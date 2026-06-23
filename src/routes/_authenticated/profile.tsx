@@ -240,3 +240,148 @@ function Field({
     </label>
   );
 }
+
+type WorkoutPoint = { id: string; count: number; duration_ms: number; created_at: string };
+
+function WorkoutCharts({ workouts }: { workouts: WorkoutPoint[] }) {
+  const [metric, setMetric] = useState<"count" | "duration">("count");
+
+  const data = useMemo(() => {
+    // workouts arrive newest-first → reverse for chronological X axis
+    return [...workouts]
+      .slice()
+      .reverse()
+      .map((w, i) => {
+        const d = new Date(w.created_at);
+        return {
+          idx: i + 1,
+          label: d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
+          fullLabel: d.toLocaleString("de-DE"),
+          count: w.count,
+          duration: Math.round(w.duration_ms / 1000),
+        };
+      });
+  }, [workouts]);
+
+  const cumulative = useMemo(() => {
+    let total = 0;
+    return data.map((d) => {
+      total += d.count;
+      return { ...d, total };
+    });
+  }, [data]);
+
+  if (workouts.length === 0) return null;
+
+  const accent = "oklch(0.82 0.19 95)";
+  const muted = "oklch(0.7 0.03 250)";
+
+  return (
+    <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          Verlauf
+        </h2>
+        <div className="flex rounded-full border border-border bg-background/60 p-0.5 text-[10px] uppercase tracking-[0.18em]">
+          <MetricTab active={metric === "count"} onClick={() => setMetric("count")}>
+            Reps
+          </MetricTab>
+          <MetricTab active={metric === "duration"} onClick={() => setMetric("duration")}>
+            Zeit
+          </MetricTab>
+        </div>
+      </div>
+
+      <div className="h-44 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3 0.03 250)" vertical={false} />
+            <XAxis dataKey="label" stroke={muted} fontSize={10} tickLine={false} axisLine={false} />
+            <YAxis stroke={muted} fontSize={10} tickLine={false} axisLine={false} width={32} />
+            <Tooltip
+              cursor={{ fill: "oklch(0.82 0.19 95 / 0.08)" }}
+              contentStyle={{
+                background: "oklch(0.22 0.03 250)",
+                border: "1px solid oklch(0.3 0.03 250)",
+                borderRadius: 12,
+                fontSize: 12,
+                color: "oklch(0.98 0.01 90)",
+              }}
+              labelFormatter={(_, p) => p?.[0]?.payload?.fullLabel ?? ""}
+              formatter={(v: number) => [
+                metric === "count" ? `${v} Push-Ups` : `${v}s`,
+                metric === "count" ? "Reps" : "Dauer",
+              ]}
+            />
+            <Bar
+              dataKey={metric}
+              fill={accent}
+              radius={[6, 6, 2, 2]}
+              maxBarSize={28}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="mt-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        Gesamt über Zeit
+      </div>
+      <div className="mt-1 h-32 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={cumulative} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="totalFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={accent} stopOpacity={0.45} />
+                <stop offset="100%" stopColor={accent} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3 0.03 250)" vertical={false} />
+            <XAxis dataKey="label" stroke={muted} fontSize={10} tickLine={false} axisLine={false} />
+            <YAxis stroke={muted} fontSize={10} tickLine={false} axisLine={false} width={32} />
+            <Tooltip
+              contentStyle={{
+                background: "oklch(0.22 0.03 250)",
+                border: "1px solid oklch(0.3 0.03 250)",
+                borderRadius: 12,
+                fontSize: 12,
+                color: "oklch(0.98 0.01 90)",
+              }}
+              labelFormatter={(_, p) => p?.[0]?.payload?.fullLabel ?? ""}
+              formatter={(v: number) => [`${v} Push-Ups`, "Gesamt"]}
+            />
+            <Area
+              type="monotone"
+              dataKey="total"
+              stroke={accent}
+              strokeWidth={2}
+              fill="url(#totalFill)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </section>
+  );
+}
+
+function MetricTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full px-3 py-1 transition ${
+        active
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
