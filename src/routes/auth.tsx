@@ -225,6 +225,3 @@ function OAuthButton({ label, onClick, disabled }: { label: string; onClick: () 
     </button>
   );
 }
-
-// Avoid unused-import warnings during SSR build of this file
-void useEffect;
