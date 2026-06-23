@@ -1,16 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Nose Push — Push-Up Zähler" },
-      { name: "description", content: "Lege dein Handy auf den Boden und zähle Push-Ups mit deiner Nase." },
-      { property: "og:title", content: "Nose Push — Push-Up Zähler" },
-      { property: "og:description", content: "Lege dein Handy auf den Boden und zähle Push-Ups mit deiner Nase." },
+      { name: "description", content: "Zähle Push-Ups mit der Nase. Bestwerte werden geräteübergreifend gespeichert." },
     ],
   }),
-  component: Index,
+  component: Counter,
 });
 
 function formatTime(ms: number) {
@@ -20,18 +19,35 @@ function formatTime(ms: number) {
   return `${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
 }
 
-function Index() {
+type Profile = { id: string; display_name: string | null; avatar_url: string | null; best_count: number };
+
+function Counter() {
   const [count, setCount] = useState(0);
-  const [best, setBest] = useState(0);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const [pop, setPop] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [savedHint, setSavedHint] = useState<string | null>(null);
   const lastTap = useRef(0);
   const audioCtx = useRef<AudioContext | null>(null);
 
+  // Load profile
   useEffect(() => {
-    const b = Number(localStorage.getItem("nosepush.best") || "0");
-    if (!Number.isNaN(b)) setBest(b);
+    let cancelled = false;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, best_count")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      if (!cancelled && data) setProfile(data as Profile);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -64,34 +80,62 @@ function Index() {
 
   const handlePush = useCallback(() => {
     const t = Date.now();
-    if (t - lastTap.current < 280) return; // debounce
+    if (t - lastTap.current < 280) return;
     lastTap.current = t;
     if (navigator.vibrate) navigator.vibrate(35);
     beep();
-    setCount((c) => {
-      const next = c + 1;
-      if (next > best) {
-        setBest(next);
-        localStorage.setItem("nosepush.best", String(next));
-      }
-      return next;
-    });
+    setCount((c) => c + 1);
     setPop((p) => p + 1);
     setStartedAt((s) => s ?? Date.now());
-  }, [beep, best]);
+    setSavedHint(null);
+  }, [beep]);
 
-  const reset = () => {
+  const finishWorkout = async () => {
+    if (count <= 0 || !profile) {
+      reset();
+      return;
+    }
+    setSaving(true);
+    const duration_ms = startedAt ? Date.now() - startedAt : 0;
+    const { error } = await supabase.from("workouts").insert({
+      user_id: profile.id,
+      count,
+      duration_ms,
+    });
+    if (!error && count > profile.best_count) {
+      const { data } = await supabase
+        .from("profiles")
+        .update({ best_count: count })
+        .eq("id", profile.id)
+        .select("id, display_name, avatar_url, best_count")
+        .single();
+      if (data) setProfile(data as Profile);
+      setSavedHint(`Gespeichert — neuer Bestwert: ${count}`);
+    } else if (!error) {
+      setSavedHint(`Gespeichert: ${count} Push-Ups`);
+    } else {
+      setSavedHint("Speichern fehlgeschlagen");
+    }
+    setSaving(false);
     setCount(0);
     setStartedAt(null);
     setPop(0);
   };
 
+  const reset = () => {
+    setCount(0);
+    setStartedAt(null);
+    setPop(0);
+    setSavedHint(null);
+  };
+
   const elapsed = startedAt ? now - startedAt : 0;
-  const pace = startedAt && count > 0 ? (count / (elapsed / 60000)) : 0;
+  const pace = startedAt && count > 0 ? count / (elapsed / 60000) : 0;
+  const best = profile?.best_count ?? 0;
+  const initials = (profile?.display_name || "?").slice(0, 1).toUpperCase();
 
   return (
     <main className="relative flex min-h-[100dvh] flex-col px-5 pt-6 pb-4">
-      {/* Header */}
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_var(--color-primary)]" />
@@ -99,28 +143,30 @@ function Index() {
             Nose&nbsp;Push
           </span>
         </div>
-        <button
-          onClick={reset}
-          className="text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground transition"
+        <Link
+          to="/profile"
+          className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-secondary-foreground"
+          aria-label="Profil"
         >
-          Reset
-        </button>
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            initials
+          )}
+        </Link>
       </header>
 
-      {/* Stats row */}
       <section className="mt-6 grid grid-cols-3 gap-3">
         <Stat label="Zeit" value={formatTime(elapsed)} />
         <Stat label="Tempo" value={`${pace ? pace.toFixed(0) : "—"}`} unit="/min" />
         <Stat label="Bestwert" value={best.toString()} />
       </section>
 
-      {/* Tap target */}
       <button
         onPointerDown={handlePush}
         aria-label="Mit der Nase drücken"
         className="group relative mt-6 flex flex-1 select-none items-center justify-center overflow-hidden rounded-[2rem] border border-border bg-card/60 backdrop-blur active:bg-card transition-colors"
       >
-        {/* Pulse rings when idle */}
         {count === 0 && (
           <>
             <span className="pointer-events-none absolute h-40 w-40 rounded-full bg-primary/20 animate-pulse-ring" />
@@ -146,15 +192,30 @@ function Index() {
           </span>
         </div>
 
-        {/* Corner ticks */}
         <Corner className="left-3 top-3" />
         <Corner className="right-3 top-3 rotate-90" />
         <Corner className="right-3 bottom-3 rotate-180" />
         <Corner className="left-3 bottom-3 -rotate-90" />
       </button>
 
-      <p className="mt-4 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-        Tippe irgendwo auf die Fläche
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <button
+          onClick={reset}
+          className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80 active:scale-[0.98]"
+        >
+          Verwerfen
+        </button>
+        <button
+          onClick={finishWorkout}
+          disabled={saving || count === 0}
+          className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+        >
+          {saving ? "Speichere…" : "Workout speichern"}
+        </button>
+      </div>
+
+      <p className="mt-3 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+        {savedHint ?? "Tippe irgendwo auf die Fläche"}
       </p>
     </main>
   );
