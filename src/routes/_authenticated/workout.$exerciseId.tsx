@@ -151,7 +151,7 @@ function WorkoutScreen() {
           .maybeSingle();
         const pb = ((cur as { personal_bests: Record<string, number> | null } | null)?.personal_bests) ?? {};
         const next = { ...pb, [exerciseId]: count };
-        const updates: Record<string, unknown> = { personal_bests: next };
+        const updates: { personal_bests: Record<string, number>; best_count?: number } = { personal_bests: next };
         if (exerciseId === "pushup") updates.best_count = count;
         await supabase.from("profiles").update(updates).eq("id", userId);
         setBest(count);
