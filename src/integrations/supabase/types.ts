@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      exercises: {
+        Row: {
+          created_at: string
+          description: string | null
+          detection_type: string
+          icon: string
+          id: string
+          name: string
+          sort_order: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          detection_type: string
+          icon: string
+          id: string
+          name: string
+          sort_order?: number
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          detection_type?: string
+          icon?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          unit?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -21,6 +54,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          personal_bests: Json
           updated_at: string
         }
         Insert: {
@@ -29,6 +63,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          personal_bests?: Json
           updated_at?: string
         }
         Update: {
@@ -37,6 +72,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          personal_bests?: Json
           updated_at?: string
         }
         Relationships: []
@@ -46,6 +82,7 @@ export type Database = {
           count: number
           created_at: string
           duration_ms: number
+          exercise_id: string
           id: string
           user_id: string
         }
@@ -53,6 +90,7 @@ export type Database = {
           count: number
           created_at?: string
           duration_ms?: number
+          exercise_id?: string
           id?: string
           user_id: string
         }
@@ -60,10 +98,19 @@ export type Database = {
           count?: number
           created_at?: string
           duration_ms?: number
+          exercise_id?: string
           id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workouts_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
