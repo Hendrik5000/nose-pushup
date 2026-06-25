@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+import { levelProgress } from "@/lib/level";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
