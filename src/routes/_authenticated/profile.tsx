@@ -104,7 +104,7 @@ function ProfilePage() {
     navigate({ to: "/auth", replace: true });
   };
 
-  const total = workouts.reduce((s, w) => s + w.count, 0);
+  void workouts.length;
   const lp = levelProgress(profile?.xp ?? 0);
   const streak = profile?.current_streak ?? 0;
   const streakActive = (() => {
