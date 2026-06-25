@@ -26,6 +26,11 @@ type Profile = {
   display_name: string | null;
   avatar_url: string | null;
   best_count: number;
+  xp: number;
+  level: number;
+  current_streak: number;
+  longest_streak: number;
+  last_workout_date: string | null;
 };
 
 type Workout = { id: string; count: number; duration_ms: number; created_at: string };
