@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_stats: {
+        Row: {
+          created_at: string
+          day: string
+          id: string
+          sessions: number
+          total_duration_ms: number
+          total_reps: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          id?: string
+          sessions?: number
+          total_duration_ms?: number
+          total_reps?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          id?: string
+          sessions?: number
+          total_duration_ms?: number
+          total_reps?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           created_at: string
@@ -52,28 +85,52 @@ export type Database = {
           avatar_url: string | null
           best_count: number
           created_at: string
+          current_streak: number
           display_name: string | null
           id: string
+          last_workout_date: string | null
+          level: number
+          longest_streak: number
           personal_bests: Json
+          streak_freeze_week: string | null
+          streak_freezes: number
+          theme: string
           updated_at: string
+          xp: number
         }
         Insert: {
           avatar_url?: string | null
           best_count?: number
           created_at?: string
+          current_streak?: number
           display_name?: string | null
           id: string
+          last_workout_date?: string | null
+          level?: number
+          longest_streak?: number
           personal_bests?: Json
+          streak_freeze_week?: string | null
+          streak_freezes?: number
+          theme?: string
           updated_at?: string
+          xp?: number
         }
         Update: {
           avatar_url?: string | null
           best_count?: number
           created_at?: string
+          current_streak?: number
           display_name?: string | null
           id?: string
+          last_workout_date?: string | null
+          level?: number
+          longest_streak?: number
           personal_bests?: Json
+          streak_freeze_week?: string | null
+          streak_freezes?: number
+          theme?: string
           updated_at?: string
+          xp?: number
         }
         Relationships: []
       }
@@ -117,7 +174,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calc_level: { Args: { _xp: number }; Returns: number }
     }
     Enums: {
       [_ in never]: never
