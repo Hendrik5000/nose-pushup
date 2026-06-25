@@ -1,16 +1,35 @@
-import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useExerciseEngine, ensureMotionPermission } from "@/hooks/useExerciseEngine";
+import { useCameraDetection } from "@/hooks/useCameraDetection";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { getConfig } from "@/lib/exercises";
 
+type PushMode = "nose" | "manual" | "camera";
+
 export const Route = createFileRoute("/_authenticated/workout/$exerciseId")({
+  validateSearch: (search: Record<string, unknown>): { mode?: PushMode } => {
+    const raw = search.mode;
+    if (raw === "nose" || raw === "manual" || raw === "camera") return { mode: raw };
+    return {};
+  },
   head: ({ params }) => ({
-    meta: [{ title: `${params.exerciseId} — Nose Push` }],
+    meta: [{ title: `${params.exerciseId} — Nosy Push-Ups` }],
   }),
   component: WorkoutScreen,
 });
+
+const MOTIVATIONAL = [
+  "Atme — und weiter.",
+  "Du bist stärker als gestern.",
+  "Noch einer. Und noch einer.",
+  "Form vor Tempo.",
+  "Stark!",
+  "Beast-Modus aktiv.",
+  "Halte durch — du schaffst das.",
+  "Power!",
+];
 
 function formatTime(ms: number) {
   const s = Math.floor(ms / 1000);
@@ -21,6 +40,7 @@ function formatTime(ms: number) {
 
 function WorkoutScreen() {
   const { exerciseId } = useParams({ from: "/_authenticated/workout/$exerciseId" });
+  const search = useSearch({ from: "/_authenticated/workout/$exerciseId" });
   const navigate = useNavigate();
 
   const [exercise, setExercise] = useState<ExerciseMeta | null>(null);
@@ -33,36 +53,61 @@ function WorkoutScreen() {
   const [saving, setSaving] = useState(false);
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [motionError, setMotionError] = useState<string | null>(null);
+  const [motivation, setMotivation] = useState<string | null>(null);
 
   const audioCtx = useRef<AudioContext | null>(null);
 
-  const detection = exercise?.detection_type ?? "touch";
+  const isPushup = exerciseId === "pushup";
+  const pushMode: PushMode = isPushup ? (search.mode ?? "nose") : "nose";
+  const useCamera = isPushup && pushMode === "camera";
+
+  // Effective detection: for push-ups we honor the mode toggle.
+  const detection = useMemo(() => {
+    if (!exercise) return "touch" as const;
+    if (isPushup) return useCamera ? "touch" : exercise.detection_type; // camera drives bump() externally
+    return exercise.detection_type;
+  }, [exercise, isPushup, useCamera]);
+
+  const playTick = useCallback(() => {
+    try {
+      if (!audioCtx.current) {
+        const Ctx = window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        audioCtx.current = new Ctx();
+      }
+      const ctx = audioCtx.current!;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.frequency.value = 660;
+      o.type = "sine";
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+      o.connect(g).connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.13);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const { count, pop, bump, reset: resetEngine } = useExerciseEngine({
     exerciseId,
     detection,
-    active,
-    onTick: () => {
-      try {
-        if (!audioCtx.current) {
-          const Ctx = window.AudioContext ||
-            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-          audioCtx.current = new Ctx();
-        }
-        const ctx = audioCtx.current!;
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.frequency.value = 660;
-        o.type = "sine";
-        g.gain.setValueAtTime(0.0001, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
-        o.connect(g).connect(ctx.destination);
-        o.start();
-        o.stop(ctx.currentTime + 0.13);
-      } catch {
-        /* ignore */
+    active: useCamera ? false : active, // when camera-driven, we bump() from camera
+    onTick: (n) => {
+      playTick();
+      if (n > 0 && n % 5 === 0) {
+        setMotivation(MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)]);
       }
     },
+  });
+
+  // Camera detector — only mounted for camera mode
+  const cameraBump = useCallback(() => bump(), [bump]);
+  const { videoRef, error: cameraError, ready: cameraReady } = useCameraDetection({
+    active: useCamera && active,
+    onRep: cameraBump,
   });
 
   // Load exercise + user best
@@ -98,7 +143,6 @@ function WorkoutScreen() {
     };
   }, [exerciseId, navigate]);
 
-  // Elapsed timer tick
   useEffect(() => {
     if (!startedAt) return;
     const id = setInterval(() => setNow(Date.now()), 250);
@@ -120,12 +164,11 @@ function WorkoutScreen() {
   }, [detection]);
 
   const handleSurfaceTap = useCallback(() => {
+    if (useCamera) return;
     if (detection === "timer" || detection === "motion_vertical") return;
-    if (!active) {
-      start();
-    }
+    if (!active) start();
     bump();
-  }, [detection, active, start, bump]);
+  }, [useCamera, detection, active, start, bump]);
 
   const finish = async () => {
     if (count <= 0 || !userId || !exercise) {
@@ -143,7 +186,6 @@ function WorkoutScreen() {
     if (!error) {
       const newBest = count > best;
       if (newBest) {
-        // Read-modify-write personal_bests jsonb.
         const { data: cur } = await supabase
           .from("profiles")
           .select("personal_bests, best_count")
@@ -155,9 +197,12 @@ function WorkoutScreen() {
         if (exerciseId === "pushup") updates.best_count = count;
         await supabase.from("profiles").update(updates).eq("id", userId);
         setBest(count);
-        setSavedHint(`Neuer Bestwert: ${count}${exercise.unit === "seconds" ? " Sek." : ""}`);
+        setSavedHint(`🏆 Neuer Bestwert: ${count}${exercise.unit === "seconds" ? " Sek." : ""}`);
       } else {
-        setSavedHint(`Gespeichert: ${count}${exercise.unit === "seconds" ? " Sek." : ""}`);
+        const xpGained = exercise.unit === "seconds"
+          ? Math.max(1, Math.floor(duration_ms / 1000))
+          : count * 10;
+        setSavedHint(`Gespeichert · +${xpGained} XP`);
       }
     } else {
       setSavedHint("Speichern fehlgeschlagen");
@@ -173,6 +218,7 @@ function WorkoutScreen() {
     setStartedAt(null);
     resetEngine();
     setSavedHint(null);
+    setMotivation(null);
   };
 
   const elapsed = startedAt ? now - startedAt : 0;
@@ -180,7 +226,7 @@ function WorkoutScreen() {
     ? count / (elapsed / 60000)
     : 0;
   const cfg = exercise ? getConfig(exerciseId) : null;
-  const isTapDriven = detection === "touch" || detection === "combo";
+  const isTapDriven = !useCamera && (detection === "touch" || detection === "combo");
 
   if (!exercise) {
     return (
@@ -190,19 +236,28 @@ function WorkoutScreen() {
     );
   }
 
+  const modeLabel: Record<PushMode, string> = { nose: "Nase", manual: "Manuell", camera: "Kamera" };
+
   return (
-    <main className="relative flex min-h-[100dvh] flex-col px-5 pt-6 pb-4">
+    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
       <header className="flex items-center justify-between">
         <Link
           to="/"
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
         >
           <span aria-hidden>←</span>
-          <span>Übungen</span>
+          <span>Zurück</span>
         </Link>
         <div className="flex items-center gap-2">
           <span className="text-2xl">{exercise.icon}</span>
-          <span className="text-sm font-medium text-foreground">{exercise.name}</span>
+          <span className="text-sm font-medium text-foreground">
+            {exercise.name}
+            {isPushup && (
+              <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                {modeLabel[pushMode]}
+              </span>
+            )}
+          </span>
         </div>
       </header>
 
@@ -221,16 +276,25 @@ function WorkoutScreen() {
         aria-label={isTapDriven ? "Antippen" : "Aktiv"}
         className="group relative mt-6 flex flex-1 select-none items-center justify-center overflow-hidden rounded-[2rem] border border-border bg-card/60 backdrop-blur active:bg-card transition-colors"
       >
-        {count === 0 && !active && (
+        {useCamera && (
+          <video
+            ref={videoRef}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"
+            playsInline
+            muted
+          />
+        )}
+
+        {count === 0 && !active && !useCamera && (
           <>
             <span className="pointer-events-none absolute h-40 w-40 rounded-full bg-primary/20 animate-pulse-ring" />
             <span className="pointer-events-none absolute h-40 w-40 rounded-full bg-primary/10 animate-pulse-ring [animation-delay:0.7s]" />
           </>
         )}
 
-        <div className="relative flex flex-col items-center gap-3 px-4 text-center">
+        <div className="relative z-10 flex flex-col items-center gap-3 px-4 text-center">
           <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
-            {exercise.name}
+            {isPushup ? `Push-Ups · ${modeLabel[pushMode]}` : exercise.name}
           </span>
           <span
             key={pop}
@@ -240,12 +304,14 @@ function WorkoutScreen() {
             {count}
           </span>
           <span className="mt-2 max-w-[16rem] text-sm text-muted-foreground">
-            {!active && count === 0
-              ? cfg?.idleHint
-              : cfg?.activeHint}
+            {motivation ?? (!active && count === 0 ? cfg?.idleHint : cfg?.activeHint)}
           </span>
-          {motionError && (
-            <span className="text-xs text-destructive">{motionError}</span>
+          {motionError && <span className="text-xs text-destructive">{motionError}</span>}
+          {useCamera && cameraError && (
+            <span className="text-xs text-destructive">{cameraError}</span>
+          )}
+          {useCamera && active && !cameraReady && !cameraError && (
+            <span className="text-xs text-muted-foreground">Kamera startet…</span>
           )}
         </div>
 
@@ -283,7 +349,16 @@ function WorkoutScreen() {
       )}
 
       <p className="mt-3 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-        {savedHint ?? (isTapDriven ? "Tippe irgendwo auf die Fläche" : active ? "Erkennung aktiv" : "Bereit zum Start")}
+        {savedHint ??
+          (useCamera
+            ? active
+              ? "Kamera erkennt dich"
+              : "Starten · Kamera-Modus"
+            : isTapDriven
+            ? "Tippe irgendwo auf die Fläche"
+            : active
+            ? "Erkennung aktiv"
+            : "Bereit zum Start")}
       </p>
     </main>
   );

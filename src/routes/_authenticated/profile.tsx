@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+import { levelProgress } from "@/lib/level";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -25,6 +26,11 @@ type Profile = {
   display_name: string | null;
   avatar_url: string | null;
   best_count: number;
+  xp: number;
+  level: number;
+  current_streak: number;
+  longest_streak: number;
+  last_workout_date: string | null;
 };
 
 type Workout = { id: string; count: number; duration_ms: number; created_at: string };
@@ -47,7 +53,7 @@ function ProfilePage() {
       const [{ data: p }, { data: w }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, display_name, avatar_url, best_count")
+          .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date")
           .eq("id", u.user.id)
           .maybeSingle(),
         supabase
@@ -77,7 +83,7 @@ function ProfilePage() {
         avatar_url: avatarUrl.trim() || null,
       })
       .eq("id", profile.id)
-      .select("id, display_name, avatar_url, best_count")
+      .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date")
       .single();
     setSaving(false);
     if (error) {
@@ -98,7 +104,15 @@ function ProfilePage() {
     navigate({ to: "/auth", replace: true });
   };
 
-  const total = workouts.reduce((s, w) => s + w.count, 0);
+  
+  const lp = levelProgress(profile?.xp ?? 0);
+  const streak = profile?.current_streak ?? 0;
+  const streakActive = (() => {
+    if (!profile?.last_workout_date) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    return profile.last_workout_date === today || profile.last_workout_date === yesterday;
+  })();
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
@@ -134,10 +148,42 @@ function ProfilePage() {
         </div>
       </section>
 
+      {/* Level + XP */}
+      <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+              Level {lp.level} · {lp.title}
+            </div>
+            <div className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+              {lp.xp.toLocaleString("de-DE")} XP
+            </div>
+          </div>
+          <div
+            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${
+              streakActive && streak > 0
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border bg-secondary text-muted-foreground"
+            }`}
+            title="Aktuelle Streak"
+          >
+            <span className="text-lg leading-none">{streak > 0 && streakActive ? "🔥" : "❄️"}</span>
+            <span className="tabular-nums">{streak}</span>
+          </div>
+        </div>
+        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-secondary">
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${lp.progress * 100}%` }} />
+        </div>
+        <div className="mt-1 flex justify-between text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          <span>{lp.xpIntoLevel} / {lp.xpForLevel} XP</span>
+          <span>{lp.isMax ? "Max-Level" : `Noch ${lp.xpToNext} XP bis Lv ${lp.level + 1}`}</span>
+        </div>
+      </section>
+
       <section className="mt-4 grid grid-cols-3 gap-3">
         <Stat label="Bestwert" value={(profile?.best_count ?? 0).toString()} />
         <Stat label="Workouts" value={workouts.length.toString()} />
-        <Stat label="Total" value={total.toString()} />
+        <Stat label="Längste" value={(profile?.longest_streak ?? 0).toString()} />
       </section>
 
       <section className="mt-6 space-y-3 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">

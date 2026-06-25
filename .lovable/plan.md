@@ -1,125 +1,109 @@
 
-# Nose Push → vollständige Fitness-Plattform
+# Nosy Push-Ups – Erweiterung zur gamifizierten Fitness-App
 
-Vier Feature-Pakete, aufeinander aufbauend. Jedes Paket ist eigenständig nutzbar, lässt sich aber in dieser Reihenfolge am sinnvollsten ausrollen.
-
----
-
-## 1. Mehr Übungen (Multi-Exercise Engine)
-
-Heute zählt die App nur Push-Ups via Nasen-Touch. Wir verallgemeinern den Counter zu einer Engine, die mehrere Übungen kennt.
-
-**Übungen v1**
-- Push-Ups (Nase aufs Display)
-- Sit-Ups (Nase aufs hochgehaltene Handy am Knie)
-- Squats (Handy in Hosentasche → Beschleunigungssensor, hoch/runter-Erkennung)
-- Plank (Timer + Stabilitäts­erkennung via Gyroskop)
-- Burpees (Kombi: Touch unten + Bewegung oben)
-
-**Technisch**
-- Neuer Übungs-Registry-Code mit Strategy-Pattern: jede Übung definiert Erkennung (Touch / DeviceMotion / Timer), Mindest-Intervall, Animation, Sound.
-- `workouts`-Tabelle erweitert um `exercise_id text not null default 'pushup'`.
-- Neue Tabelle `exercises` (id, name, icon, detection_type, unit, description) – serverseitig gepflegt.
-- Übungsauswahl-Screen auf der Startseite vor dem Start.
-- Sensor-Permission-Handling für iOS (`DeviceMotionEvent.requestPermission`).
+Wir bauen die bestehende Multi-Exercise-Engine wieder klar auf Push-Ups als Hauptfeature zurück (andere Übungen bleiben optional sichtbar) und ergänzen ein vollständiges Gamification-, Battle- und Coach-System. Umsetzung in **4 Etappen** – nach jeder Etappe ist die App nutzbar.
 
 ---
 
-## 2. Training & Coaching
+## Etappe 1 – Fundament: Tracking-Modi, XP, Level, Streaks
 
-Aus dem Counter wird ein echter Trainings-Begleiter.
-
-**Trainingspläne**
-- Vorgefertigte Pläne: „30-Tage Push-Up", „Anfänger Ganzkörper", „Power Woche".
-- Tagesansicht: heutige Session mit Sätzen × Wiederholungen, Pausen-Timer, Fortschrittsbalken.
-- Eigener Plan-Editor: Sätze, Pausen, Übungs-Mix definieren.
-
-**Ziele & Streaks**
-- Wochenziel (z. B. 200 Push-Ups/Woche), Tagesziel.
-- Streak-Counter: Tage in Folge mit erreichtem Tagesziel. Visualisierung als Kalender-Heatmap.
-- Push-Erinnerungen am gewählten Trainingszeitpunkt (Web Push API).
-
-**KI-Coach**
-- Nach jeder Session: kurze Analyse via Lovable AI Gateway (`google/gemini-2.5-flash`) mit Trend, Verbesserungs-Tipp, Motivation.
-- Wöchentlicher KI-Report auf der Profilseite.
-
-**Technisch**
-- Tabellen: `training_plans`, `plan_days`, `user_plan_progress`, `user_goals`.
-- Serverfunktion `getCoachInsight` (mit `requireSupabaseAuth`) ruft AI Gateway.
-- Heatmap mit Recharts oder eigener SVG-Grid-Komponente.
-
----
-
-## 3. Gamification
-
-Belohnungssystem, das zum täglichen Öffnen motiviert.
+**Tracking-Modi für Push-Ups**
+- Nose-Tap (Haupt, vorhanden)
+- Manueller Tap (großer Button)
+- Kamera-Modus (MVP): nutzt `getUserMedia` + einfache Bewegungs-/Helligkeitsdifferenz im unteren Bildbereich zur Repetition-Erkennung. Hinweis: kein ML-Modell, dafür offline & ohne Extra-Kosten. Kann später durch MediaPipe Pose ersetzt werden.
 
 **XP & Level**
-- Jede Wiederholung gibt XP, Bonus-XP für neue Bestwerte und gehaltene Streaks.
-- 50 Level mit eigenen Titeln („Nase-Padawan" → „Liegestütz-Lord").
-- Level-Up-Animation mit Konfetti.
+- 1 Push-Up = 10 XP, Bonus für Streaks & Challenges
+- 50 Level mit Titeln: Beginner → Rookie → Athlete → Beast → Machine → Legend → Mythic
+- Level-Up-Animation + Sound
 
-**Achievements**
-- ~30 Abzeichen: „Erste 10", „Plank 2 min", „7-Tage-Streak", „100 Squats in einer Session", „Mitternachts-Workout".
-- Achievement-Galerie im Profil mit Fortschrittsbalken pro Abzeichen.
+**Streak-System**
+- `current_streak`, `longest_streak`, `last_workout_date`
+- Visuelles Feuer-Icon, „Streak in Gefahr"-Badge ab 20:00 Uhr lokal
+- Streak-Freeze (1× pro Woche automatisch)
 
-**Tägliche Quests**
-- Drei rotierende Quests pro Tag (z. B. „Mache heute 25 Sit-Ups", „Schlage deinen Push-Up-Schnitt").
-- XP- und Coin-Belohnung beim Abschluss.
-
-**Coins & Cosmetics**
-- Verdiente Coins schalten optionale Themes, Avatar-Rahmen und Sounds frei.
-
-**Technisch**
-- Tabellen: `user_xp` (user_id, xp, level), `achievements` (statisch), `user_achievements`, `daily_quests`, `user_quest_progress`, `cosmetics`, `user_cosmetics`.
-- Server-Trigger nach Workout-Insert: XP berechnen, Quests prüfen, Achievements freischalten – als Postgres-Funktion + Trigger.
+**DB-Migration**
+- `profiles`: + `xp int`, `level int`, `current_streak`, `longest_streak`, `last_workout_date`, `theme text`
+- `daily_stats` (user_id, date, total_reps, sessions) für schnelle Charts
+- Trigger nach `workouts` insert: XP/Level/Streak/daily_stats aktualisieren
 
 ---
 
-## 4. Social & Wettbewerb
+## Etappe 2 – Smart Coach, Challenges, Dashboard
 
-Aus der Solo-App wird eine Community.
-
-**Freunde & Profile**
-- Öffentliche Profilseiten mit Username, Avatar, Level, Top-Übungen.
-- Freundschafts­anfragen, Freundes-Feed (letzte Sessions, neue Achievements).
-- Username-Vergabe beim ersten Login (eindeutig).
-
-**Leaderboards**
-- Globale Ranglisten pro Übung: heute, Woche, Allzeit-Bestwert.
-- Freundes-Rangliste als gefilterte Ansicht.
-- Länder-Leaderboard (optional, auf Zustimmung).
-
-**Duelle (Realtime)**
-- 1-gegen-1-Challenge: beide haben 60 Sek., wer mehr Reps schafft gewinnt.
-- Lobby per Code oder Freundes-Einladung.
-- Realtime-Sync via Supabase Realtime: live gegnerischer Counter sichtbar.
+**Smart Coach** (Lovable AI, `google/gemini-3-flash-preview`)
+- Server-Function `getCoachAdvice`: nimmt letzte 14 Tage Stats → liefert 2–3 Sätze Feedback + konkreten Trainingsvorschlag (z. B. „Heute 4×12 mit 60 s Pause")
+- Anzeige als Karte im Dashboard, „Neu generieren"-Button (rate-limited)
+- Kurze Motivations-Snippets während des Workouts (lokal aus Pool, ohne AI-Call pro Rep)
 
 **Challenges**
-- Gruppen-Challenges („Wer schafft im Mai die meisten Push-Ups?").
-- Beitritt per Link, Live-Tabelle.
+- Tabelle `challenges` (Template) + `user_challenges` (Fortschritt)
+- Daily (3 rotierende): z. B. 50 Reps, 3 Sessions, 1 Streak halten
+- Weekly: z. B. 300 Reps, neue PR, 5 Tage trainieren
+- Belohnung: XP + Coins (für spätere Themes)
 
-**Technisch**
-- Tabellen: `friendships`, `friend_requests`, `duels`, `duel_participants`, `duel_events`, `challenges`, `challenge_members`.
-- Realtime auf `duel_events` und `duel_participants` aktivieren.
-- Public-View `public_profiles` für gelistete Profile (Username, Avatar, Level – keine PII).
-- Eigene Server­funktionen für Matchmaking & Duell-Beitritt mit Validierung.
-
----
-
-## Rollout-Reihenfolge
-
-1. **Multi-Exercise Engine** (Basis für alles Weitere)
-2. **Gamification** (sofort spürbarer Motivations-Boost)
-3. **Training & Coaching** (Tiefe & Wiederkehr)
-4. **Social & Wettbewerb** (Netzwerkeffekt zum Schluss)
+**Statistik-Dashboard** (überarbeitet)
+- Bar-Chart letzte 30 Tage (Reps)
+- Line-Chart Wochenvergleich
+- Karten: PR, stärkster Tag, Ø Reps/Session, Streak
+- Recharts bereits drin
 
 ---
 
-## Offene Entscheidungen
+## Etappe 3 – Battle-Modus & Community
 
-- **Schritt 1 starten?** Wir würden mit Paket 1 (Multi-Exercise + erweitertes Datenmodell) beginnen, weil alle anderen Pakete darauf aufbauen.
-- **Sounds & Haptik**: aktivieren oder optional?
-- **Profile öffentlich**: Standard öffentlich oder Standard privat?
+**1v1 Battle (Realtime)**
+- Tabellen: `battles` (host_id, guest_id, status, duration_s, winner_id), `battle_reps` (battle_id, user_id, count, ts)
+- Flow: Host erstellt Battle → Code/Link teilen → Guest joint → Countdown 3-2-1 → 60 s zählen → Ergebnis + Revanche
+- Supabase Realtime channel pro Battle für Live-Reps
+- Bot-Modus (simulierter Gegner) wenn kein Freund da
 
-Sag Bescheid, ob ich direkt mit **Paket 1** starten soll oder ob du Prioritäten ändern willst.
+**Freunde & Leaderboard**
+- `friendships` (requester, addressee, status)
+- Globales & Freunde-Leaderboard (Reps/Woche, Level, längste Streak)
+- Battle-Bilanz (W/L) am Profil
+
+**Public Profile**
+- View `public_profiles` (display_name, avatar, level, longest_streak, total_reps) – RLS: alle authenticated lesen
+
+---
+
+## Etappe 4 – Achievements, Themes, Sounds, Politur
+
+**Achievements** (~25)
+- Erste 10 / 100 / 1000 / 10000 Reps, Streak 7/30/100, Battle gewonnen, Level 10/25/50, Challenge-Sammler, etc.
+- Trigger-basiert, Badge-Galerie im Profil
+
+**Themes**
+- Dark (default), Gym (warm rot/orange), Neon (cyan/magenta), Minimal (mono)
+- CSS-Variablen-Sets in `styles.css`, Auswahl in Einstellungen, Persistenz in `profiles.theme`
+- Manche Themes durch Level/Coins freischaltbar
+
+**Sounds & Haptik**
+- Pro Push-Up: kurzer Click (Web Audio, generiert – keine Asset-Größe)
+- Level-Up, Battle-Win, Streak-Save: eigene Töne
+- Vibration via `navigator.vibrate` wo verfügbar
+- Stummschalt-Toggle
+
+**Politur**
+- Onboarding (3 Slides)
+- Empty States, Loading-Skeletons
+- PWA-Manifest fürs Home-Screen-Icon
+
+---
+
+## Technische Hinweise
+
+- Backend: Lovable Cloud + `createServerFn` mit `requireSupabaseAuth`
+- AI: Lovable AI Gateway (`google/gemini-3-flash-preview`)
+- Realtime: Supabase Realtime für Battles
+- Kein neuer Provider, keine extra Secrets nötig
+- Push-Ups bekommen wieder einen prominenten „Start"-CTA auf der Startseite; andere Übungen rutschen in einen „Mehr Übungen"-Bereich
+
+---
+
+## Reihenfolge & Bestätigung
+
+Vorschlag: **Etappe 1 zuerst** umsetzen (Modi, XP/Level/Streak, Migration, Dashboard-Update), dann nach deinem OK Etappe 2.
+
+Soll ich mit Etappe 1 starten – oder willst du die Reihenfolge ändern (z. B. Battle-Modus früher)?
