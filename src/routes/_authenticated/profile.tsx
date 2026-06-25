@@ -105,6 +105,14 @@ function ProfilePage() {
   };
 
   const total = workouts.reduce((s, w) => s + w.count, 0);
+  const lp = levelProgress(profile?.xp ?? 0);
+  const streak = profile?.current_streak ?? 0;
+  const streakActive = (() => {
+    if (!profile?.last_workout_date) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    return profile.last_workout_date === today || profile.last_workout_date === yesterday;
+  })();
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
