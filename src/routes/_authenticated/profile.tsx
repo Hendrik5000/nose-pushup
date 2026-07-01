@@ -85,7 +85,7 @@ function ProfilePage() {
         avatar_url: avatarUrl.trim() || null,
       })
       .eq("id", profile.id)
-      .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date")
+      .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes")
       .single();
     setSaving(false);
     if (error) {
