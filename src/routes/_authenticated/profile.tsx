@@ -188,6 +188,8 @@ function ProfilePage() {
         <Stat label="Längste" value={(profile?.longest_streak ?? 0).toString()} />
       </section>
 
+      {profile && <CoachPanel profile={profile} workouts={workouts} />}
+
       <section className="mt-6 space-y-3 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Profil bearbeiten
