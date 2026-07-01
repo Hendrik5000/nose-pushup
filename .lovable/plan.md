@@ -1,109 +1,81 @@
+# Nosy Push-Ups – Roadmap für große neue Funktionen
 
-# Nosy Push-Ups – Erweiterung zur gamifizierten Fitness-App
-
-Wir bauen die bestehende Multi-Exercise-Engine wieder klar auf Push-Ups als Hauptfeature zurück (andere Übungen bleiben optional sichtbar) und ergänzen ein vollständiges Gamification-, Battle- und Coach-System. Umsetzung in **4 Etappen** – nach jeder Etappe ist die App nutzbar.
-
----
-
-## Etappe 1 – Fundament: Tracking-Modi, XP, Level, Streaks
-
-**Tracking-Modi für Push-Ups**
-- Nose-Tap (Haupt, vorhanden)
-- Manueller Tap (großer Button)
-- Kamera-Modus (MVP): nutzt `getUserMedia` + einfache Bewegungs-/Helligkeitsdifferenz im unteren Bildbereich zur Repetition-Erkennung. Hinweis: kein ML-Modell, dafür offline & ohne Extra-Kosten. Kann später durch MediaPipe Pose ersetzt werden.
-
-**XP & Level**
-- 1 Push-Up = 10 XP, Bonus für Streaks & Challenges
-- 50 Level mit Titeln: Beginner → Rookie → Athlete → Beast → Machine → Legend → Mythic
-- Level-Up-Animation + Sound
-
-**Streak-System**
-- `current_streak`, `longest_streak`, `last_workout_date`
-- Visuelles Feuer-Icon, „Streak in Gefahr"-Badge ab 20:00 Uhr lokal
-- Streak-Freeze (1× pro Woche automatisch)
-
-**DB-Migration**
-- `profiles`: + `xp int`, `level int`, `current_streak`, `longest_streak`, `last_workout_date`, `theme text`
-- `daily_stats` (user_id, date, total_reps, sessions) für schnelle Charts
-- Trigger nach `workouts` insert: XP/Level/Streak/daily_stats aktualisieren
+Etappe 1 (XP/Level/Streak/Modi) und der Coach-Bereich sind live. Jetzt kommen die vier großen Ausbaustufen, die die App zu einer echten gamifizierten Fitness-Community machen. Nach jeder Etappe ist die App voll nutzbar.
 
 ---
 
-## Etappe 2 – Smart Coach, Challenges, Dashboard
+## Etappe A – Smart Coach v2 + Challenges
 
-**Smart Coach** (Lovable AI, `google/gemini-3-flash-preview`)
-- Server-Function `getCoachAdvice`: nimmt letzte 14 Tage Stats → liefert 2–3 Sätze Feedback + konkreten Trainingsvorschlag (z. B. „Heute 4×12 mit 60 s Pause")
-- Anzeige als Karte im Dashboard, „Neu generieren"-Button (rate-limited)
-- Kurze Motivations-Snippets während des Workouts (lokal aus Pool, ohne AI-Call pro Rep)
+**Smart Coach v2 (AI)**
+- Neue Server-Function `getCoachAdvice` nutzt Lovable AI (`google/gemini-3-flash-preview`).
+- Input: letzte 14 Tage `daily_stats`, PR, Streak, Level.
+- Output: 2–3 Sätze Feedback + konkreter Tagesplan (z. B. „4×12, 60 s Pause").
+- Anzeige im bestehenden `CoachPanel` mit „Neu generieren" (rate-limited auf 1×/Stunde pro User).
+- Fallback: bestehende regelbasierte Logik, wenn AI fehlschlägt.
 
-**Challenges**
-- Tabelle `challenges` (Template) + `user_challenges` (Fortschritt)
-- Daily (3 rotierende): z. B. 50 Reps, 3 Sessions, 1 Streak halten
-- Weekly: z. B. 300 Reps, neue PR, 5 Tage trainieren
-- Belohnung: XP + Coins (für spätere Themes)
+**Daily & Weekly Challenges**
+- Tabellen `challenges` (Templates) + `user_challenges` (Fortschritt, reset_at).
+- 3 rotierende Daily Challenges (z. B. 50 Reps, 3 Sessions, Streak halten).
+- 1 Weekly Challenge (z. B. 300 Reps, neuer PR).
+- Belohnung: Bonus-XP + Coins (für spätere Themes).
+- UI: Challenge-Karten auf dem Dashboard mit Fortschrittsbalken.
 
-**Statistik-Dashboard** (überarbeitet)
-- Bar-Chart letzte 30 Tage (Reps)
-- Line-Chart Wochenvergleich
-- Karten: PR, stärkster Tag, Ø Reps/Session, Streak
-- Recharts bereits drin
+## Etappe B – Battle-Modus (Realtime 1v1)
 
----
+**Datenbank**
+- `battles` (host_id, guest_id, status, duration_s, winner_id, code).
+- `battle_reps` (battle_id, user_id, count, ts).
 
-## Etappe 3 – Battle-Modus & Community
+**Flow**
+- Host erstellt Battle → 6-stelliger Code / Share-Link.
+- Guest joint → Countdown 3-2-1 → 60 s Zählphase → Ergebnis + Revanche.
+- Supabase Realtime Channel pro Battle für Live-Reps beider Seiten.
+- Bot-Modus: simulierter Gegner nach realistischem Reps/s-Profil, wenn niemand joint.
 
-**1v1 Battle (Realtime)**
-- Tabellen: `battles` (host_id, guest_id, status, duration_s, winner_id), `battle_reps` (battle_id, user_id, count, ts)
-- Flow: Host erstellt Battle → Code/Link teilen → Guest joint → Countdown 3-2-1 → 60 s zählen → Ergebnis + Revanche
-- Supabase Realtime channel pro Battle für Live-Reps
-- Bot-Modus (simulierter Gegner) wenn kein Freund da
+**UI**
+- Neue Route `/_authenticated/battle` (Lobby) und `/_authenticated/battle/$id` (Arena).
+- Live-Balken beider Spieler, Rep-Counter, Restzeit.
+- Ergebnisscreen mit W/L-Bilanz-Update.
 
-**Freunde & Leaderboard**
-- `friendships` (requester, addressee, status)
-- Globales & Freunde-Leaderboard (Reps/Woche, Level, längste Streak)
-- Battle-Bilanz (W/L) am Profil
+## Etappe C – Social: Freunde, Leaderboards, Public Profile
 
-**Public Profile**
-- View `public_profiles` (display_name, avatar, level, longest_streak, total_reps) – RLS: alle authenticated lesen
+- `friendships` (requester, addressee, status).
+- View `public_profiles` (display_name, avatar, level, longest_streak, total_reps) – lesbar für alle authenticated.
+- Globales & Freunde-Leaderboard (Reps/Woche, Level, längste Streak) als eigene Route `/leaderboard`.
+- Battle-Bilanz (W/L) und Achievements-Badges am Profil sichtbar.
+- Freund hinzufügen per Suche (Anzeigename) oder Battle-Code.
 
----
+## Etappe D – Achievements, Themes, Sounds, Politur
 
-## Etappe 4 – Achievements, Themes, Sounds, Politur
-
-**Achievements** (~25)
-- Erste 10 / 100 / 1000 / 10000 Reps, Streak 7/30/100, Battle gewonnen, Level 10/25/50, Challenge-Sammler, etc.
-- Trigger-basiert, Badge-Galerie im Profil
+**Achievements (~25)**
+- Meilensteine: 10 / 100 / 1 000 / 10 000 Reps, Streak 7 / 30 / 100, Level 10 / 25 / 50, Battle-Wins, Challenge-Sammler.
+- DB-Trigger auf `workouts`/`battles`/`user_challenges` vergibt Badges.
+- Badge-Galerie im Profil, Toast bei Freischaltung.
 
 **Themes**
-- Dark (default), Gym (warm rot/orange), Neon (cyan/magenta), Minimal (mono)
-- CSS-Variablen-Sets in `styles.css`, Auswahl in Einstellungen, Persistenz in `profiles.theme`
-- Manche Themes durch Level/Coins freischaltbar
+- Dark (Default), Gym (rot/orange), Neon (cyan/magenta), Minimal (mono).
+- CSS-Variablen-Sets in `styles.css`, Auswahl in Einstellungen, Persistenz in `profiles.theme`.
+- Einige Themes durch Level/Coins freischaltbar.
 
 **Sounds & Haptik**
-- Pro Push-Up: kurzer Click (Web Audio, generiert – keine Asset-Größe)
-- Level-Up, Battle-Win, Streak-Save: eigene Töne
-- Vibration via `navigator.vibrate` wo verfügbar
-- Stummschalt-Toggle
+- Web-Audio-Click pro Rep (keine Asset-Größe), eigene Sounds für Level-Up / Battle-Win / Streak-Save.
+- `navigator.vibrate` wo verfügbar, globaler Mute-Toggle.
 
 **Politur**
-- Onboarding (3 Slides)
-- Empty States, Loading-Skeletons
-- PWA-Manifest fürs Home-Screen-Icon
+- 3-Slide-Onboarding, Empty States, Loading-Skeletons.
+- PWA-Manifest fürs Home-Screen-Icon.
 
 ---
 
 ## Technische Hinweise
 
-- Backend: Lovable Cloud + `createServerFn` mit `requireSupabaseAuth`
-- AI: Lovable AI Gateway (`google/gemini-3-flash-preview`)
-- Realtime: Supabase Realtime für Battles
-- Kein neuer Provider, keine extra Secrets nötig
-- Push-Ups bekommen wieder einen prominenten „Start"-CTA auf der Startseite; andere Übungen rutschen in einen „Mehr Übungen"-Bereich
+- Backend: Lovable Cloud, `createServerFn` mit `requireSupabaseAuth` für alle privaten Reads/Writes.
+- AI: Lovable AI Gateway – kein zusätzlicher Key nötig.
+- Realtime: Supabase Realtime Channels für Battles.
+- Alle neuen Tabellen mit RLS + GRANTs; Achievements & Challenges über SECURITY DEFINER-Trigger.
 
----
+## Reihenfolge
 
-## Reihenfolge & Bestätigung
+Vorschlag: **A → B → C → D**. Etappe A baut direkt auf dem Coach-Panel auf und liefert schnellen sichtbaren Mehrwert; danach das große Highlight Battle-Modus.
 
-Vorschlag: **Etappe 1 zuerst** umsetzen (Modi, XP/Level/Streak, Migration, Dashboard-Update), dann nach deinem OK Etappe 2.
-
-Soll ich mit Etappe 1 starten – oder willst du die Reihenfolge ändern (z. B. Battle-Modus früher)?
+Womit soll ich starten – Etappe A (Coach v2 + Challenges) oder lieber direkt Etappe B (Battle-Modus)?
