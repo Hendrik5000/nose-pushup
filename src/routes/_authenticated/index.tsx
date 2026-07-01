@@ -3,6 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { levelProgress } from "@/lib/level";
+import { AiCoachCard } from "@/components/AiCoachCard";
+import { ChallengesPanel } from "@/components/ChallengesPanel";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
