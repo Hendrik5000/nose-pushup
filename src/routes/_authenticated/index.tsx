@@ -189,7 +189,14 @@ function Dashboard() {
         </Link>
       </section>
 
+      {/* Smart Coach (AI) */}
+      <AiCoachCard />
+
+      {/* Challenges */}
+      {userId && <ChallengesPanel userId={userId} />}
+
       {/* Other exercises */}
+
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
