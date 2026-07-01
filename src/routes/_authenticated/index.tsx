@@ -41,9 +41,11 @@ type PushMode = "nose" | "manual" | "camera";
 function Dashboard() {
   const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
+
 
   useEffect(() => {
     (async () => {
