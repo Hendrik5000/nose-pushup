@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      challenges: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          exercise_id: string | null
+          goal_type: string
+          goal_value: number
+          icon: string
+          id: string
+          period: string
+          sort_order: number
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description: string
+          exercise_id?: string | null
+          goal_type: string
+          goal_value: number
+          icon?: string
+          id: string
+          period: string
+          sort_order?: number
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          exercise_id?: string | null
+          goal_type?: string
+          goal_value?: number
+          icon?: string
+          id?: string
+          period?: string
+          sort_order?: number
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      coach_advice: {
+        Row: {
+          advice: string
+          created_at: string
+          id: string
+          model: string | null
+          plan: Json
+          user_id: string
+        }
+        Insert: {
+          advice: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          plan?: Json
+          user_id: string
+        }
+        Update: {
+          advice?: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          plan?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_stats: {
         Row: {
           created_at: string
@@ -134,6 +206,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_challenges: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          period_start: string
+          progress: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          period_start: string
+          progress?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          period_start?: string
+          progress?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workouts: {
         Row: {
           count: number
@@ -175,6 +288,10 @@ export type Database = {
     }
     Functions: {
       calc_level: { Args: { _xp: number }; Returns: number }
+      challenge_period_start: {
+        Args: { _day: string; _period: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

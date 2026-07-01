@@ -3,6 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { levelProgress } from "@/lib/level";
+import { AiCoachCard } from "@/components/AiCoachCard";
+import { ChallengesPanel } from "@/components/ChallengesPanel";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -38,15 +41,19 @@ type PushMode = "nose" | "manual" | "camera";
 function Dashboard() {
   const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
+
 
   useEffect(() => {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
+      setUserId(u.user.id);
       const today = new Date().toISOString().slice(0, 10);
+
       const [{ data: ex }, { data: p }, { data: ds }] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         supabase
@@ -182,7 +189,14 @@ function Dashboard() {
         </Link>
       </section>
 
+      {/* Smart Coach (AI) */}
+      <AiCoachCard />
+
+      {/* Challenges */}
+      {userId && <ChallengesPanel userId={userId} />}
+
       {/* Other exercises */}
+
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
