@@ -35,7 +35,7 @@ type Profile = {
   streak_freezes: number;
 };
 
-type Workout = { id: string; count: number; duration_ms: number; created_at: string };
+type Workout = { id: string; count: number; duration_ms: number; created_at: string; exercise_id: string | null };
 
 function ProfilePage() {
   const navigate = useNavigate();
