@@ -55,12 +55,12 @@ function ProfilePage() {
       const [{ data: p }, { data: w }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date")
+          .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes")
           .eq("id", u.user.id)
           .maybeSingle(),
         supabase
           .from("workouts")
-          .select("id, count, duration_ms, created_at")
+          .select("id, count, duration_ms, created_at, exercise_id")
           .order("created_at", { ascending: false })
           .limit(20),
       ]);
