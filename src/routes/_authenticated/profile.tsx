@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { levelProgress } from "@/lib/level";
+import { CoachPanel } from "@/components/CoachPanel";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
