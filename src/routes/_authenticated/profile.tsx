@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { levelProgress } from "@/lib/level";
+import { CoachPanel } from "@/components/CoachPanel";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -31,9 +32,10 @@ type Profile = {
   current_streak: number;
   longest_streak: number;
   last_workout_date: string | null;
+  streak_freezes: number;
 };
 
-type Workout = { id: string; count: number; duration_ms: number; created_at: string };
+type Workout = { id: string; count: number; duration_ms: number; created_at: string; exercise_id: string | null };
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -53,12 +55,12 @@ function ProfilePage() {
       const [{ data: p }, { data: w }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date")
+          .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes")
           .eq("id", u.user.id)
           .maybeSingle(),
         supabase
           .from("workouts")
-          .select("id, count, duration_ms, created_at")
+          .select("id, count, duration_ms, created_at, exercise_id")
           .order("created_at", { ascending: false })
           .limit(20),
       ]);
@@ -83,7 +85,7 @@ function ProfilePage() {
         avatar_url: avatarUrl.trim() || null,
       })
       .eq("id", profile.id)
-      .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date")
+      .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes")
       .single();
     setSaving(false);
     if (error) {
@@ -185,6 +187,8 @@ function ProfilePage() {
         <Stat label="Workouts" value={workouts.length.toString()} />
         <Stat label="Längste" value={(profile?.longest_streak ?? 0).toString()} />
       </section>
+
+      {profile && <CoachPanel profile={profile} workouts={workouts} />}
 
       <section className="mt-6 space-y-3 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
