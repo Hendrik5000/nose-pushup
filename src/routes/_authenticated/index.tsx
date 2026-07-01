@@ -51,7 +51,9 @@ function Dashboard() {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
+      setUserId(u.user.id);
       const today = new Date().toISOString().slice(0, 10);
+
       const [{ data: ex }, { data: p }, { data: ds }] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         supabase
