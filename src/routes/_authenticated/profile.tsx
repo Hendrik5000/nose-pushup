@@ -32,6 +32,7 @@ type Profile = {
   current_streak: number;
   longest_streak: number;
   last_workout_date: string | null;
+  streak_freezes: number;
 };
 
 type Workout = { id: string; count: number; duration_ms: number; created_at: string };
