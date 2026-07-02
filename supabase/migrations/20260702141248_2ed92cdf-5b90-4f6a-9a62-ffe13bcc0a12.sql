@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.on_battle_finished() FROM PUBLIC, anon, authenticated;
