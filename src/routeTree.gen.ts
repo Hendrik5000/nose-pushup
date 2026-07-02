@@ -13,7 +13,9 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedBattleRouteImport } from './routes/_authenticated/battle'
 import { Route as AuthenticatedWorkoutExerciseIdRouteImport } from './routes/_authenticated/workout.$exerciseId'
+import { Route as AuthenticatedBattleIdRouteImport } from './routes/_authenticated/battle.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -34,44 +36,74 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBattleRoute = AuthenticatedBattleRouteImport.update({
+  id: '/battle',
+  path: '/battle',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWorkoutExerciseIdRoute =
   AuthenticatedWorkoutExerciseIdRouteImport.update({
     id: '/workout/$exerciseId',
     path: '/workout/$exerciseId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBattleIdRoute = AuthenticatedBattleIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedBattleRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/battle': typeof AuthenticatedBattleRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
+  '/battle/$id': typeof AuthenticatedBattleIdRoute
   '/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/battle': typeof AuthenticatedBattleRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
   '/': typeof AuthenticatedIndexRoute
+  '/battle/$id': typeof AuthenticatedBattleIdRoute
   '/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/battle': typeof AuthenticatedBattleRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/battle/$id': typeof AuthenticatedBattleIdRoute
   '/_authenticated/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/profile' | '/workout/$exerciseId'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/battle'
+    | '/profile'
+    | '/battle/$id'
+    | '/workout/$exerciseId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/profile' | '/' | '/workout/$exerciseId'
+  to:
+    | '/auth'
+    | '/battle'
+    | '/profile'
+    | '/'
+    | '/battle/$id'
+    | '/workout/$exerciseId'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/battle'
     | '/_authenticated/profile'
     | '/_authenticated/'
+    | '/_authenticated/battle/$id'
     | '/_authenticated/workout/$exerciseId'
   fileRoutesById: FileRoutesById
 }
@@ -110,6 +142,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/battle': {
+      id: '/_authenticated/battle'
+      path: '/battle'
+      fullPath: '/battle'
+      preLoaderRoute: typeof AuthenticatedBattleRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/workout/$exerciseId': {
       id: '/_authenticated/workout/$exerciseId'
       path: '/workout/$exerciseId'
@@ -117,16 +156,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkoutExerciseIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/battle/$id': {
+      id: '/_authenticated/battle/$id'
+      path: '/$id'
+      fullPath: '/battle/$id'
+      preLoaderRoute: typeof AuthenticatedBattleIdRouteImport
+      parentRoute: typeof AuthenticatedBattleRoute
+    }
   }
 }
 
+interface AuthenticatedBattleRouteChildren {
+  AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
+}
+
+const AuthenticatedBattleRouteChildren: AuthenticatedBattleRouteChildren = {
+  AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
+}
+
+const AuthenticatedBattleRouteWithChildren =
+  AuthenticatedBattleRoute._addFileChildren(AuthenticatedBattleRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBattleRoute: typeof AuthenticatedBattleRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedWorkoutExerciseIdRoute: typeof AuthenticatedWorkoutExerciseIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBattleRoute: AuthenticatedBattleRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedWorkoutExerciseIdRoute: AuthenticatedWorkoutExerciseIdRoute,
