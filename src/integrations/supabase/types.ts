@@ -14,6 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      battle_reps: {
+        Row: {
+          battle_id: string
+          count: number
+          created_at: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          battle_id: string
+          count: number
+          created_at?: string
+          id?: number
+          user_id: string
+        }
+        Update: {
+          battle_id?: string
+          count?: number
+          created_at?: string
+          id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_reps_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battles: {
+        Row: {
+          code: string
+          created_at: string
+          duration_s: number
+          ends_at: string | null
+          guest_count: number
+          guest_id: string | null
+          host_count: number
+          host_id: string
+          id: string
+          is_bot: boolean
+          started_at: string | null
+          status: string
+          updated_at: string
+          winner_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          duration_s?: number
+          ends_at?: string | null
+          guest_count?: number
+          guest_id?: string | null
+          host_count?: number
+          host_id: string
+          id?: string
+          is_bot?: boolean
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          duration_s?: number
+          ends_at?: string | null
+          guest_count?: number
+          guest_id?: string | null
+          host_count?: number
+          host_id?: string
+          id?: string
+          is_bot?: boolean
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
       challenges: {
         Row: {
           active: boolean
@@ -155,6 +238,8 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          battle_losses: number
+          battle_wins: number
           best_count: number
           created_at: string
           current_streak: number
@@ -172,6 +257,8 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          battle_losses?: number
+          battle_wins?: number
           best_count?: number
           created_at?: string
           current_streak?: number
@@ -189,6 +276,8 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          battle_losses?: number
+          battle_wins?: number
           best_count?: number
           created_at?: string
           current_streak?: number

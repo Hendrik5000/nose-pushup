@@ -189,6 +189,19 @@ function Dashboard() {
         </Link>
       </section>
 
+      {/* Battle CTA */}
+      <Link
+        to="/battle"
+        className="mt-4 flex items-center justify-between rounded-2xl border border-primary/40 bg-gradient-to-r from-primary/15 to-card/60 px-5 py-4 backdrop-blur transition active:scale-[0.98]"
+      >
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Neu</div>
+          <div className="mt-0.5 text-base font-semibold">⚔️ Battle-Modus</div>
+          <div className="text-xs text-muted-foreground">1v1 Duell in Echtzeit</div>
+        </div>
+        <span className="text-2xl">→</span>
+      </Link>
+
       {/* Smart Coach (AI) */}
       <AiCoachCard />
 
