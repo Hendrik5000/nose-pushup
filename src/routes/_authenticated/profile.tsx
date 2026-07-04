@@ -58,6 +58,7 @@ function ProfilePage() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       setEmail(u.user.email ?? "");
+      setIsAnonymous(!!u.user.is_anonymous);
       const [{ data: p }, { data: w }] = await Promise.all([
         supabase
           .from("profiles")
