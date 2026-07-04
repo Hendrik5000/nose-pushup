@@ -235,6 +235,33 @@ export type Database = {
         }
         Relationships: []
       }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -373,7 +400,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          battle_losses: number | null
+          battle_wins: number | null
+          best_count: number | null
+          current_streak: number | null
+          display_name: string | null
+          id: string | null
+          level: number | null
+          longest_streak: number | null
+          xp: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          battle_losses?: number | null
+          battle_wins?: number | null
+          best_count?: number | null
+          current_streak?: number | null
+          display_name?: string | null
+          id?: string | null
+          level?: number | null
+          longest_streak?: number | null
+          xp?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          battle_losses?: number | null
+          battle_wins?: number | null
+          best_count?: number | null
+          current_streak?: number | null
+          display_name?: string | null
+          id?: string | null
+          level?: number | null
+          longest_streak?: number | null
+          xp?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calc_level: { Args: { _xp: number }; Returns: number }

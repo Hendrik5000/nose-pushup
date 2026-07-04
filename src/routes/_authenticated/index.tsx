@@ -189,18 +189,25 @@ function Dashboard() {
         </Link>
       </section>
 
-      {/* Battle CTA */}
-      <Link
-        to="/battle"
-        className="mt-4 flex items-center justify-between rounded-2xl border border-primary/40 bg-gradient-to-r from-primary/15 to-card/60 px-5 py-4 backdrop-blur transition active:scale-[0.98]"
-      >
-        <div>
+      {/* Battle + Leaderboard CTAs */}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <Link
+          to="/battle"
+          className="flex flex-col justify-between rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 to-card/60 p-4 backdrop-blur transition active:scale-[0.98]"
+        >
           <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Neu</div>
-          <div className="mt-0.5 text-base font-semibold">⚔️ Battle-Modus</div>
-          <div className="text-xs text-muted-foreground">1v1 Duell in Echtzeit</div>
-        </div>
-        <span className="text-2xl">→</span>
-      </Link>
+          <div className="mt-1 text-base font-semibold">⚔️ Battle</div>
+          <div className="text-[11px] text-muted-foreground">1v1 Duell</div>
+        </Link>
+        <Link
+          to="/leaderboard"
+          className="flex flex-col justify-between rounded-2xl border border-border bg-card/60 p-4 backdrop-blur transition active:scale-[0.98]"
+        >
+          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Social</div>
+          <div className="mt-1 text-base font-semibold">🏆 Leaderboard</div>
+          <div className="text-[11px] text-muted-foreground">Global & Freunde</div>
+        </Link>
+      </div>
 
       {/* Smart Coach (AI) */}
       <AiCoachCard />
