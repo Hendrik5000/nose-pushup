@@ -88,6 +88,22 @@ function AuthPage() {
     navigate({ to: "/" });
   };
 
+  const handleGuest = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInAnonymously({
+        options: { data: { display_name: "Gast" } },
+      });
+      if (error) throw error;
+      navigate({ to: "/" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gast-Login fehlgeschlagen");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="flex min-h-[100dvh] flex-col items-center justify-center px-5 py-10">
       <div className="w-full max-w-sm">
