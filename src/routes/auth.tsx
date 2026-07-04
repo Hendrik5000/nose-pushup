@@ -88,6 +88,22 @@ function AuthPage() {
     navigate({ to: "/" });
   };
 
+  const handleGuest = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInAnonymously({
+        options: { data: { display_name: "Gast" } },
+      });
+      if (error) throw error;
+      navigate({ to: "/" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gast-Login fehlgeschlagen");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="flex min-h-[100dvh] flex-col items-center justify-center px-5 py-10">
       <div className="w-full max-w-sm">
@@ -172,6 +188,20 @@ function AuthPage() {
               ? "Noch kein Konto? Jetzt registrieren"
               : "Bereits registriert? Anmelden"}
           </button>
+
+          <div className="mt-4 border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={handleGuest}
+              disabled={loading}
+              className="w-full rounded-xl border border-dashed border-border bg-background/40 px-4 py-3 text-sm font-medium text-muted-foreground transition hover:text-foreground hover:border-primary/40 active:scale-[0.98] disabled:opacity-60"
+            >
+              👤 Als Gast fortfahren
+            </button>
+            <p className="mt-2 text-center text-[10px] text-muted-foreground">
+              Ohne Anmeldung starten. Fortschritt bleibt an dieses Gerät gebunden.
+            </p>
+          </div>
         </div>
       </div>
     </main>

@@ -42,17 +42,23 @@ function ProfilePage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>("");
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [upgradeEmail, setUpgradeEmail] = useState("");
+  const [upgradePassword, setUpgradePassword] = useState("");
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeMsg, setUpgradeMsg] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       setEmail(u.user.email ?? "");
+      setIsAnonymous(!!u.user.is_anonymous);
       const [{ data: p }, { data: w }] = await Promise.all([
         supabase
           .from("profiles")
@@ -107,6 +113,28 @@ function ProfilePage() {
     navigate({ to: "/auth", replace: true });
   };
 
+  const upgradeAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpgradeMsg(null);
+    if (!upgradeEmail.includes("@") || upgradePassword.length < 6) {
+      setUpgradeMsg("E-Mail und Passwort (min. 6 Zeichen) erforderlich");
+      return;
+    }
+    setUpgrading(true);
+    const { error } = await supabase.auth.updateUser({
+      email: upgradeEmail.trim(),
+      password: upgradePassword,
+    });
+    setUpgrading(false);
+    if (error) {
+      setUpgradeMsg(error.message);
+    } else {
+      setUpgradeMsg("Konto erstellt! Bitte E-Mail zur Bestätigung prüfen.");
+      setIsAnonymous(false);
+      setEmail(upgradeEmail.trim());
+    }
+  };
+
   
   const lp = levelProgress(profile?.xp ?? 0);
   const streak = profile?.current_streak ?? 0;
@@ -146,10 +174,54 @@ function ProfilePage() {
         <div className="min-w-0 flex-1">
           <div className="truncate text-base font-semibold">
             {profile?.display_name || "Ohne Namen"}
+            {isAnonymous && (
+              <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 align-middle text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                Gast
+              </span>
+            )}
           </div>
-          <div className="truncate text-xs text-muted-foreground">{email}</div>
+          <div className="truncate text-xs text-muted-foreground">
+            {isAnonymous ? "Kein Konto verknüpft" : email}
+          </div>
         </div>
       </section>
+
+      {isAnonymous && (
+        <section className="mt-4 rounded-3xl border border-primary/40 bg-primary/5 p-5 backdrop-blur">
+          <h2 className="text-sm font-semibold text-primary">
+            🔒 Fortschritt sichern
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Erstelle ein Konto, um deine XP, Streaks und Bestwerte auf allen Geräten zu behalten.
+          </p>
+          <form onSubmit={upgradeAccount} className="mt-3 space-y-2">
+            <input
+              type="email"
+              value={upgradeEmail}
+              onChange={(e) => setUpgradeEmail(e.target.value)}
+              placeholder="E-Mail"
+              autoComplete="email"
+              className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+            />
+            <input
+              type="password"
+              value={upgradePassword}
+              onChange={(e) => setUpgradePassword(e.target.value)}
+              placeholder="Passwort (min. 6 Zeichen)"
+              autoComplete="new-password"
+              className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+            />
+            {upgradeMsg && <p className="text-xs text-muted-foreground">{upgradeMsg}</p>}
+            <button
+              type="submit"
+              disabled={upgrading}
+              className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
+            >
+              {upgrading ? "Erstelle…" : "Konto erstellen"}
+            </button>
+          </form>
+        </section>
+      )}
 
       {/* Level + XP */}
       <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
