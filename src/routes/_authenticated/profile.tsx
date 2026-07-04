@@ -113,6 +113,28 @@ function ProfilePage() {
     navigate({ to: "/auth", replace: true });
   };
 
+  const upgradeAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpgradeMsg(null);
+    if (!upgradeEmail.includes("@") || upgradePassword.length < 6) {
+      setUpgradeMsg("E-Mail und Passwort (min. 6 Zeichen) erforderlich");
+      return;
+    }
+    setUpgrading(true);
+    const { error } = await supabase.auth.updateUser({
+      email: upgradeEmail.trim(),
+      password: upgradePassword,
+    });
+    setUpgrading(false);
+    if (error) {
+      setUpgradeMsg(error.message);
+    } else {
+      setUpgradeMsg("Konto erstellt! Bitte E-Mail zur Bestätigung prüfen.");
+      setIsAnonymous(false);
+      setEmail(upgradeEmail.trim());
+    }
+  };
+
   
   const lp = levelProgress(profile?.xp ?? 0);
   const streak = profile?.current_streak ?? 0;
