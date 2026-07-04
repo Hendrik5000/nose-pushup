@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { levelProgress } from "@/lib/level";
 import { CoachPanel } from "@/components/CoachPanel";
+import { FriendsPanel } from "@/components/FriendsPanel";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
