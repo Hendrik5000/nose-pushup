@@ -54,19 +54,24 @@ function WorkoutScreen() {
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [motionError, setMotionError] = useState<string | null>(null);
   const [motivation, setMotivation] = useState<string | null>(null);
+  const [manualInput, setManualInput] = useState("");
 
   const audioCtx = useRef<AudioContext | null>(null);
 
   const isPushup = exerciseId === "pushup";
   const pushMode: PushMode = isPushup ? (search.mode ?? "nose") : "nose";
   const useCamera = isPushup && pushMode === "camera";
+  const useManual = isPushup && pushMode === "manual";
 
   // Effective detection: for push-ups we honor the mode toggle.
   const detection = useMemo(() => {
     if (!exercise) return "touch" as const;
-    if (isPushup) return useCamera ? "touch" : exercise.detection_type; // camera drives bump() externally
+    if (isPushup) {
+      if (useCamera || useManual) return "touch" as const; // driven externally / not at all
+      return exercise.detection_type;
+    }
     return exercise.detection_type;
-  }, [exercise, isPushup, useCamera]);
+  }, [exercise, isPushup, useCamera, useManual]);
 
   const playTick = useCallback(() => {
     try {
@@ -105,7 +110,7 @@ function WorkoutScreen() {
 
   // Camera detector — only mounted for camera mode
   const cameraBump = useCallback(() => bump(), [bump]);
-  const { videoRef, error: cameraError, ready: cameraReady } = useCameraDetection({
+  const { videoRef, error: cameraError, ready: cameraReady, status: cameraStatus } = useCameraDetection({
     active: useCamera && active,
     onRep: cameraBump,
   });
@@ -229,6 +234,95 @@ function WorkoutScreen() {
 
   const modeLabel: Record<PushMode, string> = { nose: "Nase", manual: "Manuell", camera: "Kamera" };
 
+  // Manual mode: user just types how many they did.
+  const submitManual = async () => {
+    const n = Math.max(0, Math.min(9999, parseInt(manualInput, 10) || 0));
+    if (n <= 0 || !userId || !exercise) return;
+    setSaving(true);
+    const { error } = await supabase.from("workouts").insert({
+      user_id: userId,
+      exercise_id: exerciseId,
+      count: n,
+      duration_ms: 0,
+    });
+    if (!error) {
+      const newBest = n > best;
+      if (newBest) {
+        setBest(n);
+        setSavedHint(`🏆 Neuer Bestwert: ${n}`);
+      } else {
+        setSavedHint(`Gespeichert · +${n * 10} XP`);
+      }
+      setManualInput("");
+    } else {
+      setSavedHint("Speichern fehlgeschlagen");
+    }
+    setSaving(false);
+  };
+
+  if (useManual) {
+    return (
+      <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
+        <header className="flex items-center justify-between">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
+          >
+            <span aria-hidden>←</span>
+            <span>Zurück</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{exercise.icon}</span>
+            <span className="text-sm font-medium text-foreground">
+              {exercise.name}
+              <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                Manuell
+              </span>
+            </span>
+          </div>
+        </header>
+
+        <section className="mt-6 grid grid-cols-2 gap-3">
+          <Stat label="Bestwert" value={best.toString()} />
+          <Stat label="Modus" value="✍️ Manuell" />
+        </section>
+
+        <section className="mt-6 flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 p-6 text-center backdrop-blur">
+          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+            Wie viele Push-Ups?
+          </span>
+          <input
+            type="number"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            min={1}
+            max={9999}
+            value={manualInput}
+            onChange={(e) => setManualInput(e.target.value.replace(/[^0-9]/g, ""))}
+            placeholder="0"
+            className="mt-4 w-full max-w-[14rem] rounded-2xl border border-border bg-background/60 py-4 text-center font-display text-[5rem] font-bold tabular-nums text-foreground focus:border-primary focus:outline-none"
+          />
+          <p className="mt-4 max-w-[16rem] text-sm text-muted-foreground">
+            Trage die Anzahl deiner gerade absolvierten Push-Ups ein und speichere.
+          </p>
+        </section>
+
+        <button
+          onClick={submitManual}
+          disabled={saving || !manualInput || parseInt(manualInput, 10) <= 0}
+          className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+        >
+          {saving ? "Speichere…" : "Workout speichern"}
+        </button>
+
+        <p className="mt-3 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+          {savedHint ?? "Ehrlichkeitsmodus 🙏"}
+        </p>
+      </main>
+    );
+  }
+
+
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
       <header className="flex items-center justify-between">
@@ -302,7 +396,12 @@ function WorkoutScreen() {
             <span className="text-xs text-destructive">{cameraError}</span>
           )}
           {useCamera && active && !cameraReady && !cameraError && (
-            <span className="text-xs text-muted-foreground">Kamera startet…</span>
+            <span className="text-xs text-muted-foreground">{cameraStatus}</span>
+          )}
+          {useCamera && cameraReady && (
+            <span className="text-[10px] uppercase tracking-[0.2em] text-primary/80">
+              🤖 KI · {cameraStatus}
+            </span>
           )}
         </div>
 
