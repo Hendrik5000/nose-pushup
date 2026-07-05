@@ -396,7 +396,12 @@ function WorkoutScreen() {
             <span className="text-xs text-destructive">{cameraError}</span>
           )}
           {useCamera && active && !cameraReady && !cameraError && (
-            <span className="text-xs text-muted-foreground">Kamera startet…</span>
+            <span className="text-xs text-muted-foreground">{cameraStatus}</span>
+          )}
+          {useCamera && cameraReady && (
+            <span className="text-[10px] uppercase tracking-[0.2em] text-primary/80">
+              🤖 KI · {cameraStatus}
+            </span>
           )}
         </div>
 
