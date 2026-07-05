@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { PoseLandmarker } from "@mediapipe/tasks-vision";
 
 type Args = {
   active: boolean;
@@ -7,24 +8,24 @@ type Args = {
 };
 
 /**
- * Lightweight camera-based push-up detector (MVP).
- * Approach: sample the bottom band of the camera frame and measure
- * mean brightness. A push-up cycle = brightness goes dark (face/phone close)
- * then bright again. We count one rep per dark→bright transition.
- *
- * No ML model, no extra dependencies — runs fully offline.
+ * AI camera-based push-up detector using MediaPipe Pose Landmarker.
+ * Tracks the vertical position of the shoulders (avg of left/right shoulder Y).
+ * A push-up cycle = shoulders move down (chest closer to floor) then up again.
+ * We count one rep per down→up transition.
  */
-export function useCameraDetection({ active, onRep, minIntervalMs = 350 }: Args) {
+export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
+  const landmarkerRef = useRef<PoseLandmarker | null>(null);
   const lastRepRef = useRef(0);
-  const phaseRef = useRef<"bright" | "dark">("bright");
+  const phaseRef = useRef<"up" | "down">("up");
   const baselineRef = useRef<number | null>(null);
-  const [brightness, setBrightness] = useState(0);
+  const minYRef = useRef<number>(1);
+  const maxYRef = useRef<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [status, setStatus] = useState<string>("Modell wird geladen…");
 
   const stop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -33,6 +34,14 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 350 }: Args)
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
+    if (landmarkerRef.current) {
+      landmarkerRef.current.close();
+      landmarkerRef.current = null;
+    }
+    baselineRef.current = null;
+    minYRef.current = 1;
+    maxYRef.current = 0;
+    phaseRef.current = "up";
     setReady(false);
   }, []);
 
@@ -44,8 +53,30 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 350 }: Args)
     let cancelled = false;
     (async () => {
       try {
+        setStatus("KI-Modell wird geladen…");
+        const vision = await import("@mediapipe/tasks-vision");
+        const fileset = await vision.FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm",
+        );
+        if (cancelled) return;
+        const landmarker = await vision.PoseLandmarker.createFromOptions(fileset, {
+          baseOptions: {
+            modelAssetPath:
+              "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+            delegate: "GPU",
+          },
+          runningMode: "VIDEO",
+          numPoses: 1,
+        });
+        if (cancelled) {
+          landmarker.close();
+          return;
+        }
+        landmarkerRef.current = landmarker;
+
+        setStatus("Frontkamera wird geöffnet…");
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: 320, height: 240 },
+          video: { facingMode: "user", width: 480, height: 360 },
           audio: false,
         });
         if (cancelled) {
@@ -58,52 +89,59 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 350 }: Args)
         video.srcObject = stream;
         await video.play();
         setReady(true);
-
-        const canvas = canvasRef.current ?? document.createElement("canvas");
-        canvasRef.current = canvas;
-        canvas.width = 64;
-        canvas.height = 48;
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        if (!ctx) return;
+        setStatus("Positioniere dich für Push-Ups");
 
         const sample = () => {
-          if (!video || video.readyState < 2) {
+          const l = landmarkerRef.current;
+          if (!video || !l || video.readyState < 2) {
             rafRef.current = requestAnimationFrame(sample);
             return;
           }
-          // Draw lower third of the frame (where the user's face appears
-          // when looking down at the phone during a push-up).
-          ctx.drawImage(video, 0, video.videoHeight * 0.5, video.videoWidth, video.videoHeight * 0.5, 0, 0, 64, 48);
-          const { data } = ctx.getImageData(0, 0, 64, 48);
-          let sum = 0;
-          for (let i = 0; i < data.length; i += 4) {
-            sum += (data[i] + data[i + 1] + data[i + 2]) / 3;
-          }
-          const mean = sum / (data.length / 4);
-          setBrightness(mean);
+          const ts = performance.now();
+          const result = l.detectForVideo(video, ts);
+          const lm = result.landmarks?.[0];
+          if (lm && lm.length > 12) {
+            // 11 = left shoulder, 12 = right shoulder. Y is normalized 0(top)-1(bottom).
+            const ls = lm[11];
+            const rs = lm[12];
+            if (ls && rs && ls.visibility! > 0.5 && rs.visibility! > 0.5) {
+              const y = (ls.y + rs.y) / 2;
 
-          if (baselineRef.current === null) baselineRef.current = mean;
-          // Slow drift to adapt to lighting changes
-          baselineRef.current = baselineRef.current * 0.98 + mean * 0.02;
-          const base = baselineRef.current;
-          const darkT = base * 0.7;
-          const brightT = base * 0.92;
+              // Track observed range to auto-calibrate threshold.
+              if (y < minYRef.current) minYRef.current = y;
+              if (y > maxYRef.current) maxYRef.current = y;
+              const range = maxYRef.current - minYRef.current;
 
-          const now = Date.now();
-          if (phaseRef.current === "bright" && mean < darkT) {
-            phaseRef.current = "dark";
-          } else if (phaseRef.current === "dark" && mean > brightT) {
-            phaseRef.current = "bright";
-            if (now - lastRepRef.current >= minIntervalMs) {
-              lastRepRef.current = now;
-              onRep();
+              // Need at least 8% frame-height of movement before counting.
+              if (range > 0.08) {
+                const downT = minYRef.current + range * 0.7; // near the floor
+                const upT = minYRef.current + range * 0.3; // near the top
+                const now = Date.now();
+                if (phaseRef.current === "up" && y > downT) {
+                  phaseRef.current = "down";
+                  setStatus("↓ unten");
+                } else if (phaseRef.current === "down" && y < upT) {
+                  phaseRef.current = "up";
+                  setStatus("↑ oben");
+                  if (now - lastRepRef.current >= minIntervalMs) {
+                    lastRepRef.current = now;
+                    onRep();
+                  }
+                }
+              } else {
+                setStatus("Bewege dich für Kalibrierung");
+              }
+            } else {
+              setStatus("Schultern nicht sichtbar");
             }
+          } else {
+            setStatus("Suche Körper…");
           }
           rafRef.current = requestAnimationFrame(sample);
         };
         rafRef.current = requestAnimationFrame(sample);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Kamera nicht verfügbar");
+        setError(e instanceof Error ? e.message : "Kamera oder KI nicht verfügbar");
       }
     })();
     return () => {
@@ -112,5 +150,5 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 350 }: Args)
     };
   }, [active, minIntervalMs, onRep, stop]);
 
-  return { videoRef, brightness, error, ready };
+  return { videoRef, error, ready, status };
 }
