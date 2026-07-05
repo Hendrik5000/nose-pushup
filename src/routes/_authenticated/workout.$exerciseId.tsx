@@ -54,19 +54,24 @@ function WorkoutScreen() {
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [motionError, setMotionError] = useState<string | null>(null);
   const [motivation, setMotivation] = useState<string | null>(null);
+  const [manualInput, setManualInput] = useState("");
 
   const audioCtx = useRef<AudioContext | null>(null);
 
   const isPushup = exerciseId === "pushup";
   const pushMode: PushMode = isPushup ? (search.mode ?? "nose") : "nose";
   const useCamera = isPushup && pushMode === "camera";
+  const useManual = isPushup && pushMode === "manual";
 
   // Effective detection: for push-ups we honor the mode toggle.
   const detection = useMemo(() => {
     if (!exercise) return "touch" as const;
-    if (isPushup) return useCamera ? "touch" : exercise.detection_type; // camera drives bump() externally
+    if (isPushup) {
+      if (useCamera || useManual) return "touch" as const; // driven externally / not at all
+      return exercise.detection_type;
+    }
     return exercise.detection_type;
-  }, [exercise, isPushup, useCamera]);
+  }, [exercise, isPushup, useCamera, useManual]);
 
   const playTick = useCallback(() => {
     try {
