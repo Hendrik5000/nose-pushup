@@ -154,10 +154,8 @@ function BattleArena() {
     finishedRef.current = true;
     setFinishing(true);
     const payload = battle.is_bot
-      ? { id: battle.id, host_count: myCountRef.current, guest_count: oppCountRef.current }
-      : iAmHost
-        ? { id: battle.id, host_count: myCountRef.current, guest_count: 0 }
-        : { id: battle.id, host_count: 0, guest_count: myCountRef.current };
+      ? { id: battle.id, guest_count: oppCountRef.current }
+      : { id: battle.id };
     finish({ data: payload })
       .catch(() => undefined)
       .finally(() => setFinishing(false));
