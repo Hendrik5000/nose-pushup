@@ -111,11 +111,11 @@ export const startBattle = createServerFn({ method: "POST" })
 export const finishBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const raw = (input ?? {}) as { id?: string; host_count?: number; guest_count?: number };
+    const raw = (input ?? {}) as { id?: string; guest_count?: number };
     if (!raw.id) throw new Error("Battle-ID fehlt");
     return {
       id: String(raw.id),
-      host_count: Math.max(0, Math.min(9999, Number(raw.host_count ?? 0) | 0)),
+      // Only used for bot battles where host reports the bot's simulated count.
       guest_count: Math.max(0, Math.min(9999, Number(raw.guest_count ?? 0) | 0)),
     };
   })
@@ -123,7 +123,7 @@ export const finishBattle = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: b } = await supabase
       .from("battles")
-      .select("id, host_id, guest_id, status, host_count, guest_count")
+      .select("id, host_id, guest_id, status, host_count, guest_count, is_bot")
       .eq("id", data.id)
       .maybeSingle();
     if (!b) throw new Error("Battle nicht gefunden");
@@ -134,6 +134,7 @@ export const finishBattle = createServerFn({ method: "POST" })
       status: string;
       host_count: number;
       guest_count: number;
+      is_bot: boolean;
     };
     if (row.status === "finished") {
       return { winner_id: null, host_count: row.host_count, guest_count: row.guest_count };
@@ -142,9 +143,23 @@ export const finishBattle = createServerFn({ method: "POST" })
     const isGuest = row.guest_id === userId;
     if (!isHost && !isGuest) throw new Error("Nicht dein Battle");
 
-    // Merge counts: each side reports its own; keep the highest reported.
-    const host_count = isHost ? Math.max(row.host_count, data.host_count) : row.host_count;
-    const guest_count = isGuest ? Math.max(row.guest_count, data.guest_count) : row.guest_count;
+    // Authoritative counts come from the battle_reps ledger — clients cannot inflate them.
+    const { data: reps, error: repsErr } = await supabase
+      .from("battle_reps")
+      .select("user_id, count")
+      .eq("battle_id", row.id);
+    if (repsErr) throw new Error(repsErr.message);
+
+    let host_count = 0;
+    let guest_count = 0;
+    for (const r of (reps ?? []) as Array<{ user_id: string; count: number }>) {
+      if (r.user_id === row.host_id) host_count += r.count;
+      else if (row.guest_id && r.user_id === row.guest_id) guest_count += r.count;
+    }
+    // Bot battles have no guest user — trust the host-reported simulated bot count.
+    if (row.is_bot && isHost) {
+      guest_count = data.guest_count;
+    }
 
     let winner_id: string | null = null;
     if (host_count > guest_count) winner_id = row.host_id;

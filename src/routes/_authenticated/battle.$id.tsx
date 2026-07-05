@@ -154,10 +154,8 @@ function BattleArena() {
     finishedRef.current = true;
     setFinishing(true);
     const payload = battle.is_bot
-      ? { id: battle.id, host_count: myCountRef.current, guest_count: oppCountRef.current }
-      : iAmHost
-        ? { id: battle.id, host_count: myCountRef.current, guest_count: 0 }
-        : { id: battle.id, host_count: 0, guest_count: myCountRef.current };
+      ? { id: battle.id, guest_count: oppCountRef.current }
+      : { id: battle.id };
     finish({ data: payload })
       .catch(() => undefined)
       .finally(() => setFinishing(false));
@@ -165,16 +163,19 @@ function BattleArena() {
 
   const tap = useCallback(() => {
     if (!battle || battle.status !== "active" || countdown !== null) return;
+    if (!userId || !(iAmHost || iAmGuest)) return;
     myCountRef.current += 1;
     const next = myCountRef.current;
     setMyCount(next);
     if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+    // Persist to server-side ledger — finishBattle sums these authoritatively.
+    void supabase.from("battle_reps").insert({ battle_id: battle.id, user_id: userId, count: 1 });
     channelRef.current?.send({
       type: "broadcast",
       event: "rep",
       payload: { user_id: userId, count: next },
     });
-  }, [battle, countdown, userId]);
+  }, [battle, countdown, userId, iAmHost, iAmGuest]);
 
   const doStart = async () => {
     setError(null);

@@ -24,7 +24,7 @@ export type Database = {
         }
         Insert: {
           battle_id: string
-          count: number
+          count?: number
           created_at?: string
           id?: number
           user_id: string
