@@ -110,7 +110,7 @@ function WorkoutScreen() {
 
   // Camera detector — only mounted for camera mode
   const cameraBump = useCallback(() => bump(), [bump]);
-  const { videoRef, error: cameraError, ready: cameraReady } = useCameraDetection({
+  const { videoRef, error: cameraError, ready: cameraReady, status: cameraStatus } = useCameraDetection({
     active: useCamera && active,
     onRep: cameraBump,
   });
