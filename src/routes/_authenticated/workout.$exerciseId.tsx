@@ -186,16 +186,7 @@ function WorkoutScreen() {
     if (!error) {
       const newBest = count > best;
       if (newBest) {
-        const { data: cur } = await supabase
-          .from("profiles")
-          .select("personal_bests, best_count")
-          .eq("id", userId)
-          .maybeSingle();
-        const pb = ((cur as { personal_bests: Record<string, number> | null } | null)?.personal_bests) ?? {};
-        const next = { ...pb, [exerciseId]: count };
-        const updates: { personal_bests: Record<string, number>; best_count?: number } = { personal_bests: next };
-        if (exerciseId === "pushup") updates.best_count = count;
-        await supabase.from("profiles").update(updates).eq("id", userId);
+        // Personal bests are updated server-side by the on_workout_inserted trigger.
         setBest(count);
         setSavedHint(`🏆 Neuer Bestwert: ${count}${exercise.unit === "seconds" ? " Sek." : ""}`);
       } else {
