@@ -14,7 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
-import { Route as AuthenticatedBattleRouteImport } from './routes/_authenticated/battle'
+import { Route as AuthenticatedBattleIndexRouteImport } from './routes/_authenticated/battle.index'
 import { Route as AuthenticatedWorkoutExerciseIdRouteImport } from './routes/_authenticated/workout.$exerciseId'
 import { Route as AuthenticatedBattleIdRouteImport } from './routes/_authenticated/battle.$id'
 
@@ -43,11 +43,12 @@ const AuthenticatedLeaderboardRoute =
     path: '/leaderboard',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedBattleRoute = AuthenticatedBattleRouteImport.update({
-  id: '/battle',
-  path: '/battle',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
+const AuthenticatedBattleIndexRoute =
+  AuthenticatedBattleIndexRouteImport.update({
+    id: '/battle/',
+    path: '/battle/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedWorkoutExerciseIdRoute =
   AuthenticatedWorkoutExerciseIdRouteImport.update({
     id: '/workout/$exerciseId',
@@ -55,69 +56,69 @@ const AuthenticatedWorkoutExerciseIdRoute =
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedBattleIdRoute = AuthenticatedBattleIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedBattleRoute,
+  id: '/battle/$id',
+  path: '/battle/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
-  '/battle': typeof AuthenticatedBattleRouteWithChildren
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
   '/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
+  '/battle/': typeof AuthenticatedBattleIndexRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
-  '/battle': typeof AuthenticatedBattleRouteWithChildren
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/': typeof AuthenticatedIndexRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
   '/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
+  '/battle': typeof AuthenticatedBattleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/battle': typeof AuthenticatedBattleRouteWithChildren
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/battle/$id': typeof AuthenticatedBattleIdRoute
   '/_authenticated/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
+  '/_authenticated/battle/': typeof AuthenticatedBattleIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
-    | '/battle'
     | '/leaderboard'
     | '/profile'
     | '/battle/$id'
     | '/workout/$exerciseId'
+    | '/battle/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
-    | '/battle'
     | '/leaderboard'
     | '/profile'
     | '/'
     | '/battle/$id'
     | '/workout/$exerciseId'
+    | '/battle'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/battle'
     | '/_authenticated/leaderboard'
     | '/_authenticated/profile'
     | '/_authenticated/'
     | '/_authenticated/battle/$id'
     | '/_authenticated/workout/$exerciseId'
+    | '/_authenticated/battle/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -162,11 +163,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/battle': {
-      id: '/_authenticated/battle'
+    '/_authenticated/battle/': {
+      id: '/_authenticated/battle/'
       path: '/battle'
-      fullPath: '/battle'
-      preLoaderRoute: typeof AuthenticatedBattleRouteImport
+      fullPath: '/battle/'
+      preLoaderRoute: typeof AuthenticatedBattleIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/workout/$exerciseId': {
@@ -178,39 +179,30 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/battle/$id': {
       id: '/_authenticated/battle/$id'
-      path: '/$id'
+      path: '/battle/$id'
       fullPath: '/battle/$id'
       preLoaderRoute: typeof AuthenticatedBattleIdRouteImport
-      parentRoute: typeof AuthenticatedBattleRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface AuthenticatedBattleRouteChildren {
-  AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
-}
-
-const AuthenticatedBattleRouteChildren: AuthenticatedBattleRouteChildren = {
-  AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
-}
-
-const AuthenticatedBattleRouteWithChildren =
-  AuthenticatedBattleRoute._addFileChildren(AuthenticatedBattleRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedBattleRoute: typeof AuthenticatedBattleRouteWithChildren
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
   AuthenticatedWorkoutExerciseIdRoute: typeof AuthenticatedWorkoutExerciseIdRoute
+  AuthenticatedBattleIndexRoute: typeof AuthenticatedBattleIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedBattleRoute: AuthenticatedBattleRouteWithChildren,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
   AuthenticatedWorkoutExerciseIdRoute: AuthenticatedWorkoutExerciseIdRoute,
+  AuthenticatedBattleIndexRoute: AuthenticatedBattleIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -223,13 +215,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

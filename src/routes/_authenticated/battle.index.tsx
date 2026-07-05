@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { createBattle, joinBattle } from "@/lib/battle.functions";
 
-export const Route = createFileRoute("/_authenticated/battle")({
+export const Route = createFileRoute("/_authenticated/battle/")({
   head: () => ({
     meta: [
       { title: "Battle — Nosy Push-Ups" },
