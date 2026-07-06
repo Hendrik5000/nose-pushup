@@ -65,15 +65,28 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm",
         );
         if (cancelled) return;
-        const landmarker = await vision.PoseLandmarker.createFromOptions(fileset, {
-          baseOptions: {
-            modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-            delegate: "GPU",
-          },
-          runningMode: "VIDEO",
-          numPoses: 1,
-        });
+        let landmarker: PoseLandmarker;
+        try {
+          landmarker = await vision.PoseLandmarker.createFromOptions(fileset, {
+            baseOptions: {
+              modelAssetPath:
+                "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+              delegate: "GPU",
+            },
+            runningMode: "VIDEO",
+            numPoses: 1,
+          });
+        } catch {
+          landmarker = await vision.PoseLandmarker.createFromOptions(fileset, {
+            baseOptions: {
+              modelAssetPath:
+                "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+              delegate: "CPU",
+            },
+            runningMode: "VIDEO",
+            numPoses: 1,
+          });
+        }
         if (cancelled) {
           landmarker.close();
           return;
@@ -90,8 +103,13 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
           return;
         }
         streamRef.current = stream;
+        let attempts = 0;
+        while (!videoRef.current && attempts < 50 && !cancelled) {
+          await new Promise((r) => setTimeout(r, 50));
+          attempts++;
+        }
         const video = videoRef.current;
-        if (!video) return;
+        if (!video || cancelled) return;
         video.srcObject = stream;
         await video.play();
         setReady(true);
@@ -107,21 +125,16 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
           const result = l.detectForVideo(video, ts);
           const lm = result.landmarks?.[0];
           if (lm && lm.length > 12) {
-            // 11 = left shoulder, 12 = right shoulder. Y is normalized 0(top)-1(bottom).
             const ls = lm[11];
             const rs = lm[12];
             if (ls && rs && ls.visibility! > 0.5 && rs.visibility! > 0.5) {
               const y = (ls.y + rs.y) / 2;
-
-              // Track observed range to auto-calibrate threshold.
               if (y < minYRef.current) minYRef.current = y;
               if (y > maxYRef.current) maxYRef.current = y;
               const range = maxYRef.current - minYRef.current;
-
-              // Need at least 8% frame-height of movement before counting.
               if (range > 0.08) {
-                const downT = minYRef.current + range * 0.7; // near the floor
-                const upT = minYRef.current + range * 0.3; // near the top
+                const downT = minYRef.current + range * 0.7;
+                const upT = minYRef.current + range * 0.3;
                 const now = Date.now();
                 if (phaseRef.current === "up" && y > downT) {
                   phaseRef.current = "down";
@@ -129,9 +142,9 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
                 } else if (phaseRef.current === "down" && y < upT) {
                   phaseRef.current = "up";
                   setStatus("↑ oben");
-                  if (now - lastRepRef.current >= minIntervalMs) {
+                  if (now - lastRepRef.current >= minIntervalRef.current) {
                     lastRepRef.current = now;
-                    onRep();
+                    onRepRef.current();
                   }
                 }
               } else {
@@ -147,6 +160,7 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
         };
         rafRef.current = requestAnimationFrame(sample);
       } catch (e) {
+        console.error("[camera-detection]", e);
         setError(e instanceof Error ? e.message : "Kamera oder KI nicht verfügbar");
       }
     })();
@@ -154,7 +168,7 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
       cancelled = true;
       stop();
     };
-  }, [active, minIntervalMs, onRep, stop]);
+  }, [active, stop]);
 
   return { videoRef, error, ready, status };
 }
