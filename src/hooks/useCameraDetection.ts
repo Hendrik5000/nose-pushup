@@ -23,6 +23,12 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
   const baselineRef = useRef<number | null>(null);
   const minYRef = useRef<number>(1);
   const maxYRef = useRef<number>(0);
+  const onRepRef = useRef(onRep);
+  const minIntervalRef = useRef(minIntervalMs);
+  useEffect(() => {
+    onRepRef.current = onRep;
+    minIntervalRef.current = minIntervalMs;
+  }, [onRep, minIntervalMs]);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<string>("Modell wird geladen…");
