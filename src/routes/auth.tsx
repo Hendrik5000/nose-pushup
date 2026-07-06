@@ -4,17 +4,23 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
+function safeNext(raw: unknown): string {
+  if (typeof raw !== "string" || !raw.startsWith("/") || raw.startsWith("//")) return "/";
+  return raw;
+}
+
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (s: Record<string, unknown>) => ({ next: safeNext(s.next) }),
   head: () => ({
     meta: [
       { title: "Anmelden — Nose Push" },
       { name: "description", content: "Melde dich an, um deine Push-Up-Bestwerte geräteübergreifend zu speichern." },
     ],
   }),
-  beforeLoad: async () => {
+  beforeLoad: async ({ search }) => {
     const { data } = await supabase.auth.getUser();
-    if (data.user) throw redirect({ to: "/" });
+    if (data.user) throw redirect({ href: search.next });
   },
   component: AuthPage,
 });
@@ -27,6 +33,7 @@ const credSchema = z.object({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -53,7 +60,7 @@ function AuthPage() {
           email: parsed.data.email,
           password: parsed.data.password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: window.location.origin + next,
             data: { display_name: parsed.data.displayName },
           },
         });
@@ -65,7 +72,7 @@ function AuthPage() {
         });
         if (error) throw error;
       }
-      navigate({ to: "/" });
+      window.location.href = next;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Anmeldung fehlgeschlagen");
     } finally {
@@ -77,7 +84,7 @@ function AuthPage() {
     setError(null);
     setLoading(true);
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
+      redirect_uri: window.location.origin + "/auth?next=" + encodeURIComponent(next),
     });
     if (result.error) {
       setError(result.error instanceof Error ? result.error.message : "OAuth fehlgeschlagen");
@@ -85,7 +92,7 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/" });
+    window.location.href = next;
   };
 
   const handleGuest = async () => {
@@ -96,7 +103,7 @@ function AuthPage() {
         options: { data: { display_name: "Gast" } },
       });
       if (error) throw error;
-      navigate({ to: "/" });
+      window.location.href = next;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gast-Login fehlgeschlagen");
     } finally {

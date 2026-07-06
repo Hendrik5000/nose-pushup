@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://dbnlybjlswuvxrccgqah.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "nose-push-mcp",
+      "version": "0.1.0",
+      "title": "Nose Push MCP"
+    },
+    "tools": [
+      {
+        "name": "get_my_profile",
+        "title": "Get my profile",
+        "description": "Return the signed-in user's Nose Push profile: display name, XP, level, current & longest streak, best pushup count, personal bests per exercise, and battle wins/losses.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_workouts",
+        "title": "List my workouts",
+        "description": "List the signed-in user's most recent workouts (exercise id, rep count, duration in ms, created_at). Newest first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "Maximum workouts to return (1-100). Defaults to 20."
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "log_workout",
+        "title": "Log a workout",
+        "description": "Log a completed workout for the signed-in user. Triggers XP, streak, personal-best, and challenge progress updates server-side. Exercise ids include 'pushup', 'squat', 'plank', 'burpee'.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "exercise_id": {
+              "type": "string",
+              "description": "Exercise id, e.g. 'pushup', 'squat', 'plank', 'burpee'."
+            },
+            "count": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "Rep count (0-1000). For 'plank', pass 0 and use duration_ms."
+            },
+            "duration_ms": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "Session duration in milliseconds. Required for 'plank'; use 0 otherwise."
+            }
+          },
+          "required": [
+            "exercise_id",
+            "count"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_my_recent_stats",
+        "title": "Get my recent daily stats",
+        "description": "Return the signed-in user's daily aggregates (total reps, sessions, total duration) for the last N days. Newest first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "Number of days back to fetch (1-90). Defaults to 14."
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
