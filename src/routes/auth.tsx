@@ -60,7 +60,7 @@ function AuthPage() {
           email: parsed.data.email,
           password: parsed.data.password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: window.location.origin + next,
             data: { display_name: parsed.data.displayName },
           },
         });
@@ -72,7 +72,7 @@ function AuthPage() {
         });
         if (error) throw error;
       }
-      navigate({ to: "/" });
+      window.location.href = next;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Anmeldung fehlgeschlagen");
     } finally {
@@ -84,7 +84,7 @@ function AuthPage() {
     setError(null);
     setLoading(true);
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
+      redirect_uri: window.location.origin + "/auth?next=" + encodeURIComponent(next),
     });
     if (result.error) {
       setError(result.error instanceof Error ? result.error.message : "OAuth fehlgeschlagen");
@@ -92,7 +92,7 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/" });
+    window.location.href = next;
   };
 
   const handleGuest = async () => {
@@ -103,7 +103,7 @@ function AuthPage() {
         options: { data: { display_name: "Gast" } },
       });
       if (error) throw error;
-      navigate({ to: "/" });
+      window.location.href = next;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gast-Login fehlgeschlagen");
     } finally {
