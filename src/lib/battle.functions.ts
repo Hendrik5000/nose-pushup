@@ -96,7 +96,8 @@ export const startBattle = createServerFn({ method: "POST" })
     if (!row.is_bot && !row.guest_id) throw new Error("Warte auf Gegner");
     const now = new Date();
     const ends = new Date(now.getTime() + row.duration_s * 1000);
-    const { error: upErr } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: upErr } = await supabaseAdmin
       .from("battles")
       .update({
         status: "active",
@@ -107,6 +108,7 @@ export const startBattle = createServerFn({ method: "POST" })
     if (upErr) throw new Error(upErr.message);
     return { ok: true };
   });
+
 
 export const finishBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -165,7 +167,8 @@ export const finishBattle = createServerFn({ method: "POST" })
     if (host_count > guest_count) winner_id = row.host_id;
     else if (guest_count > host_count) winner_id = row.guest_id;
 
-    const { error: upErr } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: upErr } = await supabaseAdmin
       .from("battles")
       .update({
         status: "finished",
@@ -177,3 +180,4 @@ export const finishBattle = createServerFn({ method: "POST" })
     if (upErr) throw new Error(upErr.message);
     return { winner_id, host_count, guest_count };
   });
+
