@@ -209,8 +209,10 @@ function BattleArena() {
         </header>
         <section className="mt-8 rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/15 to-card/60 p-6 text-center backdrop-blur">
           <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Battle Code</div>
-          <div className="mt-3 font-mono text-6xl font-bold tracking-[0.35em] tabular-nums">
-            {battle.code}
+          <div className="mt-3 flex justify-center">
+            <span className="inline-block pl-[0.35em] font-mono text-6xl font-bold tracking-[0.35em] tabular-nums">
+              {battle.code}
+            </span>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
             {battle.is_bot
