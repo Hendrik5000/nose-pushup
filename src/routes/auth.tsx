@@ -41,6 +41,25 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [showPassword, setShowPassword] = useState(false);
+
+  const translateAuthError = (raw: string): string => {
+    const m = raw.toLowerCase();
+    if (m.includes("invalid login credentials") || m.includes("invalid credentials"))
+      return "E-Mail oder Passwort ist falsch.";
+    if (m.includes("email not confirmed"))
+      return "Bitte bestätige zuerst deine E-Mail (Link im Postfach).";
+    if (m.includes("user already registered"))
+      return "Diese E-Mail ist bereits registriert. Melde dich stattdessen an.";
+    if (m.includes("password should be at least"))
+      return "Passwort zu kurz — mindestens 6 Zeichen.";
+    if (m.includes("rate limit") || m.includes("too many"))
+      return "Zu viele Versuche. Bitte warte einen Moment.";
+    if (m.includes("network") || m.includes("failed to fetch"))
+      return "Keine Verbindung — prüfe dein Internet.";
+    return raw;
+  };
+
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -74,7 +93,8 @@ function AuthPage() {
       }
       window.location.href = next;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Anmeldung fehlgeschlagen");
+      const msg = err instanceof Error ? err.message : "Anmeldung fehlgeschlagen";
+      setError(translateAuthError(msg));
     } finally {
       setLoading(false);
     }
@@ -159,15 +179,31 @@ function AuthPage() {
               autoComplete="email"
               required
             />
-            <Field
-              label="Passwort"
-              type="password"
-              value={password}
-              onChange={setPassword}
-              placeholder="••••••••"
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              required
-            />
+            <label className="block">
+              <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Passwort
+              </span>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  required
+                  className="w-full rounded-xl border border-border bg-background/60 px-3 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+                  aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? "🙈" : "👁"}
+                </button>
+              </div>
+            </label>
 
             {error && (
               <p className="text-sm text-destructive" role="alert">

@@ -52,14 +52,22 @@ export function AiCoachCard() {
             Smart Coach
           </h2>
         </div>
-        <button
-          onClick={() => canRefresh && !refreshing && load(true)}
-          disabled={!canRefresh || refreshing || loading}
-          className="rounded-full border border-border bg-secondary px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition hover:text-foreground disabled:opacity-50"
-          title={canRefresh ? "Neu generieren" : "Frühestens in 1 h wieder"}
-        >
-          {refreshing ? "…" : "↻ Neu"}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/coach"
+            className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary transition hover:bg-primary/20"
+          >
+            💬 Chat
+          </Link>
+          <button
+            onClick={() => canRefresh && !refreshing && load(true)}
+            disabled={!canRefresh || refreshing || loading}
+            className="rounded-full border border-border bg-secondary px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+            title={canRefresh ? "Neu generieren" : "Frühestens in 1 h wieder"}
+          >
+            {refreshing ? "…" : "↻"}
+          </button>
+        </div>
       </div>
 
       <div className="mt-4 min-h-[80px] text-sm leading-relaxed text-foreground">
