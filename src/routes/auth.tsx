@@ -41,6 +41,25 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [showPassword, setShowPassword] = useState(false);
+
+  const translateAuthError = (raw: string): string => {
+    const m = raw.toLowerCase();
+    if (m.includes("invalid login credentials") || m.includes("invalid credentials"))
+      return "E-Mail oder Passwort ist falsch.";
+    if (m.includes("email not confirmed"))
+      return "Bitte bestätige zuerst deine E-Mail (Link im Postfach).";
+    if (m.includes("user already registered"))
+      return "Diese E-Mail ist bereits registriert. Melde dich stattdessen an.";
+    if (m.includes("password should be at least"))
+      return "Passwort zu kurz — mindestens 6 Zeichen.";
+    if (m.includes("rate limit") || m.includes("too many"))
+      return "Zu viele Versuche. Bitte warte einen Moment.";
+    if (m.includes("network") || m.includes("failed to fetch"))
+      return "Keine Verbindung — prüfe dein Internet.";
+    return raw;
+  };
+
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -74,7 +93,8 @@ function AuthPage() {
       }
       window.location.href = next;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Anmeldung fehlgeschlagen");
+      const msg = err instanceof Error ? err.message : "Anmeldung fehlgeschlagen";
+      setError(translateAuthError(msg));
     } finally {
       setLoading(false);
     }
