@@ -184,10 +184,13 @@ Wenn der Nutzer nach Muskelwachstum/Verbesserung fragt: konkrete Trainingsempfeh
     };
   });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupaClient = any;
+
 async function runTool(
   name: string,
   args: Record<string, unknown>,
-  ctx: { supabase: ReturnType<typeof requireSupabaseAuth extends never ? never : never> | any; userId: string },
+  ctx: { supabase: SupaClient; userId: string },
 ): Promise<{ data: unknown; action?: string }> {
   const supabase = ctx.supabase;
   const userId = ctx.userId;
