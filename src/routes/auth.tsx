@@ -179,15 +179,31 @@ function AuthPage() {
               autoComplete="email"
               required
             />
-            <Field
-              label="Passwort"
-              type="password"
-              value={password}
-              onChange={setPassword}
-              placeholder="••••••••"
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              required
-            />
+            <label className="block">
+              <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Passwort
+              </span>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  required
+                  className="w-full rounded-xl border border-border bg-background/60 px-3 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+                  aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? "🙈" : "👁"}
+                </button>
+              </div>
+            </label>
 
             {error && (
               <p className="text-sm text-destructive" role="alert">
