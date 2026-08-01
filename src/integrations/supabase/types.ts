@@ -262,24 +262,69 @@ export type Database = {
         }
         Relationships: []
       }
+      health_entries: {
+        Row: {
+          active_kcal: number
+          created_at: string
+          day: string
+          id: string
+          sleep_min: number
+          source: string
+          steps: number
+          updated_at: string
+          user_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          active_kcal?: number
+          created_at?: string
+          day: string
+          id?: string
+          sleep_min?: number
+          source?: string
+          steps?: number
+          updated_at?: string
+          user_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          active_kcal?: number
+          created_at?: string
+          day?: string
+          id?: string
+          sleep_min?: number
+          source?: string
+          steps?: number
+          updated_at?: string
+          user_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           battle_losses: number
           battle_wins: number
           best_count: number
+          birth_year: number | null
           created_at: string
           current_streak: number
+          daily_goal: number
           display_name: string | null
+          height_cm: number | null
           id: string
           last_workout_date: string | null
           level: number
           longest_streak: number
           personal_bests: Json
+          sex: string | null
+          share_activity: boolean
           streak_freeze_week: string | null
           streak_freezes: number
           theme: string
           updated_at: string
+          weight_kg: number | null
           xp: number
         }
         Insert: {
@@ -287,18 +332,24 @@ export type Database = {
           battle_losses?: number
           battle_wins?: number
           best_count?: number
+          birth_year?: number | null
           created_at?: string
           current_streak?: number
+          daily_goal?: number
           display_name?: string | null
+          height_cm?: number | null
           id: string
           last_workout_date?: string | null
           level?: number
           longest_streak?: number
           personal_bests?: Json
+          sex?: string | null
+          share_activity?: boolean
           streak_freeze_week?: string | null
           streak_freezes?: number
           theme?: string
           updated_at?: string
+          weight_kg?: number | null
           xp?: number
         }
         Update: {
@@ -306,19 +357,58 @@ export type Database = {
           battle_losses?: number
           battle_wins?: number
           best_count?: number
+          birth_year?: number | null
           created_at?: string
           current_streak?: number
+          daily_goal?: number
           display_name?: string | null
+          height_cm?: number | null
           id?: string
           last_workout_date?: string | null
           level?: number
           longest_streak?: number
           personal_bests?: Json
+          sex?: string | null
+          share_activity?: boolean
           streak_freeze_week?: string | null
           streak_freezes?: number
           theme?: string
           updated_at?: string
+          weight_kg?: number | null
           xp?: number
+        }
+        Relationships: []
+      }
+      runs: {
+        Row: {
+          calories: number
+          created_at: string
+          distance_m: number
+          duration_ms: number
+          id: string
+          note: string | null
+          path: Json
+          user_id: string
+        }
+        Insert: {
+          calories?: number
+          created_at?: string
+          distance_m?: number
+          duration_ms?: number
+          id?: string
+          note?: string | null
+          path?: Json
+          user_id: string
+        }
+        Update: {
+          calories?: number
+          created_at?: string
+          distance_m?: number
+          duration_ms?: number
+          id?: string
+          note?: string | null
+          path?: Json
+          user_id?: string
         }
         Relationships: []
       }
