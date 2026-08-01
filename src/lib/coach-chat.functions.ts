@@ -98,10 +98,12 @@ export const coachChat = createServerFn({ method: "POST" })
 
     // Gather context for system prompt.
     const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
-    const [{ data: profile }, { data: stats }] = await Promise.all([
+    const [{ data: profile }, { data: stats }, { data: runs }, { data: health }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("display_name, level, xp, current_streak, longest_streak, best_count, personal_bests, last_workout_date")
+        .select(
+          "display_name, level, xp, current_streak, longest_streak, best_count, personal_bests, last_workout_date, birth_year, height_cm, weight_kg, sex, daily_goal",
+        )
         .eq("id", userId)
         .maybeSingle(),
       supabase
@@ -110,11 +112,47 @@ export const coachChat = createServerFn({ method: "POST" })
         .eq("user_id", userId)
         .gte("day", cutoff)
         .order("day", { ascending: true }),
+      supabase
+        .from("runs")
+        .select("distance_m, duration_ms, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("health_entries")
+        .select("day, steps, active_kcal, sleep_min, weight_kg")
+        .eq("user_id", userId)
+        .gte("day", cutoff)
+        .order("day", { ascending: false })
+        .limit(7),
     ]);
 
     const days = (stats ?? []) as Array<{ day: string; total_reps: number; sessions: number }>;
     const weekReps = days.filter((d) => +new Date(d.day) >= Date.now() - 7 * 86400000).reduce((s, d) => s + d.total_reps, 0);
     const name = (profile?.display_name as string | null) ?? "Athlet";
+
+    const by = profile?.birth_year as number | null | undefined;
+    const age = by ? new Date().getFullYear() - by : null;
+    const h = profile?.height_cm as number | null | undefined;
+    const w = profile?.weight_kg as number | null | undefined;
+    const bmi = h && w ? (Number(w) / Math.pow(Number(h) / 100, 2)).toFixed(1) : null;
+
+    const runList = (runs ?? []) as Array<{ distance_m: number; duration_ms: number; created_at: string }>;
+    const runSummary = runList.length
+      ? runList
+          .map(
+            (r) =>
+              `${(r.distance_m / 1000).toFixed(2)} km in ${Math.round(r.duration_ms / 60000)} min (${r.created_at.slice(0, 10)})`,
+          )
+          .join("; ")
+      : "keine Läufe aufgezeichnet";
+
+    const healthList = (health ?? []) as Array<{ day: string; steps: number; sleep_min: number; active_kcal: number }>;
+    const healthSummary = healthList.length
+      ? healthList
+          .map((e) => `${e.day}: ${e.steps} Schritte, ${(e.sleep_min / 60).toFixed(1)} h Schlaf, ${e.active_kcal} kcal`)
+          .join("; ")
+      : "keine Health-Daten";
 
     const system = `Du bist "Smart Coach", ein autonomer, motivierender deutschsprachiger Fitness-Coach in der Nose-Push-Up App. Du kennst Trainingslehre, Kraftaufbau, Muskelgruppen, Ernährung und Regeneration.
 
@@ -122,12 +160,18 @@ STIL: Knapp, direkt, motivierend. Antworten meist 2–5 Sätze. Kein Fachchinesi
 
 NUTZER-KONTEXT:
 - Name: ${name}
+- Alter: ${age ?? "unbekannt"}, Größe: ${h ?? "unbekannt"} cm, Gewicht: ${w ?? "unbekannt"} kg, Geschlecht: ${profile?.sex ?? "unbekannt"}${bmi ? `, BMI: ${bmi}` : ""}
+- Tagesziel: ${profile?.daily_goal ?? 50} Reps
 - Level: ${profile?.level ?? 1}, XP: ${profile?.xp ?? 0}
 - Aktuelle Streak: ${profile?.current_streak ?? 0} Tage (längste: ${profile?.longest_streak ?? 0})
 - Push-Up Bestwert: ${profile?.best_count ?? 0}
 - Personal Bests: ${JSON.stringify(profile?.personal_bests ?? {})}
 - Reps letzte 7 Tage: ${weekReps}
 - Letztes Training: ${profile?.last_workout_date ?? "nie"}
+- Letzte Läufe: ${runSummary}
+- Health-Daten (Schritte/Schlaf): ${healthSummary}
+
+Beziehe Alter, Größe, Gewicht/BMI, Schlaf und Laufumfang aktiv in deine Empfehlungen ein (Trainingsvolumen, Regeneration, Kalorien/Protein-Richtwerte). Fehlen Körperdaten, weise einmal freundlich darauf hin, dass man sie im Profil eintragen kann.
 
 TOOL-NUTZUNG (WICHTIG):
 - Sagt der Nutzer sinngemäß "ich habe X gemacht/geschafft/absolviert" → RUFE SOFORT log_workout AUF. Nicht nachfragen, direkt loggen.
