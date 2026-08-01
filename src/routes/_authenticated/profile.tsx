@@ -35,6 +35,12 @@ type Profile = {
   longest_streak: number;
   last_workout_date: string | null;
   streak_freezes: number;
+  birth_year: number | null;
+  height_cm: number | null;
+  weight_kg: number | null;
+  sex: string | null;
+  daily_goal: number;
+  share_activity: boolean;
 };
 
 type Workout = { id: string; count: number; duration_ms: number; created_at: string; exercise_id: string | null };
