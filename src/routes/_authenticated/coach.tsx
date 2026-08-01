@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { coachChat } from "@/lib/coach-chat.functions";
+import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
@@ -225,6 +226,7 @@ function CoachChatPage() {
           </svg>
         </button>
       </form>
+      <BottomNav />
     </main>
   );
 }

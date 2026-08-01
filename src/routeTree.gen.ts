@@ -13,8 +13,10 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedRunRouteImport } from './routes/_authenticated/run'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
+import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -43,6 +45,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRunRoute = AuthenticatedRunRouteImport.update({
+  id: '/run',
+  path: '/run',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -54,6 +61,11 @@ const AuthenticatedLeaderboardRoute =
     path: '/leaderboard',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedHealthRoute = AuthenticatedHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
   id: '/coach',
   path: '/coach',
@@ -107,8 +119,10 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/coach': typeof AuthenticatedCoachRoute
+  '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/run': typeof AuthenticatedRunRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
@@ -121,8 +135,10 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/coach': typeof AuthenticatedCoachRoute
+  '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/run': typeof AuthenticatedRunRoute
   '/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -138,8 +154,10 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
+  '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/run': typeof AuthenticatedRunRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -156,8 +174,10 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/coach'
+    | '/health'
     | '/leaderboard'
     | '/profile'
+    | '/run'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/battle/$id'
@@ -170,8 +190,10 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/coach'
+    | '/health'
     | '/leaderboard'
     | '/profile'
+    | '/run'
     | '/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -186,8 +208,10 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/coach'
+    | '/_authenticated/health'
     | '/_authenticated/leaderboard'
     | '/_authenticated/profile'
+    | '/_authenticated/run'
     | '/_authenticated/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -236,6 +260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/run': {
+      id: '/_authenticated/run'
+      path: '/run'
+      fullPath: '/run'
+      preLoaderRoute: typeof AuthenticatedRunRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -248,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/leaderboard'
       fullPath: '/leaderboard'
       preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/health': {
+      id: '/_authenticated/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof AuthenticatedHealthRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/coach': {
@@ -311,8 +349,10 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
+  AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedRunRoute: typeof AuthenticatedRunRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
   AuthenticatedWorkoutExerciseIdRoute: typeof AuthenticatedWorkoutExerciseIdRoute
@@ -321,8 +361,10 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
+  AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedRunRoute: AuthenticatedRunRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
   AuthenticatedWorkoutExerciseIdRoute: AuthenticatedWorkoutExerciseIdRoute,

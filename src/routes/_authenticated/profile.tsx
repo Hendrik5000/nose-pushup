@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { levelProgress } from "@/lib/level";
 import { CoachPanel } from "@/components/CoachPanel";
 import { FriendsPanel } from "@/components/FriendsPanel";
+import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -34,9 +35,18 @@ type Profile = {
   longest_streak: number;
   last_workout_date: string | null;
   streak_freezes: number;
+  birth_year: number | null;
+  height_cm: number | null;
+  weight_kg: number | null;
+  sex: string | null;
+  daily_goal: number;
+  share_activity: boolean;
 };
 
 type Workout = { id: string; count: number; duration_ms: number; created_at: string; exercise_id: string | null };
+
+const PROFILE_COLS =
+  "id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes, birth_year, height_cm, weight_kg, sex, daily_goal, share_activity";
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -46,12 +56,30 @@ function ProfilePage() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [heightCm, setHeightCm] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [sex, setSex] = useState("");
+  const [dailyGoal, setDailyGoal] = useState("50");
+  const [shareActivity, setShareActivity] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [upgradeEmail, setUpgradeEmail] = useState("");
   const [upgradePassword, setUpgradePassword] = useState("");
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeMsg, setUpgradeMsg] = useState<string | null>(null);
+
+  const applyProfile = (prof: Profile) => {
+    setProfile(prof);
+    setDisplayName(prof.display_name ?? "");
+    setAvatarUrl(prof.avatar_url ?? "");
+    setBirthYear(prof.birth_year ? String(prof.birth_year) : "");
+    setHeightCm(prof.height_cm ? String(prof.height_cm) : "");
+    setWeightKg(prof.weight_kg ? String(prof.weight_kg) : "");
+    setSex(prof.sex ?? "");
+    setDailyGoal(String(prof.daily_goal ?? 50));
+    setShareActivity(prof.share_activity ?? true);
+  };
 
   useEffect(() => {
     (async () => {
@@ -60,26 +88,35 @@ function ProfilePage() {
       setEmail(u.user.email ?? "");
       setIsAnonymous(!!u.user.is_anonymous);
       const [{ data: p }, { data: w }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes")
-          .eq("id", u.user.id)
-          .maybeSingle(),
+        supabase.from("profiles").select(PROFILE_COLS).eq("id", u.user.id).maybeSingle(),
         supabase
           .from("workouts")
           .select("id, count, duration_ms, created_at, exercise_id")
           .order("created_at", { ascending: false })
           .limit(20),
       ]);
-      if (p) {
-        const prof = p as Profile;
-        setProfile(prof);
-        setDisplayName(prof.display_name ?? "");
-        setAvatarUrl(prof.avatar_url ?? "");
+      let prof = p;
+      if (!prof) {
+        const { data: created } = await supabase
+          .from("profiles")
+          .insert({
+            id: u.user.id,
+            display_name: u.user.is_anonymous ? "Gast" : (u.user.email?.split("@")[0] ?? null),
+          })
+          .select(PROFILE_COLS)
+          .maybeSingle();
+        prof = created;
       }
+      if (prof) applyProfile(prof as Profile);
       if (w) setWorkouts(w as Workout[]);
     })();
   }, []);
+
+  const numOrNull = (v: string, min: number, max: number) => {
+    const n = Number(v);
+    if (!v.trim() || Number.isNaN(n)) return null;
+    return Math.max(min, Math.min(max, n));
+  };
 
   const save = async () => {
     if (!profile) return;
@@ -90,15 +127,21 @@ function ProfilePage() {
       .update({
         display_name: displayName.trim() || null,
         avatar_url: avatarUrl.trim() || null,
+        birth_year: numOrNull(birthYear, 1920, new Date().getFullYear()),
+        height_cm: numOrNull(heightCm, 80, 250),
+        weight_kg: numOrNull(weightKg, 25, 400),
+        sex: sex || null,
+        daily_goal: numOrNull(dailyGoal, 5, 2000) ?? 50,
+        share_activity: shareActivity,
       })
       .eq("id", profile.id)
-      .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes")
+      .select(PROFILE_COLS)
       .single();
     setSaving(false);
     if (error) {
       setMsg("Speichern fehlgeschlagen");
     } else {
-      setProfile(data as Profile);
+      applyProfile(data as Profile);
       setMsg("Profil aktualisiert");
     }
   };
@@ -277,6 +320,65 @@ function ProfilePage() {
           placeholder="https://…"
           maxLength={500}
         />
+
+        <div className="!mt-5 border-t border-border pt-4">
+          <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Körperdaten (für den Smart Coach)
+          </h3>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Field label="Geburtsjahr" value={birthYear} onChange={setBirthYear} placeholder="1998" maxLength={4} />
+            <Field label="Größe (cm)" value={heightCm} onChange={setHeightCm} placeholder="180" maxLength={3} />
+            <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} />
+            <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} />
+          </div>
+          <div className="mt-3">
+            <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Geschlecht
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { v: "male", l: "Männlich" },
+                { v: "female", l: "Weiblich" },
+                { v: "other", l: "Divers" },
+              ].map((o) => (
+                <button
+                  key={o.v}
+                  type="button"
+                  onClick={() => setSex(sex === o.v ? "" : o.v)}
+                  className={`rounded-xl border px-2 py-2 text-xs font-medium transition ${
+                    sex === o.v
+                      ? "border-primary bg-primary/15 text-foreground"
+                      : "border-border bg-secondary/60 text-muted-foreground"
+                  }`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShareActivity((s) => !s)}
+            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
+          >
+            <span className="text-xs">
+              Tages-Aktivität mit Freunden teilen
+              <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                Freunde sehen deine Push-Ups des Tages live.
+              </span>
+            </span>
+            <span
+              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
+                shareActivity ? "bg-primary" : "bg-secondary"
+              }`}
+            >
+              <span
+                className={`h-5 w-5 rounded-full bg-background transition ${shareActivity ? "translate-x-5" : ""}`}
+              />
+            </span>
+          </button>
+        </div>
+
         {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
         <button
           onClick={save}
@@ -322,6 +424,7 @@ function ProfilePage() {
           </ul>
         )}
       </section>
+      <BottomNav />
     </main>
   );
 }
