@@ -424,6 +424,7 @@ function ProfilePage() {
           </ul>
         )}
       </section>
+      <BottomNav />
     </main>
   );
 }
