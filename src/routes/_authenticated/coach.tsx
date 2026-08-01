@@ -226,6 +226,7 @@ function CoachChatPage() {
           </svg>
         </button>
       </form>
+      <BottomNav />
     </main>
   );
 }
