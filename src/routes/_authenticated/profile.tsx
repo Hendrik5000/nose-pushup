@@ -45,6 +45,9 @@ type Profile = {
 
 type Workout = { id: string; count: number; duration_ms: number; created_at: string; exercise_id: string | null };
 
+const PROFILE_COLS =
+  "id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes, birth_year, height_cm, weight_kg, sex, daily_goal, share_activity";
+
 function ProfilePage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
