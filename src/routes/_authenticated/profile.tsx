@@ -53,12 +53,30 @@ function ProfilePage() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [heightCm, setHeightCm] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [sex, setSex] = useState("");
+  const [dailyGoal, setDailyGoal] = useState("50");
+  const [shareActivity, setShareActivity] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [upgradeEmail, setUpgradeEmail] = useState("");
   const [upgradePassword, setUpgradePassword] = useState("");
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeMsg, setUpgradeMsg] = useState<string | null>(null);
+
+  const applyProfile = (prof: Profile) => {
+    setProfile(prof);
+    setDisplayName(prof.display_name ?? "");
+    setAvatarUrl(prof.avatar_url ?? "");
+    setBirthYear(prof.birth_year ? String(prof.birth_year) : "");
+    setHeightCm(prof.height_cm ? String(prof.height_cm) : "");
+    setWeightKg(prof.weight_kg ? String(prof.weight_kg) : "");
+    setSex(prof.sex ?? "");
+    setDailyGoal(String(prof.daily_goal ?? 50));
+    setShareActivity(prof.share_activity ?? true);
+  };
 
   useEffect(() => {
     (async () => {
@@ -67,26 +85,35 @@ function ProfilePage() {
       setEmail(u.user.email ?? "");
       setIsAnonymous(!!u.user.is_anonymous);
       const [{ data: p }, { data: w }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes")
-          .eq("id", u.user.id)
-          .maybeSingle(),
+        supabase.from("profiles").select(PROFILE_COLS).eq("id", u.user.id).maybeSingle(),
         supabase
           .from("workouts")
           .select("id, count, duration_ms, created_at, exercise_id")
           .order("created_at", { ascending: false })
           .limit(20),
       ]);
-      if (p) {
-        const prof = p as Profile;
-        setProfile(prof);
-        setDisplayName(prof.display_name ?? "");
-        setAvatarUrl(prof.avatar_url ?? "");
+      let prof = p;
+      if (!prof) {
+        const { data: created } = await supabase
+          .from("profiles")
+          .insert({
+            id: u.user.id,
+            display_name: u.user.is_anonymous ? "Gast" : (u.user.email?.split("@")[0] ?? null),
+          })
+          .select(PROFILE_COLS)
+          .maybeSingle();
+        prof = created;
       }
+      if (prof) applyProfile(prof as Profile);
       if (w) setWorkouts(w as Workout[]);
     })();
   }, []);
+
+  const numOrNull = (v: string, min: number, max: number) => {
+    const n = Number(v);
+    if (!v.trim() || Number.isNaN(n)) return null;
+    return Math.max(min, Math.min(max, n));
+  };
 
   const save = async () => {
     if (!profile) return;
@@ -97,15 +124,21 @@ function ProfilePage() {
       .update({
         display_name: displayName.trim() || null,
         avatar_url: avatarUrl.trim() || null,
+        birth_year: numOrNull(birthYear, 1920, new Date().getFullYear()),
+        height_cm: numOrNull(heightCm, 80, 250),
+        weight_kg: numOrNull(weightKg, 25, 400),
+        sex: sex || null,
+        daily_goal: numOrNull(dailyGoal, 5, 2000) ?? 50,
+        share_activity: shareActivity,
       })
       .eq("id", profile.id)
-      .select("id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes")
+      .select(PROFILE_COLS)
       .single();
     setSaving(false);
     if (error) {
       setMsg("Speichern fehlgeschlagen");
     } else {
-      setProfile(data as Profile);
+      applyProfile(data as Profile);
       setMsg("Profil aktualisiert");
     }
   };
