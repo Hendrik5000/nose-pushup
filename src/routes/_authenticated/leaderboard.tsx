@@ -160,6 +160,7 @@ function LeaderboardPage() {
             );
           })}
       </section>
+      <BottomNav />
     </main>
   );
 }
