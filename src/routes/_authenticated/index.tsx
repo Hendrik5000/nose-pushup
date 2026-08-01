@@ -5,7 +5,8 @@ import type { ExerciseMeta } from "@/lib/exercises";
 import { levelProgress } from "@/lib/level";
 import { AiCoachCard } from "@/components/AiCoachCard";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
-
+import { FriendActivity } from "@/components/FriendActivity";
+import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -16,6 +17,10 @@ export const Route = createFileRoute("/_authenticated/")({
         content:
           "Zähle Push-Ups mit der Nase, sammle XP, halte deine Streak und tritt gegen Freunde an.",
       },
+      { property: "og:title", content: "Nosy Push-Ups — Dashboard" },
+      { property: "og:description", content: "Push-Ups zählen, XP sammeln, Streak halten." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Dashboard,
@@ -32,20 +37,22 @@ type Profile = {
   current_streak: number;
   longest_streak: number;
   last_workout_date: string | null;
+  daily_goal: number;
 };
 
-type DailyStat = { day: string; total_reps: number };
-
 type PushMode = "nose" | "manual" | "camera";
+
+const PROFILE_COLS =
+  "id, display_name, avatar_url, best_count, personal_bests, xp, level, current_streak, longest_streak, last_workout_date, daily_goal";
 
 function Dashboard() {
   const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
+  const [todaySteps, setTodaySteps] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
-
 
   useEffect(() => {
     (async () => {
@@ -54,30 +61,48 @@ function Dashboard() {
       setUserId(u.user.id);
       const today = new Date().toISOString().slice(0, 10);
 
-      const [{ data: ex }, { data: p }, { data: ds }] = await Promise.all([
+      const [{ data: ex }, { data: p }, { data: ds }, { data: he }] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
-        supabase
-          .from("profiles")
-          .select(
-            "id, display_name, avatar_url, best_count, personal_bests, xp, level, current_streak, longest_streak, last_workout_date",
-          )
-          .eq("id", u.user.id)
-          .maybeSingle(),
+        supabase.from("profiles").select(PROFILE_COLS).eq("id", u.user.id).maybeSingle(),
         supabase
           .from("daily_stats")
           .select("day, total_reps")
           .eq("user_id", u.user.id)
           .eq("day", today)
           .maybeSingle(),
+        supabase
+          .from("health_entries")
+          .select("steps")
+          .eq("user_id", u.user.id)
+          .eq("day", today)
+          .maybeSingle(),
       ]);
+
       if (ex) setExercises(ex as ExerciseMeta[]);
-      if (p) {
-        const raw = p as unknown as Omit<Profile, "personal_bests"> & {
+
+      let prof = p;
+      if (!prof) {
+        // Selbstheilung: Profil anlegen (z. B. für Gast-Konten ohne Zeile).
+        const { data: created } = await supabase
+          .from("profiles")
+          .insert({
+            id: u.user.id,
+            display_name:
+              (u.user.user_metadata?.display_name as string | undefined) ??
+              (u.user.is_anonymous ? "Gast" : (u.user.email?.split("@")[0] ?? null)),
+          })
+          .select(PROFILE_COLS)
+          .maybeSingle();
+        prof = created;
+      }
+      if (prof) {
+        const raw = prof as unknown as Omit<Profile, "personal_bests"> & {
           personal_bests: Record<string, number> | null;
         };
         setProfile({ ...raw, personal_bests: raw.personal_bests ?? {} });
       }
-      if (ds) setTodayReps((ds as DailyStat).total_reps);
+      if (ds) setTodayReps(ds.total_reps ?? 0);
+      if (he) setTodaySteps(he.steps ?? 0);
       setLoading(false);
     })();
   }, []);
@@ -85,6 +110,8 @@ function Dashboard() {
   const lp = useMemo(() => levelProgress(profile?.xp ?? 0), [profile?.xp]);
   const initials = (profile?.display_name || "?").slice(0, 1).toUpperCase();
   const streak = profile?.current_streak ?? 0;
+  const goal = profile?.daily_goal || 50;
+  const goalPct = Math.min(1, todayReps / goal);
   const streakActive = (() => {
     if (!profile?.last_workout_date) return false;
     const today = new Date().toISOString().slice(0, 10);
@@ -95,19 +122,27 @@ function Dashboard() {
   const pushupBest = profile?.personal_bests?.pushup ?? profile?.best_count ?? 0;
   const otherExercises = exercises.filter((e) => e.id !== "pushup");
   const pushupEx = exercises.find((e) => e.id === "pushup");
+  const dateLabel = new Date().toLocaleDateString("de-DE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 
   return (
-    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
+    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
+      {/* Header */}
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_var(--color-primary)]" />
-          <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">
-            Nosy&nbsp;Push-Ups
-          </span>
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+            {dateLabel}
+          </div>
+          <h1 className="mt-0.5 text-xl font-bold tracking-tight">
+            Hallo {profile?.display_name || "Athlet"} 👋
+          </h1>
         </div>
         <Link
           to="/profile"
-          className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-secondary-foreground"
+          className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-secondary-foreground"
           aria-label="Profil"
         >
           {profile?.avatar_url ? (
@@ -118,56 +153,57 @@ function Dashboard() {
         </Link>
       </header>
 
-      {/* Level + Streak Card */}
-      <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+      {/* Aktivitäts-Ring (Samsung-Health-Struktur) */}
+      <section className="mt-5 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+        <div className="flex items-center gap-5">
+          <ActivityRing pct={goalPct} value={todayReps} goal={goal} />
+          <div className="min-w-0 flex-1 space-y-2.5">
+            <RingRow icon="🏆" label="Bestwert" value={`${pushupBest}`} />
+            <RingRow icon={streakActive && streak > 0 ? "🔥" : "❄️"} label="Streak" value={`${streak} Tage`} />
+            <RingRow icon="👟" label="Schritte" value={todaySteps ? todaySteps.toLocaleString("de-DE") : "—"} />
+          </div>
+        </div>
+
+        <div className="mt-5 border-t border-border pt-4">
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="font-semibold">
               Level {lp.level} · {lp.title}
-            </div>
-            <div className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+            </span>
+            <span className="tabular-nums text-muted-foreground">
               {lp.xp.toLocaleString("de-DE")} XP
-            </div>
+            </span>
           </div>
-          <div
-            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${
-              streakActive && streak > 0
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border bg-secondary text-muted-foreground"
-            }`}
-            title="Streak: Tage in Folge"
-          >
-            <span className="text-lg leading-none">{streak > 0 && streakActive ? "🔥" : "❄️"}</span>
-            <span className="tabular-nums">{streak}</span>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${lp.progress * 100}%` }}
+            />
           </div>
-        </div>
-        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-secondary">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${lp.progress * 100}%` }}
-          />
-        </div>
-        <div className="mt-1 flex justify-between text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-          <span>{lp.xpIntoLevel} / {lp.xpForLevel} XP</span>
-          <span>{lp.isMax ? "Max" : `Noch ${lp.xpToNext} XP`}</span>
+          <div className="mt-1 flex justify-between text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            <span>
+              {lp.xpIntoLevel} / {lp.xpForLevel} XP
+            </span>
+            <span>{lp.isMax ? "Max" : `Noch ${lp.xpToNext} XP`}</span>
+          </div>
         </div>
       </section>
 
-      {/* Today / Best / Longest */}
-      <section className="mt-3 grid grid-cols-3 gap-3">
-        <Stat label="Heute" value={todayReps.toString()} unit="Reps" />
-        <Stat label="Bestwert" value={pushupBest.toString()} unit="Push-Ups" />
-        <Stat label="Längste Streak" value={(profile?.longest_streak ?? 0).toString()} unit="Tage" />
+      {/* Quick Tiles */}
+      <section className="mt-4 grid grid-cols-4 gap-2">
+        <Tile to="/run" icon="🏃" label="Laufen" />
+        <Tile to="/battle" icon="⚔️" label="Battle" />
+        <Tile to="/leaderboard" icon="🏆" label="Rangliste" />
+        <Tile to="/health" icon="❤️" label="Health" />
       </section>
 
-      {/* Push-Up Hero CTA */}
-      <section className="mt-6 overflow-hidden rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/15 via-card/70 to-card/60 p-5 backdrop-blur">
+      {/* Push-Up Hero */}
+      <section className="mt-4 overflow-hidden rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/15 via-card/70 to-card/60 p-5 backdrop-blur">
         <div className="flex items-start justify-between">
           <div>
             <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Haupt-Übung</div>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground">Push-Ups</h1>
+            <h2 className="mt-1 text-3xl font-bold tracking-tight text-foreground">Push-Ups</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Tippe das Handy mit der Nase an, halte manuell mit oder lass die Kamera zählen.
+              Nase antippen, manuell eintragen oder von der Kamera zählen lassen.
             </p>
           </div>
           <span className="text-5xl">{pushupEx?.icon ?? "💪"}</span>
@@ -189,25 +225,8 @@ function Dashboard() {
         </Link>
       </section>
 
-      {/* Battle + Leaderboard CTAs */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <Link
-          to="/battle"
-          className="flex flex-col justify-between rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 to-card/60 p-4 backdrop-blur transition active:scale-[0.98]"
-        >
-          <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Neu</div>
-          <div className="mt-1 text-base font-semibold">⚔️ Battle</div>
-          <div className="text-[11px] text-muted-foreground">1v1 Duell</div>
-        </Link>
-        <Link
-          to="/leaderboard"
-          className="flex flex-col justify-between rounded-2xl border border-border bg-card/60 p-4 backdrop-blur transition active:scale-[0.98]"
-        >
-          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Social</div>
-          <div className="mt-1 text-base font-semibold">🏆 Leaderboard</div>
-          <div className="text-[11px] text-muted-foreground">Global & Freunde</div>
-        </Link>
-      </div>
+      {/* Live-Aktivität mit Freunden */}
+      {userId && <FriendActivity userId={userId} />}
 
       {/* Smart Coach (AI) */}
       <AiCoachCard />
@@ -215,8 +234,7 @@ function Dashboard() {
       {/* Challenges */}
       {userId && <ChallengesPanel userId={userId} />}
 
-      {/* Other exercises */}
-
+      {/* Weitere Übungen */}
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -259,21 +277,63 @@ function Dashboard() {
           })}
         </div>
       </section>
+
+      <BottomNav />
     </main>
   );
 }
 
-function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
+function ActivityRing({ pct, value, goal }: { pct: number; value: number; goal: number }) {
+  const r = 46;
+  const c = 2 * Math.PI * r;
   return (
-    <div className="rounded-2xl border border-border bg-card/50 px-3 py-3 backdrop-blur">
-      <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 flex items-baseline gap-1">
-        <span className="text-xl font-semibold tabular-nums text-foreground">{value}</span>
-        {unit && <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground">{unit}</span>}
+    <div className="relative h-32 w-32 shrink-0">
+      <svg viewBox="0 0 110 110" className="h-full w-full -rotate-90">
+        <circle cx="55" cy="55" r={r} fill="none" stroke="var(--color-secondary)" strokeWidth="10" />
+        <circle
+          cx="55"
+          cy="55"
+          r={r}
+          fill="none"
+          stroke="var(--color-primary)"
+          strokeWidth="10"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - pct)}
+          className="transition-all duration-700"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="font-display text-3xl font-bold tabular-nums leading-none">{value}</span>
+        <span className="mt-1 text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+          / {goal} Reps
+        </span>
       </div>
     </div>
+  );
+}
+
+function RingRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-xl bg-background/40 px-3 py-2">
+      <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        <span className="text-base leading-none">{icon}</span>
+        {label}
+      </span>
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+function Tile({ to, icon, label }: { to: string; icon: string; label: string }) {
+  return (
+    <Link
+      to={to}
+      className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card/50 py-3 text-[10px] font-medium text-muted-foreground backdrop-blur transition active:scale-[0.97] hover:border-primary/40"
+    >
+      <span className="text-2xl leading-none">{icon}</span>
+      {label}
+    </Link>
   );
 }
 
