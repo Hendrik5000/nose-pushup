@@ -320,6 +320,65 @@ function ProfilePage() {
           placeholder="https://…"
           maxLength={500}
         />
+
+        <div className="!mt-5 border-t border-border pt-4">
+          <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Körperdaten (für den Smart Coach)
+          </h3>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Field label="Geburtsjahr" value={birthYear} onChange={setBirthYear} placeholder="1998" maxLength={4} />
+            <Field label="Größe (cm)" value={heightCm} onChange={setHeightCm} placeholder="180" maxLength={3} />
+            <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} />
+            <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} />
+          </div>
+          <div className="mt-3">
+            <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Geschlecht
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { v: "male", l: "Männlich" },
+                { v: "female", l: "Weiblich" },
+                { v: "other", l: "Divers" },
+              ].map((o) => (
+                <button
+                  key={o.v}
+                  type="button"
+                  onClick={() => setSex(sex === o.v ? "" : o.v)}
+                  className={`rounded-xl border px-2 py-2 text-xs font-medium transition ${
+                    sex === o.v
+                      ? "border-primary bg-primary/15 text-foreground"
+                      : "border-border bg-secondary/60 text-muted-foreground"
+                  }`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShareActivity((s) => !s)}
+            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
+          >
+            <span className="text-xs">
+              Tages-Aktivität mit Freunden teilen
+              <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                Freunde sehen deine Push-Ups des Tages live.
+              </span>
+            </span>
+            <span
+              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
+                shareActivity ? "bg-primary" : "bg-secondary"
+              }`}
+            >
+              <span
+                className={`h-5 w-5 rounded-full bg-background transition ${shareActivity ? "translate-x-5" : ""}`}
+              />
+            </span>
+          </button>
+        </div>
+
         {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
         <button
           onClick={save}
