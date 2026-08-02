@@ -113,9 +113,19 @@ function ProfilePage() {
   }, []);
 
   const numOrNull = (v: string, min: number, max: number) => {
-    const n = Number(v);
-    if (!v.trim() || Number.isNaN(n)) return null;
+    const cleaned = v.replace(",", ".").replace(/[^0-9.]/g, "");
+    const n = Number(cleaned);
+    if (!cleaned || Number.isNaN(n)) return null;
     return Math.max(min, Math.min(max, n));
+  };
+
+  // Accept "1,80" / "1.8" (meters) as well as "180" (cm).
+  const heightOrNull = (v: string) => {
+    const cleaned = v.replace(",", ".").replace(/[^0-9.]/g, "");
+    let n = Number(cleaned);
+    if (!cleaned || Number.isNaN(n) || n <= 0) return null;
+    if (n < 3) n = n * 100;
+    return Math.round(Math.max(80, Math.min(250, n)));
   };
 
   const save = async () => {
