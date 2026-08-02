@@ -63,9 +63,6 @@ function CoachChatPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   const submit = async (textOverride?: string) => {
     const text = (textOverride ?? input).trim();
