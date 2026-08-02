@@ -7,7 +7,12 @@ export const backfillAchievements = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data, error } = await supabase.rpc("check_achievements", { _user_id: userId });
     if (error) throw new Error(error.message);
-    return { unlocked: (data ?? []) as Array<{ achievement_id: string; xp_reward: number }> };
+    return {
+      unlocked: ((data ?? []) as Array<{ _achievement_id: string; _xp_reward: number }>).map((r) => ({
+        achievement_id: r._achievement_id,
+        xp_reward: r._xp_reward,
+      })),
+    };
   });
 
 export const listAchievements = createServerFn({ method: "GET" })
