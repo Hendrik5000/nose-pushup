@@ -1,81 +1,91 @@
-# Nosy Push-Ups – Roadmap für große neue Funktionen
+# Nosy Push-Ups – Nächste große Features
 
-Etappe 1 (XP/Level/Streak/Modi) und der Coach-Bereich sind live. Jetzt kommen die vier großen Ausbaustufen, die die App zu einer echten gamifizierten Fitness-Community machen. Nach jeder Etappe ist die App voll nutzbar.
+Ausgangslage: Etappe A (Smart Coach + Challenges), B (Battle-Modus) und C (Freunde + Leaderboards) sind live. Etappe D ist noch offen. Fokus: User-Engagement steigern durch Gamification, Personalisierung und ein runderes Erstbesucher-Erlebnis.
 
 ---
 
-## Etappe A – Smart Coach v2 + Challenges
+## Phase 1 – Achievements & Badge-Galerie
 
-**Smart Coach v2 (AI)**
-- Neue Server-Function `getCoachAdvice` nutzt Lovable AI (`google/gemini-3-flash-preview`).
-- Input: letzte 14 Tage `daily_stats`, PR, Streak, Level.
-- Output: 2–3 Sätze Feedback + konkreter Tagesplan (z. B. „4×12, 60 s Pause").
-- Anzeige im bestehenden `CoachPanel` mit „Neu generieren" (rate-limited auf 1×/Stunde pro User).
-- Fallback: bestehende regelbasierte Logik, wenn AI fehlschlägt.
+**Ziel:** Spielerische Meilensteine sichtbar machen und Motivation durch sammelbare Badges liefern.
 
-**Daily & Weekly Challenges**
-- Tabellen `challenges` (Templates) + `user_challenges` (Fortschritt, reset_at).
-- 3 rotierende Daily Challenges (z. B. 50 Reps, 3 Sessions, Streak halten).
-- 1 Weekly Challenge (z. B. 300 Reps, neuer PR).
-- Belohnung: Bonus-XP + Coins (für spätere Themes).
-- UI: Challenge-Karten auf dem Dashboard mit Fortschrittsbalken.
+- Tabelle `achievements` (id, title, description, icon, category, condition_type, condition_value, xp_reward, hidden).
+- Tabelle `user_achievements` (user_id, achievement_id, unlocked_at, seen).
+- Kategorien:
+  - Reps: 10 / 100 / 1.000 / 10.000 / 50.000 Push-Ups
+  - Streak: 7 / 30 / 100 / 365 Tage
+  - Level: 10 / 25 / 50
+  - Battle: 1 / 10 / 50 / 100 Siege
+  - Challenges: 5 / 25 / 100 abgeschlossen
+  - Social: Erste Freundschaft, 5 Freunde
+- SECURITY DEFINER-Trigger auf `workouts`, `battles` und `user_challenges` prüft Bedingungen und vergibt Badges serverseitig.
+- UI:
+  - Badge-Galerie im Profil (gesperrt = Silhouette, freigeschaltet = farbig).
+  - Toast/Popup bei Freischaltung mit XP-Bonus.
+  - "Neu"-Badge für ungesehene Achievements.
 
-## Etappe B – Battle-Modus (Realtime 1v1)
+## Phase 2 – Themes & App-Personalisierung
 
-**Datenbank**
-- `battles` (host_id, guest_id, status, duration_s, winner_id, code).
-- `battle_reps` (battle_id, user_id, count, ts).
+**Ziel:** Die App fühlt sich individuell an und bindet Langzeit-Nutzer durch Freischaltbares.
 
-**Flow**
-- Host erstellt Battle → 6-stelliger Code / Share-Link.
-- Guest joint → Countdown 3-2-1 → 60 s Zählphase → Ergebnis + Revanche.
-- Supabase Realtime Channel pro Battle für Live-Reps beider Seiten.
-- Bot-Modus: simulierter Gegner nach realistischem Reps/s-Profil, wenn niemand joint.
+- Spalte `profiles.theme` erweitern (`dark`, `gym`, `neon`, `minimal`, `ocean`).
+- CSS-Variablen-Sets in `styles.css` für jedes Theme.
+- Theme-Wähler in den Profileinstellungen.
+- Einige Themes freischaltbar per Level/Achievement (z. B. Neon ab Level 15, Ocean ab Streak 30).
+- App-Icon-Variante passend zum aktiven Theme (optional).
 
-**UI**
-- Neue Route `/_authenticated/battle` (Lobby) und `/_authenticated/battle/$id` (Arena).
-- Live-Balken beider Spieler, Rep-Counter, Restzeit.
-- Ergebnisscreen mit W/L-Bilanz-Update.
+## Phase 3 – Sounds, Haptik & PWA-Politur
 
-## Etappe C – Social: Freunde, Leaderboards, Public Profile
+**Ziel:** Feedback pro Rep, Erfolgsmomente spürbar machen, App installierbar wie eine native App.
 
-- `friendships` (requester, addressee, status).
-- View `public_profiles` (display_name, avatar, level, longest_streak, total_reps) – lesbar für alle authenticated.
-- Globales & Freunde-Leaderboard (Reps/Woche, Level, längste Streak) als eigene Route `/leaderboard`.
-- Battle-Bilanz (W/L) und Achievements-Badges am Profil sichtbar.
-- Freund hinzufügen per Suche (Anzeigename) oder Battle-Code.
+- Web-Audio-API:
+  - Klick pro Rep.
+  - Level-Up-Sound.
+  - Battle-Win / Streak-Save-Sound.
+- `navigator.vibrate` für Rep, Level-Up und Battle-Ergebnis.
+- Globaler Mute-/Sound-Toggle in den Einstellungen.
+- PWA-Manifest (`manifest.json`, Icons, `theme-color`, `display: standalone`).
+- Service-Worker-Registrierung für Offline-Start und Add-to-Home-Screen-Prompt.
 
-## Etappe D – Achievements, Themes, Sounds, Politur
+## Phase 4 – Engagement-Loop: Erinnerungen, Recaps & Onboarding
 
-**Achievements (~25)**
-- Meilensteine: 10 / 100 / 1 000 / 10 000 Reps, Streak 7 / 30 / 100, Level 10 / 25 / 50, Battle-Wins, Challenge-Sammler.
-- DB-Trigger auf `workouts`/`battles`/`user_challenges` vergibt Badges.
-- Badge-Galerie im Profil, Toast bei Freischaltung.
+**Ziel:** Nutzer kommen zurück, verstehen die App sofort und feiern Fortschritte.
 
-**Themes**
-- Dark (Default), Gym (rot/orange), Neon (cyan/magenta), Minimal (mono).
-- CSS-Variablen-Sets in `styles.css`, Auswahl in Einstellungen, Persistenz in `profiles.theme`.
-- Einige Themes durch Level/Coins freischaltbar.
+- **3-Slide-Onboarding** für neue Nutzer:
+  1. Nose-Push-Up erklären.
+  2. XP, Streak, Level zeigen.
+  3. Freunde & Battle einladen.
+  - Onboarding-Status in `profiles.onboarded` speichern.
+- **Streak-Erinnerung** (Browser-Push-Notification):
+  - Wenn Streak aktiv und bis 20 Uhr kein Workout → "Hol dir deine Streak!".
+  - Opt-in in den Einstellungen.
+- **Wöchentlicher Recap** (Push + In-App-Seite):
+  - Reps-Woche, neue PBs, abgeschlossene Challenges, Level-Up.
+  - Sonntags als Notification und als teilbare Karte.
+- **Streak-Freeze-UI**:
+  - Sichtbarer Counter `streak_freezes`.
+  - Button "Streak retten" für gestern, falls Freeze verfügbar.
+- **Empty States & Loading-Skeletons** überall dort, wo aktuell "Lade…" oder leere Listen stehen.
 
-**Sounds & Haptik**
-- Web-Audio-Click pro Rep (keine Asset-Größe), eigene Sounds für Level-Up / Battle-Win / Streak-Save.
-- `navigator.vibrate` wo verfügbar, globaler Mute-Toggle.
+## Phase 5 – Battle-Modus ausbauen (optional, Engagement-Booster)
 
-**Politur**
-- 3-Slide-Onboarding, Empty States, Loading-Skeletons.
-- PWA-Manifest fürs Home-Screen-Icon.
+**Ziel:** Battles noch sozialer und wiederspielbarer machen.
+
+- Revanche-Button direkt nach Battle-Ergebnis.
+- Battle-Statistik (Siege/Niederlagen pro Gegner).
+- Öffentliche Battle-Lobby mit Zufalls-Matchmaking gegen Online-Nutzer.
 
 ---
 
 ## Technische Hinweise
 
 - Backend: Lovable Cloud, `createServerFn` mit `requireSupabaseAuth` für alle privaten Reads/Writes.
-- AI: Lovable AI Gateway – kein zusätzlicher Key nötig.
-- Realtime: Supabase Realtime Channels für Battles.
-- Alle neuen Tabellen mit RLS + GRANTs; Achievements & Challenges über SECURITY DEFINER-Trigger.
+- Alle neuen Tabellen mit RLS + GRANTs; Achievements über SECURITY DEFINER-Trigger.
+- Push-Notifications über Web Push (VAPID) oder Browser-Notification-API; erst einfach beginnen mit `Notification.requestPermission`.
+- Sounds rein per Web-Audio-API generieren, keine externen Assets nötig.
+- PWA-Manifest und Service-Worker über Vite-PWA-Plugin oder manuell in `public/`.
 
 ## Reihenfolge
 
-Vorschlag: **A → B → C → D**. Etappe A baut direkt auf dem Coach-Panel auf und liefert schnellen sichtbaren Mehrwert; danach das große Highlight Battle-Modus.
+Vorschlag: **1 → 2 → 3 → 4 → 5**. Jede Phase ist nach Fertigstellung allein nutzbar und liefert sichtbaren Mehrwert. Phase 1 (Achievements) und Phase 4 (Onboarding/Reminders) haben den stärksten Engagement-Effekt.
 
-Womit soll ich starten – Etappe A (Coach v2 + Challenges) oder lieber direkt Etappe B (Battle-Modus)?
+Soll ich mit Phase 1 beginnen?
