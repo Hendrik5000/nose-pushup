@@ -457,12 +457,14 @@ function Field({
   onChange,
   placeholder,
   maxLength,
+  numeric,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   maxLength?: number;
+  numeric?: boolean;
 }) {
   return (
     <label className="block">
@@ -474,6 +476,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
+        inputMode={numeric ? "decimal" : undefined}
         className="w-full rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
       />
     </label>
