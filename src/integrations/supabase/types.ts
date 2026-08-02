@@ -619,8 +619,8 @@ export type Database = {
       check_achievements: {
         Args: { _user_id: string }
         Returns: {
-          achievement_id: string
-          xp_reward: number
+          _achievement_id: string
+          _xp_reward: number
         }[]
       }
     }
