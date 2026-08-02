@@ -113,9 +113,19 @@ function ProfilePage() {
   }, []);
 
   const numOrNull = (v: string, min: number, max: number) => {
-    const n = Number(v);
-    if (!v.trim() || Number.isNaN(n)) return null;
+    const cleaned = v.replace(",", ".").replace(/[^0-9.]/g, "");
+    const n = Number(cleaned);
+    if (!cleaned || Number.isNaN(n)) return null;
     return Math.max(min, Math.min(max, n));
+  };
+
+  // Accept "1,80" / "1.8" (meters) as well as "180" (cm).
+  const heightOrNull = (v: string) => {
+    const cleaned = v.replace(",", ".").replace(/[^0-9.]/g, "");
+    let n = Number(cleaned);
+    if (!cleaned || Number.isNaN(n) || n <= 0) return null;
+    if (n < 3) n = n * 100;
+    return Math.round(Math.max(80, Math.min(250, n)));
   };
 
   const save = async () => {
@@ -128,7 +138,7 @@ function ProfilePage() {
         display_name: displayName.trim() || null,
         avatar_url: avatarUrl.trim() || null,
         birth_year: numOrNull(birthYear, 1920, new Date().getFullYear()),
-        height_cm: numOrNull(heightCm, 80, 250),
+        height_cm: heightOrNull(heightCm),
         weight_kg: numOrNull(weightKg, 25, 400),
         sex: sex || null,
         daily_goal: numOrNull(dailyGoal, 5, 2000) ?? 50,
@@ -326,10 +336,11 @@ function ProfilePage() {
             Körperdaten (für den Smart Coach)
           </h3>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <Field label="Geburtsjahr" value={birthYear} onChange={setBirthYear} placeholder="1998" maxLength={4} />
-            <Field label="Größe (cm)" value={heightCm} onChange={setHeightCm} placeholder="180" maxLength={3} />
-            <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} />
-            <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} />
+            <Field label="Geburtsjahr" value={birthYear} onChange={setBirthYear} placeholder="1998" maxLength={4} numeric />
+            <Field label="Größe (cm)" value={heightCm} onChange={setHeightCm} placeholder="180" maxLength={5} numeric />
+            <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} numeric />
+            <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} numeric />
+
           </div>
           <div className="mt-3">
             <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -446,12 +457,14 @@ function Field({
   onChange,
   placeholder,
   maxLength,
+  numeric,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   maxLength?: number;
+  numeric?: boolean;
 }) {
   return (
     <label className="block">
@@ -463,6 +476,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
+        inputMode={numeric ? "decimal" : undefined}
         className="w-full rounded-xl border border-border bg-background/60 px-3 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
       />
     </label>
