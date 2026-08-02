@@ -1,6 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+export const backfillAchievements = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data, error } = await supabase.rpc("check_achievements", { _user_id: userId });
+    if (error) throw new Error(error.message);
+    return { unlocked: (data ?? []) as Array<{ achievement_id: string; xp_reward: number }> };
+  });
+
 export const listAchievements = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
