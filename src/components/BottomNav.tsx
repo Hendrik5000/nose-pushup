@@ -14,18 +14,22 @@ const ITEMS: Item[] = [
 export function BottomNav() {
   return (
     <>
-      <div className="h-24" aria-hidden />
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/90 backdrop-blur-xl">
-        <ul className="mx-auto flex w-full max-w-md items-stretch justify-between px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+      <div className="h-28" aria-hidden />
+      <nav className="pointer-events-none fixed inset-x-0 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4">
+        <ul className="pointer-events-auto flex w-full max-w-sm items-center justify-between gap-1 rounded-full border border-border/60 bg-card/60 p-1.5 shadow-[0_12px_40px_-12px_oklch(0_0_0/0.7)] backdrop-blur-2xl">
           {ITEMS.map((it) => (
             <li key={it.to} className="flex-1">
               <Link
                 to={it.to}
                 activeOptions={{ exact: it.to === "/" }}
-                className="flex flex-col items-center gap-1 rounded-2xl px-1 py-1.5 text-[10px] font-medium text-muted-foreground transition [&.active]:text-primary"
+                className="group relative flex flex-col items-center gap-0.5 rounded-full px-2 py-2 text-muted-foreground transition-all duration-300 [&.active]:bg-primary/12 [&.active]:text-primary"
               >
-                <span className="text-xl leading-none">{it.icon}</span>
-                <span className="tracking-wide">{it.label}</span>
+                <span className="text-lg leading-none transition-transform duration-300 group-[.active]:-translate-y-px group-[.active]:scale-110">
+                  {it.icon}
+                </span>
+                <span className="max-h-0 overflow-hidden text-[9px] font-medium tracking-wide opacity-0 transition-all duration-300 group-[.active]:max-h-4 group-[.active]:opacity-100">
+                  {it.label}
+                </span>
               </Link>
             </li>
           ))}
