@@ -62,10 +62,11 @@ export const joinBattle = createServerFn({ method: "POST" })
     if ((battle as { status: string }).status !== "waiting") {
       throw new Error("Battle nicht mehr verfügbar");
     }
-    const { error: upErr } = await supabase
+    const { error: upErr } = await supabaseAdmin
       .from("battles")
       .update({ guest_id: userId })
       .eq("id", (battle as { id: string }).id)
+      .eq("status", "waiting")
       .is("guest_id", null);
     if (upErr) throw new Error(upErr.message);
     return { id: (battle as { id: string }).id };
