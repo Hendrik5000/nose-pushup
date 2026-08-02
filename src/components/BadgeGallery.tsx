@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { listAchievements, markAchievementsSeen } from "@/lib/achievements.functions";
+import { backfillAchievements, listAchievements, markAchievementsSeen } from "@/lib/achievements.functions";
 
 type Achievement = {
   id: string;
@@ -30,6 +30,7 @@ const CATEGORIES: Record<string, { label: string; color: string }> = {
 
 export function BadgeGallery() {
   const fetchAchievements = useServerFn(listAchievements);
+  const backfill = useServerFn(backfillAchievements);
   const markSeen = useServerFn(markAchievementsSeen);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [unlocked, setUnlocked] = useState<Unlocked[]>([]);
@@ -38,18 +39,24 @@ export function BadgeGallery() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchAchievements()
-      .then((res) => {
+    (async () => {
+      try {
+        // Retroactively unlock achievements based on existing stats.
+        await backfill({ data: undefined });
+        const res = await fetchAchievements();
         if (cancelled) return;
         setAchievements(res.achievements);
         setUnlocked(res.unlocked);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
     return () => {
       cancelled = true;
     };
-  }, [fetchAchievements]);
+  }, [fetchAchievements, backfill]);
 
   // Show toasts for newly unlocked, unseen achievements.
   useEffect(() => {
