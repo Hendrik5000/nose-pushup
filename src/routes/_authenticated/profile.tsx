@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { levelProgress } from "@/lib/level";
 import { CoachPanel } from "@/components/CoachPanel";
 import { FriendsPanel } from "@/components/FriendsPanel";
+import { BadgeGallery } from "@/components/BadgeGallery";
 import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -317,6 +318,8 @@ function ProfilePage() {
       {profile && <CoachPanel profile={profile} workouts={workouts} />}
 
       {profile && <FriendsPanel userId={profile.id} />}
+
+      <BadgeGallery />
 
       <section className="mt-6 space-y-3 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">

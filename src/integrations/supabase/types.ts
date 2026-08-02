@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          category: string
+          condition_type: string
+          condition_value: number
+          created_at: string
+          description: string
+          hidden: boolean
+          icon: string
+          id: string
+          sort_order: number
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          category: string
+          condition_type: string
+          condition_value?: number
+          created_at?: string
+          description: string
+          hidden?: boolean
+          icon?: string
+          id: string
+          sort_order?: number
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          category?: string
+          condition_type?: string
+          condition_value?: number
+          created_at?: string
+          description?: string
+          hidden?: boolean
+          icon?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       battle_reps: {
         Row: {
           battle_id: string
@@ -412,6 +454,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          created_at: string
+          id: string
+          seen: boolean
+          unlocked_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          created_at?: string
+          id?: string
+          seen?: boolean
+          unlocked_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          created_at?: string
+          id?: string
+          seen?: boolean
+          unlocked_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_challenges: {
         Row: {
           challenge_id: string
@@ -535,6 +615,13 @@ export type Database = {
       challenge_period_start: {
         Args: { _day: string; _period: string }
         Returns: string
+      }
+      check_achievements: {
+        Args: { _user_id: string }
+        Returns: {
+          _achievement_id: string
+          _xp_reward: number
+        }[]
       }
     }
     Enums: {
