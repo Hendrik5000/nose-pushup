@@ -81,7 +81,6 @@ function CoachChatPage() {
       setMessages((m) => [...m, { role: "assistant", content: `⚠️ ${msg}` }]);
     } finally {
       setLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 50);
     }
   };
 
@@ -205,9 +204,9 @@ function CoachChatPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Frag den Coach oder logge dein Training…"
+          placeholder="Nachricht an den Coach…"
           rows={1}
-          className="flex-1 resize-none bg-transparent px-2 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
+          className="min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2 text-sm text-foreground outline-none placeholder:truncate placeholder:text-muted-foreground/60"
           style={{ maxHeight: 140 }}
           disabled={loading}
         />
