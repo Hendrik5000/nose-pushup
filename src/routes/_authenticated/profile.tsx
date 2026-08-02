@@ -138,7 +138,7 @@ function ProfilePage() {
         display_name: displayName.trim() || null,
         avatar_url: avatarUrl.trim() || null,
         birth_year: numOrNull(birthYear, 1920, new Date().getFullYear()),
-        height_cm: numOrNull(heightCm, 80, 250),
+        height_cm: heightOrNull(heightCm),
         weight_kg: numOrNull(weightKg, 25, 400),
         sex: sex || null,
         daily_goal: numOrNull(dailyGoal, 5, 2000) ?? 50,
@@ -336,10 +336,11 @@ function ProfilePage() {
             Körperdaten (für den Smart Coach)
           </h3>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <Field label="Geburtsjahr" value={birthYear} onChange={setBirthYear} placeholder="1998" maxLength={4} />
-            <Field label="Größe (cm)" value={heightCm} onChange={setHeightCm} placeholder="180" maxLength={3} />
-            <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} />
-            <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} />
+            <Field label="Geburtsjahr" value={birthYear} onChange={setBirthYear} placeholder="1998" maxLength={4} numeric />
+            <Field label="Größe (cm)" value={heightCm} onChange={setHeightCm} placeholder="180" maxLength={5} numeric />
+            <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} numeric />
+            <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} numeric />
+
           </div>
           <div className="mt-3">
             <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
