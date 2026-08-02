@@ -46,7 +46,7 @@ export const joinBattle = createServerFn({ method: "POST" })
     return { code };
   })
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
     // Code lookup runs server-side: waiting battles are not readable by non-participants.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: battle, error } = await supabaseAdmin
