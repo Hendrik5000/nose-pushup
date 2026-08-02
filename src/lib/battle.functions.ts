@@ -46,8 +46,10 @@ export const joinBattle = createServerFn({ method: "POST" })
     return { code };
   })
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: battle, error } = await supabase
+    const { userId } = context;
+    // Code lookup runs server-side: waiting battles are not readable by non-participants.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: battle, error } = await supabaseAdmin
       .from("battles")
       .select("id, host_id, guest_id, status")
       .eq("code", data.code)
@@ -60,10 +62,11 @@ export const joinBattle = createServerFn({ method: "POST" })
     if ((battle as { status: string }).status !== "waiting") {
       throw new Error("Battle nicht mehr verfügbar");
     }
-    const { error: upErr } = await supabase
+    const { error: upErr } = await supabaseAdmin
       .from("battles")
       .update({ guest_id: userId })
       .eq("id", (battle as { id: string }).id)
+      .eq("status", "waiting")
       .is("guest_id", null);
     if (upErr) throw new Error(upErr.message);
     return { id: (battle as { id: string }).id };
