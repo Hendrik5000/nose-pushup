@@ -16,6 +16,7 @@ import { levelProgress } from "@/lib/level";
 import { CoachPanel } from "@/components/CoachPanel";
 import { FriendsPanel } from "@/components/FriendsPanel";
 import { BadgeGallery } from "@/components/BadgeGallery";
+import { ThemePicker } from "@/components/ThemePicker";
 import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -42,12 +43,13 @@ type Profile = {
   sex: string | null;
   daily_goal: number;
   share_activity: boolean;
+  theme: string | null;
 };
 
 type Workout = { id: string; count: number; duration_ms: number; created_at: string; exercise_id: string | null };
 
 const PROFILE_COLS =
-  "id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes, birth_year, height_cm, weight_kg, sex, daily_goal, share_activity";
+  "id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes, birth_year, height_cm, weight_kg, sex, daily_goal, share_activity, theme";
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -319,6 +321,7 @@ function ProfilePage() {
 
       {profile && <FriendsPanel userId={profile.id} />}
 
+      <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
       <BadgeGallery />
 
       <section className="mt-6 space-y-3 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">

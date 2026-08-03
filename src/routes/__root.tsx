@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { applyTheme, getStoredTheme } from "@/lib/theme";
 
 function NotFoundComponent() {
   return (
@@ -126,6 +127,10 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+
+  useEffect(() => {
+    applyTheme(getStoredTheme());
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
