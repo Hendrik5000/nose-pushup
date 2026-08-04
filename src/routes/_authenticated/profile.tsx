@@ -13,6 +13,8 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { levelProgress } from "@/lib/level";
+import { setSoundEnabled, setHapticsEnabled, feedbackSuccess } from "@/lib/feedback";
+
 import { CoachPanel } from "@/components/CoachPanel";
 import { FriendsPanel } from "@/components/FriendsPanel";
 import { BadgeGallery } from "@/components/BadgeGallery";
