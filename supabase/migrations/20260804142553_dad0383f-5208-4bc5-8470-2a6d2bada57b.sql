@@ -1,0 +1,1 @@
+GRANT UPDATE (sound_enabled, haptics_enabled, onboarded) ON public.profiles TO authenticated;
