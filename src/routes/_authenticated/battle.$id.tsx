@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { finishBattle, startBattle } from "@/lib/battle.functions";
-import { feedbackRep, feedbackWin, feedbackLose } from "@/lib/feedback";
+import { feedbackRep, feedbackWin, feedbackLose, feedbackSuccess } from "@/lib/feedback";
 
 
 export const Route = createFileRoute("/_authenticated/battle/$id")({
