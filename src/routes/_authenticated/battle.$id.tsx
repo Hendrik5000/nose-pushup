@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { finishBattle, startBattle } from "@/lib/battle.functions";
+import { feedbackRep, feedbackWin, feedbackLose, feedbackSuccess } from "@/lib/feedback";
+
 
 export const Route = createFileRoute("/_authenticated/battle/$id")({
   head: () => ({
@@ -167,7 +169,7 @@ function BattleArena() {
     myCountRef.current += 1;
     const next = myCountRef.current;
     setMyCount(next);
-    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+    feedbackRep(next);
     // Persist to server-side ledger — finishBattle sums these authoritatively.
     void supabase.from("battle_reps").insert({ battle_id: battle.id, user_id: userId, count: 1 });
     channelRef.current?.send({
@@ -176,6 +178,18 @@ function BattleArena() {
       payload: { user_id: userId, count: next },
     });
   }, [battle, countdown, userId, iAmHost, iAmGuest]);
+
+  // Ergebnis-Sound genau einmal, sobald das Battle beendet ist.
+  const resultPlayed = useRef(false);
+  useEffect(() => {
+    if (!battle || battle.status !== "finished" || resultPlayed.current) return;
+    resultPlayed.current = true;
+    if (battle.winner_id && battle.winner_id === userId) feedbackWin();
+    else if (battle.winner_id) feedbackLose();
+    else feedbackSuccess();
+  }, [battle, userId]);
+
+
 
   const doStart = async () => {
     setError(null);

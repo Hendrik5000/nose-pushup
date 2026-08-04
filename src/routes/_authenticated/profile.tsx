@@ -13,6 +13,8 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { levelProgress } from "@/lib/level";
+import { setSoundEnabled, setHapticsEnabled, feedbackSuccess } from "@/lib/feedback";
+
 import { CoachPanel } from "@/components/CoachPanel";
 import { FriendsPanel } from "@/components/FriendsPanel";
 import { BadgeGallery } from "@/components/BadgeGallery";
@@ -44,12 +46,15 @@ type Profile = {
   daily_goal: number;
   share_activity: boolean;
   theme: string | null;
+  sound_enabled: boolean;
+  haptics_enabled: boolean;
 };
 
 type Workout = { id: string; count: number; duration_ms: number; created_at: string; exercise_id: string | null };
 
 const PROFILE_COLS =
-  "id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes, birth_year, height_cm, weight_kg, sex, daily_goal, share_activity, theme";
+  "id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes, birth_year, height_cm, weight_kg, sex, daily_goal, share_activity, theme, sound_enabled, haptics_enabled";
+
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -65,6 +70,8 @@ function ProfilePage() {
   const [sex, setSex] = useState("");
   const [dailyGoal, setDailyGoal] = useState("50");
   const [shareActivity, setShareActivity] = useState(true);
+  const [soundOn, setSoundOn] = useState(true);
+  const [hapticsOn, setHapticsOn] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [upgradeEmail, setUpgradeEmail] = useState("");
@@ -82,7 +89,14 @@ function ProfilePage() {
     setSex(prof.sex ?? "");
     setDailyGoal(String(prof.daily_goal ?? 50));
     setShareActivity(prof.share_activity ?? true);
+    const sound = prof.sound_enabled ?? true;
+    const haptics = prof.haptics_enabled ?? true;
+    setSoundOn(sound);
+    setHapticsOn(haptics);
+    setSoundEnabled(sound);
+    setHapticsEnabled(haptics);
   };
+
 
   useEffect(() => {
     (async () => {
@@ -146,6 +160,9 @@ function ProfilePage() {
         sex: sex || null,
         daily_goal: numOrNull(dailyGoal, 5, 2000) ?? 50,
         share_activity: shareActivity,
+        sound_enabled: soundOn,
+        haptics_enabled: hapticsOn,
+
       })
       .eq("id", profile.id)
       .select(PROFILE_COLS)
@@ -394,7 +411,62 @@ function ProfilePage() {
               />
             </span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const next = !soundOn;
+              setSoundOn(next);
+              setSoundEnabled(next);
+              if (next) feedbackSuccess();
+            }}
+            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
+          >
+            <span className="text-xs">
+              Sound-Feedback
+              <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                Klick bei jeder Wiederholung, Fanfare bei Erfolgen.
+              </span>
+            </span>
+            <span
+              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
+                soundOn ? "bg-primary" : "bg-secondary"
+              }`}
+            >
+              <span
+                className={`h-5 w-5 rounded-full bg-background transition ${soundOn ? "translate-x-5" : ""}`}
+              />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const next = !hapticsOn;
+              setHapticsOn(next);
+              setHapticsEnabled(next);
+              if (next && typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+            }}
+            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
+          >
+            <span className="text-xs">
+              Vibration
+              <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                Haptisches Feedback auf dem Handy.
+              </span>
+            </span>
+            <span
+              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
+                hapticsOn ? "bg-primary" : "bg-secondary"
+              }`}
+            >
+              <span
+                className={`h-5 w-5 rounded-full bg-background transition ${hapticsOn ? "translate-x-5" : ""}`}
+              />
+            </span>
+          </button>
         </div>
+
 
         {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
         <button
