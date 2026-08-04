@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useExerciseEngine, ensureMotionPermission } from "@/hooks/useExerciseEngine";
 import { useCameraDetection } from "@/hooks/useCameraDetection";
+import { feedbackRep, feedbackSuccess } from "@/lib/feedback";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { getConfig } from "@/lib/exercises";
+
 
 type PushMode = "nose" | "manual" | "camera";
 
