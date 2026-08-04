@@ -160,6 +160,9 @@ function ProfilePage() {
         sex: sex || null,
         daily_goal: numOrNull(dailyGoal, 5, 2000) ?? 50,
         share_activity: shareActivity,
+        sound_enabled: soundOn,
+        haptics_enabled: hapticsOn,
+
       })
       .eq("id", profile.id)
       .select(PROFILE_COLS)
