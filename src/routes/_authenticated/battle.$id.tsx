@@ -167,7 +167,7 @@ function BattleArena() {
     myCountRef.current += 1;
     const next = myCountRef.current;
     setMyCount(next);
-    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+    feedbackRep(next);
     // Persist to server-side ledger — finishBattle sums these authoritatively.
     void supabase.from("battle_reps").insert({ battle_id: battle.id, user_id: userId, count: 1 });
     channelRef.current?.send({
