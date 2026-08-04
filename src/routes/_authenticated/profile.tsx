@@ -411,7 +411,62 @@ function ProfilePage() {
               />
             </span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const next = !soundOn;
+              setSoundOn(next);
+              setSoundEnabled(next);
+              if (next) feedbackSuccess();
+            }}
+            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
+          >
+            <span className="text-xs">
+              Sound-Feedback
+              <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                Klick bei jeder Wiederholung, Fanfare bei Erfolgen.
+              </span>
+            </span>
+            <span
+              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
+                soundOn ? "bg-primary" : "bg-secondary"
+              }`}
+            >
+              <span
+                className={`h-5 w-5 rounded-full bg-background transition ${soundOn ? "translate-x-5" : ""}`}
+              />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const next = !hapticsOn;
+              setHapticsOn(next);
+              setHapticsEnabled(next);
+              if (next && typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+            }}
+            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
+          >
+            <span className="text-xs">
+              Vibration
+              <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                Haptisches Feedback auf dem Handy.
+              </span>
+            </span>
+            <span
+              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
+                hapticsOn ? "bg-primary" : "bg-secondary"
+              }`}
+            >
+              <span
+                className={`h-5 w-5 rounded-full bg-background transition ${hapticsOn ? "translate-x-5" : ""}`}
+              />
+            </span>
+          </button>
         </div>
+
 
         {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
         <button
