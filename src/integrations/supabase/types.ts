@@ -354,14 +354,17 @@ export type Database = {
           current_streak: number
           daily_goal: number
           display_name: string | null
+          haptics_enabled: boolean
           height_cm: number | null
           id: string
           last_workout_date: string | null
           level: number
           longest_streak: number
+          onboarded: boolean
           personal_bests: Json
           sex: string | null
           share_activity: boolean
+          sound_enabled: boolean
           streak_freeze_week: string | null
           streak_freezes: number
           theme: string
@@ -379,14 +382,17 @@ export type Database = {
           current_streak?: number
           daily_goal?: number
           display_name?: string | null
+          haptics_enabled?: boolean
           height_cm?: number | null
           id: string
           last_workout_date?: string | null
           level?: number
           longest_streak?: number
+          onboarded?: boolean
           personal_bests?: Json
           sex?: string | null
           share_activity?: boolean
+          sound_enabled?: boolean
           streak_freeze_week?: string | null
           streak_freezes?: number
           theme?: string
@@ -404,14 +410,17 @@ export type Database = {
           current_streak?: number
           daily_goal?: number
           display_name?: string | null
+          haptics_enabled?: boolean
           height_cm?: number | null
           id?: string
           last_workout_date?: string | null
           level?: number
           longest_streak?: number
+          onboarded?: boolean
           personal_bests?: Json
           sex?: string | null
           share_activity?: boolean
+          sound_enabled?: boolean
           streak_freeze_week?: string | null
           streak_freezes?: number
           theme?: string
