@@ -73,40 +73,18 @@ function WorkoutScreen() {
     return exercise.detection_type;
   }, [exercise, isPushup, useCamera, useManual]);
 
-  const playTick = useCallback(() => {
-    try {
-      if (!audioCtx.current) {
-        const Ctx = window.AudioContext ||
-          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        audioCtx.current = new Ctx();
-      }
-      const ctx = audioCtx.current!;
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.frequency.value = 660;
-      o.type = "sine";
-      g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
-      o.connect(g).connect(ctx.destination);
-      o.start();
-      o.stop(ctx.currentTime + 0.13);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
   const { count, pop, bump, reset: resetEngine } = useExerciseEngine({
     exerciseId,
     detection,
     active: useCamera ? false : active, // when camera-driven, we bump() from camera
     onTick: (n) => {
-      playTick();
+      feedbackRep(n);
       if (n > 0 && n % 5 === 0) {
         setMotivation(MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)]);
       }
     },
   });
+
 
   // Camera detector — only mounted for camera mode
   const cameraBump = useCallback(() => bump(), [bump]);
