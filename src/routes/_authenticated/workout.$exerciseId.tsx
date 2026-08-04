@@ -228,7 +228,9 @@ function WorkoutScreen() {
       duration_ms: 0,
     });
     if (!error) {
+      feedbackSuccess();
       const newBest = n > best;
+
       if (newBest) {
         setBest(n);
         setSavedHint(`🏆 Neuer Bestwert: ${n}`);
