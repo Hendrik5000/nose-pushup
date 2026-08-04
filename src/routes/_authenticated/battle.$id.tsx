@@ -179,6 +179,18 @@ function BattleArena() {
     });
   }, [battle, countdown, userId, iAmHost, iAmGuest]);
 
+  // Ergebnis-Sound genau einmal, sobald das Battle beendet ist.
+  const resultPlayed = useRef(false);
+  useEffect(() => {
+    if (!battle || battle.status !== "finished" || resultPlayed.current) return;
+    resultPlayed.current = true;
+    if (battle.winner_id && battle.winner_id === userId) feedbackWin();
+    else if (battle.winner_id) feedbackLose();
+    else feedbackSuccess();
+  }, [battle, userId]);
+
+
+
   const doStart = async () => {
     setError(null);
     try {
