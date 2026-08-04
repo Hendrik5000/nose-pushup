@@ -68,6 +68,8 @@ function ProfilePage() {
   const [sex, setSex] = useState("");
   const [dailyGoal, setDailyGoal] = useState("50");
   const [shareActivity, setShareActivity] = useState(true);
+  const [soundOn, setSoundOn] = useState(true);
+  const [hapticsOn, setHapticsOn] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [upgradeEmail, setUpgradeEmail] = useState("");
@@ -85,7 +87,14 @@ function ProfilePage() {
     setSex(prof.sex ?? "");
     setDailyGoal(String(prof.daily_goal ?? 50));
     setShareActivity(prof.share_activity ?? true);
+    const sound = prof.sound_enabled ?? true;
+    const haptics = prof.haptics_enabled ?? true;
+    setSoundOn(sound);
+    setHapticsOn(haptics);
+    setSoundEnabled(sound);
+    setHapticsEnabled(haptics);
   };
+
 
   useEffect(() => {
     (async () => {
