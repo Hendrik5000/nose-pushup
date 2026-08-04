@@ -169,7 +169,9 @@ function WorkoutScreen() {
       duration_ms,
     });
     if (!error) {
+      feedbackSuccess();
       const newBest = count > best;
+
       if (newBest) {
         // Personal bests are updated server-side by the on_workout_inserted trigger.
         setBest(count);
