@@ -58,7 +58,7 @@ function WorkoutScreen() {
   const [motivation, setMotivation] = useState<string | null>(null);
   const [manualInput, setManualInput] = useState("");
 
-  const audioCtx = useRef<AudioContext | null>(null);
+
 
   const isPushup = exerciseId === "pushup";
   const pushMode: PushMode = isPushup ? (search.mode ?? "nose") : "nose";
