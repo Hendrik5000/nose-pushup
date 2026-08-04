@@ -44,12 +44,15 @@ type Profile = {
   daily_goal: number;
   share_activity: boolean;
   theme: string | null;
+  sound_enabled: boolean;
+  haptics_enabled: boolean;
 };
 
 type Workout = { id: string; count: number; duration_ms: number; created_at: string; exercise_id: string | null };
 
 const PROFILE_COLS =
-  "id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes, birth_year, height_cm, weight_kg, sex, daily_goal, share_activity, theme";
+  "id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes, birth_year, height_cm, weight_kg, sex, daily_goal, share_activity, theme, sound_enabled, haptics_enabled";
+
 
 function ProfilePage() {
   const navigate = useNavigate();
