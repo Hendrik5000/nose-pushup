@@ -6,7 +6,7 @@ const SHA256_FINGERPRINTS: string[] = [
   // "AA:BB:CC:...:FF"
 ];
 
-export const Route = createFileRoute("/.well-known/assetlinks")({
+export const Route = createFileRoute("/.well-known/assetlinks.json")({
   server: {
     handlers: {
       GET: () =>

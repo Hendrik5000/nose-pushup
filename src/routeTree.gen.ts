@@ -13,7 +13,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as Char91DotwellKnownChar93AssetlinksRouteImport } from './routes/[.well-known]/assetlinks'
+import { Route as Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport } from './routes/[.well-known]/assetlinks[.]json'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
@@ -47,10 +47,10 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
-const Char91DotwellKnownChar93AssetlinksRoute =
-  Char91DotwellKnownChar93AssetlinksRouteImport.update({
-    id: '/.well-known/assetlinks',
-    path: '/.well-known/assetlinks',
+const Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute =
+  Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport.update({
+    id: '/.well-known/assetlinks.json',
+    path: '/.well-known/assetlinks.json',
     getParentRoute: () => rootRouteImport,
   } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
@@ -124,7 +124,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/mcp': typeof McpRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
-  '/.well-known/assetlinks': typeof Char91DotwellKnownChar93AssetlinksRoute
+  '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/health': typeof AuthenticatedHealthRoute
@@ -141,7 +141,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/mcp': typeof McpRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
-  '/.well-known/assetlinks': typeof Char91DotwellKnownChar93AssetlinksRoute
+  '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/health': typeof AuthenticatedHealthRoute
@@ -161,7 +161,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/mcp': typeof McpRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
-  '/.well-known/assetlinks': typeof Char91DotwellKnownChar93AssetlinksRoute
+  '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
@@ -182,7 +182,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/mcp'
     | '/.mcp/list-tools'
-    | '/.well-known/assetlinks'
+    | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
     | '/coach'
     | '/health'
@@ -199,7 +199,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/mcp'
     | '/.mcp/list-tools'
-    | '/.well-known/assetlinks'
+    | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
     | '/coach'
     | '/health'
@@ -218,7 +218,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/mcp'
     | '/.mcp/list-tools'
-    | '/.well-known/assetlinks'
+    | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/coach'
     | '/_authenticated/health'
@@ -238,7 +238,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   McpRoute: typeof McpRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
-  Char91DotwellKnownChar93AssetlinksRoute: typeof Char91DotwellKnownChar93AssetlinksRoute
+  Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute: typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -274,11 +274,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.well-known/assetlinks': {
-      id: '/.well-known/assetlinks'
-      path: '/.well-known/assetlinks'
-      fullPath: '/.well-known/assetlinks'
-      preLoaderRoute: typeof Char91DotwellKnownChar93AssetlinksRouteImport
+    '/.well-known/assetlinks.json': {
+      id: '/.well-known/assetlinks.json'
+      path: '/.well-known/assetlinks.json'
+      fullPath: '/.well-known/assetlinks.json'
+      preLoaderRoute: typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.well-known/oauth-protected-resource': {
@@ -400,8 +400,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   McpRoute: McpRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
-  Char91DotwellKnownChar93AssetlinksRoute:
-    Char91DotwellKnownChar93AssetlinksRoute,
+  Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute:
+    Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
