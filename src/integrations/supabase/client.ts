@@ -2,6 +2,12 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// Node.js 20 lacks native WebSocket; supply the 'ws' package for SSR.
+const WebSocketImpl =
+  typeof WebSocket !== 'undefined'
+    ? WebSocket
+    : (await import('ws').then((m) => m.default)) as unknown as typeof WebSocket;
+
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
 }
@@ -51,7 +57,10 @@ function createSupabaseClient() {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
-    }
+    },
+    realtime: {
+      transport: WebSocketImpl,
+    },
   });
 }
 
