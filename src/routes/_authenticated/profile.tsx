@@ -480,6 +480,41 @@ function ProfilePage() {
         </button>
       </section>
 
+      <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Google Health Connect
+            </h2>
+            <p className="mt-1 text-sm text-foreground">
+              Schritte, Schlaf und Aktivität für den Smart Coach sichtbar machen.
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Die Web-App kann diese Daten nicht direkt auslesen. Über die Android-App kannst du sie verbinden und dann hier verwalten.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col gap-2">
+            <Link
+              to="/health"
+              className="rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-center text-sm font-semibold text-primary transition active:scale-[0.98]"
+            >
+              Öffnen
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.open("https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata", "_blank", "noopener,noreferrer");
+                }
+              }}
+              className="rounded-xl border border-border bg-background/60 px-3 py-2 text-sm font-semibold text-foreground transition active:scale-[0.98]"
+            >
+              Verbinden
+            </button>
+          </div>
+        </div>
+      </section>
+
       <NotificationSettings />
 
       <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
