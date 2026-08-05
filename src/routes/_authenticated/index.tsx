@@ -192,7 +192,7 @@ function Dashboard() {
       <section className="mt-4 grid grid-cols-4 gap-2">
         <Tile to="/run" icon="🏃" label="Laufen" />
         <Tile to="/battle" icon="⚔️" label="Battle" />
-        <Tile to="/leaderboard" icon="🏆" label="Rangliste" />
+        <Tile to="/calisthenics" icon="🤸" label="Cali" />
         <Tile to="/health" icon="❤️" label="Health" />
       </section>
 

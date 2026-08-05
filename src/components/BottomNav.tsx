@@ -5,9 +5,9 @@ type Item = { to: string; icon: string; label: string };
 const ITEMS: Item[] = [
   { to: "/", icon: "🏡", label: "Start" },
   { to: "/exercises", icon: "🏋️", label: "Übungen" },
+  { to: "/calisthenics", icon: "🤸", label: "Cali" },
   { to: "/coach", icon: "🧠", label: "Coach" },
-  { to: "/leaderboard", icon: "🤝", label: "Together" },
-  { to: "/profile", icon: "⚙️", label: "Einstellungen" },
+  { to: "/profile", icon: "⚙️", label: "Profil" },
 ];
 
 /** Samsung-Health-style persistent bottom tab bar. */

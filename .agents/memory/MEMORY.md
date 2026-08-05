@@ -1,0 +1,2 @@
+- [Cali System Architecture](cali-system.md) — Skill progression data lives in src/lib/calisthenics.ts; check-ins use localStorage; bests stored in profiles.personal_bests JSON.
+- [Node 20 Supabase SSR WebSocket Fix](supabase-ws-fix.md) — ws package needed as realtime transport in src/integrations/supabase/client.ts for Node 20 SSR.

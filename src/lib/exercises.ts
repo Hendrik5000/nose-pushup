@@ -62,6 +62,103 @@ export const EXERCISE_CONFIG: Record<string, ExerciseConfig> = {
   },
 };
 
+// ─── Calisthenics Skill Configs ───────────────────────────────────────────────
+// These IDs map to skills defined in src/lib/calisthenics.ts.
+// All hold-based skills use "timer" detection; rep-based ones use "touch".
+
+Object.assign(EXERCISE_CONFIG, {
+  cali_planche_lean: {
+    minIntervalMs: 1000,
+    idleHint: "Position einnehmen: Schultern leicht vor die Hände, Körper Brett-gerade.",
+    activeHint: "Halten — Spannung im gesamten Körper!",
+    repLabel: "Sekunde",
+  },
+  cali_pseudo_pushup: {
+    minIntervalMs: 600,
+    idleHint: "Finger zeigen nach hinten, Handy auf den Boden — Nase antippen.",
+    activeHint: "Schultern vorverlagern — kontrolliert rauf!",
+    repLabel: "Pseudo Planche Push-Up",
+  },
+  cali_tuck_planche: {
+    minIntervalMs: 1000,
+    idleHint: "Knie zur Brust ziehen und Position halten.",
+    activeHint: "Halten — Schulterblätter auseinander drücken!",
+    repLabel: "Sekunde",
+  },
+  cali_adv_tuck_planche: {
+    minIntervalMs: 1000,
+    idleHint: "Rücken flach, Knie locker gebeugt — Position einnehmen.",
+    activeHint: "Halten — Rücken flach, maximale Spannung!",
+    repLabel: "Sekunde",
+  },
+  cali_straddle_planche: {
+    minIntervalMs: 1000,
+    idleHint: "Beine V-förmig spreizen, Hüfte auf Schulterniveau.",
+    activeHint: "Halten — Gleichgewicht halten!",
+    repLabel: "Sekunde",
+  },
+  cali_full_planche: {
+    minIntervalMs: 1000,
+    idleHint: "Beine gestreckt zusammen, Körper waagerecht — volle Spannung.",
+    activeHint: "Halten — Elite Level! Nicht aufgeben!",
+    repLabel: "Sekunde",
+  },
+  cali_dead_hang: {
+    minIntervalMs: 1000,
+    idleHint: "An der Stange hängen — Schultern aktiv nach unten ziehen.",
+    activeHint: "Halten — Rumpf leicht angespannt!",
+    repLabel: "Sekunde",
+  },
+  cali_tuck_fl: {
+    minIntervalMs: 1000,
+    idleHint: "Knie zur Brust, Hüfte auf Stangehöhe halten.",
+    activeHint: "Halten — Schultern aktiv!",
+    repLabel: "Sekunde",
+  },
+  cali_adv_tuck_fl: {
+    minIntervalMs: 1000,
+    idleHint: "Rücken schrittweise flacher, Knie noch gebeugt.",
+    activeHint: "Halten — Rücken flach halten!",
+    repLabel: "Sekunde",
+  },
+  cali_straddle_fl: {
+    minIntervalMs: 1000,
+    idleHint: "Beine gespreizt, Körper waagerecht an der Stange.",
+    activeHint: "Halten — Latissimus aktivieren!",
+    repLabel: "Sekunde",
+  },
+  cali_full_fl: {
+    minIntervalMs: 1000,
+    idleHint: "Beine gestreckt zusammen, Körper parallel zum Boden.",
+    activeHint: "Halten — volle Körperspannung!",
+    repLabel: "Sekunde",
+  },
+  cali_wall_hs: {
+    minIntervalMs: 1000,
+    idleHint: "Hände schulterbreit, Rücken zur Wand — Handstand einnehmen.",
+    activeHint: "Halten — Schultern über Handgelenken!",
+    repLabel: "Sekunde",
+  },
+  cali_chest_wall_hs: {
+    minIntervalMs: 1000,
+    idleHint: "Brust zur Wand, Körper gerade ausrichten.",
+    activeHint: "Halten — Bauch zur Wand, gerade Linie!",
+    repLabel: "Sekunde",
+  },
+  cali_freestand_hs: {
+    minIntervalMs: 1000,
+    idleHint: "Kein Wandkontakt — Balance über Finger steuern.",
+    activeHint: "Halten — kleine Korrekturen mit den Fingern!",
+    repLabel: "Sekunde",
+  },
+  cali_hs_pushup: {
+    minIntervalMs: 700,
+    idleHint: "Handstand einnehmen, Handy auf den Boden — Kopf antippen.",
+    activeHint: "Runter und hoch — volle Streckung oben!",
+    repLabel: "Handstand Push-Up",
+  },
+} satisfies Record<string, ExerciseConfig>);
+
 export function getConfig(id: string): ExerciseConfig {
   return EXERCISE_CONFIG[id] ?? EXERCISE_CONFIG.pushup;
 }

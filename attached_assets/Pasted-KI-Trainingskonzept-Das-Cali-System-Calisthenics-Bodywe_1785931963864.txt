@@ -1,0 +1,41 @@
+KI-Trainingskonzept: Das „Cali System“ (Calisthenics & Bodyweight)
+​Ziel: Das System aus dem Video (Zero to Planche in 229 Days) zielt darauf ab, hochkomplexe Calisthenics-Skills (wie Planche, Front Lever, Handstand) durch strukturierte Datenerfassung, adaptive Belastungssteuerung und tägliche Konsistenz schnellstmöglich freizuschalten.
+​📱 Kernfunktionen & KI-Logik für die App
+​1. Zero-Day-Prävention (Konsistenz-Engine)
+​Konzept: Kein Tag darf ein direkter „Null-Tag“ sein. Das System verlangt tägliche Aktivität zur Gewohnheitsbildung.
+​KI-Logik / Feature:
+​An intensiven Trainingstagen: Volles Workout-Tracking.
+​An Rest Days / Regenerationstagen: Die KI schlägt automatisch Mikro-Aktivitäten vor (z. B. 10 Min. Mobilität/Stretching, mentale Vorbereitung, Aktivierungsübungen oder Theorie-Lerneinheiten).
+​Streaks / Gamification: Belohnungssystem basierend auf täglichen Aktivitäts-Streaks (nicht nur harten Workouts).
+​2. Detaillierte Datenanalyse (Analysis & Tracking)
+​Konzept: Lückenloses Tracking aller relevanten Trainingsvariablen zur Optimierung des Progressionsverlaufs.
+​KI-Logik / Feature:
+​Erfassung von:
+​Wiederholungen & Satzzahlen
+​Haltezeiten (für statische Calisthenics-Skills)
+​Satzpausen
+​Subjektives Belastungsempfinden (RPE / Fatigue-Level)
+​Tagesform / Performance-Scores
+​KI-Analyse: Automatische Auswertung der Trends (z. B. Erkenne Plateaus bei der Haltezeit einer Progression).
+​3. Smart Load Management (Belastungssteuerung)
+​Konzept: Verletzungsvermeidung durch intelligentes Belasten anstelle von blindem Training bis zum Muskelversagen.
+​KI-Logik / Feature:
+​Fatigue-Score & Verletzungsschutz: Algorithmus berechnet die kumulative Gelenk- und Sehnenbelastung (besonders kritisch für Handgelenke und Schultern bei Calisthenics).
+​Deltaloading-Empfehlungen: Automatisches Drosseln von Intensität oder Volumen, wenn Ermüdungswerte zu hoch sind.
+​4. Intuitive Intensität & Adaptive Pläne (Intuition & Intensity)
+​Konzept: Flexibles Anpassen des Trainingsplans basierend auf dem aktuellen Tagesgefühl (Biofeedback).
+​KI-Logik / Feature:
+​Dynamic Daily Adjustments: Vor jedem Workout führt die App einen kurzen Check-in durch (z. B. "Wie fühlen sich deine Schultern heute an?").
+​Beispiel: Steht laut Plan ein Front-Lever-Tag an, aber die KI erkennt beim Aufwärmen/Check-in, dass die Planche-Form hervorragend ist, kann der Algorithmus vorschlagen, spontan den Fokus auf den Hochform-Skill zu verlagern.
+​5. Qualitäts- und Technik-Auge (Technique First)
+​Konzept: Saubere Form geht immer vor Volumen. Erst die korrekte Ausführung verstehen, bevor hohes Volumen trainiert wird.
+​KI-Logik / Feature:
+​Computer-Vision-Form-Check: Option zur Analyse der Ausführung über die Smartphone-Kamera (z. B. Hüftwinkel bei der Tuck Planche, Beckenkippung).
+​Progression-Gates: Die KI schaltet die nächste Übungsvariante erst frei, wenn die Basisausführung eine definierte Haltezeit mit sauberer Form erfüllt.
+​6. Effizienz & Handlungsreaktion (Efficiency & Decision Making)
+​Konzept: Schnelle Anpassung von Einflussfaktoren (Ernährung, Schlaf, Regenerationszeiten, Coach-Feedback) bei Stagnation.
+​KI-Logik / Feature:
+​Prompting / Actionable Advice: Wenn der Fortschritt über 2 Wochen stagniert, generiert die KI konkrete Handlungsempfehlungen (z. B. „Erhöhe deinen Schlaf um 30 Minuten“, „Passe deine Proteinzufuhr an“ oder „Wechsle zur leichteren Progression mit höherem Volumen“).
+​📺 Video-Referenz
+​Titel: This System Took Me From Zero to Planche in 229 Days! (INSANE RESULTS)
+​Kanal: Josh
