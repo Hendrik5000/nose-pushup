@@ -78,7 +78,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Nosy Push-Up" },
       { name: "description", content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone." },
       { name: "theme-color", content: "#0b0b0f" },
