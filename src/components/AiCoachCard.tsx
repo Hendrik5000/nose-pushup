@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
 import { getCoachAdvice } from "@/lib/coach.functions";
 import { getCoachFocus } from "@/lib/workout-plans";
 
@@ -17,6 +18,7 @@ export function AiCoachCard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [focus, setFocus] = useState("Starte heute mit einem sauberen Set und baue dir sofort Vertrauen auf.");
 
   const load = async (force = false) => {
     if (force) setRefreshing(true);
@@ -34,7 +36,26 @@ export function AiCoachCard() {
   };
 
   useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user || !active) return;
+      const today = new Date().toISOString().slice(0, 10);
+      const [{ data: profile }, { data: stats }] = await Promise.all([
+        supabase.from("profiles").select("best_count, current_streak").eq("id", u.user.id).maybeSingle(),
+        supabase.from("daily_stats").select("total_reps").eq("user_id", u.user.id).eq("day", today).maybeSingle(),
+      ]);
+      const best = (profile as { best_count?: number } | null)?.best_count ?? 0;
+      const streak = (profile as { current_streak?: number } | null)?.current_streak ?? 0;
+      const todayReps = (stats as { total_reps?: number } | null)?.total_reps ?? 0;
+      const weekReps = todayReps;
+      if (!active) return;
+      setFocus(getCoachFocus(best, weekReps, streak));
+    })();
     load(false);
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -88,7 +109,7 @@ export function AiCoachCard() {
             <div className="rounded-2xl border border-primary/20 bg-background/50 p-3 text-xs text-muted-foreground">
               <div className="font-semibold uppercase tracking-[0.2em] text-primary">Coach-Fokus</div>
               <div className="mt-1 text-sm text-foreground">
-                {getCoachFocus(0, 0, 0)}
+                {focus}
               </div>
             </div>
           </div>

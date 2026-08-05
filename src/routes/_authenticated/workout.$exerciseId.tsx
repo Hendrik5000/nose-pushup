@@ -57,6 +57,8 @@ function WorkoutScreen() {
   const [motionError, setMotionError] = useState<string | null>(null);
   const [motivation, setMotivation] = useState<string | null>(null);
   const [manualInput, setManualInput] = useState("");
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [summary, setSummary] = useState<{ count: number; durationMs: number; xp: number; isBest: boolean } | null>(null);
 
 
 
@@ -134,6 +136,21 @@ function WorkoutScreen() {
     return () => clearInterval(id);
   }, [startedAt]);
 
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      setCountdown(null);
+      setActive(true);
+      setStartedAt((s) => s ?? Date.now());
+      setMotionError(null);
+      setSavedHint(null);
+      return;
+    }
+
+    const id = window.setTimeout(() => setCountdown((value) => (value ?? 0) - 1), 900);
+    return () => window.clearTimeout(id);
+  }, [countdown]);
+
   const start = useCallback(async () => {
     if (detection === "motion_vertical" || detection === "combo") {
       const ok = await ensureMotionPermission();
@@ -142,10 +159,12 @@ function WorkoutScreen() {
         return;
       }
     }
-    setActive(true);
-    setStartedAt((s) => s ?? Date.now());
+    setCountdown(3);
+    setActive(false);
+    setStartedAt(null);
     setMotionError(null);
     setSavedHint(null);
+    setSummary(null);
   }, [detection]);
 
   const handleSurfaceTap = useCallback(() => {
@@ -171,6 +190,10 @@ function WorkoutScreen() {
     if (!error) {
       feedbackSuccess();
       const newBest = count > best;
+      const xpGained = exercise.unit === "seconds"
+        ? Math.max(1, Math.floor(duration_ms / 1000))
+        : count * 10;
+      setSummary({ count, durationMs: duration_ms, xp: xpGained, isBest: newBest });
 
       if (newBest) {
         setBest(count);
@@ -185,9 +208,6 @@ function WorkoutScreen() {
           })
           .then(() => {/* fire-and-forget; trigger also handles it */});
       } else {
-        const xpGained = exercise.unit === "seconds"
-          ? Math.max(1, Math.floor(duration_ms / 1000))
-          : count * 10;
         setSavedHint(`Gespeichert · +${xpGained} XP`);
       }
     } else {
@@ -196,12 +216,15 @@ function WorkoutScreen() {
     setSaving(false);
     setActive(false);
     setStartedAt(null);
+    setCountdown(null);
     resetEngine();
   };
 
   const resetAll = () => {
     setActive(false);
     setStartedAt(null);
+    setCountdown(null);
+    setSummary(null);
     resetEngine();
     setSavedHint(null);
     setMotivation(null);
@@ -238,6 +261,7 @@ function WorkoutScreen() {
     if (!error) {
       feedbackSuccess();
       const newBest = n > best;
+      setSummary({ count: n, durationMs: 0, xp: n * 10, isBest: newBest });
 
       if (newBest) {
         setBest(n);
@@ -307,6 +331,14 @@ function WorkoutScreen() {
           {saving ? "Speichere…" : "Workout speichern"}
         </button>
 
+        {summary && (
+          <div className="mt-4 w-full rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Session abgeschlossen</div>
+            <div className="mt-2 text-lg font-semibold text-foreground">{summary.count} Einheiten</div>
+            <div className="mt-1 text-sm text-muted-foreground">+{summary.xp} XP · {summary.isBest ? "Neuer Bestwert" : "Gut gemacht"}</div>
+          </div>
+        )}
+
         <p className="mt-3 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
           {savedHint ?? "Ehrlichkeitsmodus 🙏"}
         </p>
@@ -373,6 +405,11 @@ function WorkoutScreen() {
           <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
             {isPushup ? `Push-Ups · ${modeLabel[pushMode]}` : exercise.name}
           </span>
+          {countdown !== null && (
+            <div className="rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
+              Los in {countdown}…
+            </div>
+          )}
           <span
             key={pop}
             className="font-display text-[9rem] leading-none font-bold tabular-nums text-foreground animate-count-pop"
@@ -459,6 +496,14 @@ function WorkoutScreen() {
           >
             {saving ? "Speichere…" : "Workout speichern"}
           </button>
+        </div>
+      )}
+
+      {summary && !active && (
+        <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Session abgeschlossen</div>
+          <div className="mt-2 text-lg font-semibold text-foreground">{summary.count} {exercise.unit === "seconds" ? "Sekunden" : "Wiederholungen"}</div>
+          <div className="mt-1 text-sm text-muted-foreground">+{summary.xp} XP · {summary.isBest ? "Neuer Bestwert" : "Gut gemacht"}</div>
         </div>
       )}
 
