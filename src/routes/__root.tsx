@@ -138,8 +138,8 @@ function RootComponent() {
   const pathname = useRouterState((state) => state.location.pathname);
   const [installable, setInstallable] = useState(false);
   const [standalone, setStandalone] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [routeKey, setRouteKey] = useState(pathname);
+  const [fullscreenRequested, setFullscreenRequested] = useState(false);
 
   const updateViewportHeight = () => {
     const height = window.visualViewport?.height ?? window.innerHeight;
@@ -168,15 +168,9 @@ function RootComponent() {
   useEffect(() => {
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
     setStandalone(isStandalone);
-    setIsFullscreen(Boolean(document.fullscreenElement));
 
     const handleDisplayMode = () => setStandalone(window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true);
-    const handleFullscreenChange = () => {
-      updateViewportHeight();
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
     window.matchMedia("(display-mode: standalone)").addEventListener("change", handleDisplayMode);
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
 
     const onBeforeInstallPrompt = () => setInstallable(true);
     const onAppInstalled = () => {
@@ -184,19 +178,56 @@ function RootComponent() {
       setStandalone(true);
     };
 
+    const tryAutoFullscreen = async () => {
+      if (fullscreenRequested || document.fullscreenElement) return;
+
+      const inStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+      const inFullscreenMode = window.matchMedia("(display-mode: fullscreen)").matches;
+      if (!inStandalone && !inFullscreenMode) return;
+
+      setFullscreenRequested(true);
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch {
+        // Browsers block autoplay/fullscreen without a user interaction. We fall back to the first tap.
+      }
+    };
+
+    const onFirstInteraction = () => {
+      void tryAutoFullscreen();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        window.setTimeout(() => {
+          void tryAutoFullscreen();
+        }, 200);
+      }
+    };
+
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
     window.addEventListener("appinstalled", onAppInstalled);
+    window.addEventListener("pointerdown", onFirstInteraction, { passive: true });
+    window.addEventListener("touchstart", onFirstInteraction, { passive: true });
+    window.addEventListener("keydown", onFirstInteraction, { passive: true });
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.setTimeout(() => {
+      void tryAutoFullscreen();
+    }, 400);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
       window.removeEventListener("appinstalled", onAppInstalled);
       window.matchMedia("(display-mode: standalone)").removeEventListener("change", handleDisplayMode);
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
       window.removeEventListener("resize", updateViewportHeight);
       window.removeEventListener("orientationchange", updateViewportHeight);
       window.visualViewport?.removeEventListener("resize", updateViewportHeight);
+      window.removeEventListener("pointerdown", onFirstInteraction);
+      window.removeEventListener("touchstart", onFirstInteraction);
+      window.removeEventListener("keydown", onFirstInteraction);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, []);
+  }, [fullscreenRequested]);
 
   useEffect(() => {
     setRouteKey(pathname);
@@ -216,23 +247,6 @@ function RootComponent() {
     })();
     return () => unsub?.unsubscribe();
   }, [router, queryClient]);
-
-  const toggleFullscreen = async () => {
-    if (!document.fullscreenElement) {
-      try {
-        await document.documentElement.requestFullscreen();
-      } catch {
-        // Kein Vollbild verfügbar oder vom Browser blockiert.
-      }
-      return;
-    }
-
-    try {
-      await document.exitFullscreen();
-    } catch {
-      // ignore
-    }
-  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -254,13 +268,6 @@ function RootComponent() {
           </div>
         </div>
       )}
-      <button
-        type="button"
-        onClick={() => void toggleFullscreen()}
-        className="fixed bottom-3 right-3 z-50 rounded-full border border-primary/30 bg-background/95 px-3 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur"
-      >
-        {isFullscreen ? "Vollbild aus" : "Vollbild an"}
-      </button>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <div key={routeKey} className="route-enter">
         <Outlet />
