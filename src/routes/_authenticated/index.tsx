@@ -8,7 +8,6 @@ import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
 import { BottomNav } from "@/components/BottomNav";
-import { NotificationSettings } from "@/components/NotificationSettings";
 import { getQuickStartPlan } from "@/lib/workout-plans";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -205,7 +204,7 @@ function Dashboard() {
       </section>
 
       {/* Schnellstart */}
-      <section className="mt-4 overflow-hidden rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/15 via-card/70 to-card/60 p-5 backdrop-blur">
+      <section className="mt-8 overflow-hidden rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/15 via-card/70 to-card/60 p-5 backdrop-blur">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Schnellstart</div>
@@ -288,9 +287,6 @@ function Dashboard() {
           </div>
         </section>
       )}
-
-      {/* Benachrichtigungen */}
-      <NotificationSettings />
 
       {/* Smart Coach (AI) */}
       <AiCoachCard />
