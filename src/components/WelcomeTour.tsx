@@ -39,6 +39,21 @@ function storageKey(userId: string) {
   return `nose-push:tour-seen:${userId}`;
 }
 
+const RESTART_EVENT = "nose-push:restart-tour";
+
+/**
+ * Startet die Willkommenstour erneut — löscht das „gesehen"-Flag und
+ * signalisiert der gemounteten WelcomeTour, sich wieder zu öffnen.
+ */
+export function restartWelcomeTour(userId: string) {
+  try {
+    localStorage.removeItem(storageKey(userId));
+  } catch {
+    /* Storage nicht verfügbar — trotzdem Event feuern. */
+  }
+  window.dispatchEvent(new CustomEvent(RESTART_EVENT));
+}
+
 /**
  * Onboarding-Tour für neue bzw. Gast-Konten.
  * Zeigt einmalig pro Gerät/Konto die wichtigsten Funktionen.
@@ -62,6 +77,17 @@ export function WelcomeTour({ userId }: { userId: string }) {
       requestAnimationFrame(() => setMounted(true));
     }
   }, [userId]);
+
+  // Manueller Neustart (z. B. aus den Einstellungen).
+  useEffect(() => {
+    const handler = () => {
+      setStep(0);
+      setOpen(true);
+      requestAnimationFrame(() => setMounted(true));
+    };
+    window.addEventListener(RESTART_EVENT, handler);
+    return () => window.removeEventListener(RESTART_EVENT, handler);
+  }, []);
 
   const finish = () => {
     try {
