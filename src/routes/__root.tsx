@@ -141,7 +141,17 @@ function RootComponent() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [routeKey, setRouteKey] = useState(pathname);
 
+  const updateViewportHeight = () => {
+    const height = window.visualViewport?.height ?? window.innerHeight;
+    document.documentElement.style.setProperty("--app-viewport-height", `${Math.max(height, 0)}px`);
+  };
+
   useEffect(() => {
+    updateViewportHeight();
+    window.addEventListener("resize", updateViewportHeight);
+    window.addEventListener("orientationchange", updateViewportHeight);
+    window.visualViewport?.addEventListener("resize", updateViewportHeight);
+
     applyTheme(getStoredTheme());
     // Theme des Kontos laden, damit es auch ohne Profilbesuch sofort greift.
     (async () => {
@@ -161,7 +171,10 @@ function RootComponent() {
     setIsFullscreen(Boolean(document.fullscreenElement));
 
     const handleDisplayMode = () => setStandalone(window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true);
-    const handleFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    const handleFullscreenChange = () => {
+      updateViewportHeight();
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
     window.matchMedia("(display-mode: standalone)").addEventListener("change", handleDisplayMode);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
 
@@ -179,6 +192,9 @@ function RootComponent() {
       window.removeEventListener("appinstalled", onAppInstalled);
       window.matchMedia("(display-mode: standalone)").removeEventListener("change", handleDisplayMode);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      window.removeEventListener("resize", updateViewportHeight);
+      window.removeEventListener("orientationchange", updateViewportHeight);
+      window.visualViewport?.removeEventListener("resize", updateViewportHeight);
     };
   }, []);
 
