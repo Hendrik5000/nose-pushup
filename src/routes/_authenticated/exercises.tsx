@@ -187,7 +187,7 @@ function ExercisesPage() {
           </div>
         )}
 
-        {exercises.map((ex) => {
+        {exercises.filter((ex) => !ex.id.startsWith("cali_")).map((ex) => {
           const best = bests[ex.id] ?? 0;
           return (
             <Link

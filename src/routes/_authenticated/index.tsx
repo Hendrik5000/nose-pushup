@@ -6,6 +6,7 @@ import { levelProgress } from "@/lib/level";
 import { AiCoachCard } from "@/components/AiCoachCard";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
+import { WorkoutHistory } from "@/components/WorkoutHistory";
 import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -224,6 +225,13 @@ function Dashboard() {
           Workout starten →
         </Link>
       </section>
+
+      {/* Workout-Verlauf */}
+      {userId && (
+        <section className="mt-4">
+          <WorkoutHistory userId={userId} />
+        </section>
+      )}
 
       {/* Live-Aktivität mit Freunden */}
       {userId && <FriendActivity userId={userId} />}

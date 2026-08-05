@@ -162,13 +162,17 @@ function SkillCard({
         </div>
 
         {/* Train button */}
-        {!isLocked && !isMastered && (
+        {!isLocked && (
           <Link
-            to="/workout/$exerciseId"
-            params={{ exerciseId: skill.id }}
-            className="shrink-0 rounded-xl bg-primary/15 border border-primary/30 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/25 active:scale-[0.97]"
+            to="/cali-workout/$skillId"
+            params={{ skillId: skill.id }}
+            className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-semibold transition active:scale-[0.97] ${
+              isMastered
+                ? "border-primary/30 bg-primary/8 text-primary/70 hover:bg-primary/15"
+                : "border-primary/30 bg-primary/15 text-primary hover:bg-primary/25"
+            }`}
           >
-            Train
+            {isMastered ? "Üben" : "Train"}
           </Link>
         )}
       </div>

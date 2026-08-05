@@ -27,6 +27,7 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AuthenticatedBattleIndexRouteImport } from './routes/_authenticated/battle.index'
 import { Route as AuthenticatedBattleIdRouteImport } from './routes/_authenticated/battle.$id'
+import { Route as AuthenticatedCaliWorkoutSkillIdRouteImport } from './routes/_authenticated/cali-workout.$skillId'
 import { Route as AuthenticatedWorkoutExerciseIdRouteImport } from './routes/_authenticated/workout.$exerciseId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -125,6 +126,12 @@ const AuthenticatedBattleIdRoute = AuthenticatedBattleIdRouteImport.update({
   path: '/battle/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCaliWorkoutSkillIdRoute =
+  AuthenticatedCaliWorkoutSkillIdRouteImport.update({
+    id: '/cali-workout/$skillId',
+    path: '/cali-workout/$skillId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedWorkoutExerciseIdRoute =
   AuthenticatedWorkoutExerciseIdRouteImport.update({
     id: '/workout/$exerciseId',
@@ -149,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
+  '/cali-workout/$skillId': typeof AuthenticatedCaliWorkoutSkillIdRoute
   '/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
   '/battle/': typeof AuthenticatedBattleIndexRoute
 }
@@ -169,6 +177,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
+  '/cali-workout/$skillId': typeof AuthenticatedCaliWorkoutSkillIdRoute
   '/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
   '/battle': typeof AuthenticatedBattleIndexRoute
 }
@@ -191,6 +200,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/battle/$id': typeof AuthenticatedBattleIdRoute
+  '/_authenticated/cali-workout/$skillId': typeof AuthenticatedCaliWorkoutSkillIdRoute
   '/_authenticated/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
   '/_authenticated/battle/': typeof AuthenticatedBattleIndexRoute
 }
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/battle/$id'
+    | '/cali-workout/$skillId'
     | '/workout/$exerciseId'
     | '/battle/'
   fileRoutesByTo: FileRoutesByTo
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/battle/$id'
+    | '/cali-workout/$skillId'
     | '/workout/$exerciseId'
     | '/battle'
   id:
@@ -254,6 +266,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/battle/$id'
+    | '/_authenticated/cali-workout/$skillId'
     | '/_authenticated/workout/$exerciseId'
     | '/_authenticated/battle/'
   fileRoutesById: FileRoutesById
@@ -397,6 +410,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBattleIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/cali-workout/$skillId': {
+      id: '/_authenticated/cali-workout/$skillId'
+      path: '/cali-workout/$skillId'
+      fullPath: '/cali-workout/$skillId'
+      preLoaderRoute: typeof AuthenticatedCaliWorkoutSkillIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/workout/$exerciseId': {
       id: '/_authenticated/workout/$exerciseId'
       path: '/workout/$exerciseId'
@@ -417,6 +437,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRunRoute: typeof AuthenticatedRunRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
+  AuthenticatedCaliWorkoutSkillIdRoute: typeof AuthenticatedCaliWorkoutSkillIdRoute
   AuthenticatedWorkoutExerciseIdRoute: typeof AuthenticatedWorkoutExerciseIdRoute
   AuthenticatedBattleIndexRoute: typeof AuthenticatedBattleIndexRoute
 }
@@ -431,6 +452,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRunRoute: AuthenticatedRunRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
+  AuthenticatedCaliWorkoutSkillIdRoute: AuthenticatedCaliWorkoutSkillIdRoute,
   AuthenticatedWorkoutExerciseIdRoute: AuthenticatedWorkoutExerciseIdRoute,
   AuthenticatedBattleIndexRoute: AuthenticatedBattleIndexRoute,
 }

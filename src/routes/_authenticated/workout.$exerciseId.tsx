@@ -173,9 +173,17 @@ function WorkoutScreen() {
       const newBest = count > best;
 
       if (newBest) {
-        // Personal bests are updated server-side by the on_workout_inserted trigger.
         setBest(count);
         setSavedHint(`🏆 Neuer Bestwert: ${count}${exercise.unit === "seconds" ? " Sek." : ""}`);
+        // Client-side personal_bests update — belt-and-suspenders alongside the DB trigger.
+        // Needed especially for cali_* skill IDs.
+        supabase
+          .rpc("update_personal_best" as never, {
+            p_user_id: userId,
+            p_exercise_id: exerciseId,
+            p_count: count,
+          })
+          .then(() => {/* fire-and-forget; trigger also handles it */});
       } else {
         const xpGained = exercise.unit === "seconds"
           ? Math.max(1, Math.floor(duration_ms / 1000))
