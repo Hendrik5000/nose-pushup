@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { getCoachAdvice } from "@/lib/coach.functions";
+import { getCoachFocus } from "@/lib/workout-plans";
 
 type Advice = {
   advice: string;
@@ -81,7 +82,17 @@ export function AiCoachCard() {
             {error}
           </div>
         )}
-        {data && <p>{data.advice}</p>}
+        {data && (
+          <div className="space-y-3">
+            <p>{data.advice}</p>
+            <div className="rounded-2xl border border-primary/20 bg-background/50 p-3 text-xs text-muted-foreground">
+              <div className="font-semibold uppercase tracking-[0.2em] text-primary">Coach-Fokus</div>
+              <div className="mt-1 text-sm text-foreground">
+                {getCoachFocus(0, 0, 0)}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {data && (

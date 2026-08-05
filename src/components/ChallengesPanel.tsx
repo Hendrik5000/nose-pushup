@@ -90,6 +90,13 @@ export function ChallengesPanel({ userId }: { userId: string }) {
         </div>
       </div>
 
+      <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 p-3 text-sm text-foreground">
+        <div className="font-semibold">Bleib dran – kleine Schritte zählen</div>
+        <div className="mt-1 text-xs text-muted-foreground">
+          Schließe heute ein Ziel ab und bringe deinen Streak sicher über den nächsten Tag.
+        </div>
+      </div>
+
       <ul className="mt-4 space-y-2">
         {loading && (
           <li className="rounded-2xl border border-border bg-background/40 p-4 text-center text-xs text-muted-foreground">
