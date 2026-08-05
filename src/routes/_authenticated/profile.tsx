@@ -21,10 +21,11 @@ import { BadgeGallery } from "@/components/BadgeGallery";
 import { ThemePicker } from "@/components/ThemePicker";
 import { BottomNav } from "@/components/BottomNav";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { restartWelcomeTour } from "@/components/WelcomeTour";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
-    meta: [{ title: "Profil — Nose Push" }],
+    meta: [{ title: "Einstellungen — Nose Push" }],
   }),
   component: ProfilePage,
 });
@@ -228,7 +229,7 @@ function ProfilePage() {
         >
           ← Zurück
         </Link>
-        <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Profil</span>
+        <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Einstellungen</span>
         <button
           onClick={signOut}
           className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-destructive transition"
@@ -480,6 +481,31 @@ function ProfilePage() {
       </section>
 
       <NotificationSettings />
+
+      <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          Hilfe & Einführung
+        </h2>
+        <div className="mt-3 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">Willkommenstour</div>
+            <p className="mt-0.5 text-xs text-muted-foreground text-pretty">
+              Sieh dir die wichtigsten Funktionen noch einmal an.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (profile) restartWelcomeTour(profile.id);
+              navigate({ to: "/" });
+            }}
+            disabled={!profile}
+            className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition active:scale-[0.98] disabled:opacity-60"
+          >
+            Neu starten
+          </button>
+        </div>
+      </section>
 
       <WorkoutCharts workouts={workouts} />
 

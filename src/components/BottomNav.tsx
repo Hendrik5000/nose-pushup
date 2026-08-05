@@ -3,11 +3,11 @@ import { Link } from "@tanstack/react-router";
 type Item = { to: string; icon: string; label: string };
 
 const ITEMS: Item[] = [
-  { to: "/", icon: "🏠", label: "Start" },
-  { to: "/run", icon: "🏃", label: "Laufen" },
-  { to: "/coach", icon: "🤖", label: "Coach" },
-  { to: "/leaderboard", icon: "👥", label: "Together" },
-  { to: "/profile", icon: "🙋", label: "Ich" },
+  { to: "/", icon: "🏡", label: "Start" },
+  { to: "/exercises", icon: "🏋️", label: "Übungen" },
+  { to: "/coach", icon: "🧠", label: "Coach" },
+  { to: "/leaderboard", icon: "🤝", label: "Together" },
+  { to: "/profile", icon: "⚙️", label: "Einstellungen" },
 ];
 
 /** Samsung-Health-style persistent bottom tab bar. */
