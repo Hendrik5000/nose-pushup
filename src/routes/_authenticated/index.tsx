@@ -198,8 +198,7 @@ function Dashboard() {
       </section>
 
       {/* Quick Tiles */}
-      <section className="mt-4 grid grid-cols-4 gap-2">
-        <Tile to="/run" icon="🏃" label="Laufen" />
+      <section className="mt-4 grid grid-cols-3 gap-2">
         <Tile to="/battle" icon="⚔️" label="Battle" />
         <Tile to="/calisthenics" icon="🤸" label="Cali" />
         <Tile to="/health" icon="❤️" label="Health" />
@@ -268,7 +267,7 @@ function Dashboard() {
         <section className="mt-4 rounded-3xl border border-border bg-card/50 p-4 backdrop-blur">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Motivation</div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Heute</div>
               <div className="text-sm font-semibold text-foreground">
                 {streak > 0 ? `${streak} Tage in Folge` : "Neuer Start heute"}
               </div>
@@ -280,24 +279,21 @@ function Dashboard() {
         </section>
       )}
 
-      {/* Workout-Verlauf */}
+      {/* Kurzer Fokusblock */}
       {userId && (
-        <section className="mt-4">
-          <WorkoutHistory userId={userId} />
+        <section className="mt-3 rounded-2xl border border-border/70 bg-background/40 p-3 text-sm text-muted-foreground">
+          <div className="flex items-center justify-between">
+            <span>Heute fokus: {goal - todayReps > 0 ? `${goal - todayReps} Reps noch` : "voller Einsatz"}</span>
+            <span className="font-semibold text-foreground">{pushupBest} Best</span>
+          </div>
         </section>
       )}
-
-      {/* Live-Aktivität mit Freunden */}
-      {userId && <FriendActivity userId={userId} />}
 
       {/* Benachrichtigungen */}
       <NotificationSettings />
 
       {/* Smart Coach (AI) */}
       <AiCoachCard />
-
-      {/* Challenges */}
-      {userId && <ChallengesPanel userId={userId} />}
 
       {/* Weitere Übungen */}
       <section className="mt-6">
