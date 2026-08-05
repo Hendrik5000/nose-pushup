@@ -75,31 +75,41 @@ export function FriendActivity({ userId }: { userId: string }) {
       {loading ? (
         <p className="mt-3 text-xs text-muted-foreground">Lade…</p>
       ) : rows.length <= 1 ? (
+        <div className="mt-3 rounded-2xl border border-dashed border-border bg-background/40 p-3 text-xs text-muted-foreground">
+          Noch kein sozialer Vergleich aktiv. Lade Freunde ein und starte den nächsten gemeinsamen Push-Up-Tag.
+        </div>
+      ) : (
+        <>
+          <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-foreground">
+            <span className="font-semibold">Gemeinsam stärker:</span> Kleine tägliche Sessions mit Freunden machen den Fortschritt deutlich angenehmer.
+          </div>
+          <ul className="mt-3 space-y-2.5">
         <p className="mt-3 text-xs text-muted-foreground">
           Füge Freunde hinzu, um eure Push-Ups über den Tag live zu vergleichen.
         </p>
       ) : (
-        <ul className="mt-3 space-y-2.5">
-          {rows.map((r, i) => (
-            <li key={r.id}>
-              <div className="flex items-baseline justify-between text-xs">
-                <span className={r.self ? "font-semibold text-primary" : "text-foreground"}>
-                  {i === 0 && r.reps > 0 ? "👑 " : ""}
-                  {r.name}
-                </span>
-                <span className="tabular-nums text-muted-foreground">
-                  {r.reps} Reps · {r.sessions} Sets
-                </span>
-              </div>
-              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-                <div
-                  className={`h-full rounded-full transition-all ${r.self ? "bg-primary" : "bg-accent"}`}
-                  style={{ width: `${(r.reps / max) * 100}%` }}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
+          <ul className="mt-3 space-y-2.5">
+            {rows.map((r, i) => (
+              <li key={r.id}>
+                <div className="flex items-baseline justify-between text-xs">
+                  <span className={r.self ? "font-semibold text-primary" : "text-foreground"}>
+                    {i === 0 && r.reps > 0 ? "👑 " : ""}
+                    {r.name}
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {r.reps} Reps · {r.sessions} Sets
+                  </span>
+                </div>
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className={`h-full rounded-full transition-all ${r.self ? "bg-primary" : "bg-accent"}`}
+                    style={{ width: `${(r.reps / max) * 100}%` }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </section>
   );

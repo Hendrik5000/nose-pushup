@@ -135,6 +135,10 @@ export function WorkoutHistory({ userId }: { userId: string }) {
         </div>
       </div>
 
+      <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-foreground">
+        <span className="font-semibold">Momentum:</span> {trainedDays >= 5 ? "Du bist im Flow und bleibst konsistent." : "Ein paar kleine Sessions reichen schon, um den Rhythmus zu halten."}
+      </div>
+
       {/* 7-day bar chart */}
       <div className="flex items-end gap-1 h-14">
         {weeklyTotals.map((reps, i) => {
