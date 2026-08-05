@@ -17,6 +17,7 @@ export function NotificationSettings() {
   const [enabled, setEnabled] = useState(false);
   const [time, setTime] = useState(DEFAULT_REMINDER_TIME);
   const [denied, setDenied] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setSupported(notificationsSupported());
@@ -29,16 +30,19 @@ export function NotificationSettings() {
     if (enabled) {
       setEnabled(false);
       setNotifyEnabled(false);
+      setMessage("Benachrichtigungen aus");
       return;
     }
     const perm = await requestNotificationPermission();
     if (perm !== "granted") {
       setDenied(perm === "denied");
+      setMessage("Bitte erlaube Benachrichtigungen im Browser.");
       return;
     }
     setDenied(false);
     setEnabled(true);
     setNotifyEnabled(true);
+    setMessage(`Aktiv: wir erinnern dich täglich um ${getReminderTime()} Uhr.`);
     void showNotification("Erinnerungen aktiv 🔔", `Wir melden uns täglich um ${getReminderTime()} Uhr.`, "np-test");
   };
 
@@ -69,6 +73,15 @@ export function NotificationSettings() {
         </span>
       </button>
 
+      <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 p-3 text-sm text-foreground">
+        <div className="font-semibold">Was du bekommst</div>
+        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+          <li>• tägliche Erinnerungen, wenn dein Ziel noch offen ist</li>
+          <li>• Hinweise zu Streaks und Trainingsfortschritt</li>
+          <li>• Benachrichtigungen bei neuen Freundschaften und Battles</li>
+        </ul>
+      </div>
+
       <label className="mt-3 flex items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3">
         <span className="text-xs">Uhrzeit</span>
         <input
@@ -77,6 +90,7 @@ export function NotificationSettings() {
           onChange={(e) => {
             setTime(e.target.value);
             setReminderTime(e.target.value);
+            setMessage(`Erinnerung auf ${e.target.value} Uhr eingestellt.`);
           }}
           className="rounded-lg border border-border bg-background px-2 py-1 text-sm tabular-nums"
         />
@@ -87,6 +101,7 @@ export function NotificationSettings() {
           Dein Browser unterstützt keine Benachrichtigungen. Installiere die App auf dem Homescreen.
         </p>
       )}
+      {message && <p className="mt-3 text-[11px] text-muted-foreground">{message}</p>}
       {denied && (
         <p className="mt-2 text-[11px] text-destructive">
           Benachrichtigungen sind blockiert. Erlaube sie in den Browser-Einstellungen für diese Seite.

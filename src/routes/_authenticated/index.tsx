@@ -8,7 +8,7 @@ import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
 import { BottomNav } from "@/components/BottomNav";
-import { FigmaConnector } from "@/components/FigmaConnector";
+import { NotificationSettings } from "@/components/NotificationSettings";
 import { getQuickStartPlan } from "@/lib/workout-plans";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -290,8 +290,8 @@ function Dashboard() {
       {/* Live-Aktivität mit Freunden */}
       {userId && <FriendActivity userId={userId} />}
 
-      {/* Figma-Connector */}
-      <FigmaConnector />
+      {/* Benachrichtigungen */}
+      <NotificationSettings />
 
       {/* Smart Coach (AI) */}
       <AiCoachCard />
