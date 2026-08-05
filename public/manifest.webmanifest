@@ -7,7 +7,7 @@
   "start_url": "/",
   "id": "/",
   "scope": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#0b1017",

@@ -136,6 +136,7 @@ function RootComponent() {
   const router = useRouter();
   const [installable, setInstallable] = useState(false);
   const [standalone, setStandalone] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     applyTheme(getStoredTheme());
@@ -154,9 +155,12 @@ function RootComponent() {
   useEffect(() => {
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
     setStandalone(isStandalone);
+    setIsFullscreen(Boolean(document.fullscreenElement));
 
     const handleDisplayMode = () => setStandalone(window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true);
+    const handleFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
     window.matchMedia("(display-mode: standalone)").addEventListener("change", handleDisplayMode);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
 
     const onBeforeInstallPrompt = () => setInstallable(true);
     const onAppInstalled = () => {
@@ -171,6 +175,7 @@ function RootComponent() {
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
       window.removeEventListener("appinstalled", onAppInstalled);
       window.matchMedia("(display-mode: standalone)").removeEventListener("change", handleDisplayMode);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, []);
 
@@ -188,6 +193,23 @@ function RootComponent() {
     })();
     return () => unsub?.unsubscribe();
   }, [router, queryClient]);
+
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch {
+        // Kein Vollbild verfügbar oder vom Browser blockiert.
+      }
+      return;
+    }
+
+    try {
+      await document.exitFullscreen();
+    } catch {
+      // ignore
+    }
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -209,6 +231,13 @@ function RootComponent() {
           </div>
         </div>
       )}
+      <button
+        type="button"
+        onClick={() => void toggleFullscreen()}
+        className="fixed bottom-3 right-3 z-50 rounded-full border border-primary/30 bg-background/95 px-3 py-2 text-[11px] font-semibold text-foreground shadow-lg backdrop-blur"
+      >
+        {isFullscreen ? "Vollbild aus" : "Vollbild an"}
+      </button>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-center" richColors />
