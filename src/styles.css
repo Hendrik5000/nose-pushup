@@ -132,7 +132,10 @@
 @layer base {
   * { border-color: var(--color-border); }
   html, body { height: 100%; overscroll-behavior: none; }
-  html { background: var(--color-background); }
+  html {
+    background: var(--color-background);
+    scroll-behavior: smooth;
+  }
   body {
     transition: background-color 300ms ease;
     background:
@@ -142,12 +145,19 @@
     color: var(--color-foreground);
     font-family: var(--font-display);
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-overflow-scrolling: touch;
     user-select: none;
     background-attachment: fixed;
     min-height: 100dvh;
     padding-top: env(safe-area-inset-top);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+  }
+  #root { min-height: 100%; }
+  button, [role="button"], a, input, select, textarea {
+    touch-action: manipulation;
   }
 }
 
@@ -172,4 +182,23 @@
     100% { transform: scale(1); }
   }
   .animate-count-pop { animation: count-pop 220ms ease-out; }
+  @keyframes route-enter {
+    0% {
+      opacity: 0;
+      transform: translateY(8px) scale(0.995);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .route-enter {
+    animation: route-enter 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .route-enter {
+      animation: none;
+    }
+  }
 }

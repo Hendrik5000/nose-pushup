@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -134,9 +135,11 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const pathname = useRouterState((state) => state.location.pathname);
   const [installable, setInstallable] = useState(false);
   const [standalone, setStandalone] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [routeKey, setRouteKey] = useState(pathname);
 
   useEffect(() => {
     applyTheme(getStoredTheme());
@@ -178,6 +181,10 @@ function RootComponent() {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, []);
+
+  useEffect(() => {
+    setRouteKey(pathname);
+  }, [pathname]);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -239,7 +246,9 @@ function RootComponent() {
         {isFullscreen ? "Vollbild aus" : "Vollbild an"}
       </button>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div key={routeKey} className="route-enter">
+        <Outlet />
+      </div>
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
   );
