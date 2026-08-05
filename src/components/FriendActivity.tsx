@@ -84,11 +84,6 @@ export function FriendActivity({ userId }: { userId: string }) {
             <span className="font-semibold">Gemeinsam stärker:</span> Kleine tägliche Sessions mit Freunden machen den Fortschritt deutlich angenehmer.
           </div>
           <ul className="mt-3 space-y-2.5">
-        <p className="mt-3 text-xs text-muted-foreground">
-          Füge Freunde hinzu, um eure Push-Ups über den Tag live zu vergleichen.
-        </p>
-      ) : (
-          <ul className="mt-3 space-y-2.5">
             {rows.map((r, i) => (
               <li key={r.id}>
                 <div className="flex items-baseline justify-between text-xs">
