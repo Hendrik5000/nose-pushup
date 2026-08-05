@@ -9,29 +9,29 @@ type Step = {
 
 const STEPS: Step[] = [
   {
-    icon: "👃",
-    title: "Willkommen bei Nose Push!",
-    body: "Deine Fitness, spielerisch. Zähle Wiederholungen, sammle XP und halte deine Streak am Leben. Ein kurzer Rundgang zeigt dir das Wichtigste.",
+    icon: "🏡",
+    title: "Startseite als Zentrum",
+    body: "Dein Dashboard zeigt dir sofort den Überblick: Tagesziel, Bestwerte, Streak und aktuelle Aktivität. So bleibst du jederzeit auf dem Laufenden.",
   },
   {
-    icon: "⭕",
-    title: "Dein Aktivitäts-Ring",
-    body: "Auf der Startseite siehst du deinen Tagesfortschritt: Reps, Bestwert, Streak und Schritte. Fülle den Ring, um dein Tagesziel zu erreichen.",
+    icon: "🧭",
+    title: "Hauptfunktionen schnell erreichen",
+    body: "Über die untere Navigation kommst du direkt zu Übungen, Coach, Together und deinen Einstellungen. So wechselst du mühelos zwischen den Kernbereichen.",
   },
   {
     icon: "💪",
-    title: "Push-Ups auf 3 Arten",
-    body: "Tippe die Nase aufs Display (👃), trag Reps manuell ein (👆) oder lass die Kamera zählen (📷). Starte direkt vom Dashboard aus.",
-  },
-  {
-    icon: "⚔️",
-    title: "Tritt gegen andere an",
-    body: "Unter „Together“ findest du Rangliste, Freunde und Live-Battles. Fordere jemanden heraus und miss dich in Echtzeit.",
+    title: "Workout starten",
+    body: "Von der Startseite aus kannst du sofort ein Push-Up-Workout beginnen. Wähle zwischen Nase, manuell oder Kamera und starte direkt in deinen Trainingseinstieg.",
   },
   {
     icon: "🤖",
-    title: "Dein Smart Coach",
-    body: "Der KI-Coach gibt dir Tipps, passt Ziele an und hält dich motiviert. Du bist startklar — auf geht’s!",
+    title: "Coach und Tipps nutzen",
+    body: "Der Smart Coach begleitet dich mit personalisierten Empfehlungen, Trainingsideen und motivierenden Tipps. So wird dein Workout noch effektiver.",
+  },
+  {
+    icon: "⚔️",
+    title: "Mit Freunden und der Community antreten",
+    body: "In Together findest du Battles, Ranglisten und gemeinsame Aktivitäten. So bringst du den Trainingsspaß direkt in die Gemeinschaft.",
   },
 ];
 
