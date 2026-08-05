@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
+import { WelcomeTour } from "@/components/WelcomeTour";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -14,5 +15,11 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   useNotifications();
-  return <Outlet />;
+  const { user } = Route.useRouteContext();
+  return (
+    <>
+      <Outlet />
+      <WelcomeTour userId={user.id} />
+    </>
+  );
 }
