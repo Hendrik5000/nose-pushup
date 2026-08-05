@@ -12,7 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { applyTheme, getStoredTheme } from "@/lib/theme";
+import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
 
 function NotFoundComponent() {
   return (
@@ -78,7 +78,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Nosy Push-Up" },
       { name: "description", content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone." },
       { name: "theme-color", content: "#0b0b0f" },
@@ -137,6 +137,16 @@ function RootComponent() {
 
   useEffect(() => {
     applyTheme(getStoredTheme());
+    // Theme des Kontos laden, damit es auch ohne Profilbesuch sofort greift.
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) return;
+      const { data } = await supabase.from("profiles").select("theme").eq("id", uid).maybeSingle();
+      const t = data?.theme;
+      if (isThemeId(t)) applyTheme(t);
+    })();
   }, []);
 
   useEffect(() => {

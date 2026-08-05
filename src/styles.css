@@ -132,6 +132,7 @@
 @layer base {
   * { border-color: var(--color-border); }
   html, body { height: 100%; overscroll-behavior: none; }
+  html { background: var(--color-background); }
   body {
     transition: background-color 300ms ease;
     background:
@@ -142,6 +143,11 @@
     font-family: var(--font-display);
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    background-attachment: fixed;
+    min-height: 100dvh;
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 }
 
