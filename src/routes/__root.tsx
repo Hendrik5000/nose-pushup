@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
@@ -134,6 +134,8 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const [installable, setInstallable] = useState(false);
+  const [standalone, setStandalone] = useState(false);
 
   useEffect(() => {
     applyTheme(getStoredTheme());
@@ -147,6 +149,29 @@ function RootComponent() {
       const t = data?.theme;
       if (isThemeId(t)) applyTheme(t);
     })();
+  }, []);
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    setStandalone(isStandalone);
+
+    const handleDisplayMode = () => setStandalone(window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true);
+    window.matchMedia("(display-mode: standalone)").addEventListener("change", handleDisplayMode);
+
+    const onBeforeInstallPrompt = () => setInstallable(true);
+    const onAppInstalled = () => {
+      setInstallable(false);
+      setStandalone(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onAppInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onAppInstalled);
+      window.matchMedia("(display-mode: standalone)").removeEventListener("change", handleDisplayMode);
+    };
   }, []);
 
   useEffect(() => {
@@ -166,6 +191,24 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      {installable && !standalone && (
+        <div className="fixed inset-x-3 top-3 z-50 rounded-2xl border border-primary/30 bg-background/95 px-3 py-3 shadow-lg backdrop-blur">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Installieren</div>
+              <div className="mt-1 text-sm font-semibold text-foreground">Als App auf dem Startbildschirm nutzen</div>
+              <div className="mt-1 text-xs text-muted-foreground">Öffne das Browser-Menü und wähle „Als App installieren“.</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setInstallable(false)}
+              className="rounded-full border border-border px-2 py-1 text-[11px] text-muted-foreground"
+            >
+              Schließen
+            </button>
+          </div>
+        </div>
+      )}
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-center" richColors />
