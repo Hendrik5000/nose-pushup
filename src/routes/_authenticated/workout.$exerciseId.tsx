@@ -90,7 +90,7 @@ function WorkoutScreen() {
 
   // Camera detector — only mounted for camera mode
   const cameraBump = useCallback(() => bump(), [bump]);
-  const { videoRef, error: cameraError, ready: cameraReady, status: cameraStatus } = useCameraDetection({
+  const { videoRef, error: cameraError, ready: cameraReady, status: cameraStatus, elbowAngle } = useCameraDetection({
     active: useCamera && active,
     onRep: cameraBump,
   });
@@ -348,7 +348,7 @@ function WorkoutScreen() {
         {useCamera && (
           <video
             ref={videoRef}
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40"
             playsInline
             muted
           />
@@ -383,9 +383,41 @@ function WorkoutScreen() {
             <span className="text-xs text-muted-foreground">{cameraStatus}</span>
           )}
           {useCamera && cameraReady && (
-            <span className="text-[10px] uppercase tracking-[0.2em] text-primary/80">
-              🤖 KI · {cameraStatus}
-            </span>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-primary/80">
+                🤖 KI · {cameraStatus}
+              </span>
+              {elbowAngle !== null && (
+                <div className="flex items-center gap-2">
+                  {/* Arc indicator */}
+                  <svg viewBox="0 0 48 28" className="h-7 w-12">
+                    <path
+                      d="M4 24 A20 20 0 0 1 44 24"
+                      fill="none"
+                      stroke="oklch(var(--color-secondary)/0.5)"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M4 24 A20 20 0 0 1 44 24"
+                      fill="none"
+                      stroke="oklch(var(--color-primary))"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeDasharray="62.8"
+                      strokeDashoffset={62.8 * (1 - Math.min(1, elbowAngle / 180))}
+                      className="transition-all duration-150"
+                    />
+                  </svg>
+                  <span className="text-xs font-bold tabular-nums text-foreground">
+                    {elbowAngle}°
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {elbowAngle >= 155 ? "▲ oben" : elbowAngle <= 85 ? "▼ unten" : "…"}
+                  </span>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

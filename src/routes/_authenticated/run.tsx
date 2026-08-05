@@ -29,7 +29,8 @@ type RunRow = {
   created_at: string;
 };
 
-function haversine(a: Point, b: Point) {
+/** Haversine distance in metres between two GPS points. */
+function haversine(a: Point, b: Point): number {
   const R = 6371000;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLon = ((b.lon - a.lon) * Math.PI) / 180;
@@ -37,6 +38,11 @@ function haversine(a: Point, b: Point) {
   const la2 = (b.lat * Math.PI) / 180;
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/** Simple exponential moving average smoother for GPS coordinates. */
+function ema(prev: number, next: number, alpha = 0.3): number {
+  return alpha * next + (1 - alpha) * prev;
 }
 
 function fmtTime(ms: number) {
@@ -54,19 +60,20 @@ function RunPage() {
   const [elapsed, setElapsed] = useState(0);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [gpsFix, setGpsFix] = useState(false);
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [weight, setWeight] = useState<number>(75);
 
   const points = useRef<Point[]>([]);
+  const smoothed = useRef<{ lat: number; lon: number } | null>(null);
   const watchId = useRef<number | null>(null);
   const startTs = useRef<number>(0);
   const accumulated = useRef<number>(0);
   const pausedRef = useRef(false);
+  const lastPointTs = useRef<number>(0);
 
-  useEffect(() => {
-    pausedRef.current = paused;
-  }, [paused]);
+  useEffect(() => { pausedRef.current = paused; }, [paused]);
 
   const loadRuns = async () => {
     const { data } = await supabase
@@ -105,7 +112,10 @@ function RunPage() {
       return;
     }
     setGpsError(null);
+    setGpsFix(false);
     points.current = [];
+    smoothed.current = null;
+    lastPointTs.current = 0;
     setDistance(0);
     setElapsed(0);
     accumulated.current = 0;
@@ -115,22 +125,57 @@ function RunPage() {
 
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
-        setAccuracy(pos.coords.accuracy);
+        const acc = pos.coords.accuracy;
+        setAccuracy(acc);
+
+        // ── Quality gates ──────────────────────────────────────────────
+        // 1. Skip low-accuracy readings (>25 m is too noisy for short segments)
+        if (acc > 25) return;
+        setGpsFix(true);
+
         if (pausedRef.current) return;
-        if (pos.coords.accuracy > 40) return; // zu ungenau
-        const p: Point = { lat: pos.coords.latitude, lon: pos.coords.longitude, t: Date.now() };
+
+        const now = Date.now();
+        // 2. Minimum 3 s between accepted points (avoids GPS oscillation noise)
+        if (now - lastPointTs.current < 3000) return;
+
+        // 3. Smooth coordinates with EMA to reduce GPS jitter
+        const rawLat = pos.coords.latitude;
+        const rawLon = pos.coords.longitude;
+        if (!smoothed.current) {
+          smoothed.current = { lat: rawLat, lon: rawLon };
+        } else {
+          smoothed.current = {
+            lat: ema(smoothed.current.lat, rawLat),
+            lon: ema(smoothed.current.lon, rawLon),
+          };
+        }
+
+        const p: Point = { lat: smoothed.current.lat, lon: smoothed.current.lon, t: now };
         const last = points.current[points.current.length - 1];
+
         if (last) {
           const d = haversine(last, p);
-          if (d < 2 || d > 120) {
-            if (d <= 2) return; // Rauschen
-          }
+          const dtSec = (now - last.t) / 1000;
+
+          // 4. Implied speed sanity check: skip if > 10 m/s (~36 km/h, generous for sprinting)
+          //    and skip if < 0.5 m (pure noise / standing still)
+          const impliedSpeed = dtSec > 0 ? d / dtSec : 0;
+          if (d < 0.5) return;   // standing still / noise
+          if (impliedSpeed > 10) return; // GPS jump — teleportation
+
+          // 5. Double-check with device speed if available (more accurate than calculated)
+          const deviceSpeed = pos.coords.speed; // m/s, null if unavailable
+          if (deviceSpeed !== null && deviceSpeed > 10) return;
+
           setDistance((x) => x + d);
         }
+
         points.current.push(p);
+        lastPointTs.current = now;
       },
       (err) => setGpsError(err.message || "GPS-Zugriff verweigert."),
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
     );
   };
 
@@ -155,7 +200,9 @@ function RunPage() {
 
   const finish = async () => {
     stopWatch();
-    const total = paused ? accumulated.current : accumulated.current + (Date.now() - startTs.current);
+    const total = paused
+      ? accumulated.current
+      : accumulated.current + (Date.now() - startTs.current);
     setActive(false);
     setPaused(false);
     if (distance < 10) {
@@ -179,6 +226,7 @@ function RunPage() {
     setSaving(false);
     setDistance(0);
     setElapsed(0);
+    setGpsFix(false);
   };
 
   const km = distance / 1000;
@@ -206,17 +254,31 @@ function RunPage() {
           <Metric label="Zeit" value={fmtTime(elapsed)} />
           <Metric
             label="Pace"
-            value={paceMinPerKm > 0 ? `${Math.floor(paceMinPerKm)}:${String(Math.round((paceMinPerKm % 1) * 60)).padStart(2, "0")}` : "—"}
+            value={
+              paceMinPerKm > 0
+                ? `${Math.floor(paceMinPerKm)}:${String(Math.round((paceMinPerKm % 1) * 60)).padStart(2, "0")}`
+                : "—"
+            }
             unit="/km"
           />
           <Metric label="Kcal" value={String(kcal)} />
         </div>
 
         {gpsError && <p className="mt-4 text-xs text-destructive">{gpsError}</p>}
-        {active && accuracy !== null && (
-          <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            GPS-Genauigkeit ±{Math.round(accuracy)} m
-          </p>
+
+        {active && (
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <div
+              className={`h-2 w-2 rounded-full ${gpsFix ? "bg-green-500" : "bg-yellow-400 animate-pulse"}`}
+            />
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              {gpsFix
+                ? accuracy !== null
+                  ? `GPS ±${Math.round(accuracy)} m`
+                  : "GPS bereit"
+                : "GPS wird gesucht…"}
+            </p>
+          </div>
         )}
 
         {!active ? (
@@ -244,6 +306,13 @@ function RunPage() {
           </div>
         )}
       </section>
+
+      {/* GPS quality hint — shown before first fix */}
+      {active && !gpsFix && !gpsError && (
+        <div className="mt-3 rounded-2xl border border-yellow-500/30 bg-yellow-500/8 p-3 text-center text-xs text-yellow-400">
+          Warte auf GPS-Signal… Geh ins Freie für bessere Genauigkeit.
+        </div>
+      )}
 
       <section className="mt-6">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
