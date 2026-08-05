@@ -30,6 +30,7 @@ type Entry = {
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
+const GOOGLE_HEALTH_CONNECT_URL = "https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata";
 
 function HealthPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -90,6 +91,12 @@ function HealthPage() {
   const avgSteps = week.length ? Math.round(week.reduce((s, e) => s + e.steps, 0) / week.length) : 0;
   const avgSleep = week.length ? week.reduce((s, e) => s + e.sleep_min, 0) / week.length / 60 : 0;
 
+  const openHealthConnect = () => {
+    if (typeof window !== "undefined") {
+      window.open(GOOGLE_HEALTH_CONNECT_URL, "_blank", "noopener,noreferrer");
+    }
+  };
+
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
       <header className="flex items-center justify-between">
@@ -127,16 +134,21 @@ function HealthPage() {
       </section>
 
       <section className="mt-4 rounded-3xl border border-border bg-card/40 p-5 text-xs leading-relaxed text-muted-foreground">
-        <h2 className="mb-2 text-sm font-semibold text-foreground">Mit Health Connect verbinden</h2>
+        <h2 className="mb-2 text-sm font-semibold text-foreground">Mit Google Health Connect verbinden</h2>
         <p>
-          Health Connect (Android) und Apple Health geben ihre Daten nur an installierte Apps mit
-          System-Berechtigung weiter — eine Web-App wie diese kann sie nicht direkt auslesen.
-          So bekommst du deine Daten trotzdem rein:
+          Für Android ist die offizielle Quelle die Google Health Connect-App. Eine Web-App wie diese kann die Daten nicht direkt auslesen, aber du kannst sie schnell über die richtige App verbinden:
         </p>
-        <ol className="mt-2 list-decimal space-y-1 pl-4">
-          <li>Health Connect öffnen → „Daten und Zugriff" → Schritte / Kalorien / Schlaf ansehen.</li>
-          <li>Werte oben für den jeweiligen Tag eintragen — dauert 10 Sekunden.</li>
-          <li>Der Smart Coach nutzt Schritte, Schlaf und Gewicht automatisch für seine Empfehlungen.</li>
+        <button
+          type="button"
+          onClick={openHealthConnect}
+          className="mt-3 w-full rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm font-semibold text-primary transition active:scale-[0.98]"
+        >
+          Google Health Connect öffnen
+        </button>
+        <ol className="mt-3 list-decimal space-y-1 pl-4">
+          <li>Öffne die Google Health Connect-App und erlaube den Zugriff für Nose Push.</li>
+          <li>Prüfe dort Schritte, aktive Kalorien und Schlafdaten.</li>
+          <li>Trage die Werte oben für den jeweiligen Tag ein, damit der Smart Coach sie nutzen kann.</li>
         </ol>
         <p className="mt-2">
           Deine Läufe zeichnet die App per GPS selbst auf — dafür brauchst du Health Connect nicht.
