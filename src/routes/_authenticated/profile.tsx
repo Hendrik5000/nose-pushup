@@ -20,6 +20,7 @@ import { FriendsPanel } from "@/components/FriendsPanel";
 import { BadgeGallery } from "@/components/BadgeGallery";
 import { ThemePicker } from "@/components/ThemePicker";
 import { BottomNav } from "@/components/BottomNav";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
