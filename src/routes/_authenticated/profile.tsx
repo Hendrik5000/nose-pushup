@@ -479,7 +479,9 @@ function ProfilePage() {
         </button>
       </section>
 
-      <WorkoutCharts workouts={workouts} />
+      <NotificationSettings />
+
+
 
       <section className="mt-6">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
