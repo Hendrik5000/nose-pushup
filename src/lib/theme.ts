@@ -27,9 +27,30 @@ export function getStoredTheme(): ThemeId {
   return isThemeId(v) ? v : DEFAULT_THEME;
 }
 
+/** Hintergrundfarbe je Theme – wird für die Systemleisten (theme-color) genutzt. */
+const THEME_BG: Record<ThemeId, string> = {
+  solar: "#0b1017",
+  ember: "#150d0a",
+  aqua: "#0a1017",
+  neon: "#08110c",
+  violet: "#120c17",
+  mono: "#0a0a0a",
+};
+
+function updateThemeColorMeta(theme: ThemeId) {
+  if (typeof document === "undefined") return;
+  const color = THEME_BG[theme];
+  document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
+  const meta = document.createElement("meta");
+  meta.setAttribute("name", "theme-color");
+  meta.setAttribute("content", color);
+  document.head.appendChild(meta);
+}
+
 export function applyTheme(theme: ThemeId) {
   if (typeof document === "undefined") return;
   document.documentElement.dataset["theme"] = theme;
+  updateThemeColorMeta(theme);
   try {
     window.localStorage.setItem(STORAGE_KEY, theme);
   } catch {
