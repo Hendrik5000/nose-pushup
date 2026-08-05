@@ -12,7 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { applyTheme, getStoredTheme } from "@/lib/theme";
+import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
 
 function NotFoundComponent() {
   return (
@@ -144,7 +144,8 @@ function RootComponent() {
       const uid = userData.user?.id;
       if (!uid) return;
       const { data } = await supabase.from("profiles").select("theme").eq("id", uid).maybeSingle();
-      if (isThemeId(data?.theme)) applyTheme(data.theme);
+      const t = data?.theme;
+      if (isThemeId(t)) applyTheme(t);
     })();
   }, []);
 
