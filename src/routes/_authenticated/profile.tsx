@@ -481,6 +481,7 @@ function ProfilePage() {
 
       <NotificationSettings />
 
+      <WorkoutCharts workouts={workouts} />
 
 
       <section className="mt-6">
