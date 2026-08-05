@@ -20,6 +20,7 @@ import { FriendsPanel } from "@/components/FriendsPanel";
 import { BadgeGallery } from "@/components/BadgeGallery";
 import { ThemePicker } from "@/components/ThemePicker";
 import { BottomNav } from "@/components/BottomNav";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -478,7 +479,10 @@ function ProfilePage() {
         </button>
       </section>
 
+      <NotificationSettings />
+
       <WorkoutCharts workouts={workouts} />
+
 
       <section className="mt-6">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
