@@ -137,6 +137,15 @@ function RootComponent() {
 
   useEffect(() => {
     applyTheme(getStoredTheme());
+    // Theme des Kontos laden, damit es auch ohne Profilbesuch sofort greift.
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) return;
+      const { data } = await supabase.from("profiles").select("theme").eq("id", uid).maybeSingle();
+      if (isThemeId(data?.theme)) applyTheme(data.theme);
+    })();
   }, []);
 
   useEffect(() => {
