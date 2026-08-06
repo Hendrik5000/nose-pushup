@@ -143,6 +143,17 @@ Antworte AUSSCHLIESSLICH mit JSON: { "advice": "...", "plan": { "sets": 4, "reps
         .select("created_at")
         .maybeSingle();
 
+      try {
+        const { sendPushNotification } = await import("./push-notifications.server");
+        await sendPushNotification(userId, {
+          title: "Neuer Tipp vom Coach! 💡",
+          body: advice.length > 100 ? advice.substring(0, 97) + "..." : advice,
+          url: "/coach"
+        });
+      } catch (pushErr) {
+        console.error("Push fail:", pushErr);
+      }
+
       return {
         advice,
         plan,

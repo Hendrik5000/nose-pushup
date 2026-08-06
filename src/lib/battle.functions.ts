@@ -69,6 +69,18 @@ export const joinBattle = createServerFn({ method: "POST" })
       .eq("status", "waiting")
       .is("guest_id", null);
     if (upErr) throw new Error(upErr.message);
+
+    try {
+      const { sendPushNotification } = await import("./push-notifications.server");
+      await sendPushNotification((battle as { host_id: string }).host_id, {
+        title: "Gegner gefunden! ⚔️",
+        body: "Jemand ist deinem Battle beigetreten. Starte jetzt!",
+        url: `/battle/${(battle as { id: string }).id}`
+      });
+    } catch (pushErr) {
+      console.error("Push fail:", pushErr);
+    }
+
     return { id: (battle as { id: string }).id };
   });
 

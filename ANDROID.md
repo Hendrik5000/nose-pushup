@@ -41,6 +41,13 @@ curl https://nose-pushup.lovable.app/.well-known/assetlinks.json
 
 Ohne korrekten Fingerprint zeigt Android eine Browser-Adressleiste an.
 
+## Benachrichtigungen (Samsung & Android)
+
+Die App nutzt **Web Push**. Damit Benachrichtigungen auch bei geschlossener App auf Samsung-Geräten zuverlässig ankommen:
+1. Die App muss über den Browser (Chrome/Samsung Internet) zum Homescreen hinzugefügt werden.
+2. In den Einstellungen der App (in der App selbst) muss "Cloud Push" aktiviert werden.
+3. In den Android-Systemeinstellungen muss die Benachrichtigungsberechtigung für die installierte PWA erteilt sein.
+
 ## Bundle bauen
 
 ```

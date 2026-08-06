@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Bell, BellOff, Send, Smartphone, Clock } from "lucide-react";
 import {
   DEFAULT_REMINDER_TIME,
   getReminderTime,
@@ -9,104 +11,134 @@ import {
   setNotifyEnabled,
   setReminderTime,
   showNotification,
+  subscribeToPush,
 } from "@/lib/notifications";
+import { supabase } from "@/integrations/supabase/client";
 
-/** Einstellungen für tägliche Erinnerungen und Social-Hinweise. */
 export function NotificationSettings() {
   const [supported, setSupported] = useState(true);
   const [enabled, setEnabled] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [time, setTime] = useState(DEFAULT_REMINDER_TIME);
   const [denied, setDenied] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setSupported(notificationsSupported());
     setEnabled(isNotifyEnabled());
     setTime(getReminderTime());
     setDenied(notificationPermission() === "denied");
+    
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.pushManager.getSubscription().then(sub => {
+          setPushEnabled(!!sub);
+        });
+      });
+    }
   }, []);
 
-  const toggle = async () => {
+  const toggleLocal = async () => {
     if (enabled) {
       setEnabled(false);
       setNotifyEnabled(false);
-      setMessage("Benachrichtigungen aus");
+      toast.info("Erinnerungen deaktiviert");
       return;
     }
     const perm = await requestNotificationPermission();
     if (perm !== "granted") {
       setDenied(perm === "denied");
-      setMessage("Bitte erlaube Benachrichtigungen im Browser.");
+      toast.error("Berechtigung fehlt");
       return;
     }
     setDenied(false);
     setEnabled(true);
     setNotifyEnabled(true);
-    setMessage(`Aktiv: wir erinnern dich täglich um ${getReminderTime()} Uhr.`);
+    toast.success("Erinnerungen aktiv!");
     void showNotification("Erinnerungen aktiv 🔔", `Wir melden uns täglich um ${getReminderTime()} Uhr.`, "np-test");
   };
 
+  const togglePush = async () => {
+    setLoading(true);
+    try {
+      if (pushEnabled) {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            await supabase.from('push_subscriptions').delete().eq('user_id', userData.user.id).eq('endpoint', sub.endpoint);
+          }
+        }
+        setPushEnabled(false);
+        toast.info("Push-Benachrichtigungen deaktiviert");
+      } else {
+        const perm = await requestNotificationPermission();
+        if (perm !== "granted") {
+          setDenied(perm === "denied");
+          throw new Error("Permission not granted");
+        }
+        const sub = await subscribeToPush();
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData.user) throw new Error("Nicht eingeloggt");
+        const subJSON = sub.toJSON();
+        const { error } = await supabase.from('push_subscriptions').upsert({
+          user_id: userData.user.id,
+          endpoint: subJSON.endpoint,
+          p256dh: subJSON.keys?.p256dh,
+          auth: subJSON.keys?.auth,
+        });
+        if (error) throw error;
+        setPushEnabled(true);
+        toast.success("Push-Benachrichtigungen aktiviert!");
+      }
+    } catch (err) {
+      toast.error("Fehler bei Push-Aktivierung");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <section className="mt-6 rounded-2xl border border-border bg-card/40 p-4 backdrop-blur">
-      <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        Benachrichtigungen
-      </h2>
-
-      <button
-        type="button"
-        onClick={toggle}
-        disabled={!supported}
-        className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left disabled:opacity-60"
-      >
-        <span className="text-xs">
-          Tägliche Erinnerung
-          <span className="mt-0.5 block text-[10px] text-muted-foreground">
-            Hinweis, wenn dein Tagesziel noch offen ist – plus Freundschaftsanfragen und Battle-Starts.
-          </span>
-        </span>
-        <span
-          className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
-            enabled ? "bg-primary" : "bg-secondary"
-          }`}
-        >
-          <span className={`h-5 w-5 rounded-full bg-background transition ${enabled ? "translate-x-5" : ""}`} />
-        </span>
-      </button>
-
-      <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 p-3 text-sm text-foreground">
-        <div className="font-semibold">Was du bekommst</div>
-        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-          <li>• tägliche Erinnerungen, wenn dein Ziel noch offen ist</li>
-          <li>• Hinweise zu Streaks und Trainingsfortschritt</li>
-          <li>• Benachrichtigungen bei neuen Freundschaften und Battles</li>
-        </ul>
+    <section className="mt-6 space-y-4 rounded-3xl border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
+      <div className="flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/70">
+          <Bell className="h-4 w-4" />
+          Benachrichtigungen
+        </h2>
       </div>
-
-      <label className="mt-3 flex items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3">
-        <span className="text-xs">Uhrzeit</span>
-        <input
-          type="time"
-          value={time}
-          onChange={(e) => {
-            setTime(e.target.value);
-            setReminderTime(e.target.value);
-            setMessage(`Erinnerung auf ${e.target.value} Uhr eingestellt.`);
-          }}
-          className="rounded-lg border border-border bg-background px-2 py-1 text-sm tabular-nums"
-        />
-      </label>
-
-      {!supported && (
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          Dein Browser unterstützt keine Benachrichtigungen. Installiere die App auf dem Homescreen.
-        </p>
-      )}
-      {message && <p className="mt-3 text-[11px] text-muted-foreground">{message}</p>}
-      {denied && (
-        <p className="mt-2 text-[11px] text-destructive">
-          Benachrichtigungen sind blockiert. Erlaube sie in den Browser-Einstellungen für diese Seite.
-        </p>
-      )}
+      <div className="space-y-3">
+        <div onClick={toggleLocal} className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all ${enabled ? "border-primary/50 bg-primary/5" : "border-white/5 bg-white/5"}`}>
+          <div className="flex items-center gap-4">
+            <div className={`rounded-xl p-2.5 ${enabled ? "bg-primary text-white" : "bg-white/5 text-white/40"}`}>
+              {enabled ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">Tägliche Erinnerung</p>
+            </div>
+          </div>
+        </div>
+        <div onClick={!loading ? togglePush : undefined} className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all ${pushEnabled ? "border-blue-500/50 bg-blue-500/5" : "border-white/5 bg-white/5"}`}>
+          <div className="flex items-center gap-4">
+            <div className={`rounded-xl p-2.5 ${pushEnabled ? "bg-blue-500 text-white" : "bg-white/5 text-white/40"}`}>
+              <Smartphone className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">Cloud Push</p>
+            </div>
+          </div>
+        </div>
+        {enabled && (
+          <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-4">
+            <div className="flex items-center gap-4">
+              <Clock className="h-5 w-5 text-white/40" />
+              <p className="text-sm text-white">Zeit</p>
+            </div>
+            <input type="time" value={time} onChange={(e) => { setTime(e.target.value); setReminderTime(e.target.value); }} className="bg-transparent text-white outline-none" />
+          </div>
+        )}
+      </div>
     </section>
   );
 }

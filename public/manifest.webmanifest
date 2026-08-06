@@ -7,7 +7,7 @@
   "start_url": "/",
   "id": "/",
   "scope": "/",
-  "display": "fullscreen",
+  "display": "standalone",
   "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#0b1017",
@@ -32,6 +32,20 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Workout starten",
+      "short_name": "Workout",
+      "url": "/run",
+      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "AI Coach",
+      "short_name": "Coach",
+      "url": "/coach",
+      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
     }
   ]
 }

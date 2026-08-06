@@ -152,6 +152,12 @@ function RootComponent() {
     window.addEventListener("orientationchange", updateViewportHeight);
     window.visualViewport?.addEventListener("resize", updateViewportHeight);
 
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW reg fail:', err));
+      });
+    }
+
     applyTheme(getStoredTheme());
     // Theme des Kontos laden, damit es auch ohne Profilbesuch sofort greift.
     (async () => {
