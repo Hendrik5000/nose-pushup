@@ -159,7 +159,7 @@ function CaliWorkoutScreen() {
       feedbackSuccess();
       // Client-side PB update
       if (bestSet > prevBest) {
-        await supabase.rpc("update_personal_best" as never, {
+        await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)("update_personal_best", {
           p_user_id: userId,
           p_exercise_id: skillId,
           p_count: bestSet,

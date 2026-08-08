@@ -200,8 +200,8 @@ function WorkoutScreen() {
         setSavedHint(`🏆 Neuer Bestwert: ${count}${exercise.unit === "seconds" ? " Sek." : ""}`);
         // Client-side personal_bests update — belt-and-suspenders alongside the DB trigger.
         // Needed especially for cali_* skill IDs.
-        supabase
-          .rpc("update_personal_best" as never, {
+        (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)
+          ("update_personal_best", {
             p_user_id: userId,
             p_exercise_id: exerciseId,
             p_count: count,

@@ -135,7 +135,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
-  const pathname = useRouterState((state) => state.location.pathname);
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [installable, setInstallable] = useState(false);
   const [standalone, setStandalone] = useState(false);
   const [routeKey, setRouteKey] = useState(pathname);
@@ -172,10 +172,10 @@ function RootComponent() {
   }, []);
 
   useEffect(() => {
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
     setStandalone(isStandalone);
 
-    const handleDisplayMode = () => setStandalone(window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true);
+    const handleDisplayMode = () => setStandalone(window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
     window.matchMedia("(display-mode: standalone)").addEventListener("change", handleDisplayMode);
 
     const onBeforeInstallPrompt = () => setInstallable(true);
@@ -187,7 +187,7 @@ function RootComponent() {
     const tryAutoFullscreen = async () => {
       if (fullscreenRequested || document.fullscreenElement) return;
 
-      const inStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+      const inStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
       const inFullscreenMode = window.matchMedia("(display-mode: fullscreen)").matches;
       if (!inStandalone && !inFullscreenMode) return;
 

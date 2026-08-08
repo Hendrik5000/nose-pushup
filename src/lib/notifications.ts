@@ -82,7 +82,7 @@ export async function showNotification(title: string, body: string, tag?: string
     body,
     icon: "/favicon.png",
     badge: "/favicon.png",
-    vibrate: [100, 50, 100],
+    ...( { vibrate: [100, 50, 100] } as NotificationOptions ),
     data: { url: url || '/' },
     ...(tag ? { tag } : {}),
   };
