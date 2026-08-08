@@ -1,5 +1,5 @@
 import webpush from 'web-push';
-import { supabase } from '@/integrations/supabase/client.server';
+import { supabaseAdmin as supabase } from '@/integrations/supabase/client.server';
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BEl62vp9IHZisv938A96792I37S0H479S4522409579304957930495793049579304957930495793';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';

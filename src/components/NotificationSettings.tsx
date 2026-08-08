@@ -85,9 +85,9 @@ export function NotificationSettings() {
         const subJSON = sub.toJSON();
         const { error } = await supabase.from('push_subscriptions').upsert({
           user_id: userData.user.id,
-          endpoint: subJSON.endpoint,
-          p256dh: subJSON.keys?.p256dh,
-          auth: subJSON.keys?.auth,
+          endpoint: subJSON.endpoint ?? "",
+          p256dh: subJSON.keys?.p256dh ?? "",
+          auth: subJSON.keys?.auth ?? "",
         });
         if (error) throw error;
         setPushEnabled(true);
