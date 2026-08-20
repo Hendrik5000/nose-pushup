@@ -343,6 +343,63 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_days: {
+        Row: {
+          created_at: string
+          day: string
+          exercise_id: string | null
+          focus: string
+          id: string
+          note: string
+          plan_id: string
+          reps: number
+          rest_s: number
+          sets: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          exercise_id?: string | null
+          focus: string
+          id?: string
+          note?: string
+          plan_id: string
+          reps?: number
+          rest_s?: number
+          sets?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          exercise_id?: string | null
+          focus?: string
+          id?: string
+          note?: string
+          plan_id?: string
+          reps?: number
+          rest_s?: number
+          sets?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_days_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_days_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "training_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -490,6 +547,36 @@ export type Database = {
           note?: string | null
           path?: Json
           user_id?: string
+        }
+        Relationships: []
+      }
+      training_plans: {
+        Row: {
+          created_at: string
+          id: string
+          model: string | null
+          summary: string
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model?: string | null
+          summary?: string
+          updated_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model?: string | null
+          summary?: string
+          updated_at?: string
+          user_id?: string
+          week_start?: string
         }
         Relationships: []
       }
