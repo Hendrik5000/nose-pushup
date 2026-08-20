@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { levelProgress } from "@/lib/level";
 import { AiCoachCard } from "@/components/AiCoachCard";
+import { WeekPlanCard } from "@/components/WeekPlanCard";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
@@ -260,6 +261,7 @@ function Dashboard() {
       )}
 
       {/* Smart Coach (AI) */}
+      <WeekPlanCard />
       <AiCoachCard />
 
       {/* Weitere Übungen */}
