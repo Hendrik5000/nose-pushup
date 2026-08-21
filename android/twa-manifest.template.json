@@ -43,6 +43,5 @@
   "isMetaQuest": false,
   "fullScopeUrl": "https://nose-pushup.lovable.app/",
   "minSdkVersion": 23,
-  "shareTarget": undefined,
   "orientationLock": false
 }
