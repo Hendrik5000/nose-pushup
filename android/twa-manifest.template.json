@@ -1,0 +1,47 @@
+{
+  "packageId": "app.lovable.nosypushup",
+  "host": "nose-pushup.lovable.app",
+  "name": "Nosy Push-Up",
+  "launcherName": "Nosy",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0b1017",
+  "themeColorDark": "#0b1017",
+  "navigationColor": "#0b1017",
+  "navigationColorDark": "#0b1017",
+  "navigationDividerColor": "#0b1017",
+  "navigationDividerColorDark": "#0b1017",
+  "backgroundColor": "#0b1017",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://nose-pushup.lovable.app/favicon.png",
+  "maskableIconUrl": "https://nose-pushup.lovable.app/favicon.png",
+  "splashScreenFadeOutDuration": 300,
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Workout starten",
+      "shortName": "Workout",
+      "url": "/run",
+      "chosenIconUrl": "https://nose-pushup.lovable.app/favicon.png"
+    },
+    {
+      "name": "AI Coach",
+      "shortName": "Coach",
+      "url": "/coach",
+      "chosenIconUrl": "https://nose-pushup.lovable.app/favicon.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://nose-pushup.lovable.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://nose-pushup.lovable.app/",
+  "minSdkVersion": 23,
+  "orientationLock": false
+}
