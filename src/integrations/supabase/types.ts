@@ -56,6 +56,38 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_queue: {
+        Row: {
+          battle_id: string | null
+          created_at: string
+          duration_s: number
+          mode: string
+          user_id: string
+        }
+        Insert: {
+          battle_id?: string | null
+          created_at?: string
+          duration_s?: number
+          mode?: string
+          user_id: string
+        }
+        Update: {
+          battle_id?: string | null
+          created_at?: string
+          duration_s?: number
+          mode?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_queue_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       battle_reps: {
         Row: {
           battle_id: string
@@ -100,8 +132,11 @@ export type Database = {
           host_id: string
           id: string
           is_bot: boolean
+          mode: string
+          rematch_of: string | null
           started_at: string | null
           status: string
+          target_reps: number
           updated_at: string
           winner_id: string | null
         }
@@ -116,8 +151,11 @@ export type Database = {
           host_id: string
           id?: string
           is_bot?: boolean
+          mode?: string
+          rematch_of?: string | null
           started_at?: string | null
           status?: string
+          target_reps?: number
           updated_at?: string
           winner_id?: string | null
         }
@@ -132,8 +170,11 @@ export type Database = {
           host_id?: string
           id?: string
           is_bot?: boolean
+          mode?: string
+          rematch_of?: string | null
           started_at?: string | null
           status?: string
+          target_reps?: number
           updated_at?: string
           winner_id?: string | null
         }
@@ -181,6 +222,109 @@ export type Database = {
           sort_order?: number
           title?: string
           xp_reward?: number
+        }
+        Relationships: []
+      }
+      club_members: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_members_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_posts: {
+        Row: {
+          body: string
+          club_id: string
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          club_id: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          club_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_posts_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clubs: {
+        Row: {
+          code: string
+          color: string
+          created_at: string
+          id: string
+          motto: string
+          name: string
+          owner_id: string
+          updated_at: string
+          weekly_goal: number
+        }
+        Insert: {
+          code: string
+          color?: string
+          created_at?: string
+          id?: string
+          motto?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+          weekly_goal?: number
+        }
+        Update: {
+          code?: string
+          color?: string
+          created_at?: string
+          id?: string
+          motto?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+          weekly_goal?: number
         }
         Relationships: []
       }
@@ -404,6 +548,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           battle_losses: number
+          battle_rating: number
           battle_wins: number
           best_count: number
           birth_year: number | null
@@ -432,6 +577,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           battle_losses?: number
+          battle_rating?: number
           battle_wins?: number
           best_count?: number
           birth_year?: number | null
@@ -460,6 +606,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           battle_losses?: number
+          battle_rating?: number
           battle_wins?: number
           best_count?: number
           birth_year?: number | null
@@ -749,6 +896,32 @@ export type Database = {
           _xp_reward: number
         }[]
       }
+      club_league: {
+        Args: never
+        Returns: {
+          club_id: string
+          color: string
+          members: number
+          name: string
+          week_reps: number
+          weekly_goal: number
+        }[]
+      }
+      club_week_stats: {
+        Args: { _club_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          level: number
+          reps: number
+          user_id: string
+        }[]
+      }
+      is_club_member: {
+        Args: { _club_id: string; _user_id: string }
+        Returns: boolean
+      }
+      join_club_by_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
