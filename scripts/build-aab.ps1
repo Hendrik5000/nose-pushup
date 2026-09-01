@@ -41,9 +41,9 @@ try {
     Write-Host "Neues TWA-Projekt aus Vorlage anlegen" -ForegroundColor Cyan
     Copy-Item $template "twa-manifest.json"
     # Host/URLs an die gewaehlte Domain anpassen
-    $host = ([System.Uri]$SiteUrl).Host
+    $siteHost = ([System.Uri]$SiteUrl).Host
     (Get-Content "twa-manifest.json") `
-      -replace "nose-pushup\.lovable\.app", $host |
+      -replace "nose-pushup\.lovable\.app", $siteHost |
       Set-Content "twa-manifest.json"
     bubblewrap init --manifest $manifestUrl --directory .
   }
