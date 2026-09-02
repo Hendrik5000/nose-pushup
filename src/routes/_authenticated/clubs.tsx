@@ -101,7 +101,7 @@ function ClubsPage() {
     const clubId = ((mem ?? []) as unknown as Array<{ club_id: string }>)[0]?.club_id ?? null;
 
     const { data: leagueRows } = await supabase.rpc("club_league" as never);
-    setLeague(((leagueRows ?? []) as unknown as LeagueRow[]) ?? []);
+    setLeague((leagueRows ?? []) as unknown as LeagueRow[]);
 
     if (!clubId) {
       setClub(null);
@@ -122,8 +122,8 @@ function ClubsPage() {
         .limit(25),
     ]);
     setClub((c as unknown as Club) ?? null);
-    setMembers(((stats ?? []) as unknown as MemberStat[]) ?? []);
-    setPosts(((feed ?? []) as unknown as Post[]) ?? []);
+    setMembers((stats ?? []) as unknown as MemberStat[]);
+    setPosts((feed ?? []) as unknown as Post[]);
     setLoading(false);
   }, []);
 
