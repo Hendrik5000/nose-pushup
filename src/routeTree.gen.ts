@@ -17,6 +17,7 @@ import { Route as Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImpo
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedCalisthenicsRouteImport } from './routes/_authenticated/calisthenics'
+import { Route as AuthenticatedClubsRouteImport } from './routes/_authenticated/clubs'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedExercisesRouteImport } from './routes/_authenticated/exercises'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
@@ -73,6 +74,11 @@ const AuthenticatedCalisthenicsRoute =
     path: '/calisthenics',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedClubsRoute = AuthenticatedClubsRouteImport.update({
+  id: '/clubs',
+  path: '/clubs',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
   id: '/coach',
   path: '/coach',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
+  '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/exercises': typeof AuthenticatedExercisesRoute
   '/health': typeof AuthenticatedHealthRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
+  '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/exercises': typeof AuthenticatedExercisesRoute
   '/health': typeof AuthenticatedHealthRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/calisthenics': typeof AuthenticatedCalisthenicsRoute
+  '/_authenticated/clubs': typeof AuthenticatedClubsRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/exercises': typeof AuthenticatedExercisesRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
     | '/calisthenics'
+    | '/clubs'
     | '/coach'
     | '/exercises'
     | '/health'
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
     | '/calisthenics'
+    | '/clubs'
     | '/coach'
     | '/exercises'
     | '/health'
@@ -256,6 +267,7 @@ export interface FileRouteTypes {
     | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/calisthenics'
+    | '/_authenticated/clubs'
     | '/_authenticated/coach'
     | '/_authenticated/exercises'
     | '/_authenticated/health'
@@ -338,6 +350,13 @@ declare module '@tanstack/react-router' {
       path: '/calisthenics'
       fullPath: '/calisthenics'
       preLoaderRoute: typeof AuthenticatedCalisthenicsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/clubs': {
+      id: '/_authenticated/clubs'
+      path: '/clubs'
+      fullPath: '/clubs'
+      preLoaderRoute: typeof AuthenticatedClubsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/coach': {
@@ -429,6 +448,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCalisthenicsRoute: typeof AuthenticatedCalisthenicsRoute
+  AuthenticatedClubsRoute: typeof AuthenticatedClubsRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedExercisesRoute: typeof AuthenticatedExercisesRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
@@ -444,6 +464,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCalisthenicsRoute: AuthenticatedCalisthenicsRoute,
+  AuthenticatedClubsRoute: AuthenticatedClubsRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedExercisesRoute: AuthenticatedExercisesRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
