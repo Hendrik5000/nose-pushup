@@ -8,13 +8,46 @@ function makeCode() {
   return s;
 }
 
+export const BATTLE_MODES = ["timed", "first_to", "sprint", "endurance"] as const;
+export type BattleMode = (typeof BATTLE_MODES)[number];
+
+/** Modus-Defaults: Dauer + Zielreps. */
+export function modeDefaults(mode: BattleMode) {
+  switch (mode) {
+    case "first_to":
+      return { duration_s: 180, target_reps: 30 };
+    case "sprint":
+      return { duration_s: 60, target_reps: 0 };
+    case "endurance":
+      return { duration_s: 300, target_reps: 0 };
+    default:
+      return { duration_s: 60, target_reps: 0 };
+  }
+}
+
+function normalizeMode(value: unknown): BattleMode {
+  const m = String(value ?? "timed") as BattleMode;
+  return (BATTLE_MODES as readonly string[]).includes(m) ? m : "timed";
+}
+
 export const createBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const raw = (input ?? {}) as { duration_s?: number; is_bot?: boolean };
+    const raw = (input ?? {}) as {
+      duration_s?: number;
+      is_bot?: boolean;
+      mode?: string;
+      target_reps?: number;
+      rematch_of?: string;
+    };
+    const mode = normalizeMode(raw.mode);
+    const defaults = modeDefaults(mode);
     return {
-      duration_s: Math.max(15, Math.min(300, raw.duration_s ?? 60)),
+      duration_s: Math.max(15, Math.min(600, raw.duration_s ?? defaults.duration_s)),
       is_bot: !!raw.is_bot,
+      mode,
+      target_reps: Math.max(0, Math.min(500, Number(raw.target_reps ?? defaults.target_reps) | 0)),
+      rematch_of: raw.rematch_of ? String(raw.rematch_of) : null,
     };
   })
   .handler(async ({ data, context }) => {
@@ -28,7 +61,10 @@ export const createBattle = createServerFn({ method: "POST" })
           host_id: userId,
           duration_s: data.duration_s,
           is_bot: data.is_bot,
-          status: data.is_bot ? "waiting" : "waiting",
+          mode: data.mode,
+          target_reps: data.target_reps,
+          rematch_of: data.rematch_of,
+          status: "waiting",
         })
         .select("id, code")
         .maybeSingle();
@@ -36,6 +72,88 @@ export const createBattle = createServerFn({ method: "POST" })
       if (error && !String(error.message).includes("duplicate")) throw new Error(error.message);
     }
     throw new Error("Konnte keinen freien Code erzeugen");
+  });
+
+/**
+ * Zufalls-Matchmaking: sucht einen wartenden Gegner mit gleichem Modus,
+ * sonst wird der Nutzer selbst in die Warteschlange gestellt.
+ */
+export const findMatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => {
+    const raw = (input ?? {}) as { mode?: string; duration_s?: number };
+    const mode = normalizeMode(raw.mode);
+    const defaults = modeDefaults(mode);
+    return {
+      mode,
+      duration_s: Math.max(15, Math.min(600, Number(raw.duration_s ?? defaults.duration_s) | 0)),
+    };
+  })
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const cutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+
+    const { data: waiting } = await supabaseAdmin
+      .from("battle_queue")
+      .select("user_id, created_at")
+      .eq("mode", data.mode)
+      .eq("duration_s", data.duration_s)
+      .is("battle_id", null)
+      .neq("user_id", userId)
+      .gte("created_at", cutoff)
+      .order("created_at", { ascending: true })
+      .limit(1);
+
+    const opponent = (waiting ?? [])[0] as { user_id: string } | undefined;
+
+    if (opponent) {
+      const defaults = modeDefaults(data.mode);
+      const code = makeCode();
+      const { data: battle, error } = await supabaseAdmin
+        .from("battles")
+        .insert({
+          code,
+          host_id: opponent.user_id,
+          guest_id: userId,
+          duration_s: data.duration_s,
+          mode: data.mode,
+          target_reps: defaults.target_reps,
+          is_bot: false,
+          status: "waiting",
+        })
+        .select("id")
+        .maybeSingle();
+      if (error || !battle) throw new Error(error?.message ?? "Match fehlgeschlagen");
+      const battleId = (battle as { id: string }).id;
+      await supabaseAdmin
+        .from("battle_queue")
+        .update({ battle_id: battleId })
+        .eq("user_id", opponent.user_id);
+      await supabaseAdmin.from("battle_queue").delete().eq("user_id", userId);
+      return { matched: true as const, id: battleId };
+    }
+
+    await supabaseAdmin.from("battle_queue").upsert(
+      {
+        user_id: userId,
+        mode: data.mode,
+        duration_s: data.duration_s,
+        battle_id: null,
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" },
+    );
+    return { matched: false as const, id: null };
+  });
+
+/** Warteschlange verlassen. */
+export const leaveQueue = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("battle_queue").delete().eq("user_id", context.userId);
+    return { ok: true };
   });
 
 export const joinBattle = createServerFn({ method: "POST" })
