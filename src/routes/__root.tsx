@@ -11,6 +11,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
