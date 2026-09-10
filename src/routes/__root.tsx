@@ -278,6 +278,7 @@ function RootComponent() {
       <div key={routeKey} className="route-enter">
         <Outlet />
       </div>
+      <OfflineBanner />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
   );
