@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { saveOrQueue } from "@/lib/offline-queue";
 import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/_authenticated/run")({
@@ -214,12 +215,12 @@ function RunPage() {
     if (u.user) {
       const km = distance / 1000;
       const calories = Math.round(km * weight * 1.036);
-      await supabase.from("runs").insert({
+      await saveOrQueue("runs", {
         user_id: u.user.id,
         distance_m: Math.round(distance),
         duration_ms: Math.round(total),
         calories,
-        path: points.current.slice(-500) as unknown as never,
+        path: points.current.slice(-500),
       });
       await loadRuns();
     }
