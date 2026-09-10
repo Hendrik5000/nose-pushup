@@ -181,7 +181,8 @@ function WorkoutScreen() {
     }
     setSaving(true);
     const duration_ms = startedAt ? Date.now() - startedAt : 0;
-    const { error } = await supabase.from("workouts").insert({
+    // Offline landet das Training in der Warteschlange und wird später nachgesendet.
+    const { error } = await saveOrQueue("workouts", {
       user_id: userId,
       exercise_id: exerciseId,
       count,
