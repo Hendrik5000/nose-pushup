@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { createBattle, joinBattle } from "@/lib/battle.functions";
+import { createBattle, joinBattle, findMatch, leaveQueue, modeDefaults, type BattleMode } from "@/lib/battle.functions";
 
 export const Route = createFileRoute("/_authenticated/battle/")({
   head: () => ({
@@ -30,10 +30,15 @@ function BattleLobby() {
   const navigate = useNavigate();
   const create = useServerFn(createBattle);
   const join = useServerFn(joinBattle);
+  const match = useServerFn(findMatch);
+  const dequeue = useServerFn(leaveQueue);
 
   const [code, setCode] = useState("");
   const [duration, setDuration] = useState(60);
-  const [busy, setBusy] = useState<null | "create" | "bot" | "join">(null);
+  const [busy, setBusy] = useState<null | "create" | "bot" | "join" | "match">(null);
+  const [mode, setMode] = useState<BattleMode>("timed");
+  const [searching, setSearching] = useState(false);
+  const [rating, setRating] = useState(1000);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<BattleRow[]>([]);
   const [wins, setWins] = useState(0);
@@ -51,12 +56,17 @@ function BattleLobby() {
           .in("status", ["finished", "active"])
           .order("created_at", { ascending: false })
           .limit(5),
-        supabase.from("profiles").select("battle_wins, battle_losses").eq("id", u.user.id).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("battle_wins, battle_losses, battle_rating")
+          .eq("id", u.user.id)
+          .maybeSingle(),
       ]);
       if (rows) setHistory(rows as BattleRow[]);
       if (p) {
         setWins((p as { battle_wins: number }).battle_wins ?? 0);
         setLosses((p as { battle_losses: number }).battle_losses ?? 0);
+        setRating((p as { battle_rating?: number }).battle_rating ?? 1000);
       }
     })();
   }, []);
@@ -65,12 +75,68 @@ function BattleLobby() {
     setBusy(bot ? "bot" : "create");
     setError(null);
     try {
-      const res = await create({ data: { duration_s: duration, is_bot: bot } });
+      const defaults = modeDefaults(mode);
+      const res = await create({
+        data: {
+          duration_s: mode === "timed" ? duration : defaults.duration_s,
+          is_bot: bot,
+          mode,
+          target_reps: defaults.target_reps,
+        },
+      });
       navigate({ to: "/battle/$id", params: { id: res.id } });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Fehler");
       setBusy(null);
     }
+  };
+
+  // Zufalls-Matchmaking: pollt die Warteschlange, bis ein Gegner gefunden ist.
+  useEffect(() => {
+    if (!searching) return;
+    let stop = false;
+    const tick = async () => {
+      if (stop) return;
+      try {
+        const res = await match({ data: { mode, duration_s: mode === "timed" ? duration : modeDefaults(mode).duration_s } });
+        if (res.matched && res.id) {
+          setSearching(false);
+          navigate({ to: "/battle/$id", params: { id: res.id } });
+          return;
+        }
+        const { data: u } = await supabase.auth.getUser();
+        if (u.user) {
+          const { data: q } = await supabase
+            .from("battle_queue" as never)
+            .select("battle_id")
+            .eq("user_id", u.user.id)
+            .maybeSingle();
+          const bid = (q as unknown as { battle_id: string | null } | null)?.battle_id;
+          if (bid) {
+            setSearching(false);
+            navigate({ to: "/battle/$id", params: { id: bid } });
+          }
+        }
+      } catch {
+        /* weiter versuchen */
+      }
+    };
+    void tick();
+    const t = setInterval(() => void tick(), 3000);
+    return () => {
+      stop = true;
+      clearInterval(t);
+    };
+  }, [searching, mode, duration, match, navigate]);
+
+  const handleMatchmaking = async () => {
+    if (searching) {
+      setSearching(false);
+      await dequeue({});
+      return;
+    }
+    setError(null);
+    setSearching(true);
   };
 
   const handleJoin = async () => {
@@ -101,6 +167,29 @@ function BattleLobby() {
           Erstelle ein Battle und teile den Code — oder trete gegen einen Bot an.
         </p>
 
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {([
+            { id: "timed", label: "Zeitduell", hint: "Meiste Reps" },
+            { id: "first_to", label: "Erster auf 30", hint: "Tempo zählt" },
+            { id: "sprint", label: "60s Sprint", hint: "Vollgas" },
+            { id: "endurance", label: "Ausdauer 5 Min", hint: "Durchhalten" },
+          ] as Array<{ id: BattleMode; label: string; hint: string }>).map((m) => (
+            <button
+              key={m.id}
+              onClick={() => setMode(m.id)}
+              className={`rounded-2xl border px-3 py-3 text-left transition ${
+                mode === m.id
+                  ? "border-primary bg-primary/20"
+                  : "border-border bg-secondary/60"
+              }`}
+            >
+              <div className="text-sm font-semibold">{m.label}</div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{m.hint}</div>
+            </button>
+          ))}
+        </div>
+
+        {mode === "timed" && (
         <div className="mt-4 flex gap-2">
           {[30, 60, 120].map((d) => (
             <button
@@ -116,13 +205,21 @@ function BattleLobby() {
             </button>
           ))}
         </div>
+        )}
 
         <button
-          onClick={() => handleCreate(false)}
+          onClick={handleMatchmaking}
           disabled={busy !== null}
           className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
         >
-          {busy === "create" ? "Erstelle…" : "Battle erstellen"}
+          {searching ? "Suche Gegner… (abbrechen)" : "🎯 Gegner suchen"}
+        </button>
+        <button
+          onClick={() => handleCreate(false)}
+          disabled={busy !== null}
+          className="mt-2 flex w-full items-center justify-center rounded-2xl border border-primary/50 bg-primary/15 px-4 py-3 text-sm font-semibold text-foreground transition active:scale-[0.98] disabled:opacity-50"
+        >
+          {busy === "create" ? "Erstelle…" : "Battle mit Code erstellen"}
         </button>
         <button
           onClick={() => handleCreate(true)}
@@ -160,7 +257,7 @@ function BattleLobby() {
         )}
       </section>
 
-      <section className="mt-6 grid grid-cols-2 gap-3">
+      <section className="mt-6 grid grid-cols-3 gap-3">
         <div className="rounded-2xl border border-border bg-card/50 px-4 py-3 backdrop-blur">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Wins</div>
           <div className="mt-1 text-2xl font-semibold tabular-nums text-primary">{wins}</div>
@@ -168,6 +265,10 @@ function BattleLobby() {
         <div className="rounded-2xl border border-border bg-card/50 px-4 py-3 backdrop-blur">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Losses</div>
           <div className="mt-1 text-2xl font-semibold tabular-nums text-muted-foreground">{losses}</div>
+        </div>
+        <div className="rounded-2xl border border-border bg-card/50 px-4 py-3 backdrop-blur">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Wertung</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums">{rating}</div>
         </div>
       </section>
 

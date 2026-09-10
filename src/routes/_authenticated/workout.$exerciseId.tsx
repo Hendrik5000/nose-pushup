@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useExerciseEngine, ensureMotionPermission } from "@/hooks/useExerciseEngine";
 import { useCameraDetection } from "@/hooks/useCameraDetection";
 import { feedbackRep, feedbackSuccess } from "@/lib/feedback";
+import { saveOrQueue } from "@/lib/offline-queue";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { getConfig } from "@/lib/exercises";
 
@@ -181,7 +182,8 @@ function WorkoutScreen() {
     }
     setSaving(true);
     const duration_ms = startedAt ? Date.now() - startedAt : 0;
-    const { error } = await supabase.from("workouts").insert({
+    // Offline landet das Training in der Warteschlange und wird später nachgesendet.
+    const { error } = await saveOrQueue("workouts", {
       user_id: userId,
       exercise_id: exerciseId,
       count,
@@ -252,7 +254,7 @@ function WorkoutScreen() {
     const n = Math.max(0, Math.min(9999, parseInt(manualInput, 10) || 0));
     if (n <= 0 || !userId || !exercise) return;
     setSaving(true);
-    const { error } = await supabase.from("workouts").insert({
+    const { error } = await saveOrQueue("workouts", {
       user_id: userId,
       exercise_id: exerciseId,
       count: n,

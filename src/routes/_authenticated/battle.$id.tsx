@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-r
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { finishBattle, startBattle } from "@/lib/battle.functions";
+import { createBattle, finishBattle, startBattle } from "@/lib/battle.functions";
 import { feedbackRep, feedbackWin, feedbackLose, feedbackSuccess } from "@/lib/feedback";
 
 
@@ -26,6 +26,8 @@ type Battle = {
   guest_count: number;
   winner_id: string | null;
   is_bot: boolean;
+  mode?: string;
+  target_reps?: number;
 };
 
 function BattleArena() {
@@ -33,6 +35,7 @@ function BattleArena() {
   const navigate = useNavigate();
   const start = useServerFn(startBattle);
   const finish = useServerFn(finishBattle);
+  const create = useServerFn(createBattle);
 
   const [userId, setUserId] = useState<string | null>(null);
   const [battle, setBattle] = useState<Battle | null>(null);
@@ -148,6 +151,22 @@ function BattleArena() {
   const remaining = battle?.ends_at ? Math.max(0, +new Date(battle.ends_at) - now) : battle?.duration_s
     ? battle.duration_s * 1000
     : 0;
+
+  // Modus "Erster auf X": beenden, sobald jemand das Ziel erreicht.
+  useEffect(() => {
+    if (!battle || battle.status !== "active" || finishedRef.current) return;
+    const target = battle.target_reps ?? 0;
+    if (battle.mode !== "first_to" || target <= 0) return;
+    if (myCount < target && oppCount < target) return;
+    finishedRef.current = true;
+    setFinishing(true);
+    const payload = battle.is_bot
+      ? { id: battle.id, guest_count: oppCountRef.current }
+      : { id: battle.id };
+    finish({ data: payload })
+      .catch(() => undefined)
+      .finally(() => setFinishing(false));
+  }, [battle, myCount, oppCount, finish]);
 
   // Auto-finish when time up
   useEffect(() => {
@@ -285,9 +304,30 @@ function BattleArena() {
             <div className="mt-1 text-4xl font-bold tabular-nums">{oppFinal}</div>
           </div>
         </div>
+        <button
+          onClick={async () => {
+            try {
+              const res = await create({
+                data: {
+                  duration_s: battle.duration_s,
+                  is_bot: battle.is_bot,
+                  mode: battle.mode ?? "timed",
+                  target_reps: battle.target_reps ?? 0,
+                  rematch_of: battle.id,
+                },
+              });
+              navigate({ to: "/battle/$id", params: { id: res.id } });
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "Fehler");
+            }
+          }}
+          className="mt-8 w-full rounded-2xl bg-primary px-4 py-4 text-center text-base font-semibold text-primary-foreground"
+        >
+          🔁 Revanche
+        </button>
         <Link
           to="/battle"
-          className="mt-8 w-full rounded-2xl bg-primary px-4 py-4 text-center text-base font-semibold text-primary-foreground"
+          className="mt-2 w-full rounded-2xl border border-border bg-secondary/60 px-4 py-3 text-center text-sm font-medium"
         >
           Neues Battle
         </Link>
@@ -313,7 +353,15 @@ function BattleArena() {
       onPointerDown={tap}
     >
       <header className="flex items-center justify-between">
-        <span className="text-sm font-medium">⚔️ Battle</span>
+        <span className="text-sm font-medium">
+          ⚔️ {battle.mode === "first_to"
+            ? `Erster auf ${battle.target_reps ?? 30}`
+            : battle.mode === "sprint"
+              ? "60s Sprint"
+              : battle.mode === "endurance"
+                ? "Ausdauer"
+                : "Battle"}
+        </span>
         <div className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-sm font-semibold tabular-nums text-primary">
           {seconds}s
         </div>
