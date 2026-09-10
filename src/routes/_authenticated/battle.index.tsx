@@ -132,7 +132,7 @@ function BattleLobby() {
   const handleMatchmaking = async () => {
     if (searching) {
       setSearching(false);
-      await dequeue({ data: {} });
+      await dequeue({});
       return;
     }
     setError(null);
