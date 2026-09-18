@@ -219,6 +219,8 @@ function WorkoutScreen() {
       exercise_id: exerciseId,
       count,
       duration_ms,
+      form_score: formStats?.formScore ?? null,
+      clean_reps: formStats?.cleanReps ?? null,
     });
     if (!error) {
       feedbackSuccess();
@@ -226,7 +228,14 @@ function WorkoutScreen() {
       const xpGained = exercise.unit === "seconds"
         ? Math.max(1, Math.floor(duration_ms / 1000))
         : count * 10;
-      setSummary({ count, durationMs: duration_ms, xp: xpGained, isBest: newBest });
+      setSummary({
+        count,
+        durationMs: duration_ms,
+        xp: xpGained,
+        isBest: newBest,
+        formScore: formStats?.formScore ?? null,
+        cleanReps: formStats?.cleanReps ?? null,
+      });
 
       if (newBest) {
         setBest(count);
@@ -261,6 +270,7 @@ function WorkoutScreen() {
     resetEngine();
     setSavedHint(null);
     setMotivation(null);
+    setRepGrades([]);
   };
 
   const elapsed = startedAt ? now - startedAt : 0;
