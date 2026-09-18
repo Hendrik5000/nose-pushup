@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanst
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useExerciseEngine, ensureMotionPermission } from "@/hooks/useExerciseEngine";
-import { useCameraDetection } from "@/hooks/useCameraDetection";
+import { useCameraDetection, type RepQuality } from "@/hooks/useCameraDetection";
 import { feedbackRep, feedbackSuccess } from "@/lib/feedback";
 import { saveOrQueue } from "@/lib/offline-queue";
 import type { ExerciseMeta } from "@/lib/exercises";
