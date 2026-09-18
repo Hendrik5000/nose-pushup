@@ -100,11 +100,34 @@ function WorkoutScreen() {
 
 
   // Camera detector — only mounted for camera mode
-  const cameraBump = useCallback(() => bump(), [bump]);
-  const { videoRef, error: cameraError, ready: cameraReady, status: cameraStatus, elbowAngle } = useCameraDetection({
+  const cameraBump = useCallback(
+    (q: RepQuality) => {
+      setRepGrades((prev) => [...prev, { grade: q.grade, full: q.full }]);
+      bump();
+    },
+    [bump],
+  );
+  const {
+    videoRef,
+    error: cameraError,
+    ready: cameraReady,
+    status: cameraStatus,
+    elbowAngle,
+    liveCue,
+    lastQuality,
+  } = useCameraDetection({
     active: useCamera && active,
     onRep: cameraBump,
   });
+
+  const formStats = useMemo(() => {
+    if (repGrades.length === 0) return null;
+    const avg = repGrades.reduce((s, r) => s + r.grade, 0) / repGrades.length;
+    return {
+      formScore: Math.round(avg * 10) / 10,
+      cleanReps: repGrades.filter((r) => r.full && r.grade >= 4).length,
+    };
+  }, [repGrades]);
 
   // Load exercise + user best
   useEffect(() => {
