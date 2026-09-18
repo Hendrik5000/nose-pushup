@@ -808,26 +808,32 @@ export type Database = {
       }
       workouts: {
         Row: {
+          clean_reps: number | null
           count: number
           created_at: string
           duration_ms: number
           exercise_id: string
+          form_score: number | null
           id: string
           user_id: string
         }
         Insert: {
+          clean_reps?: number | null
           count: number
           created_at?: string
           duration_ms?: number
           exercise_id?: string
+          form_score?: number | null
           id?: string
           user_id: string
         }
         Update: {
+          clean_reps?: number | null
           count?: number
           created_at?: string
           duration_ms?: number
           exercise_id?: string
+          form_score?: number | null
           id?: string
           user_id?: string
         }

@@ -1,24 +1,40 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PoseLandmarker } from "@mediapipe/tasks-vision";
 
+/** Bewertung einer einzelnen Wiederholung. */
+export type RepQuality = {
+  /** Note von 1 (schlecht) bis 5 (perfekt). */
+  grade: number;
+  /** true = volle Wiederholung, false = halbe (zu wenig Tiefe). */
+  full: boolean;
+  /** Kleinster Ellbogenwinkel während der Wiederholung. */
+  depth: number;
+  /** Abweichung der Hüftlinie in Grad (0 = perfekt gerade). */
+  hipDeviation: number;
+  /** Dauer der Wiederholung in Millisekunden. */
+  tempoMs: number;
+  /** Kurzer Hinweis für die Nutzerin/den Nutzer. */
+  cue: string | null;
+};
+
 type Args = {
   active: boolean;
-  onRep: () => void;
+  onRep: (quality: RepQuality) => void;
   minIntervalMs?: number;
 };
 
+const DEPTH_GOOD = 90; // Ellbogenwinkel für volle Tiefe
+const DEPTH_PARTIAL = 115; // ab hier zählt es als halbe Wiederholung
+const UP_ANGLE = 155;
+const TEMPO_FAST = 700; // schneller als das = gerissen
+const TEMPO_SLOW = 4000;
+
 /**
- * AI camera-based push-up detector using MediaPipe Pose Landmarker.
+ * KI-Kamera-Erkennung für Push-Ups inkl. Form-Check.
  *
- * Detection strategy: elbow angle (shoulder→elbow→wrist).
- * - Arms extended (top of push-up):  angle ≥ 155°
- * - Arms bent    (bottom of push-up): angle ≤ 85°
- * A rep is counted on the up→down→up transition.
- *
- * Improvement over shoulder-Y approach:
- * - Works regardless of camera placement angle.
- * - Not fooled by the whole body moving (e.g. rocking).
- * - Requires both elbows to be visible; falls back to shoulder-Y if only one visible.
+ * Bewertet pro Wiederholung Tiefe (Ellbogenwinkel), Hüftlinie
+ * (Schulter–Hüfte–Knie) und Tempo und liefert eine Note von 1–5.
+ * Läuft vollständig auf dem Gerät.
  */
 export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -29,6 +45,10 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
 
   // Phase tracking for elbow-angle method
   const phaseRef = useRef<"up" | "down">("up");
+  const repStartRef = useRef(0);
+  const minAngleRef = useRef(180);
+  const hipSumRef = useRef(0);
+  const hipCountRef = useRef(0);
   // For shoulder-Y fallback
   const minYRef = useRef<number>(1);
   const maxYRef = useRef<number>(0);
@@ -45,6 +65,8 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<string>("Modell wird geladen…");
   const [elbowAngle, setElbowAngle] = useState<number | null>(null);
+  const [liveCue, setLiveCue] = useState<string | null>(null);
+  const [lastQuality, setLastQuality] = useState<RepQuality | null>(null);
 
   const stop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -61,8 +83,12 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
     fallbackPhaseRef.current = "up";
     minYRef.current = 1;
     maxYRef.current = 0;
+    minAngleRef.current = 180;
+    hipSumRef.current = 0;
+    hipCountRef.current = 0;
     setReady(false);
     setElbowAngle(null);
+    setLiveCue(null);
   }, []);
 
   useEffect(() => {
@@ -141,9 +167,12 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
             // ── Landmark indices ──────────────────────────────────────────
             // 11=L-shoulder 12=R-shoulder 13=L-elbow 14=R-elbow
             // 15=L-wrist   16=R-wrist   23=L-hip   24=R-hip
+            // 25=L-knee    26=R-knee
             const ls = lm[11], rs = lm[12];
             const le = lm[13], re = lm[14];
             const lw = lm[15], rw = lm[16];
+            const lh = lm[23], rh = lm[24];
+            const lk = lm[25], rk = lm[26];
 
             const leftVis =
               (ls?.visibility ?? 0) > 0.5 &&
@@ -154,42 +183,68 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
               (re?.visibility ?? 0) > 0.5 &&
               (rw?.visibility ?? 0) > 0.5;
 
+            // Hüftlinie: Schulter–Hüfte–Knie sollte ~180° sein.
+            let hipAngle: number | null = null;
+            {
+              let sum = 0, cnt = 0;
+              if (ls && lh && lk && (lh.visibility ?? 0) > 0.5 && (lk.visibility ?? 0) > 0.5) {
+                sum += calcAngle(ls, lh, lk); cnt++;
+              }
+              if (rs && rh && rk && (rh.visibility ?? 0) > 0.5 && (rk.visibility ?? 0) > 0.5) {
+                sum += calcAngle(rs, rh, rk); cnt++;
+              }
+              if (cnt > 0) hipAngle = sum / cnt;
+            }
+
             if (leftVis || rightVis) {
-              // Calculate elbow angle for whichever side(s) are visible
-              let angle = 180;
-              let angleCount = 0;
-              if (leftVis && ls && le && lw) {
-                angle += calcAngle(ls, le, lw);
-                angleCount++;
-              }
-              if (rightVis && rs && re && rw) {
-                angle += calcAngle(rs, re, rw);
-                angleCount++;
-              }
-              if (angleCount > 0) angle = (angle - 180) / angleCount + 180; // average, keep sign
-              // Redo: just average all valid angles
               let sum = 0, cnt = 0;
               if (leftVis && ls && le && lw) { sum += calcAngle(ls, le, lw); cnt++; }
               if (rightVis && rs && re && rw) { sum += calcAngle(rs, re, rw); cnt++; }
-              angle = cnt > 0 ? sum / cnt : 180;
+              const angle = cnt > 0 ? sum / cnt : 180;
 
               setElbowAngle(Math.round(angle));
               const now = Date.now();
 
-              // Rep logic: up (angle ≥ 155°) → down (angle ≤ 85°) → up = 1 rep
-              if (phaseRef.current === "up" && angle <= 85) {
+              if (phaseRef.current === "down") {
+                if (angle < minAngleRef.current) minAngleRef.current = angle;
+                if (hipAngle !== null) {
+                  hipSumRef.current += Math.abs(180 - hipAngle);
+                  hipCountRef.current++;
+                }
+              }
+
+              // Rep-Logik: oben (≥155°) → unten (≤115°) → oben = 1 Wiederholung
+              if (phaseRef.current === "up" && angle <= DEPTH_PARTIAL) {
                 phaseRef.current = "down";
+                repStartRef.current = now;
+                minAngleRef.current = angle;
+                hipSumRef.current = 0;
+                hipCountRef.current = 0;
                 setStatus(`↓ Runter · ${Math.round(angle)}°`);
-              } else if (phaseRef.current === "down" && angle >= 155) {
+              } else if (phaseRef.current === "down" && angle >= UP_ANGLE) {
                 phaseRef.current = "up";
                 setStatus(`↑ Oben · ${Math.round(angle)}°`);
                 if (now - lastRepRef.current >= minIntervalRef.current) {
                   lastRepRef.current = now;
-                  onRepRef.current();
+                  const depth = minAngleRef.current;
+                  const hipDev =
+                    hipCountRef.current > 0 ? hipSumRef.current / hipCountRef.current : 0;
+                  const tempoMs = now - repStartRef.current;
+                  const quality = gradeRep(depth, hipDev, tempoMs);
+                  setLastQuality(quality);
+                  setLiveCue(quality.cue);
+                  onRepRef.current(quality);
                 }
+                minAngleRef.current = 180;
               } else {
                 const phase = phaseRef.current === "up" ? "Strecken…" : "Runter…";
                 setStatus(`${phase} ${Math.round(angle)}°`);
+                // Live-Hinweise während der Bewegung
+                if (phaseRef.current === "down" && hipAngle !== null && Math.abs(180 - hipAngle) > 22) {
+                  setLiveCue(hipAngle < 180 ? "Hüfte hoch" : "Po runter");
+                } else if (phaseRef.current === "down" && angle > DEPTH_PARTIAL - 5) {
+                  setLiveCue("Tiefer");
+                }
               }
             } else {
               // Fallback: shoulder-Y (works for front-facing camera)
@@ -209,13 +264,23 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
                   const now = Date.now();
                   if (fallbackPhaseRef.current === "up" && y > downT) {
                     fallbackPhaseRef.current = "down";
+                    repStartRef.current = now;
                     setStatus("↓ Runter (Fallback)");
                   } else if (fallbackPhaseRef.current === "down" && y < upT) {
                     fallbackPhaseRef.current = "up";
                     setStatus("↑ Oben (Fallback)");
                     if (now - lastRepRef.current >= minIntervalRef.current) {
                       lastRepRef.current = now;
-                      onRepRef.current();
+                      const quality: RepQuality = {
+                        grade: 3,
+                        full: true,
+                        depth: 90,
+                        hipDeviation: 0,
+                        tempoMs: now - repStartRef.current,
+                        cue: null,
+                      };
+                      setLastQuality(quality);
+                      onRepRef.current(quality);
                     }
                   } else {
                     setStatus("Schulter-Tracking (Kalibrierung)");
@@ -247,7 +312,47 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
     };
   }, [active, stop]);
 
-  return { videoRef, error, ready, status, elbowAngle };
+  return { videoRef, error, ready, status, elbowAngle, liveCue, lastQuality };
+}
+
+/** Bewertet eine Wiederholung anhand von Tiefe, Hüftlinie und Tempo. */
+export function gradeRep(depth: number, hipDeviation: number, tempoMs: number): RepQuality {
+  let grade = 5;
+  let cue: string | null = null;
+
+  if (depth > DEPTH_PARTIAL) {
+    grade -= 2.5;
+    cue = "Tiefer";
+  } else if (depth > DEPTH_GOOD) {
+    grade -= 1;
+    cue = "Etwas tiefer";
+  }
+
+  if (hipDeviation > 30) {
+    grade -= 1.5;
+    cue = cue ?? "Hüfte auf einer Linie";
+  } else if (hipDeviation > 18) {
+    grade -= 0.75;
+    cue = cue ?? "Rumpf anspannen";
+  }
+
+  if (tempoMs < TEMPO_FAST) {
+    grade -= 1;
+    cue = cue ?? "Langsamer";
+  } else if (tempoMs > TEMPO_SLOW) {
+    grade -= 0.5;
+  }
+
+  grade = Math.max(1, Math.min(5, Math.round(grade * 2) / 2));
+
+  return {
+    grade,
+    full: depth <= DEPTH_GOOD + 10,
+    depth: Math.round(depth),
+    hipDeviation: Math.round(hipDeviation),
+    tempoMs,
+    cue,
+  };
 }
 
 /** Calculate the angle at joint `b` between rays b→a and b→c (in degrees). */

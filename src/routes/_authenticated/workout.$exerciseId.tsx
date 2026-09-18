@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanst
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useExerciseEngine, ensureMotionPermission } from "@/hooks/useExerciseEngine";
-import { useCameraDetection } from "@/hooks/useCameraDetection";
+import { useCameraDetection, type RepQuality } from "@/hooks/useCameraDetection";
 import { feedbackRep, feedbackSuccess } from "@/lib/feedback";
 import { saveOrQueue } from "@/lib/offline-queue";
 import type { ExerciseMeta } from "@/lib/exercises";
@@ -59,7 +59,15 @@ function WorkoutScreen() {
   const [motivation, setMotivation] = useState<string | null>(null);
   const [manualInput, setManualInput] = useState("");
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [summary, setSummary] = useState<{ count: number; durationMs: number; xp: number; isBest: boolean } | null>(null);
+  const [summary, setSummary] = useState<{
+    count: number;
+    durationMs: number;
+    xp: number;
+    isBest: boolean;
+    formScore?: number | null;
+    cleanReps?: number | null;
+  } | null>(null);
+  const [repGrades, setRepGrades] = useState<{ grade: number; full: boolean }[]>([]);
 
 
 
@@ -92,11 +100,34 @@ function WorkoutScreen() {
 
 
   // Camera detector — only mounted for camera mode
-  const cameraBump = useCallback(() => bump(), [bump]);
-  const { videoRef, error: cameraError, ready: cameraReady, status: cameraStatus, elbowAngle } = useCameraDetection({
+  const cameraBump = useCallback(
+    (q: RepQuality) => {
+      setRepGrades((prev) => [...prev, { grade: q.grade, full: q.full }]);
+      bump();
+    },
+    [bump],
+  );
+  const {
+    videoRef,
+    error: cameraError,
+    ready: cameraReady,
+    status: cameraStatus,
+    elbowAngle,
+    liveCue,
+    lastQuality,
+  } = useCameraDetection({
     active: useCamera && active,
     onRep: cameraBump,
   });
+
+  const formStats = useMemo(() => {
+    if (repGrades.length === 0) return null;
+    const avg = repGrades.reduce((s, r) => s + r.grade, 0) / repGrades.length;
+    return {
+      formScore: Math.round(avg * 10) / 10,
+      cleanReps: repGrades.filter((r) => r.full && r.grade >= 4).length,
+    };
+  }, [repGrades]);
 
   // Load exercise + user best
   useEffect(() => {
@@ -188,6 +219,8 @@ function WorkoutScreen() {
       exercise_id: exerciseId,
       count,
       duration_ms,
+      form_score: formStats?.formScore ?? null,
+      clean_reps: formStats?.cleanReps ?? null,
     });
     if (!error) {
       feedbackSuccess();
@@ -195,7 +228,14 @@ function WorkoutScreen() {
       const xpGained = exercise.unit === "seconds"
         ? Math.max(1, Math.floor(duration_ms / 1000))
         : count * 10;
-      setSummary({ count, durationMs: duration_ms, xp: xpGained, isBest: newBest });
+      setSummary({
+        count,
+        durationMs: duration_ms,
+        xp: xpGained,
+        isBest: newBest,
+        formScore: formStats?.formScore ?? null,
+        cleanReps: formStats?.cleanReps ?? null,
+      });
 
       if (newBest) {
         setBest(count);
@@ -230,6 +270,7 @@ function WorkoutScreen() {
     resetEngine();
     setSavedHint(null);
     setMotivation(null);
+    setRepGrades([]);
   };
 
   const elapsed = startedAt ? now - startedAt : 0;
