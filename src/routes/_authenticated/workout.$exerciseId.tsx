@@ -59,7 +59,15 @@ function WorkoutScreen() {
   const [motivation, setMotivation] = useState<string | null>(null);
   const [manualInput, setManualInput] = useState("");
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [summary, setSummary] = useState<{ count: number; durationMs: number; xp: number; isBest: boolean } | null>(null);
+  const [summary, setSummary] = useState<{
+    count: number;
+    durationMs: number;
+    xp: number;
+    isBest: boolean;
+    formScore?: number | null;
+    cleanReps?: number | null;
+  } | null>(null);
+  const [repGrades, setRepGrades] = useState<{ grade: number; full: boolean }[]>([]);
 
 
 
