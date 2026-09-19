@@ -552,6 +552,7 @@ export type Database = {
           battle_wins: number
           best_count: number
           birth_year: number | null
+          coins: number
           created_at: string
           current_streak: number
           daily_goal: number
@@ -559,11 +560,14 @@ export type Database = {
           haptics_enabled: boolean
           height_cm: number | null
           id: string
+          invited_by: string | null
           last_workout_date: string | null
           level: number
           longest_streak: number
           onboarded: boolean
           personal_bests: Json
+          public_enabled: boolean
+          public_slug: string | null
           sex: string | null
           share_activity: boolean
           sound_enabled: boolean
@@ -581,6 +585,7 @@ export type Database = {
           battle_wins?: number
           best_count?: number
           birth_year?: number | null
+          coins?: number
           created_at?: string
           current_streak?: number
           daily_goal?: number
@@ -588,11 +593,14 @@ export type Database = {
           haptics_enabled?: boolean
           height_cm?: number | null
           id: string
+          invited_by?: string | null
           last_workout_date?: string | null
           level?: number
           longest_streak?: number
           onboarded?: boolean
           personal_bests?: Json
+          public_enabled?: boolean
+          public_slug?: string | null
           sex?: string | null
           share_activity?: boolean
           sound_enabled?: boolean
@@ -610,6 +618,7 @@ export type Database = {
           battle_wins?: number
           best_count?: number
           birth_year?: number | null
+          coins?: number
           created_at?: string
           current_streak?: number
           daily_goal?: number
@@ -617,11 +626,14 @@ export type Database = {
           haptics_enabled?: boolean
           height_cm?: number | null
           id?: string
+          invited_by?: string | null
           last_workout_date?: string | null
           level?: number
           longest_streak?: number
           onboarded?: boolean
           personal_bests?: Json
+          public_enabled?: boolean
+          public_slug?: string | null
           sex?: string | null
           share_activity?: boolean
           sound_enabled?: boolean
@@ -631,6 +643,93 @@ export type Database = {
           updated_at?: string
           weight_kg?: number | null
           xp?: number
+        }
+        Relationships: []
+      }
+      program_days: {
+        Row: {
+          created_at: string
+          day_index: number
+          exercise_id: string | null
+          focus: string
+          id: string
+          note: string
+          program_id: string
+          reps: number
+          rest_s: number
+          sets: number
+        }
+        Insert: {
+          created_at?: string
+          day_index: number
+          exercise_id?: string | null
+          focus: string
+          id?: string
+          note?: string
+          program_id: string
+          reps?: number
+          rest_s?: number
+          sets?: number
+        }
+        Update: {
+          created_at?: string
+          day_index?: number
+          exercise_id?: string | null
+          focus?: string
+          id?: string
+          note?: string
+          program_id?: string
+          reps?: number
+          rest_s?: number
+          sets?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_days_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_days_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programs: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          level: string
+          sort_order: number
+          title: string
+          weeks: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id: string
+          level?: string
+          sort_order?: number
+          title: string
+          weeks?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          level?: string
+          sort_order?: number
+          title?: string
+          weeks?: number
         }
         Relationships: []
       }
@@ -694,6 +793,107 @@ export type Database = {
           note?: string | null
           path?: Json
           user_id?: string
+        }
+        Relationships: []
+      }
+      season_scores: {
+        Row: {
+          created_at: string
+          id: string
+          league: string
+          points: number
+          season_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          league?: string
+          points?: number
+          season_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          league?: string
+          points?: number
+          season_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_scores_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasons: {
+        Row: {
+          active: boolean
+          created_at: string
+          ends_on: string
+          id: string
+          name: string
+          starts_on: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          ends_on: string
+          id?: string
+          name: string
+          starts_on: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          ends_on?: string
+          id?: string
+          name?: string
+          starts_on?: string
+        }
+        Relationships: []
+      }
+      shop_items: {
+        Row: {
+          cost: number
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          kind: string
+          name: string
+          payload: Json
+          sort_order: number
+        }
+        Insert: {
+          cost?: number
+          created_at?: string
+          description?: string
+          icon?: string
+          id: string
+          kind: string
+          name: string
+          payload?: Json
+          sort_order?: number
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          kind?: string
+          name?: string
+          payload?: Json
+          sort_order?: number
         }
         Relationships: []
       }
@@ -802,6 +1002,114 @@ export type Database = {
             columns: ["challenge_id"]
             isOneToOne: false
             referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_program_days: {
+        Row: {
+          completed_at: string
+          created_at: string
+          day_index: number
+          id: string
+          reps_done: number
+          user_id: string
+          user_program_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          day_index: number
+          id?: string
+          reps_done?: number
+          user_id: string
+          user_program_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          day_index?: number
+          id?: string
+          reps_done?: number
+          user_id?: string
+          user_program_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_program_days_user_program_id_fkey"
+            columns: ["user_program_id"]
+            isOneToOne: false
+            referencedRelation: "user_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_programs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_day: number
+          id: string
+          program_id: string
+          started_on: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_day?: number
+          id?: string
+          program_id: string
+          started_on?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_day?: number
+          id?: string
+          program_id?: string
+          started_on?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_programs_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
             referencedColumns: ["id"]
           },
         ]
@@ -928,6 +1236,20 @@ export type Database = {
         Returns: boolean
       }
       join_club_by_code: { Args: { _code: string }; Returns: string }
+      public_profile: {
+        Args: { _slug: string }
+        Returns: {
+          avatar_url: string
+          battle_wins: number
+          best_count: number
+          current_streak: number
+          display_name: string
+          level: number
+          longest_streak: number
+          xp: number
+        }[]
+      }
+      purchase_shop_item: { Args: { _item_id: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
