@@ -560,11 +560,14 @@ export type Database = {
           haptics_enabled: boolean
           height_cm: number | null
           id: string
+          invited_by: string | null
           last_workout_date: string | null
           level: number
           longest_streak: number
           onboarded: boolean
           personal_bests: Json
+          public_enabled: boolean
+          public_slug: string | null
           sex: string | null
           share_activity: boolean
           sound_enabled: boolean
@@ -590,11 +593,14 @@ export type Database = {
           haptics_enabled?: boolean
           height_cm?: number | null
           id: string
+          invited_by?: string | null
           last_workout_date?: string | null
           level?: number
           longest_streak?: number
           onboarded?: boolean
           personal_bests?: Json
+          public_enabled?: boolean
+          public_slug?: string | null
           sex?: string | null
           share_activity?: boolean
           sound_enabled?: boolean
@@ -620,11 +626,14 @@ export type Database = {
           haptics_enabled?: boolean
           height_cm?: number | null
           id?: string
+          invited_by?: string | null
           last_workout_date?: string | null
           level?: number
           longest_streak?: number
           onboarded?: boolean
           personal_bests?: Json
+          public_enabled?: boolean
+          public_slug?: string | null
           sex?: string | null
           share_activity?: boolean
           sound_enabled?: boolean
@@ -1227,6 +1236,19 @@ export type Database = {
         Returns: boolean
       }
       join_club_by_code: { Args: { _code: string }; Returns: string }
+      public_profile: {
+        Args: { _slug: string }
+        Returns: {
+          avatar_url: string
+          battle_wins: number
+          best_count: number
+          current_streak: number
+          display_name: string
+          level: number
+          longest_streak: number
+          xp: number
+        }[]
+      }
       purchase_shop_item: { Args: { _item_id: string }; Returns: Json }
     }
     Enums: {
