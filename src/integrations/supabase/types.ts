@@ -634,6 +634,93 @@ export type Database = {
         }
         Relationships: []
       }
+      program_days: {
+        Row: {
+          created_at: string
+          day_index: number
+          exercise_id: string | null
+          focus: string
+          id: string
+          note: string
+          program_id: string
+          reps: number
+          rest_s: number
+          sets: number
+        }
+        Insert: {
+          created_at?: string
+          day_index: number
+          exercise_id?: string | null
+          focus: string
+          id?: string
+          note?: string
+          program_id: string
+          reps?: number
+          rest_s?: number
+          sets?: number
+        }
+        Update: {
+          created_at?: string
+          day_index?: number
+          exercise_id?: string | null
+          focus?: string
+          id?: string
+          note?: string
+          program_id?: string
+          reps?: number
+          rest_s?: number
+          sets?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_days_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_days_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programs: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          level: string
+          sort_order: number
+          title: string
+          weeks: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id: string
+          level?: string
+          sort_order?: number
+          title: string
+          weeks?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          level?: string
+          sort_order?: number
+          title?: string
+          weeks?: number
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -802,6 +889,85 @@ export type Database = {
             columns: ["challenge_id"]
             isOneToOne: false
             referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_program_days: {
+        Row: {
+          completed_at: string
+          created_at: string
+          day_index: number
+          id: string
+          reps_done: number
+          user_id: string
+          user_program_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          day_index: number
+          id?: string
+          reps_done?: number
+          user_id: string
+          user_program_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          day_index?: number
+          id?: string
+          reps_done?: number
+          user_id?: string
+          user_program_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_program_days_user_program_id_fkey"
+            columns: ["user_program_id"]
+            isOneToOne: false
+            referencedRelation: "user_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_programs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_day: number
+          id: string
+          program_id: string
+          started_on: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_day?: number
+          id?: string
+          program_id: string
+          started_on?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_day?: number
+          id?: string
+          program_id?: string
+          started_on?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_programs_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
             referencedColumns: ["id"]
           },
         ]
