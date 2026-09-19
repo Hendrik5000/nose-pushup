@@ -505,6 +505,27 @@ function WorkoutScreen() {
                   </span>
                 </div>
               )}
+              {lastQuality && (
+                <span className="text-[11px] font-semibold text-foreground">
+                  {"★".repeat(Math.round(lastQuality.grade))}
+                  <span className="text-muted-foreground">
+                    {"★".repeat(Math.max(0, 5 - Math.round(lastQuality.grade)))}
+                  </span>
+                  {!lastQuality.full && (
+                    <span className="ml-1 text-muted-foreground">· halbe Rep</span>
+                  )}
+                </span>
+              )}
+              {liveCue && (
+                <span className="rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-[11px] font-semibold text-primary">
+                  {liveCue}
+                </span>
+              )}
+              {formStats && (
+                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Technik {formStats.formScore.toFixed(1)} · {formStats.cleanReps} sauber
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -547,6 +568,14 @@ function WorkoutScreen() {
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Session abgeschlossen</div>
           <div className="mt-2 text-lg font-semibold text-foreground">{summary.count} {exercise.unit === "seconds" ? "Sekunden" : "Wiederholungen"}</div>
           <div className="mt-1 text-sm text-muted-foreground">+{summary.xp} XP · {summary.isBest ? "Neuer Bestwert" : "Gut gemacht"}</div>
+          {summary.formScore != null && (
+            <div className="mt-2 flex items-center justify-between rounded-xl bg-background/50 px-3 py-2 text-xs">
+              <span className="text-muted-foreground">Technik-Note</span>
+              <span className="font-semibold tabular-nums text-foreground">
+                {summary.formScore.toFixed(1)} / 5 · {summary.cleanReps} sauber
+              </span>
+            </div>
+          )}
         </div>
       )}
 
