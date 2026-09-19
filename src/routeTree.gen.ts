@@ -24,6 +24,7 @@ import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRunRouteImport } from './routes/_authenticated/run'
+import { Route as USlugRouteImport } from './routes/u.$slug'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AuthenticatedBattleIndexRouteImport } from './routes/_authenticated/battle.index'
@@ -110,6 +111,11 @@ const AuthenticatedRunRoute = AuthenticatedRunRouteImport.update({
   path: '/run',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const USlugRoute = USlugRouteImport.update({
+  id: '/u/$slug',
+  path: '/u/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -160,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/run': typeof AuthenticatedRunRoute
+  '/u/$slug': typeof USlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/run': typeof AuthenticatedRunRoute
+  '/u/$slug': typeof USlugRoute
   '/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/run': typeof AuthenticatedRunRoute
+  '/u/$slug': typeof USlugRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/profile'
     | '/run'
+    | '/u/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/battle/$id'
@@ -251,6 +261,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/profile'
     | '/run'
+    | '/u/$slug'
     | '/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
     | '/_authenticated/leaderboard'
     | '/_authenticated/profile'
     | '/_authenticated/run'
+    | '/u/$slug'
     | '/_authenticated/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -290,6 +302,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute: typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  USlugRoute: typeof USlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -401,6 +414,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRunRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/u/$slug': {
+      id: '/u/$slug'
+      path: '/u/$slug'
+      fullPath: '/u/$slug'
+      preLoaderRoute: typeof USlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -490,6 +510,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  USlugRoute: USlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
