@@ -23,7 +23,9 @@ import { Route as AuthenticatedExercisesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedProgramsRouteImport } from './routes/_authenticated/programs'
 import { Route as AuthenticatedRunRouteImport } from './routes/_authenticated/run'
+import { Route as AuthenticatedSeasonRouteImport } from './routes/_authenticated/season'
 import { Route as USlugRouteImport } from './routes/u.$slug'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -106,9 +108,19 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProgramsRoute = AuthenticatedProgramsRouteImport.update({
+  id: '/programs',
+  path: '/programs',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRunRoute = AuthenticatedRunRouteImport.update({
   id: '/run',
   path: '/run',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSeasonRoute = AuthenticatedSeasonRouteImport.update({
+  id: '/season',
+  path: '/season',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const USlugRoute = USlugRouteImport.update({
@@ -165,7 +177,9 @@ export interface FileRoutesByFullPath {
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/programs': typeof AuthenticatedProgramsRoute
   '/run': typeof AuthenticatedRunRoute
+  '/season': typeof AuthenticatedSeasonRoute
   '/u/$slug': typeof USlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -187,7 +201,9 @@ export interface FileRoutesByTo {
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/programs': typeof AuthenticatedProgramsRoute
   '/run': typeof AuthenticatedRunRoute
+  '/season': typeof AuthenticatedSeasonRoute
   '/u/$slug': typeof USlugRoute
   '/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -212,7 +228,9 @@ export interface FileRoutesById {
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/programs': typeof AuthenticatedProgramsRoute
   '/_authenticated/run': typeof AuthenticatedRunRoute
+  '/_authenticated/season': typeof AuthenticatedSeasonRoute
   '/u/$slug': typeof USlugRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -238,7 +256,9 @@ export interface FileRouteTypes {
     | '/health'
     | '/leaderboard'
     | '/profile'
+    | '/programs'
     | '/run'
+    | '/season'
     | '/u/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -260,7 +280,9 @@ export interface FileRouteTypes {
     | '/health'
     | '/leaderboard'
     | '/profile'
+    | '/programs'
     | '/run'
+    | '/season'
     | '/u/$slug'
     | '/'
     | '/.lovable/oauth/consent'
@@ -284,7 +306,9 @@ export interface FileRouteTypes {
     | '/_authenticated/health'
     | '/_authenticated/leaderboard'
     | '/_authenticated/profile'
+    | '/_authenticated/programs'
     | '/_authenticated/run'
+    | '/_authenticated/season'
     | '/u/$slug'
     | '/_authenticated/'
     | '/.lovable/oauth/consent'
@@ -407,11 +431,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/programs': {
+      id: '/_authenticated/programs'
+      path: '/programs'
+      fullPath: '/programs'
+      preLoaderRoute: typeof AuthenticatedProgramsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/run': {
       id: '/_authenticated/run'
       path: '/run'
       fullPath: '/run'
       preLoaderRoute: typeof AuthenticatedRunRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/season': {
+      id: '/_authenticated/season'
+      path: '/season'
+      fullPath: '/season'
+      preLoaderRoute: typeof AuthenticatedSeasonRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/u/$slug': {
@@ -474,7 +512,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedProgramsRoute: typeof AuthenticatedProgramsRoute
   AuthenticatedRunRoute: typeof AuthenticatedRunRoute
+  AuthenticatedSeasonRoute: typeof AuthenticatedSeasonRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
   AuthenticatedCaliWorkoutSkillIdRoute: typeof AuthenticatedCaliWorkoutSkillIdRoute
@@ -490,7 +530,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedProgramsRoute: AuthenticatedProgramsRoute,
   AuthenticatedRunRoute: AuthenticatedRunRoute,
+  AuthenticatedSeasonRoute: AuthenticatedSeasonRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
   AuthenticatedCaliWorkoutSkillIdRoute: AuthenticatedCaliWorkoutSkillIdRoute,
