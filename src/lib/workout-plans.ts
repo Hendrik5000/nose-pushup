@@ -30,6 +30,57 @@ export type ReminderSummary = {
   text: string;
 };
 
+export type RoutinePreset = {
+  id: string;
+  name: string;
+  mode: "push" | "strength" | "mobility";
+  sets: number;
+  reps: number;
+  rest_s: number;
+};
+
+const ROUTINE_STORAGE_KEY = "np-routines";
+
+export function getSavedRoutines(): RoutinePreset[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(ROUTINE_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is RoutinePreset => {
+      const candidate = item as Partial<RoutinePreset> | null;
+      return !!candidate && typeof candidate.id === "string" && typeof candidate.name === "string" && ["push", "strength", "mobility"].includes(candidate.mode ?? "") && typeof candidate.sets === "number" && typeof candidate.reps === "number" && typeof candidate.rest_s === "number";
+    });
+  } catch {
+    return [];
+  }
+}
+
+export function saveRoutinePreset(preset: RoutinePreset) {
+  const next = [preset, ...getSavedRoutines().filter((item) => item.id !== preset.id)].slice(0, 5);
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // ignore storage issues
+    }
+  }
+  return next;
+}
+
+export function removeRoutinePreset(id: string) {
+  const next = getSavedRoutines().filter((item) => item.id !== id);
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // ignore storage issues
+    }
+  }
+  return next;
+}
+
 export function getQuickStartPlan({
   best,
   todayReps,
