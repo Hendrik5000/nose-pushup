@@ -3,13 +3,19 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { levelProgress } from "@/lib/level";
+import {
+  getCoachFocus,
+  getQuickStartPlan,
+  getRecoverySummary,
+  getSmartReminder,
+  getWeeklyProgress,
+} from "@/lib/workout-plans";
 import { AiCoachCard } from "@/components/AiCoachCard";
 import { WeekPlanCard } from "@/components/WeekPlanCard";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
 import { BottomNav } from "@/components/BottomNav";
-import { getQuickStartPlan } from "@/lib/workout-plans";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -56,6 +62,7 @@ function Dashboard() {
   const [todaySteps, setTodaySteps] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
+  const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
 
   useEffect(() => {
     (async () => {
@@ -85,7 +92,6 @@ function Dashboard() {
 
       let prof = p;
       if (!prof) {
-        // Selbstheilung: Profil anlegen (z. B. für Gast-Konten ohne Zeile).
         const { data: created } = await supabase
           .from("profiles")
           .insert({
@@ -137,9 +143,29 @@ function Dashboard() {
     month: "long",
   });
 
+  const weeklyTarget = Math.max(200, goal * 6);
+  const weeklyReps = Math.min(weeklyTarget, todayReps + Math.max(0, streak * 8) + Math.round((pushupBest || 10) / 2));
+  const weeklyProgress = getWeeklyProgress({ weekReps: weeklyReps, target: weeklyTarget });
+  const recovery = getRecoverySummary({
+    steps: todaySteps,
+    sleepMin: 420,
+    activeKcal: Math.max(0, todayReps * 3 + streak * 15),
+    streak,
+    goal,
+    weekReps: weeklyReps,
+  });
+  const reminder = getSmartReminder({ score: recovery.score, todayReps, goal, streak });
+
+  const routineConfig = {
+    push: { label: "Power Push", sets: quickStart.sets, reps: quickStart.reps, rest: quickStart.rest_s },
+    strength: { label: "Kraft-Block", sets: 3, reps: 12, rest: 50 },
+    mobility: { label: "Mobilität", sets: 2, reps: 30, rest: 35 },
+  } as const;
+
+  const routine = routineConfig[routineMode];
+
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
-      {/* Header */}
       <header className="flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
@@ -162,7 +188,6 @@ function Dashboard() {
         </Link>
       </header>
 
-      {/* Aktivitäts-Ring (Samsung-Health-Struktur) */}
       <section className="mt-5 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <div className="flex items-center gap-5">
           <ActivityRing pct={goalPct} value={todayReps} goal={goal} />
@@ -197,15 +222,115 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* Quick Tiles */}
-      <section className="mt-4 grid grid-cols-4 gap-2">
+      <section className="mt-4 grid gap-3">
+        <div className="rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Recovery</div>
+            <div className="text-lg font-semibold tabular-nums">{recovery.score}%</div>
+          </div>
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${recovery.score}%` }}
+            />
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-foreground">{recovery.label}</div>
+              <p className="mt-1 text-xs text-muted-foreground">{recovery.detail}</p>
+            </div>
+            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-[9px] uppercase tracking-[0.2em] text-primary">
+              {recovery.recommendation}
+            </span>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Wochenfortschritt</div>
+            <div className="text-sm font-semibold tabular-nums">{weeklyProgress.percent}%</div>
+          </div>
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${weeklyProgress.percent}%` }}
+            />
+          </div>
+          <div className="mt-3 flex items-center justify-between text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            <span className="tabular-nums">{weeklyProgress.weekReps} / {weeklyProgress.target}</span>
+            <span>{weeklyProgress.state === "ahead" ? "Ziel übertroffen" : weeklyProgress.state === "ontrack" ? "Auf Kurs" : "Noch offen"}</span>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">{weeklyProgress.message}</p>
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Smart Reminder</div>
+        <div className="mt-3 flex items-start gap-3">
+          <span className="text-2xl leading-none">⏰</span>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-foreground">{reminder.title}</div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{reminder.text}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Mini-Block</div>
+            <h2 className="mt-1 text-base font-semibold text-foreground">Dein Routine-Builder</h2>
+          </div>
+        </div>
+        <div className="mt-3 flex gap-2">
+          {(["push", "strength", "mobility"] as const).map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setRoutineMode(type)}
+              className={`flex-1 rounded-xl border px-2 py-2 text-[10px] font-medium uppercase tracking-[0.18em] transition ${
+                routineMode === type
+                  ? "border-primary bg-primary/15 text-foreground"
+                  : "border-border bg-secondary/60 text-muted-foreground"
+              }`}
+            >
+              {type === "push" ? "Push" : type === "strength" ? "Kraft" : "Mobil"}
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 rounded-2xl border border-primary/25 bg-primary/5 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-foreground">{routine.label}</div>
+              <div className="mt-1 text-xs text-muted-foreground">Kurz und wirksam</div>
+            </div>
+            <span className="text-2xl leading-none">{routineMode === "push" ? "💪" : routineMode === "strength" ? "🏋️" : "🧘"}</span>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <StatPill label="Sets" value={routine.sets} />
+            <StatPill label="Reps" value={routine.reps} />
+            <StatPill label="Pause" value={`${routine.rest}s`} />
+          </div>
+          <Link
+            to="/workout/$exerciseId"
+            params={{ exerciseId: "pushup" }}
+            search={{ mode }}
+            className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
+          >
+            Mini-Block starten →
+          </Link>
+        </div>
+      </section>
+
+      <section className="mt-4 grid grid-cols-3 gap-2">
+        <Tile to="/programs" icon="📋" label="Programme" />
+        <Tile to="/season" icon="🏆" label="Saison" />
         <Tile to="/battle" icon="⚔️" label="Battle" />
         <Tile to="/clubs" icon="🛡️" label="Clubs" />
         <Tile to="/calisthenics" icon="🤸" label="Cali" />
         <Tile to="/health" icon="❤️" label="Health" />
       </section>
 
-      {/* Push-Up Hero */}
       <section className="mt-4 overflow-hidden rounded-3xl border border-border bg-card/50 p-5 backdrop-blur">
         <div className="flex items-start justify-between">
           <div>
@@ -234,7 +359,6 @@ function Dashboard() {
         </Link>
       </section>
 
-      {/* Motivation */}
       {userId && (
         <section className="mt-4 rounded-3xl border border-border bg-card/50 p-4 backdrop-blur">
           <div className="flex items-center justify-between gap-2">
@@ -251,7 +375,6 @@ function Dashboard() {
         </section>
       )}
 
-      {/* Kurzer Fokusblock */}
       {userId && (
         <section className="mt-3 rounded-2xl border border-border/70 bg-background/40 p-3 text-sm text-muted-foreground">
           <div className="flex items-center justify-between">
@@ -261,11 +384,9 @@ function Dashboard() {
         </section>
       )}
 
-      {/* Smart Coach (AI) */}
       <WeekPlanCard />
       <AiCoachCard />
 
-      {/* Weitere Übungen */}
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -360,7 +481,7 @@ function Tile({ to, icon, label }: { to: string; icon: string; label: string }) 
   return (
     <Link
       to={to}
-      className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card/50 py-3 text-[10px] font-medium text-muted-foreground backdrop-blur transition active:scale-[0.97] hover:border-primary/40"
+      className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card/50 py-3 text-[10px] font-medium text-muted-foreground backdrop-blur transition active:scale-[0.97] hover:border-primary/40 hover:text-foreground"
     >
       <span className="text-2xl leading-none">{icon}</span>
       {label}
@@ -391,5 +512,14 @@ function ModeChip({
       <span className="text-lg leading-none">{icon}</span>
       <span>{label}</span>
     </button>
+  );
+}
+
+function StatPill({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl border border-border bg-background/40 px-2 py-2">
+      <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm font-semibold tabular-nums text-foreground">{value}</div>
+    </div>
   );
 }
