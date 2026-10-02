@@ -8,79 +8,6 @@ export type QuickStartPlan = {
   remaining: number;
 };
 
-export type RecoverySummary = {
-  score: number;
-  label: string;
-  detail: string;
-  recommendation: string;
-  readiness: "high" | "medium" | "low";
-};
-
-export type WeeklyProgressSummary = {
-  weekReps: number;
-  target: number;
-  percent: number;
-  delta: number;
-  state: "ahead" | "ontrack" | "behind";
-  message: string;
-};
-
-export type ReminderSummary = {
-  title: string;
-  text: string;
-};
-
-export type RoutinePreset = {
-  id: string;
-  name: string;
-  mode: "push" | "strength" | "mobility";
-  sets: number;
-  reps: number;
-  rest_s: number;
-};
-
-const ROUTINE_STORAGE_KEY = "np-routines";
-
-export function getSavedRoutines(): RoutinePreset[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(ROUTINE_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item): item is RoutinePreset => {
-      const candidate = item as Partial<RoutinePreset> | null;
-      return !!candidate && typeof candidate.id === "string" && typeof candidate.name === "string" && ["push", "strength", "mobility"].includes(candidate.mode ?? "") && typeof candidate.sets === "number" && typeof candidate.reps === "number" && typeof candidate.rest_s === "number";
-    });
-  } catch {
-    return [];
-  }
-}
-
-export function saveRoutinePreset(preset: RoutinePreset) {
-  const next = [preset, ...getSavedRoutines().filter((item) => item.id !== preset.id)].slice(0, 5);
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // ignore storage issues
-    }
-  }
-  return next;
-}
-
-export function removeRoutinePreset(id: string) {
-  const next = getSavedRoutines().filter((item) => item.id !== id);
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // ignore storage issues
-    }
-  }
-  return next;
-}
-
 export function getQuickStartPlan({
   best,
   todayReps,
@@ -128,85 +55,51 @@ export function getCoachFocus(best: number, weekReps: number, streak: number) {
   return "Bleib im Rhythmus, zieh die Wiederholungen ruhig und halte das Tempo gleichmäßig.";
 }
 
-export function getRecoverySummary({
-  steps = 0,
-  sleepMin = 0,
-  activeKcal = 0,
-  streak = 0,
-  goal = 50,
-  weekReps = 0,
-}: {
-  steps?: number;
-  sleepMin?: number;
-  activeKcal?: number;
-  streak?: number;
-  goal?: number;
-  weekReps?: number;
-}): RecoverySummary {
-  const stepRatio = Math.min(1, steps / 10000);
-  const sleepRatio = Math.min(1, sleepMin / 480);
-  const calorieRatio = Math.min(1, activeKcal / 500);
-  const consistencyRatio = Math.min(1, (streak + 1) / 6);
-  const weeklyRatio = Math.min(1, weekReps / Math.max(150, goal * 5));
-  const score = Math.max(0, Math.min(100, Math.round((stepRatio * 30 + sleepRatio * 25 + calorieRatio * 20 + consistencyRatio * 15 + weeklyRatio * 10) * 100)));
-
-  if (score >= 75) {
-    return {
-      score,
-      label: "Gut vorbereitet",
-      detail: "Deine Erholung ist aktuell in einem starken Bereich – ideal für einen belastbaren Push-Tag.",
-      recommendation: "Ziel: stabil halten",
-      readiness: "high",
-    };
-  }
-
-  if (score >= 45) {
-    return {
-      score,
-      label: "Mittelmäßig",
-      detail: "Es geht bergauf, aber die Erholung ist noch nicht voll da – kürzere, sauberere Sets sind sinnvoll.",
-      recommendation: "Konsistenz vor Volumen",
-      readiness: "medium",
-    };
-  }
-
-  return {
-    score,
-    label: "Erholung niedrig",
-    detail: "Heute lieber sauber und kontrolliert arbeiten, statt die Reihenfolge zu erzwingen.",
-    recommendation: "Leichter Start",
-    readiness: "low",
-  };
-}
-
-export function getWeeklyProgress({
-  weekReps,
-  target,
-}: {
-  weekReps: number;
-  target: number;
-}): WeeklyProgressSummary {
-  const safeTarget = Math.max(1, target);
-  const total = Math.max(0, weekReps);
-  const percent = Math.min(100, Math.round((total / safeTarget) * 100));
-  const delta = Math.max(0, safeTarget - total);
-  const state = total >= safeTarget ? "ahead" : total >= safeTarget * 0.75 ? "ontrack" : "behind";
-
+export function getWeeklyProgress({ weekReps, target }: { weekReps: number; target: number }) {
+  const percent = target > 0 ? Math.min(100, Math.round((weekReps / target) * 100)) : 0;
+  const state: "ahead" | "ontrack" | "behind" =
+    percent >= 100 ? "ahead" : percent >= 50 ? "ontrack" : "behind";
   const message =
     state === "ahead"
-      ? "Du bist über deinem Wochenziel – das gibt dir jetzt Luft für eine lockerere Session."
+      ? "Stark! Dein Wochenziel ist geschafft."
       : state === "ontrack"
-        ? "Sehr gut – du bist auf Kurs und brauchst nur noch einen sauberen Schub."
-        : "Der Rhythmus fehlt noch – ein kurzer, sauberer Block reicht schon aus, um wieder in den Flow zu kommen.";
+        ? "Du bist auf Kurs – bleib dran."
+        : `Noch ${Math.max(0, target - weekReps)} Reps bis zum Wochenziel.`;
+  return { weekReps, target, percent, state, message };
+}
 
-  return {
-    weekReps: total,
-    target: safeTarget,
-    percent,
-    delta,
-    state,
-    message,
-  };
+export function getRecoverySummary({
+  steps,
+  sleepMin,
+  activeKcal,
+  streak,
+  goal,
+  weekReps,
+}: {
+  steps: number;
+  sleepMin: number;
+  activeKcal: number;
+  streak: number;
+  goal: number;
+  weekReps: number;
+}) {
+  let score = 70;
+  score += Math.min(15, Math.round((sleepMin - 360) / 8));
+  score -= Math.min(20, Math.round(activeKcal / 100));
+  score -= Math.min(10, Math.max(0, streak - 5));
+  score -= weekReps > goal * 7 ? 10 : 0;
+  score += steps > 0 && steps < 12000 ? 5 : 0;
+  score = Math.max(10, Math.min(100, score));
+  const label = score >= 75 ? "Gut erholt" : score >= 50 ? "Solide" : "Erholung nötig";
+  const detail =
+    score >= 75
+      ? "Dein Körper ist bereit für eine intensive Einheit."
+      : score >= 50
+        ? "Normales Training ist okay, achte auf saubere Technik."
+        : "Heute lieber locker trainieren oder pausieren.";
+  const recommendation =
+    score >= 75 ? "Volle Power" : score >= 50 ? "Moderat trainieren" : "Mobilität & Pause";
+  return { score, label, detail, recommendation };
 }
 
 export function getSmartReminder({
@@ -219,54 +112,18 @@ export function getSmartReminder({
   todayReps: number;
   goal: number;
   streak: number;
-}): ReminderSummary {
-  if (score < 45) {
-    return {
-      title: "Leichter Fokus heute",
-      text: "Deine Erholung ist noch nicht voll da. Mache zwei saubere Sätze, halte die Form hoch und starte entspannt.",
-    };
+}) {
+  if (todayReps >= goal) {
+    return { title: "Tagesziel erreicht", text: "Super! Gönn dir Erholung oder hol dir Bonus-XP." };
   }
-
-  if (todayReps < goal * 0.7) {
-    return {
-      title: "Zwischenstopp nicht vergessen",
-      text: `Du bist noch ${Math.max(0, Math.round(goal * 0.7) - todayReps)} Reps von der guten Tagesbasis entfernt. Ein kurzer Block reicht schon.`,
-    };
+  if (score < 50) {
+    return { title: "Sanft bleiben", text: "Ein kurzer, lockerer Satz hält deine Serie am Leben." };
   }
-
   if (streak > 0) {
     return {
-      title: "Streak am Leben halten",
-      text: "Du bist im guten Rhythmus. Halte die Session kurz, sauber und konsistent, damit der Streak weiterläuft.",
+      title: `${streak} Tage Serie`,
+      text: `Noch ${goal - todayReps} Reps, damit die Serie weiterläuft.`,
     };
   }
-
-  return {
-    title: "Neues Kapitel starten",
-    text: "Heute ist ein guter Tag für einen sauberen Neustart: kurz, kontrolliert und ohne Druck.",
-  };
-}
-
-export function getClubChallengeState({
-  clubGoal,
-  teamReps,
-}: {
-  clubGoal: number;
-  teamReps: number;
-}) {
-  const percent = Math.min(100, Math.round((teamReps / Math.max(1, clubGoal)) * 100));
-
-  if (percent >= 100) {
-    return {
-      label: "Mission erfüllt",
-      message: "Der Club hat das Wochenziel bereits knallhart geschafft.",
-      percent,
-    };
-  }
-
-  return {
-    label: "Mission im Gange",
-    message: `${Math.max(0, clubGoal - teamReps)} Reps bis zum Team-Ziel. Ein kurzer Block von jedem reicht aus.`,
-    percent,
-  };
+  return { title: "Heute starten", text: `${goal} Reps sind dein Ziel – leg los!` };
 }

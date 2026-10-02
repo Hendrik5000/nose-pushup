@@ -322,7 +322,9 @@ function Dashboard() {
         </div>
       </section>
 
-      <section className="mt-4 grid grid-cols-4 gap-2">
+      <section className="mt-4 grid grid-cols-3 gap-2">
+        <Tile to="/programs" icon="📋" label="Programme" />
+        <Tile to="/season" icon="🏆" label="Saison" />
         <Tile to="/battle" icon="⚔️" label="Battle" />
         <Tile to="/clubs" icon="🛡️" label="Clubs" />
         <Tile to="/calisthenics" icon="🤸" label="Cali" />
