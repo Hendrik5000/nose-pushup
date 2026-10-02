@@ -21,6 +21,7 @@ import { BadgeGallery } from "@/components/BadgeGallery";
 import { ThemePicker } from "@/components/ThemePicker";
 import { BottomNav } from "@/components/BottomNav";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { PublicProfileSettings } from "@/components/PublicProfileSettings";
 import { restartWelcomeTour } from "@/components/WelcomeTour";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -515,6 +516,7 @@ function ProfilePage() {
         </div>
       </section>
 
+      <PublicProfileSettings />
       <NotificationSettings />
 
       <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
