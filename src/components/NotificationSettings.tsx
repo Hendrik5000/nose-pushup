@@ -28,7 +28,7 @@ export function NotificationSettings() {
     setEnabled(isNotifyEnabled());
     setTime(getReminderTime());
     setDenied(notificationPermission() === "denied");
-    
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(reg => {
         reg.pushManager.getSubscription().then(sub => {
@@ -93,7 +93,7 @@ export function NotificationSettings() {
         setPushEnabled(true);
         toast.success("Push-Benachrichtigungen aktiviert!");
       }
-    } catch (err) {
+    } catch {
       toast.error("Fehler bei Push-Aktivierung");
     } finally {
       setLoading(false);
@@ -101,44 +101,56 @@ export function NotificationSettings() {
   };
 
   return (
-    <section className="mt-6 space-y-4 rounded-3xl border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
-      <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/70">
-          <Bell className="h-4 w-4" />
-          Benachrichtigungen
-        </h2>
-      </div>
-      <div className="space-y-3">
-        <div onClick={toggleLocal} className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all ${enabled ? "border-primary/50 bg-primary/5" : "border-white/5 bg-white/5"}`}>
-          <div className="flex items-center gap-4">
-            <div className={`rounded-xl p-2.5 ${enabled ? "bg-primary text-white" : "bg-white/5 text-white/40"}`}>
-              {enabled ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
-            </div>
-            <div>
-              <p className="text-sm font-medium text-white">Tägliche Erinnerung</p>
-            </div>
+    <div className="space-y-3">
+      <div
+        onClick={toggleLocal}
+        className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all ${
+          enabled ? "border-primary/50 bg-primary/5" : "border-border bg-secondary/40"
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <div className={`rounded-xl p-2.5 ${enabled ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"}`}>
+            {enabled ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground">Tägliche Erinnerung</p>
+            {!supported && <p className="text-[10px] text-muted-foreground">Nicht unterstützt</p>}
+            {denied && <p className="text-[10px] text-muted-foreground">Berechtigung blockiert</p>}
           </div>
         </div>
-        <div onClick={!loading ? togglePush : undefined} className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all ${pushEnabled ? "border-blue-500/50 bg-blue-500/5" : "border-white/5 bg-white/5"}`}>
-          <div className="flex items-center gap-4">
-            <div className={`rounded-xl p-2.5 ${pushEnabled ? "bg-blue-500 text-white" : "bg-white/5 text-white/40"}`}>
-              <Smartphone className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-white">Cloud Push</p>
-            </div>
+      </div>
+      <div
+        onClick={!loading ? togglePush : undefined}
+        className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all ${
+          pushEnabled ? "border-primary/50 bg-primary/5" : "border-border bg-secondary/40"
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <div className={`rounded-xl p-2.5 ${pushEnabled ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"}`}>
+            <Smartphone className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground">Cloud Push</p>
           </div>
         </div>
-        {enabled && (
-          <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-4">
-            <div className="flex items-center gap-4">
-              <Clock className="h-5 w-5 text-white/40" />
-              <p className="text-sm text-white">Zeit</p>
-            </div>
-            <input type="time" value={time} onChange={(e) => { setTime(e.target.value); setReminderTime(e.target.value); }} className="bg-transparent text-white outline-none" />
-          </div>
-        )}
       </div>
-    </section>
+      {enabled && (
+        <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 p-4">
+          <div className="flex items-center gap-4">
+            <Clock className="h-5 w-5 text-muted-foreground" />
+            <p className="text-sm text-foreground">Zeit</p>
+          </div>
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => {
+              setTime(e.target.value);
+              setReminderTime(e.target.value);
+            }}
+            className="bg-transparent text-foreground outline-none"
+          />
+        </div>
+      )}
+    </div>
   );
 }

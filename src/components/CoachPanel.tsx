@@ -111,15 +111,7 @@ export function CoachPanel({ profile, workouts }: Props) {
   ];
 
   return (
-    <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Coach
-        </h2>
-        <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-          Lv {lp.level} · {lp.title}
-        </span>
-      </div>
+    <div>
 
       <div className={`mt-3 rounded-2xl border px-4 py-3 ${toneClass}`}>
         <div className="text-sm font-semibold">{status.title}</div>
@@ -175,7 +167,7 @@ export function CoachPanel({ profile, workouts }: Props) {
           <li className="text-destructive">• Heute noch trainieren, um die Streak zu retten.</li>
         )}
       </ul>
-    </section>
+    </div>
   );
 }
 

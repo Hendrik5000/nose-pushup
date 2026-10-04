@@ -124,15 +124,7 @@ export function FriendsPanel({ userId }: { userId: string }) {
   );
 
   return (
-    <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Freunde
-        </h2>
-        <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-          {friends.length}
-        </span>
-      </div>
+    <div>
 
       <div className="flex overflow-x-auto rounded-full border border-border bg-background/60 p-0.5 text-[10px] uppercase tracking-[0.18em]">
         <TabBtn active={tab === "friends"} onClick={() => setTab("friends")}>
@@ -282,7 +274,7 @@ export function FriendsPanel({ userId }: { userId: string }) {
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }
 
