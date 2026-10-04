@@ -91,33 +91,28 @@ export function BadgeGallery() {
 
   if (loading) {
     return (
-      <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Badges</h2>
-        <div className="mt-4 grid grid-cols-4 gap-3">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="aspect-square animate-pulse rounded-2xl bg-secondary" />
-          ))}
-        </div>
-      </section>
+      <div className="grid grid-cols-4 gap-3">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="aspect-square animate-pulse rounded-2xl bg-secondary" />
+        ))}
+      </div>
     );
   }
 
   const progress = achievements.length > 0 ? Math.round((unlocked.length / achievements.length) * 100) : 0;
 
   return (
-    <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Badges</h2>
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {unlocked.length}/{achievements.length} ({progress}%)
+    <div>
+      <div className="flex items-center gap-3">
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+          {unlocked.length}/{achievements.length}
         </span>
-      </div>
-
-      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
-        <div
-          className="h-full rounded-full bg-primary transition-all"
-          style={{ width: `${progress}%` }}
-        />
       </div>
 
       <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -161,6 +156,6 @@ export function BadgeGallery() {
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }

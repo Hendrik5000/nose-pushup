@@ -20,11 +20,8 @@ export function ThemePicker({ profileId, initialTheme }: { profileId?: string; i
   };
 
   return (
-    <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-      <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Design</h2>
-      <p className="mt-1 text-xs text-muted-foreground">Wähle deine Farbwelt – wirkt sofort in der ganzen App.</p>
-
-      <div className="mt-4 grid grid-cols-3 gap-3">
+    <div>
+      <div className="grid grid-cols-3 gap-3">
         {THEMES.map((t) => (
           <button
             key={t.id}
@@ -46,6 +43,6 @@ export function ThemePicker({ profileId, initialTheme }: { profileId?: string; i
           </button>
         ))}
       </div>
-    </section>
+    </div>
   );
 }
