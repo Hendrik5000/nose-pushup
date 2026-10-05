@@ -425,6 +425,42 @@ function ProfilePage() {
               <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} numeric />
               <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} numeric />
             </div>
+            <div>
+              <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Geschlecht
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { v: "male", l: "Männlich" },
+                  { v: "female", l: "Weiblich" },
+                  { v: "other", l: "Divers" },
+                ].map((o) => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    onClick={() => setSex(sex === o.v ? "" : o.v)}
+                    className={`rounded-xl border px-2 py-2 text-xs font-medium transition ${
+                      sex === o.v
+                        ? "border-primary bg-primary/15 text-foreground"
+                        : "border-border bg-secondary/60 text-muted-foreground"
+                    }`}
+                  >
+                    {o.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
+            <button
+              onClick={save}
+              disabled={saving || !profile}
+              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
+            >
+              {saving ? "Speichere…" : "Speichern"}
+            </button>
+          </div>
+        </SettingsSection>
+
         <SettingsSection icon="⚙️" title="Bedienung" subtitle="Sound, Vibration, Teilen">
           <div className="space-y-3">
             <ToggleRow
