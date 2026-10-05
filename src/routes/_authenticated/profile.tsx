@@ -624,11 +624,8 @@ function WorkoutCharts({ workouts }: { workouts: WorkoutPoint[] }) {
   const muted = "oklch(0.7 0.03 250)";
 
   return (
-    <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Verlauf
-        </h2>
+    <div>
+      <div className="mb-4 flex justify-end gap-2">
         <div className="flex rounded-full border border-border bg-background/60 p-0.5 text-[10px] uppercase tracking-[0.18em]">
           <MetricTab active={metric === "count"} onClick={() => setMetric("count")}>
             Reps
