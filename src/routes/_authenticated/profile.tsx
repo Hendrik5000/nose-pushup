@@ -425,118 +425,28 @@ function ProfilePage() {
               <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} numeric />
               <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} numeric />
             </div>
-          <div className="mt-3">
-            <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Geschlecht
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { v: "male", l: "Männlich" },
-                { v: "female", l: "Weiblich" },
-                { v: "other", l: "Divers" },
-              ].map((o) => (
-                <button
-                  key={o.v}
-                  type="button"
-                  onClick={() => setSex(sex === o.v ? "" : o.v)}
-                  className={`rounded-xl border px-2 py-2 text-xs font-medium transition ${
-                    sex === o.v
-                      ? "border-primary bg-primary/15 text-foreground"
-                      : "border-border bg-secondary/60 text-muted-foreground"
-                  }`}
-                >
-                  {o.l}
-                </button>
-              ))}
-            </div>
+        <SettingsSection icon="⚙️" title="Bedienung" subtitle="Sound, Vibration, Teilen">
+          <div className="space-y-3">
+            <ToggleRow
+              label="Tages-Aktivität mit Freunden teilen"
+              description="Freunde sehen deine Push-Ups des Tages live."
+              on={shareActivity}
+              onToggle={toggleShare}
+            />
+            <ToggleRow
+              label="Sound-Feedback"
+              description="Klick bei jeder Wiederholung, Fanfare bei Erfolgen."
+              on={soundOn}
+              onToggle={toggleSound}
+            />
+            <ToggleRow
+              label="Vibration"
+              description="Haptisches Feedback auf dem Handy."
+              on={hapticsOn}
+              onToggle={toggleHaptics}
+            />
           </div>
-          <button
-            type="button"
-            onClick={() => setShareActivity((s) => !s)}
-            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
-          >
-            <span className="text-xs">
-              Tages-Aktivität mit Freunden teilen
-              <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                Freunde sehen deine Push-Ups des Tages live.
-              </span>
-            </span>
-            <span
-              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
-                shareActivity ? "bg-primary" : "bg-secondary"
-              }`}
-            >
-              <span
-                className={`h-5 w-5 rounded-full bg-background transition ${shareActivity ? "translate-x-5" : ""}`}
-              />
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const next = !soundOn;
-              setSoundOn(next);
-              setSoundEnabled(next);
-              if (next) feedbackSuccess();
-            }}
-            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
-          >
-            <span className="text-xs">
-              Sound-Feedback
-              <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                Klick bei jeder Wiederholung, Fanfare bei Erfolgen.
-              </span>
-            </span>
-            <span
-              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
-                soundOn ? "bg-primary" : "bg-secondary"
-              }`}
-            >
-              <span
-                className={`h-5 w-5 rounded-full bg-background transition ${soundOn ? "translate-x-5" : ""}`}
-              />
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const next = !hapticsOn;
-              setHapticsOn(next);
-              setHapticsEnabled(next);
-              if (next && typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
-            }}
-            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
-          >
-            <span className="text-xs">
-              Vibration
-              <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                Haptisches Feedback auf dem Handy.
-              </span>
-            </span>
-            <span
-              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
-                hapticsOn ? "bg-primary" : "bg-secondary"
-              }`}
-            >
-              <span
-                className={`h-5 w-5 rounded-full bg-background transition ${hapticsOn ? "translate-x-5" : ""}`}
-              />
-            </span>
-          </button>
-        </div>
-
-
-        {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
-        <button
-          onClick={save}
-          disabled={saving || !profile}
-          className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
-        >
-          {saving ? "Speichere…" : "Speichern"}
-        </button>
-      </section>
+        </SettingsSection>
 
       <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <div className="flex items-start justify-between gap-3">
