@@ -504,42 +504,42 @@ function ProfilePage() {
           </div>
         </SettingsSection>
 
-      <WorkoutCharts workouts={workouts} />
+        <SettingsSection icon="📈" title="Verlauf" subtitle={`${workouts.length} Workouts`}>
+          <WorkoutCharts workouts={workouts} />
+        </SettingsSection>
 
-
-      <section className="mt-6">
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Letzte Trainings
-        </h2>
-        {workouts.length === 0 ? (
-          <p className="rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground">
-            Noch keine Workouts gespeichert.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {workouts.map((w) => (
-              <li
-                key={w.id}
-                className="flex items-center justify-between rounded-2xl border border-border bg-card/40 px-4 py-3 backdrop-blur"
-              >
-                <div>
-                  <div className="text-base font-semibold tabular-nums">{w.count} Push-Ups</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {new Date(w.created_at).toLocaleString("de-DE")} ·{" "}
-                    {Math.round(w.duration_ms / 1000)}s
-                  </div>
-                </div>
-                <button
-                  onClick={() => deleteWorkout(w.id)}
-                  className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive transition"
+        <SettingsSection icon="📋" title="Letzte Trainings" subtitle={`${workouts.length} Einträge`}>
+          {workouts.length === 0 ? (
+            <p className="rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground">
+              Noch keine Workouts gespeichert.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {workouts.map((w) => (
+                <li
+                  key={w.id}
+                  className="flex items-center justify-between rounded-2xl border border-border bg-card/40 px-4 py-3 backdrop-blur"
                 >
-                  Löschen
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                  <div>
+                    <div className="text-base font-semibold tabular-nums">{w.count} Push-Ups</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {new Date(w.created_at).toLocaleString("de-DE")} ·{" "}
+                      {Math.round(w.duration_ms / 1000)}s
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteWorkout(w.id)}
+                    className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive transition"
+                  >
+                    Löschen
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SettingsSection>
+      </div>
+
       <BottomNav />
     </main>
   );
