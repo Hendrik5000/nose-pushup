@@ -71,18 +71,15 @@ export function PublicProfileSettings() {
   };
 
   return (
-    <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold">Öffentliches Profil</div>
-          <div className="text-[11px] text-muted-foreground">
-            Name, Level, Streak und Bestwert teilen
-          </div>
-        </div>
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="text-xs text-muted-foreground">
+          Name, Level, Streak und Bestwert teilen
+        </span>
         <button
           onClick={() => save(!enabled)}
           disabled={saving}
-          className={`h-7 w-12 rounded-full p-0.5 transition ${enabled ? "bg-primary" : "bg-secondary"}`}
+          className={`h-7 w-12 shrink-0 rounded-full p-0.5 transition ${enabled ? "bg-primary" : "bg-secondary"}`}
           aria-label="Öffentliches Profil umschalten"
         >
           <span
@@ -91,7 +88,7 @@ export function PublicProfileSettings() {
         </button>
       </div>
 
-      <label className="mt-3 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+      <label className="block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
         Adresse
       </label>
       <div className="mt-1 flex gap-2">
@@ -125,6 +122,6 @@ export function PublicProfileSettings() {
         </button>
       </div>
       {hint && <p className="mt-2 text-center text-[11px] text-muted-foreground">{hint}</p>}
-    </section>
+    </div>
   );
 }

@@ -22,6 +22,7 @@ import { ThemePicker } from "@/components/ThemePicker";
 import { BottomNav } from "@/components/BottomNav";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { PublicProfileSettings } from "@/components/PublicProfileSettings";
+import { SettingsSection } from "@/components/SettingsSection";
 import { restartWelcomeTour } from "@/components/WelcomeTour";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -177,6 +178,35 @@ function ProfilePage() {
       applyProfile(data as Profile);
       setMsg("Profil aktualisiert");
     }
+  };
+
+  // Sofort-Speichern für Umschalter (ohne den großen "Speichern"-Button).
+  const saveSetting = async (patch: Partial<Profile>) => {
+    if (!profile) return;
+    const { error } = await supabase.from("profiles").update(patch as never).eq("id", profile.id);
+    if (!error) setProfile({ ...profile, ...patch } as Profile);
+  };
+
+  const toggleShare = async () => {
+    const next = !shareActivity;
+    setShareActivity(next);
+    await saveSetting({ share_activity: next });
+  };
+
+  const toggleSound = async () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+    if (next) feedbackSuccess();
+    await saveSetting({ sound_enabled: next });
+  };
+
+  const toggleHaptics = async () => {
+    const next = !hapticsOn;
+    setHapticsOn(next);
+    setHapticsEnabled(next);
+    if (next && typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+    await saveSetting({ haptics_enabled: next });
   };
 
   const deleteWorkout = async (id: string) => {
@@ -337,12 +367,26 @@ function ProfilePage() {
         <Stat label="Längste" value={(profile?.longest_streak ?? 0).toString()} />
       </section>
 
-      {profile && <CoachPanel profile={profile} workouts={workouts} />}
+      <div className="mt-4 space-y-3">
+        {profile && (
+          <SettingsSection icon="🧠" title="Smart Coach" subtitle="Trainingsplan & Streak-Tipps">
+            <CoachPanel profile={profile} workouts={workouts} />
+          </SettingsSection>
+        )}
 
-      {profile && <FriendsPanel userId={profile.id} />}
+        {profile && (
+          <SettingsSection icon="🤝" title="Freunde" subtitle="Einladen, anfragen, zusammen trainieren">
+            <FriendsPanel userId={profile.id} />
+          </SettingsSection>
+        )}
 
-      <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
-      <BadgeGallery />
+        <SettingsSection icon="🎨" title="Design" subtitle="6 Farbwelten">
+          <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
+        </SettingsSection>
+
+        <SettingsSection icon="🏅" title="Badges" subtitle="Erfolge & Sammlung">
+          <BadgeGallery />
+        </SettingsSection>
 
       <section className="mt-6 space-y-3 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
