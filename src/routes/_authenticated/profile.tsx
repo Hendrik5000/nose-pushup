@@ -22,6 +22,7 @@ import { ThemePicker } from "@/components/ThemePicker";
 import { BottomNav } from "@/components/BottomNav";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { PublicProfileSettings } from "@/components/PublicProfileSettings";
+import { SettingsSection } from "@/components/SettingsSection";
 import { restartWelcomeTour } from "@/components/WelcomeTour";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -177,6 +178,35 @@ function ProfilePage() {
       applyProfile(data as Profile);
       setMsg("Profil aktualisiert");
     }
+  };
+
+  // Sofort-Speichern für Umschalter (ohne den großen "Speichern"-Button).
+  const saveSetting = async (patch: Partial<Profile>) => {
+    if (!profile) return;
+    const { error } = await supabase.from("profiles").update(patch as never).eq("id", profile.id);
+    if (!error) setProfile({ ...profile, ...patch } as Profile);
+  };
+
+  const toggleShare = async () => {
+    const next = !shareActivity;
+    setShareActivity(next);
+    await saveSetting({ share_activity: next });
+  };
+
+  const toggleSound = async () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+    if (next) feedbackSuccess();
+    await saveSetting({ sound_enabled: next });
+  };
+
+  const toggleHaptics = async () => {
+    const next = !hapticsOn;
+    setHapticsOn(next);
+    setHapticsEnabled(next);
+    if (next && typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+    await saveSetting({ haptics_enabled: next });
   };
 
   const deleteWorkout = async (id: string) => {
@@ -337,164 +367,129 @@ function ProfilePage() {
         <Stat label="Längste" value={(profile?.longest_streak ?? 0).toString()} />
       </section>
 
-      {profile && <CoachPanel profile={profile} workouts={workouts} />}
+      <div className="mt-4 space-y-3">
+        {profile && (
+          <SettingsSection icon="🧠" title="Smart Coach" subtitle="Trainingsplan & Streak-Tipps">
+            <CoachPanel profile={profile} workouts={workouts} />
+          </SettingsSection>
+        )}
 
-      {profile && <FriendsPanel userId={profile.id} />}
+        {profile && (
+          <SettingsSection icon="🤝" title="Freunde" subtitle="Einladen, anfragen, zusammen trainieren">
+            <FriendsPanel userId={profile.id} />
+          </SettingsSection>
+        )}
 
-      <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
-      <BadgeGallery />
+        <SettingsSection icon="🎨" title="Design" subtitle="6 Farbwelten">
+          <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
+        </SettingsSection>
 
-      <section className="mt-6 space-y-3 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Profil bearbeiten
-        </h2>
-        <Field label="Anzeigename" value={displayName} onChange={setDisplayName} maxLength={60} />
-        <Field
-          label="Avatar-URL"
-          value={avatarUrl}
-          onChange={setAvatarUrl}
-          placeholder="https://…"
-          maxLength={500}
-        />
+        <SettingsSection icon="🏅" title="Badges" subtitle="Erfolge & Sammlung">
+          <BadgeGallery />
+        </SettingsSection>
 
-        <div className="!mt-5 border-t border-border pt-4">
-          <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Körperdaten (für den Smart Coach)
-          </h3>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <Field label="Geburtsjahr" value={birthYear} onChange={setBirthYear} placeholder="1998" maxLength={4} numeric />
-            <Field label="Größe (cm)" value={heightCm} onChange={setHeightCm} placeholder="180" maxLength={5} numeric />
-            <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} numeric />
-            <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} numeric />
-
-          </div>
-          <div className="mt-3">
-            <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Geschlecht
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { v: "male", l: "Männlich" },
-                { v: "female", l: "Weiblich" },
-                { v: "other", l: "Divers" },
-              ].map((o) => (
-                <button
-                  key={o.v}
-                  type="button"
-                  onClick={() => setSex(sex === o.v ? "" : o.v)}
-                  className={`rounded-xl border px-2 py-2 text-xs font-medium transition ${
-                    sex === o.v
-                      ? "border-primary bg-primary/15 text-foreground"
-                      : "border-border bg-secondary/60 text-muted-foreground"
-                  }`}
-                >
-                  {o.l}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShareActivity((s) => !s)}
-            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
-          >
-            <span className="text-xs">
-              Tages-Aktivität mit Freunden teilen
-              <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                Freunde sehen deine Push-Ups des Tages live.
-              </span>
-            </span>
-            <span
-              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
-                shareActivity ? "bg-primary" : "bg-secondary"
-              }`}
-            >
-              <span
-                className={`h-5 w-5 rounded-full bg-background transition ${shareActivity ? "translate-x-5" : ""}`}
-              />
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const next = !soundOn;
-              setSoundOn(next);
-              setSoundEnabled(next);
-              if (next) feedbackSuccess();
-            }}
-            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
-          >
-            <span className="text-xs">
-              Sound-Feedback
-              <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                Klick bei jeder Wiederholung, Fanfare bei Erfolgen.
-              </span>
-            </span>
-            <span
-              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
-                soundOn ? "bg-primary" : "bg-secondary"
-              }`}
-            >
-              <span
-                className={`h-5 w-5 rounded-full bg-background transition ${soundOn ? "translate-x-5" : ""}`}
-              />
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const next = !hapticsOn;
-              setHapticsOn(next);
-              setHapticsEnabled(next);
-              if (next && typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
-            }}
-            className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-3 text-left"
-          >
-            <span className="text-xs">
-              Vibration
-              <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                Haptisches Feedback auf dem Handy.
-              </span>
-            </span>
-            <span
-              className={`ml-3 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
-                hapticsOn ? "bg-primary" : "bg-secondary"
-              }`}
-            >
-              <span
-                className={`h-5 w-5 rounded-full bg-background transition ${hapticsOn ? "translate-x-5" : ""}`}
-              />
-            </span>
-          </button>
-        </div>
-
-
-        {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
-        <button
-          onClick={save}
-          disabled={saving || !profile}
-          className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
+        <SettingsSection
+          icon="✏️"
+          title="Profil bearbeiten"
+          subtitle={profile?.display_name || "Ohne Namen"}
         >
-          {saving ? "Speichere…" : "Speichern"}
-        </button>
-      </section>
-
-      <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Google Health Connect
-            </h2>
-            <p className="mt-1 text-sm text-foreground">
-              Schritte, Schlaf und Aktivität für den Smart Coach sichtbar machen.
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Die Web-App kann diese Daten nicht direkt auslesen. Über die Android-App kannst du sie verbinden und dann hier verwalten.
-            </p>
+          <div className="space-y-3">
+            <Field label="Anzeigename" value={displayName} onChange={setDisplayName} maxLength={60} />
+            <Field
+              label="Avatar-URL"
+              value={avatarUrl}
+              onChange={setAvatarUrl}
+              placeholder="https://…"
+              maxLength={500}
+            />
+            {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
+            <button
+              onClick={save}
+              disabled={saving || !profile}
+              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
+            >
+              {saving ? "Speichere…" : "Speichern"}
+            </button>
           </div>
-          <div className="flex shrink-0 flex-col gap-2">
+        </SettingsSection>
+
+        <SettingsSection
+          icon="📏"
+          title="Körperdaten"
+          subtitle={`${heightCm || "–"} cm · ${weightKg || "–"} kg`}
+        >
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Geburtsjahr" value={birthYear} onChange={setBirthYear} placeholder="1998" maxLength={4} numeric />
+              <Field label="Größe (cm)" value={heightCm} onChange={setHeightCm} placeholder="180" maxLength={5} numeric />
+              <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} numeric />
+              <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} numeric />
+            </div>
+            <div>
+              <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Geschlecht
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { v: "male", l: "Männlich" },
+                  { v: "female", l: "Weiblich" },
+                  { v: "other", l: "Divers" },
+                ].map((o) => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    onClick={() => setSex(sex === o.v ? "" : o.v)}
+                    className={`rounded-xl border px-2 py-2 text-xs font-medium transition ${
+                      sex === o.v
+                        ? "border-primary bg-primary/15 text-foreground"
+                        : "border-border bg-secondary/60 text-muted-foreground"
+                    }`}
+                  >
+                    {o.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
+            <button
+              onClick={save}
+              disabled={saving || !profile}
+              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
+            >
+              {saving ? "Speichere…" : "Speichern"}
+            </button>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection icon="⚙️" title="Bedienung" subtitle="Sound, Vibration, Teilen">
+          <div className="space-y-3">
+            <ToggleRow
+              label="Tages-Aktivität mit Freunden teilen"
+              description="Freunde sehen deine Push-Ups des Tages live."
+              on={shareActivity}
+              onToggle={toggleShare}
+            />
+            <ToggleRow
+              label="Sound-Feedback"
+              description="Klick bei jeder Wiederholung, Fanfare bei Erfolgen."
+              on={soundOn}
+              onToggle={toggleSound}
+            />
+            <ToggleRow
+              label="Vibration"
+              description="Haptisches Feedback auf dem Handy."
+              on={hapticsOn}
+              onToggle={toggleHaptics}
+            />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection icon="❤️" title="Google Health Connect" subtitle="Schritte, Schlaf & Aktivität">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Die Web-App kann diese Daten nicht direkt auslesen. Über die Android-App kannst du sie
+            verbinden und dann hier verwalten.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
             <Link
               to="/health"
               className="rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-center text-sm font-semibold text-primary transition active:scale-[0.98]"
@@ -513,73 +508,74 @@ function ProfilePage() {
               Verbinden
             </button>
           </div>
-        </div>
-      </section>
+        </SettingsSection>
 
-      <PublicProfileSettings />
-      <NotificationSettings />
+        <SettingsSection icon="🌐" title="Öffentliches Profil" subtitle="Adresse, Teilen & Einladen">
+          <PublicProfileSettings />
+        </SettingsSection>
 
-      <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Hilfe & Einführung
-        </h2>
-        <div className="mt-3 flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold">Willkommenstour</div>
-            <p className="mt-0.5 text-xs text-muted-foreground text-pretty">
-              Sieh dir die wichtigsten Funktionen noch einmal an.
-            </p>
+        <SettingsSection icon="🔔" title="Benachrichtigungen" subtitle="Tägliche Erinnerung & Cloud-Push">
+          <NotificationSettings />
+        </SettingsSection>
+
+        <SettingsSection icon="❓" title="Hilfe & Einführung" subtitle="Willkommenstour neu starten">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold">Willkommenstour</div>
+              <p className="mt-0.5 text-xs text-muted-foreground text-pretty">
+                Sieh dir die wichtigsten Funktionen noch einmal an.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (profile) restartWelcomeTour(profile.id);
+                navigate({ to: "/" });
+              }}
+              disabled={!profile}
+              className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition active:scale-[0.98] disabled:opacity-60"
+            >
+              Neu starten
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (profile) restartWelcomeTour(profile.id);
-              navigate({ to: "/" });
-            }}
-            disabled={!profile}
-            className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition active:scale-[0.98] disabled:opacity-60"
-          >
-            Neu starten
-          </button>
-        </div>
-      </section>
+        </SettingsSection>
 
-      <WorkoutCharts workouts={workouts} />
+        <SettingsSection icon="📈" title="Verlauf" subtitle={`${workouts.length} Workouts`}>
+          <WorkoutCharts workouts={workouts} />
+        </SettingsSection>
 
-
-      <section className="mt-6">
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Letzte Trainings
-        </h2>
-        {workouts.length === 0 ? (
-          <p className="rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground">
-            Noch keine Workouts gespeichert.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {workouts.map((w) => (
-              <li
-                key={w.id}
-                className="flex items-center justify-between rounded-2xl border border-border bg-card/40 px-4 py-3 backdrop-blur"
-              >
-                <div>
-                  <div className="text-base font-semibold tabular-nums">{w.count} Push-Ups</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {new Date(w.created_at).toLocaleString("de-DE")} ·{" "}
-                    {Math.round(w.duration_ms / 1000)}s
-                  </div>
-                </div>
-                <button
-                  onClick={() => deleteWorkout(w.id)}
-                  className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive transition"
+        <SettingsSection icon="📋" title="Letzte Trainings" subtitle={`${workouts.length} Einträge`}>
+          {workouts.length === 0 ? (
+            <p className="rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground">
+              Noch keine Workouts gespeichert.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {workouts.map((w) => (
+                <li
+                  key={w.id}
+                  className="flex items-center justify-between rounded-2xl border border-border bg-card/40 px-4 py-3 backdrop-blur"
                 >
-                  Löschen
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                  <div>
+                    <div className="text-base font-semibold tabular-nums">{w.count} Push-Ups</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {new Date(w.created_at).toLocaleString("de-DE")} ·{" "}
+                      {Math.round(w.duration_ms / 1000)}s
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteWorkout(w.id)}
+                    className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive transition"
+                  >
+                    Löschen
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SettingsSection>
+      </div>
+
       <BottomNav />
     </main>
   );
@@ -664,11 +660,8 @@ function WorkoutCharts({ workouts }: { workouts: WorkoutPoint[] }) {
   const muted = "oklch(0.7 0.03 250)";
 
   return (
-    <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Verlauf
-        </h2>
+    <div>
+      <div className="mb-4 flex justify-end gap-2">
         <div className="flex rounded-full border border-border bg-background/60 p-0.5 text-[10px] uppercase tracking-[0.18em]">
           <MetricTab active={metric === "count"} onClick={() => setMetric("count")}>
             Reps
@@ -746,7 +739,7 @@ function WorkoutCharts({ workouts }: { workouts: WorkoutPoint[] }) {
           </AreaChart>
         </ResponsiveContainer>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -769,6 +762,40 @@ function MetricTab({
       }`}
     >
       {children}
+    </button>
+  );
+}
+
+function ToggleRow({
+  label,
+  description,
+  on,
+  onToggle,
+}: {
+  label: string;
+  description: string;
+  on: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border bg-background/40 px-4 py-3 text-left transition active:scale-[0.99]"
+    >
+      <span className="text-xs">
+        {label}
+        <span className="mt-0.5 block text-[10px] text-muted-foreground">{description}</span>
+      </span>
+      <span
+        className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
+          on ? "bg-primary" : "bg-secondary"
+        }`}
+      >
+        <span
+          className={`h-5 w-5 rounded-full bg-background transition ${on ? "translate-x-5" : ""}`}
+        />
+      </span>
     </button>
   );
 }
