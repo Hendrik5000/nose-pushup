@@ -388,30 +388,43 @@ function ProfilePage() {
           <BadgeGallery />
         </SettingsSection>
 
-      <section className="mt-6 space-y-3 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Profil bearbeiten
-        </h2>
-        <Field label="Anzeigename" value={displayName} onChange={setDisplayName} maxLength={60} />
-        <Field
-          label="Avatar-URL"
-          value={avatarUrl}
-          onChange={setAvatarUrl}
-          placeholder="https://…"
-          maxLength={500}
-        />
-
-        <div className="!mt-5 border-t border-border pt-4">
-          <h3 className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Körperdaten (für den Smart Coach)
-          </h3>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <Field label="Geburtsjahr" value={birthYear} onChange={setBirthYear} placeholder="1998" maxLength={4} numeric />
-            <Field label="Größe (cm)" value={heightCm} onChange={setHeightCm} placeholder="180" maxLength={5} numeric />
-            <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} numeric />
-            <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} numeric />
-
+        <SettingsSection
+          icon="✏️"
+          title="Profil bearbeiten"
+          subtitle={profile?.display_name || "Ohne Namen"}
+        >
+          <div className="space-y-3">
+            <Field label="Anzeigename" value={displayName} onChange={setDisplayName} maxLength={60} />
+            <Field
+              label="Avatar-URL"
+              value={avatarUrl}
+              onChange={setAvatarUrl}
+              placeholder="https://…"
+              maxLength={500}
+            />
+            {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
+            <button
+              onClick={save}
+              disabled={saving || !profile}
+              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
+            >
+              {saving ? "Speichere…" : "Speichern"}
+            </button>
           </div>
+        </SettingsSection>
+
+        <SettingsSection
+          icon="📏"
+          title="Körperdaten"
+          subtitle={`${heightCm || "–"} cm · ${weightKg || "–"} kg`}
+        >
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Geburtsjahr" value={birthYear} onChange={setBirthYear} placeholder="1998" maxLength={4} numeric />
+              <Field label="Größe (cm)" value={heightCm} onChange={setHeightCm} placeholder="180" maxLength={5} numeric />
+              <Field label="Gewicht (kg)" value={weightKg} onChange={setWeightKg} placeholder="78" maxLength={5} numeric />
+              <Field label="Tagesziel (Reps)" value={dailyGoal} onChange={setDailyGoal} placeholder="50" maxLength={4} numeric />
+            </div>
           <div className="mt-3">
             <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Geschlecht
