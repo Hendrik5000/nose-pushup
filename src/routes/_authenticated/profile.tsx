@@ -448,20 +448,12 @@ function ProfilePage() {
           </div>
         </SettingsSection>
 
-      <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Google Health Connect
-            </h2>
-            <p className="mt-1 text-sm text-foreground">
-              Schritte, Schlaf und Aktivität für den Smart Coach sichtbar machen.
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Die Web-App kann diese Daten nicht direkt auslesen. Über die Android-App kannst du sie verbinden und dann hier verwalten.
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-col gap-2">
+        <SettingsSection icon="❤️" title="Google Health Connect" subtitle="Schritte, Schlaf & Aktivität">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Die Web-App kann diese Daten nicht direkt auslesen. Über die Android-App kannst du sie
+            verbinden und dann hier verwalten.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
             <Link
               to="/health"
               className="rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-center text-sm font-semibold text-primary transition active:scale-[0.98]"
@@ -480,36 +472,37 @@ function ProfilePage() {
               Verbinden
             </button>
           </div>
-        </div>
-      </section>
+        </SettingsSection>
 
-      <PublicProfileSettings />
-      <NotificationSettings />
+        <SettingsSection icon="🌐" title="Öffentliches Profil" subtitle="Adresse, Teilen & Einladen">
+          <PublicProfileSettings />
+        </SettingsSection>
 
-      <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Hilfe & Einführung
-        </h2>
-        <div className="mt-3 flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold">Willkommenstour</div>
-            <p className="mt-0.5 text-xs text-muted-foreground text-pretty">
-              Sieh dir die wichtigsten Funktionen noch einmal an.
-            </p>
+        <SettingsSection icon="🔔" title="Benachrichtigungen" subtitle="Tägliche Erinnerung & Cloud-Push">
+          <NotificationSettings />
+        </SettingsSection>
+
+        <SettingsSection icon="❓" title="Hilfe & Einführung" subtitle="Willkommenstour neu starten">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold">Willkommenstour</div>
+              <p className="mt-0.5 text-xs text-muted-foreground text-pretty">
+                Sieh dir die wichtigsten Funktionen noch einmal an.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (profile) restartWelcomeTour(profile.id);
+                navigate({ to: "/" });
+              }}
+              disabled={!profile}
+              className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition active:scale-[0.98] disabled:opacity-60"
+            >
+              Neu starten
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (profile) restartWelcomeTour(profile.id);
-              navigate({ to: "/" });
-            }}
-            disabled={!profile}
-            className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition active:scale-[0.98] disabled:opacity-60"
-          >
-            Neu starten
-          </button>
-        </div>
-      </section>
+        </SettingsSection>
 
       <WorkoutCharts workouts={workouts} />
 
