@@ -703,7 +703,7 @@ function WorkoutCharts({ workouts }: { workouts: WorkoutPoint[] }) {
           </AreaChart>
         </ResponsiveContainer>
       </div>
-    </section>
+    </div>
   );
 }
 
