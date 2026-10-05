@@ -765,3 +765,37 @@ function MetricTab({
     </button>
   );
 }
+
+function ToggleRow({
+  label,
+  description,
+  on,
+  onToggle,
+}: {
+  label: string;
+  description: string;
+  on: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border bg-background/40 px-4 py-3 text-left transition active:scale-[0.99]"
+    >
+      <span className="text-xs">
+        {label}
+        <span className="mt-0.5 block text-[10px] text-muted-foreground">{description}</span>
+      </span>
+      <span
+        className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${
+          on ? "bg-primary" : "bg-secondary"
+        }`}
+      >
+        <span
+          className={`h-5 w-5 rounded-full bg-background transition ${on ? "translate-x-5" : ""}`}
+        />
+      </span>
+    </button>
+  );
+}
