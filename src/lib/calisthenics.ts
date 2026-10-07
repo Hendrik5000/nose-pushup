@@ -383,3 +383,113 @@ export function loadRecentCheckins(days: number): CheckinData[] {
   }
   return result;
 }
+
+// ─── Cali 2.0: Trendanalyse, Plateau-Erkennung, dynamischer Tagesfokus ───────
+
+export type SkillWorkoutPoint = { day: string; value: number };
+
+export type SkillTrend = {
+  skill: CaliSkill;
+  /** Bestwert pro Tag, aufsteigend sortiert (letzte 28 Tage). */
+  series: SkillWorkoutPoint[];
+  /** true = in den letzten 14 Tagen trainiert, aber keine Verbesserung gegenüber den 14 Tagen davor. */
+  plateau: boolean;
+  /** Bestwert der letzten 14 Tage. */
+  recentBest: number;
+  /** Bestwert der 14 Tage davor. */
+  previousBest: number;
+};
+
+/**
+ * Analysiert Workouts (exercise_id, count, created_at) der letzten 28 Tage
+ * pro Cali-Skill. Plateau = trainiert (>=2 Sessions in 14 Tagen), aber
+ * recentBest <= previousBest.
+ */
+export function analyzeSkillTrends(
+  workouts: Array<{ exercise_id: string; count: number; created_at: string }>,
+): SkillTrend[] {
+  const now = Date.now();
+  const d14 = now - 14 * 86400000;
+  const d28 = now - 28 * 86400000;
+  const skills = allSkills();
+  const byId = new Map(skills.map((s) => [s.id, s]));
+
+  const relevant = workouts.filter((w) => {
+    const t = +new Date(w.created_at);
+    return t >= d28 && byId.has(w.exercise_id);
+  });
+
+  return skills
+    .map((skill) => {
+      const rows = relevant.filter((w) => w.exercise_id === skill.id);
+      if (!rows.length) return null;
+
+      // Bestwert pro Tag
+      const perDay = new Map<string, number>();
+      for (const w of rows) {
+        const day = w.created_at.slice(0, 10);
+        perDay.set(day, Math.max(perDay.get(day) ?? 0, w.count));
+      }
+      const series = [...perDay.entries()]
+        .map(([day, value]) => ({ day, value }))
+        .sort((a, b) => a.day.localeCompare(b.day));
+
+      const recent = rows.filter((w) => +new Date(w.created_at) >= d14);
+      const previous = rows.filter((w) => +new Date(w.created_at) < d14);
+      const recentBest = recent.reduce((m, w) => Math.max(m, w.count), 0);
+      const previousBest = previous.reduce((m, w) => Math.max(m, w.count), 0);
+      const plateau = recent.length >= 2 && previous.length >= 1 && recentBest <= previousBest;
+
+      return { skill, series, plateau, recentBest, previousBest };
+    })
+    .filter((t): t is SkillTrend => t !== null);
+}
+
+export type DailyFocus = {
+  kind: "peak" | "normal" | "recovery";
+  title: string;
+  message: string;
+  /** Empfohlener Skill (bei recovery: null = Mobilität). */
+  skill: CaliSkill | null;
+};
+
+/**
+ * Dynamischer Tagesfokus: Das Check-in steuert, welcher Skill heute dran ist.
+ * Topform (Energie >= 4, Schmerzen <= 2) -> härtester aktiver Skill.
+ * Muedigkeit (Energie <= 2 oder Schmerzen >= 4) -> Mobilitaet/Regeneration.
+ */
+export function getDailyFocus(
+  bests: Record<string, number>,
+  checkin: CheckinData | null,
+): DailyFocus {
+  // Härtester aktiver Skill über alle Pfade (der letzte aktive in der Reihenfolge)
+  const activeSkills = allSkills().filter((s) => getSkillStatus(bests, s) === "active");
+  const hardest = activeSkills[activeSkills.length - 1] ?? null;
+  const easiest = activeSkills[0] ?? null;
+
+  if (checkin && (checkin.energy <= 2 || checkin.soreness >= 4)) {
+    return {
+      kind: "recovery",
+      title: "Regenerationsfokus",
+      message:
+        "Dein Check-in zeigt wenig Energie oder hohe Gelenkbelastung. Heute: 10 Min. Mobilität, Handgelenk-Routine und leichtes Stretching — die Streak zählt trotzdem.",
+      skill: null,
+    };
+  }
+  if (checkin && checkin.energy >= 4 && checkin.soreness <= 2 && hardest) {
+    return {
+      kind: "peak",
+      title: "Hochform-Tag",
+      message: `Topform erkannt — perfekter Tag für ${hardest.name}. Nutze die Chance für einen neuen Bestwert!`,
+      skill: hardest,
+    };
+  }
+  return {
+    kind: "normal",
+    title: "Solider Trainingstag",
+    message: easiest
+      ? `Weiter an ${easiest.name} arbeiten — saubere Form vor Volumen.`
+      : "Wähle einen Skill aus dem Baum und leg los.",
+    skill: easiest,
+  };
+}

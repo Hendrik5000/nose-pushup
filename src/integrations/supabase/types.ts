@@ -1123,6 +1123,7 @@ export type Database = {
           exercise_id: string
           form_score: number | null
           id: string
+          rpe: number | null
           user_id: string
         }
         Insert: {
@@ -1133,6 +1134,7 @@ export type Database = {
           exercise_id?: string
           form_score?: number | null
           id?: string
+          rpe?: number | null
           user_id: string
         }
         Update: {
@@ -1143,6 +1145,7 @@ export type Database = {
           exercise_id?: string
           form_score?: number | null
           id?: string
+          rpe?: number | null
           user_id?: string
         }
         Relationships: [
@@ -1161,6 +1164,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           battle_losses: number | null
+          battle_rating: number | null
           battle_wins: number | null
           best_count: number | null
           current_streak: number | null
@@ -1173,6 +1177,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           battle_losses?: number | null
+          battle_rating?: number | null
           battle_wins?: number | null
           best_count?: number | null
           current_streak?: number | null
@@ -1185,6 +1190,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           battle_losses?: number | null
+          battle_rating?: number | null
           battle_wins?: number | null
           best_count?: number | null
           current_streak?: number | null
