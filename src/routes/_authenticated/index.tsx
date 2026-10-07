@@ -15,6 +15,8 @@ import { WeekPlanCard } from "@/components/WeekPlanCard";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
+import { ReadinessCard } from "@/components/ReadinessCard";
+import { WeeklyReview } from "@/components/WeeklyReview";
 import { BottomNav } from "@/components/BottomNav";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -187,6 +189,8 @@ function Dashboard() {
           )}
         </Link>
       </header>
+
+      <ReadinessCard streak={streak} />
 
       <section className="mt-5 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <div className="flex items-center gap-5">
@@ -385,6 +389,7 @@ function Dashboard() {
       )}
 
       <WeekPlanCard />
+      <WeeklyReview userId={userId} streak={streak} />
       <AiCoachCard />
 
       <section className="mt-6">
