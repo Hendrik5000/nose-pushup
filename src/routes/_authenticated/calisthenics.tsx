@@ -267,3 +267,78 @@ function CalisthenicsPage() {
     </main>
   );
 }
+
+/** Plateau-Karte: Verlauf der letzten 4 Wochen + KI-Handlungsempfehlung. */
+function PlateauCard({ trend }: { trend: SkillTrend }) {
+  const loadAdvice = useServerFn(getPlateauAdvice);
+  const [advice, setAdvice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const max = Math.max(1, ...trend.series.map((p) => p.value));
+  const unitLabel = trend.skill.unit === "seconds" ? "s" : "";
+
+  const fetchAdvice = async () => {
+    setBusy(true);
+    try {
+      const res = await loadAdvice({
+        data: {
+          skillId: trend.skill.id,
+          skillName: trend.skill.name,
+          recentBest: trend.recentBest,
+          previousBest: trend.previousBest,
+          unit: trend.skill.unit,
+        },
+      });
+      setAdvice(res.advice);
+    } catch {
+      setAdvice("Der Coach ist gerade nicht erreichbar — versuche es später erneut.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-orange-500/30 bg-orange-500/8 p-4">
+      <div className="flex items-start gap-3">
+        <span className="text-xl">📉</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-orange-400">
+            Plateau: {trend.skill.name}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Seit 2 Wochen keine Verbesserung ({trend.previousBest}
+            {unitLabel} → {trend.recentBest}
+            {unitLabel}).
+          </p>
+
+          {/* Mini-Verlauf */}
+          <div className="mt-3 flex h-10 items-end gap-0.5">
+            {trend.series.map((p) => (
+              <div
+                key={p.day}
+                title={`${p.day}: ${p.value}${unitLabel}`}
+                className="flex-1 rounded-sm bg-orange-400/60"
+                style={{ height: `${Math.max(12, (p.value / max) * 100)}%` }}
+              />
+            ))}
+          </div>
+
+          {advice ? (
+            <p className="mt-3 rounded-xl bg-background/50 p-3 text-xs leading-relaxed text-foreground">
+              🤖 {advice}
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={fetchAdvice}
+              disabled={busy}
+              className="mt-3 rounded-xl border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-300 transition active:scale-[0.98] disabled:opacity-50"
+            >
+              {busy ? "Coach denkt nach…" : "🤖 Coach-Tipp holen"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
