@@ -282,6 +282,7 @@ function WorkoutScreen() {
     setStartedAt(null);
     setCountdown(null);
     setSummary(null);
+    setAwaitingRpe(false);
     resetEngine();
     setSavedHint(null);
     setMotivation(null);
@@ -306,20 +307,28 @@ function WorkoutScreen() {
   const modeLabel: Record<PushMode, string> = { nose: "Nase", manual: "Manuell", camera: "Kamera" };
 
   // Manual mode: user just types how many they did.
-  const submitManual = async () => {
+  const submitManual = () => {
     const n = Math.max(0, Math.min(9999, parseInt(manualInput, 10) || 0));
     if (n <= 0 || !userId || !exercise) return;
+    setAwaitingRpe(true);
+  };
+
+  const saveManualWithRpe = async (rpe: number | null) => {
+    const n = Math.max(0, Math.min(9999, parseInt(manualInput, 10) || 0));
+    if (n <= 0 || !userId || !exercise) return;
+    setAwaitingRpe(false);
     setSaving(true);
     const { error } = await saveOrQueue("workouts", {
       user_id: userId,
       exercise_id: exerciseId,
       count: n,
       duration_ms: 0,
+      rpe,
     });
     if (!error) {
       feedbackSuccess();
       const newBest = n > best;
-      setSummary({ count: n, durationMs: 0, xp: n * 10, isBest: newBest });
+      setSummary({ count: n, durationMs: 0, xp: n * 10, isBest: newBest, rpe });
 
       if (newBest) {
         setBest(n);
