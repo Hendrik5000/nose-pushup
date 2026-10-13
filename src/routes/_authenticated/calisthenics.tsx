@@ -41,6 +41,7 @@ type WorkoutRow = {
 function CalisthenicsPage() {
   const [bests, setBests] = useState<Record<string, number>>({});
   const [recentWorkouts, setRecentWorkouts] = useState<WorkoutRow[]>([]);
+  const [trends, setTrends] = useState<SkillTrend[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [checkin, setCheckin] = useState<CheckinData | null>(null);
