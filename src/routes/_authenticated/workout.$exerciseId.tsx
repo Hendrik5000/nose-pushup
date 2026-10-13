@@ -648,3 +648,52 @@ function Corner({ className = "" }: { className?: string }) {
     />
   );
 }
+
+/** RPE-Abfrage (1–10) nach dem Satz — ein Tippen genügt, überspringbar. */
+function RpePicker({
+  saving,
+  onPick,
+}: {
+  saving: boolean;
+  onPick: (rpe: number | null) => void;
+}) {
+  return (
+    <div className="mt-4 rounded-2xl border border-primary/25 bg-primary/5 p-4">
+      <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        Wie schwer war das?
+      </div>
+      <div className="mt-1 text-xs text-muted-foreground">
+        1 = sehr leicht · 10 = maximale Belastung
+      </div>
+      <div className="mt-3 grid grid-cols-5 gap-1.5">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
+          <button
+            key={v}
+            type="button"
+            disabled={saving}
+            onClick={() => onPick(v)}
+            className={`rounded-xl border py-2.5 text-sm font-semibold tabular-nums transition active:scale-95 disabled:opacity-50 ${
+              v <= 3
+                ? "border-green-500/30 bg-green-500/10 text-green-400"
+                : v <= 6
+                  ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
+                  : v <= 8
+                    ? "border-orange-500/30 bg-orange-500/10 text-orange-400"
+                    : "border-red-500/30 bg-red-500/10 text-red-400"
+            }`}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={() => onPick(null)}
+        className="mt-2 w-full rounded-xl border border-border bg-secondary/60 px-4 py-2.5 text-xs font-medium text-muted-foreground transition active:scale-[0.98] disabled:opacity-50"
+      >
+        {saving ? "Speichere…" : "Ohne Angabe speichern"}
+      </button>
+    </div>
+  );
+}
