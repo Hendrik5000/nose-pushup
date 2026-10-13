@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const MODEL = "google/gemini-3-flash-preview";
+const MODEL = "openai/gpt-6-astra";
 
 export type PlateauAdvice = {
   advice: string;
@@ -47,25 +47,29 @@ export const getPlateauAdvice = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (key) {
       try {
-        const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
           method: "POST",
-          headers: { "content-type": "application/json", "Lovable-API-Key": key },
+          headers: {
+            "content-type": "application/json",
+            "Lovable-API-Key": key,
+            "X-Lovable-AIG-SDK": "fetch",
+          },
           body: JSON.stringify({
             model: MODEL,
-            messages: [
-              {
-                role: "user",
-                content: `Du bist ein Calisthenics-Coach. Ein Athlet stagniert bei "${data.skillName}" seit 2 Wochen (Bestwert ${data.previousBest} -> ${data.recentBest} ${unitLabel}, trotz regelmaessigem Training).
-Gib 2-3 konkrete, umsetzbare Empfehlungen auf Deutsch (max. 60 Woerter): Volumen/Intensitaet anpassen, Progressionsstufe wechseln, Schlaf/Ernaehrung, Pausen. Kein Motivationsbla, nur Handlungen.`,
-              },
-            ],
+            store: false,
+            reasoning: { effort: "low" },
+            input: `Du bist ein Calisthenics-Coach. Ein Athlet stagniert bei "${data.skillName}" seit 2 Wochen (Bestwert ${data.previousBest} -> ${data.recentBest} ${unitLabel}, trotz regelmaessigem Training).
+Gib 2-3 konkrete, umsetzbare Empfehlungen auf Deutsch (max. 60 Woerter): Volumen/Intensitaet anpassen, Progressionsstufe wechseln, Schlaf/Ernaehrung, Pausen. Keine Motivationsfloskeln, nur Handlungen.`,
           }),
         });
         if (res.ok) {
           const json = (await res.json()) as {
-            choices?: Array<{ message?: { content?: string } }>;
+            output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
           };
-          const text = json.choices?.[0]?.message?.content?.trim();
+          const text = json.output
+            ?.find((o) => o.type === "message")
+            ?.content?.find((c) => c.type === "output_text")
+            ?.text?.trim();
           if (text) advice = text.slice(0, 600);
         }
       } catch {
