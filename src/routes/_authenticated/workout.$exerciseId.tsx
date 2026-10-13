@@ -209,11 +209,21 @@ function WorkoutScreen() {
     bump();
   }, [useCamera, detection, active, start, bump]);
 
-  const finish = async () => {
+  const finish = () => {
     if (count <= 0 || !userId || !exercise) {
       resetAll();
       return;
     }
+    // Erst RPE abfragen, dann speichern
+    setAwaitingRpe(true);
+  };
+
+  const saveWithRpe = async (rpe: number | null) => {
+    if (count <= 0 || !userId || !exercise) {
+      resetAll();
+      return;
+    }
+    setAwaitingRpe(false);
     setSaving(true);
     const duration_ms = startedAt ? Date.now() - startedAt : 0;
     // Offline landet das Training in der Warteschlange und wird später nachgesendet.
@@ -224,6 +234,7 @@ function WorkoutScreen() {
       duration_ms,
       form_score: formStats?.formScore ?? null,
       clean_reps: formStats?.cleanReps ?? null,
+      rpe,
     });
     if (!error) {
       feedbackSuccess();
@@ -238,6 +249,7 @@ function WorkoutScreen() {
         isBest: newBest,
         formScore: formStats?.formScore ?? null,
         cleanReps: formStats?.cleanReps ?? null,
+        rpe,
       });
 
       if (newBest) {
