@@ -98,21 +98,21 @@ function CalisthenicsPage() {
       ? recentCheckins.reduce((s, c) => s + c.soreness, 0) / recentCheckins.length
       : 1;
 
-  // ─── Stagnation detection ─────────────────────────────────────────────────
-  // Find skills where there's no improvement signal (no workouts in 14 days)
+  // ─── Stagnation (kein Training seit 14 Tagen) + Plateau (keine Verbesserung) ─
   const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
   const recentIds = new Set(
     recentWorkouts
       .filter((w) => w.created_at >= fourteenDaysAgo && allCaliIds.has(w.exercise_id))
       .map((w) => w.exercise_id),
   );
-  // Skills that are active but haven't been trained in 14 days
   const stagnating = CALI_PATHS.flatMap((p) =>
     p.skills.filter((s) => {
       const best = bests[s.id] ?? 0;
       return best > 0 && best < s.mastery_threshold && !recentIds.has(s.id);
     }),
   );
+  const plateaus = trends.filter((t) => t.plateau);
+  const dailyFocus = getDailyFocus(bests, checkin);
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
