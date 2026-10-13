@@ -66,8 +66,11 @@ function WorkoutScreen() {
     isBest: boolean;
     formScore?: number | null;
     cleanReps?: number | null;
+    rpe?: number | null;
   } | null>(null);
   const [repGrades, setRepGrades] = useState<{ grade: number; full: boolean }[]>([]);
+  // RPE-Abfrage (1–10) vor dem endgültigen Speichern
+  const [awaitingRpe, setAwaitingRpe] = useState(false);
 
 
 
@@ -206,11 +209,21 @@ function WorkoutScreen() {
     bump();
   }, [useCamera, detection, active, start, bump]);
 
-  const finish = async () => {
+  const finish = () => {
     if (count <= 0 || !userId || !exercise) {
       resetAll();
       return;
     }
+    // Erst RPE abfragen, dann speichern
+    setAwaitingRpe(true);
+  };
+
+  const saveWithRpe = async (rpe: number | null) => {
+    if (count <= 0 || !userId || !exercise) {
+      resetAll();
+      return;
+    }
+    setAwaitingRpe(false);
     setSaving(true);
     const duration_ms = startedAt ? Date.now() - startedAt : 0;
     // Offline landet das Training in der Warteschlange und wird später nachgesendet.
@@ -221,6 +234,7 @@ function WorkoutScreen() {
       duration_ms,
       form_score: formStats?.formScore ?? null,
       clean_reps: formStats?.cleanReps ?? null,
+      rpe,
     });
     if (!error) {
       feedbackSuccess();
@@ -235,6 +249,7 @@ function WorkoutScreen() {
         isBest: newBest,
         formScore: formStats?.formScore ?? null,
         cleanReps: formStats?.cleanReps ?? null,
+        rpe,
       });
 
       if (newBest) {
@@ -267,6 +282,7 @@ function WorkoutScreen() {
     setStartedAt(null);
     setCountdown(null);
     setSummary(null);
+    setAwaitingRpe(false);
     resetEngine();
     setSavedHint(null);
     setMotivation(null);
@@ -291,20 +307,28 @@ function WorkoutScreen() {
   const modeLabel: Record<PushMode, string> = { nose: "Nase", manual: "Manuell", camera: "Kamera" };
 
   // Manual mode: user just types how many they did.
-  const submitManual = async () => {
+  const submitManual = () => {
     const n = Math.max(0, Math.min(9999, parseInt(manualInput, 10) || 0));
     if (n <= 0 || !userId || !exercise) return;
+    setAwaitingRpe(true);
+  };
+
+  const saveManualWithRpe = async (rpe: number | null) => {
+    const n = Math.max(0, Math.min(9999, parseInt(manualInput, 10) || 0));
+    if (n <= 0 || !userId || !exercise) return;
+    setAwaitingRpe(false);
     setSaving(true);
     const { error } = await saveOrQueue("workouts", {
       user_id: userId,
       exercise_id: exerciseId,
       count: n,
       duration_ms: 0,
+      rpe,
     });
     if (!error) {
       feedbackSuccess();
       const newBest = n > best;
-      setSummary({ count: n, durationMs: 0, xp: n * 10, isBest: newBest });
+      setSummary({ count: n, durationMs: 0, xp: n * 10, isBest: newBest, rpe });
 
       if (newBest) {
         setBest(n);
@@ -366,13 +390,17 @@ function WorkoutScreen() {
           </p>
         </section>
 
-        <button
-          onClick={submitManual}
-          disabled={saving || !manualInput || parseInt(manualInput, 10) <= 0}
-          className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
-        >
-          {saving ? "Speichere…" : "Workout speichern"}
-        </button>
+        {awaitingRpe ? (
+          <RpePicker saving={saving} onPick={saveManualWithRpe} />
+        ) : (
+          <button
+            onClick={submitManual}
+            disabled={saving || !manualInput || parseInt(manualInput, 10) <= 0}
+            className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+          >
+            {saving ? "Speichere…" : "Workout speichern"}
+          </button>
+        )}
 
         {summary && (
           <div className="mt-4 w-full rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
@@ -545,7 +573,11 @@ function WorkoutScreen() {
         </button>
       )}
 
-      {(active || count > 0) && (
+      {awaitingRpe && (
+        <RpePicker saving={saving} onPick={saveWithRpe} />
+      )}
+
+      {!awaitingRpe && (active || count > 0) && (
         <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             onClick={resetAll}
@@ -614,5 +646,54 @@ function Corner({ className = "" }: { className?: string }) {
     <span
       className={`pointer-events-none absolute h-5 w-5 border-l-2 border-t-2 border-primary/70 ${className}`}
     />
+  );
+}
+
+/** RPE-Abfrage (1–10) nach dem Satz — ein Tippen genügt, überspringbar. */
+function RpePicker({
+  saving,
+  onPick,
+}: {
+  saving: boolean;
+  onPick: (rpe: number | null) => void;
+}) {
+  return (
+    <div className="mt-4 rounded-2xl border border-primary/25 bg-primary/5 p-4">
+      <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        Wie schwer war das?
+      </div>
+      <div className="mt-1 text-xs text-muted-foreground">
+        1 = sehr leicht · 10 = maximale Belastung
+      </div>
+      <div className="mt-3 grid grid-cols-5 gap-1.5">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
+          <button
+            key={v}
+            type="button"
+            disabled={saving}
+            onClick={() => onPick(v)}
+            className={`rounded-xl border py-2.5 text-sm font-semibold tabular-nums transition active:scale-95 disabled:opacity-50 ${
+              v <= 3
+                ? "border-green-500/30 bg-green-500/10 text-green-400"
+                : v <= 6
+                  ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
+                  : v <= 8
+                    ? "border-orange-500/30 bg-orange-500/10 text-orange-400"
+                    : "border-red-500/30 bg-red-500/10 text-red-400"
+            }`}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={() => onPick(null)}
+        className="mt-2 w-full rounded-xl border border-border bg-secondary/60 px-4 py-2.5 text-xs font-medium text-muted-foreground transition active:scale-[0.98] disabled:opacity-50"
+      >
+        {saving ? "Speichere…" : "Ohne Angabe speichern"}
+      </button>
+    </div>
   );
 }

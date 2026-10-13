@@ -158,6 +158,12 @@ function BattleLobby() {
           <span aria-hidden>←</span> Zurück
         </Link>
         <span className="text-sm font-medium">⚔️ Battle</span>
+        <Link
+          to="/battle-league"
+          className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-primary transition active:scale-[0.98]"
+        >
+          Liga 🏆
+        </Link>
       </header>
 
       <section className="mt-6 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card/70 to-card/60 p-5 backdrop-blur">
