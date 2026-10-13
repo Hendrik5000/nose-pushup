@@ -66,8 +66,11 @@ function WorkoutScreen() {
     isBest: boolean;
     formScore?: number | null;
     cleanReps?: number | null;
+    rpe?: number | null;
   } | null>(null);
   const [repGrades, setRepGrades] = useState<{ grade: number; full: boolean }[]>([]);
+  // RPE-Abfrage (1–10) vor dem endgültigen Speichern
+  const [awaitingRpe, setAwaitingRpe] = useState(false);
 
 
 
