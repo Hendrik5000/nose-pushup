@@ -155,6 +155,33 @@ function CalisthenicsPage() {
             avgSoreness={avgSoreness}
           />
 
+          {/* Dynamischer Tagesfokus aus dem Check-in */}
+          <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">
+                {dailyFocus.kind === "peak" ? "🚀" : dailyFocus.kind === "recovery" ? "🌱" : "🎯"}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">{dailyFocus.title}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{dailyFocus.message}</p>
+                {dailyFocus.skill && (
+                  <Link
+                    to="/workout/$exerciseId"
+                    params={{ exerciseId: dailyFocus.skill.id }}
+                    className="mt-2 inline-block rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition active:scale-[0.98]"
+                  >
+                    {dailyFocus.skill.icon} {dailyFocus.skill.name} trainieren →
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Plateau-Karten mit Coach-Tipp */}
+          {plateaus.map((t) => (
+            <PlateauCard key={t.skill.id} trend={t} />
+          ))}
+
           {/* Stagnation Alert */}
           {stagnating.length > 0 && (
             <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/8 p-4">
