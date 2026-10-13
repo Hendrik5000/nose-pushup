@@ -390,13 +390,17 @@ function WorkoutScreen() {
           </p>
         </section>
 
-        <button
-          onClick={submitManual}
-          disabled={saving || !manualInput || parseInt(manualInput, 10) <= 0}
-          className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
-        >
-          {saving ? "Speichere…" : "Workout speichern"}
-        </button>
+        {awaitingRpe ? (
+          <RpePicker saving={saving} onPick={saveManualWithRpe} />
+        ) : (
+          <button
+            onClick={submitManual}
+            disabled={saving || !manualInput || parseInt(manualInput, 10) <= 0}
+            className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+          >
+            {saving ? "Speichere…" : "Workout speichern"}
+          </button>
+        )}
 
         {summary && (
           <div className="mt-4 w-full rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
@@ -569,7 +573,11 @@ function WorkoutScreen() {
         </button>
       )}
 
-      {(active || count > 0) && (
+      {awaitingRpe && (
+        <RpePicker saving={saving} onPick={saveWithRpe} />
+      )}
+
+      {!awaitingRpe && (active || count > 0) && (
         <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             onClick={resetAll}
