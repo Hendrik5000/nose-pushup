@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { CaliSkillTree } from "@/components/CaliSkillTree";
@@ -7,11 +8,15 @@ import { CaliCheckin } from "@/components/CaliCheckin";
 import { CaliLoadManager } from "@/components/CaliLoadManager";
 import {
   CALI_PATHS,
+  analyzeSkillTrends,
+  getDailyFocus,
   getTodayKey,
   loadCheckin,
   loadRecentCheckins,
   type CheckinData,
+  type SkillTrend,
 } from "@/lib/calisthenics";
+import { getPlateauAdvice } from "@/lib/cali-coach.functions";
 
 export const Route = createFileRoute("/_authenticated/calisthenics")({
   head: () => ({
@@ -49,8 +54,9 @@ function CalisthenicsPage() {
       if (!u.user) return;
 
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const twentyEightDaysAgo = new Date(Date.now() - 28 * 86400000).toISOString();
 
-      const [{ data: profile }, { data: workouts }] = await Promise.all([
+      const [{ data: profile }, { data: workouts }, { data: trendWorkouts }] = await Promise.all([
         supabase
           .from("profiles")
           .select("personal_bests")
@@ -62,7 +68,15 @@ function CalisthenicsPage() {
           .eq("user_id", u.user.id)
           .gte("created_at", sevenDaysAgo)
           .order("created_at", { ascending: false }),
+        supabase
+          .from("workouts")
+          .select("exercise_id, count, created_at")
+          .eq("user_id", u.user.id)
+          .gte("created_at", twentyEightDaysAgo)
+          .order("created_at", { ascending: true }),
       ]);
+
+      if (trendWorkouts) setTrends(analyzeSkillTrends(trendWorkouts as WorkoutRow[]));
 
       const raw = (profile?.personal_bests ?? {}) as Record<string, number>;
       setBests(raw);
