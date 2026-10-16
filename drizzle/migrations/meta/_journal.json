@@ -8,6 +8,13 @@
       "when": 1791400081193,
       "tag": "0000_rpe_battle_rating_nemesis",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792167705903,
+      "tag": "0001_referral_bonus_and_queue_lock",
+      "breakpoints": true
     }
   ]
 }

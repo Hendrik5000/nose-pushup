@@ -763,6 +763,30 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_bonuses: {
+        Row: {
+          coins: number
+          created_at: string
+          id: string
+          invited_id: string
+          referrer_id: string
+        }
+        Insert: {
+          coins?: number
+          created_at?: string
+          id?: string
+          invited_id: string
+          referrer_id: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          id?: string
+          invited_id?: string
+          referrer_id?: string
+        }
+        Relationships: []
+      }
       runs: {
         Row: {
           calories: number
@@ -1216,6 +1240,10 @@ export type Database = {
           _xp_reward: number
         }[]
       }
+      claim_queue_match: {
+        Args: { _duration_s: number; _mode: string; _user_id: string }
+        Returns: string
+      }
       club_league: {
         Args: never
         Returns: {
@@ -1236,6 +1264,10 @@ export type Database = {
           reps: number
           user_id: string
         }[]
+      }
+      grant_referral_bonus: {
+        Args: { _invited_id: string }
+        Returns: undefined
       }
       is_club_member: {
         Args: { _club_id: string; _user_id: string }
