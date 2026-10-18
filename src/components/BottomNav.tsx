@@ -6,7 +6,7 @@ const ITEMS: Item[] = [
   { to: "/", icon: "🏡", label: "Start" },
   { to: "/exercises", icon: "🏋️", label: "Übungen" },
   { to: "/coach", icon: "🧠", label: "Coach" },
-  { to: "/leaderboard", icon: "🤝", label: "Together" },
+  { to: "/chat", icon: "💬", label: "Chat" },
   { to: "/profile", icon: "⚙️", label: "Einstellungen" },
 ];
 
