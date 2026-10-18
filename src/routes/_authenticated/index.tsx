@@ -17,6 +17,8 @@ import { FriendActivity } from "@/components/FriendActivity";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
 import { ReadinessCard } from "@/components/ReadinessCard";
 import { MicroChallengeCard } from "@/components/MicroChallengeCard";
+import { StreakFreezeCard } from "@/components/StreakFreezeCard";
+import { RecoveryCalendar } from "@/components/RecoveryCalendar";
 import { WeeklyReview } from "@/components/WeeklyReview";
 import { BottomNav } from "@/components/BottomNav";
 
@@ -147,7 +149,10 @@ function Dashboard() {
   });
 
   const weeklyTarget = Math.max(200, goal * 6);
-  const weeklyReps = Math.min(weeklyTarget, todayReps + Math.max(0, streak * 8) + Math.round((pushupBest || 10) / 2));
+  const weeklyReps = Math.min(
+    weeklyTarget,
+    todayReps + Math.max(0, streak * 8) + Math.round((pushupBest || 10) / 2),
+  );
   const weeklyProgress = getWeeklyProgress({ weekReps: weeklyReps, target: weeklyTarget });
   const recovery = getRecoverySummary({
     steps: todaySteps,
@@ -205,13 +210,24 @@ function Dashboard() {
         plankBest={profile?.personal_bests?.plank}
       />
 
+      <StreakFreezeCard streak={streak} />
+      <RecoveryCalendar userId={userId} />
+
       <section className="mt-5 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <div className="flex items-center gap-5">
           <ActivityRing pct={goalPct} value={todayReps} goal={goal} />
           <div className="min-w-0 flex-1 space-y-2.5">
             <RingRow icon="🏆" label="Bestwert" value={`${pushupBest}`} />
-            <RingRow icon={streakActive && streak > 0 ? "🔥" : "❄️"} label="Streak" value={`${streak} Tage`} />
-            <RingRow icon="👟" label="Schritte" value={todaySteps ? todaySteps.toLocaleString("de-DE") : "—"} />
+            <RingRow
+              icon={streakActive && streak > 0 ? "🔥" : "❄️"}
+              label="Streak"
+              value={`${streak} Tage`}
+            />
+            <RingRow
+              icon="👟"
+              label="Schritte"
+              value={todaySteps ? todaySteps.toLocaleString("de-DE") : "—"}
+            />
           </div>
         </div>
 
@@ -264,7 +280,9 @@ function Dashboard() {
 
         <div className="rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
           <div className="flex items-center justify-between">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Wochenfortschritt</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Wochenfortschritt
+            </div>
             <div className="text-sm font-semibold tabular-nums">{weeklyProgress.percent}%</div>
           </div>
           <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
@@ -274,8 +292,16 @@ function Dashboard() {
             />
           </div>
           <div className="mt-3 flex items-center justify-between text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            <span className="tabular-nums">{weeklyProgress.weekReps} / {weeklyProgress.target}</span>
-            <span>{weeklyProgress.state === "ahead" ? "Ziel übertroffen" : weeklyProgress.state === "ontrack" ? "Auf Kurs" : "Noch offen"}</span>
+            <span className="tabular-nums">
+              {weeklyProgress.weekReps} / {weeklyProgress.target}
+            </span>
+            <span>
+              {weeklyProgress.state === "ahead"
+                ? "Ziel übertroffen"
+                : weeklyProgress.state === "ontrack"
+                  ? "Auf Kurs"
+                  : "Noch offen"}
+            </span>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">{weeklyProgress.message}</p>
         </div>
@@ -321,7 +347,9 @@ function Dashboard() {
               <div className="text-sm font-semibold text-foreground">{routine.label}</div>
               <div className="mt-1 text-xs text-muted-foreground">Kurz und wirksam</div>
             </div>
-            <span className="text-2xl leading-none">{routineMode === "push" ? "💪" : routineMode === "strength" ? "🏋️" : "🧘"}</span>
+            <span className="text-2xl leading-none">
+              {routineMode === "push" ? "💪" : routineMode === "strength" ? "🏋️" : "🧘"}
+            </span>
           </div>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
             <StatPill label="Sets" value={routine.sets} />
@@ -362,8 +390,18 @@ function Dashboard() {
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           <ModeChip active={mode === "nose"} onClick={() => setMode("nose")} icon="👃" label="Nase" />
-          <ModeChip active={mode === "manual"} onClick={() => setMode("manual")} icon="👆" label="Manuell" />
-          <ModeChip active={mode === "camera"} onClick={() => setMode("camera")} icon="📷" label="Kamera" />
+          <ModeChip
+            active={mode === "manual"}
+            onClick={() => setMode("manual")}
+            icon="👆"
+            label="Manuell"
+          />
+          <ModeChip
+            active={mode === "camera"}
+            onClick={() => setMode("camera")}
+            icon="📷"
+            label="Kamera"
+          />
         </div>
 
         <Link
@@ -375,31 +413,6 @@ function Dashboard() {
           Workout starten →
         </Link>
       </section>
-
-      {userId && (
-        <section className="mt-4 rounded-3xl border border-border bg-card/50 p-4 backdrop-blur">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Heute</div>
-              <div className="text-sm font-semibold text-foreground">
-                {streak > 0 ? `${streak} Tage in Folge` : "Neuer Start heute"}
-              </div>
-            </div>
-            <div className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
-              {goal - todayReps > 0 ? `${goal - todayReps} Reps bis zum Ziel` : "Ziel erreicht"}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {userId && (
-        <section className="mt-3 rounded-2xl border border-border/70 bg-background/40 p-3 text-sm text-muted-foreground">
-          <div className="flex items-center justify-between">
-            <span>Heute fokus: {goal - todayReps > 0 ? `${goal - todayReps} Reps noch` : "voller Einsatz"}</span>
-            <span className="font-semibold text-foreground">{pushupBest} Best</span>
-          </div>
-        </section>
-      )}
 
       <WeekPlanCard />
       <WeeklyReview userId={userId} streak={streak} />
@@ -456,28 +469,13 @@ function Dashboard() {
   );
 }
 
-function ActivityRing({
-  pct,
-  value,
-  goal,
-}: {
-  pct: number;
-  value: number;
-  goal: number;
-}) {
+function ActivityRing({ pct, value, goal }: { pct: number; value: number; goal: number }) {
   const r = 45;
   const c = 2 * Math.PI * r;
   return (
     <div className="relative h-[110px] w-[110px] shrink-0">
       <svg viewBox="0 0 110 110" className="h-full w-full -rotate-90">
-        <circle
-          cx="55"
-          cy="55"
-          r={r}
-          fill="none"
-          stroke="var(--color-secondary)"
-          strokeWidth="10"
-        />
+        <circle cx="55" cy="55" r={r} fill="none" stroke="var(--color-secondary)" strokeWidth="10" />
         <circle
           cx="55"
           cy="55"
