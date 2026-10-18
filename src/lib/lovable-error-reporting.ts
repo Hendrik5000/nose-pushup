@@ -1,3 +1,5 @@
+import { reportError } from "@/lib/error-reports";
+
 type LovableErrorOptions = {
   mechanism?: "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
   handled?: boolean;
@@ -20,6 +22,14 @@ declare global {
 
 export function reportLovableError(error: unknown, context: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
+
+  // Our persistent store (localStorage + optional Supabase)
+  reportError(error, {
+    source: String(context.boundary ?? context.source ?? "react_error_boundary"),
+    severity: "error",
+    extra: context,
+  });
+
   window.__lovableEvents?.captureException?.(
     error,
     {

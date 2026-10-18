@@ -1,30 +1,30 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
+# Agent notes — Nosy Push-Up / Super App
 
-## Architecture rules
+## Automatic error reports (read first)
 
-- Readiness-Score lives in `src/lib/readiness.ts` and is the single source for
-  daily training-readiness; dashboard, coach plan and cali hub must use it
-  instead of computing their own scores. Why: avoids diverging fatigue logic.
-- Plateau/trend analysis for cali skills lives in `src/lib/calisthenics.ts`
-  (`analyzeSkillTrends`, `getDailyFocus`); AI advice goes through
-  `src/lib/cali-coach.functions.ts` and is cached in `coach_advice` with a
-  `plan.plateau_skill` marker. Why: keeps AI calls rare and auditable.
-- RPE (1–10) is collected in the workout finish flow before saving and stored
-  on `workouts.rpe` (nullable). Why: one optional column, no breaking change.
-- Battle league (`/battle-league`) is read-only over `battles` +
-  `public_profiles.battle_rating`; the `nemesis` achievement condition is
-  evaluated inside `check_achievements`. Why: no new tables, gamification stays
-  server-side.
-- New server-side AI calls use model `openai/gpt-6-astra` via
-  `https://ai.gateway.lovable.dev/v1/responses` (store:false, reasoning effort
-  low). Why: workspace default model policy; older coach code still uses
-  gemini chat completions and is left as-is.
+The app records client errors automatically:
+
+- **localStorage** key `np-error-reports` (ring buffer, max 40)
+- Optional Supabase table `error_reports` (migration `20261019013000_error_reports.sql`)
+- Capture: `window.onerror`, `unhandledrejection`, React route error boundary, `console.error` (soft)
+
+### Protocol on every coding session
+
+1. Ask the user whether new errors appeared, or paste from **Profil → Fehlerberichte → Alle kopieren**.
+2. If JSON reports are provided, **fix the root causes before new features**.
+3. Prefer minimal, targeted patches; mark reports fixed after deploy.
+4. Do not ignore repeated stack traces on the same route.
+
+### How users export
+
+Profil → Abschnitt „Fehlerberichte“ → **Alle kopieren (für Auto-Fix)** → paste into chat.
+
+## Stack
+
+- TanStack Start / React 19, file routes, Supabase auth + RLS
+- Apple Health–inspired UI, TopNav segmented control
+- Super-AI (BYOK), Nexus Chat hybrid, workout + micro-challenges
+
+## Migrations
+
+Append-only under `supabase/migrations/`. Never rewrite applied files.
