@@ -21,6 +21,7 @@ import { Route as AuthenticatedCalisthenicsRouteImport } from './routes/_authent
 import { Route as AuthenticatedClubsRouteImport } from './routes/_authenticated/clubs'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedExercisesRouteImport } from './routes/_authenticated/exercises'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
@@ -98,6 +99,11 @@ const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
 const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedExercisesRoute = AuthenticatedExercisesRouteImport.update({
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/ai': typeof AuthenticatedAiRoute
   '/exercises': typeof AuthenticatedExercisesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/ai': typeof AuthenticatedAiRoute
   '/exercises': typeof AuthenticatedExercisesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/_authenticated/clubs': typeof AuthenticatedClubsRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
+  '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/exercises': typeof AuthenticatedExercisesRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -273,6 +282,7 @@ export interface FileRouteTypes {
     | '/clubs'
     | '/coach'
     | '/chat'
+    | '/ai'
     | '/exercises'
     | '/health'
     | '/leaderboard'
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/clubs'
     | '/coach'
     | '/chat'
+    | '/ai'
     | '/exercises'
     | '/health'
     | '/leaderboard'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clubs'
     | '/_authenticated/coach'
     | '/_authenticated/chat'
+    | '/_authenticated/ai'
     | '/_authenticated/exercises'
     | '/_authenticated/health'
     | '/_authenticated/leaderboard'
@@ -442,6 +454,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ai': {
+      id: '/_authenticated/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AuthenticatedAiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/exercises': {
       id: '/_authenticated/exercises'
       path: '/exercises'
@@ -544,11 +563,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBattleLeagueRoute: typeof AuthenticatedBattleLeagueRoute
   AuthenticatedCalisthenicsRoute: typeof AuthenticatedCalisthenicsRoute
   AuthenticatedClubsRoute: typeof AuthenticatedClubsRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
+  AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedExercisesRoute: typeof AuthenticatedExercisesRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
@@ -556,19 +577,20 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProgramsRoute: typeof AuthenticatedProgramsRoute
   AuthenticatedRunRoute: typeof AuthenticatedRunRoute
   AuthenticatedSeasonRoute: typeof AuthenticatedSeasonRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedBattleIndexRoute: typeof AuthenticatedBattleIndexRoute
   AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
   AuthenticatedCaliWorkoutSkillIdRoute: typeof AuthenticatedCaliWorkoutSkillIdRoute
   AuthenticatedWorkoutExerciseIdRoute: typeof AuthenticatedWorkoutExerciseIdRoute
-  AuthenticatedBattleIndexRoute: typeof AuthenticatedBattleIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBattleLeagueRoute: AuthenticatedBattleLeagueRoute,
   AuthenticatedCalisthenicsRoute: AuthenticatedCalisthenicsRoute,
   AuthenticatedClubsRoute: AuthenticatedClubsRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
+  AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedExercisesRoute: AuthenticatedExercisesRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
@@ -576,11 +598,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProgramsRoute: AuthenticatedProgramsRoute,
   AuthenticatedRunRoute: AuthenticatedRunRoute,
   AuthenticatedSeasonRoute: AuthenticatedSeasonRoute,
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedBattleIndexRoute: AuthenticatedBattleIndexRoute,
   AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
   AuthenticatedCaliWorkoutSkillIdRoute: AuthenticatedCaliWorkoutSkillIdRoute,
   AuthenticatedWorkoutExerciseIdRoute: AuthenticatedWorkoutExerciseIdRoute,
-  AuthenticatedBattleIndexRoute: AuthenticatedBattleIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
