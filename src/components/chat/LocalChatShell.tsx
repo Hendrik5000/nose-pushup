@@ -2,19 +2,22 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  createRoom,
-  deleteMessage,
-  editMessage,
-  getOrCreateDm,
-  loadChatStore,
-  messagesFor,
-  sendMessage,
-  toggleReaction,
+  createChatRoom,
+  deleteChatMessage,
+  detectChatMode,
+  editChatMessage,
+  loadMessages,
+  loadRoomsForUser,
+  postMessage,
+  reactToMessage,
+  type ChatMode,
   type LocalDm,
   type LocalMessage,
   type LocalReaction,
   type LocalRoom,
-} from "@/lib/local-chat";
+  getOrCreateLocalDm,
+  loadChatStore,
+} from "@/lib/chat-backend";
 import { QUICK_EMOJIS, formatTime, initials } from "@/components/chat/types";
 
 type Target = { kind: "room" | "dm"; id: string };
@@ -22,6 +25,7 @@ type Target = { kind: "room" | "dm"; id: string };
 export function LocalChatShell() {
   const [userId, setUserId] = useState<string | null>(null);
   const [myName, setMyName] = useState("Du");
+  const [mode, setMode] = useState<ChatMode>("local");
   const [rooms, setRooms] = useState<LocalRoom[]>([]);
   const [dms, setDms] = useState<LocalDm[]>([]);
   const [active, setActive] = useState<Target | null>(null);
@@ -34,25 +38,36 @@ export function LocalChatShell() {
   const [newRoomName, setNewRoomName] = useState("");
   const [dmName, setDmName] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<Target | null>(null);
+  activeRef.current = active;
 
-  const refresh = useCallback(
-    (uid: string, target: Target | null) => {
+  const refresh = useCallback(async (uid: string, target: Target | null) => {
+    const roomList = await loadRoomsForUser(uid);
+    setRooms(roomList);
+
+    if (mode === "local" || (await detectChatMode()) === "local") {
       const store = loadChatStore(uid);
-      setRooms(store.rooms);
       setDms(store.dms);
-      setReactions(store.reactions);
-      if (target) setMessages(messagesFor(store, target));
-      else if (store.rooms[0]) {
-        const t: Target = { kind: "room", id: store.rooms[0].id };
-        setActive(t);
-        setMessages(messagesFor(store, t));
-      }
-    },
-    [],
-  );
+    }
+
+    const t =
+      target ??
+      (roomList[0] ? ({ kind: "room", id: roomList[0].id } as Target) : null);
+    if (!target && t) setActive(t);
+    if (!t) {
+      setMessages([]);
+      setReactions([]);
+      return;
+    }
+    const { messages: msgs, reactions: reacts } = await loadMessages(uid, t);
+    setMessages(msgs);
+    setReactions(reacts);
+  }, [mode]);
 
   useEffect(() => {
     (async () => {
+      const m = await detectChatMode();
+      setMode(m);
       const { data } = await supabase.auth.getUser();
       const u = data.user;
       if (!u) return;
@@ -68,19 +83,46 @@ export function LocalChatShell() {
           (u.is_anonymous ? "Gast" : u.email?.split("@")[0]) ||
           "Du",
       );
-      refresh(u.id, null);
+      await refresh(u.id, null);
     })();
   }, [refresh]);
 
   useEffect(() => {
     if (!userId || !active) return;
-    refresh(userId, active);
+    void refresh(userId, active);
     setReplyTo(null);
-  }, [userId, active, refresh]);
+  }, [userId, active?.kind, active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, active?.id]);
+
+  // Realtime when on Supabase
+  useEffect(() => {
+    if (mode !== "supabase" || !userId) return;
+    const channel = supabase
+      .channel("nose-chat-stream")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        () => {
+          const t = activeRef.current;
+          if (t) void refresh(userId, t);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "message_reactions" },
+        () => {
+          const t = activeRef.current;
+          if (t) void refresh(userId, t);
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [mode, userId, refresh]);
 
   const headerTitle = useMemo(() => {
     if (!active) return "Chat";
@@ -89,38 +131,51 @@ export function LocalChatShell() {
     return dms.find((d) => d.id === active.id)?.other_name ?? "DM";
   }, [active, rooms, dms]);
 
-  const onSend = () => {
+  const onSend = async () => {
     if (!userId || !active) return;
     const content = draft.trim();
     if (!content) return;
     setDraft("");
-    sendMessage(userId, {
+    await postMessage(userId, {
       roomId: active.kind === "room" ? active.id : null,
       conversationId: active.kind === "dm" ? active.id : null,
       content,
       replyToId: replyTo?.id ?? null,
     });
     setReplyTo(null);
-    refresh(userId, active);
+    await refresh(userId, active);
   };
 
-  const onCreateRoom = () => {
+  const onCreateRoom = async () => {
     if (!userId || !newRoomName.trim()) return;
-    const room = createRoom(userId, newRoomName);
+    const room = await createChatRoom(userId, newRoomName);
     setNewRoomName("");
     setNewRoomOpen(false);
-    setActive({ kind: "room", id: room.id });
-    refresh(userId, { kind: "room", id: room.id });
+    if (room) {
+      setActive({ kind: "room", id: room.id });
+      await refresh(userId, { kind: "room", id: room.id });
+    }
   };
 
-  const onStartDm = () => {
+  const onStartDm = async () => {
     if (!userId || !dmName.trim()) return;
+    if (mode === "supabase") {
+      // DMs across real users need a target uuid — local name DMs stay local-only
+      const otherId = `local-${dmName.trim().toLowerCase().replace(/\s+/g, "-")}`;
+      const dm = getOrCreateLocalDm(userId, otherId, dmName.trim());
+      setDmName("");
+      setActive({ kind: "dm", id: dm.id });
+      await refresh(userId, { kind: "dm", id: dm.id });
+      return;
+    }
     const otherId = `local-${dmName.trim().toLowerCase().replace(/\s+/g, "-")}`;
-    const dm = getOrCreateDm(userId, otherId, dmName.trim());
+    const dm = getOrCreateLocalDm(userId, otherId, dmName.trim());
     setDmName("");
     setActive({ kind: "dm", id: dm.id });
-    refresh(userId, { kind: "dm", id: dm.id });
+    await refresh(userId, { kind: "dm", id: dm.id });
   };
+
+  const modeLabel = mode === "supabase" ? "Cloud · Supabase" : "Lokal · dieses Gerät";
 
   const sidebar = (
     <div className="flex h-full flex-col">
@@ -129,7 +184,7 @@ export function LocalChatShell() {
         <div>
           <div className="text-sm font-semibold">Nexus Chat</div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Lokal · dieses Gerät
+            {modeLabel}
           </div>
         </div>
       </div>
@@ -175,13 +230,13 @@ export function LocalChatShell() {
           <input
             value={dmName}
             onChange={(e) => setDmName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onStartDm()}
+            onKeyDown={(e) => e.key === "Enter" && void onStartDm()}
             placeholder="Name…"
             className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-2 py-1.5 text-xs outline-none focus:border-primary"
           />
           <button
             type="button"
-            onClick={onStartDm}
+            onClick={() => void onStartDm()}
             className="rounded-xl bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground"
           >
             DM
@@ -223,7 +278,7 @@ export function LocalChatShell() {
           </span>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium">{myName}</div>
-            <div className="text-[10px] text-muted-foreground">Nur lokal gespeichert</div>
+            <div className="text-[10px] text-muted-foreground">{modeLabel}</div>
           </div>
           <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">
             App
@@ -249,7 +304,8 @@ export function LocalChatShell() {
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">{headerTitle}</div>
             <div className="text-[10px] text-muted-foreground">
-              {active?.kind === "room" ? "Raum" : "Direktnachricht"} · lokal
+              {active?.kind === "room" ? "Raum" : "Direktnachricht"} ·{" "}
+              {mode === "supabase" ? "Cloud" : "lokal"}
             </div>
           </div>
           <Link
@@ -282,7 +338,7 @@ export function LocalChatShell() {
                 autoFocus
                 value={newRoomName}
                 onChange={(e) => setNewRoomName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && onCreateRoom()}
+                onKeyDown={(e) => e.key === "Enter" && void onCreateRoom()}
                 placeholder="Name"
                 className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
               />
@@ -296,7 +352,7 @@ export function LocalChatShell() {
                 </button>
                 <button
                   type="button"
-                  onClick={onCreateRoom}
+                  onClick={() => void onCreateRoom()}
                   className="flex-1 rounded-xl bg-primary py-2 text-sm font-semibold text-primary-foreground"
                 >
                   Erstellen
@@ -371,9 +427,10 @@ export function LocalChatShell() {
                         key={emoji}
                         type="button"
                         onClick={() => {
-                          if (!userId) return;
-                          toggleReaction(userId, m.id, emoji);
-                          refresh(userId, active);
+                          if (!userId || !active) return;
+                          void reactToMessage(userId, m.id, emoji).then(() =>
+                            refresh(userId, active),
+                          );
                         }}
                         className={`rounded-full border px-2 py-0.5 text-xs ${
                           info.mine
@@ -394,9 +451,10 @@ export function LocalChatShell() {
                       type="button"
                       className="text-xs opacity-40 transition hover:opacity-100"
                       onClick={() => {
-                        if (!userId) return;
-                        toggleReaction(userId, m.id, e);
-                        refresh(userId, active);
+                        if (!userId || !active) return;
+                        void reactToMessage(userId, m.id, e).then(() =>
+                          refresh(userId, active),
+                        );
                       }}
                     >
                       {e}
@@ -416,9 +474,10 @@ export function LocalChatShell() {
                         className="text-[10px] text-muted-foreground"
                         onClick={() => {
                           const next = window.prompt("Bearbeiten", m.content);
-                          if (next && userId) {
-                            editMessage(userId, m.id, next);
-                            refresh(userId, active);
+                          if (next && userId && active) {
+                            void editChatMessage(userId, m.id, next).then(() =>
+                              refresh(userId, active),
+                            );
                           }
                         }}
                       >
@@ -428,9 +487,10 @@ export function LocalChatShell() {
                         type="button"
                         className="text-[10px] text-destructive"
                         onClick={() => {
-                          if (!userId) return;
-                          deleteMessage(userId, m.id);
-                          refresh(userId, active);
+                          if (!userId || !active) return;
+                          void deleteChatMessage(userId, m.id).then(() =>
+                            refresh(userId, active),
+                          );
                         }}
                       >
                         Löschen
@@ -447,9 +507,7 @@ export function LocalChatShell() {
         <div className="border-t border-border px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
           {replyTo && (
             <div className="mb-2 flex items-center gap-2 rounded-xl border-l-2 border-primary bg-secondary/40 px-3 py-2 text-xs">
-              <div className="min-w-0 flex-1 truncate">
-                Antwort: {replyTo.content}
-              </div>
+              <div className="min-w-0 flex-1 truncate">Antwort: {replyTo.content}</div>
               <button type="button" onClick={() => setReplyTo(null)} className="text-muted-foreground">
                 ✕
               </button>
@@ -462,7 +520,7 @@ export function LocalChatShell() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  onSend();
+                  void onSend();
                 }
               }}
               rows={1}
@@ -472,7 +530,7 @@ export function LocalChatShell() {
             />
             <button
               type="button"
-              onClick={onSend}
+              onClick={() => void onSend()}
               disabled={!active || !draft.trim()}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground disabled:opacity-40"
             >
