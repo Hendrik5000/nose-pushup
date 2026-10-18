@@ -3,17 +3,18 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { SmartwatchPanel } from "@/components/SmartwatchPanel";
+import { HealthConnectPanel } from "@/components/HealthConnectPanel";
 
 export const Route = createFileRoute("/_authenticated/health")({
   head: () => ({
     meta: [
-      { title: "Smartwatch & Health — Nose Push" },
+      { title: "Health Connect — Nose Push" },
       {
         name: "description",
-        content: "Smartwatch koppeln, Schritte und Schlaf synchronisieren, Health-Daten nutzen.",
+        content: "Google Health Connect, Smartwatch und Gesundheitsdaten mit dem Training verbinden.",
       },
-      { property: "og:title", content: "Smartwatch & Health — Nose Push" },
-      { property: "og:description", content: "Watch und Gesundheitsdaten mit deinem Training verbinden." },
+      { property: "og:title", content: "Health Connect — Nose Push" },
+      { property: "og:description", content: "Schritte, Schlaf und Aktivität synchronisieren." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -31,8 +32,6 @@ type Entry = {
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
-const GOOGLE_HEALTH_CONNECT_URL =
-  "https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata";
 
 function HealthPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -97,13 +96,20 @@ function HealthPage() {
         <Link to="/" className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
           ← Start
         </Link>
-        <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Smartwatch</span>
+        <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Health</span>
         <span className="w-12" />
       </header>
 
       <section className="mt-6 grid grid-cols-2 gap-3">
         <Card label="Ø Schritte (7T)" value={avgSteps.toLocaleString("de-DE")} />
         <Card label="Ø Schlaf (7T)" value={`${avgSleep.toFixed(1)} h`} />
+      </section>
+
+      <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          Google Health Connect
+        </h2>
+        <HealthConnectPanel />
       </section>
 
       <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
@@ -134,21 +140,6 @@ function HealthPage() {
         </button>
       </section>
 
-      <section className="mt-4 rounded-3xl border border-border bg-card/40 p-5 text-xs leading-relaxed text-muted-foreground">
-        <h2 className="mb-2 text-sm font-semibold text-foreground">Health Connect (Android)</h2>
-        <p>
-          Galaxy Watch, Pixel Watch und Fitbit schreiben in Health Connect. Die Web-App liest Sensoren
-          nicht direkt — Import per CSV/JSON oder manuell bringt die Werte in den Smart Coach.
-        </p>
-        <button
-          type="button"
-          onClick={() => window.open(GOOGLE_HEALTH_CONNECT_URL, "_blank", "noopener,noreferrer")}
-          className="mt-3 w-full rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm font-semibold text-primary"
-        >
-          Google Health Connect öffnen
-        </button>
-      </section>
-
       <section className="mt-6">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Verlauf
@@ -166,9 +157,11 @@ function HealthPage() {
               >
                 <span className="font-semibold">
                   {new Date(e.day).toLocaleDateString("de-DE")}
-                  {e.source === "watch" || e.source?.startsWith("watch") ? (
-                    <span className="ml-2 text-[10px] text-primary">⌚</span>
-                  ) : null}
+                  {(e.source === "health_connect" || e.source === "watch" || e.source?.startsWith("watch")) && (
+                    <span className="ml-2 text-[10px] text-primary">
+                      {e.source === "health_connect" ? "HC" : "⌚"}
+                    </span>
+                  )}
                 </span>
                 <span className="tabular-nums text-muted-foreground">
                   {e.steps.toLocaleString("de-DE")} · {e.active_kcal} kcal · {(e.sleep_min / 60).toFixed(1)} h

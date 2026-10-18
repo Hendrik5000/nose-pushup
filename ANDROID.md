@@ -101,12 +101,45 @@ Die App nutzt **Web Push**. Damit Benachrichtigungen auch bei geschlossener App 
 2. In der App unter Profil → Benachrichtigungen „Cloud Push“ aktivieren.
 3. Android-Systemeinstellungen: Benachrichtigungsberechtigung für die App erteilen.
 
+## Google Health Connect (Bridge)
+
+Die Web-UI unter **Health → Google Health Connect** spricht die API so an:
+
+```js
+window.NosePushHealthConnect = {
+  async isAvailable() { return true },
+  async requestPermissions() { /* Health Connect permission contract */ return true },
+  async readSummary(days = 1) {
+    // Schritte, kcal, Schlaf aus Health Connect lesen
+    return {
+      day: "2026-10-19",
+      steps: 7368,
+      activeKcal: 420,
+      sleepMin: 430,
+      weightKg: 78.2,
+      restingHr: 54,
+    }
+  },
+}
+```
+
+### Einbindung in der Android-Shell
+
+1. Health Connect Client Library + Permissions im Android-Projekt.
+2. `WebView.addJavascriptInterface` (oder TWA-Custom-Tab-Bridge) als
+   `NosePushHealthConnect` injizieren.
+3. Berechtigungen: Steps, ActiveCaloriesBurned, SleepSession, Weight, RestingHeartRate.
+4. Ohne Bridge öffnet die Web-App Health Connect per Intent und erlaubt
+   manuelle Übernahme / CSV – der Coach nutzt `health_entries` mit
+   `source = health_connect`.
+
 ## Häufige Stolpersteine
 
 | Problem | Ursache / Lösung |
 | --- | --- |
 | Adressleiste sichtbar | assetlinks.json fehlt/falscher SHA-256 – auch den Play-App-Signing-Key eintragen |
-| Play lehnt Upload ab („version code already used“) | `appVersionCode` erhöhen |
+| Play lehnt Upload ab („version code already used") | `appVersionCode` erhöhen |
 | Splash/Icon unscharf | Maskable-Icon in 512×512 im Manifest hinterlegen |
 | Build bricht bei JDK ab | `bubblewrap doctor` ausführen, danach `bubblewrap updateConfig --jdkPath …` |
 | Offline weiße Seite | Service Worker (`public/sw.js`) muss ausgeliefert werden, kein Cache-Header `no-store` auf `/` |
+| Health Connect „kein Sync" | Keine native Bridge in der reinen Web-App – Intent öffnen + manuell/CSV oder Bridge in TWA |
