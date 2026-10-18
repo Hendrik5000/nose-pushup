@@ -1,27 +1,27 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 
-type Item = { to: string; icon: string; label: string };
+type Item = { to: string; label: string };
 
+/** Apple Health–style segmented control, placed at the bottom. */
 const ITEMS: Item[] = [
-  { to: "/", icon: "⌂", label: "Home" },
-  { to: "/exercises", icon: "◎", label: "Training" },
-  { to: "/ai", icon: "✦", label: "Super-AI" },
-  { to: "/chat", icon: "◉", label: "Chat" },
-  { to: "/profile", icon: "○", label: "Profil" },
+  { to: "/", label: "Übersicht" },
+  { to: "/exercises", label: "Training" },
+  { to: "/ai", label: "Super-AI" },
+  { to: "/chat", label: "Chat" },
+  { to: "/profile", label: "Profil" },
 ];
 
-/** Samsung Health–style floating bottom tab bar (always bottom). */
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
     <>
-      <div className="h-28" aria-hidden />
+      <div className="h-24" aria-hidden />
       <nav
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))]"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         aria-label="Hauptnavigation"
       >
-        <ul className="pointer-events-auto flex w-full max-w-md items-stretch justify-between gap-0.5 rounded-[1.75rem] border border-white/10 bg-[oklch(0.18_0.02_260/0.82)] p-1.5 shadow-[0_12px_40px_-8px_oklch(0_0_0/0.65)] backdrop-blur-2xl">
+        <ul className="ah-segment pointer-events-auto">
           {ITEMS.map((it) => {
             const active =
               it.to === "/"
@@ -32,27 +32,10 @@ export function BottomNav() {
                 <Link
                   to={it.to}
                   activeOptions={{ exact: it.to === "/" }}
-                  className={`flex flex-col items-center justify-center gap-0.5 rounded-[1.35rem] px-1 py-2.5 transition-all duration-200 ${
-                    active
-                      ? "bg-primary/18 text-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  aria-current={active ? "page" : undefined}
+                  className={`block w-full truncate ${active ? "is-active" : ""}`}
                 >
-                  <span
-                    className={`text-[1.15rem] leading-none transition-transform duration-200 ${
-                      active ? "scale-110" : ""
-                    }`}
-                    aria-hidden
-                  >
-                    {it.icon}
-                  </span>
-                  <span
-                    className={`max-w-full truncate text-[9px] font-semibold tracking-wide ${
-                      active ? "opacity-100" : "opacity-70"
-                    }`}
-                  >
-                    {it.label}
-                  </span>
+                  {it.label}
                 </Link>
               </li>
             );

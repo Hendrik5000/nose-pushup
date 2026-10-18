@@ -6,12 +6,12 @@ export const THEMES: Array<{
   description: string;
   swatch: [string, string];
 }> = [
-  { id: "solar", label: "Solar", description: "Warmes Gold", swatch: ["oklch(0.82 0.19 95)", "oklch(0.7 0.22 25)"] },
-  { id: "ember", label: "Ember", description: "Glut & Rot", swatch: ["oklch(0.68 0.23 25)", "oklch(0.78 0.17 60)"] },
-  { id: "aqua", label: "Aqua", description: "Kühles Cyan", swatch: ["oklch(0.8 0.15 200)", "oklch(0.68 0.16 240)"] },
-  { id: "neon", label: "Neon", description: "Grelles Grün", swatch: ["oklch(0.85 0.2 145)", "oklch(0.75 0.18 170)"] },
-  { id: "violet", label: "Violet", description: "Tiefes Lila", swatch: ["oklch(0.72 0.2 300)", "oklch(0.7 0.18 340)"] },
-  { id: "mono", label: "Mono", description: "Schlicht S/W", swatch: ["oklch(0.95 0 0)", "oklch(0.6 0 0)"] },
+  { id: "solar", label: "Health", description: "Apple-Warm (Orange)", swatch: ["#ff6b2c", "#1c1c1e"] },
+  { id: "ember", label: "Ember", description: "Glut & Rot", swatch: ["#ff453a", "#2c1210"] },
+  { id: "aqua", label: "Aqua", description: "Kühles Cyan", swatch: ["#64d2ff", "#0a1620"] },
+  { id: "neon", label: "Neon", description: "Aktiv-Grün", swatch: ["#30d158", "#0c1610"] },
+  { id: "violet", label: "Violet", description: "Lila Accent", swatch: ["#bf5af2", "#160f1c"] },
+  { id: "mono", label: "Mono", description: "Schlicht S/W", swatch: ["#f5f5f7", "#000000"] },
 ];
 
 export const DEFAULT_THEME: ThemeId = "solar";
@@ -27,14 +27,14 @@ export function getStoredTheme(): ThemeId {
   return isThemeId(v) ? v : DEFAULT_THEME;
 }
 
-/** Hintergrundfarbe je Theme – wird für die Systemleisten (theme-color) genutzt. */
+/** Hintergrundfarbe je Theme – Systemleisten (theme-color). */
 const THEME_BG: Record<ThemeId, string> = {
-  solar: "#0b1017",
-  ember: "#150d0a",
-  aqua: "#0a1017",
-  neon: "#08110c",
-  violet: "#120c17",
-  mono: "#0a0a0a",
+  solar: "#000000",
+  ember: "#000000",
+  aqua: "#000000",
+  neon: "#000000",
+  violet: "#000000",
+  mono: "#000000",
 };
 
 function updateThemeColorMeta(theme: ThemeId) {

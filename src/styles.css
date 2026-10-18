@@ -24,112 +24,130 @@
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-ring: var(--ring);
-  --font-display: "Inter", "Space Grotesk", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
 }
 
-/* Samsung Health–inspired default: soft dark canvas + teal activity accent */
-:root {
-  --radius: 1.5rem;
+/* Apple Health default: pure black + warm orange accent */
+:root,
+[data-theme="solar"] {
+  --radius: 1.25rem;
   --app-viewport-height: 100dvh;
-  --background: oklch(0.13 0.01 260);
-  --foreground: oklch(0.97 0.005 90);
-  --card: oklch(0.19 0.015 260);
-  --card-foreground: oklch(0.97 0.005 90);
-  --primary: oklch(0.78 0.14 175);
-  --primary-foreground: oklch(0.14 0.02 175);
-  --secondary: oklch(0.24 0.02 260);
-  --secondary-foreground: oklch(0.95 0.005 90);
-  --muted: oklch(0.21 0.015 260);
-  --muted-foreground: oklch(0.68 0.02 260);
-  --accent: oklch(0.72 0.16 300);
-  --accent-foreground: oklch(0.98 0.01 90);
-  --destructive: oklch(0.65 0.2 25);
-  --border: oklch(1 0 0 / 0.08);
-  --input: oklch(1 0 0 / 0.1);
-  --ring: oklch(0.78 0.14 175);
-  --glow-1: oklch(0.22 0.04 200 / 0.55);
-  --glow-2: oklch(0.18 0.05 300 / 0.35);
-  --sh-shadow: 0 8px 32px -12px oklch(0 0 0 / 0.55);
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --card: #1c1c1e;
+  --card-foreground: #f5f5f7;
+  --primary: #ff6b2c;
+  --primary-foreground: #ffffff;
+  --secondary: #2c2c2e;
+  --secondary-foreground: #f5f5f7;
+  --muted: #2c2c2e;
+  --muted-foreground: #8e8e93;
+  --accent: #0a84ff;
+  --accent-foreground: #ffffff;
+  --destructive: #ff453a;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #ff6b2c;
+  --glow-1: rgba(255, 107, 44, 0.45);
+  --glow-2: rgba(255, 69, 58, 0.2);
+  --sh-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+  --seg-track: #2c2c2e;
+  --seg-active: #3a3a3c;
 }
 
 [data-theme="ember"] {
-  --background: oklch(0.14 0.02 30);
-  --card: oklch(0.2 0.03 30);
-  --primary: oklch(0.7 0.2 35);
-  --primary-foreground: oklch(0.98 0.01 60);
-  --secondary: oklch(0.26 0.04 30);
-  --muted: oklch(0.22 0.03 30);
-  --muted-foreground: oklch(0.72 0.03 40);
-  --accent: oklch(0.78 0.17 60);
-  --border: oklch(1 0 0 / 0.09);
-  --input: oklch(1 0 0 / 0.1);
-  --ring: oklch(0.7 0.2 35);
-  --glow-1: oklch(0.26 0.08 35 / 0.5);
-  --glow-2: oklch(0.2 0.05 15 / 0.4);
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --card: #1c1c1e;
+  --primary: #ff453a;
+  --primary-foreground: #ffffff;
+  --secondary: #2c2c2e;
+  --muted: #2c2c2e;
+  --muted-foreground: #8e8e93;
+  --accent: #ff9f0a;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #ff453a;
+  --glow-1: rgba(255, 69, 58, 0.4);
+  --glow-2: rgba(255, 159, 10, 0.2);
+  --seg-track: #2c2c2e;
+  --seg-active: #3a3a3c;
 }
 
 [data-theme="aqua"] {
-  --background: oklch(0.14 0.02 230);
-  --card: oklch(0.2 0.03 230);
-  --primary: oklch(0.78 0.13 205);
-  --primary-foreground: oklch(0.14 0.03 230);
-  --secondary: oklch(0.26 0.04 230);
-  --muted: oklch(0.22 0.03 230);
-  --muted-foreground: oklch(0.72 0.03 220);
-  --accent: oklch(0.68 0.16 240);
-  --border: oklch(1 0 0 / 0.09);
-  --input: oklch(1 0 0 / 0.1);
-  --ring: oklch(0.78 0.13 205);
-  --glow-1: oklch(0.24 0.07 220 / 0.5);
-  --glow-2: oklch(0.2 0.05 250 / 0.4);
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --card: #1c1c1e;
+  --primary: #64d2ff;
+  --primary-foreground: #00344d;
+  --secondary: #2c2c2e;
+  --muted: #2c2c2e;
+  --muted-foreground: #8e8e93;
+  --accent: #0a84ff;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #64d2ff;
+  --glow-1: rgba(100, 210, 255, 0.35);
+  --glow-2: rgba(10, 132, 255, 0.2);
+  --seg-track: #2c2c2e;
+  --seg-active: #3a3a3c;
 }
 
 [data-theme="neon"] {
-  --background: oklch(0.13 0.02 150);
-  --card: oklch(0.19 0.03 150);
-  --primary: oklch(0.84 0.18 145);
-  --primary-foreground: oklch(0.14 0.03 150);
-  --secondary: oklch(0.25 0.04 150);
-  --muted: oklch(0.21 0.03 150);
-  --muted-foreground: oklch(0.72 0.03 150);
-  --accent: oklch(0.75 0.18 170);
-  --border: oklch(1 0 0 / 0.09);
-  --input: oklch(1 0 0 / 0.1);
-  --ring: oklch(0.84 0.18 145);
-  --glow-1: oklch(0.24 0.08 150 / 0.5);
-  --glow-2: oklch(0.2 0.05 175 / 0.4);
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --card: #1c1c1e;
+  --primary: #30d158;
+  --primary-foreground: #003214;
+  --secondary: #2c2c2e;
+  --muted: #2c2c2e;
+  --muted-foreground: #8e8e93;
+  --accent: #64d2ff;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #30d158;
+  --glow-1: rgba(48, 209, 88, 0.35);
+  --glow-2: rgba(100, 210, 255, 0.15);
+  --seg-track: #2c2c2e;
+  --seg-active: #3a3a3c;
 }
 
 [data-theme="violet"] {
-  --background: oklch(0.14 0.03 300);
-  --card: oklch(0.2 0.04 300);
-  --primary: oklch(0.74 0.18 300);
-  --primary-foreground: oklch(0.98 0.01 300);
-  --secondary: oklch(0.26 0.05 300);
-  --muted: oklch(0.22 0.04 300);
-  --muted-foreground: oklch(0.73 0.03 300);
-  --accent: oklch(0.7 0.18 340);
-  --border: oklch(1 0 0 / 0.09);
-  --input: oklch(1 0 0 / 0.1);
-  --ring: oklch(0.74 0.18 300);
-  --glow-1: oklch(0.26 0.09 300 / 0.5);
-  --glow-2: oklch(0.21 0.06 340 / 0.4);
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --card: #1c1c1e;
+  --primary: #bf5af2;
+  --primary-foreground: #ffffff;
+  --secondary: #2c2c2e;
+  --muted: #2c2c2e;
+  --muted-foreground: #8e8e93;
+  --accent: #ff375f;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #bf5af2;
+  --glow-1: rgba(191, 90, 242, 0.35);
+  --glow-2: rgba(255, 55, 95, 0.15);
+  --seg-track: #2c2c2e;
+  --seg-active: #3a3a3c;
 }
 
 [data-theme="mono"] {
-  --background: oklch(0.12 0 0);
-  --card: oklch(0.18 0 0);
-  --primary: oklch(0.94 0 0);
-  --primary-foreground: oklch(0.12 0 0);
-  --secondary: oklch(0.24 0 0);
-  --muted: oklch(0.2 0 0);
-  --muted-foreground: oklch(0.68 0 0);
-  --accent: oklch(0.58 0 0);
-  --border: oklch(1 0 0 / 0.1);
-  --input: oklch(1 0 0 / 0.12);
-  --ring: oklch(0.94 0 0);
-  --glow-1: oklch(0.22 0 0 / 0.5);
-  --glow-2: oklch(0.16 0 0 / 0.4);
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --card: #1c1c1e;
+  --primary: #f5f5f7;
+  --primary-foreground: #000000;
+  --secondary: #2c2c2e;
+  --muted: #2c2c2e;
+  --muted-foreground: #8e8e93;
+  --accent: #aeaeb2;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #f5f5f7;
+  --glow-1: rgba(255, 255, 255, 0.08);
+  --glow-2: rgba(255, 255, 255, 0.04);
+  --seg-track: #2c2c2e;
+  --seg-active: #3a3a3c;
 }
 
 @layer base {
@@ -140,11 +158,15 @@
     scroll-behavior: smooth;
   }
   body {
-    transition: background-color 300ms ease;
+    transition: background-color 280ms ease, color 280ms ease;
+    /* Apple Health: warm glow only at top */
     background:
-      radial-gradient(ellipse 120% 80% at 50% -20%, var(--glow-1) 0%, transparent 55%),
-      radial-gradient(ellipse 90% 60% at 80% 100%, var(--glow-2) 0%, transparent 50%),
-      var(--color-background);
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--primary) 55%, #1a0a00) 0%,
+        #000000 28%,
+        #000000 100%
+      );
     color: var(--color-foreground);
     font-family: var(--font-display);
     -webkit-tap-highlight-color: transparent;
@@ -170,82 +192,71 @@
 }
 
 @layer components {
-  /* Samsung Health-style elevated card */
   .sh-card {
-    border-radius: calc(var(--radius) + 0.15rem);
-    border: 1px solid oklch(1 0 0 / 0.06);
-    background: linear-gradient(
-      160deg,
-      color-mix(in oklch, var(--color-card) 92%, white) 0%,
-      var(--color-card) 100%
-    );
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--color-card);
     box-shadow: var(--sh-shadow);
-    backdrop-filter: blur(16px);
-  }
-  .sh-card-activity {
-    background: linear-gradient(
-      145deg,
-      oklch(0.28 0.08 175 / 0.35) 0%,
-      var(--color-card) 55%
-    );
-  }
-  .sh-card-sleep {
-    background: linear-gradient(
-      145deg,
-      oklch(0.28 0.1 300 / 0.35) 0%,
-      var(--color-card) 55%
-    );
-  }
-  .sh-card-vitals {
-    background: linear-gradient(
-      145deg,
-      oklch(0.3 0.1 25 / 0.28) 0%,
-      var(--color-card) 55%
-    );
-  }
-  .sh-card-mind {
-    background: linear-gradient(
-      145deg,
-      oklch(0.28 0.08 230 / 0.32) 0%,
-      var(--color-card) 55%
-    );
   }
   .sh-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    letter-spacing: -0.01em;
     color: var(--color-muted-foreground);
   }
   .sh-metric {
     font-size: 1.75rem;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
   }
 
-  /* Polish existing Tailwind cards app-wide toward Samsung Health */
+  /* Existing dashboard cards → Apple Health panels */
   main section.rounded-3xl,
   main .rounded-3xl.border {
-    box-shadow: var(--sh-shadow);
-    border-color: oklch(1 0 0 / 0.07) !important;
-    background-image: linear-gradient(
-      165deg,
-      color-mix(in oklch, var(--color-card) 88%, white) 0%,
-      var(--color-card) 70%
-    );
+    border-radius: 16px !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
+    background: var(--color-card) !important;
+    background-image: none !important;
+    box-shadow: none;
+    backdrop-filter: none;
   }
   main .rounded-2xl.border {
-    border-color: oklch(1 0 0 / 0.07) !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
+    background-color: color-mix(in srgb, var(--color-card) 92%, #000);
   }
-  main a.rounded-2xl.border,
-  main button.rounded-2xl.border {
-    transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+
+  /* iOS segmented control (used by BottomNav) */
+  .ah-segment {
+    display: flex;
+    width: 100%;
+    max-width: 28rem;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--seg-track);
+    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
   }
-  main a.rounded-2xl.border:active,
-  main button.rounded-2xl.border:active {
-    transform: scale(0.98);
+  .ah-segment a,
+  .ah-segment button {
+    flex: 1;
+    min-width: 0;
+    border-radius: 999px;
+    padding: 0.55rem 0.35rem;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-align: center;
+    color: var(--color-muted-foreground);
+    transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+  }
+  .ah-segment a.active,
+  .ah-segment a[data-status="active"],
+  .ah-segment a[aria-current="page"],
+  .ah-segment .is-active {
+    background: var(--seg-active);
+    color: var(--color-foreground);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   }
 }
 
