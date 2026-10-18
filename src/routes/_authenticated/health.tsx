@@ -2,17 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { SmartwatchPanel } from "@/components/SmartwatchPanel";
 
 export const Route = createFileRoute("/_authenticated/health")({
   head: () => ({
     meta: [
-      { title: "Health Connect — Nose Push" },
+      { title: "Smartwatch & Health — Nose Push" },
       {
         name: "description",
-        content: "Verbinde Schritte, aktive Kalorien, Schlaf und Gewicht mit deinem Push-Up-Training.",
+        content: "Smartwatch koppeln, Schritte und Schlaf synchronisieren, Health-Daten nutzen.",
       },
-      { property: "og:title", content: "Health Connect — Nose Push" },
-      { property: "og:description", content: "Gesundheitsdaten mit deinem Training zusammenführen." },
+      { property: "og:title", content: "Smartwatch & Health — Nose Push" },
+      { property: "og:description", content: "Watch und Gesundheitsdaten mit deinem Training verbinden." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -30,7 +31,8 @@ type Entry = {
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
-const GOOGLE_HEALTH_CONNECT_URL = "https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata";
+const GOOGLE_HEALTH_CONNECT_URL =
+  "https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata";
 
 function HealthPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -69,9 +71,7 @@ function HealthPage() {
       sleep_min: Math.max(0, Math.min(1440, Math.round((parseFloat(sleepH || "0") || 0) * 60))),
       source: "manual",
     };
-    const { error } = await supabase
-      .from("health_entries")
-      .upsert(payload, { onConflict: "user_id,day" });
+    const { error } = await supabase.from("health_entries").upsert(payload, { onConflict: "user_id,day" });
     setBusy(false);
     if (error) {
       setMsg("Speichern fehlgeschlagen.");
@@ -91,19 +91,13 @@ function HealthPage() {
   const avgSteps = week.length ? Math.round(week.reduce((s, e) => s + e.steps, 0) / week.length) : 0;
   const avgSleep = week.length ? week.reduce((s, e) => s + e.sleep_min, 0) / week.length / 60 : 0;
 
-  const openHealthConnect = () => {
-    if (typeof window !== "undefined") {
-      window.open(GOOGLE_HEALTH_CONNECT_URL, "_blank", "noopener,noreferrer");
-    }
-  };
-
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
+    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-8">
       <header className="flex items-center justify-between">
         <Link to="/" className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
           ← Start
         </Link>
-        <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Health Connect</span>
+        <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Smartwatch</span>
         <span className="w-12" />
       </header>
 
@@ -113,8 +107,15 @@ function HealthPage() {
       </section>
 
       <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          Smartwatch
+        </h2>
+        <SmartwatchPanel />
+      </section>
+
+      <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Tag erfassen
+          Tag manuell erfassen
         </h2>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <Input label="Datum" type="date" value={day} onChange={setDay} />
@@ -134,25 +135,18 @@ function HealthPage() {
       </section>
 
       <section className="mt-4 rounded-3xl border border-border bg-card/40 p-5 text-xs leading-relaxed text-muted-foreground">
-        <h2 className="mb-2 text-sm font-semibold text-foreground">Mit Google Health Connect verbinden</h2>
+        <h2 className="mb-2 text-sm font-semibold text-foreground">Health Connect (Android)</h2>
         <p>
-          Für Android ist die offizielle Quelle die Google Health Connect-App. Eine Web-App wie diese kann die Daten nicht direkt auslesen, aber du kannst sie schnell über die richtige App verbinden:
+          Galaxy Watch, Pixel Watch und Fitbit schreiben in Health Connect. Die Web-App liest Sensoren
+          nicht direkt — Import per CSV/JSON oder manuell bringt die Werte in den Smart Coach.
         </p>
         <button
           type="button"
-          onClick={openHealthConnect}
-          className="mt-3 w-full rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm font-semibold text-primary transition active:scale-[0.98]"
+          onClick={() => window.open(GOOGLE_HEALTH_CONNECT_URL, "_blank", "noopener,noreferrer")}
+          className="mt-3 w-full rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm font-semibold text-primary"
         >
           Google Health Connect öffnen
         </button>
-        <ol className="mt-3 list-decimal space-y-1 pl-4">
-          <li>Öffne die Google Health Connect-App und erlaube den Zugriff für Nose Push.</li>
-          <li>Prüfe dort Schritte, aktive Kalorien und Schlafdaten.</li>
-          <li>Trage die Werte oben für den jeweiligen Tag ein, damit der Smart Coach sie nutzen kann.</li>
-        </ol>
-        <p className="mt-2">
-          Deine Läufe zeichnet die App per GPS selbst auf — dafür brauchst du Health Connect nicht.
-        </p>
       </section>
 
       <section className="mt-6">
@@ -172,10 +166,12 @@ function HealthPage() {
               >
                 <span className="font-semibold">
                   {new Date(e.day).toLocaleDateString("de-DE")}
+                  {e.source === "watch" || e.source?.startsWith("watch") ? (
+                    <span className="ml-2 text-[10px] text-primary">⌚</span>
+                  ) : null}
                 </span>
                 <span className="tabular-nums text-muted-foreground">
-                  {e.steps.toLocaleString("de-DE")} Schritte · {e.active_kcal} kcal ·{" "}
-                  {(e.sleep_min / 60).toFixed(1)} h
+                  {e.steps.toLocaleString("de-DE")} · {e.active_kcal} kcal · {(e.sleep_min / 60).toFixed(1)} h
                 </span>
               </li>
             ))}
@@ -212,9 +208,7 @@ function Input({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        {label}
-      </span>
+      <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
       <input
         type={type}
         inputMode={type === "number" ? "decimal" : undefined}
