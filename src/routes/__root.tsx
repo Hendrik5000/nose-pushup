@@ -15,6 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
 
 function NotFoundComponent() {
@@ -147,6 +148,10 @@ function RootComponent() {
     const height = window.visualViewport?.height ?? window.innerHeight;
     document.documentElement.style.setProperty("--app-viewport-height", `${Math.max(height, 0)}px`);
   };
+
+  useEffect(() => {
+    installGlobalErrorReporting();
+  }, []);
 
   useEffect(() => {
     updateViewportHeight();
