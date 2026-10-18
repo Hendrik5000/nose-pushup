@@ -20,6 +20,7 @@ import { Route as AuthenticatedBattleLeagueRouteImport } from './routes/_authent
 import { Route as AuthenticatedCalisthenicsRouteImport } from './routes/_authenticated/calisthenics'
 import { Route as AuthenticatedClubsRouteImport } from './routes/_authenticated/clubs'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
+import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedExercisesRouteImport } from './routes/_authenticated/exercises'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
@@ -92,6 +93,11 @@ const AuthenticatedClubsRoute = AuthenticatedClubsRouteImport.update({
 const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
   id: '/coach',
   path: '/coach',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedExercisesRoute = AuthenticatedExercisesRouteImport.update({
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
+  '/chat': typeof AuthenticatedChatRoute
   '/exercises': typeof AuthenticatedExercisesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
+  '/chat': typeof AuthenticatedChatRoute
   '/exercises': typeof AuthenticatedExercisesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/_authenticated/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/_authenticated/clubs': typeof AuthenticatedClubsRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
+  '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/exercises': typeof AuthenticatedExercisesRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -263,6 +272,7 @@ export interface FileRouteTypes {
     | '/calisthenics'
     | '/clubs'
     | '/coach'
+    | '/chat'
     | '/exercises'
     | '/health'
     | '/leaderboard'
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | '/calisthenics'
     | '/clubs'
     | '/coach'
+    | '/chat'
     | '/exercises'
     | '/health'
     | '/leaderboard'
@@ -315,6 +326,7 @@ export interface FileRouteTypes {
     | '/_authenticated/calisthenics'
     | '/_authenticated/clubs'
     | '/_authenticated/coach'
+    | '/_authenticated/chat'
     | '/_authenticated/exercises'
     | '/_authenticated/health'
     | '/_authenticated/leaderboard'
@@ -423,6 +435,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCoachRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/chat': {
+      id: '/_authenticated/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof AuthenticatedChatRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/exercises': {
       id: '/_authenticated/exercises'
       path: '/exercises'
@@ -493,13 +512,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/battle/': {
-      id: '/_authenticated/battle/'
-      path: '/battle'
-      fullPath: '/battle/'
-      preLoaderRoute: typeof AuthenticatedBattleIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/battle/$id': {
       id: '/_authenticated/battle/$id'
       path: '/battle/$id'
@@ -521,6 +533,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkoutExerciseIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/battle/': {
+      id: '/_authenticated/battle/'
+      path: '/battle'
+      fullPath: '/battle/'
+      preLoaderRoute: typeof AuthenticatedBattleIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -529,6 +548,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCalisthenicsRoute: typeof AuthenticatedCalisthenicsRoute
   AuthenticatedClubsRoute: typeof AuthenticatedClubsRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
+  AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedExercisesRoute: typeof AuthenticatedExercisesRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
@@ -548,6 +568,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCalisthenicsRoute: AuthenticatedCalisthenicsRoute,
   AuthenticatedClubsRoute: AuthenticatedClubsRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
+  AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedExercisesRoute: AuthenticatedExercisesRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
@@ -581,13 +602,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
