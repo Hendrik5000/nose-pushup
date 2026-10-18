@@ -24,110 +24,112 @@
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-ring: var(--ring);
-  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-display: "Inter", "Space Grotesk", system-ui, sans-serif;
 }
 
+/* Samsung Health–inspired default: soft dark canvas + teal activity accent */
 :root {
-  --radius: 1.25rem;
+  --radius: 1.5rem;
   --app-viewport-height: 100dvh;
-  --background: oklch(0.16 0.02 250);
-  --foreground: oklch(0.98 0.01 90);
-  --card: oklch(0.22 0.03 250);
-  --card-foreground: oklch(0.98 0.01 90);
-  --primary: oklch(0.82 0.19 95);
-  --primary-foreground: oklch(0.18 0.02 250);
-  --secondary: oklch(0.28 0.04 250);
-  --secondary-foreground: oklch(0.98 0.01 90);
-  --muted: oklch(0.24 0.03 250);
-  --muted-foreground: oklch(0.7 0.03 250);
-  --accent: oklch(0.7 0.22 25);
+  --background: oklch(0.13 0.01 260);
+  --foreground: oklch(0.97 0.005 90);
+  --card: oklch(0.19 0.015 260);
+  --card-foreground: oklch(0.97 0.005 90);
+  --primary: oklch(0.78 0.14 175);
+  --primary-foreground: oklch(0.14 0.02 175);
+  --secondary: oklch(0.24 0.02 260);
+  --secondary-foreground: oklch(0.95 0.005 90);
+  --muted: oklch(0.21 0.015 260);
+  --muted-foreground: oklch(0.68 0.02 260);
+  --accent: oklch(0.72 0.16 300);
   --accent-foreground: oklch(0.98 0.01 90);
-  --destructive: oklch(0.65 0.24 25);
-  --border: oklch(0.3 0.03 250);
-  --input: oklch(0.3 0.03 250);
-  --ring: oklch(0.82 0.19 95);
-  --glow-1: oklch(0.22 0.05 260);
-  --glow-2: oklch(0.2 0.04 30 / 0.5);
+  --destructive: oklch(0.65 0.2 25);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: oklch(0.78 0.14 175);
+  --glow-1: oklch(0.22 0.04 200 / 0.55);
+  --glow-2: oklch(0.18 0.05 300 / 0.35);
+  --sh-shadow: 0 8px 32px -12px oklch(0 0 0 / 0.55);
 }
 
 [data-theme="ember"] {
-  --background: oklch(0.15 0.02 30);
-  --card: oklch(0.21 0.03 30);
-  --primary: oklch(0.68 0.23 25);
+  --background: oklch(0.14 0.02 30);
+  --card: oklch(0.2 0.03 30);
+  --primary: oklch(0.7 0.2 35);
   --primary-foreground: oklch(0.98 0.01 60);
-  --secondary: oklch(0.27 0.04 30);
-  --muted: oklch(0.23 0.03 30);
+  --secondary: oklch(0.26 0.04 30);
+  --muted: oklch(0.22 0.03 30);
   --muted-foreground: oklch(0.72 0.03 40);
   --accent: oklch(0.78 0.17 60);
-  --border: oklch(0.3 0.04 30);
-  --input: oklch(0.3 0.04 30);
-  --ring: oklch(0.68 0.23 25);
-  --glow-1: oklch(0.26 0.08 35);
-  --glow-2: oklch(0.2 0.05 15 / 0.6);
+  --border: oklch(1 0 0 / 0.09);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: oklch(0.7 0.2 35);
+  --glow-1: oklch(0.26 0.08 35 / 0.5);
+  --glow-2: oklch(0.2 0.05 15 / 0.4);
 }
 
 [data-theme="aqua"] {
-  --background: oklch(0.15 0.02 230);
-  --card: oklch(0.21 0.03 230);
-  --primary: oklch(0.8 0.15 200);
-  --primary-foreground: oklch(0.16 0.03 230);
-  --secondary: oklch(0.27 0.04 230);
-  --muted: oklch(0.23 0.03 230);
+  --background: oklch(0.14 0.02 230);
+  --card: oklch(0.2 0.03 230);
+  --primary: oklch(0.78 0.13 205);
+  --primary-foreground: oklch(0.14 0.03 230);
+  --secondary: oklch(0.26 0.04 230);
+  --muted: oklch(0.22 0.03 230);
   --muted-foreground: oklch(0.72 0.03 220);
   --accent: oklch(0.68 0.16 240);
-  --border: oklch(0.3 0.04 230);
-  --input: oklch(0.3 0.04 230);
-  --ring: oklch(0.8 0.15 200);
-  --glow-1: oklch(0.24 0.07 220);
-  --glow-2: oklch(0.2 0.05 250 / 0.6);
+  --border: oklch(1 0 0 / 0.09);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: oklch(0.78 0.13 205);
+  --glow-1: oklch(0.24 0.07 220 / 0.5);
+  --glow-2: oklch(0.2 0.05 250 / 0.4);
 }
 
 [data-theme="neon"] {
-  --background: oklch(0.14 0.02 150);
-  --card: oklch(0.2 0.03 150);
-  --primary: oklch(0.85 0.2 145);
-  --primary-foreground: oklch(0.15 0.03 150);
-  --secondary: oklch(0.26 0.04 150);
-  --muted: oklch(0.22 0.03 150);
+  --background: oklch(0.13 0.02 150);
+  --card: oklch(0.19 0.03 150);
+  --primary: oklch(0.84 0.18 145);
+  --primary-foreground: oklch(0.14 0.03 150);
+  --secondary: oklch(0.25 0.04 150);
+  --muted: oklch(0.21 0.03 150);
   --muted-foreground: oklch(0.72 0.03 150);
   --accent: oklch(0.75 0.18 170);
-  --border: oklch(0.29 0.04 150);
-  --input: oklch(0.29 0.04 150);
-  --ring: oklch(0.85 0.2 145);
-  --glow-1: oklch(0.24 0.08 150);
-  --glow-2: oklch(0.2 0.05 175 / 0.6);
+  --border: oklch(1 0 0 / 0.09);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: oklch(0.84 0.18 145);
+  --glow-1: oklch(0.24 0.08 150 / 0.5);
+  --glow-2: oklch(0.2 0.05 175 / 0.4);
 }
 
 [data-theme="violet"] {
-  --background: oklch(0.15 0.03 300);
-  --card: oklch(0.21 0.04 300);
-  --primary: oklch(0.72 0.2 300);
+  --background: oklch(0.14 0.03 300);
+  --card: oklch(0.2 0.04 300);
+  --primary: oklch(0.74 0.18 300);
   --primary-foreground: oklch(0.98 0.01 300);
-  --secondary: oklch(0.27 0.05 300);
-  --muted: oklch(0.23 0.04 300);
+  --secondary: oklch(0.26 0.05 300);
+  --muted: oklch(0.22 0.04 300);
   --muted-foreground: oklch(0.73 0.03 300);
   --accent: oklch(0.7 0.18 340);
-  --border: oklch(0.31 0.05 300);
-  --input: oklch(0.31 0.05 300);
-  --ring: oklch(0.72 0.2 300);
-  --glow-1: oklch(0.26 0.09 300);
-  --glow-2: oklch(0.21 0.06 340 / 0.6);
+  --border: oklch(1 0 0 / 0.09);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: oklch(0.74 0.18 300);
+  --glow-1: oklch(0.26 0.09 300 / 0.5);
+  --glow-2: oklch(0.21 0.06 340 / 0.4);
 }
 
 [data-theme="mono"] {
-  --background: oklch(0.14 0 0);
-  --card: oklch(0.2 0 0);
-  --primary: oklch(0.95 0 0);
-  --primary-foreground: oklch(0.14 0 0);
-  --secondary: oklch(0.26 0 0);
-  --muted: oklch(0.22 0 0);
-  --muted-foreground: oklch(0.7 0 0);
-  --accent: oklch(0.6 0 0);
-  --border: oklch(0.3 0 0);
-  --input: oklch(0.3 0 0);
-  --ring: oklch(0.95 0 0);
-  --glow-1: oklch(0.24 0 0);
-  --glow-2: oklch(0.18 0 0 / 0.6);
+  --background: oklch(0.12 0 0);
+  --card: oklch(0.18 0 0);
+  --primary: oklch(0.94 0 0);
+  --primary-foreground: oklch(0.12 0 0);
+  --secondary: oklch(0.24 0 0);
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.68 0 0);
+  --accent: oklch(0.58 0 0);
+  --border: oklch(1 0 0 / 0.1);
+  --input: oklch(1 0 0 / 0.12);
+  --ring: oklch(0.94 0 0);
+  --glow-1: oklch(0.22 0 0 / 0.5);
+  --glow-2: oklch(0.16 0 0 / 0.4);
 }
 
 @layer base {
@@ -140,8 +142,8 @@
   body {
     transition: background-color 300ms ease;
     background:
-      radial-gradient(ellipse at top, var(--glow-1) 0%, transparent 60%),
-      radial-gradient(ellipse at bottom, var(--glow-2) 0%, transparent 60%),
+      radial-gradient(ellipse 120% 80% at 50% -20%, var(--glow-1) 0%, transparent 55%),
+      radial-gradient(ellipse 90% 60% at 80% 100%, var(--glow-2) 0%, transparent 50%),
       var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-display);
@@ -164,6 +166,63 @@
   }
   button, [role="button"], a, input, select, textarea {
     touch-action: manipulation;
+  }
+}
+
+@layer components {
+  /* Samsung Health-style elevated card */
+  .sh-card {
+    border-radius: calc(var(--radius) + 0.15rem);
+    border: 1px solid oklch(1 0 0 / 0.06);
+    background: linear-gradient(
+      160deg,
+      oklch(from var(--color-card) l c h / 0.95) 0%,
+      var(--color-card) 100%
+    );
+    box-shadow: var(--sh-shadow);
+    backdrop-filter: blur(16px);
+  }
+  .sh-card-activity {
+    background: linear-gradient(
+      145deg,
+      oklch(0.28 0.08 175 / 0.35) 0%,
+      var(--color-card) 55%
+    );
+  }
+  .sh-card-sleep {
+    background: linear-gradient(
+      145deg,
+      oklch(0.28 0.1 300 / 0.35) 0%,
+      var(--color-card) 55%
+    );
+  }
+  .sh-card-vitals {
+    background: linear-gradient(
+      145deg,
+      oklch(0.3 0.1 25 / 0.28) 0%,
+      var(--color-card) 55%
+    );
+  }
+  .sh-card-mind {
+    background: linear-gradient(
+      145deg,
+      oklch(0.28 0.08 230 / 0.32) 0%,
+      var(--color-card) 55%
+    );
+  }
+  .sh-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+  }
+  .sh-metric {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
   }
 }
 
