@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
 import { WelcomeTour } from "@/components/WelcomeTour";
+import { TopNav } from "@/components/TopNav";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -17,9 +18,10 @@ function AuthenticatedLayout() {
   useNotifications();
   const { user } = Route.useRouteContext();
   return (
-    <>
+    <div className="min-h-[100dvh] pt-[calc(3.1rem+env(safe-area-inset-top))]">
+      <TopNav />
       <Outlet />
       <WelcomeTour userId={user.id} />
-    </>
+    </div>
   );
 }
