@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { levelProgress } from "@/lib/level";
 import {
-  getCoachFocus,
   getQuickStartPlan,
   getRecoverySummary,
   getSmartReminder,
@@ -28,15 +27,7 @@ export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Nosy Push-Ups — Dashboard" },
-      {
-        name: "description",
-        content:
-          "Zähle Push-Ups mit der Nase, sammle XP, halte deine Streak und tritt gegen Freunde an.",
-      },
-      { property: "og:title", content: "Nosy Push-Ups — Dashboard" },
-      { property: "og:description", content: "Push-Ups zählen, XP sammeln, Streak halten." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "description", content: "Zähle Push-Ups mit der Nase, sammle XP, halte deine Streak." },
     ],
   }),
   component: Dashboard,
@@ -77,26 +68,13 @@ function Dashboard() {
       if (!u.user) return;
       setUserId(u.user.id);
       const today = new Date().toISOString().slice(0, 10);
-
       const [{ data: ex }, { data: p }, { data: ds }, { data: he }] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         supabase.from("profiles").select(PROFILE_COLS).eq("id", u.user.id).maybeSingle(),
-        supabase
-          .from("daily_stats")
-          .select("day, total_reps")
-          .eq("user_id", u.user.id)
-          .eq("day", today)
-          .maybeSingle(),
-        supabase
-          .from("health_entries")
-          .select("steps")
-          .eq("user_id", u.user.id)
-          .eq("day", today)
-          .maybeSingle(),
+        supabase.from("daily_stats").select("day, total_reps").eq("user_id", u.user.id).eq("day", today).maybeSingle(),
+        supabase.from("health_entries").select("steps").eq("user_id", u.user.id).eq("day", today).maybeSingle(),
       ]);
-
       if (ex) setExercises(ex as ExerciseMeta[]);
-
       let prof = p;
       if (!prof) {
         const { data: created } = await supabase
@@ -113,16 +91,220 @@ function Dashboard() {
       }
       if (prof) {
         const raw = prof as unknown as Omit<Profile, "personal_bests"> & {
-          personal_bests: raw.personal_bests ?? {} as never
+          personal_bests: Record<string, number> | null;
         };
+        setProfile({ ...raw, personal_bests: raw.personal_bests ?? {} });
       }
+      if (ds) setTodayReps(ds.total_reps ?? 0);
+      if (he) setTodaySteps(he.steps ?? 0);
+      setLoading(false);
     })();
   }, []);
 
+  const lp = useMemo(() => levelProgress(profile?.xp ?? 0), [profile?.xp]);
+  const initials = (profile?.display_name || "?").slice(0, 1).toUpperCase();
+  const streak = profile?.current_streak ?? 0;
+  const goal = profile?.daily_goal || 50;
+  const goalPct = Math.min(1, todayReps / goal);
+  const streakActive = (() => {
+    if (!profile?.last_workout_date) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    return profile.last_workout_date === today || profile.last_workout_date === yesterday;
+  })();
+  const pushupBest = profile?.personal_bests?.pushup ?? profile?.best_count ?? 0;
+  const otherExercises = exercises.filter((e) => e.id !== "pushup");
+  const quickStart = getQuickStartPlan({ best: pushupBest, todayReps, streak, goal });
+  const pushupEx = exercises.find((e) => e.id === "pushup");
+  const dateLabel = new Date().toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+  const weeklyTarget = Math.max(200, goal * 6);
+  const weeklyReps = Math.min(weeklyTarget, todayReps + Math.max(0, streak * 8) + Math.round((pushupBest || 10) / 2));
+  const weeklyProgress = getWeeklyProgress({ weekReps: weeklyReps, target: weeklyTarget });
+  const recovery = getRecoverySummary({
+    steps: todaySteps,
+    sleepMin: 420,
+    activeKcal: Math.max(0, todayReps * 3 + streak * 15),
+    streak,
+    goal,
+    weekReps: weeklyReps,
+  });
+  const reminder = getSmartReminder({ score: recovery.score, todayReps, goal, streak });
+  const routineConfig = {
+    push: { label: "Power Push", sets: quickStart.sets, reps: quickStart.reps, rest: quickStart.rest_s },
+    strength: { label: "Kraft-Block", sets: 3, reps: 12, rest: 50 },
+    mobility: { label: "Mobilität", sets: 2, reps: 30, rest: 35 },
+  } as const;
+  const routine = routineConfig[routineMode];
+
   return (
-    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
-      <h1 className="text-xl font-bold">Dashboard lädt…</h1>
-      <p className="text-sm text-muted-foreground">Bitte Sync erneut — volle Datei wird wiederhergestellt.</p>
+    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-8">
+      <header className="flex items-center justify-between">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{dateLabel}</div>
+          <h1 className="mt-0.5 text-xl font-bold tracking-tight">Hallo {profile?.display_name || "Athlet"} 👋</h1>
+        </div>
+        <Link to="/profile" className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold" aria-label="Profil">
+          {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" /> : initials}
+        </Link>
+      </header>
+
+      <ReadinessCard streak={streak} />
+
+      <DashboardExtras streak={streak} todayReps={todayReps} goal={goal} readinessScore={recovery.score} />
+
+      <MicroChallengeCard
+        userId={userId}
+        pushupBest={pushupBest}
+        dailyGoal={goal}
+        todayReps={todayReps}
+        streak={streak}
+        readinessLevel={recovery.score >= 70 ? "green" : recovery.score >= 45 ? "yellow" : "red"}
+        plankBest={profile?.personal_bests?.plank}
+      />
+
+      <StreakFreezeCard streak={streak} />
+      <RecoveryCalendar userId={userId} />
+
+      <section className="mt-5 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+        <div className="flex items-center gap-5">
+          <ActivityRing pct={goalPct} value={todayReps} goal={goal} />
+          <div className="min-w-0 flex-1 space-y-2.5">
+            <RingRow icon="🏆" label="Bestwert" value={`${pushupBest}`} />
+            <RingRow icon={streakActive && streak > 0 ? "🔥" : "❄️"} label="Streak" value={`${streak} Tage`} />
+            <RingRow icon="👟" label="Schritte" value={todaySteps ? todaySteps.toLocaleString("de-DE") : "—"} />
+          </div>
+        </div>
+        <div className="mt-5 border-t border-border pt-4">
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="font-semibold">Level {lp.level} · {lp.title}</span>
+            <span className="tabular-nums text-muted-foreground">{lp.xp.toLocaleString("de-DE")} XP</span>
+          </div>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${lp.progress * 100}%` }} />
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Smart Reminder</div>
+        <div className="mt-2 text-sm font-semibold">{reminder.title}</div>
+        <p className="mt-1 text-xs text-muted-foreground">{reminder.text}</p>
+        <p className="mt-2 text-xs text-muted-foreground">Woche: {weeklyProgress.percent}% · Recovery {recovery.score}%</p>
+      </section>
+
+      <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Mini-Block · {routine.label}</div>
+        <div className="mt-2 flex gap-2">
+          {(["push", "strength", "mobility"] as const).map((type) => (
+            <button key={type} type="button" onClick={() => setRoutineMode(type)} className={`flex-1 rounded-xl border px-2 py-2 text-[10px] font-medium uppercase ${
+              routineMode === type ? "border-primary bg-primary/15" : "border-border"
+            }`}>{type === "push" ? "Push" : type === "strength" ? "Kraft" : "Mobil"}</button>
+          ))}
+        </div>
+        <Link to="/workout/$exerciseId" params={{ exerciseId: "pushup" }} search={{ mode }} className="mt-3 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground">
+          Mini-Block starten →
+        </Link>
+      </section>
+
+      <section className="mt-4 grid grid-cols-3 gap-2">
+        <Tile to="/chat" icon="💬" label="Chat" />
+        <Tile to="/health" icon="💚" label="Health" />
+        <Tile to="/ai" icon="✦" label="Super-AI" />
+        <Tile to="/programs" icon="📋" label="Programme" />
+        <Tile to="/battle" icon="⚔️" label="Battle" />
+        <Tile to="/calisthenics" icon="🤸" label="Cali" />
+      </section>
+
+      <section className="mt-4 rounded-3xl border border-border bg-card/50 p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Haupt-Übung</div>
+            <h2 className="mt-1 text-3xl font-bold">Push-Ups</h2>
+          </div>
+          <span className="text-5xl">{pushupEx?.icon ?? "💪"}</span>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <ModeChip active={mode === "nose"} onClick={() => setMode("nose")} icon="👃" label="Nase" />
+          <ModeChip active={mode === "manual"} onClick={() => setMode("manual")} icon="👆" label="Manuell" />
+          <ModeChip active={mode === "camera"} onClick={() => setMode("camera")} icon="📷" label="Kamera" />
+        </div>
+        <Link to="/workout/$exerciseId" params={{ exerciseId: "pushup" }} search={{ mode }} className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground">
+          Workout starten →
+        </Link>
+      </section>
+
+      <WeekPlanCard />
+      <WeeklyReview userId={userId} streak={streak} />
+      <AiCoachCard />
+      {userId && <ChallengesPanel userId={userId} />}
+      {userId && <FriendActivity userId={userId} />}
+      {userId && <WorkoutHistory userId={userId} />}
+
+      <section className="mt-6">
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Weitere Übungen</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {loading && <div className="col-span-full rounded-2xl border border-border p-6 text-center text-sm text-muted-foreground">Lade…</div>}
+          {otherExercises.map((ex) => {
+            const best = profile?.personal_bests?.[ex.id] ?? 0;
+            return (
+              <Link key={ex.id} to="/workout/$exerciseId" params={{ exerciseId: ex.id }} className="flex flex-col gap-1 rounded-2xl border border-border bg-card/50 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-3xl">{ex.icon}</span>
+                  <FavoriteStar exerciseId={ex.id} />
+                </div>
+                <span className="text-sm font-semibold">{ex.name}</span>
+                <span className="text-xs text-muted-foreground">Best {best}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <BottomNav />
     </main>
+  );
+}
+
+function ActivityRing({ pct, value, goal }: { pct: number; value: number; goal: number }) {
+  const r = 48;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="relative h-[110px] w-[110px] shrink-0">
+      <svg width="110" height="110" className="-rotate-90">
+        <circle cx="55" cy="55" r={r} fill="none" stroke="var(--color-secondary)" strokeWidth="10" />
+        <circle cx="55" cy="55" r={r} fill="none" stroke="var(--color-primary)" strokeWidth="10" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - pct)} className="transition-all duration-700" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-3xl font-bold tabular-nums">{value}</span>
+        <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">/ {goal}</span>
+      </div>
+    </div>
+  );
+}
+
+function RingRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-xl bg-background/40 px-3 py-2">
+      <span className="flex items-center gap-2 text-[11px] text-muted-foreground"><span className="text-base">{icon}</span>{label}</span>
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+function Tile({ to, icon, label }: { to: string; icon: string; label: string }) {
+  return (
+    <Link to={to} className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card/50 py-3 text-[10px] font-medium text-muted-foreground">
+      <span className="text-2xl">{icon}</span>{label}
+    </Link>
+  );
+}
+
+function ModeChip({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: string; label: string }) {
+  return (
+    <button onClick={onClick} className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs font-medium ${
+      active ? "border-primary bg-primary/15" : "border-border bg-secondary/60 text-muted-foreground"
+    }`}>
+      <span className="text-lg">{icon}</span><span>{label}</span>
+    </button>
   );
 }
