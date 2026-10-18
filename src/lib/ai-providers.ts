@@ -1,0 +1,130 @@
+/** Client-side BYOK multi-provider config for Super-AI. */
+
+export type ProviderId = "openai" | "anthropic" | "google" | "lovable" | "custom";
+
+export type AiTask =
+  | "general"
+  | "training_plan"
+  | "form_technique"
+  | "recovery"
+  | "stats_analysis"
+  | "chat_summary"
+  | "quick_log"
+  | "motivation";
+
+export type ProviderConfig = {
+  id: ProviderId;
+  label: string;
+  enabled: boolean;
+  apiKey: string;
+  /** OpenAI-compatible base URL (custom only) */
+  baseUrl?: string;
+  /** Default model id for this provider */
+  model: string;
+  /** Preferred for these tasks */
+  tasks: AiTask[];
+};
+
+const STORAGE_KEY = "super-ai-providers-v1";
+
+export const DEFAULT_PROVIDERS: ProviderConfig[] = [
+  {
+    id: "openai",
+    label: "OpenAI",
+    enabled: false,
+    apiKey: "",
+    model: "gpt-4o-mini",
+    tasks: ["general", "stats_analysis", "training_plan"],
+  },
+  {
+    id: "anthropic",
+    label: "Anthropic (Claude)",
+    enabled: false,
+    apiKey: "",
+    model: "claude-3-5-haiku-latest",
+    tasks: ["form_technique", "recovery", "training_plan"],
+  },
+  {
+    id: "google",
+    label: "Google (Gemini)",
+    enabled: false,
+    apiKey: "",
+    model: "gemini-2.0-flash",
+    tasks: ["quick_log", "motivation", "general"],
+  },
+  {
+    id: "lovable",
+    label: "Lovable Gateway",
+    enabled: true,
+    apiKey: "",
+    model: "google/gemini-3-flash-preview",
+    tasks: ["general", "quick_log", "motivation"],
+  },
+  {
+    id: "custom",
+    label: "Custom (OpenAI-kompatibel)",
+    enabled: false,
+    apiKey: "",
+    baseUrl: "https://api.example.com/v1",
+    model: "my-model",
+    tasks: ["general"],
+  },
+];
+
+export function loadProviders(): ProviderConfig[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return structuredClone(DEFAULT_PROVIDERS);
+    const parsed = JSON.parse(raw) as ProviderConfig[];
+    if (!Array.isArray(parsed) || parsed.length === 0) return structuredClone(DEFAULT_PROVIDERS);
+    // Merge with defaults so new fields appear after updates
+    return DEFAULT_PROVIDERS.map((d) => {
+      const found = parsed.find((p) => p.id === d.id);
+      return found ? { ...d, ...found, id: d.id, label: d.label } : d;
+    });
+  } catch {
+    return structuredClone(DEFAULT_PROVIDERS);
+  }
+}
+
+export function saveProviders(list: ProviderConfig[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+/** Classify user message into a task for model routing. */
+export function classifyTask(text: string): AiTask {
+  const t = text.toLowerCase();
+  if (/(hab|habe|gemacht|geschafft|absolviert|logg|logge)/.test(t) && /\d+/.test(t))
+    return "quick_log";
+  if (/(plan|programm|split|wochenplan|trainingsplan)/.test(t)) return "training_plan";
+  if (/(form|technik|haltung|nacken|rücken|schulter|winkel)/.test(t)) return "form_technique";
+  if (/(regen|recovery|schmerz|pause|müde|schlaf|überlast)/.test(t)) return "recovery";
+  if (/(statistik|fortschritt|woche|trend|analyse|wie war)/.test(t)) return "stats_analysis";
+  if (/(chat|nachricht|raum|dm|zusammenfassung|freund)/.test(t)) return "chat_summary";
+  if (/(motiv|nicht lust|faul|durchhalten|streak)/.test(t)) return "motivation";
+  return "general";
+}
+
+/** Pick best enabled provider for a task (first with key or lovable). */
+export function pickProvider(providers: ProviderConfig[], task: AiTask): ProviderConfig | null {
+  const enabled = providers.filter((p) => p.enabled && (p.id === "lovable" || p.apiKey.trim()));
+  if (enabled.length === 0) return null;
+  const preferred = enabled.find((p) => p.tasks.includes(task));
+  return preferred ?? enabled[0];
+}
+
+export type ClientProviderPayload = {
+  id: ProviderId;
+  apiKey: string;
+  baseUrl?: string;
+  model: string;
+};
+
+export function toPayload(p: ProviderConfig): ClientProviderPayload {
+  return {
+    id: p.id,
+    apiKey: p.apiKey,
+    baseUrl: p.baseUrl,
+    model: p.model,
+  };
+}
