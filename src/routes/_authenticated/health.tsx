@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { SmartwatchPanel } from "@/components/SmartwatchPanel";
 import { HealthConnectPanel } from "@/components/HealthConnectPanel";
+import { WeightTrendCard } from "@/components/WeightTrendCard";
+import { SleepDebtCard } from "@/components/SleepDebtCard";
+import { WeeklyStepsGoal } from "@/components/WeeklyStepsGoal";
 
 export const Route = createFileRoute("/_authenticated/health")({
   head: () => ({
@@ -89,6 +92,7 @@ function HealthPage() {
   const week = entries.slice(0, 7);
   const avgSteps = week.length ? Math.round(week.reduce((s, e) => s + e.steps, 0) / week.length) : 0;
   const avgSleep = week.length ? week.reduce((s, e) => s + e.sleep_min, 0) / week.length / 60 : 0;
+  const todaySteps = entries.find((e) => e.day === today())?.steps ?? 0;
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-8">
@@ -104,6 +108,14 @@ function HealthPage() {
         <Card label="Ø Schritte (7T)" value={avgSteps.toLocaleString("de-DE")} />
         <Card label="Ø Schlaf (7T)" value={`${avgSleep.toFixed(1)} h`} />
       </section>
+
+      <WeeklyStepsGoal todaySteps={todaySteps} />
+      <SleepDebtCard sleepMinutes={entries.slice(0, 7).map((e) => e.sleep_min)} />
+      <WeightTrendCard
+        points={entries
+          .filter((e) => e.weight_kg != null)
+          .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
+      />
 
       <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
