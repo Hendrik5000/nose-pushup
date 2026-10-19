@@ -25,6 +25,11 @@ Profil → Abschnitt „Fehlerberichte“ → **Alle kopieren (für Auto-Fix)** 
 - Apple Health–inspired UI, TopNav segmented control
 - Super-AI (BYOK), Nexus Chat hybrid, workout + micro-challenges
 
+## Dependency changes and Vercel
+
+- Keep `package-lock.json` synchronized with `package.json` in every dependency change. Vercel installs with `npm ci`, which rejects an inconsistent lockfile.
+- Use npm to regenerate the lockfile; verify with `npm ci --no-audit --no-fund`, `npm run lint`, and `npm run build` before pushing. Never replace this check with `npm install` alone.
+
 ## Migrations
 
 Append-only under `supabase/migrations/`. Never rewrite applied files.
