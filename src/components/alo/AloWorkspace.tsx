@@ -1,5 +1,6 @@
+import { priorityTasks } from "@/lib/alo-ui";
 import { readAttachment } from "@/lib/alo-attachments";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Search, Layers, Plus, CalendarDays, ShieldCheck, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -29,7 +30,7 @@ const AREA_LABELS: Record<string, string> = {
   mira: "Mira",
   nexus: "Nexus",
 };
-type Tab = "today" | "search" | "capture" | "collections" | "shortcuts" | "privacy";
+type Tab = "menu" | "today" | "search" | "capture" | "collections" | "shortcuts" | "privacy";
 const TABS = [
   { id: "today", label: "Tagesübersicht", icon: CalendarDays },
   { id: "search", label: "Überall suchen", icon: Search },
@@ -40,14 +41,17 @@ const TABS = [
 ] as const;
 export function AloWorkspace({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>("today");
+  const launcher = useRef<HTMLElement | null>(null);
+  const [tab, setTab] = useState<Tab>("menu");
   const [, refresh] = useState(0);
   const [error, setError] = useState("");
   useEffect(() => {
     const update = () => refresh((n) => n + 1);
     const launch = (e: Event) => {
+      launcher.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
       const next = (e as CustomEvent<Tab>).detail;
-      if (TABS.some((t) => t.id === next)) setTab(next);
+      if (next === "menu" || TABS.some((t) => t.id === next)) setTab(next);
       setOpen(true);
     };
     const storage = (e: StorageEvent) => {
@@ -59,6 +63,8 @@ export function AloWorkspace({ userId }: { userId: string }) {
     const keydown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
+        launcher.current =
+          document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setTab("search");
         setOpen(true);
       }
@@ -110,44 +116,60 @@ export function AloWorkspace({ userId }: { userId: string }) {
   const sync = getSyncState();
   return (
     <>
-      <button
-        type="button"
-        aria-label="Alo Zentrale öffnen"
-        className="alo-launcher"
-        onClick={() => setOpen(true)}
-      >
-        <Layers size={17} />
-        <span>Alo</span>
-      </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="alo-dialog alo-workspace">
+        <DialogContent
+          className="alo-dialog alo-workspace"
+          data-view={tab}
+          onCloseAutoFocus={(e) => {
+            if (launcher.current?.isConnected) {
+              e.preventDefault();
+              launcher.current.focus();
+            }
+          }}
+        >
           <header>
-            <DialogTitle>Alo · Alles verbunden</DialogTitle>
+            <DialogTitle>
+              {tab === "menu" ? "Alo · Plus-Menü" : TABS.find((t) => t.id === tab)?.label}
+            </DialogTitle>
             <DialogDescription>
               {cloudEnabled(userId)
                 ? sync.message
                 : "Nur auf diesem Gerät · Cloud-Synchronisierung aus"}
             </DialogDescription>
           </header>
-          <nav aria-label="Alo Werkzeuge" className="alo-tabs">
-            {TABS.map((t) => (
-              <button
-                type="button"
-                aria-current={tab === t.id ? "page" : undefined}
-                className={tab === t.id ? "is-active" : ""}
-                key={t.id}
-                onClick={() => setTab(t.id)}
+          {tab !== "menu" && tab !== "search" && (
+            <label className="alo-tool-switcher">
+              <span className="sr-only">Alo Werkzeug</span>
+              <select
+                aria-label="Alo Werkzeug auswählen"
+                value={tab}
+                onChange={(e) => setTab(e.target.value as Tab)}
               >
-                <t.icon size={16} />
-                <span>{t.label}</span>
-              </button>
-            ))}
-          </nav>
+                <option value="menu">Plus-Menü</option>
+                {TABS.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className="alo-workspace-content">
             {error ? (
               <p role="alert">{error}</p>
             ) : (
               <>
+                {tab === "menu" && (
+                  <div className="alo-command-list">
+                    {[TABS[2], TABS[1], TABS[0], ...TABS.slice(3)].map((t) => (
+                      <button key={t.id} onClick={() => setTab(t.id)}>
+                        <t.icon size={20} aria-hidden="true" />
+                        <span>{t.label}</span>
+                        <span aria-hidden="true">→</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {tab === "today" && (
                   <Today
                     userId={userId}
@@ -197,9 +219,11 @@ function Today({
   const [title, setTitle] = useState("");
   const [due, setDue] = useState("");
   const [status, setStatus] = useState("");
+  const [chatState, setChatState] = useState<"loading" | "ready" | "error">("loading");
   const [important, setImportant] = useState<
     Array<{ room: LocalRoom; unread: number; text: string }>
   >([]);
+  const taskDetails = useRef<HTMLDetailsElement>(null);
   const [now, setNow] = useState(Date.now());
   const tasks = rows.filter((r) => r.kind === "task");
   const upcoming = tasks
@@ -218,7 +242,8 @@ function Today({
       );
       const results = await Promise.all(
         rooms.map(async (room) => {
-          const { messages } = await loadMessages(userId, { kind: "room", id: room.id });
+          const { messages, available } = await loadMessages(userId, { kind: "room", id: room.id });
+          if (!available) throw new Error("Raum derzeit nicht verfügbar");
           return {
             room,
             unread: countUnread(prefs, "room", room.id, messages, userId),
@@ -228,6 +253,7 @@ function Today({
       );
       if (active) {
         setImportant(results);
+        setChatState("ready");
         setStatus(
           rooms.length
             ? "Favorisierte Räume geladen; ungelesene Angaben beziehen sich auf die letzten bis zu 200 Nachrichten."
@@ -235,12 +261,16 @@ function Today({
         );
       }
     })().catch(() => {
-      if (active) setStatus("Wichtige Chats derzeit nicht erreichbar.");
+      if (active) {
+        setChatState("error");
+        setStatus("Wichtige Chats derzeit nicht erreichbar.");
+      }
     });
     return () => {
       active = false;
     };
   }, [userId]);
+  const nextTask = priorityTasks(rows, 1)[0];
   const add = () => {
     if (!title.trim()) return;
     const parsed = due ? new Date(due) : null;
@@ -279,143 +309,212 @@ function Today({
             month: "long",
           })}
         </p>
-        <h2 className="text-2xl font-semibold">Dein Tag in Alo</h2>
-        <p className="text-sm text-muted-foreground">
-          Aufgaben, Erinnerungen und wichtige Chats – nicht nur Training.
-        </p>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        <div className="alo-card">
-          <strong className="text-2xl">{tasks.filter((t) => !t.body.done).length}</strong>
-          <p className="text-xs">offen</p>
-        </div>
-        <div className="alo-card">
-          <strong className="text-2xl">
-            {upcoming.filter((t) => new Date(String(t.body.due)).getTime() <= now).length}
-          </strong>
-          <p className="text-xs">fällig</p>
-        </div>
-        <div className="alo-card">
-          <strong className="text-2xl">{important.reduce((sum, r) => sum + r.unread, 0)}</strong>
-          <p className="text-xs">Chat ungelesen</p>
-        </div>
-      </div>
-      <section className="alo-card space-y-3">
-        <h3 className="font-semibold">Aufgabe oder Erinnerung</h3>
-        <input
-          aria-label="Neue Aufgabe"
-          placeholder="Was steht an?"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={200}
-        />
-        <label>
-          Optional fällig am
-          <input
-            aria-label="Aufgabe fällig am"
-            type="datetime-local"
-            value={due}
-            onChange={(e) => setDue(e.target.value)}
-          />
-        </label>
-        <button type="button" className="alo-btn-primary" disabled={!title.trim()} onClick={add}>
-          Aufgabe speichern
-        </button>
-        <p className="text-xs text-muted-foreground">
-          Zeitangaben in deiner Gerätezeitzone. Hinweise in der App, keine zugesicherte
-          Push-Benachrichtigung bei geschlossener App.
-        </p>
-      </section>
-      <section className="space-y-2">
-        <h3 className="font-semibold">Heute & offen</h3>
-        {tasks.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Noch keine Aufgaben. Du kannst oben eine hinzufügen.
+      <div className="alo-priority-cards" aria-label="Deine zwei wichtigsten Karten">
+        <article className="alo-card">
+          <p className="text-xs text-primary">
+            {upcoming.filter((t) => new Date(String(t.body.due)).getTime() <= now).length} fällig ·{" "}
+            {tasks.filter((t) => !t.body.done).length} offen
           </p>
-        )}
-        {tasks
-          .sort((a, b) => Number(!!a.body.done) - Number(!!b.body.done))
-          .map((t) => (
-            <div className="alo-card flex items-start gap-3" key={t.id}>
-              <input
-                type="checkbox"
-                aria-label={`${String(t.body.title)} erledigt`}
-                checked={!!t.body.done}
-                onChange={(e) => {
-                  try {
-                    putAlo("task", { ...t.body, done: e.target.checked }, t.id, userId);
-                  } catch {
-                    setStatus("Änderung nicht gespeichert.");
-                  }
-                }}
-              />
-              <div className="min-w-0 flex-1">
-                <p className={t.body.done ? "line-through" : "font-medium"}>
-                  {String(t.body.title)}
-                </p>
-                {!!t.body.due && (
-                  <p
-                    role={
-                      new Date(String(t.body.due)).getTime() <= now && !t.body.done
-                        ? "status"
-                        : undefined
-                    }
-                    className="text-xs text-muted-foreground"
-                  >
-                    {new Date(String(t.body.due)).toLocaleString("de-DE")}{" "}
-                    {new Date(String(t.body.due)).getTime() <= now && !t.body.done
-                      ? "· Jetzt fällig"
-                      : ""}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                className="text-xs text-muted-foreground"
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      "Diese Aufgabe löschen? Cloudkopie wird bei aktivem Abgleich ebenfalls gelöscht.",
-                    )
-                  )
-                    removeAlo(t.id, userId);
-                }}
-              >
-                Löschen
-              </button>
-            </div>
-          ))}
-      </section>
-      <section className="space-y-2">
-        <h3 className="font-semibold">Wichtige Chats · deine Favoriten</h3>
-        {important.map((i) => (
+          <h3 className="font-semibold">
+            {String(nextTask?.body.title ?? "Platz für deinen nächsten Schritt")}
+          </h3>
+          {typeof nextTask?.body.roomId === "string" ? (
+            <Link
+              className="alo-text-action"
+              to="/chat"
+              onClick={() => {
+                window.sessionStorage.setItem(
+                  "alo-open-nexus",
+                  JSON.stringify({ kind: "room", id: nextTask.body.roomId }),
+                );
+                onNavigate();
+              }}
+            >
+              Zum Nexus-Ursprung →
+            </Link>
+          ) : (
+            <button
+              className="alo-text-action"
+              onClick={() => {
+                if (taskDetails.current) {
+                  taskDetails.current.open = true;
+                  taskDetails.current.scrollIntoView({ block: "start", behavior: "smooth" });
+                }
+              }}
+            >
+              Aufgaben & Erinnerungen öffnen →
+            </button>
+          )}
+        </article>
+        <article className="alo-card">
+          <p className="text-xs text-primary">
+            {chatState === "loading"
+              ? "Wichtige Chats werden geladen"
+              : chatState === "error"
+                ? "Chat-Status nicht verfügbar"
+                : important.length
+                  ? `${important.reduce((sum, r) => sum + r.unread, 0)} ungelesen in Favoriten`
+                  : "Noch keine Favoriten"}
+          </p>
+          <h3 className="font-semibold">
+            {[...important].sort((a, b) => b.unread - a.unread)[0]?.room.name ??
+              "Deine wichtigen Chats"}
+          </h3>
+          <p className="line-clamp-2 text-sm text-muted-foreground">
+            {[...important].sort((a, b) => b.unread - a.unread)[0]?.text ??
+              "Öffne Nexus und markiere einen Raum als Favoriten."}
+          </p>
           <Link
-            key={i.room.id}
-            className="alo-card block"
+            className="alo-text-action"
             to="/chat"
             onClick={() => {
-              window.sessionStorage.setItem(
-                "alo-open-nexus",
-                JSON.stringify({ kind: "room", id: i.room.id }),
-              );
+              const room = [...important].sort((a, b) => b.unread - a.unread)[0]?.room;
+              if (room)
+                window.sessionStorage.setItem(
+                  "alo-open-nexus",
+                  JSON.stringify({ kind: "room", id: room.id }),
+                );
               onNavigate();
             }}
           >
-            <p className="font-medium">
-              {i.room.name} · {i.unread} ungelesen
-            </p>
-            <p className="line-clamp-2 text-xs text-muted-foreground">{i.text}</p>
+            In Nexus öffnen →
           </Link>
-        ))}
-      </section>
-      <div className="flex flex-wrap gap-2">
-        <button className="alo-btn" onClick={onCapture}>
-          Schnell speichern
-        </button>
-        <Link className="alo-btn" to="/programs" onClick={onNavigate}>
-          Trainingsplan öffnen
-        </Link>
+        </article>
       </div>
+      <button className="alo-btn-primary w-full" onClick={onCapture}>
+        Etwas festhalten
+      </button>
+      <details ref={taskDetails} className="alo-secondary-details">
+        <summary>Aufgaben & Erinnerungen verwalten</summary>
+        <section className="alo-card space-y-3">
+          <h3 className="font-semibold">Aufgabe oder Erinnerung</h3>
+          <input
+            aria-label="Neue Aufgabe"
+            placeholder="Was steht an?"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={200}
+          />
+          <label>
+            Optional fällig am
+            <input
+              aria-label="Aufgabe fällig am"
+              type="datetime-local"
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+            />
+          </label>
+          <button type="button" className="alo-btn-primary" disabled={!title.trim()} onClick={add}>
+            Aufgabe speichern
+          </button>
+          <p className="text-xs text-muted-foreground">
+            Zeitangaben in deiner Gerätezeitzone. Hinweise in der App, keine zugesicherte
+            Push-Benachrichtigung bei geschlossener App.
+          </p>
+        </section>
+        <section className="space-y-2">
+          <h3 className="font-semibold">Heute & offen</h3>
+          {tasks.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Noch keine Aufgaben. Du kannst oben eine hinzufügen.
+            </p>
+          )}
+          {tasks
+            .sort((a, b) => Number(!!a.body.done) - Number(!!b.body.done))
+            .map((t) => (
+              <div className="alo-card flex items-start gap-3" key={t.id}>
+                <input
+                  type="checkbox"
+                  aria-label={`${String(t.body.title)} erledigt`}
+                  checked={!!t.body.done}
+                  onChange={(e) => {
+                    try {
+                      putAlo("task", { ...t.body, done: e.target.checked }, t.id, userId);
+                    } catch {
+                      setStatus("Änderung nicht gespeichert.");
+                    }
+                  }}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className={t.body.done ? "line-through" : "font-medium"}>
+                    {String(t.body.title)}
+                  </p>
+                  {typeof t.body.roomId === "string" && (
+                    <Link
+                      className="alo-text-action block"
+                      to="/chat"
+                      onClick={() => {
+                        window.sessionStorage.setItem(
+                          "alo-open-nexus",
+                          JSON.stringify({ kind: "room", id: t.body.roomId }),
+                        );
+                        onNavigate();
+                      }}
+                    >
+                      Zum Nexus-Ursprung →
+                    </Link>
+                  )}
+                  {!!t.body.due && (
+                    <p
+                      role={
+                        new Date(String(t.body.due)).getTime() <= now && !t.body.done
+                          ? "status"
+                          : undefined
+                      }
+                      className="text-xs text-muted-foreground"
+                    >
+                      {new Date(String(t.body.due)).toLocaleString("de-DE")}{" "}
+                      {new Date(String(t.body.due)).getTime() <= now && !t.body.done
+                        ? "· Jetzt fällig"
+                        : ""}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Diese Aufgabe löschen? Cloudkopie wird bei aktivem Abgleich ebenfalls gelöscht.",
+                      )
+                    )
+                      removeAlo(t.id, userId);
+                  }}
+                >
+                  Löschen
+                </button>
+              </div>
+            ))}
+        </section>
+      </details>
+      <details className="alo-secondary-details">
+        <summary>Weitere wichtige Chats</summary>
+        <section className="space-y-2">
+          <h3 className="font-semibold">Wichtige Chats · deine Favoriten</h3>
+          {important.map((i) => (
+            <Link
+              key={i.room.id}
+              className="alo-card block"
+              to="/chat"
+              onClick={() => {
+                window.sessionStorage.setItem(
+                  "alo-open-nexus",
+                  JSON.stringify({ kind: "room", id: i.room.id }),
+                );
+                onNavigate();
+              }}
+            >
+              <p className="font-medium">
+                {i.room.name} · {i.unread} ungelesen
+              </p>
+              <p className="line-clamp-2 text-xs text-muted-foreground">{i.text}</p>
+            </Link>
+          ))}
+        </section>
+      </details>
+
       <p role="status" className="text-xs text-muted-foreground">
         {status}
       </p>

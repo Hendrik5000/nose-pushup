@@ -61,12 +61,13 @@ export async function loadMessages(
   userId: string,
   target: { kind: "room" | "dm"; id: string },
   options: { strict?: boolean } = {},
-): Promise<{ messages: LocalMessage[]; reactions: LocalReaction[] }> {
+): Promise<{ messages: LocalMessage[]; reactions: LocalReaction[]; available: boolean }> {
   if ((await detectChatMode()) === "local") {
     const store = loadChatStore(userId);
     const messages = messagesFor(store, target);
     const ids = new Set(messages.map((m) => m.id));
     return {
+      available: true,
       messages,
       reactions: store.reactions.filter((r) => ids.has(r.message_id)),
     };
@@ -100,7 +101,7 @@ export async function loadMessages(
       .in("message_id" as never, ids as never);
     reactions = (reacts ?? []) as unknown as LocalReaction[];
   }
-  return { messages, reactions };
+  return { messages, reactions, available: !error };
 }
 
 export async function postMessage(
@@ -206,3 +207,32 @@ export async function deleteChatMessage(userId: string, messageId: string): Prom
 
 export type { LocalDm, LocalMessage, LocalReaction, LocalRoom };
 export { loadChatStore, saveChatStore, localGetDm as getOrCreateLocalDm };
+
+/** One latest message and an exact unread count; RLS remains authoritative. */
+export async function loadRoomPreview(userId: string, roomId: string, since?: string) {
+  const latestQuery = supabase
+    .from("messages" as never)
+    .select("content,created_at,user_id" as never)
+    .eq("room_id" as never, roomId as never)
+    .order("created_at" as never, { ascending: false })
+    .limit(1);
+  let unreadQuery = supabase
+    .from("messages" as never)
+    .select("id" as never, { count: "exact", head: true })
+    .eq("room_id" as never, roomId as never)
+    .neq("user_id" as never, userId as never);
+  if (since && Number.isFinite(Date.parse(since)))
+    unreadQuery = unreadQuery.gt("created_at" as never, since as never);
+  const [latest, unread] = await Promise.all([latestQuery, unreadQuery]);
+  return {
+    latest: latest.error
+      ? null
+      : ((latest.data?.[0] ?? null) as {
+          content: string;
+          created_at: string;
+          user_id: string;
+        } | null),
+    unread: unread.error ? null : (unread.count ?? 0),
+    error: Boolean(latest.error || unread.error),
+  };
+}

@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
+  ArrowLeft,
+  Plus,
   ChevronRight,
-  Palette,
   Dumbbell,
   HeartPulse,
   Menu,
@@ -18,6 +19,8 @@ import {
   Route as RouteIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { aloPageIdentity } from "@/lib/alo-ui";
 
 const SECTIONS = [
   {
@@ -53,16 +56,21 @@ const SECTIONS = [
 export function SportAppHeader() {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const referenceTitle =
-    pathname === "/health"
-      ? "Gesundheit"
-      : ["/ai", "/coach"].includes(pathname)
-        ? "Mira"
-        : pathname === "/chat"
-          ? "Nexus Chat"
-          : null;
+  const identity = aloPageIdentity(pathname);
   const ref = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() =>
+      document.documentElement.style.setProperty(
+        "--alo-header-space",
+        `${element.getBoundingClientRect().height}px`,
+      ),
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
@@ -74,46 +82,46 @@ export function SportAppHeader() {
         trigger.current?.focus();
       }
     };
-    const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !ref.current?.contains(event.target)) setOpen(false);
-    };
     document.addEventListener("keydown", close);
-    document.addEventListener("pointerdown", outside);
     return () => {
       document.removeEventListener("keydown", close);
-      document.removeEventListener("pointerdown", outside);
     };
   }, [open]);
   return (
-    <div
-      className={`sport-only sport-app-header ${referenceTitle ? "reference-interior-header" : ""}`}
-      ref={ref}
-    >
+    <div className="sport-app-header alo-app-header" ref={ref}>
       <div className="sport-app-header-inner">
-        <Link to="/" className="sport-brand" aria-label="Alo · Startseite">
-          {referenceTitle ? (
-            <span className="reference-page-title">{referenceTitle}</span>
-          ) : (
-            <>
-              <span className="sport-brand-symbol">
-                <Activity aria-hidden="true" />
-              </span>
-              <span>
-                ALO
-                <small>ALL IN ONE · NOSE-PUSHUP · MIRA · NEXUS</small>
-              </span>
-            </>
+        <div className="alo-header-identity">
+          {identity.back && (
+            <Link
+              to={identity.back}
+              className="alo-icon-button"
+              aria-label={`Zurück zu ${identity.back === "/" ? "Nose-Pushup" : identity.back === "/exercises" ? "Übungen" : "Calisthenics"}`}
+            >
+              <ArrowLeft aria-hidden="true" />
+            </Link>
           )}
-        </Link>
-        <div className="sport-header-actions">
           <Link
-            to="/profile"
-            hash="appearance"
-            className="sport-design-shortcut"
-            aria-label="Design & Navigation öffnen"
+            to={identity.module === "Mira" ? "/ai" : identity.module === "Nexus" ? "/chat" : "/"}
+            className="alo-header-title"
+            aria-label={`Alo · ${identity.title}`}
           >
-            <Palette className="h-5 w-5" aria-hidden="true" />
+            <small>
+              <img src="/alo-wordmark.png" alt="Alo" width={44} height={24} />
+              <span>· {identity.module}</span>
+            </small>
+            <strong>{identity.title}</strong>
           </Link>
+        </div>
+        <div className="sport-header-actions">
+          <button
+            type="button"
+            className="alo-icon-button"
+            aria-label="Alo Zentrale öffnen"
+            title="Plus-Menü: Schnellablage und Alo-Werkzeuge"
+            onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "menu" }))}
+          >
+            <Plus aria-hidden="true" />
+          </button>
           <button
             ref={trigger}
             type="button"
@@ -123,7 +131,7 @@ export function SportAppHeader() {
             aria-label={open ? "Weitere Bereiche schließen" : "Weitere Bereiche öffnen"}
             onClick={() => setOpen(!open)}
           >
-            <span>Mehr</span>
+            <span className="sr-only">Bereiche & Einstellungen</span>
             {open ? (
               <X className="h-5 w-5" aria-hidden="true" />
             ) : (
@@ -132,27 +140,69 @@ export function SportAppHeader() {
           </button>
         </div>
       </div>
-      {open && (
-        <nav id="sport-area-menu" className="sport-area-menu" aria-label="Alle Bereiche">
-          {SECTIONS.map((section) => (
-            <div key={section.title}>
-              <p className="sport-menu-label">{section.title}</p>
-              {section.links.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  aria-current={pathname === link.to ? "page" : undefined}
-                  className="sport-area-link"
-                >
-                  <link.icon className="h-4 w-4" aria-hidden="true" />
-                  <span>{link.label}</span>
-                  <ChevronRight className="ml-auto h-3.5 w-3.5" aria-hidden="true" />
-                </Link>
-              ))}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          className="alo-dialog alo-area-sheet"
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            trigger.current?.focus();
+          }}
+        >
+          <DialogTitle>Bereiche & Einstellungen</DialogTitle>
+          <DialogDescription>
+            {identity.module} · {identity.title}
+          </DialogDescription>
+          <nav id="sport-area-menu" className="sport-area-menu" aria-label="Alle Bereiche">
+            <div className="alo-menu-orientation">
+              <p>
+                Du bist hier: {identity.module} · {identity.title}
+              </p>
+              <button
+                className="alo-btn"
+                onClick={() => {
+                  setOpen(false);
+                  requestAnimationFrame(() =>
+                    window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" })),
+                  );
+                }}
+              >
+                Überall suchen
+              </button>
+              <Link to="/profile" className="sport-area-link" onClick={() => setOpen(false)}>
+                <UserRound aria-hidden="true" />
+                Einstellungen & Profil
+              </Link>
+              <Link
+                to="/profile"
+                hash="appearance"
+                aria-label="Design & Navigation öffnen"
+                className="sport-area-link"
+                onClick={() => setOpen(false)}
+              >
+                Design & Navigation
+              </Link>
             </div>
-          ))}
-        </nav>
-      )}
+            {SECTIONS.map((section) => (
+              <div key={section.title}>
+                <p className="sport-menu-label">{section.title}</p>
+                {section.links.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    aria-current={pathname === link.to ? "page" : undefined}
+                    className="sport-area-link"
+                    onClick={() => setOpen(false)}
+                  >
+                    <link.icon className="h-4 w-4" aria-hidden="true" />
+                    <span>{link.label}</span>
+                    <ChevronRight className="ml-auto h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </nav>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

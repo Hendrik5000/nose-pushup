@@ -1,3 +1,4 @@
+import { progressState } from "@/lib/alo-ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +86,8 @@ function Dashboard() {
   const [userId, setUserId] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
   const [todaySteps, setTodaySteps] = useState(0);
+  const [hasTodayData, setHasTodayData] = useState(false);
+  const [workoutAvailable, setWorkoutAvailable] = useState(true);
   const [hasWorkoutData, setHasWorkoutData] = useState(false);
   const [weekReps, setWeekReps] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -137,6 +140,13 @@ function Dashboard() {
         };
         setProfile({ ...raw, personal_bests: raw.personal_bests ?? {} });
       }
+      setWorkoutAvailable(!workouts.error);
+      setHasTodayData(
+        !workouts.error &&
+          (workouts.data ?? []).some(
+            (row) => !!row.created_at && localDateKey(new Date(row.created_at)) === today,
+          ),
+      );
       setHasWorkoutData(!workouts.error && (workouts.data?.length ?? 0) > 0);
       setTodayReps(
         (workouts.data ?? []).reduce(
@@ -159,6 +169,7 @@ function Dashboard() {
   const readinessData = useReadiness({ streak });
   const { readiness } = readinessData;
   const goal = profile?.daily_goal || 50;
+  const todayProgress = progressState(loading, workoutAvailable, hasTodayData, todayReps);
   const goalPct = Math.min(1, todayReps / goal);
   const streakActive = (() => {
     if (!profile?.last_workout_date) return false;
@@ -320,39 +331,45 @@ function Dashboard() {
       case "statsRing":
         return wrap(
           <section className="rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-            <div className="flex items-center gap-5">
-              <ActivityRing pct={goalPct} value={todayReps} goal={goal} />
-              <div className="min-w-0 flex-1 space-y-2.5">
-                <RingRow icon="🏆" label="Bestwert" value={`${pushupBest}`} />
-                <RingRow
-                  icon={streakActive && streak > 0 ? "🔥" : "❄️"}
-                  label="Trainingsserie"
-                  value={`${streak} Tage`}
-                />
-                <RingRow
-                  icon="👟"
-                  label="Schritte"
-                  value={todaySteps ? todaySteps.toLocaleString("de-DE") : "—"}
-                />
+            <details className="alo-stat-details">
+              <summary>
+                {todayProgress.measured ? `${todayReps} / ${goal} Wdh. heute` : todayProgress.label}{" "}
+                · Details öffnen
+              </summary>
+              <div className="flex items-center gap-5">
+                <ActivityRing pct={goalPct} value={todayReps} goal={goal} state={todayProgress} />
+                <div className="min-w-0 flex-1 space-y-2.5">
+                  <RingRow icon="🏆" label="Bestwert" value={`${pushupBest}`} />
+                  <RingRow
+                    icon={streakActive && streak > 0 ? "🔥" : "❄️"}
+                    label="Trainingsserie"
+                    value={`${streak} Tage`}
+                  />
+                  <RingRow
+                    icon="👟"
+                    label="Schritte"
+                    value={todaySteps ? todaySteps.toLocaleString("de-DE") : "—"}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="mt-5 border-t border-border pt-4">
-              <div className="flex items-baseline justify-between text-xs">
-                <span className="font-semibold">
-                  Level {lp.level} · {lp.title}
-                </span>
-                <span className="tabular-nums text-muted-foreground">
-                  {lp.xp.toLocaleString("de-DE")} XP
-                </span>
+              <div className="mt-5 border-t border-border pt-4">
+                <div className="flex items-baseline justify-between text-xs">
+                  <span className="font-semibold">
+                    Level {lp.level} · {lp.title}
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {lp.xp.toLocaleString("de-DE")} XP
+                  </span>
+                </div>
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${lp.progress * 100}%` }}
+                  />
+                </div>
               </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${lp.progress * 100}%` }}
-                />
-              </div>
-            </div>
+            </details>
           </section>,
           size,
         );
@@ -523,61 +540,59 @@ function Dashboard() {
 
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
-      <section className="mb-7" aria-labelledby="alo-home-title">
-        <div className="mb-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-            ALO · ALL IN ONE
-          </p>
-          <h1 id="alo-home-title" className="mt-1 text-2xl font-bold tracking-tight">
-            Ein Zuhause für alles, was du vorhast.
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Drei gleichwertige Bereiche. Wische links oder rechts, um zu wechseln.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Link
-            to="/workout/$exerciseId"
-            params={{ exerciseId: "pushup" }}
-            search={{ mode: "nose", sets: 3, reps: 8, rest_s: 60, title: "Nose-Pushup" }}
-            className="rounded-2xl border border-primary/40 bg-primary/10 p-4 transition hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-              01 · Training
-            </span>
-            <h2 className="mt-1 text-lg font-bold">Nose-Pushup</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Nasen-Tracking, Fortschritt und deine Sportfunktionen.
-            </p>
-            <span className="mt-3 inline-block text-sm font-semibold">Training starten →</span>
-          </Link>
-          <Link
-            to="/ai"
-            className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-              02 · Allgemeine KI
-            </span>
-            <h2 className="mt-1 text-lg font-bold">Mira</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Wissen, Schreiben, Ideen, Alltag – deine vielseitige KI.
-            </p>
-            <span className="mt-3 inline-block text-sm font-semibold">Mira fragen →</span>
-          </Link>
-          <Link
-            to="/chat"
-            className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-              03 · Gemeinsam
-            </span>
-            <h2 className="mt-1 text-lg font-bold">Nexus Chat</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Verbinde dich mit Menschen und deinen Chat-Räumen.
-            </p>
-            <span className="mt-3 inline-block text-sm font-semibold">Nexus öffnen →</span>
-          </Link>
-        </div>
+      <section className="alo-home-intro" aria-label="Deine Alo-Bereiche">
+        <button
+          className="alo-text-action"
+          onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "today" }))}
+        >
+          Deinen Tag überblicken →
+        </button>
+        <details className="alo-home-areas">
+          <summary>Mira, Nexus & Training öffnen</summary>
+          <div className="alo-home-portals">
+            <Link
+              to="/workout/$exerciseId"
+              params={{ exerciseId: "pushup" }}
+              search={{ mode: "nose", sets: 3, reps: 8, rest_s: 60, title: "Nose-Pushup" }}
+              className="rounded-2xl border border-primary/40 bg-primary/10 p-4 transition hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                01 · Training
+              </span>
+              <h2 className="mt-1 text-lg font-bold">Nose-Pushup</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Nasen-Tracking, Fortschritt und deine Sportfunktionen.
+              </p>
+              <span className="mt-3 inline-block text-sm font-semibold">Training starten →</span>
+            </Link>
+            <Link
+              to="/ai"
+              className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                02 · Allgemeine KI
+              </span>
+              <h2 className="mt-1 text-lg font-bold">Mira</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Wissen, Schreiben, Ideen, Alltag – deine vielseitige KI.
+              </p>
+              <span className="mt-3 inline-block text-sm font-semibold">Mira fragen →</span>
+            </Link>
+            <Link
+              to="/chat"
+              className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                03 · Gemeinsam
+              </span>
+              <h2 className="mt-1 text-lg font-bold">Nexus Chat</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Verbinde dich mit Menschen und deinen Chat-Räumen.
+              </p>
+              <span className="mt-3 inline-block text-sm font-semibold">Nexus öffnen →</span>
+            </Link>
+          </div>
+        </details>
       </section>
       <header className="classic-only dashboard-header flex items-center justify-between">
         <div>
@@ -641,6 +656,18 @@ function Dashboard() {
           <PlanMetric label="Wdh. je Satz" value={recommendation.reps} />
           <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
         </div>
+        <label className="alo-counting-select">
+          <span>Zählen</span>
+          <select
+            aria-label="Zählmethode auswählen"
+            value={mode}
+            onChange={(e) => setMode(e.target.value as typeof mode)}
+          >
+            <option value="nose">Nase</option>
+            <option value="manual">Manuell</option>
+            <option value="camera">Kamera</option>
+          </select>
+        </label>
         <div className="sport-counting-group" role="group" aria-label="Zählmethode">
           <ModeChip
             active={mode === "nose"}
@@ -681,44 +708,55 @@ function Dashboard() {
         <details className="text-xs text-muted-foreground">
           <summary className="cursor-pointer">Warum dieser Plan?</summary>
           <p className="mt-2 leading-relaxed">{recommendation.detail}</p>
+          <p className="alo-mobile-plan-context mt-2">
+            Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter Fortschritt.
+          </p>
           {weekReps === 0 && todayReps === 0 && (
             <p className="mt-2">Starte entspannt – saubere Technik geht vor Tempo.</p>
           )}
         </details>
       </section>
-      <SportSectionLabel number="02">Dein Fortschritt</SportSectionLabel>
-      <dl className="sport-only sport-overview-metrics" aria-label="Dein Trainingsstatus">
-        <div>
-          <dt>
-            <Target aria-hidden="true" />
-            HEUTE
-          </dt>
-          <dd>
-            {loading ? "—" : todayReps}
-            <small>/ {goal} Wdh.</small>
-          </dd>
-        </div>
-        <div>
-          <dt>
-            <Flame aria-hidden="true" />
-            DEINE SERIE
-          </dt>
-          <dd>
-            {loading ? "—" : streak}
-            <small>{streak === 1 ? "Tag" : "Tage"} in Folge</small>
-          </dd>
-        </div>
-        <div>
-          <dt>
-            <Trophy aria-hidden="true" />
-            DEIN LEVEL
-          </dt>
-          <dd>
-            {loading ? "—" : lp.level}
-            <small>{loading ? "Lädt…" : lp.title}</small>
-          </dd>
-        </div>
-      </dl>
+      <details className="sport-only alo-stat-details">
+        <summary>
+          <span>
+            {todayProgress.measured ? `${todayReps} / ${goal} Wdh. heute` : todayProgress.label}
+          </span>
+          <span className="text-muted-foreground"> · Fortschritt öffnen</span>
+        </summary>
+        <SportSectionLabel number="02">Dein Fortschritt</SportSectionLabel>
+        <dl className="sport-overview-metrics" aria-label="Dein Trainingsstatus">
+          <div>
+            <dt>
+              <Target aria-hidden="true" />
+              HEUTE
+            </dt>
+            <dd>
+              {todayProgress.value}
+              <small>/ {goal} Wdh.</small>
+            </dd>
+          </div>
+          <div>
+            <dt>
+              <Flame aria-hidden="true" />
+              DEINE SERIE
+            </dt>
+            <dd>
+              {loading ? "—" : streak}
+              <small>{streak === 1 ? "Tag" : "Tage"} in Folge</small>
+            </dd>
+          </div>
+          <div>
+            <dt>
+              <Trophy aria-hidden="true" />
+              DEIN LEVEL
+            </dt>
+            <dd>
+              {loading ? "—" : lp.level}
+              <small>{loading ? "Lädt…" : lp.title}</small>
+            </dd>
+          </div>
+        </dl>
+      </details>
       <SportSectionLabel number="03">Finde deinen Fokus</SportSectionLabel>
       <nav className="sport-only sport-shortcuts" aria-label="Trainingsbereiche">
         <Link to="/exercises" className="sport-shortcut">
@@ -818,11 +856,26 @@ function Dashboard() {
   );
 }
 
-function ActivityRing({ pct, value, goal }: { pct: number; value: number; goal: number }) {
+function ActivityRing({
+  pct,
+  goal,
+  state,
+}: {
+  pct: number;
+  value: number;
+  goal: number;
+  state: ReturnType<typeof progressState>;
+}) {
   const r = 48;
   const c = 2 * Math.PI * r;
   return (
-    <div className="relative h-[110px] w-[110px] shrink-0">
+    <div
+      className="alo-progress-ring relative h-[110px] w-[110px] shrink-0"
+      role="img"
+      aria-label={
+        state.measured ? `${state.value} von ${goal} Wiederholungen erfasst` : state.label
+      }
+    >
       <svg width="110" height="110" className="-rotate-90">
         <circle
           cx="55"
@@ -841,12 +894,12 @@ function ActivityRing({ pct, value, goal }: { pct: number; value: number; goal: 
           strokeWidth="10"
           strokeLinecap="round"
           strokeDasharray={c}
-          strokeDashoffset={c * (1 - pct)}
+          strokeDashoffset={c * (1 - (state.measured ? pct : 0))}
           className="transition-all duration-700"
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold tabular-nums">{value}</span>
+        <span className="text-3xl font-bold tabular-nums">{state.value}</span>
         <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
           / {goal}
         </span>

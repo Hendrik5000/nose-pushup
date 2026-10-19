@@ -8,39 +8,24 @@
   "id": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": [
-    "fullscreen",
-    "standalone",
-    "minimal-ui"
-  ],
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#0b1017",
   "theme_color": "#0b1017",
-  "categories": [
-    "productivity",
-    "social",
-    "health",
-    "fitness"
-  ],
+  "categories": ["productivity", "social", "health", "fitness"],
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/favicon.png",
+      "src": "/alo-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon.png",
+      "src": "/alo-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/favicon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
@@ -50,7 +35,7 @@
       "url": "/",
       "icons": [
         {
-          "src": "/favicon.png",
+          "src": "/alo-icon-192.png",
           "sizes": "192x192"
         }
       ]
@@ -61,7 +46,7 @@
       "url": "/ai",
       "icons": [
         {
-          "src": "/favicon.png",
+          "src": "/alo-icon-192.png",
           "sizes": "192x192"
         }
       ]
@@ -72,7 +57,7 @@
       "url": "/chat",
       "icons": [
         {
-          "src": "/favicon.png",
+          "src": "/alo-icon-192.png",
           "sizes": "192x192"
         }
       ]

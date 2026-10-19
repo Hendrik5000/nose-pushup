@@ -67,6 +67,7 @@ function WorkoutScreen() {
   const [active, setActive] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [focused, setFocused] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [motionError, setMotionError] = useState<string | null>(null);
@@ -120,6 +121,43 @@ function WorkoutScreen() {
     [search.sets, search.reps, search.rest_s, search.title],
   );
 
+  const focusControls = (
+    <>
+      <div className="alo-focus-toolbar">
+        <span>Dein Training</span>
+        <button
+          type="button"
+          className="alo-btn"
+          aria-pressed={focused}
+          onClick={() => setFocused((v) => !v)}
+        >
+          {focused ? "Details anzeigen" : "Fokusmodus"}
+        </button>
+      </div>
+      {isPlanned && session && (
+        <div className="alo-session-strip" role="status">
+          <strong>
+            Satz {Math.min(session.currentSet, plan.sets)}/{plan.sets}
+          </strong>
+          <span>
+            {session.phase === "rest"
+              ? `Pause · ${restRemaining ?? 0}s`
+              : session.phase === "paused"
+                ? "Pausiert"
+                : session.phase === "completed"
+                  ? "Abgeschlossen"
+                  : session.phase === "preparation"
+                    ? "Bereit"
+                    : "Aktiv"}
+          </span>
+          <span>
+            {session.currentReps}
+            {plan.reps ? `/${plan.reps}` : ""} Wdh.
+          </span>
+        </div>
+      )}
+    </>
+  );
   // Effective detection: for push-ups we honor the mode toggle.
   const detection = useMemo(() => {
     if (!exercise) return "touch" as const;
@@ -527,7 +565,11 @@ function WorkoutScreen() {
     return (
       <>
         <DesignView variant="sport">
-          <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col justify-center gap-6 px-5 py-8 sm:px-8">
+          <main
+            className="alo-training-focus sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col justify-center gap-6 px-5 py-8 sm:px-8"
+            data-training-focus={focused}
+          >
+            {focusControls}
             <SportPageIntro
               eyebrow="WORKOUT · ENTWURF GESICHERT"
               title="Dein Training wartet"
@@ -569,7 +611,11 @@ function WorkoutScreen() {
           </main>
         </DesignView>
         <DesignView variant="classic">
-          <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col justify-center px-5 py-8">
+          <main
+            className="alo-training-focus classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col justify-center px-5 py-8"
+            data-training-focus={focused}
+          >
+            {focusControls}
             <section
               className="rounded-3xl border border-border bg-card p-5"
               aria-labelledby="saved-draft-title"
@@ -709,7 +755,11 @@ function WorkoutScreen() {
     return (
       <>
         <DesignView variant="sport">
-          <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-6 px-5 py-6 sm:px-8">
+          <main
+            className="alo-training-focus sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-6 px-5 py-6 sm:px-8"
+            data-training-focus={focused}
+          >
+            {focusControls}
             <SportPageIntro
               eyebrow="SESSION · MANUELLE ERFASSUNG"
               title={isPushup ? "Liegestütze" : exercise.name}
@@ -719,7 +769,7 @@ function WorkoutScreen() {
                 <ArrowLeft size={16} /> Zurück
               </Link>
             </SportPageIntro>
-            <section className="sport-focus-card rounded-3xl border border-border bg-card/60 p-5 sm:p-7">
+            <section className="alo-training-secondary sport-focus-card rounded-3xl border border-border bg-card/60 p-5 sm:p-7">
               <SportSectionLabel number="01">Dein Leistungsstand</SportSectionLabel>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <Stat label="Persönlicher Bestwert" value={best.toString()} />
@@ -728,7 +778,7 @@ function WorkoutScreen() {
             </section>
             {isPlanned && session && (
               <section
-                className="rounded-3xl border border-primary/25 bg-primary/5 p-5 text-center"
+                className="alo-session-controls rounded-3xl border border-primary/25 bg-primary/5 p-5 text-center"
                 aria-live="polite"
               >
                 <SportSectionLabel number="02">Trainingsplan</SportSectionLabel>
@@ -812,7 +862,7 @@ function WorkoutScreen() {
                   <button
                     type="button"
                     onClick={resetAll}
-                    className="mt-2 w-full rounded-xl border border-border px-4 py-3 text-sm"
+                    className="alo-training-discard mt-2 w-full rounded-xl border border-border px-4 py-3 text-sm"
                   >
                     Entwurf verwerfen
                   </button>
@@ -820,7 +870,10 @@ function WorkoutScreen() {
               </section>
             )}
             {!summary && (
-              <section className="sport-focus-card flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/65 p-6 text-center sm:p-10">
+              <section
+                className="alo-manual-entry sport-focus-card flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/65 p-6 text-center sm:p-10"
+                data-entry-enabled={!isPlanned || session?.phase === "active"}
+              >
                 {isPlanned && session && (
                   <div className="mb-5 rounded-full border border-border bg-background/50 px-4 py-2 text-xs font-semibold text-muted-foreground">
                     {session.phase === "completed"
@@ -912,7 +965,7 @@ function WorkoutScreen() {
             {summary && (
               <button
                 onClick={resetAll}
-                className="w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold"
+                className="alo-training-discard w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold"
               >
                 Neues Training
               </button>
@@ -928,7 +981,11 @@ function WorkoutScreen() {
           </main>
         </DesignView>
         <DesignView variant="classic">
-          <main className="classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
+          <main
+            className="alo-training-focus classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4"
+            data-training-focus={focused}
+          >
+            {focusControls}
             <header className="flex items-center justify-between">
               <Link
                 to="/"
@@ -1038,7 +1095,7 @@ function WorkoutScreen() {
                   <button
                     type="button"
                     onClick={resetAll}
-                    className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
+                    className="alo-training-discard mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
                   >
                     Verwerfen
                   </button>
@@ -1048,7 +1105,10 @@ function WorkoutScreen() {
 
             {!summary && (
               <>
-                <section className="mt-6 flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 p-6 text-center backdrop-blur">
+                <section
+                  className="alo-manual-entry mt-6 flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 p-6 text-center backdrop-blur"
+                  data-entry-enabled={!isPlanned || session?.phase === "active"}
+                >
                   {isPlanned && session && (
                     <div className="text-xs font-medium text-muted-foreground">
                       {session.phase === "completed"
@@ -1145,7 +1205,7 @@ function WorkoutScreen() {
             {summary && (
               <button
                 onClick={resetAll}
-                className="mt-3 w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium"
+                className="alo-training-discard mt-3 w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium"
               >
                 Neues Training
               </button>
@@ -1169,7 +1229,11 @@ function WorkoutScreen() {
   return (
     <>
       <DesignView variant="sport">
-        <main className="sport-only relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-6 px-5 py-6 sm:px-8 pb-10">
+        <main
+          className="alo-training-focus sport-only relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-6 px-5 py-6 sm:px-8 pb-10"
+          data-training-focus={focused}
+        >
+          {focusControls}
           <SportPageIntro
             eyebrow={isPlanned ? "WORKOUT · GEPLANTE SESSION" : "WORKOUT · LIVE-TRACKING"}
             title={isPushup ? "Liegestütze" : "" + exercise.name}
@@ -1184,7 +1248,7 @@ function WorkoutScreen() {
               <ArrowLeft size={16} /> Zurück
             </Link>
           </SportPageIntro>
-          <section className="grid gap-3 sm:grid-cols-3">
+          <section className="alo-training-secondary grid gap-3 sm:grid-cols-3">
             <Stat label="Trainingszeit" value={formatTime(elapsed)} />
             <Stat
               label={exercise.unit === "seconds" ? "Status" : "Tempo"}
@@ -1207,7 +1271,7 @@ function WorkoutScreen() {
           </section>
           {isPlanned && session && (
             <section
-              className="rounded-3xl border border-primary/25 bg-primary/5 p-5"
+              className="alo-session-controls rounded-3xl border border-primary/25 bg-primary/5 p-5"
               aria-live="polite"
             >
               <SportSectionLabel number="01">Satzsteuerung</SportSectionLabel>
@@ -1450,7 +1514,7 @@ function WorkoutScreen() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={resetAll}
-                  className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm font-semibold"
+                  className="alo-training-discard rounded-2xl border border-border bg-secondary px-4 py-4 text-sm font-semibold"
                 >
                   <RotateCcw className="mr-2 inline" size={15} />
                   Verwerfen
@@ -1528,7 +1592,11 @@ function WorkoutScreen() {
         </main>
       </DesignView>
       <DesignView variant="classic">
-        <main className="classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
+        <main
+          className="alo-training-focus classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4"
+          data-training-focus={focused}
+        >
+          {focusControls}
           <header className="flex items-center justify-between">
             <Link
               to="/"
@@ -1845,7 +1913,7 @@ function WorkoutScreen() {
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <button
                   onClick={resetAll}
-                  className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80 active:scale-[0.98]"
+                  className="alo-training-discard rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80 active:scale-[0.98]"
                 >
                   Verwerfen
                 </button>

@@ -1,3 +1,4 @@
+import { searchArea, type SearchArea } from "@/lib/alo-ui";
 import { useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +58,7 @@ export function GlobalSearch({
   onPrivacy: () => void;
   onOpenAlo: (tab: "today" | "collections") => void;
 }) {
+  const [area, setArea] = useState<SearchArea>("all");
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);
   const [status, setStatus] = useState(
@@ -185,9 +187,9 @@ export function GlobalSearch({
   };
   return (
     <div className="space-y-3">
-      <h2 className="text-xl font-semibold">Überall suchen</h2>
+      <h2 className="sr-only">Überall suchen</h2>
       <form
-        className="flex gap-2"
+        className="alo-search-form flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           void run();
@@ -203,44 +205,68 @@ export function GlobalSearch({
           {busy ? "Sucht …" : "Suchen"}
         </button>
       </form>
+      <label>
+        Bereich
+        <select
+          aria-label="Suche nach Bereich filtern"
+          value={area}
+          onChange={(e) => setArea(e.target.value as SearchArea)}
+        >
+          <option value="all">Alle Bereiche</option>
+          <option value="training">Training</option>
+          <option value="mira">Mira</option>
+          <option value="nexus">Nexus</option>
+          <option value="alo">Alo & Einstellungen</option>
+        </select>
+      </label>
+      {query.trim() &&
+        !busy &&
+        hits.filter((h) => area === "all" || searchArea(h.source) === area).length === 0 && (
+          <p className="alo-empty-state">
+            Noch kein passender Treffer. Nutze einen kürzeren Suchbegriff oder wähle „Alle
+            Bereiche“.
+          </p>
+        )}
       <p role="status" className="text-xs text-muted-foreground">
         {status}
       </p>
-      {hits.map((h) => (
-        <article className="alo-card" key={`${h.source}:${h.id}`}>
-          <p className="text-xs font-semibold text-primary">{h.source}</p>
-          <h3 className="font-semibold">{h.title}</h3>
-          <p className="line-clamp-4 whitespace-pre-wrap text-sm">{h.text}</p>
-          <div className="mt-2 flex flex-wrap gap-3">
-            {h.aloTab ? (
-              <button className="alo-btn" onClick={() => onOpenAlo(h.aloTab!)}>
-                Quelle öffnen
-              </button>
-            ) : h.id === "settings-privacy" ? (
-              <button className="alo-btn" onClick={onPrivacy}>
-                Öffnen
-              </button>
-            ) : (
-              <Link
-                to={h.path}
-                className="text-sm font-semibold text-primary"
-                onClick={() => {
-                  if (h.sessionId) window.sessionStorage.setItem("alo-open-mira", h.sessionId);
-                  if (h.roomId)
-                    window.sessionStorage.setItem(
-                      "alo-open-nexus",
-                      JSON.stringify({ kind: "room", id: h.roomId, messageId: h.messageId }),
-                    );
-                  onNavigate();
-                }}
-              >
-                Quelle öffnen
-              </Link>
-            )}
-            <ContentActions userId={userId} title={h.title} text={h.text} source={h.source} />
-          </div>
-        </article>
-      ))}
+      {hits
+        .filter((h) => area === "all" || searchArea(h.source) === area)
+        .map((h) => (
+          <article className="alo-card" key={`${h.source}:${h.id}`}>
+            <p className="text-xs font-semibold text-primary">{h.source}</p>
+            <h3 className="font-semibold">{h.title}</h3>
+            <p className="line-clamp-4 whitespace-pre-wrap text-sm">{h.text}</p>
+            <div className="mt-2 flex flex-wrap gap-3">
+              {h.aloTab ? (
+                <button className="alo-btn" onClick={() => onOpenAlo(h.aloTab!)}>
+                  Quelle öffnen
+                </button>
+              ) : h.id === "settings-privacy" ? (
+                <button className="alo-btn" onClick={onPrivacy}>
+                  Öffnen
+                </button>
+              ) : (
+                <Link
+                  to={h.path}
+                  className="text-sm font-semibold text-primary"
+                  onClick={() => {
+                    if (h.sessionId) window.sessionStorage.setItem("alo-open-mira", h.sessionId);
+                    if (h.roomId)
+                      window.sessionStorage.setItem(
+                        "alo-open-nexus",
+                        JSON.stringify({ kind: "room", id: h.roomId, messageId: h.messageId }),
+                      );
+                    onNavigate();
+                  }}
+                >
+                  Quelle öffnen
+                </Link>
+              )}
+              <ContentActions userId={userId} title={h.title} text={h.text} source={h.source} />
+            </div>
+          </article>
+        ))}
     </div>
   );
 }

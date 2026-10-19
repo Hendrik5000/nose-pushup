@@ -1,3 +1,4 @@
+import { MiraSources } from "@/components/alo/MiraSources";
 import {
   Sparkles,
   Mic,
@@ -130,6 +131,10 @@ export function SuperAiPage() {
   const [sessionQuery, setSessionQuery] = useState("");
   const [sessionFilter, setSessionFilter] = useState<SportAiHistoryFilter>("all");
   const [contextOpen, setContextOpen] = useState(false);
+  const [classicOptionsOpen, setClassicOptionsOpen] = useState(false);
+  useEffect(() => {
+    setClassicOptionsOpen(window.matchMedia("(min-width: 768px)").matches);
+  }, []);
   const [contextAllowed, setContextAllowed] = useState(getMiraContextPreference);
   const [grants, setGrants] = useState(getMiraGrants);
   const [persona, setPersona] = useState<AiPersona>(() => loadPersona());
@@ -442,66 +447,70 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
   return (
     <>
       <DesignView variant="classic">
-        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pt-5 pb-3">
+        <main className="classic-only alo-classic-mira mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pt-5 pb-3">
           {/* Header */}
-          <header className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/20 via-card/80 to-background p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <Link
-                  to="/"
-                  className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
-                >
-                  ← Alo
-                </Link>
-                <h1 className="mt-1 text-xl font-bold tracking-tight">Mira</h1>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">{activeTitle}</p>
+          <details
+            className="alo-classic-mira-options"
+            open={classicOptionsOpen}
+            onToggle={(e) => setClassicOptionsOpen(e.currentTarget.open)}
+          >
+            <summary>Gesprächsoptionen & Aufgaben</summary>
+            <header className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/20 via-card/80 to-background p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <Link
+                    to="/"
+                    className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
+                  >
+                    ← Alo
+                  </Link>
+                  <h1 className="mt-1 text-xl font-bold tracking-tight">Mira</h1>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{activeTitle}</p>
+                </div>
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  <IconBtn label="Chats" onClick={() => setSessionsOpen((v) => !v)}>
+                    💬
+                  </IconBtn>
+                  <IconBtn label="Werkzeuge" onClick={() => setToolsOpen((v) => !v)}>
+                    ✦
+                  </IconBtn>
+                  <IconBtn label="Kontext" onClick={() => setContextOpen((v) => !v)}>
+                    ⧉
+                  </IconBtn>
+                  <IconBtn label="Zugangsdaten" onClick={() => setSettingsOpen((v) => !v)}>
+                    ⚙️
+                  </IconBtn>
+                </div>
               </div>
-              <div className="flex flex-wrap justify-end gap-1.5">
-                <IconBtn label="Chats" onClick={() => setSessionsOpen((v) => !v)}>
-                  💬
-                </IconBtn>
-                <IconBtn label="Werkzeuge" onClick={() => setToolsOpen((v) => !v)}>
-                  ✦
-                </IconBtn>
-                <IconBtn label="Kontext" onClick={() => setContextOpen((v) => !v)}>
-                  ⧉
-                </IconBtn>
-                <IconBtn label="Zugangsdaten" onClick={() => setSettingsOpen((v) => !v)}>
-                  ⚙️
-                </IconBtn>
+
+              {/* Personas */}
+              <div className="mt-3 flex gap-1.5">
+                {PERSONAS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => onPersona(p.id)}
+                    aria-pressed={persona === p.id}
+                    className={`flex-1 rounded-xl border px-2 py-1.5 text-center transition ${
+                      persona === p.id
+                        ? "border-primary bg-primary/20 text-foreground"
+                        : "border-border/60 bg-background/30 text-muted-foreground"
+                    }`}
+                  >
+                    <div className="text-[11px] font-semibold">{p.label}</div>
+                    <div className="text-[9px] opacity-70">{p.hint}</div>
+                    {persona === p.id && <span className="text-[9px]">Ausgewählt</span>}
+                  </button>
+                ))}
               </div>
-            </div>
 
-            {/* Personas */}
-            <div className="mt-3 flex gap-1.5">
-              {PERSONAS.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => onPersona(p.id)}
-                  aria-pressed={persona === p.id}
-                  className={`flex-1 rounded-xl border px-2 py-1.5 text-center transition ${
-                    persona === p.id
-                      ? "border-primary bg-primary/20 text-foreground"
-                      : "border-border/60 bg-background/30 text-muted-foreground"
-                  }`}
-                >
-                  <div className="text-[11px] font-semibold">{p.label}</div>
-                  <div className="text-[9px] opacity-70">{p.hint}</div>
-                  {persona === p.id && <span className="text-[9px]">Ausgewählt</span>}
-                </button>
-              ))}
-            </div>
+              {lastTask && (
+                <p className="mt-2 text-[10px] text-muted-foreground">
+                  Frage eingeordnet: {lastTask}
+                </p>
+              )}
+            </header>
 
-            {lastTask && (
-              <p className="mt-2 text-[10px] text-muted-foreground">
-                Frage eingeordnet: {lastTask}
-              </p>
-            )}
-          </header>
-
-          {/* Composer */}
-          <div className="mt-2 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur">
             <div className="mb-1.5 flex gap-1">
               <SmallAction onClick={regenerate} disabled={loading || messages.length === 0}>
                 Neu generieren
@@ -529,6 +538,27 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                 Leeren
               </SmallAction>
             </div>
+            {/* Favorites */}
+            {favs.length > 0 && (
+              <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
+                {favs.map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => void submit(f)}
+                    className="shrink-0 rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-[10px]"
+                  >
+                    ★ {f.slice(0, 32)}
+                    {f.length > 32 ? "…" : ""}
+                  </button>
+                ))}
+              </div>
+            )}
+          </details>
+
+          {/* Composer */}
+          <div className="alo-classic-composer mt-2 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur">
+            {userId && <MiraSources userId={userId} />}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -576,7 +606,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
           </div>
 
           <section
-            className="mt-2 rounded-xl border border-border bg-card/50 px-3 py-2 text-[10px] text-muted-foreground"
+            className="alo-classic-context-note mt-2 rounded-xl border border-border bg-card/50 px-3 py-2 text-[10px] text-muted-foreground"
             aria-label="Datenkontext vor dem Senden"
           >
             <div className="font-semibold text-foreground">Daten, die beim Senden mitgehen</div>
@@ -641,7 +671,12 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                   </li>
                 ))}
                 {sessions.length === 0 && (
-                  <li className="text-xs text-muted-foreground">Noch keine gespeicherten Chats.</li>
+                  <li className="text-xs text-muted-foreground">
+                    Noch keine gespeicherten Chats.{" "}
+                    <button type="button" className="alo-text-action" onClick={startNewSession}>
+                      Erstes Gespräch beginnen
+                    </button>
+                  </li>
                 )}
               </ul>
             </section>
@@ -705,27 +740,10 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
             </section>
           )}
 
-          {/* Favorites */}
-          {favs.length > 0 && (
-            <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
-              {favs.map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => void submit(f)}
-                  className="shrink-0 rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-[10px]"
-                >
-                  ★ {f.slice(0, 32)}
-                  {f.length > 32 ? "…" : ""}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* Messages */}
           <div
             ref={scrollRef}
-            className="mt-3 flex-1 space-y-3 overflow-y-auto rounded-3xl border border-border bg-card/30 p-3 backdrop-blur"
+            className="alo-classic-mira-messages mt-3 flex-1 space-y-3 overflow-y-auto rounded-3xl border border-border bg-card/30 p-3 backdrop-blur"
           >
             {messages.length === 0 && (
               <div className="flex flex-col items-center gap-2 py-8 text-center">
@@ -734,9 +752,16 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                 </div>
                 <p className="text-sm font-semibold">Deine vielseitige KI Mira</p>
                 <p className="max-w-[260px] text-xs text-muted-foreground">
-                  Schreib zuerst, was du wissen möchtest. „Routing“ heißt nur: Die App wählt passend
-                  dazu einen KI-Anbieter und ein Modell.
+                  Fragen klären, Texte schreiben oder Ideen entwickeln. Du entscheidest, was du
+                  teilst.
                 </p>
+                <button
+                  type="button"
+                  className="alo-btn"
+                  onClick={() => setInput("Erkläre mir ein Thema in einfachen Worten: ")}
+                >
+                  Eine Frage vorbereiten
+                </button>
               </div>
             )}
 
@@ -919,6 +944,31 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                 >
                   <Settings2 aria-hidden="true" />
                 </button>
+                <details className="alo-mira-view-menu">
+                  <summary aria-label="Mira-Ansicht wechseln">
+                    <span aria-hidden="true">•••</span>
+                  </summary>
+                  <div>
+                    {(["chat", "history", "coach"] as const).map((view) => (
+                      <button
+                        key={view}
+                        type="button"
+                        aria-pressed={sportAiView === view}
+                        onClick={(e) => {
+                          setSportAiView(view);
+                          setSessionsOpen(false);
+                          e.currentTarget.closest("details")?.removeAttribute("open");
+                        }}
+                      >
+                        {view === "chat"
+                          ? "Mira-Chat"
+                          : view === "history"
+                            ? "Gesprächsverlauf"
+                            : "Aufgaben & Beispiele"}
+                      </button>
+                    ))}
+                  </div>
+                </details>
                 <span className="sport-ai-header-avatar" aria-label={profileName || "Profil"}>
                   {profileName ? (
                     profileName.slice(0, 1).toLocaleUpperCase("de-DE")
@@ -997,6 +1047,20 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                 onSaved={() => refreshProviderStatus((revision) => revision + 1)}
               />
             </section>
+          )}
+          {sportAiView !== "chat" && (
+            <label className="alo-mira-mobile-picker">
+              <span className="sr-only">Mira-Ansicht</span>
+              <select
+                aria-label="Mira-Ansicht auswählen"
+                value={sportAiView}
+                onChange={(e) => setSportAiView(e.target.value as typeof sportAiView)}
+              >
+                <option value="chat">Mira-Chat</option>
+                <option value="history">Gesprächsverlauf</option>
+                <option value="coach">Aufgaben & Beispiele</option>
+              </select>
+            </label>
           )}
           {sportAiView === "coach" && (
             <section className="sport-ai-home" aria-labelledby="sport-ai-home-title">
@@ -1188,7 +1252,12 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                   );
                 })}
                 {sessions.length === 0 && (
-                  <p className="sport-ai-history-empty">Noch keine Gespräche gespeichert.</p>
+                  <div className="alo-empty-state">
+                    Noch keine Gespräche gespeichert.{" "}
+                    <button className="alo-text-action" onClick={startNewSession}>
+                      Erstes Gespräch beginnen →
+                    </button>
+                  </div>
                 )}
                 {sessions.length > 0 && filteredSessions.length === 0 && (
                   <p className="sport-ai-history-empty">Keine Chats für diese Suche gefunden.</p>
@@ -1198,15 +1267,6 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
           )}
           {sportAiView === "chat" && (
             <div className="sport-ai-chat-grid">
-              <details className="col-span-full rounded-2xl border border-border bg-card/70 p-4 text-xs">
-                <summary className="cursor-pointer font-semibold">
-                  Mira-Datenfreigabe ·{" "}
-                  {contextAllowed
-                    ? `Aktiv: ${grants.training ? "Training/Gesundheit" : "kein Training"}; ${grants.rooms.length} Nexus-Raum/Räume`
-                    : "Aus · keine anderen Alo-Daten"}
-                </summary>
-                <div className="mt-3">{userId && <MiraContextControls userId={userId} />}</div>
-              </details>
               <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
                 <details className="sport-ai-chat-options">
                   <summary>Gesprächsoptionen & Datenschutz</summary>
@@ -1300,7 +1360,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                     <div className="ai-welcome mx-auto my-auto max-w-lg py-8 text-center">
                       <span className="ai-welcome-mark" aria-hidden="true" />
                       <h3 className="mt-4 text-xl font-bold">
-                        Hallo{profileName ? ` ${profileName}` : ""}, lass uns loslegen
+                        Hallo{profileName ? ` ${profileName}` : ""}, wobei kann ich helfen?
                       </h3>
                       <p>Was möchtest du heute angehen?</p>
                       <div
@@ -1464,6 +1524,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                     {error}
                   </div>
                 )}
+                {userId && <MiraSources userId={userId} />}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();

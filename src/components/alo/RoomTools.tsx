@@ -1,5 +1,6 @@
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { readAttachment } from "@/lib/alo-attachments";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fileToData, putAlo, type AloBody } from "@/lib/alo-store";
 import type { ChatMode } from "@/lib/chat-backend";
@@ -23,6 +24,10 @@ export function RoomTools({
   roomName: string;
   mode: ChatMode;
 }) {
+  const trigger = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const [section, setSection] = useState<"chat" | Tool["kind"]>("chat");
+  const [creating, setCreating] = useState(false);
   const [items, setItems] = useState<Tool[]>([]);
   const [votes, setVotes] = useState<Vote[]>([]);
   const [kind, setKind] = useState<Tool["kind"]>("info");
@@ -210,201 +215,269 @@ export function RoomTools({
     }
   };
   return (
-    <details
-      className="alo-room-tools"
-      onToggle={(e) => {
-        if (e.currentTarget.open) void load();
-      }}
-    >
-      <summary>Raumfunktionen · Infos, Dateien, Umfragen, Termine</summary>
-      <div className="space-y-3 py-3">
-        <p className="text-xs text-muted-foreground">
-          {mode === "local"
-            ? "Nur auf diesem Gerät. Lokale Umfragen haben keine geräteübergreifenden Teilnehmer."
-            : "Cloud-Raum: für alle angemeldeten Nexus-Nutzer sichtbar. Kein privater Mitgliederraum. Bis zu 100 letzte Rauminhalte; Aktualisieren lädt neue Stimmen."}
-        </p>
-        <button className="alo-btn" onClick={() => void load()}>
-          Aktualisieren
-        </button>
-        <div className="alo-card space-y-2">
+    <>
+      <button
+        ref={trigger}
+        className="alo-room-open"
+        type="button"
+        onClick={() => {
+          setOpen(true);
+          void load();
+        }}
+      >
+        Raumdetails öffnen
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          className="alo-dialog alo-room-sheet"
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            trigger.current?.focus();
+          }}
+        >
+          <DialogTitle>{roomName} · Raumdetails</DialogTitle>
+          <DialogDescription>
+            Infos, Dateien, Umfragen und Termine. Dein Chat bleibt im Hintergrund erhalten.
+          </DialogDescription>
           <label>
-            Typ
+            Inhalt
             <select
-              aria-label="Raumfunktion Typ"
-              value={kind}
-              onChange={(e) => setKind(e.target.value as Tool["kind"])}
+              aria-label="Raumdetail auswählen"
+              value={section}
+              onChange={(e) => {
+                const value = e.target.value as typeof section;
+                setSection(value);
+                setCreating(false);
+                if (value !== "chat") setKind(value);
+              }}
             >
+              <option value="chat">Chat</option>
               <option value="info">Angepinnte Infos</option>
               <option value="file">Dateien</option>
               <option value="poll">Umfragen</option>
               <option value="event">Termine</option>
             </select>
           </label>
-          <input
-            aria-label="Rauminhalt Titel"
-            placeholder="Titel"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={200}
-          />
-          <textarea
-            aria-label="Rauminhalt Text"
-            placeholder="Inhalt / Beschreibung"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={10000}
-          />
-          {kind === "poll" && (
-            <textarea
-              aria-label="Umfrage Antworten"
-              placeholder="Eine Antwortmöglichkeit je Zeile (2–10)"
-              value={options}
-              onChange={(e) => setOptions(e.target.value)}
-              maxLength={2000}
-            />
-          )}
-          {kind === "event" && (
-            <label>
-              Termin (Gerätezeitzone)
-              <input
-                aria-label="Raumtermin Beginn"
-                type="datetime-local"
-                value={starts}
-                onChange={(e) => setStarts(e.target.value)}
-              />
-            </label>
-          )}
-          {kind === "file" && (
-            <>
-              <input
-                type="file"
-                aria-label="Raumdatei auswählen"
-                accept="image/png,image/jpeg,image/gif,image/webp,audio/*,application/pdf,text/plain"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (!f) return;
-                  setBusy(true);
-                  void fileToData(f)
-                    .then((data) => setFile({ name: f.name, type: f.type, data }))
-                    .catch((e) => setStatus(e instanceof Error ? e.message : "Datei nicht lesbar."))
-                    .finally(() => setBusy(false));
-                }}
-              />
-              <p>
-                Dateien bis 1 MB werden mit dem Raumdatensatz gespeichert, nicht öffentlich
-                verlinkt. {file?.name}
-              </p>
-            </>
-          )}
-          <button
-            type="button"
-            className="alo-btn-primary"
-            disabled={!available || busy || !title.trim()}
-            onClick={() => void create()}
-          >
-            {busy ? "Speichert …" : "Vorschau bestätigen & im Raum speichern"}
-          </button>
-        </div>
-        {(
-          [
-            ["info", "Angepinnte Infos"],
-            ["file", "Dateien"],
-            ["poll", "Umfragen"],
-            ["event", "Termine"],
-          ] as const
-        ).map(([type, label]) => (
-          <section key={type} className="space-y-2">
-            <h3 className="font-semibold">{label}</h3>
-            {items
-              .filter((t) => t.kind === type)
-              .map((tool) => {
-                const a = readAttachment(tool.body.attachment);
-                return (
-                  <article className="alo-card space-y-2" key={tool.id}>
-                    <h4 className="font-semibold">{String(tool.body.title)}</h4>
-                    <p className="whitespace-pre-wrap break-words">
-                      {String(tool.body.text ?? "")}
-                    </p>
-                    {tool.kind === "poll" &&
-                      (Array.isArray(tool.body.options)
-                        ? tool.body.options
-                            .filter((v): v is string => typeof v === "string")
-                            .slice(0, 10)
-                        : []
-                      ).map((option, i) => (
-                        <button
-                          className="alo-btn block w-full text-left"
-                          aria-pressed={votes.some(
-                            (v) => v.tool_id === tool.id && v.user_id === userId && v.choice === i,
-                          )}
-                          disabled={busy}
-                          key={i}
-                          onClick={() => void vote(tool, i)}
-                        >
-                          {option} ·{" "}
-                          {votes.filter((v) => v.tool_id === tool.id && v.choice === i).length}{" "}
-                          Stimme(n)
-                          {votes.some(
-                            (v) => v.tool_id === tool.id && v.user_id === userId && v.choice === i,
-                          )
-                            ? " · Deine Wahl"
-                            : ""}
-                        </button>
-                      ))}
-                    {tool.kind === "event" && (
+          <div className="alo-room-sheet-content space-y-3">
+            {section === "chat" && (
+              <div className="alo-card space-y-3">
+                <h3 className="font-semibold">Dein Gespräch</h3>
+                <p className="text-sm text-muted-foreground">
+                  Wähle oben einen Inhalt, um Infos, Raumdateien oder Abstimmungen zu öffnen.
+                </p>
+                <button className="alo-btn-primary" onClick={() => setOpen(false)}>
+                  Zum Chat zurück
+                </button>
+              </div>
+            )}
+            {section !== "chat" && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  {mode === "local"
+                    ? "Nur auf diesem Gerät. Lokale Umfragen haben keine geräteübergreifenden Teilnehmer."
+                    : "Cloud-Raum: für alle angemeldeten Nexus-Nutzer sichtbar. Kein privater Mitgliederraum. Bis zu 100 letzte Rauminhalte; Aktualisieren lädt neue Stimmen."}
+                </p>
+                <button className="alo-btn" onClick={() => void load()}>
+                  Aktualisieren
+                </button>
+                <button
+                  className="alo-btn-primary"
+                  onClick={() => setCreating((v) => !v)}
+                  aria-expanded={creating}
+                >
+                  {creating ? "Formular schließen" : "Neuen Eintrag erstellen"}
+                </button>
+                {creating && (
+                  <div className="alo-card space-y-2">
+                    <input
+                      aria-label="Rauminhalt Titel"
+                      placeholder="Titel"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      maxLength={200}
+                    />
+                    <textarea
+                      aria-label="Rauminhalt Text"
+                      placeholder="Inhalt / Beschreibung"
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      maxLength={10000}
+                    />
+                    {kind === "poll" && (
+                      <textarea
+                        aria-label="Umfrage Antworten"
+                        placeholder="Eine Antwortmöglichkeit je Zeile (2–10)"
+                        value={options}
+                        onChange={(e) => setOptions(e.target.value)}
+                        maxLength={2000}
+                      />
+                    )}
+                    {kind === "event" && (
+                      <label>
+                        Termin (Gerätezeitzone)
+                        <input
+                          aria-label="Raumtermin Beginn"
+                          type="datetime-local"
+                          value={starts}
+                          onChange={(e) => setStarts(e.target.value)}
+                        />
+                      </label>
+                    )}
+                    {kind === "file" && (
                       <>
-                        <p>{new Date(String(tool.body.starts)).toLocaleString("de-DE")}</p>
-                        <button
-                          className="alo-btn"
-                          onClick={() => {
-                            try {
-                              putAlo(
-                                "task",
-                                {
-                                  title: String(tool.body.title),
-                                  due: tool.body.starts,
-                                  done: false,
-                                  source: `Nexus · ${roomName}`,
-                                  roomId,
-                                },
-                                `event:${tool.id}`,
-                                userId,
-                              );
-                              setStatus(
-                                "Termin als persönliche Erinnerung in Tagesübersicht übernommen. Keine automatische Kalenderbuchung oder Hintergrund-Push-Nachricht.",
-                              );
-                            } catch {
-                              setStatus("Termin nicht übernommen.");
-                            }
+                        <input
+                          type="file"
+                          aria-label="Raumdatei auswählen"
+                          accept="image/png,image/jpeg,image/gif,image/webp,audio/*,application/pdf,text/plain"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (!f) return;
+                            setBusy(true);
+                            void fileToData(f)
+                              .then((data) => setFile({ name: f.name, type: f.type, data }))
+                              .catch((e) =>
+                                setStatus(e instanceof Error ? e.message : "Datei nicht lesbar."),
+                              )
+                              .finally(() => setBusy(false));
                           }}
-                        >
-                          In Tagesübersicht übernehmen
-                        </button>
+                        />
+                        <p>
+                          Dateien bis 1 MB werden mit dem Raumdatensatz gespeichert, nicht
+                          öffentlich verlinkt. {file?.name}
+                        </p>
                       </>
                     )}
-                    {a && (
-                      <a className="alo-btn inline-block" href={a.data} download={a.name}>
-                        Datei herunterladen · {a.name}
-                      </a>
-                    )}
-                    {tool.user_id === userId && (
-                      <button
-                        className="ml-2 text-xs text-destructive"
-                        onClick={() => void remove(tool)}
-                      >
-                        Löschen
-                      </button>
-                    )}
-                  </article>
-                );
-              })}
-            {!items.some((t) => t.kind === type) && (
-              <p className="text-muted-foreground">Noch keine Einträge.</p>
+                    <button
+                      type="button"
+                      className="alo-btn-primary"
+                      disabled={!available || busy || !title.trim()}
+                      onClick={() => void create()}
+                    >
+                      {busy ? "Speichert …" : "Vorschau bestätigen & im Raum speichern"}
+                    </button>
+                  </div>
+                )}
+                {(
+                  [
+                    ["info", "Angepinnte Infos"],
+                    ["file", "Dateien"],
+                    ["poll", "Umfragen"],
+                    ["event", "Termine"],
+                  ] as const
+                )
+                  .filter(([type]) => type === section)
+                  .map(([type, label]) => (
+                    <section key={type} className="space-y-2">
+                      <h3 className="font-semibold">{label}</h3>
+                      {items
+                        .filter((t) => t.kind === type)
+                        .map((tool) => {
+                          const a = readAttachment(tool.body.attachment);
+                          return (
+                            <article className="alo-card space-y-2" key={tool.id}>
+                              <h4 className="font-semibold">{String(tool.body.title)}</h4>
+                              <p className="whitespace-pre-wrap break-words">
+                                {String(tool.body.text ?? "")}
+                              </p>
+                              {tool.kind === "poll" &&
+                                (Array.isArray(tool.body.options)
+                                  ? tool.body.options
+                                      .filter((v): v is string => typeof v === "string")
+                                      .slice(0, 10)
+                                  : []
+                                ).map((option, i) => (
+                                  <button
+                                    className="alo-btn block w-full text-left"
+                                    aria-pressed={votes.some(
+                                      (v) =>
+                                        v.tool_id === tool.id &&
+                                        v.user_id === userId &&
+                                        v.choice === i,
+                                    )}
+                                    disabled={busy}
+                                    key={i}
+                                    onClick={() => void vote(tool, i)}
+                                  >
+                                    {option} ·{" "}
+                                    {
+                                      votes.filter((v) => v.tool_id === tool.id && v.choice === i)
+                                        .length
+                                    }{" "}
+                                    Stimme(n)
+                                    {votes.some(
+                                      (v) =>
+                                        v.tool_id === tool.id &&
+                                        v.user_id === userId &&
+                                        v.choice === i,
+                                    )
+                                      ? " · Deine Wahl"
+                                      : ""}
+                                  </button>
+                                ))}
+                              {tool.kind === "event" && (
+                                <>
+                                  <p>
+                                    {new Date(String(tool.body.starts)).toLocaleString("de-DE")}
+                                  </p>
+                                  <button
+                                    className="alo-btn"
+                                    onClick={() => {
+                                      try {
+                                        putAlo(
+                                          "task",
+                                          {
+                                            title: String(tool.body.title),
+                                            due: tool.body.starts,
+                                            done: false,
+                                            source: `Nexus · ${roomName}`,
+                                            roomId,
+                                          },
+                                          `event:${tool.id}`,
+                                          userId,
+                                        );
+                                        setStatus(
+                                          "Termin als persönliche Erinnerung in Tagesübersicht übernommen. Keine automatische Kalenderbuchung oder Hintergrund-Push-Nachricht.",
+                                        );
+                                      } catch {
+                                        setStatus("Termin nicht übernommen.");
+                                      }
+                                    }}
+                                  >
+                                    In Tagesübersicht übernehmen
+                                  </button>
+                                </>
+                              )}
+                              {a && (
+                                <a className="alo-btn inline-block" href={a.data} download={a.name}>
+                                  Datei herunterladen · {a.name}
+                                </a>
+                              )}
+                              {tool.user_id === userId && (
+                                <button
+                                  className="ml-2 text-xs text-destructive"
+                                  onClick={() => void remove(tool)}
+                                >
+                                  Löschen
+                                </button>
+                              )}
+                            </article>
+                          );
+                        })}
+                      {!items.some((t) => t.kind === type) && (
+                        <p className="alo-empty-state">
+                          Noch keine Einträge. Wähle „Neuen Eintrag erstellen“, um diesen Bereich zu
+                          füllen.
+                        </p>
+                      )}
+                    </section>
+                  ))}
+                {status && <p role="status">{status}</p>}
+              </>
             )}
-          </section>
-        ))}
-        {status && <p role="status">{status}</p>}
-      </div>
-    </details>
+            {section === "chat" && status && <p role="status">{status}</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

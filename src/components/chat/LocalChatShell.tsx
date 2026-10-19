@@ -1,3 +1,4 @@
+import { chatRowSummary } from "@/lib/alo-ui";
 import { RoomTools } from "@/components/alo/RoomTools";
 import { ContentActions } from "@/components/alo/ContentActions";
 import { ALO_REMOTE_EVENT, cloudEnabled } from "@/lib/alo-store";
@@ -21,6 +22,7 @@ import {
   detectChatMode,
   editChatMessage,
   loadMessages,
+  loadRoomPreview,
   loadRoomsForUser,
   postMessage,
   reactToMessage,
@@ -65,6 +67,11 @@ export function LocalChatShell() {
   const [sending, setSending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileListOpen, setMobileListOpen] = useState(true);
+  const [previews, setPreviews] = useState<
+    Record<string, Awaited<ReturnType<typeof loadRoomPreview>>>
+  >({});
+  const mobileListOpenRef = useRef(mobileListOpen);
+  mobileListOpenRef.current = mobileListOpen;
   const [roomQuery, setRoomQuery] = useState("");
   const [roomFilter, setRoomFilter] = useState<"all" | "favorites" | "dms">("all");
   const [newRoomOpen, setNewRoomOpen] = useState(false);
@@ -113,10 +120,21 @@ export function LocalChatShell() {
         setReactions([]);
         return;
       }
-      const { messages: msgs, reactions: reacts } = await loadMessages(uid, t);
+      const { messages: msgs, reactions: reacts, available } = await loadMessages(uid, t);
+      if (!available) {
+        setMessages([]);
+        setReactions([]);
+        setToast("Nachrichten nicht verfügbar. Der Ungelesen-Status bleibt unverändert.");
+        return;
+      }
       setMessages(msgs);
       setReactions(reacts);
-      setPrefs(markRead(uid, t.kind, t.id, msgs[msgs.length - 1]?.created_at));
+      const viewingConversation =
+        document.documentElement.dataset.designStyle !== "performance" ||
+        window.matchMedia("(min-width: 768px)").matches ||
+        !mobileListOpenRef.current;
+      if (viewingConversation)
+        setPrefs(markRead(uid, t.kind, t.id, msgs[msgs.length - 1]?.created_at));
     },
     [mode],
   );
@@ -161,6 +179,42 @@ export function LocalChatShell() {
     setSearch("");
     setSearchOpen(false);
   }, [userId, active?.kind, active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!mobileListOpen && userId && activeRef.current) void refresh(userId, activeRef.current);
+  }, [mobileListOpen, userId, refresh]);
+
+  useEffect(() => {
+    if (!userId || mode !== "supabase") {
+      setPreviews({});
+      return;
+    }
+    let cancelled = false;
+    let index = 0;
+    const loadNext = async () => {
+      while (!cancelled && index < rooms.length) {
+        const room = rooms[index++];
+        try {
+          const preview = await loadRoomPreview(
+            userId,
+            room.id,
+            prefs?.lastRead[`room:${room.id}`],
+          );
+          if (!cancelled) setPreviews((previous) => ({ ...previous, [room.id]: preview }));
+        } catch {
+          if (!cancelled)
+            setPreviews((previous) => ({
+              ...previous,
+              [room.id]: { latest: null, unread: null, error: true },
+            }));
+        }
+      }
+    };
+    void Promise.all(Array.from({ length: Math.min(4, rooms.length) }, loadNext));
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, mode, rooms, prefs?.lastRead]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -524,8 +578,20 @@ export function LocalChatShell() {
               userId && mode === "local"
                 ? loadChatStore(userId).messages.filter((m) => m.room_id === r.id)
                 : [];
-            const unread =
-              userId && prefs ? countUnread(prefs, "room", r.id, storeMsgs, userId) : 0;
+            const summary =
+              mode === "local"
+                ? chatRowSummary(storeMsgs, userId ?? "", prefs?.lastRead[`room:${r.id}`])
+                : previews[r.id];
+            const unread = summary?.unread;
+            const unknownUnread = mode === "supabase" && (!summary || summary.unread === null);
+            const latest = summary?.latest;
+            const previewText =
+              latest?.content ??
+              (mode === "supabase" && (!summary || ("error" in summary && summary.error))
+                ? !summary
+                  ? "Vorschau wird geladen"
+                  : "Vorschau nicht verfügbar"
+                : "Noch keine Nachrichten · Raum öffnen");
             return (
               <button
                 key={r.id}
@@ -550,20 +616,33 @@ export function LocalChatShell() {
                     {r.name}
                     {muted ? " 🔇" : ""}
                   </strong>
-                  <small className="sport-only">
-                    {storeMsgs.at(-1)?.content ?? "Gruppenraum öffnen"}
-                  </small>
+                  <small>{previewText}</small>
                 </span>
-                {storeMsgs.at(-1) && (
-                  <time className="sport-only community-room-time">
-                    {formatTime(storeMsgs.at(-1)!.created_at)}
+                {latest && (
+                  <time className="community-room-time" dateTime={latest.created_at}>
+                    {formatTime(latest.created_at)}
                   </time>
                 )}
-                {unread > 0 && active?.id !== r.id && (
-                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
-                    {unread > 9 ? "9+" : unread}
+                {unknownUnread && (
+                  <span
+                    className="community-room-time"
+                    aria-label={
+                      summary ? "Ungelesen-Status nicht verfügbar" : "Ungelesen-Status wird geladen"
+                    }
+                  >
+                    ?
                   </span>
                 )}
+                {typeof unread === "number" &&
+                  unread > 0 &&
+                  (mobileListOpen || active?.id !== r.id) && (
+                    <span
+                      aria-label={`${unread} ungelesene Nachrichten`}
+                      className="community-unread rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
+                    >
+                      {unread > 9 ? "9+" : unread}
+                    </span>
+                  )}
               </button>
             );
           })}
@@ -595,32 +674,53 @@ export function LocalChatShell() {
         </div>
         <div className="space-y-1">
           {dms.length === 0 && (
-            <p className="px-2 py-2 text-xs text-muted-foreground">Noch keine DMs.</p>
+            <p className="px-2 py-2 text-xs text-muted-foreground">
+              Noch keine Direktnachrichten. Starte oben ein Gespräch.
+            </p>
           )}
-          {visibleDms.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => {
-                setActive({ kind: "dm", id: d.id });
-                setMenuOpen(false);
-                setMobileListOpen(false);
-              }}
-              className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${
-                active?.kind === "dm" && active.id === d.id
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-secondary/60"
-              }`}
-            >
-              <span className="community-room-avatar flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold">
-                {initials(d.other_name)}
-              </span>
-              <span className="community-room-copy truncate font-medium">
-                <strong className="truncate">{d.other_name}</strong>
-                <small className="sport-only">Direktnachricht öffnen</small>
-              </span>
-            </button>
-          ))}
+          {visibleDms.map((d) => {
+            const dmMessages = userId
+              ? loadChatStore(userId).messages.filter((m) => m.conversation_id === d.id)
+              : [];
+            const summary = chatRowSummary(dmMessages, userId ?? "", prefs?.lastRead[`dm:${d.id}`]);
+            return (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => {
+                  setActive({ kind: "dm", id: d.id });
+                  setMenuOpen(false);
+                  setMobileListOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                  active?.kind === "dm" && active.id === d.id
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-secondary/60"
+                }`}
+              >
+                <span className="community-room-avatar flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold">
+                  {initials(d.other_name)}
+                </span>
+                <span className="community-room-copy truncate font-medium">
+                  <strong className="truncate">{d.other_name}</strong>
+                  <small>{summary.latest?.content ?? "Noch keine Nachrichten"}</small>
+                </span>
+                {summary.latest && (
+                  <time className="community-room-time" dateTime={summary.latest.created_at}>
+                    {formatTime(summary.latest.created_at)}
+                  </time>
+                )}
+                {summary.unread > 0 && (
+                  <span
+                    className="community-unread"
+                    aria-label={`${summary.unread} ungelesene Nachrichten`}
+                  >
+                    {summary.unread > 9 ? "9+" : summary.unread}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -916,79 +1016,84 @@ export function LocalChatShell() {
                   </div>
                 )}
 
-                <div className={`flex flex-wrap gap-1 px-1 ${own ? "justify-end" : ""}`}>
-                  {QUICK_EMOJIS.slice(0, 4).map((e) => (
-                    <button
-                      key={e}
-                      type="button"
-                      className="text-xs opacity-40 transition hover:opacity-100"
-                      onClick={() => {
-                        if (!userId || !active) return;
-                        void reactToMessage(userId, m.id, e).then(() => refresh(userId, active));
-                      }}
-                    >
-                      {e}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    className="text-[10px] text-muted-foreground"
-                    onClick={() => setReplyTo(m)}
-                  >
-                    Antwort
-                  </button>
-                  {userId && (
+                <details className="alo-message-actions">
+                  <summary>Nachrichtenaktionen</summary>
+                  <div className={`flex flex-wrap gap-1 px-1 ${own ? "justify-end" : ""}`}>
+                    {QUICK_EMOJIS.slice(0, 4).map((e) => (
+                      <button
+                        key={e}
+                        type="button"
+                        className="text-xs opacity-40 transition hover:opacity-100"
+                        onClick={() => {
+                          if (!userId || !active) return;
+                          void reactToMessage(userId, m.id, e).then(() => refresh(userId, active));
+                        }}
+                      >
+                        {e}
+                      </button>
+                    ))}
                     <button
                       type="button"
                       className="text-[10px] text-muted-foreground"
-                      onClick={() => setPrefs(togglePinMessage(userId, m.id))}
+                      onClick={() => setReplyTo(m)}
                     >
-                      {isPinned ? "Lösen" : "Pin"}
+                      Antwort
                     </button>
-                  )}
-                  {userId && (
-                    <ContentActions
-                      userId={userId}
-                      text={m.content}
-                      title={`Nachricht aus ${headerTitle}`}
-                      source="Nexus"
-                    />
-                  )}
-                  {own && m.user_id !== "system" && (
-                    <>
+                    {userId && (
                       <button
                         type="button"
                         className="text-[10px] text-muted-foreground"
-                        onClick={() => {
-                          const next = window.prompt("Bearbeiten", m.content);
-                          if (next && userId && active) {
-                            void editChatMessage(userId, m.id, next).then(() =>
+                        onClick={() => setPrefs(togglePinMessage(userId, m.id))}
+                      >
+                        {isPinned ? "Lösen" : "Pin"}
+                      </button>
+                    )}
+                    {userId && (
+                      <ContentActions
+                        userId={userId}
+                        text={m.content}
+                        title={`Nachricht aus ${headerTitle}`}
+                        source="Nexus"
+                      />
+                    )}
+                    {own && m.user_id !== "system" && (
+                      <>
+                        <button
+                          type="button"
+                          className="text-[10px] text-muted-foreground"
+                          onClick={() => {
+                            const next = window.prompt("Bearbeiten", m.content);
+                            if (next && userId && active) {
+                              void editChatMessage(userId, m.id, next).then(() =>
+                                refresh(userId, active),
+                              );
+                            }
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="text-[10px] text-destructive"
+                          onClick={() => {
+                            if (!userId || !active) return;
+                            if (
+                              !window.confirm(
+                                `Diese Nachricht ${mode === "supabase" ? "in der Cloud für alle Raumteilnehmer" : "auf diesem Gerät"} löschen? Gespeicherte Kopien in Sammlungen bleiben erhalten.`,
+                              )
+                            )
+                              return;
+                            void deleteChatMessage(userId, m.id).then(() =>
                               refresh(userId, active),
                             );
-                          }
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="text-[10px] text-destructive"
-                        onClick={() => {
-                          if (!userId || !active) return;
-                          if (
-                            !window.confirm(
-                              `Diese Nachricht ${mode === "supabase" ? "in der Cloud für alle Raumteilnehmer" : "auf diesem Gerät"} löschen? Gespeicherte Kopien in Sammlungen bleiben erhalten.`,
-                            )
-                          )
-                            return;
-                          void deleteChatMessage(userId, m.id).then(() => refresh(userId, active));
-                        }}
-                      >
-                        Löschen
-                      </button>
-                    </>
-                  )}
-                </div>
+                          }}
+                        >
+                          Löschen
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </details>
               </div>
             );
           })}
@@ -1011,25 +1116,34 @@ export function LocalChatShell() {
         )}
 
         {/* Quick replies + workout share */}
-        <div className="community-quick-replies flex gap-1.5 overflow-x-auto border-t border-border bg-card/40 px-3 py-2">
-          {QUICK_REPLIES.map((q) => (
+        <details className="alo-chat-quick-options">
+          <summary>Schnellantworten & Training teilen</summary>
+          <div className="community-quick-replies flex flex-wrap gap-2">
+            {QUICK_REPLIES.map((q) => (
+              <button
+                key={q.id}
+                type="button"
+                onClick={() => void onSend(q.text)}
+                className="shrink-0 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[10px] font-medium"
+              >
+                {q.label}
+              </button>
+            ))}
             <button
-              key={q.id}
               type="button"
-              onClick={() => void onSend(q.text)}
-              className="shrink-0 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[10px] font-medium"
+              disabled={todayReps <= 0}
+              title={
+                todayReps > 0
+                  ? "Erfasste Wiederholungen teilen"
+                  : "Noch keine Wiederholungen erfasst"
+              }
+              onClick={() => void onSend(workoutShareTemplate(todayReps))}
+              className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary"
             >
-              {q.label}
+              🏋️ Workout teilen
             </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => void onSend(workoutShareTemplate(todayReps || 20))}
-            className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary"
-          >
-            🏋️ Workout teilen
-          </button>
-        </div>
+          </div>
+        </details>
 
         <form
           onSubmit={(e) => {

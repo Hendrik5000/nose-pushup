@@ -3,8 +3,8 @@ self.addEventListener("push", function (event) {
     const data = event.data.json();
     const options = {
       body: data.body,
-      icon: "/favicon.png",
-      badge: "/favicon.png",
+      icon: "/alo-icon-192.png",
+      badge: "/alo-icon-192.png",
       vibrate: [100, 50, 100],
       data: {
         url: data.url || "/",

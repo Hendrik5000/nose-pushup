@@ -13,8 +13,9 @@ test("reference refinements load after the shared style sheets", () => {
 
 test("reference interiors keep the global menu and appearance controls", () => {
   const header = read("components/SportAppHeader.tsx");
-  assert.match(header, /reference-interior-header/);
-  assert.match(header, /reference-page-title/);
+  assert.match(header, /alo-app-header/);
+  assert.match(header, /alo-header-title/);
+  assert.match(header, /aloPageIdentity/);
   assert.match(header, /hash="appearance"/);
   assert.match(header, /aria-controls="sport-area-menu"/);
 });

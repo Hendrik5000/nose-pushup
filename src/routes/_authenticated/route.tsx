@@ -18,6 +18,7 @@ import { getSwipeDestination, isModuleSwipeBlocked } from "@/lib/module-navigati
 import { startModuleSwipeTransition } from "@/lib/module-swipe-transition";
 import "@/module-swipe.css";
 import "@/module-menu.css";
+import "@/alo-mobile.css";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,

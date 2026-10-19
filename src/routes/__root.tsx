@@ -115,18 +115,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         property: "og:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e5c2365e-a81c-4835-81d6-f8d5014655b9/id-preview-f69d2ccc--40995ef3-9b15-4ba7-9ebb-89713e15105b.lovable.app-1783159358811.png",
+        content: "/alo-brand.jpg",
       },
       {
         name: "twitter:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e5c2365e-a81c-4835-81d6-f8d5014655b9/id-preview-f69d2ccc--40995ef3-9b15-4ba7-9ebb-89713e15105b.lovable.app-1783159358811.png",
+        content: "/alo-brand.jpg",
       },
     ],
     links: [
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-      { rel: "apple-touch-icon", href: "/favicon.png" },
+      { rel: "icon", type: "image/png", href: "/alo-icon-192.png" },
+      { rel: "apple-touch-icon", href: "/alo-apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: sportCss },
