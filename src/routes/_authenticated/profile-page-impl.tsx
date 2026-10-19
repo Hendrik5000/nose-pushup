@@ -373,7 +373,12 @@ export function ProfilePage() {
                 <FriendsPanel userId={profile.id} />
               </SettingsSection>
             )}
-            <SettingsSection icon="🎨" title="Design" subtitle="Stil, Schrift, Layout & Farben">
+            <SettingsSection
+              id="appearance"
+              icon="🎨"
+              title="Design"
+              subtitle="Stil, Schrift, Layout & Farben"
+            >
               <h3 className="mb-2 text-base font-semibold">Designstil</h3>
               <DesignStylePicker />
               <div className="mt-6 border-t border-border pt-5">
@@ -502,6 +507,13 @@ export function ProfilePage() {
               Abmelden
             </button>
           </SportPageIntro>
+          <nav className="sport-profile-shortcuts" aria-label="Profileinstellungen">
+            <Link to="/profile" hash="appearance">
+              Design & Navigation
+            </Link>
+            <Link to="/ai">KI-Coach öffnen</Link>
+            <Link to="/health">Gesundheitsdaten</Link>
+          </nav>
           <section className="sport-identity-card relative overflow-hidden rounded-[2rem] border border-primary/25 bg-gradient-to-br from-primary/15 via-card/85 to-background p-6 shadow-sm sm:p-8">
             <div className="absolute right-0 top-0 h-48 w-48 translate-x-1/4 -translate-y-1/4 rounded-full border border-primary/15" />
             <div className="absolute right-8 top-8 h-28 w-28 rounded-full border border-primary/15" />
@@ -670,6 +682,7 @@ export function ProfilePage() {
             </SettingsSection>
             <SettingsSection
               icon="🎨"
+              id="appearance"
               title="Design & Navigation"
               subtitle="Stil, Schrift, Layout & Farben"
             >

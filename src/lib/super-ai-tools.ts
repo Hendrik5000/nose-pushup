@@ -155,19 +155,50 @@ export function savePersona(p: AiPersona) {
 
 export function loadSessions(): AiSession[] {
   if (!canStore()) return [];
+  let sessions: AiSession[];
   try {
-    const raw = window.localStorage.getItem(SESSIONS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as AiSession[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(window.localStorage.getItem(SESSIONS_KEY) ?? "[]");
+    sessions = Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
+  // Import once without deleting the original classic history or trimming existing chats.
+  // A malformed legacy archive or blocked write must never hide healthy current sessions.
+  try {
+    const importKey = "super-ai-imported-classic-coach";
+    if (!window.localStorage.getItem(importKey)) {
+      const legacy = JSON.parse(window.localStorage.getItem("coach-chat-v1") ?? "[]");
+      const messages = Array.isArray(legacy)
+        ? legacy.filter(
+            (message) =>
+              message &&
+              ["user", "assistant"].includes(message.role) &&
+              typeof message.content === "string",
+          )
+        : [];
+      if (messages.length && !sessions.some((session) => session.id === "classic-coach-import")) {
+        sessions = [
+          {
+            id: "classic-coach-import",
+            title: "Smart Coach · bisheriger Chat",
+            updatedAt: new Date().toISOString(),
+            messages,
+          },
+          ...sessions,
+        ];
+        window.localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+      }
+      window.localStorage.setItem(importKey, "1");
+    }
+  } catch {
+    /* Keep the readable sessions even when the optional import fails. */
+  }
+  return sessions;
 }
 
 export function saveSessions(list: AiSession[]) {
   if (!canStore()) return;
-  window.localStorage.setItem(SESSIONS_KEY, JSON.stringify(list.slice(0, 12)));
+  window.localStorage.setItem(SESSIONS_KEY, JSON.stringify(list));
 }
 
 export function newSessionId() {

@@ -1,3 +1,4 @@
+import { Footprints, Moon, HeartPulse, Watch, Plus, ArrowRight } from "lucide-react";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -99,7 +100,12 @@ function HealthPage() {
     ? Math.round(week.reduce((s, e) => s + e.steps, 0) / week.length)
     : 0;
   const avgSleep = week.length ? week.reduce((s, e) => s + e.sleep_min, 0) / week.length / 60 : 0;
-  const todaySteps = entries.find((e) => e.day === today())?.steps ?? 0;
+  const todayEntry = entries.find((e) => e.day === today());
+  const todaySteps = todayEntry?.steps ?? 0;
+  const sleepEntries = week.filter((entry) => entry.sleep_min > 0);
+  const measuredSleep = sleepEntries.length
+    ? sleepEntries.reduce((sum, entry) => sum + entry.sleep_min, 0) / sleepEntries.length / 60
+    : null;
 
   return (
     <>
@@ -228,8 +234,8 @@ function HealthPage() {
       <DesignView variant="sport">
         <main className="sport-only sport-health-page mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-6 px-5 py-6 pb-28 sm:px-8">
           <SportPageIntro
-            eyebrow="RECOVERY & VITALS"
-            title="Health Übersicht"
+            eyebrow="DEIN WOHLBEFINDEN"
+            title="Gesundheit"
             description="Schritte, Schlaf und Aktivität – als Trainingskontext an einem Ort."
           >
             <Link
@@ -239,32 +245,76 @@ function HealthPage() {
               ← Start
             </Link>
           </SportPageIntro>
-          <SportSectionLabel number="01">Wochenüberblick</SportSectionLabel>
-          <section className="grid gap-4 sm:grid-cols-2">
+          <nav className="health-category-nav" aria-label="Gesundheitsbereiche">
+            <a href="#health-today">
+              <HeartPulse aria-hidden="true" />
+              <span>Heute</span>
+            </a>
+            <a href="#health-activity">
+              <Footprints aria-hidden="true" />
+              <span>Aktivität</span>
+            </a>
+            <a href="#health-sleep">
+              <Moon aria-hidden="true" />
+              <span>Schlaf</span>
+            </a>
+            <a href="#health-sources">
+              <Watch aria-hidden="true" />
+              <span>Quellen</span>
+            </a>
+          </nav>
+          <section
+            id="health-today"
+            className="health-daily-hero"
+            aria-labelledby="health-daily-title"
+          >
+            <span className="health-hero-icon">
+              <HeartPulse aria-hidden="true" />
+            </span>
+            <p className="sport-kicker">Dein Tag im Blick</p>
+            <h2 id="health-daily-title">
+              {todayEntry ? "Jeder Schritt zählt." : "Wie geht es dir heute?"}
+            </h2>
+            <p>
+              {todayEntry
+                ? `Heute sind ${todaySteps.toLocaleString("de-DE")} Schritte erfasst. Entdecke deine Aktivität und gib deiner Erholung Raum.`
+                : "Schritte, Schlaf und Bewegung erzählen deine Geschichte. Verbinde deine Uhr oder erfasse deine ersten Werte."}
+            </p>
+            <a href="#health-entry" className="health-hero-action">
+              <Plus aria-hidden="true" /> Werte erfassen <ArrowRight aria-hidden="true" />
+            </a>
+          </section>
+          <SportSectionLabel number="01">Deine Übersicht</SportSectionLabel>
+          <section id="health-activity" className="health-bento-grid grid grid-cols-2 gap-3">
             <div className="sport-health-metric rounded-[1.75rem] border border-border/70 bg-card/80 p-6">
               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Ø Schritte · letzte 7 Einträge
+                <Footprints aria-hidden="true" /> Schritte
               </div>
               <div className="mt-4 text-4xl font-bold tabular-nums tracking-tight">
-                {avgSteps.toLocaleString("de-DE")}
+                {entries.length ? avgSteps.toLocaleString("de-DE") : "—"}
               </div>
               <div className="mt-2 text-sm text-muted-foreground">
-                Heute {todaySteps.toLocaleString("de-DE")} Schritte
+                {todayEntry
+                  ? `Heute ${todaySteps.toLocaleString("de-DE")} Schritte`
+                  : "Heute noch nicht erfasst"}
               </div>
             </div>
             <div className="sport-health-metric rounded-[1.75rem] border border-border/70 bg-card/80 p-6">
               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Ø Schlaf · letzte 7 Einträge
+                <Moon aria-hidden="true" /> Schlaf
               </div>
               <div className="mt-4 text-4xl font-bold tabular-nums tracking-tight">
-                {avgSleep.toFixed(1)} <span className="text-xl text-muted-foreground">h</span>
+                {measuredSleep == null ? "—" : measuredSleep.toFixed(1)}{" "}
+                {measuredSleep != null && <span className="text-xl text-muted-foreground">h</span>}
               </div>
               <div className="mt-2 text-sm text-muted-foreground">
-                Erholung zählt zur Trainingsleistung
+                {measuredSleep == null
+                  ? "Noch keine Schlafdaten"
+                  : `Ø aus ${sleepEntries.length} erfassten Nächten`}
               </div>
             </div>
           </section>
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div id="health-sleep" className="grid gap-5 lg:grid-cols-2">
             <div className="space-y-5">
               <WeeklyStepsGoal todaySteps={todaySteps} />
               <SleepDebtCard sleepMinutes={entries.slice(0, 7).map((e) => e.sleep_min)} />
@@ -276,7 +326,7 @@ function HealthPage() {
             />
           </div>
           <SportSectionLabel number="02">Verbundene Datenquellen</SportSectionLabel>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div id="health-sources" className="grid gap-4 md:grid-cols-2">
             <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
               <h2 className="mb-4 text-lg font-bold">Google Health Connect</h2>
               <HealthConnectPanel />
@@ -287,7 +337,10 @@ function HealthPage() {
             </section>
           </div>
           <SportSectionLabel number="03">Eintrag erfassen</SportSectionLabel>
-          <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
+          <section
+            id="health-entry"
+            className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6"
+          >
             <p className="mb-5 max-w-xl text-sm text-muted-foreground">
               Trage Werte manuell nach. Ein gespeicherter Gewichtswert aktualisiert auch dein
               Profil.

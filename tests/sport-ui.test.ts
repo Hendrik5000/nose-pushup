@@ -44,7 +44,6 @@ test("new page structures are shared across training, health, community, account
     "_authenticated/leaderboard.tsx",
     "_authenticated/season.tsx",
     "_authenticated/ai.tsx",
-    "_authenticated/coach.tsx",
     "_authenticated/health.tsx",
     "_authenticated/profile-page-impl.tsx",
     "auth.tsx",
@@ -56,6 +55,7 @@ test("new page structures are shared across training, health, community, account
     assert.match(source, /classic-only/, `${page}: must preserve the original presentation`);
   }
   assert.match(read("components/chat/LocalChatShell.tsx"), /sport-/);
+  assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage \/>/);
   assert.match(read("routes/_authenticated/index.tsx"), /sport-overview-metrics/);
   assert.match(read("routes/_authenticated/index.tsx"), /sport-shortcuts/);
 });
@@ -157,7 +157,6 @@ test("shared sports menu exposes every existing feature group", () => {
     "/calisthenics",
     "/run",
     "/health",
-    "/coach",
     "/ai",
     "/season",
     "/battle",

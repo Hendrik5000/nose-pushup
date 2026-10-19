@@ -85,7 +85,7 @@ export function AiCoachCard() {
         </div>
         <div className="flex items-center gap-2">
           <Link
-            to="/coach"
+            to="/ai"
             className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary transition hover:bg-primary/20"
           >
             💬 Chat

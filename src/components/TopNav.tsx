@@ -4,8 +4,8 @@ import { House, Dumbbell, Sparkles, MessageCircle, UserRound } from "lucide-reac
 const ITEMS = [
   { to: "/", label: "Übersicht", icon: House },
   { to: "/exercises", label: "Training", icon: Dumbbell },
-  { to: "/ai", label: "Super-KI", icon: Sparkles },
-  { to: "/chat", label: "Chat", icon: MessageCircle },
+  { to: "/ai", label: "KI-Coach", icon: Sparkles },
+  { to: "/chat", label: "Community", icon: MessageCircle },
   { to: "/profile", label: "Profil", icon: UserRound },
 ];
 

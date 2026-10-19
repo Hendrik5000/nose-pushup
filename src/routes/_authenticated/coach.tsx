@@ -1,10 +1,10 @@
+import { SuperAiPage } from "./ai";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { coachChat } from "@/lib/coach-chat.functions";
 import { BottomNav } from "@/components/BottomNav";
-import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 
 export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
@@ -37,26 +37,21 @@ const SUGGESTIONS = [
 
 function CoachChatPage() {
   const send = useServerFn(coachChat);
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+      return Array.isArray(stored) ? stored : [];
+    } catch {
+      return [];
+    }
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Persist chat in localStorage
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Msg[];
-        if (Array.isArray(parsed)) setMessages(parsed);
-      }
-    } catch {
-      /* noop */
-    }
-  }, []);
-
+  // The classic view retains its original chat without a mount-time overwrite.
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-40)));
@@ -251,124 +246,7 @@ function CoachChatPage() {
         </main>
       </DesignView>
       <DesignView variant="sport">
-        <main className="sport-only sport-coach-page mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8">
-          <SportPageIntro
-            eyebrow="TRAININGSZENTRALE · COACH"
-            title="Smart Coach"
-            description="Dein Trainingspartner für Sessions, Fortschritt und klare Antworten."
-          >
-            <Link
-              to="/"
-              className="sport-back-link rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
-            >
-              ← Übersicht
-            </Link>
-            <button
-              onClick={clearChat}
-              className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
-              title="Chat leeren"
-            >
-              Neuer Chat
-            </button>
-          </SportPageIntro>
-          <SportSectionLabel number="01">Gespräch</SportSectionLabel>
-          <div
-            ref={scrollRef}
-            className="sport-chat-stage flex min-h-[46vh] flex-1 flex-col gap-4 overflow-y-auto rounded-[2rem] border border-border/70 bg-card/65 p-5 shadow-sm sm:p-7"
-          >
-            {messages.length === 0 && (
-              <div className="mx-auto my-auto w-full max-w-lg py-5 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-primary/20 bg-primary/10 text-3xl">
-                  🧠
-                </div>
-                <h2 className="mt-5 text-xl font-bold">Bereit für deinen nächsten Schritt?</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-                  Ich kenne deine Werte. Frag nach Tipps, log dein Training per Text oder frag nach
-                  deinem Progress.
-                </p>
-                <div className="mt-6 grid gap-2 sm:grid-cols-2">
-                  {SUGGESTIONS.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => submit(s)}
-                      className="rounded-2xl border border-border bg-background/65 p-4 text-left text-sm font-medium transition hover:border-primary/50"
-                    >
-                      {s}
-                      <span className="mt-2 block text-xs text-muted-foreground">
-                        Coach fragen →
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[88%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/70 bg-background/80 text-foreground"}`}
-                >
-                  <p className="whitespace-pre-wrap">{m.content}</p>
-                  {m.actions && m.actions.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {m.actions.map((a, j) => (
-                        <span
-                          key={j}
-                          className="rounded-full border border-primary/35 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
-                        >
-                          ✓ {a}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
-                  Coach denkt…
-                </div>
-              </div>
-            )}
-          </div>
-          {error && (
-            <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          <SportSectionLabel number="02">Deine Nachricht</SportSectionLabel>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              submit();
-            }}
-            className="sport-chat-composer flex items-end gap-3 rounded-[1.5rem] border border-border/70 bg-card/80 p-3 shadow-lg"
-          >
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Nachricht an den Coach…"
-              rows={1}
-              className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-muted-foreground/70"
-              style={{ maxHeight: 140 }}
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="flex h-12 min-w-12 items-center justify-center rounded-2xl bg-primary px-4 font-semibold text-primary-foreground transition active:scale-95 disabled:opacity-40"
-              aria-label="Senden"
-            >
-              Senden ↑
-            </button>
-          </form>
-          <BottomNav />
-        </main>
+        <SuperAiPage />
       </DesignView>
     </>
   );

@@ -1,7 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
-  ArrowUpRight,
+  ChevronRight,
+  Palette,
   Dumbbell,
   HeartPulse,
   Menu,
@@ -32,8 +33,7 @@ const SECTIONS = [
     title: "WEITERKOMMEN",
     links: [
       { to: "/health", label: "Gesundheit", icon: HeartPulse },
-      { to: "/coach", label: "Coach", icon: Shield },
-      { to: "/ai", label: "Super-KI", icon: Sparkles },
+      { to: "/ai", label: "KI-Coach", icon: Sparkles },
       { to: "/season", label: "Saison", icon: Trophy },
     ],
   },
@@ -44,7 +44,7 @@ const SECTIONS = [
       { to: "/battle-league", label: "Battle-Liga", icon: Shield },
       { to: "/leaderboard", label: "Rangliste", icon: Trophy },
       { to: "/clubs", label: "Clubs", icon: Users },
-      { to: "/chat", label: "Chat", icon: MessageCircle },
+      { to: "/chat", label: "Community-Chat", icon: MessageCircle },
       { to: "/profile", label: "Profil & Design", icon: UserRound },
     ],
   },
@@ -88,22 +88,32 @@ export function SportAppHeader() {
             <small>DEIN TRAINING. DEIN FORTSCHRITT.</small>
           </span>
         </Link>
-        <button
-          ref={trigger}
-          type="button"
-          className="sport-menu-trigger"
-          aria-expanded={open}
-          aria-controls="sport-area-menu"
-          aria-label={open ? "Weitere Bereiche schließen" : "Weitere Bereiche öffnen"}
-          onClick={() => setOpen(!open)}
-        >
-          <span>Mehr</span>
-          {open ? (
-            <X className="h-5 w-5" aria-hidden="true" />
-          ) : (
-            <Menu className="h-5 w-5" aria-hidden="true" />
-          )}
-        </button>
+        <div className="sport-header-actions">
+          <Link
+            to="/profile"
+            hash="appearance"
+            className="sport-design-shortcut"
+            aria-label="Design & Navigation öffnen"
+          >
+            <Palette className="h-5 w-5" aria-hidden="true" />
+          </Link>
+          <button
+            ref={trigger}
+            type="button"
+            className="sport-menu-trigger"
+            aria-expanded={open}
+            aria-controls="sport-area-menu"
+            aria-label={open ? "Weitere Bereiche schließen" : "Weitere Bereiche öffnen"}
+            onClick={() => setOpen(!open)}
+          >
+            <span>Mehr</span>
+            {open ? (
+              <X className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
       {open && (
         <nav id="sport-area-menu" className="sport-area-menu" aria-label="Alle Bereiche">
@@ -119,7 +129,7 @@ export function SportAppHeader() {
                 >
                   <link.icon className="h-4 w-4" aria-hidden="true" />
                   <span>{link.label}</span>
-                  <ArrowUpRight className="ml-auto h-3.5 w-3.5" aria-hidden="true" />
+                  <ChevronRight className="ml-auto h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
               ))}
             </div>

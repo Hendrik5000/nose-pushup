@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, Mic } from "lucide-react";
+import {
+  ArrowUpRight,
+  ArrowLeft,
+  MessageCircle,
+  MoreVertical,
+  Search,
+  Users,
+  Mic,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { supabase } from "@/integrations/supabase/client";
 import {
   createChatRoom,
@@ -51,6 +58,9 @@ export function LocalChatShell() {
   const [replyTo, setReplyTo] = useState<LocalMessage | null>(null);
   const [draft, setDraft] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileListOpen, setMobileListOpen] = useState(true);
+  const [roomQuery, setRoomQuery] = useState("");
+  const [roomFilter, setRoomFilter] = useState<"all" | "favorites" | "dms">("all");
   const [newRoomOpen, setNewRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [dmName, setDmName] = useState("");
@@ -214,6 +224,7 @@ export function LocalChatShell() {
     const dm = getOrCreateLocalDm(userId, otherId, dmName.trim());
     setDmName("");
     setActive({ kind: "dm", id: dm.id });
+    setMobileListOpen(false);
     await refresh(userId, { kind: "dm", id: dm.id });
   };
 
@@ -265,6 +276,18 @@ export function LocalChatShell() {
 
   const modeLabel = mode === "supabase" ? "Cloud · Supabase" : "Lokal · Gerät";
 
+  const visibleRooms = sortedRooms.filter(
+    (room) =>
+      roomFilter !== "dms" &&
+      (roomFilter !== "favorites" || prefs?.favoriteRoomIds.includes(room.id)) &&
+      room.name.toLocaleLowerCase("de-DE").includes(roomQuery.toLocaleLowerCase("de-DE")),
+  );
+  const visibleDms = dms.filter(
+    (dm) =>
+      roomFilter !== "favorites" &&
+      dm.other_name.toLocaleLowerCase("de-DE").includes(roomQuery.toLocaleLowerCase("de-DE")),
+  );
+
   const sidebar = (
     <div className="sport-chat-sidebar flex h-full flex-col bg-card/40">
       <div className="border-b border-border bg-gradient-to-br from-primary/15 to-transparent px-4 py-4">
@@ -273,7 +296,7 @@ export function LocalChatShell() {
             💬
           </span>
           <div>
-            <div className="text-sm font-bold">Nexus Chat</div>
+            <div className="text-sm font-bold">Community-Chat</div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               {modeLabel}
             </div>
@@ -281,6 +304,40 @@ export function LocalChatShell() {
         </div>
       </div>
 
+      <div className="sport-only community-list-controls">
+        <label className="community-search">
+          <Search aria-hidden="true" />
+          <input
+            value={roomQuery}
+            onChange={(event) => setRoomQuery(event.target.value)}
+            placeholder="Chats durchsuchen"
+            aria-label="Community-Chats durchsuchen"
+          />
+        </label>
+        <div className="community-filter-chips" role="group" aria-label="Community-Chats filtern">
+          {(
+            [
+              ["all", "Alle"],
+              ["favorites", "Favoriten"],
+              ["dms", "Direkt"],
+            ] as const
+          ).map(([filter, label]) => (
+            <button
+              key={filter}
+              type="button"
+              aria-pressed={roomFilter === filter}
+              onClick={() => setRoomFilter(filter)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p>
+          {mode === "local"
+            ? "Nur auf diesem Gerät gespeichert. Kein Versand an andere Geräte."
+            : "Mit deiner Community verbunden."}
+        </p>
+      </div>
       <div className="flex-1 overflow-y-auto px-3 py-3">
         <div className="mb-1 flex items-center justify-between px-1">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -295,7 +352,7 @@ export function LocalChatShell() {
           </button>
         </div>
         <div className="space-y-1 pb-4">
-          {sortedRooms.map((r) => {
+          {visibleRooms.map((r) => {
             const muted = prefs?.mutedRoomIds.includes(r.id);
             const fav = prefs?.favoriteRoomIds.includes(r.id);
             const storeMsgs =
@@ -311,6 +368,7 @@ export function LocalChatShell() {
                 onClick={() => {
                   setActive({ kind: "room", id: r.id });
                   setMenuOpen(false);
+                  setMobileListOpen(false);
                 }}
                 className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${
                   active?.kind === "room" && active.id === r.id
@@ -318,11 +376,24 @@ export function LocalChatShell() {
                     : "hover:bg-secondary/60"
                 }`}
               >
-                <span className="opacity-70">{fav ? "★" : "#"}</span>
-                <span className="min-w-0 flex-1 truncate font-medium">
-                  {r.name}
-                  {muted ? " 🔇" : ""}
+                <span className="community-room-avatar">
+                  <span className="classic-only">{fav ? "★" : "#"}</span>
+                  <Users className="sport-only" aria-hidden="true" />
                 </span>
+                <span className="community-room-copy min-w-0 flex-1 truncate font-medium">
+                  <strong className="truncate">
+                    {r.name}
+                    {muted ? " 🔇" : ""}
+                  </strong>
+                  <small className="sport-only">
+                    {storeMsgs.at(-1)?.content ?? "Gruppenraum öffnen"}
+                  </small>
+                </span>
+                {storeMsgs.at(-1) && (
+                  <time className="sport-only community-room-time">
+                    {formatTime(storeMsgs.at(-1)!.created_at)}
+                  </time>
+                )}
                 {unread > 0 && active?.id !== r.id && (
                   <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
                     {unread > 9 ? "9+" : unread}
@@ -356,13 +427,14 @@ export function LocalChatShell() {
           {dms.length === 0 && (
             <p className="px-2 py-2 text-xs text-muted-foreground">Noch keine DMs.</p>
           )}
-          {dms.map((d) => (
+          {visibleDms.map((d) => (
             <button
               key={d.id}
               type="button"
               onClick={() => {
                 setActive({ kind: "dm", id: d.id });
                 setMenuOpen(false);
+                setMobileListOpen(false);
               }}
               className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${
                 active?.kind === "dm" && active.id === d.id
@@ -373,7 +445,10 @@ export function LocalChatShell() {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold">
                 {initials(d.other_name)}
               </span>
-              <span className="truncate font-medium">{d.other_name}</span>
+              <span className="community-room-copy truncate font-medium">
+                <strong className="truncate">{d.other_name}</strong>
+                <small className="sport-only">Direktnachricht öffnen</small>
+              </span>
             </button>
           ))}
         </div>
@@ -397,10 +472,13 @@ export function LocalChatShell() {
   );
 
   return (
-    <div className="app-chat-shell sport-chat-app flex overflow-hidden bg-background">
+    <div
+      className={`app-chat-shell sport-chat-app flex overflow-hidden bg-background ${mobileListOpen ? "community-show-list" : "community-show-conversation"}`}
+    >
+      <div className="sport-only community-mobile-list">{sidebar}</div>
       <aside className="hidden w-72 shrink-0 border-r border-border md:block">{sidebar}</aside>
 
-      <section className="flex min-w-0 flex-1 flex-col">
+      <section className="community-conversation flex min-w-0 flex-1 flex-col">
         <header className="classic-only flex items-center gap-2 border-b border-border bg-card/50 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
           <button
             type="button"
@@ -445,42 +523,55 @@ export function LocalChatShell() {
         </header>
 
         <div className="sport-only sport-chat-topbar border-b border-border/70 bg-card/70 px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur sm:px-6">
-          <SportPageIntro
-            eyebrow={`NEXUS CHAT · ${modeLabel.toUpperCase()}`}
-            title={headerTitle}
-            description={`${active?.kind === "room" ? "Gruppenraum" : "Direktnachricht"} · ${mode === "supabase" ? "Cloud-Synchronisierung" : "Lokal auf diesem Gerät"}`}
-          >
+          <div className="community-conversation-heading">
             <button
               type="button"
-              className="rounded-xl border border-border/70 px-3 py-2 text-sm md:hidden"
-              onClick={() => setMenuOpen(true)}
-              aria-label="Räume öffnen"
+              className="community-back"
+              onClick={() => setMobileListOpen(true)}
+              aria-label="Zur Chatliste"
             >
-              ☰ Räume
+              <ArrowLeft aria-hidden="true" />
             </button>
-            {active?.kind === "room" && userId && (
-              <>
-                <HeadBtn
-                  label="Favorit"
-                  onClick={() => setPrefs(toggleFavoriteRoom(userId, active.id))}
-                >
-                  {prefs?.favoriteRoomIds.includes(active.id) ? "★" : "☆"}
-                </HeadBtn>
-                <HeadBtn label="Stumm" onClick={() => setPrefs(toggleMute(userId, active.id))}>
-                  {prefs?.mutedRoomIds.includes(active.id) ? "🔇" : "🔔"}
-                </HeadBtn>
-              </>
-            )}
-            <HeadBtn label="Suche" onClick={() => setSearchOpen((v) => !v)}>
-              🔍
-            </HeadBtn>
-            <HeadBtn label="Export" onClick={() => void exportActive()}>
-              ⬇
-            </HeadBtn>
-            <Link to="/" className="rounded-xl border border-border/70 px-3 py-2 text-xs font-bold">
-              App
-            </Link>
-          </SportPageIntro>
+            <span className="community-room-avatar">
+              <MessageCircle aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h1>{headerTitle}</h1>
+              <p>{mode === "local" ? "Lokal auf diesem Gerät" : "Community · Cloud"}</p>
+            </div>
+          </div>
+          <details className="community-conversation-menu">
+            <summary aria-label="Chataktionen">
+              <MoreVertical aria-hidden="true" />
+            </summary>
+            <div className="community-conversation-actions">
+              {active?.kind === "room" && userId && (
+                <>
+                  <HeadBtn
+                    label="Favorit"
+                    onClick={() => setPrefs(toggleFavoriteRoom(userId, active.id))}
+                  >
+                    {prefs?.favoriteRoomIds.includes(active.id) ? "★" : "☆"}
+                  </HeadBtn>
+                  <HeadBtn label="Stumm" onClick={() => setPrefs(toggleMute(userId, active.id))}>
+                    {prefs?.mutedRoomIds.includes(active.id) ? "🔇" : "🔔"}
+                  </HeadBtn>
+                </>
+              )}
+              <HeadBtn label="Suche" onClick={() => setSearchOpen((v) => !v)}>
+                🔍
+              </HeadBtn>
+              <HeadBtn label="Export" onClick={() => void exportActive()}>
+                ⬇
+              </HeadBtn>
+              <Link
+                to="/"
+                className="rounded-xl border border-border/70 px-3 py-2 text-xs font-bold"
+              >
+                App
+              </Link>
+            </div>
+          </details>
         </div>
         {searchOpen && (
           <div className="border-b border-border bg-card/40 px-3 py-2">
@@ -741,7 +832,7 @@ export function LocalChatShell() {
         )}
 
         {/* Quick replies + workout share */}
-        <div className="flex gap-1.5 overflow-x-auto border-t border-border bg-card/40 px-3 py-2">
+        <div className="community-quick-replies flex gap-1.5 overflow-x-auto border-t border-border bg-card/40 px-3 py-2">
           {QUICK_REPLIES.map((q) => (
             <button
               key={q.id}
@@ -836,6 +927,7 @@ export function LocalChatShell() {
             }}
             placeholder={replyTo ? "Antwort schreiben…" : "Nachricht schreiben…"}
             rows={1}
+            disabled={!active}
             className="min-h-12 min-w-0 flex-1 resize-none rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
             style={{ maxHeight: 120 }}
           />

@@ -1441,3 +1441,790 @@ html[data-design-style="performance"] .sport-ai-history-empty {
   font-size: 0.85rem;
   text-align: center;
 }
+
+/* Reference-led interiors: Health cards, a conversation list and a spacious AI canvas.
+   Colors and navigation position continue to come from the user's saved choices. */
+html[data-design-style="performance"] {
+  --sport-header-height: 4rem;
+  --design-heading-font: "Segoe UI", "Inter", system-ui, sans-serif;
+}
+html[data-design-style="performance"] .sport-app-header {
+  height: var(--sport-header-height);
+}
+html[data-design-style="performance"] .sport-app-header-inner {
+  height: 100%;
+  padding-block: 0.5rem;
+}
+html[data-design-style="performance"] .sport-brand small {
+  letter-spacing: 0.08em;
+}
+html[data-design-style="performance"] .sport-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+html[data-design-style="performance"] .sport-design-shortcut {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--secondary);
+}
+html[data-design-style="performance"] .sport-page-intro {
+  margin-bottom: 0.5rem;
+}
+html[data-design-style="performance"] .sport-page-intro h1 {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+html[data-design-style="performance"] .sport-eyebrow {
+  letter-spacing: 0.09em;
+}
+html[data-design-style="performance"] .sport-section-label {
+  margin-block: 1.4rem 0.75rem;
+}
+html[data-design-style="performance"] .sport-section-number,
+html[data-design-style="performance"] .sport-section-line {
+  display: none;
+}
+html[data-design-style="performance"] .sport-section-label h2 {
+  font-size: 1rem;
+  text-transform: none;
+  letter-spacing: -0.02em;
+}
+html[data-design-style="performance"] main .training-hero {
+  border-radius: 2rem !important;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 10%, var(--card)),
+    var(--card)
+  ) !important;
+}
+html[data-design-style="performance"] .training-hero::before {
+  display: none;
+}
+html[data-design-style="performance"] .sport-avatar {
+  border-radius: 50%;
+}
+html[data-design-style="performance"] .sport-profile-shortcuts {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+html[data-design-style="performance"] .sport-profile-shortcuts a {
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: var(--secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+html[data-design-style="performance"] .settings-section {
+  scroll-margin-top: calc(var(--homebar-top-space) + 1rem);
+}
+html[data-design-style="performance"] .health-category-nav {
+  display: flex;
+  padding: 0.4rem;
+  border: 1px solid var(--sport-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+}
+html[data-design-style="performance"] .health-category-nav a {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.6rem 0.2rem;
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+}
+html[data-design-style="performance"] .health-category-nav a:first-child {
+  color: var(--foreground);
+  background: var(--secondary);
+}
+html[data-design-style="performance"] .health-category-nav svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  stroke-width: 1.5;
+}
+html[data-design-style="performance"] main .health-daily-hero {
+  position: relative;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  border-radius: 2rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--primary) 10%, var(--card)),
+    var(--card)
+  );
+  overflow: hidden;
+}
+html[data-design-style="performance"] .health-daily-hero h2 {
+  max-width: 17ch;
+  font-size: clamp(1.7rem, 4vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 1rem 0;
+}
+html[data-design-style="performance"] .health-daily-hero > p:not(.sport-kicker) {
+  max-width: 48ch;
+  color: var(--muted-foreground);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+html[data-design-style="performance"] .health-hero-icon {
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
+  color: var(--primary);
+  opacity: 0.6;
+}
+html[data-design-style="performance"] .health-hero-icon svg {
+  width: 2rem;
+  height: 2rem;
+}
+html[data-design-style="performance"] .health-hero-action {
+  display: flex;
+  width: fit-content;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  margin-left: auto;
+  padding: 0.85rem 1.1rem;
+  border-radius: 999px;
+  background: var(--secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+html[data-design-style="performance"] .health-hero-action svg {
+  width: 1rem;
+  height: 1rem;
+}
+html[data-design-style="performance"] .health-bento-grid > div {
+  min-width: 0;
+  padding: 1.3rem;
+  border: 0;
+  border-radius: 1.75rem;
+  background: var(--card);
+}
+html[data-design-style="performance"] .health-bento-grid > div:first-child {
+  background: color-mix(in srgb, var(--primary) 18%, var(--card));
+}
+html[data-design-style="performance"] .health-bento-grid > div > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.85rem;
+}
+html[data-design-style="performance"] .health-bento-grid svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+html[data-design-style="performance"] .sport-health-page :is([id^="health-"]) {
+  scroll-margin-top: calc(var(--homebar-top-space) + 1rem);
+}
+
+/* The chat canvas is the remaining viewport, not a second nested viewport. */
+html[data-design-style="performance"] main.sport-ai-chat-mode {
+  height: calc(
+    var(--app-viewport-height, 100dvh) - var(--homebar-top-space) - var(--homebar-bottom-space) -
+      var(--sport-header-height)
+  );
+  min-height: 0 !important;
+  padding: 0.6rem 1.25rem 0.75rem !important;
+  gap: 0.5rem !important;
+  overflow: hidden;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-compact-heading {
+  padding-inline: 0.35rem;
+  flex-shrink: 0;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-compact-heading > p {
+  display: none;
+}
+html[data-design-style="performance"] .sport-ai-compact-heading h1 {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+html[data-design-style="performance"] .sport-ai-compact-heading h1 span {
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-hub {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-provider-status {
+  min-height: 1.8rem;
+  padding-inline: 0.35rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-provider-status > div {
+  font-size: 0.68rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-provider-status > button {
+  min-height: 30px;
+  padding: 0.35rem 0.6rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-tabs {
+  border-radius: 999px;
+  padding: 0.2rem;
+  background: var(--card);
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-tabs button {
+  min-height: 36px;
+  padding: 0.4rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-grid {
+  flex: 1 1 0;
+  min-height: 0;
+  gap: 1.5rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-main {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+html[data-design-style="performance"]
+  .sport-ai-chat-mode
+  .sport-ai-chat-main
+  > .sport-section-label {
+  display: none;
+}
+html[data-design-style="performance"] .sport-ai-chat-options {
+  flex-shrink: 0;
+  max-height: 35dvh;
+  overflow: auto;
+  font-size: 0.75rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-options > summary {
+  min-height: 30px;
+  padding-inline: 0.4rem;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+html[data-design-style="performance"] .sport-ai-chat-options .sport-ai-persona-options {
+  position: static;
+  max-width: 100%;
+}
+html[data-design-style="performance"] .sport-ai-chat-options .sport-ai-chat-toolbar {
+  padding: 0.65rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-stage {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  padding: 1rem;
+  border: 0;
+  border-radius: 1.5rem;
+  background: radial-gradient(
+    ellipse at 50% 100%,
+    color-mix(in srgb, var(--primary) 9%, transparent),
+    transparent 70%
+  );
+  box-shadow: none;
+}
+html[data-design-style="performance"] .ai-welcome {
+  padding-block: 1rem;
+}
+html[data-design-style="performance"] .ai-welcome > div {
+  background: transparent;
+  color: var(--primary);
+  width: 3.5rem;
+  height: 3.5rem;
+}
+html[data-design-style="performance"] .ai-welcome svg {
+  width: 2.7rem;
+  height: 2.7rem;
+  stroke-width: 1.4;
+}
+html[data-design-style="performance"] .ai-welcome h3 {
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 450;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+html[data-design-style="performance"] .ai-welcome p {
+  max-width: 30ch;
+  margin-inline: auto;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer {
+  position: static;
+  flex: 0 0 auto;
+  margin: 0;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  border: 0;
+  border-radius: 2rem;
+  background: var(--card);
+  box-shadow: none;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer textarea {
+  order: 1;
+  min-height: 44px;
+  border: 0;
+  padding: 0.7rem 0.4rem;
+  border-radius: 0;
+  background: transparent;
+  font-size: 1rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer button {
+  min-width: 40px;
+  width: 40px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer .ai-new-session {
+  order: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted-foreground);
+}
+html[data-design-style="performance"]
+  .sport-ai-chat-mode
+  .sport-chat-composer
+  button[aria-label="Spracheingabe"] {
+  order: 2;
+  background: transparent;
+}
+html[data-design-style="performance"]
+  .sport-ai-chat-mode
+  .sport-chat-composer
+  button[type="submit"] {
+  order: 3;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-settings-card {
+  flex-shrink: 0;
+  max-height: 38dvh;
+  overflow: auto;
+  padding: 1rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-aside {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Community list and chat: composer stays in flex flow, below the scroll region. */
+html[data-design-style="performance"] .sport-chat-app {
+  height: calc(
+    var(--app-viewport-height, 100dvh) - var(--homebar-top-space) - var(--homebar-bottom-space) -
+      var(--sport-header-height)
+  );
+  min-height: 0;
+}
+html[data-design-style="performance"] .community-mobile-list {
+  display: none;
+}
+html[data-design-style="performance"] .community-conversation {
+  min-height: 0;
+}
+html[data-design-style="performance"] .sport-chat-sidebar {
+  padding: 0;
+  background: var(--background);
+  border: 0;
+}
+html[data-design-style="performance"] .sport-chat-sidebar > div:first-child {
+  border: 0;
+  background: transparent;
+}
+html[data-design-style="performance"] .sport-chat-sidebar > div:first-child .text-sm {
+  font-size: 1.3rem;
+}
+html[data-design-style="performance"] .community-list-controls {
+  padding: 0 1rem 0.5rem;
+}
+html[data-design-style="performance"] .community-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  background: var(--secondary);
+}
+html[data-design-style="performance"] .community-search svg {
+  width: 1.2rem;
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+html[data-design-style="performance"] .community-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.65rem 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-size: 0.9rem;
+}
+html[data-design-style="performance"] .community-filter-chips {
+  display: flex;
+  gap: 0.5rem;
+  margin-block: 0.8rem;
+}
+html[data-design-style="performance"] .community-filter-chips button {
+  min-height: 36px;
+  border: 1px solid var(--sport-line);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+html[data-design-style="performance"] .community-filter-chips button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--primary) 18%, var(--card));
+  color: var(--foreground);
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+}
+html[data-design-style="performance"] .community-list-controls > p {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+html[data-design-style="performance"] .sport-chat-sidebar button.w-full {
+  min-height: 72px;
+  border-radius: 0.9rem;
+  padding: 0.75rem 0.5rem;
+  gap: 0.9rem;
+  background: transparent;
+  color: var(--foreground);
+  box-shadow: none;
+}
+html[data-design-style="performance"] .sport-chat-sidebar button.w-full.bg-primary {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+html[data-design-style="performance"] .community-room-avatar {
+  display: grid;
+  place-items: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 14%, var(--card));
+  color: var(--primary);
+}
+html[data-design-style="performance"] .community-room-avatar svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+html[data-design-style="performance"] .sport-chat-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  padding: 0.7rem 1rem;
+}
+html[data-design-style="performance"] .community-conversation-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+html[data-design-style="performance"] .community-conversation-heading h1 {
+  font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 35vw;
+  letter-spacing: -0.02em;
+}
+html[data-design-style="performance"] .community-conversation-heading p {
+  font-size: 0.65rem;
+  color: var(--muted-foreground);
+}
+html[data-design-style="performance"] .community-conversation-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+html[data-design-style="performance"] .community-back {
+  display: none;
+  width: 36px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+}
+html[data-design-style="performance"] .sport-chat-message-list {
+  min-height: 0;
+  flex: 1 1 0;
+  padding-block: 1rem;
+  overscroll-behavior: contain;
+}
+html[data-design-style="performance"] .community-quick-replies {
+  flex-shrink: 0;
+}
+html[data-design-style="performance"] .sport-chat-app .sport-chat-composer {
+  position: static;
+  bottom: auto;
+  flex: 0 0 auto;
+  padding: 0.6rem;
+  gap: 0.5rem;
+  margin: 0.35rem 0.6rem 0.6rem;
+  border-radius: 2rem;
+}
+html[data-design-style="performance"] .sport-chat-app .sport-chat-composer textarea {
+  min-height: 44px;
+  font-size: 1rem;
+  padding: 0.6rem;
+  border: 0;
+  background: transparent;
+}
+html[data-design-style="performance"] .sport-chat-app .sport-chat-composer button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+@media (max-width: 1023px) {
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-grid {
+    display: flex;
+    flex-direction: column;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-aside {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  html[data-design-style="performance"] main {
+    padding-top: 1.2rem;
+  }
+  html[data-design-style="performance"] .sport-health-page {
+    gap: 1rem;
+  }
+  html[data-design-style="performance"] .sport-health-page .sport-page-intro .sport-intro-actions {
+    display: none;
+  }
+  html[data-design-style="performance"] .sport-intro-description {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-top: 0.6rem;
+  }
+  html[data-design-style="performance"]
+    .sport-chat-app.community-show-list
+    .community-conversation {
+    display: none;
+  }
+  html[data-design-style="performance"] .community-mobile-list {
+    display: block;
+    width: 100%;
+    min-height: 0;
+  }
+  html[data-design-style="performance"]
+    .sport-chat-app.community-show-conversation
+    .community-mobile-list {
+    display: none;
+  }
+  html[data-design-style="performance"] .community-back {
+    display: flex;
+  }
+  html[data-design-style="performance"] .community-conversation-actions {
+    margin-left: auto;
+  }
+  html[data-design-style="performance"] .sport-chat-topbar {
+    padding: 0.4rem 0.6rem;
+  }
+  html[data-design-style="performance"] .sport-chat-app .sport-chat-composer {
+    margin-bottom: 0.6rem;
+  }
+}
+/* All four positions retain both an icon and complete labels at 320px. */
+@media (max-width: 420px) {
+  html .app-homebar {
+    padding-inline: 0.35rem;
+  }
+  html .app-homebar .homebar-items {
+    padding-inline: 0.15rem;
+    gap: 0;
+  }
+  html .app-homebar .homebar-link {
+    flex-direction: column;
+    min-height: 54px;
+    padding: 0.35rem 0.05rem;
+    gap: 0.25rem;
+    font-size: 10px;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+  html .app-homebar .homebar-icon {
+    display: block;
+  }
+  html .app-homebar .homebar-link span {
+    overflow: visible;
+    text-overflow: clip;
+  }
+  html[data-navigation-layout="top"] {
+    --homebar-top-space: calc(4.5rem + env(safe-area-inset-top));
+  }
+  html[data-design-style="performance"] .sport-brand {
+    font-size: 1rem;
+    gap: 0.45rem;
+  }
+  html[data-design-style="performance"] .sport-brand small {
+    display: none;
+  }
+  html[data-design-style="performance"] .sport-menu-trigger {
+    gap: 0.35rem;
+    padding: 0.5rem;
+  }
+  html[data-design-style="performance"] .sport-header-actions {
+    gap: 0.25rem;
+  }
+  html[data-design-style="performance"] .health-bento-grid > div {
+    padding: 1.1rem;
+  }
+  html[data-design-style="performance"] .health-bento-grid .text-4xl {
+    font-size: 1.9rem;
+  }
+}
+
+/* Override panel/input primitives only inside the two actual message composers. */
+html[data-design-style="performance"]
+  :is(.sport-ai-chat-mode, .sport-chat-app)
+  .sport-chat-composer
+  textarea {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.65rem 0.4rem !important;
+  min-height: 44px !important;
+  font-size: 1rem !important;
+}
+html[data-design-style="performance"]
+  :is(.sport-ai-chat-mode, .sport-chat-app)
+  .sport-chat-composer
+  button {
+  padding: 0 !important;
+  flex-shrink: 0;
+}
+html[data-design-style="performance"]
+  .sport-ai-chat-mode
+  .sport-chat-composer
+  button[aria-label="Spracheingabe"] {
+  background: transparent !important;
+}
+html[data-design-style="performance"] .sport-chat-composer svg {
+  flex-shrink: 0;
+}
+html[data-design-style="performance"] .community-room-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 0.3rem;
+}
+html[data-design-style="performance"] .community-room-copy strong {
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+html[data-design-style="performance"] .community-room-copy small {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html[data-design-style="performance"] .community-room-time {
+  align-self: start;
+  padding-top: 0.2rem;
+  font-size: 0.65rem;
+  color: var(--muted-foreground);
+}
+@media (max-width: 420px) {
+  html[data-design-style] .app-homebar .homebar-link {
+    font-size: 10px;
+    letter-spacing: -0.025em;
+    gap: 0.25rem;
+    padding-inline: 0.05rem;
+  }
+}
+
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-main {
+  width: 100%;
+}
+@media (max-width: 1023px) {
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-grid {
+    align-items: stretch;
+  }
+}
+@media (max-width: 350px) {
+  html[data-design-style] .app-homebar .homebar-link {
+    font-size: 9.5px;
+  }
+}
+
+html[data-design-style="performance"] .community-search input {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  min-height: 30px !important;
+  box-shadow: none !important;
+}
+html[data-design-style="performance"] .sport-chat-topbar {
+  flex-wrap: nowrap;
+}
+html[data-design-style="performance"] .community-conversation-heading {
+  flex: 1;
+}
+html[data-design-style="performance"] .community-conversation-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+html[data-design-style="performance"] .community-conversation-menu summary {
+  display: grid;
+  place-items: center;
+  list-style: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+html[data-design-style="performance"] .community-conversation-menu summary::-webkit-details-marker {
+  display: none;
+}
+html[data-design-style="performance"] .community-conversation-menu summary:focus-visible {
+  outline: 2px solid var(--primary);
+}
+html[data-design-style="performance"] .community-conversation-actions {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 40;
+  padding: 0.7rem;
+  border: 1px solid var(--sport-line);
+  border-radius: 1rem;
+  background: var(--card);
+  box-shadow: 0 12px 32px #0004;
+}
+
+html[data-design-style="performance"] .community-conversation-menu summary::before {
+  content: none !important;
+}
+html[data-design-style="performance"] .community-quick-replies {
+  scrollbar-width: none;
+}
+html[data-design-style="performance"] .community-quick-replies::-webkit-scrollbar {
+  display: none;
+}
+
+html[data-design-style="performance"] .community-search {
+  min-height: 52px;
+  padding: 0.5rem 0.9rem;
+}

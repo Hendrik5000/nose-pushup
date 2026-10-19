@@ -1,3 +1,4 @@
+import { Sparkles, Mic, ArrowUp, Plus } from "lucide-react";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -83,7 +84,7 @@ function describeContext(ctx: AppContextPack): string {
   ].join("\n");
 }
 
-function SuperAiPage() {
+export function SuperAiPage() {
   const send = useServerFn(superAiChat);
   const [sessions, setSessions] = useState<AiSession[]>(() => loadSessions());
   const [activeId, setActiveId] = useState<string>(() => {
@@ -109,7 +110,7 @@ function SuperAiPage() {
   const [contextLoading, setContextLoading] = useState(false);
   const [listening, setListening] = useState(false);
   const [lastTask, setLastTask] = useState<AiTask | null>(null);
-  const [sportAiView, setSportAiView] = useState<SportAiView>("coach");
+  const [sportAiView, setSportAiView] = useState<SportAiView>("chat");
   const [, refreshProviderStatus] = useState(0);
   const activeProvider = pickProvider(loadProviders(), lastTask ?? "general");
   const lastFeedback = getMostRecentPlanFeedback(messages);
@@ -173,7 +174,7 @@ function SuperAiPage() {
           messages: messages.slice(-60),
         },
         ...others,
-      ].slice(0, 12);
+      ];
       saveSessions(next);
       return next;
     });
@@ -761,7 +762,9 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
           {sportAiView === "chat" ? (
             <header className="sport-ai-compact-heading">
               <p className="sport-kicker">KI-COACH · CHAT</p>
-              <h1>Coach-Chat</h1>
+              <h1>
+                KI-Coach <span>· {PERSONAS.find((p) => p.id === persona)?.label}</span>
+              </h1>
             </header>
           ) : (
             <SportPageIntro
@@ -805,7 +808,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                   }}
                 >
                   <span>
-                    {view === "chat" ? "Coach-Chat" : view === "history" ? "Verlauf" : "Coach"}
+                    {view === "chat" ? "Chat" : view === "history" ? "Verlauf" : "Aufgaben"}
                   </span>
                   {view === "history" && sessions.length > 0 && (
                     <span className="sport-ai-tab-count" aria-hidden="true">
@@ -1035,85 +1038,88 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
           {sportAiView === "chat" && (
             <div className="sport-ai-chat-grid">
               <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
-                <section className="sport-ai-chat-toolbar rounded-2xl border border-border/70 bg-card/70 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-primary">
-                        {PERSONAS.find((p) => p.id === persona)?.label ?? "Coach"}
-                        {lastTask && <span className="text-muted-foreground"> · {lastTask}</span>}
-                      </p>
-                      <h2 className="truncate text-sm font-bold">{activeTitle}</h2>
-                    </div>
-                    <details className="sport-ai-persona-details">
-                      <summary>Coach-Stil</summary>
-                      <div className="sport-ai-persona-options">
-                        {PERSONAS.map((p) => (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => onPersona(p.id)}
-                            aria-pressed={persona === p.id}
-                          >
-                            <span className="block font-semibold">{p.label}</span>
-                            <span className="text-xs text-muted-foreground">{p.hint}</span>
-                          </button>
-                        ))}
+                <details className="sport-ai-chat-options">
+                  <summary>Gesprächsoptionen & Datenschutz</summary>
+                  <section className="sport-ai-chat-toolbar rounded-2xl border border-border/70 bg-card/70 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-primary">
+                          {PERSONAS.find((p) => p.id === persona)?.label ?? "Coach"}
+                          {lastTask && <span className="text-muted-foreground"> · {lastTask}</span>}
+                        </p>
+                        <h2 className="truncate text-sm font-bold">{activeTitle}</h2>
                       </div>
-                    </details>
-                  </div>
-                  <button
-                    type="button"
-                    className="mt-2 text-xs font-semibold text-muted-foreground"
-                    onClick={() => setContextOpen((v) => !v)}
-                  >
-                    {contextOpen ? "Kontextdetails ausblenden" : "Welche App-Daten gehen mit?"}
-                  </button>
-                </section>
-                {contextOpen && (
-                  <section className="rounded-[1.5rem] border border-border/70 bg-card/75 p-5 text-sm">
-                    <h3 className="font-bold">App-Kontext & Datenschutz</h3>
-                    <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
-                      {contextLoading
-                        ? "App-Daten werden geladen …"
-                        : appContext
-                          ? describeContext(appContext)
-                          : userId
-                            ? "App-Kontext gerade nicht verfügbar; es werden keine App-Daten ergänzt."
-                            : "Noch nicht angemeldet oder kein App-Kontext geladen; es werden keine App-Daten ergänzt."}
-                    </p>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Deine Eingabe und dieser Chatverlauf werden ergänzt. Fehlende Werte bleiben
-                      unbekannt. Routing heißt: Die App wählt passend zur Frage ein Modell.
-                    </p>
+                      <details className="sport-ai-persona-details">
+                        <summary>Coach-Stil</summary>
+                        <div className="sport-ai-persona-options">
+                          {PERSONAS.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => onPersona(p.id)}
+                              aria-pressed={persona === p.id}
+                            >
+                              <span className="block font-semibold">{p.label}</span>
+                              <span className="text-xs text-muted-foreground">{p.hint}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                    <button
+                      type="button"
+                      className="mt-2 text-xs font-semibold text-muted-foreground"
+                      onClick={() => setContextOpen((v) => !v)}
+                    >
+                      {contextOpen ? "Kontextdetails ausblenden" : "Welche App-Daten gehen mit?"}
+                    </button>
                   </section>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <SmallAction onClick={regenerate} disabled={loading || messages.length === 0}>
-                    Neu generieren
-                  </SmallAction>
-                  <SmallAction onClick={exportChat} disabled={messages.length === 0}>
-                    Chat exportieren
-                  </SmallAction>
-                  <SmallAction
-                    onClick={() => {
-                      setMessages([]);
-                      setError(null);
-                    }}
-                  >
-                    Verlauf leeren
-                  </SmallAction>
-                </div>
+                  {contextOpen && (
+                    <section className="rounded-[1.5rem] border border-border/70 bg-card/75 p-5 text-sm">
+                      <h3 className="font-bold">App-Kontext & Datenschutz</h3>
+                      <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
+                        {contextLoading
+                          ? "App-Daten werden geladen …"
+                          : appContext
+                            ? describeContext(appContext)
+                            : userId
+                              ? "App-Kontext gerade nicht verfügbar; es werden keine App-Daten ergänzt."
+                              : "Noch nicht angemeldet oder kein App-Kontext geladen; es werden keine App-Daten ergänzt."}
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Deine Eingabe und dieser Chatverlauf werden ergänzt. Fehlende Werte bleiben
+                        unbekannt. Routing heißt: Die App wählt passend zur Frage ein Modell.
+                      </p>
+                    </section>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <SmallAction onClick={regenerate} disabled={loading || messages.length === 0}>
+                      Neu generieren
+                    </SmallAction>
+                    <SmallAction onClick={exportChat} disabled={messages.length === 0}>
+                      Chat exportieren
+                    </SmallAction>
+                    <SmallAction
+                      onClick={() => {
+                        setMessages([]);
+                        setError(null);
+                      }}
+                    >
+                      Verlauf leeren
+                    </SmallAction>
+                  </div>
+                </details>
                 <SportSectionLabel number="01">Gesprächsverlauf</SportSectionLabel>
                 <div
                   ref={scrollRef}
                   className="sport-chat-stage flex min-h-[38vh] flex-1 flex-col gap-4 overflow-y-auto rounded-[2rem] border border-border/70 bg-card/55 p-4 shadow-sm sm:p-6"
                 >
                   {messages.length === 0 && (
-                    <div className="mx-auto my-auto max-w-lg py-8 text-center">
+                    <div className="ai-welcome mx-auto my-auto max-w-lg py-8 text-center">
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-primary/10 text-3xl">
-                        ⚡
+                        <Sparkles aria-hidden="true" />
                       </div>
-                      <h3 className="mt-4 text-xl font-bold">Womit kann ich dich unterstützen?</h3>
+                      <h3 className="mt-4 text-xl font-bold">Hallo, lass uns loslegen.</h3>
                       <p className="mt-2 text-sm text-muted-foreground">
                         Frag nach Training, Erholung oder deinen gespeicherten Werten.
                       </p>
@@ -1239,11 +1245,19 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                 >
                   <button
                     type="button"
+                    onClick={startNewSession}
+                    className="ai-new-session"
+                    aria-label="Neuer Chat"
+                  >
+                    <Plus aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
                     onClick={toggleVoice}
                     className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
                     aria-label="Spracheingabe"
                   >
-                    🎤
+                    <Mic className="h-5 w-5" aria-hidden="true" />
                   </button>
                   <textarea
                     value={input}
@@ -1254,7 +1268,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                         void submit();
                       }
                     }}
-                    placeholder="Deine Frage an Super-AI…"
+                    placeholder="Deine Frage…"
                     aria-label="Deine Frage an den KI-Coach"
                     rows={1}
                     className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
@@ -1267,7 +1281,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                     disabled={loading || !input.trim()}
                     className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
                   >
-                    Senden ↑
+                    <ArrowUp className="h-5 w-5" aria-hidden="true" />
                   </button>
                 </form>
               </div>

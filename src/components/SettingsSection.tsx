@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Activity,
   Award,
@@ -16,6 +16,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouterState } from "@tanstack/react-router";
 
 /**
  * Samsung-Settings-artiger aufklappbarer Abschnitt:
@@ -26,15 +27,37 @@ export function SettingsSection({
   title,
   subtitle,
   defaultOpen = false,
+  id,
   children,
 }: {
   icon: ReactNode;
   title: string;
   subtitle?: string;
   defaultOpen?: boolean;
+  id?: string;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const routeHash = useRouterState({ select: (state) => state.location.hash });
+  useEffect(() => {
+    if (!id) return;
+    let scrollTimer: ReturnType<typeof setTimeout> | undefined;
+    const reveal = () => {
+      if (window.location.hash === `#${id}`) {
+        setOpen(true);
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+          document.getElementById(id)?.scrollIntoView({ block: "start" });
+        }, 350);
+      }
+    };
+    reveal();
+    window.addEventListener("hashchange", reveal);
+    return () => {
+      clearTimeout(scrollTimer);
+      window.removeEventListener("hashchange", reveal);
+    };
+  }, [id, routeHash]);
   const SportIcon = title.includes("Coach")
     ? Brain
     : title.includes("Freund")
@@ -62,7 +85,10 @@ export function SettingsSection({
                           : SlidersHorizontal;
 
   return (
-    <section className="settings-section overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur">
+    <section
+      id={id}
+      className="settings-section overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur"
+    >
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
