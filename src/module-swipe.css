@@ -1,0 +1,88 @@
+/* Only deliberate module swipes animate; the header and settings stay still. */
+.alo-module-surface {
+  min-width: 0;
+}
+
+html[data-module-swipe] .alo-module-surface {
+  view-transition-name: alo-module;
+}
+
+html[data-module-swipe]::view-transition-old(root),
+html[data-module-swipe]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html[data-module-swipe]::view-transition-group(alo-module) {
+  animation-duration: 280ms;
+  overflow: clip;
+}
+
+html[data-module-swipe]::view-transition-old(alo-module),
+html[data-module-swipe]::view-transition-new(alo-module) {
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  mix-blend-mode: normal;
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
+html[data-module-swipe="left"]::view-transition-old(alo-module) {
+  animation-name: alo-swipe-out-left;
+}
+html[data-module-swipe="left"]::view-transition-new(alo-module) {
+  animation-name: alo-swipe-in-left;
+}
+html[data-module-swipe="right"]::view-transition-old(alo-module) {
+  animation-name: alo-swipe-out-right;
+}
+html[data-module-swipe="right"]::view-transition-new(alo-module) {
+  animation-name: alo-swipe-in-right;
+}
+
+@keyframes alo-swipe-out-left {
+  to {
+    transform: translateX(-24%);
+    opacity: 0;
+  }
+}
+@keyframes alo-swipe-in-left {
+  from {
+    transform: translateX(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes alo-swipe-out-right {
+  to {
+    transform: translateX(24%);
+    opacity: 0;
+  }
+}
+@keyframes alo-swipe-in-right {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-module-swipe]::view-transition-group(alo-module),
+  html[data-module-swipe]::view-transition-old(alo-module),
+  html[data-module-swipe]::view-transition-new(alo-module) {
+    animation: none;
+  }
+}
+
+html[data-module-swipe] .route-enter {
+  animation: none;
+}

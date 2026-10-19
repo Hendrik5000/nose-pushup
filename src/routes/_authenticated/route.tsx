@@ -5,7 +5,7 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
 import { WelcomeTour } from "@/components/WelcomeTour";
@@ -13,6 +13,9 @@ import { TopNav } from "@/components/TopNav";
 import { SportAppHeader } from "@/components/SportAppHeader";
 import { applyNavigationVisibility, getNavigationVisible } from "@/lib/navigation-layout";
 import { getSwipeDestination, isModuleSwipeBlocked } from "@/lib/module-navigation";
+import { startModuleSwipeTransition } from "@/lib/module-swipe-transition";
+import "@/module-swipe.css";
+import "@/module-menu.css";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -29,6 +32,10 @@ function AuthenticatedLayout() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const surface = useRef<HTMLDivElement>(null);
+  const swipeTransition = useRef<ReturnType<typeof startModuleSwipeTransition> | null>(null);
+
+  useEffect(() => () => swipeTransition.current?.cancel(), []);
 
   useEffect(() => {
     applyNavigationVisibility(getNavigationVisible());
@@ -38,6 +45,10 @@ function AuthenticatedLayout() {
     let start: { x: number; y: number; target: EventTarget | null } | null = null;
     const down = (event: PointerEvent) => {
       if (event.pointerType !== "touch" || event.isPrimary === false) return;
+      if (swipeTransition.current) {
+        start = null;
+        return;
+      }
       if (document.querySelector('[aria-modal="true"], [role="dialog"], #sport-area-menu')) {
         start = null;
         return;
@@ -75,7 +86,19 @@ function AuthenticatedLayout() {
         isModuleSwipeBlocked(event.target, pathname);
       const destination = getSwipeDestination(pathname, dx, dy, blocked);
       start = null;
-      if (destination) void navigate({ to: destination });
+      if (destination && !swipeTransition.current) {
+        const transition = startModuleSwipeTransition(
+          surface.current,
+          dx < 0 ? "left" : "right",
+          () => navigate({ to: destination, viewTransition: false }),
+        );
+        swipeTransition.current = transition;
+        void transition.finished
+          .catch((error: unknown) => console.error("Alo module swipe navigation failed", error))
+          .finally(() => {
+            if (swipeTransition.current === transition) swipeTransition.current = null;
+          });
+      }
     };
     const cancel = () => {
       start = null;
@@ -117,7 +140,9 @@ function AuthenticatedLayout() {
     <div className="authenticated-shell min-h-[100dvh]">
       <TopNav />
       <SportAppHeader />
-      <Outlet />
+      <div ref={surface} className="alo-module-surface">
+        <Outlet />
+      </div>
       <WelcomeTour userId={user.id} />
     </div>
   );

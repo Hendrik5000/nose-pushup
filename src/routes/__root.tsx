@@ -23,7 +23,7 @@ import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
 import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
 import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
-
+import { swipeScreenFromPath } from "@/lib/module-navigation";
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -168,7 +168,8 @@ function RootComponent() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [installable, setInstallable] = useState(false);
   const [standalone, setStandalone] = useState(false);
-  const [routeKey, setRouteKey] = useState(pathname);
+  // Keep the shared shell mounted between modules so a swipe can finish.
+  const routeKey = swipeScreenFromPath(pathname) ? "alo-swipe-screens" : pathname;
   const [fullscreenRequested, setFullscreenRequested] = useState(false);
 
   const updateViewportHeight = () => {
@@ -282,10 +283,6 @@ function RootComponent() {
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [fullscreenRequested]);
-
-  useEffect(() => {
-    setRouteKey(pathname);
-  }, [pathname]);
 
   useEffect(() => {
     let unsub: { unsubscribe: () => void } | undefined;

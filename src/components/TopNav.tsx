@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { House, Dumbbell, Sparkles, MessageCircle, UserRound, Settings2 } from "lucide-react";
 import { updateNavigationForScroll } from "@/lib/navigation-layout";
+import { useAutoHideModuleMenu } from "@/hooks/useAutoHideModuleMenu";
 
 const ITEMS = [
   { to: "/", label: "Nose-Pushup", icon: House },
@@ -19,6 +20,7 @@ const MODULES = [
 /** Slim keyboard-accessible module switcher remains available when the full nav is hidden. */
 export function TopNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const moduleMenu = useAutoHideModuleMenu(pathname);
   const [enabled, setEnabled] = useState(false);
   const [scrollVisible, setScrollVisible] = useState(true);
   useEffect(() => {
@@ -59,7 +61,15 @@ export function TopNav() {
   }, [barVisible]);
   return (
     <>
-      <nav className="alo-module-switcher" aria-label="Alo · Module">
+      <nav
+        ref={moduleMenu.menuRef}
+        className="alo-module-switcher"
+        aria-label="Alo · Module"
+        data-visible={moduleMenu.visible}
+        onFocusCapture={moduleMenu.reveal}
+        onBlurCapture={moduleMenu.scheduleHide}
+        onPointerMove={moduleMenu.reveal}
+      >
         {MODULES.map((module) => {
           const active = module.to === "/" ? pathname === "/" : pathname === module.to;
           return (
@@ -73,7 +83,12 @@ export function TopNav() {
             </Link>
           );
         })}
-        <Link to="/profile" className="alo-module-settings" aria-label="Einstellungen und Profil">
+        <Link
+          to="/profile"
+          className="alo-module-settings"
+          aria-label="Einstellungen und Profil"
+          aria-current={pathname === "/profile" ? "page" : undefined}
+        >
           <Settings2 aria-hidden="true" />
         </Link>
       </nav>

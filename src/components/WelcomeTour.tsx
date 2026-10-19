@@ -20,7 +20,7 @@ const STEPS: Step[] = [
   {
     icon: "↔",
     title: "Zwischen Modulen wischen",
-    body: "Auf einer freien Stelle horizontal wischen: links führt zum nächsten Modul, rechts zum vorherigen. Vertikales Scrollen bleibt normal. Formulare, Chat-Eingaben, Dialoge, Karussells und aktive Workouts sind vom Wechsel ausgenommen.",
+    body: "Auf einer freien Stelle horizontal wischen: nach links geht es von Nose-Pushup über Mira und Nexus Chat zu den Einstellungen. Nach rechts geht es zurück. Einstellungen sind ein eigener Bildschirm, kein viertes Modul. Vertikales Scrollen bleibt normal. Formulare, Chat-Eingaben, Dialoge, Karussells und aktive Workouts sind vom Wechsel ausgenommen.",
   },
   {
     icon: "✍️",
@@ -30,7 +30,7 @@ const STEPS: Step[] = [
   {
     icon: "⚙️",
     title: "Kompakt starten, alles behalten",
-    body: "Tippe oben auf Nose, Mira oder Nexus, wenn du nicht wischen möchtest. Das Einstellungssymbol öffnet dein Profil, Design, Farben und Widgets. Die große Menüleiste ist anfangs aus; aktivierst du sie, verschwindet sie beim Herunterscrollen und erscheint beim Hochscrollen wieder. Diese Tour kannst du im Profil wiederholen.",
+    body: "Tippe oben auf Nose, Mira oder Nexus, wenn du nicht wischen möchtest. Das kompakte Menü blendet sich nach zwei Sekunden aus und gibt den Platz frei. Nach einem Seitenwechsel oder einer Berührung am oberen Bildschirmrand erscheint es kurz wieder; mit der Maus genügt der obere Rand. Die Design-Schaltfläche bleibt als direkter Weg zu den Einstellungen sichtbar. Die große Menüleiste ist anfangs aus; aktivierst du sie, verschwindet sie beim Herunterscrollen und erscheint beim Hochscrollen wieder. Diese Tour kannst du im Profil wiederholen.",
   },
 ];
 const VERSION = "v2";

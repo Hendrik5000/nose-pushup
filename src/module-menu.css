@@ -1,0 +1,50 @@
+/* The compact menu is fixed; release its reserved padding when it fades away. */
+.alo-module-switcher {
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease;
+}
+.alo-module-switcher[data-visible="false"] {
+  transform: translate(-50%, -150%);
+  opacity: 0;
+  pointer-events: none;
+}
+.alo-module-switcher:has(:focus-visible) {
+  transform: translateX(-50%);
+  opacity: 1;
+  pointer-events: auto;
+}
+.authenticated-shell {
+  transition: padding-top 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Higher specificity than the optional-bar overrides in all design families. */
+html:root[data-module-menu-visible="false"][data-navigation-layout][data-navigation-visible]
+  .authenticated-shell {
+  --homebar-top-space: env(safe-area-inset-top, 0px) !important;
+}
+html:root[data-module-menu-visible="false"][data-navigation-visible="true"][data-navigation-expanded="true"]:is(
+    [data-navigation-layout="top"],
+    [data-navigation-layout="top-tabs"]
+  )
+  .authenticated-shell {
+  --homebar-top-space: calc(3.2rem + env(safe-area-inset-top)) !important;
+}
+html:root[data-module-menu-visible="false"][data-navigation-visible="true"]:is(
+    [data-navigation-layout="top"],
+    [data-navigation-layout="top-tabs"]
+  )
+  .app-homebar {
+  top: 0;
+}
+.alo-module-settings[aria-current="page"] {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alo-module-switcher,
+  .authenticated-shell {
+    transition: none;
+  }
+}
