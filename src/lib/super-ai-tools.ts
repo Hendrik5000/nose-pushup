@@ -168,6 +168,7 @@ export type AiSession = {
     role: "user" | "assistant";
     content: string;
     plan?: AiWorkoutPlan;
+    media?: import("./runware").RunwareResult;
     feedback?: PlanFeedback;
     meta?: { provider?: string; model?: string; task?: string };
   }>;

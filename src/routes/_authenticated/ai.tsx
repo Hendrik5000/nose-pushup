@@ -1,3 +1,4 @@
+import { MiraRunwareResult } from "@/components/alo/MiraRunwareResult";
 import { MiraSources } from "@/components/alo/MiraSources";
 import {
   Sparkles,
@@ -19,6 +20,7 @@ import {
   removeAlo,
 } from "@/lib/alo-store";
 import { MiraContextControls } from "@/components/alo/MiraContextControls";
+import { MiraRunwareTools } from "@/components/alo/MiraRunwareTools";
 import { ContentActions } from "@/components/alo/ContentActions";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -125,6 +127,7 @@ export function SuperAiPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [runwareOpen, setRunwareOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(true);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
@@ -688,6 +691,13 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                 KI-Anbieter und API-Zugangsdaten
               </div>
               <AiProviderSettings />
+              <button
+                type="button"
+                className="alo-text-action"
+                onClick={() => setRunwareOpen(true)}
+              >
+                Runware · Text & Medien erweitern
+              </button>
             </section>
           )}
 
@@ -778,6 +788,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                   }
                 >
                   <p className="whitespace-pre-wrap">{m.content}</p>
+                  {m.media && <MiraRunwareResult result={m.media} />}
                   {userId && (
                     <ContentActions
                       userId={userId}
@@ -949,6 +960,15 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                     <span aria-hidden="true">•••</span>
                   </summary>
                   <div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        setRunwareOpen(true);
+                        e.currentTarget.closest("details")?.removeAttribute("open");
+                      }}
+                    >
+                      Runware · Text & Medien
+                    </button>
                     {(["chat", "history", "coach"] as const).map((view) => (
                       <button
                         key={view}
@@ -1046,6 +1066,13 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
               <AiProviderSettings
                 onSaved={() => refreshProviderStatus((revision) => revision + 1)}
               />
+              <button
+                type="button"
+                className="alo-text-action"
+                onClick={() => setRunwareOpen(true)}
+              >
+                Runware · Text & Medien erweitern
+              </button>
             </section>
           )}
           {sportAiView !== "chat" && (
@@ -1413,6 +1440,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                         className={`sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/70 bg-background/80"}`}
                       >
                         <p className="whitespace-pre-wrap">{m.content}</p>
+                        {m.media && <MiraRunwareResult result={m.media} />}
                         {m.role === "assistant" && m.plan && (
                           <section className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
                             <div className="text-xs font-bold uppercase tracking-wider text-primary">
@@ -1663,6 +1691,24 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
           <BottomNav />
         </main>
       </DesignView>
+      <MiraRunwareTools
+        open={runwareOpen}
+        onOpenChange={setRunwareOpen}
+        userId={userId}
+        onKeepInChat={(result) => {
+          setMessages((current) => [
+            ...current,
+            {
+              role: "assistant",
+              content:
+                result.text ?? `Mira-Werkzeugergebnis · ${result.model}\n${result.url ?? ""}`,
+              media: result,
+              meta: { provider: "runware", model: result.model, task: result.capability },
+            },
+          ]);
+          setSportAiView("chat");
+        }}
+      />
     </>
   );
 }
