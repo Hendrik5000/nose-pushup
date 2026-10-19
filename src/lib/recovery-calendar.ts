@@ -39,7 +39,8 @@ function stressForExercise(exerciseId: string): Joint[] {
   const skill = skillById.get(exerciseId) as CaliSkill | undefined;
   if (skill) return skill.stress;
   // Heuristics for base exercises
-  if (exerciseId === "pushup" || exerciseId === "burpee") return ["wrist", "shoulder", "elbow", "core"];
+  if (exerciseId === "pushup" || exerciseId === "burpee")
+    return ["wrist", "shoulder", "elbow", "core"];
   if (exerciseId === "plank") return ["wrist", "core", "shoulder"];
   if (exerciseId === "squat") return ["core"];
   if (exerciseId === "situp") return ["core"];
@@ -99,11 +100,7 @@ export function summarizeJoints(week: DayLoad[]): JointSummary[] {
 
     const level = score >= 65 ? "red" : score >= 35 ? "yellow" : "green";
     const label =
-      level === "red"
-        ? "Stark belastet"
-        : level === "yellow"
-          ? "Leicht belastet"
-          : "Erholt";
+      level === "red" ? "Stark belastet" : level === "yellow" ? "Leicht belastet" : "Erholt";
     return { joint, score, level, label };
   });
 }

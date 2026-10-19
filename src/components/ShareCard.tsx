@@ -11,7 +11,13 @@ export type ShareStats = {
  * Erzeugt aus Trainingswerten eine teilbare Bildkarte (Canvas) und nutzt
  * das native Teilen-Menü, sonst Download.
  */
-export function ShareCard({ stats, label = "Ergebnis teilen" }: { stats: ShareStats; label?: string }) {
+export function ShareCard({
+  stats,
+  label = "Ergebnis teilen",
+}: {
+  stats: ShareStats;
+  label?: string;
+}) {
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
 

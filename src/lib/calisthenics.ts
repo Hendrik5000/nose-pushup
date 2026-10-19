@@ -38,7 +38,7 @@ export const CALI_PATHS: CaliPath[] = [
     id: "planche",
     name: "Planche",
     icon: "🤸",
-    color: "oklch(0.75 0.18 90)",   // yellow-gold
+    color: "oklch(0.75 0.18 90)", // yellow-gold
     skills: [
       {
         id: "cali_planche_lean",
@@ -57,7 +57,8 @@ export const CALI_PATHS: CaliPath[] = [
         id: "cali_pseudo_pushup",
         name: "Pseudo Planche Push-Up",
         icon: "💪",
-        description: "Push-Up mit nach hinten zeigenden Fingern und vorgelagertem Körperschwerpunkt.",
+        description:
+          "Push-Up mit nach hinten zeigenden Fingern und vorgelagertem Körperschwerpunkt.",
         unit: "reps",
         detection_type: "touch",
         unlock_threshold: 15,
@@ -124,7 +125,7 @@ export const CALI_PATHS: CaliPath[] = [
     id: "front_lever",
     name: "Front Lever",
     icon: "🎯",
-    color: "oklch(0.70 0.18 200)",  // cyan-blue
+    color: "oklch(0.70 0.18 200)", // cyan-blue
     skills: [
       {
         id: "cali_dead_hang",
@@ -197,7 +198,7 @@ export const CALI_PATHS: CaliPath[] = [
     id: "handstand",
     name: "Handstand",
     icon: "🙃",
-    color: "oklch(0.72 0.18 300)",  // violet
+    color: "oklch(0.72 0.18 300)", // violet
     skills: [
       {
         id: "cali_wall_hs",
@@ -263,10 +264,7 @@ export function allSkills(): CaliSkill[] {
 }
 
 /** Get a skill's current status given the user's personal bests. */
-export function getSkillStatus(
-  bests: Record<string, number>,
-  skill: CaliSkill,
-): SkillStatus {
+export function getSkillStatus(bests: Record<string, number>, skill: CaliSkill): SkillStatus {
   // Check if prerequisite is met
   if (skill.prerequisite) {
     const prereqBest = bests[skill.prerequisite] ?? 0;
@@ -279,13 +277,8 @@ export function getSkillStatus(
 }
 
 /** Get the recommended skill to train today for a given path. */
-export function getRecommendedSkill(
-  bests: Record<string, number>,
-  path: CaliPath,
-): CaliSkill {
-  const active = path.skills.find(
-    (s) => getSkillStatus(bests, s) === "active",
-  );
+export function getRecommendedSkill(bests: Record<string, number>, path: CaliPath): CaliSkill {
+  const active = path.skills.find((s) => getSkillStatus(bests, s) === "active");
   return active ?? path.skills[path.skills.length - 1];
 }
 
@@ -300,14 +293,14 @@ export function skillProgress(bests: Record<string, number>, skill: CaliSkill): 
 export type FatigueLevel = "green" | "yellow" | "red";
 
 export type CheckinData = {
-  energy: number;     // 1–5
-  soreness: number;   // 1–5 (joints)
-  date: string;       // YYYY-MM-DD
+  energy: number; // 1–5
+  soreness: number; // 1–5 (joints)
+  date: string; // YYYY-MM-DD
 };
 
 export function getFatigueLevel(
   workoutsLast7Days: number,
-  avgSoreness: number,  // 1–5
+  avgSoreness: number, // 1–5
 ): FatigueLevel {
   if (avgSoreness >= 4 || workoutsLast7Days >= 7) return "red";
   if (avgSoreness >= 3 || workoutsLast7Days >= 5) return "yellow";

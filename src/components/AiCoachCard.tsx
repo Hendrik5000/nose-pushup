@@ -18,7 +18,9 @@ export function AiCoachCard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [focus, setFocus] = useState("Starte heute mit einem sauberen Set und baue dir sofort Vertrauen auf.");
+  const [focus, setFocus] = useState(
+    "Starte heute mit einem sauberen Set und baue dir sofort Vertrauen auf.",
+  );
 
   const load = async (force = false) => {
     if (force) setRefreshing(true);
@@ -42,8 +44,17 @@ export function AiCoachCard() {
       if (!u.user || !active) return;
       const today = new Date().toISOString().slice(0, 10);
       const [{ data: profile }, { data: stats }] = await Promise.all([
-        supabase.from("profiles").select("best_count, current_streak").eq("id", u.user.id).maybeSingle(),
-        supabase.from("daily_stats").select("total_reps").eq("user_id", u.user.id).eq("day", today).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("best_count, current_streak")
+          .eq("id", u.user.id)
+          .maybeSingle(),
+        supabase
+          .from("daily_stats")
+          .select("total_reps")
+          .eq("user_id", u.user.id)
+          .eq("day", today)
+          .maybeSingle(),
       ]);
       const best = (profile as { best_count?: number } | null)?.best_count ?? 0;
       const streak = (profile as { current_streak?: number } | null)?.current_streak ?? 0;
@@ -59,9 +70,7 @@ export function AiCoachCard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const canRefresh = data
-    ? Date.now() - +new Date(data.cached_at) > 60 * 60 * 1000
-    : true;
+  const canRefresh = data ? Date.now() - +new Date(data.cached_at) > 60 * 60 * 1000 : true;
 
   return (
     <section className="mt-6 overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card/70 to-card/60 p-5 backdrop-blur">
@@ -107,10 +116,10 @@ export function AiCoachCard() {
           <div className="space-y-3">
             <p>{data.advice}</p>
             <div className="rounded-2xl border border-primary/20 bg-background/50 p-3 text-xs text-muted-foreground">
-              <div className="font-semibold uppercase tracking-[0.2em] text-primary">Coach-Fokus</div>
-              <div className="mt-1 text-sm text-foreground">
-                {focus}
+              <div className="font-semibold uppercase tracking-[0.2em] text-primary">
+                Coach-Fokus
               </div>
+              <div className="mt-1 text-sm text-foreground">{focus}</div>
             </div>
           </div>
         )}

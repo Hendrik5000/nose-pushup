@@ -117,7 +117,9 @@ export function DashboardGrid({
             Hinzufügen
           </div>
           {missing.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Alle Widgets sind bereits auf der Übersicht.</p>
+            <p className="text-xs text-muted-foreground">
+              Alle Widgets sind bereits auf der Übersicht.
+            </p>
           ) : (
             <ul className="grid grid-cols-2 gap-2">
               {missing.map((w) => (
@@ -128,7 +130,9 @@ export function DashboardGrid({
                     className="w-full rounded-xl border border-border bg-secondary/40 px-2 py-2 text-left text-xs transition active:scale-[0.98]"
                   >
                     <span className="font-semibold text-foreground">{w.label}</span>
-                    <span className="mt-0.5 block text-[10px] text-muted-foreground">{w.description}</span>
+                    <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                      {w.description}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -191,7 +195,10 @@ export function DashboardGrid({
                   >
                     ×
                   </button>
-                  <span className="cursor-grab px-1 text-[10px] text-muted-foreground" title="Ziehen">
+                  <span
+                    className="cursor-grab px-1 text-[10px] text-muted-foreground"
+                    title="Ziehen"
+                  >
                     ⋮⋮
                   </span>
                 </div>

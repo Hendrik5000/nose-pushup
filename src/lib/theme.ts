@@ -6,7 +6,12 @@ export const THEMES: Array<{
   description: string;
   swatch: [string, string];
 }> = [
-  { id: "solar", label: "Health", description: "Apple-Warm (Orange)", swatch: ["#ff6b2c", "#1c1c1e"] },
+  {
+    id: "solar",
+    label: "Health",
+    description: "Apple-Warm (Orange)",
+    swatch: ["#ff6b2c", "#1c1c1e"],
+  },
   { id: "ember", label: "Ember", description: "Glut & Rot", swatch: ["#ff453a", "#2c1210"] },
   { id: "aqua", label: "Aqua", description: "Kühles Cyan", swatch: ["#64d2ff", "#0a1620"] },
   { id: "neon", label: "Neon", description: "Aktiv-Grün", swatch: ["#30d158", "#0c1610"] },

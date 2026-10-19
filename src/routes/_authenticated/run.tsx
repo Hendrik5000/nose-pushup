@@ -10,7 +10,8 @@ export const Route = createFileRoute("/_authenticated/run")({
       { title: "Lauf aufzeichnen — Nose Push" },
       {
         name: "description",
-        content: "Zeichne deine Läufe per GPS auf: Distanz, Tempo, Dauer und Kalorien in einer Ansicht.",
+        content:
+          "Zeichne deine Läufe per GPS auf: Distanz, Tempo, Dauer und Kalorien in einer Ansicht.",
       },
       { property: "og:title", content: "Lauf aufzeichnen — Nose Push" },
       { property: "og:description", content: "GPS-Lauftracking mit Distanz, Tempo und Kalorien." },
@@ -74,7 +75,9 @@ function RunPage() {
   const pausedRef = useRef(false);
   const lastPointTs = useRef<number>(0);
 
-  useEffect(() => { pausedRef.current = paused; }, [paused]);
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
 
   const loadRuns = async () => {
     const { data } = await supabase
@@ -162,7 +165,7 @@ function RunPage() {
           // 4. Implied speed sanity check: skip if > 10 m/s (~36 km/h, generous for sprinting)
           //    and skip if < 0.5 m (pure noise / standing still)
           const impliedSpeed = dtSec > 0 ? d / dtSec : 0;
-          if (d < 0.5) return;   // standing still / noise
+          if (d < 0.5) return; // standing still / noise
           if (impliedSpeed > 10) return; // GPS jump — teleportation
 
           // 5. Double-check with device speed if available (more accurate than calculated)

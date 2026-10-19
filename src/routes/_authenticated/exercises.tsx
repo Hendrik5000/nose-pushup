@@ -111,8 +111,8 @@ function ExercisesPage() {
               </div>
               <h2 className="mt-1.5 text-3xl font-bold tracking-tight">Calisthenics 🤸</h2>
               <p className="mt-1.5 text-sm text-muted-foreground text-pretty leading-relaxed">
-                Planche · Front Lever · Handstand — strukturiertes Skill-Training mit
-                Progression Gates, Belastungssteuerung und täglichem Check-in.
+                Planche · Front Lever · Handstand — strukturiertes Skill-Training mit Progression
+                Gates, Belastungssteuerung und täglichem Check-in.
               </p>
             </div>
           </div>
@@ -187,41 +187,45 @@ function ExercisesPage() {
           </div>
         )}
 
-        {exercises.filter((ex) => !ex.id.startsWith("cali_")).map((ex) => {
-          const best = bests[ex.id] ?? 0;
-          return (
-            <Link
-              key={ex.id}
-              to="/workout/$exerciseId"
-              params={{ exerciseId: ex.id }}
-              className="group flex items-center gap-4 rounded-3xl border border-border bg-card/50 p-4 backdrop-blur transition active:scale-[0.98] hover:border-primary/40"
-            >
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-background/50 text-3xl">
-                {ex.icon}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-semibold text-foreground">{ex.name}</span>
-                  <span className="rounded-full border border-border bg-secondary/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.15em] text-muted-foreground">
-                    {DETECTION_LABEL[ex.detection_type]}
-                  </span>
+        {exercises
+          .filter((ex) => !ex.id.startsWith("cali_"))
+          .map((ex) => {
+            const best = bests[ex.id] ?? 0;
+            return (
+              <Link
+                key={ex.id}
+                to="/workout/$exerciseId"
+                params={{ exerciseId: ex.id }}
+                className="group flex items-center gap-4 rounded-3xl border border-border bg-card/50 p-4 backdrop-blur transition active:scale-[0.98] hover:border-primary/40"
+              >
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-background/50 text-3xl">
+                  {ex.icon}
                 </div>
-                {ex.description && (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{ex.description}</p>
-                )}
-                <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                  Best:{" "}
-                  <span className="tabular-nums text-foreground">
-                    {best > 0 ? `${best}${ex.unit === "seconds" ? "s" : ""}` : "—"}
-                  </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-semibold text-foreground">{ex.name}</span>
+                    <span className="rounded-full border border-border bg-secondary/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.15em] text-muted-foreground">
+                      {DETECTION_LABEL[ex.detection_type]}
+                    </span>
+                  </div>
+                  {ex.description && (
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {ex.description}
+                    </p>
+                  )}
+                  <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    Best:{" "}
+                    <span className="tabular-nums text-foreground">
+                      {best > 0 ? `${best}${ex.unit === "seconds" ? "s" : ""}` : "—"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <span className="text-lg text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary">
-                →
-              </span>
-            </Link>
-          );
-        })}
+                <span className="text-lg text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary">
+                  →
+                </span>
+              </Link>
+            );
+          })}
       </section>
 
       <BottomNav />

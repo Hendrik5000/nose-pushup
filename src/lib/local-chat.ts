@@ -96,11 +96,7 @@ export function createRoom(userId: string, name: string): LocalRoom {
   return room;
 }
 
-export function getOrCreateDm(
-  userId: string,
-  otherId: string,
-  otherName: string,
-): LocalDm {
+export function getOrCreateDm(userId: string, otherId: string, otherName: string): LocalDm {
   const store = loadChatStore(userId);
   const existing = store.dms.find((d) => d.other_id === otherId);
   if (existing) return existing;
@@ -160,11 +156,7 @@ export function deleteMessage(userId: string, messageId: string) {
   saveChatStore(userId, store);
 }
 
-export function toggleReaction(
-  userId: string,
-  messageId: string,
-  emoji: string,
-): LocalReaction[] {
+export function toggleReaction(userId: string, messageId: string, emoji: string): LocalReaction[] {
   const store = loadChatStore(userId);
   const existing = store.reactions.find(
     (r) => r.message_id === messageId && r.user_id === userId && r.emoji === emoji,
@@ -189,9 +181,7 @@ export function messagesFor(
 ): LocalMessage[] {
   return store.messages
     .filter((m) =>
-      target.kind === "room"
-        ? m.room_id === target.id
-        : m.conversation_id === target.id,
+      target.kind === "room" ? m.room_id === target.id : m.conversation_id === target.id,
     )
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }

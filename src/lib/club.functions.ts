@@ -12,12 +12,19 @@ function makeCode() {
 export const createClub = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const raw = (input ?? {}) as { name?: string; motto?: string; color?: string; weekly_goal?: number };
+    const raw = (input ?? {}) as {
+      name?: string;
+      motto?: string;
+      color?: string;
+      weekly_goal?: number;
+    };
     const name = String(raw.name ?? "").trim();
     if (name.length < 2 || name.length > 40) throw new Error("Name muss 2–40 Zeichen haben");
     return {
       name,
-      motto: String(raw.motto ?? "").trim().slice(0, 120),
+      motto: String(raw.motto ?? "")
+        .trim()
+        .slice(0, 120),
       color: /^#[0-9a-fA-F]{6}$/.test(String(raw.color ?? "")) ? String(raw.color) : "#38bdf8",
       weekly_goal: Math.max(100, Math.min(100000, Number(raw.weekly_goal ?? 1000) | 0)),
     };
@@ -50,15 +57,20 @@ export const createClub = createServerFn({ method: "POST" })
 export const joinClubByCode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const code = String((input as { code?: string })?.code ?? "").trim().toUpperCase();
+    const code = String((input as { code?: string })?.code ?? "")
+      .trim()
+      .toUpperCase();
     if (!/^[A-Z0-9]{4,8}$/.test(code)) throw new Error("Ungültiger Code");
     return { code };
   })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: id, error } = await supabase.rpc("join_club_by_code" as never, {
-      _code: data.code,
-    } as never);
+    const { data: id, error } = await supabase.rpc(
+      "join_club_by_code" as never,
+      {
+        _code: data.code,
+      } as never,
+    );
     if (error) throw new Error(error.message);
     return { id: id as unknown as string };
   });

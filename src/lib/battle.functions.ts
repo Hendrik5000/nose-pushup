@@ -159,7 +159,9 @@ export const leaveQueue = createServerFn({ method: "POST" })
 export const joinBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const code = String((input as { code?: string })?.code ?? "").trim().toUpperCase();
+    const code = String((input as { code?: string })?.code ?? "")
+      .trim()
+      .toUpperCase();
     if (!/^[A-Z0-9]{4,8}$/.test(code)) throw new Error("Ungültiger Code");
     return { code };
   })
@@ -193,7 +195,7 @@ export const joinBattle = createServerFn({ method: "POST" })
       await sendPushNotification((battle as { host_id: string }).host_id, {
         title: "Gegner gefunden! ⚔️",
         body: "Jemand ist deinem Battle beigetreten. Starte jetzt!",
-        url: `/battle/${(battle as { id: string }).id}`
+        url: `/battle/${(battle as { id: string }).id}`,
       });
     } catch (pushErr) {
       console.error("Push fail:", pushErr);
@@ -241,7 +243,6 @@ export const startBattle = createServerFn({ method: "POST" })
     if (upErr) throw new Error(upErr.message);
     return { ok: true };
   });
-
 
 export const finishBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -313,4 +314,3 @@ export const finishBattle = createServerFn({ method: "POST" })
     if (upErr) throw new Error(upErr.message);
     return { winner_id, host_count, guest_count };
   });
-

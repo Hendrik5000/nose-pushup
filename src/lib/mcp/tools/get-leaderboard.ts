@@ -15,7 +15,11 @@ export default defineTool({
   description:
     "Return the signed-in user's daily aggregates (total reps, sessions, total duration) for the last N days. Newest first.",
   inputSchema: {
-    days: z.number().int().describe("Number of days back to fetch (1-90). Defaults to 14.").optional(),
+    days: z
+      .number()
+      .int()
+      .describe("Number of days back to fetch (1-90). Defaults to 14.")
+      .optional(),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ days }, ctx) => {

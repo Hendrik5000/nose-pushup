@@ -41,11 +41,7 @@ export function ChallengesPanel({ userId }: { userId: string }) {
       const dailyStart = periodStart("daily", today);
       const weeklyStart = periodStart("weekly", today);
       const [{ data: ch }, { data: uc }] = await Promise.all([
-        supabase
-          .from("challenges")
-          .select("*")
-          .eq("active", true)
-          .order("sort_order"),
+        supabase.from("challenges").select("*").eq("active", true).order("sort_order"),
         supabase
           .from("user_challenges")
           .select("challenge_id, period_start, progress, completed_at")
@@ -117,9 +113,7 @@ export function ChallengesPanel({ userId }: { userId: string }) {
             <li
               key={c.id}
               className={`rounded-2xl border p-3 transition ${
-                done
-                  ? "border-primary/40 bg-primary/10"
-                  : "border-border bg-background/40"
+                done ? "border-primary/40 bg-primary/10" : "border-border bg-background/40"
               }`}
             >
               <div className="flex items-start justify-between gap-3">

@@ -138,9 +138,10 @@ export function exportMessagesMarkdown(
   return lines.join("\n");
 }
 
-export function searchMessages<
-  T extends { content: string; id: string },
->(messages: T[], query: string): T[] {
+export function searchMessages<T extends { content: string; id: string }>(
+  messages: T[],
+  query: string,
+): T[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
   return messages.filter((m) => m.content.toLowerCase().includes(q)).slice(-40);

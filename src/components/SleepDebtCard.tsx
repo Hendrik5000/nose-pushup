@@ -8,7 +8,9 @@ export function SleepDebtCard({ sleepMinutes }: { sleepMinutes: number[] }) {
     <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Schlafschuld</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Schlafschuld
+          </div>
           <div className="mt-1 text-xl font-semibold tabular-nums">{debt.toFixed(1)} h</div>
           <p className="mt-1 text-xs text-muted-foreground">
             {ok

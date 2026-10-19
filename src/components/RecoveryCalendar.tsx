@@ -28,7 +28,11 @@ export function RecoveryCalendar({ userId }: { userId: string | null }) {
         .gte("created_at", since)
         .order("created_at", { ascending: true });
       if (cancelled) return;
-      setWeek(buildRecoveryWeek((data ?? []) as { exercise_id: string; count: number; created_at: string }[]));
+      setWeek(
+        buildRecoveryWeek(
+          (data ?? []) as { exercise_id: string; count: number; created_at: string }[],
+        ),
+      );
       setLoading(false);
     })();
     return () => {
@@ -79,8 +83,7 @@ export function RecoveryCalendar({ userId }: { userId: string | null }) {
             </div>
             <div className="flex gap-1">
               {week.map((d) => {
-                const total =
-                  d.loads.wrist + d.loads.shoulder + d.loads.elbow + d.loads.core;
+                const total = d.loads.wrist + d.loads.shoulder + d.loads.elbow + d.loads.core;
                 const intensity = Math.min(1, total / 8);
                 const dayLabel = d.day.slice(8);
                 return (
@@ -99,7 +102,9 @@ export function RecoveryCalendar({ userId }: { userId: string | null }) {
                       }}
                       title={`${d.day}: Last ${total}`}
                     />
-                    <span className="text-[9px] tabular-nums text-muted-foreground">{dayLabel}</span>
+                    <span className="text-[9px] tabular-nums text-muted-foreground">
+                      {dayLabel}
+                    </span>
                   </div>
                 );
               })}

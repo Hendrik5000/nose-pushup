@@ -16,7 +16,10 @@ export default defineTool({
     "Log a completed workout for the signed-in user. Triggers XP, streak, personal-best, and challenge progress updates server-side. Exercise ids include 'pushup', 'squat', 'plank', 'burpee'.",
   inputSchema: {
     exercise_id: z.string().describe("Exercise id, e.g. 'pushup', 'squat', 'plank', 'burpee'."),
-    count: z.number().int().describe("Rep count (0-1000). For 'plank', pass 0 and use duration_ms."),
+    count: z
+      .number()
+      .int()
+      .describe("Rep count (0-1000). For 'plank', pass 0 and use duration_ms."),
     duration_ms: z
       .number()
       .int()
@@ -29,7 +32,10 @@ export default defineTool({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     if (count < 0 || count > 1000) {
-      return { content: [{ type: "text", text: "count must be between 0 and 1000" }], isError: true };
+      return {
+        content: [{ type: "text", text: "count must be between 0 and 1000" }],
+        isError: true,
+      };
     }
     const sb = supabaseForUser(ctx);
     const { data, error } = await sb

@@ -74,9 +74,7 @@ function PublicProfilePage() {
             (profile.display_name || "?").slice(0, 1).toUpperCase()
           )}
         </div>
-        <h1 className="mt-3 text-xl font-bold tracking-tight">
-          {profile.display_name || slug}
-        </h1>
+        <h1 className="mt-3 text-xl font-bold tracking-tight">{profile.display_name || slug}</h1>
         <p className="text-xs uppercase tracking-[0.25em] text-primary">Level {profile.level}</p>
 
         <div className="mt-6 grid grid-cols-2 gap-3 text-left">

@@ -47,12 +47,7 @@ async function callOpenAICompat(
   return (json.choices?.[0]?.message?.content ?? "").trim();
 }
 
-async function callAnthropic(
-  apiKey: string,
-  model: string,
-  system: string,
-  messages: InMsg[],
-) {
+async function callAnthropic(apiKey: string, model: string, system: string, messages: InMsg[]) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -81,12 +76,7 @@ async function callAnthropic(
     .trim();
 }
 
-async function callGoogle(
-  apiKey: string,
-  model: string,
-  system: string,
-  messages: InMsg[],
-) {
+async function callGoogle(apiKey: string, model: string, system: string, messages: InMsg[]) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const contents = messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
@@ -179,7 +169,13 @@ export const superAiChat = createServerFn({ method: "POST" })
       reply = await callGoogle(p.apiKey, p.model, system, data.messages);
     } else if (p.id === "openai") {
       if (!p.apiKey) throw new Error("OpenAI API-Key fehlt");
-      reply = await callOpenAICompat("https://api.openai.com/v1", p.apiKey, p.model, system, data.messages);
+      reply = await callOpenAICompat(
+        "https://api.openai.com/v1",
+        p.apiKey,
+        p.model,
+        system,
+        data.messages,
+      );
     } else if (p.id === "custom") {
       if (!p.apiKey || !p.baseUrl) throw new Error("Custom: API-Key und Base-URL nötig");
       reply = await callOpenAICompat(p.baseUrl, p.apiKey, p.model, system, data.messages);

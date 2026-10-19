@@ -19,11 +19,18 @@ export function PublicProfileSettings() {
         .select("public_slug, public_enabled, display_name")
         .eq("id", u.user.id)
         .maybeSingle();
-      const row = data as { public_slug: string | null; public_enabled: boolean; display_name: string | null } | null;
+      const row = data as {
+        public_slug: string | null;
+        public_enabled: boolean;
+        display_name: string | null;
+      } | null;
       setEnabled(row?.public_enabled ?? false);
       setSlug(
         row?.public_slug ??
-          (row?.display_name ?? "athlet").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 24) +
+          (row?.display_name ?? "athlet")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .slice(0, 24) +
             "-" +
             u.user.id.slice(0, 4),
       );
@@ -36,7 +43,10 @@ export function PublicProfileSettings() {
 
   const save = async (nextEnabled: boolean) => {
     if (!userId) return;
-    const clean = slug.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 40);
+    const clean = slug
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "")
+      .slice(0, 40);
     if (clean.length < 3) {
       setHint("Adresse braucht mindestens 3 Zeichen");
       return;

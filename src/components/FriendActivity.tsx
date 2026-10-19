@@ -24,7 +24,11 @@ export function FriendActivity({ userId }: { userId: string }) {
 
     const [{ data: profs }, { data: stats }] = await Promise.all([
       supabase.from("profiles").select("id, display_name").in("id", ids),
-      supabase.from("daily_stats").select("user_id, total_reps, sessions").eq("day", today).in("user_id", ids),
+      supabase
+        .from("daily_stats")
+        .select("user_id, total_reps, sessions")
+        .eq("day", today)
+        .in("user_id", ids),
     ]);
 
     const nameOf = new Map((profs ?? []).map((p) => [p.id, p.display_name ?? "Athlet"]));
@@ -76,12 +80,14 @@ export function FriendActivity({ userId }: { userId: string }) {
         <p className="mt-3 text-xs text-muted-foreground">Lade…</p>
       ) : rows.length <= 1 ? (
         <div className="mt-3 rounded-2xl border border-dashed border-border bg-background/40 p-3 text-xs text-muted-foreground">
-          Noch kein sozialer Vergleich aktiv. Lade Freunde ein und starte den nächsten gemeinsamen Push-Up-Tag.
+          Noch kein sozialer Vergleich aktiv. Lade Freunde ein und starte den nächsten gemeinsamen
+          Push-Up-Tag.
         </div>
       ) : (
         <>
           <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-foreground">
-            <span className="font-semibold">Gemeinsam stärker:</span> Kleine tägliche Sessions mit Freunden machen den Fortschritt deutlich angenehmer.
+            <span className="font-semibold">Gemeinsam stärker:</span> Kleine tägliche Sessions mit
+            Freunden machen den Fortschritt deutlich angenehmer.
           </div>
           <ul className="mt-3 space-y-2.5">
             {rows.map((r, i) => (

@@ -8,7 +8,11 @@ export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
     meta: [
       { title: "Smart Coach — Nosy Push-Ups" },
-      { name: "description", content: "Chatte mit deinem persönlichen KI-Fitness-Coach. Er kennt deine Werte und loggt Trainings für dich." },
+      {
+        name: "description",
+        content:
+          "Chatte mit deinem persönlichen KI-Fitness-Coach. Er kennt deine Werte und loggt Trainings für dich.",
+      },
     ],
   }),
   component: CoachChatPage,
@@ -63,7 +67,6 @@ function CoachChatPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
-
   const submit = async (textOverride?: string) => {
     const text = (textOverride ?? input).trim();
     if (!text || loading) return;
@@ -73,7 +76,9 @@ function CoachChatPage() {
     setInput("");
     setLoading(true);
     try {
-      const res = await send({ data: { messages: nextMsgs.map(({ role, content }) => ({ role, content })) } });
+      const res = await send({
+        data: { messages: nextMsgs.map(({ role, content }) => ({ role, content })) },
+      });
       setMessages((m) => [...m, { role: "assistant", content: res.reply, actions: res.actions }]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Fehler";
@@ -104,7 +109,10 @@ function CoachChatPage() {
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
       <header className="flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
           <span aria-hidden>←</span> Zurück
         </Link>
         <div className="flex items-center gap-2">
@@ -131,7 +139,8 @@ function CoachChatPage() {
             <div>
               <p className="text-sm font-semibold text-foreground">Dein Fitness-Coach</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Ich kenne deine Werte. Frag nach Tipps, log dein Training per Text oder frag nach Progress.
+                Ich kenne deine Werte. Frag nach Tipps, log dein Training per Text oder frag nach
+                Progress.
               </p>
             </div>
             <div className="mt-2 grid w-full gap-2">
@@ -216,7 +225,16 @@ function CoachChatPage() {
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition active:scale-[0.95] disabled:opacity-40"
           aria-label="Senden"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <line x1="22" y1="2" x2="11" y2="13" />
             <polygon points="22 2 15 22 11 13 2 9 22 2" />
           </svg>

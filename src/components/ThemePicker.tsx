@@ -1,8 +1,21 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { applyTheme, DEFAULT_THEME, getStoredTheme, isThemeId, THEMES, type ThemeId } from "@/lib/theme";
+import {
+  applyTheme,
+  DEFAULT_THEME,
+  getStoredTheme,
+  isThemeId,
+  THEMES,
+  type ThemeId,
+} from "@/lib/theme";
 
-export function ThemePicker({ profileId, initialTheme }: { profileId?: string; initialTheme?: string | null }) {
+export function ThemePicker({
+  profileId,
+  initialTheme,
+}: {
+  profileId?: string;
+  initialTheme?: string | null;
+}) {
   const [active, setActive] = useState<ThemeId>(DEFAULT_THEME);
 
   useEffect(() => {
@@ -39,7 +52,9 @@ export function ThemePicker({ profileId, initialTheme }: { profileId?: string; i
               <span className="h-6 w-6 -ml-3 rounded-full" style={{ background: t.swatch[1] }} />
             </span>
             <span className="mt-2 block text-xs font-semibold">{t.label}</span>
-            <span className="block text-[10px] leading-tight text-muted-foreground">{t.description}</span>
+            <span className="block text-[10px] leading-tight text-muted-foreground">
+              {t.description}
+            </span>
           </button>
         ))}
       </div>

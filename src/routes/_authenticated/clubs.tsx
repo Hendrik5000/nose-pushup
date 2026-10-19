@@ -11,10 +11,14 @@ export const Route = createFileRoute("/_authenticated/clubs")({
       { title: "Clubs — Nosy Push-Ups" },
       {
         name: "description",
-        content: "Gründe einen Club, erreicht gemeinsam das Wochenziel und klettert in der Club-Liga nach oben.",
+        content:
+          "Gründe einen Club, erreicht gemeinsam das Wochenziel und klettert in der Club-Liga nach oben.",
       },
       { property: "og:title", content: "Clubs — Nosy Push-Ups" },
-      { property: "og:description", content: "Gemeinsames Wochenziel, Club-Feed und Liga-Rangliste." },
+      {
+        property: "og:description",
+        content: "Gemeinsames Wochenziel, Club-Feed und Liga-Rangliste.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -112,7 +116,11 @@ function ClubsPage() {
     }
 
     const [{ data: c }, { data: stats }, { data: feed }] = await Promise.all([
-      supabase.from("clubs" as never).select("*").eq("id", clubId).maybeSingle(),
+      supabase
+        .from("clubs" as never)
+        .select("*")
+        .eq("id", clubId)
+        .maybeSingle(),
       supabase.rpc("club_week_stats" as never, { _club_id: clubId } as never),
       supabase
         .from("club_posts" as never)
@@ -178,13 +186,19 @@ function ClubsPage() {
   const handleLeave = async () => {
     if (!club || !userId) return;
     setBusy("leave");
-    await supabase.from("club_members" as never).delete().eq("club_id", club.id).eq("user_id", userId);
+    await supabase
+      .from("club_members" as never)
+      .delete()
+      .eq("club_id", club.id)
+      .eq("user_id", userId);
     await load();
     setBusy(null);
   };
 
   const totalReps = members.reduce((sum, m) => sum + (m.reps ?? 0), 0);
-  const goalPct = club ? Math.min(100, Math.round((totalReps / Math.max(1, club.weekly_goal)) * 100)) : 0;
+  const goalPct = club
+    ? Math.min(100, Math.round((totalReps / Math.max(1, club.weekly_goal)) * 100))
+    : 0;
   const tier = tierFor(totalReps);
 
   return (
@@ -202,7 +216,10 @@ function ClubsPage() {
         <>
           <section
             className="mt-6 rounded-3xl border p-5 backdrop-blur"
-            style={{ borderColor: `${club.color}66`, background: `linear-gradient(140deg, ${club.color}22, transparent)` }}
+            style={{
+              borderColor: `${club.color}66`,
+              background: `linear-gradient(140deg, ${club.color}22, transparent)`,
+            }}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -211,7 +228,9 @@ function ClubsPage() {
               </div>
               <div className="text-right">
                 <div className="text-2xl">{tier.icon}</div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{tier.label}</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  {tier.label}
+                </div>
               </div>
             </div>
 
@@ -235,7 +254,9 @@ function ClubsPage() {
 
             <div className="mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
               <span>Einladungscode</span>
-              <span className="font-mono text-sm tracking-[0.3em] text-foreground">{club.code}</span>
+              <span className="font-mono text-sm tracking-[0.3em] text-foreground">
+                {club.code}
+              </span>
             </div>
           </section>
 
@@ -249,7 +270,9 @@ function ClubsPage() {
                   key={m.user_id}
                   className="flex items-center gap-3 rounded-2xl border border-border bg-card/50 px-4 py-3"
                 >
-                  <span className="w-5 text-sm font-semibold tabular-nums text-muted-foreground">{i + 1}</span>
+                  <span className="w-5 text-sm font-semibold tabular-nums text-muted-foreground">
+                    {i + 1}
+                  </span>
                   <div className="flex-1">
                     <div className="text-sm font-medium">{m.display_name ?? "Athlet"}</div>
                     <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -287,7 +310,10 @@ function ClubsPage() {
                 <li key={p.id} className="rounded-2xl border border-border bg-card/50 px-4 py-3">
                   <div className="text-sm">{p.body}</div>
                   <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    {new Date(p.created_at).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
+                    {new Date(p.created_at).toLocaleString("de-DE", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
                   </div>
                 </li>
               ))}
@@ -391,10 +417,14 @@ function ClubsPage() {
             <li
               key={row.club_id}
               className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${
-                club?.id === row.club_id ? "border-primary/50 bg-primary/10" : "border-border bg-card/50"
+                club?.id === row.club_id
+                  ? "border-primary/50 bg-primary/10"
+                  : "border-border bg-card/50"
               }`}
             >
-              <span className="w-5 text-sm font-semibold tabular-nums text-muted-foreground">{i + 1}</span>
+              <span className="w-5 text-sm font-semibold tabular-nums text-muted-foreground">
+                {i + 1}
+              </span>
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: row.color }} />
               <div className="flex-1">
                 <div className="text-sm font-medium">{row.name}</div>
@@ -402,7 +432,9 @@ function ClubsPage() {
                   {row.members} Mitglieder · {tierFor(row.week_reps).label}
                 </div>
               </div>
-              <span className="text-lg font-semibold tabular-nums text-primary">{row.week_reps}</span>
+              <span className="text-lg font-semibold tabular-nums text-primary">
+                {row.week_reps}
+              </span>
             </li>
           ))}
           {league.length === 0 && (

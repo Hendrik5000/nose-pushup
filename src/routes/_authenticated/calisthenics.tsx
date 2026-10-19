@@ -58,11 +58,7 @@ function CalisthenicsPage() {
       const twentyEightDaysAgo = new Date(Date.now() - 28 * 86400000).toISOString();
 
       const [{ data: profile }, { data: workouts }, { data: trendWorkouts }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("personal_bests")
-          .eq("id", u.user.id)
-          .maybeSingle(),
+        supabase.from("profiles").select("personal_bests").eq("id", u.user.id).maybeSingle(),
         supabase
           .from("workouts")
           .select("exercise_id, count, created_at")
@@ -125,11 +121,11 @@ function CalisthenicsPage() {
           <h1 className="mt-0.5 text-2xl font-bold tracking-tight">Calisthenics 🤸</h1>
         </div>
         <div className="rounded-full border border-border bg-secondary/60 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground">
-          {Object.values(CALI_PATHS)
-            .flatMap((p) =>
+          {
+            Object.values(CALI_PATHS).flatMap((p) =>
               p.skills.filter((s) => (bests[s.id] ?? 0) >= s.mastery_threshold),
-            )
-            .length}{" "}
+            ).length
+          }{" "}
           / {CALI_PATHS.flatMap((p) => p.skills).length} Skills
         </div>
       </header>
@@ -144,16 +140,10 @@ function CalisthenicsPage() {
       ) : (
         <div className="mt-5 flex-1 space-y-4">
           {/* Daily Check-in */}
-          <CaliCheckin
-            existing={checkin}
-            onSave={(d) => setCheckin(d)}
-          />
+          <CaliCheckin existing={checkin} onSave={(d) => setCheckin(d)} />
 
           {/* Load Manager */}
-          <CaliLoadManager
-            workoutsLast7Days={caliWorkoutsLast7}
-            avgSoreness={avgSoreness}
-          />
+          <CaliLoadManager workoutsLast7Days={caliWorkoutsLast7} avgSoreness={avgSoreness} />
 
           {/* Dynamischer Tagesfokus aus dem Check-in */}
           <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
@@ -188,13 +178,11 @@ function CalisthenicsPage() {
               <div className="flex items-start gap-3">
                 <span className="text-xl">📊</span>
                 <div>
-                  <p className="text-sm font-semibold text-yellow-400">
-                    Stagnation erkannt
-                  </p>
+                  <p className="text-sm font-semibold text-yellow-400">Stagnation erkannt</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {stagnating.map((s) => s.name).join(", ")} — seit über 2 Wochen kein
-                    Training. Tipp: Reduziere Volumen und erhöhe Haltezeiten mit dem
-                    leichteren Progressionsschritt.
+                    {stagnating.map((s) => s.name).join(", ")} — seit über 2 Wochen kein Training.
+                    Tipp: Reduziere Volumen und erhöhe Haltezeiten mit dem leichteren
+                    Progressionsschritt.
                   </p>
                 </div>
               </div>
@@ -237,8 +225,7 @@ function CalisthenicsPage() {
                 <div>
                   <p className="text-sm font-semibold">Regenerationstag-Plan</p>
                   <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                    Zero-Day-Prävention: Auch heute ist aktiv! Wähle eine dieser
-                    Mikro-Aktivitäten:
+                    Zero-Day-Prävention: Auch heute ist aktiv! Wähle eine dieser Mikro-Aktivitäten:
                   </p>
                   <ul className="mt-2 space-y-1">
                     {[
@@ -302,9 +289,7 @@ function PlateauCard({ trend }: { trend: SkillTrend }) {
       <div className="flex items-start gap-3">
         <span className="text-xl">📉</span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-orange-400">
-            Plateau: {trend.skill.name}
-          </p>
+          <p className="text-sm font-semibold text-orange-400">Plateau: {trend.skill.name}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Seit 2 Wochen keine Verbesserung ({trend.previousBest}
             {unitLabel} → {trend.recentBest}

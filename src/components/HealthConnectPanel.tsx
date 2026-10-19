@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  formatRelativeSync,
-} from "@/lib/smartwatch";
+import { formatRelativeSync } from "@/lib/smartwatch";
 import {
   getHcAutoSync,
   getHcCachedSummary,
@@ -221,8 +219,8 @@ export function HealthConnectPanel() {
 
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         Health Connect speichert Schritte, Schlaf und Aktivität von Galaxy Watch, Pixel Watch,
-        Fitbit u. a. Direkter Lesezugriff braucht die Android-App mit Bridge
-        (<code className="text-[10px]">window.NosePushHealthConnect</code>). In der reinen Web-App:
+        Fitbit u. a. Direkter Lesezugriff braucht die Android-App mit Bridge (
+        <code className="text-[10px]">window.NosePushHealthConnect</code>). In der reinen Web-App:
         Berechtigungen in Health Connect setzen und Werte hier übernehmen.
       </p>
 

@@ -148,7 +148,7 @@ Antworte AUSSCHLIESSLICH mit JSON: { "advice": "...", "plan": { "sets": 4, "reps
         await sendPushNotification(userId, {
           title: "Neuer Tipp vom Coach! 💡",
           body: advice.length > 100 ? advice.substring(0, 97) + "..." : advice,
-          url: "/coach"
+          url: "/coach",
         });
       } catch (pushErr) {
         console.error("Push fail:", pushErr);

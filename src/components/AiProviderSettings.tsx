@@ -27,13 +27,11 @@ export function AiProviderSettings() {
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Keys bleiben nur auf diesem Gerät (localStorage). Super-AI wählt je nach Aufgabe den passenden Provider.
+        Keys bleiben nur auf diesem Gerät (localStorage). Super-AI wählt je nach Aufgabe den
+        passenden Provider.
       </p>
       {list.map((p) => (
-        <div
-          key={p.id}
-          className="rounded-2xl border border-border bg-background/40 p-3 space-y-2"
-        >
+        <div key={p.id} className="rounded-2xl border border-border bg-background/40 p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <div className="text-sm font-semibold">{p.label}</div>
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -69,9 +67,7 @@ export function AiProviderSettings() {
             placeholder="Modell"
             className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
           />
-          <div className="text-[10px] text-muted-foreground">
-            Aufgaben: {p.tasks.join(", ")}
-          </div>
+          <div className="text-[10px] text-muted-foreground">Aufgaben: {p.tasks.join(", ")}</div>
         </div>
       ))}
       <button

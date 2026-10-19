@@ -44,7 +44,9 @@ export const getWeekPlan = createServerFn({ method: "POST" })
     const [{ data: profile }, { data: stats }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("level, xp, current_streak, best_count, birth_year, height_cm, weight_kg, daily_goal")
+        .select(
+          "level, xp, current_streak, best_count, birth_year, height_cm, weight_kg, daily_goal",
+        )
         .eq("id", userId)
         .maybeSingle(),
       supabase
@@ -86,7 +88,9 @@ Antworte NUR mit JSON:
           }),
         });
         if (res.ok) {
-          const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+          const json = (await res.json()) as {
+            choices?: Array<{ message?: { content?: string } }>;
+          };
           const parsed = JSON.parse(json.choices?.[0]?.message?.content ?? "{}") as {
             summary?: string;
             days?: unknown;

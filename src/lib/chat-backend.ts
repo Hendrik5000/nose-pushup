@@ -24,7 +24,10 @@ let cachedMode: ChatMode | null = null;
 export async function detectChatMode(): Promise<ChatMode> {
   if (cachedMode) return cachedMode;
   try {
-    const { error } = await supabase.from("rooms" as never).select("id").limit(1);
+    const { error } = await supabase
+      .from("rooms" as never)
+      .select("id")
+      .limit(1);
     cachedMode = error ? "local" : "supabase";
   } catch {
     cachedMode = "local";
@@ -122,10 +125,7 @@ export async function postMessage(
   return data as unknown as LocalMessage;
 }
 
-export async function createChatRoom(
-  userId: string,
-  name: string,
-): Promise<LocalRoom | null> {
+export async function createChatRoom(userId: string, name: string): Promise<LocalRoom | null> {
   if ((await detectChatMode()) === "local") {
     return localCreateRoom(userId, name);
   }
