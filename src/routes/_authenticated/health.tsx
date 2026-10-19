@@ -1,13 +1,4 @@
-import {
-  Activity,
-  ArrowRight,
-  Flame,
-  Footprints,
-  HeartPulse,
-  Moon,
-  Plus,
-  Watch,
-} from "lucide-react";
+import { ArrowRight, Flame, Footprints, HeartPulse, Moon, Plus, Watch } from "lucide-react";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -19,6 +10,7 @@ import { WeightTrendCard } from "@/components/WeightTrendCard";
 import { SleepDebtCard } from "@/components/SleepDebtCard";
 import { WeeklyStepsGoal } from "@/components/WeeklyStepsGoal";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { averageMeasuredHealthValue, measuredHealthValue } from "@/lib/health-glance";
 
 export const Route = createFileRoute("/_authenticated/health")({
   head: () => ({
@@ -104,13 +96,21 @@ function HealthPage() {
     void load();
   };
 
-  const week = entries.slice(0, 7);
-  const avgSteps = week.length
-    ? Math.round(week.reduce((s, e) => s + e.steps, 0) / week.length)
-    : 0;
-  const avgSleep = week.length ? week.reduce((s, e) => s + e.sleep_min, 0) / week.length / 60 : 0;
+  const weekStart = new Date(`${today()}T12:00:00Z`);
+  weekStart.setUTCDate(weekStart.getUTCDate() - 6);
+  const week = entries.filter(
+    (entry) => entry.day >= weekStart.toISOString().slice(0, 10) && entry.day <= today(),
+  );
+  const avgSteps = averageMeasuredHealthValue(week.map((entry) => entry.steps));
+  const avgSleep = averageMeasuredHealthValue(week.map((entry) => entry.sleep_min));
   const todayEntry = entries.find((e) => e.day === today());
-  const todaySteps = todayEntry?.steps ?? 0;
+  const glanceSteps = measuredHealthValue(todayEntry?.steps);
+  const glanceKcal = measuredHealthValue(todayEntry?.active_kcal);
+  const hasTodayGlanceData =
+    glanceSteps !== null ||
+    glanceKcal !== null ||
+    measuredHealthValue(todayEntry?.sleep_min) !== null;
+  const weeklySteps = averageMeasuredHealthValue(week.map((entry) => entry.steps));
   const sleepEntries = week.filter((entry) => entry.sleep_min > 0);
   const measuredSleep = sleepEntries.length
     ? sleepEntries.reduce((sum, entry) => sum + entry.sleep_min, 0) / sleepEntries.length / 60
@@ -131,12 +131,22 @@ function HealthPage() {
           </header>
 
           <section className="mt-6 grid grid-cols-2 gap-3">
-            <Card label="Ø Schritte (7T)" value={avgSteps.toLocaleString("de-DE")} />
-            <Card label="Ø Schlaf (7T)" value={`${avgSleep.toFixed(1)} h`} />
+            <Card
+              label="Ø Schritte (7T)"
+              value={
+                avgSteps.average === null
+                  ? "—"
+                  : Math.round(avgSteps.average).toLocaleString("de-DE")
+              }
+            />
+            <Card
+              label="Ø Schlaf (7T)"
+              value={avgSleep.average === null ? "—" : `${(avgSleep.average / 60).toFixed(1)} h`}
+            />
           </section>
 
-          <WeeklyStepsGoal todaySteps={todaySteps} />
-          <SleepDebtCard sleepMinutes={entries.slice(0, 7).map((e) => e.sleep_min)} />
+          <WeeklyStepsGoal todaySteps={glanceSteps} />
+          <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
           <WeightTrendCard
             points={entries
               .filter((e) => e.weight_kg != null)
@@ -228,8 +238,9 @@ function HealthPage() {
                       )}
                     </span>
                     <span className="tabular-nums text-muted-foreground">
-                      {e.steps.toLocaleString("de-DE")} · {e.active_kcal} kcal ·{" "}
-                      {(e.sleep_min / 60).toFixed(1)} h
+                      {e.steps > 0 ? e.steps.toLocaleString("de-DE") : "—"} ·{" "}
+                      {e.active_kcal > 0 ? `${e.active_kcal} kcal` : "—"} ·{" "}
+                      {e.sleep_min > 0 ? `${(e.sleep_min / 60).toFixed(1)} h` : "—"}
                     </span>
                   </li>
                 ))}
@@ -284,17 +295,47 @@ function HealthPage() {
             </span>
             <p className="sport-kicker">Dein Tag im Blick</p>
             <h2 id="health-daily-title">
-              {todayEntry ? "Jeder Schritt zählt." : "Wie geht es dir heute?"}
+              {hasTodayGlanceData ? "Deine Werte im Blick." : "Wie geht es dir heute?"}
             </h2>
             <p>
-              {todayEntry
-                ? `Heute sind ${todaySteps.toLocaleString("de-DE")} Schritte erfasst. Entdecke deine Aktivität und gib deiner Erholung Raum.`
-                : "Schritte, Schlaf und Bewegung erzählen deine Geschichte. Verbinde deine Uhr oder erfasse deine ersten Werte."}
+              {hasTodayGlanceData
+                ? glanceSteps !== null
+                  ? `Heute sind ${glanceSteps.toLocaleString("de-DE")} Schritte erfasst. Entdecke deine Aktivität und gib deiner Erholung Raum.`
+                  : "Für heute sind Gesundheitswerte erfasst. Ergänze weitere Angaben, wenn du möchtest."
+                : todayEntry
+                  ? "Für heute gibt es einen Eintrag, aber noch keine erfassten Werte für Schritte, Schlaf oder aktive Energie."
+                  : "Noch keine Werte für heute. Verbinde deine Uhr oder erfasse Schritte, Schlaf und aktive Energie."}
             </p>
-            <a href="#health-entry" className="health-hero-action">
-              <Plus aria-hidden="true" /> <span>Werte erfassen</span>{" "}
-              <ArrowRight aria-hidden="true" />
-            </a>
+            {hasTodayGlanceData && (
+              <dl className="health-today-measurements" aria-label="Erfasste Tageswerte">
+                {[
+                  { label: "Schritte", value: glanceSteps?.toLocaleString("de-DE") },
+                  { label: "Aktive kcal", value: glanceKcal?.toLocaleString("de-DE") },
+                  {
+                    label: "Schlaf",
+                    value:
+                      measuredHealthValue(todayEntry?.sleep_min) !== null
+                        ? `${(todayEntry!.sleep_min / 60).toFixed(1)} h`
+                        : undefined,
+                  },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value ?? "—"}</dd>
+                    {!value && <small>Nicht erfasst</small>}
+                  </div>
+                ))}
+              </dl>
+            )}
+            <div className="health-hero-actions">
+              <a href="#health-sources" className="health-source-action">
+                <Watch aria-hidden="true" /> Verbinden
+              </a>
+              <a href="#health-entry" className="health-hero-action">
+                <Plus aria-hidden="true" /> <span>Werte erfassen</span>{" "}
+                <ArrowRight aria-hidden="true" />
+              </a>
+            </div>
           </section>
           <section id="health-activity" className="health-bento-grid grid grid-cols-2 gap-3">
             <div className="health-energy-card">
@@ -304,30 +345,41 @@ function HealthPage() {
               </div>
               <div className="health-energy-values">
                 <div>
-                  <strong>
-                    {todayEntry ? todayEntry.active_kcal.toLocaleString("de-DE") : "—"}
-                  </strong>
-                  <span>Aktive kcal</span>
+                  <strong>{glanceKcal !== null ? glanceKcal.toLocaleString("de-DE") : "—"}</strong>
+                  <span>{glanceKcal !== null ? "Aktive kcal" : "Aktive kcal · nicht erfasst"}</span>
                 </div>
                 <div>
-                  <strong>{todayEntry ? todaySteps.toLocaleString("de-DE") : "—"}</strong>
-                  <span>Schritte</span>
+                  <strong>
+                    {glanceSteps !== null ? glanceSteps.toLocaleString("de-DE") : "—"}
+                  </strong>
+                  <span>{glanceSteps !== null ? "Schritte" : "Schritte · nicht erfasst"}</span>
                 </div>
               </div>
-              <p>{todayEntry ? "Heute erfasst" : "Noch keine Tageswerte"}</p>
+              <p>
+                {hasTodayGlanceData ? "Mindestens ein Wert heute erfasst" : "Noch keine Messwerte"}
+              </p>
             </div>
             <div className="health-activity-card">
               <div className="health-card-heading">
-                <Activity aria-hidden="true" />
-                <span>Aktivität</span>
+                <Footprints aria-hidden="true" />
+                <span>Schritte · letzte 7 Tage</span>
               </div>
-              <div className="health-rings" aria-hidden="true">
-                <span className="health-ring health-ring-outer" />
-                <span className="health-ring health-ring-middle" />
-                <span className="health-ring health-ring-inner" />
-              </div>
-              <span className="sr-only">Dekorative Ringe ohne Messwerte oder Zielvorgaben.</span>
-              <p>Illustration · keine Messwerte</p>
+              {weeklySteps.average === null ? (
+                <div className="health-week-empty">
+                  <p>Noch keine Schrittwerte erfasst.</p>
+                  <a href="#health-entry">
+                    Wert erfassen <ArrowRight aria-hidden="true" />
+                  </a>
+                </div>
+              ) : (
+                <div className="health-week-value">
+                  <strong>{Math.round(weeklySteps.average).toLocaleString("de-DE")}</strong>
+                  <span>Schritte pro erfasstem Tag</span>
+                  <p>
+                    {weeklySteps.count} {weeklySteps.count === 1 ? "Tag" : "Tage"} mit Messwert
+                  </p>
+                </div>
+              )}
             </div>
           </section>
           <section className="health-sleep-card" aria-labelledby="health-sleep-title">
@@ -342,6 +394,11 @@ function HealthPage() {
                   ? "Noch keine Schlafdaten erfasst"
                   : `Ø ${measuredSleep.toFixed(1)} h · ${sleepEntries.length} ${sleepEntries.length === 1 ? "Nacht" : "Nächte"} erfasst`}
               </p>
+              {measuredSleep == null && (
+                <a className="health-sleep-action" href="#health-entry">
+                  Schlaf erfassen
+                </a>
+              )}
             </div>
             {measuredSleep != null && (
               <strong>
@@ -352,8 +409,8 @@ function HealthPage() {
           </section>
           <div id="health-sleep" className="grid gap-5 lg:grid-cols-2">
             <div className="space-y-5">
-              <WeeklyStepsGoal todaySteps={todaySteps} />
-              <SleepDebtCard sleepMinutes={entries.slice(0, 7).map((e) => e.sleep_min)} />
+              <WeeklyStepsGoal todaySteps={glanceSteps} />
+              <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
             </div>
             <WeightTrendCard
               points={entries
@@ -451,13 +508,17 @@ function HealthPage() {
                       )}
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {e.steps.toLocaleString("de-DE")} Schritte
+                      {e.steps > 0
+                        ? `${e.steps.toLocaleString("de-DE")} Schritte`
+                        : "Schritte nicht erfasst"}
                     </div>
                   </div>
                   <div className="text-right text-xs tabular-nums text-muted-foreground">
-                    {e.active_kcal} kcal
+                    {e.active_kcal > 0 ? `${e.active_kcal} kcal` : "kcal nicht erfasst"}
                     <br />
-                    {(e.sleep_min / 60).toFixed(1)} h Schlaf
+                    {e.sleep_min > 0
+                      ? `${(e.sleep_min / 60).toFixed(1)} h Schlaf`
+                      : "Schlaf nicht erfasst"}
                   </div>
                 </li>
               ))}

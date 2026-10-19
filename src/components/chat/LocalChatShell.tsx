@@ -58,6 +58,7 @@ export function LocalChatShell() {
   const [reactions, setReactions] = useState<LocalReaction[]>([]);
   const [replyTo, setReplyTo] = useState<LocalMessage | null>(null);
   const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileListOpen, setMobileListOpen] = useState(true);
   const [roomQuery, setRoomQuery] = useState("");
@@ -72,6 +73,14 @@ export function LocalChatShell() {
   const [toast, setToast] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const sendingRef = useRef(false);
+  const replyToRef = useRef(replyTo);
+  replyToRef.current = replyTo;
+  const newRoomDialogRef = useRef<HTMLDivElement>(null);
+  const newRoomInputRef = useRef<HTMLInputElement>(null);
+  const newRoomTriggerRef = useRef<HTMLButtonElement>(null);
   const activeRef = useRef<Target | null>(null);
   activeRef.current = active;
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
@@ -141,7 +150,9 @@ export function LocalChatShell() {
     if (!userId || !active) return;
     void refresh(userId, active);
     setReplyTo(null);
-    setDraft(getDraft(userId, active.kind, active.id));
+    const savedDraft = getDraft(userId, active.kind, active.id);
+    draftRef.current = savedDraft;
+    setDraft(savedDraft);
     setSearch("");
     setSearchOpen(false);
   }, [userId, active?.kind, active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -149,6 +160,42 @@ export function LocalChatShell() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, active?.id]);
+
+  useEffect(() => {
+    if (!newRoomOpen) return;
+    newRoomInputRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setNewRoomOpen(false);
+        newRoomTriggerRef.current?.focus();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const dialog = newRoomDialogRef.current;
+      const focusable = dialog?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (
+        event.shiftKey &&
+        (document.activeElement === first || !dialog?.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        last.focus();
+      } else if (
+        !event.shiftKey &&
+        (document.activeElement === last || !dialog?.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [newRoomOpen]);
 
   useEffect(() => {
     if (mode !== "supabase" || !userId) return;
@@ -193,19 +240,59 @@ export function LocalChatShell() {
   const hits = useMemo(() => searchMessages(messages, search), [messages, search]);
 
   const onSend = async (text?: string) => {
-    if (!userId || !active) return;
+    if (!userId || !active || sendingRef.current) return;
     const content = (text ?? draft).trim();
     if (!content) return;
-    setDraft("");
-    saveDraft(userId, active.kind, active.id, "");
-    await postMessage(userId, {
-      roomId: active.kind === "room" ? active.id : null,
-      conversationId: active.kind === "dm" ? active.id : null,
-      content,
-      replyToId: replyTo?.id ?? null,
-    });
-    setReplyTo(null);
-    await refresh(userId, active);
+    const target = active;
+    const submittedDraft = draft;
+    const submittedReply = replyTo;
+    sendingRef.current = true;
+    setSending(true);
+    try {
+      let posted: LocalMessage | null;
+      try {
+        posted = await postMessage(userId, {
+          roomId: target.kind === "room" ? target.id : null,
+          conversationId: target.kind === "dm" ? target.id : null,
+          content,
+          replyToId: submittedReply?.id ?? null,
+        });
+      } catch {
+        flash("Nicht gesendet. Entwurf und Antwort bleiben erhalten.");
+        return;
+      }
+      if (!posted) {
+        flash("Nicht gesendet. Entwurf und Antwort bleiben erhalten.");
+        return;
+      }
+      if (
+        text === undefined &&
+        activeRef.current?.kind === target.kind &&
+        activeRef.current.id === target.id &&
+        draftRef.current === submittedDraft
+      ) {
+        draftRef.current = "";
+        setDraft("");
+        saveDraft(userId, target.kind, target.id, "");
+      }
+      if (
+        activeRef.current?.kind === target.kind &&
+        activeRef.current.id === target.id &&
+        replyToRef.current?.id === submittedReply?.id
+      ) {
+        setReplyTo(null);
+      }
+      if (activeRef.current?.kind === target.kind && activeRef.current.id === target.id) {
+        try {
+          await refresh(userId, target);
+        } catch {
+          flash("Nachricht gesendet, aber der Chat konnte nicht aktualisiert werden.");
+        }
+      }
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
   };
 
   const onCreateRoom = async () => {
@@ -221,6 +308,10 @@ export function LocalChatShell() {
   };
 
   const onStartDm = async () => {
+    if (mode !== "local") {
+      flash("Direktnachrichten sind derzeit nur lokal auf diesem Gerät verfügbar.");
+      return;
+    }
     if (!userId || !dmName.trim()) return;
     const otherId = `local-${dmName.trim().toLowerCase().replace(/\s+/g, "-")}`;
     const dm = getOrCreateLocalDm(userId, otherId, dmName.trim());
@@ -297,6 +388,7 @@ export function LocalChatShell() {
         onChange={(e) => setDmName(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && void onStartDm()}
         placeholder="Name…"
+        aria-label="Name für Direktnachricht"
         className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-2 py-1.5 text-xs outline-none focus:border-primary"
       />
       <button
@@ -319,7 +411,7 @@ export function LocalChatShell() {
           <div>
             <div className="text-sm font-bold">
               <span className="classic-only">Community-Chat</span>
-              <span className="sport-only">Chats</span>
+              <span className="sport-only">{mode === "local" ? "Lokale Chats" : "Chats"}</span>
             </div>
             <div className="classic-only text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               {modeLabel}
@@ -365,11 +457,15 @@ export function LocalChatShell() {
       <div className="community-list-scroll flex-1 overflow-y-auto px-3 py-3">
         <div className="mb-1 flex items-center justify-between px-1">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Räume
+            {mode === "local" ? "Lokale Räume" : "Räume"}
           </span>
           <button
             type="button"
-            onClick={() => setNewRoomOpen(true)}
+            aria-label="Neuen Raum erstellen"
+            onClick={(event) => {
+              newRoomTriggerRef.current = event.currentTarget;
+              setNewRoomOpen(true);
+            }}
             className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary"
           >
             +
@@ -431,11 +527,27 @@ export function LocalChatShell() {
         <div className="mb-1 px-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Direktnachrichten
         </div>
-        <div className="classic-only">{dmComposer}</div>
-        <details className="sport-only community-dm-details">
-          <summary>Direktnachricht starten</summary>
-          {dmComposer}
-        </details>
+        <div className="classic-only">
+          {mode === "local" ? (
+            dmComposer
+          ) : (
+            <p className="mb-2 px-1 text-xs text-muted-foreground">
+              Direktnachrichten sind derzeit nur lokal auf diesem Gerät verfügbar.
+            </p>
+          )}
+        </div>
+        <div className="sport-only">
+          {mode === "local" ? (
+            <details className="community-dm-details">
+              <summary>Direktnachricht starten</summary>
+              {dmComposer}
+            </details>
+          ) : (
+            <p className="mb-2 px-1 text-xs text-muted-foreground">
+              Direktnachrichten sind derzeit nur lokal auf diesem Gerät verfügbar.
+            </p>
+          )}
+        </div>
         <div className="space-y-1">
           {dms.length === 0 && (
             <p className="px-2 py-2 text-xs text-muted-foreground">Noch keine DMs.</p>
@@ -494,7 +606,10 @@ export function LocalChatShell() {
           type="button"
           className="community-new-chat"
           aria-label="Neuen Gruppenraum erstellen"
-          onClick={() => setNewRoomOpen(true)}
+          onClick={(event) => {
+            newRoomTriggerRef.current = event.currentTarget;
+            setNewRoomOpen(true);
+          }}
         >
           <MessageCirclePlus aria-hidden="true" />
         </button>
@@ -603,6 +718,7 @@ export function LocalChatShell() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Nachrichten durchsuchen…"
+              aria-label="Nachrichten durchsuchen"
               className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
             {search.trim() && (
@@ -865,6 +981,7 @@ export function LocalChatShell() {
           <textarea
             value={draft}
             onChange={(e) => {
+              draftRef.current = e.target.value;
               setDraft(e.target.value);
               if (userId && active) saveDraft(userId, active.kind, active.id, e.target.value);
             }}
@@ -875,6 +992,7 @@ export function LocalChatShell() {
               }
             }}
             placeholder={active ? "Nachricht…" : "Raum wählen…"}
+            aria-label="Nachricht an die Community"
             rows={1}
             disabled={!active}
             className="min-w-0 flex-1 resize-none rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-50"
@@ -882,7 +1000,7 @@ export function LocalChatShell() {
           />
           <button
             type="submit"
-            disabled={!active || !draft.trim()}
+            disabled={!active || !draft.trim() || sending}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-40"
           >
             ↑
@@ -907,6 +1025,7 @@ export function LocalChatShell() {
           <textarea
             value={draft}
             onChange={(e) => {
+              draftRef.current = e.target.value;
               setDraft(e.target.value);
               if (userId && active) saveDraft(userId, active.kind, active.id, e.target.value);
             }}
@@ -916,7 +1035,8 @@ export function LocalChatShell() {
                 void onSend();
               }
             }}
-            placeholder={replyTo ? "Antwort schreiben…" : "Nachricht schreiben…"}
+            placeholder={replyTo ? "Antwort…" : "Nachricht…"}
+            aria-label="Nachricht an die Community"
             rows={1}
             disabled={!active}
             className="min-h-12 min-w-0 flex-1 resize-none rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
@@ -924,7 +1044,7 @@ export function LocalChatShell() {
           />
           <button
             type="submit"
-            disabled={!active || !draft.trim()}
+            disabled={!active || !draft.trim() || sending}
             className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
           >
             <span className="sr-only">Nachricht senden</span>
@@ -942,22 +1062,30 @@ export function LocalChatShell() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Neuer Raum"
+            aria-labelledby="new-room-title"
+            ref={newRoomDialogRef}
             className="w-full max-w-sm rounded-2xl border border-border bg-card p-4"
           >
-            <div className="text-sm font-semibold">Neuer Raum</div>
+            <h2 id="new-room-title" className="text-sm font-semibold">
+              Neuer Raum
+            </h2>
             <input
               autoFocus
+              ref={newRoomInputRef}
               value={newRoomName}
               onChange={(e) => setNewRoomName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && void onCreateRoom()}
               placeholder="Name"
+              aria-label="Name des neuen Raums"
               className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
             />
             <div className="mt-3 flex gap-2">
               <button
                 type="button"
-                onClick={() => setNewRoomOpen(false)}
+                onClick={() => {
+                  setNewRoomOpen(false);
+                  newRoomTriggerRef.current?.focus();
+                }}
                 className="flex-1 rounded-xl border border-border py-2 text-sm"
               >
                 Abbrechen

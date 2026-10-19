@@ -1,4 +1,14 @@
-import { Sparkles, Mic, ArrowUp, Plus, Settings2 } from "lucide-react";
+import {
+  Sparkles,
+  Mic,
+  ArrowUp,
+  Plus,
+  Settings2,
+  CalendarDays,
+  Activity,
+  Moon,
+  ArrowUpRight,
+} from "lucide-react";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -840,7 +850,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                   }}
                 >
                   <span>
-                    {view === "chat" ? "Chat" : view === "history" ? "Verlauf" : "Aufgaben"}
+                    {view === "chat" ? "Coach-Chat" : view === "history" ? "Verlauf" : "Aufgaben"}
                   </span>
                   {view === "history" && sessions.length > 0 && (
                     <span className="sport-ai-tab-count" aria-hidden="true">
@@ -1152,6 +1162,46 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                       <h3 className="mt-4 text-xl font-bold">
                         Hallo{profileName ? ` ${profileName}` : ""}, lass uns loslegen
                       </h3>
+                      <p>Was möchtest du heute angehen?</p>
+                      <div
+                        className="ai-starter-grid"
+                        role="group"
+                        aria-label="Mit einer Aufgabe starten"
+                      >
+                        {[
+                          {
+                            id: "week_plan",
+                            icon: CalendarDays,
+                            hint: "Deine nächste Trainingswoche",
+                          },
+                          {
+                            id: "week_review",
+                            icon: Activity,
+                            hint: "Fortschritte besser verstehen",
+                          },
+                          { id: "recovery", icon: Moon, hint: "Training und Erholung abstimmen" },
+                        ].map(({ id, icon: Icon, hint }) => {
+                          const tool = SUPER_TOOLS.find((item) => item.id === id)!;
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              className="ai-starter-card"
+                              onClick={() => setInput(tool.prompt)}
+                            >
+                              <Icon aria-hidden="true" />
+                              <span>
+                                <strong>{tool.label}</strong>
+                                <small>{hint}</small>
+                              </span>
+                              <ArrowUpRight aria-hidden="true" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <span className="ai-starter-hint">
+                        Vorschlag wählen, anpassen und senden.
+                      </span>
                     </div>
                   )}
                   {messages.map((m, i) => (

@@ -451,3 +451,157 @@ html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-main {
   max-width: 60rem;
   margin-inline: auto;
 }
+/* Useful first-run prompts live in the scrollable canvas, never behind the composer. */
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome {
+  flex: 0 0 auto;
+  min-height: 100%;
+  padding: clamp(0.8rem, 3vh, 2rem) 0.25rem;
+}
+html[data-design-style="performance"] .ai-welcome h3 {
+  margin-top: 0.8rem;
+}
+html[data-design-style="performance"] .ai-welcome > .ai-starter-grid {
+  display: grid;
+  width: min(100%, 34rem);
+  height: auto;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  text-align: left;
+}
+html[data-design-style="performance"] .ai-starter-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 64px;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--sport-line);
+  border-radius: 1.2rem;
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  color: var(--foreground);
+}
+html[data-design-style="performance"] .ai-starter-card:hover {
+  border-color: var(--primary);
+  background: var(--secondary);
+}
+html[data-design-style="performance"] .ai-starter-card:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+html[data-design-style="performance"] .ai-starter-card > svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+  color: var(--primary);
+}
+html[data-design-style="performance"] .ai-starter-card > svg:last-child {
+  width: 1rem;
+  height: 1rem;
+  margin-left: auto;
+  color: var(--muted-foreground);
+}
+html[data-design-style="performance"] .ai-starter-card strong,
+html[data-design-style="performance"] .ai-starter-card small {
+  display: block;
+}
+html[data-design-style="performance"] .ai-starter-card strong {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+html[data-design-style="performance"] .ai-starter-card small {
+  margin-top: 0.15rem;
+  font-size: 0.73rem;
+  color: var(--muted-foreground);
+}
+html[data-design-style="performance"] .ai-starter-hint {
+  margin-top: 0.85rem;
+  font-size: 0.68rem;
+  color: var(--muted-foreground);
+}
+@media (max-width: 767px) {
+  html[data-design-style="performance"] main.sport-ai-page.sport-ai-chat-mode {
+    padding-bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.75rem)) !important;
+  }
+  html[data-design-style="performance"] .ai-welcome h3 {
+    max-width: 22ch;
+    font-size: 1.65rem;
+  }
+  html[data-design-style="performance"] .ai-welcome p {
+    margin-top: 0.55rem;
+    font-size: 0.8rem;
+  }
+}
+@media (max-height: 700px) and (max-width: 767px) {
+  html[data-design-style="performance"] .ai-welcome-mark {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  html[data-design-style="performance"] .ai-welcome > .ai-starter-grid {
+    gap: 0.4rem;
+    margin-top: 0.85rem;
+  }
+  html[data-design-style="performance"] .ai-starter-card {
+    min-height: 52px;
+    padding: 0.6rem 0.8rem;
+  }
+  html[data-design-style="performance"] .ai-starter-card small {
+    display: none;
+  }
+}
+@media (max-height: 700px) and (max-width: 767px) {
+  html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome {
+    padding-block: 0.5rem;
+  }
+  html[data-design-style="performance"] .ai-welcome h3 {
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+    max-width: none;
+  }
+  html[data-design-style="performance"] .ai-welcome p {
+    margin-top: 0.35rem;
+  }
+  html[data-design-style="performance"] .ai-welcome > .ai-starter-grid {
+    margin-top: 0.65rem;
+  }
+  html[data-design-style="performance"] .ai-starter-card {
+    min-height: 44px;
+    padding-block: 0.45rem;
+  }
+  html[data-design-style="performance"] .ai-starter-hint {
+    display: none;
+  }
+}
+@media (min-width: 768px) and (max-height: 800px) {
+  html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome {
+    padding-block: 0.5rem;
+  }
+  html[data-design-style="performance"] .ai-welcome h3 {
+    font-size: 1.6rem;
+    margin-top: 0.5rem;
+    max-width: none;
+  }
+  html[data-design-style="performance"] .ai-welcome p {
+    margin-top: 0.35rem;
+  }
+  html[data-design-style="performance"] .ai-welcome > .ai-starter-grid {
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 0.8rem;
+  }
+  html[data-design-style="performance"] .ai-starter-card {
+    min-width: 0;
+    min-height: 96px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  html[data-design-style="performance"] .ai-starter-card > svg:last-child,
+  html[data-design-style="performance"] .ai-starter-hint {
+    display: none;
+  }
+}

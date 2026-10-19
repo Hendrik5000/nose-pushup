@@ -27,13 +27,14 @@ export type Readiness = {
 export function computeReadiness(input: ReadinessInput): Readiness {
   const sources: string[] = [];
   const missingSources: string[] = [];
-  if (
+  const sleepMin =
     input.sleepMin != null &&
     Number.isFinite(input.sleepMin) &&
-    input.sleepMin >= 0 &&
+    input.sleepMin > 0 &&
     input.sleepMin <= 1440
-  )
-    sources.push("Schlaf");
+      ? input.sleepMin
+      : null;
+  if (sleepMin != null) sources.push("Schlaf");
   else missingSources.push("Schlaf");
   if (
     input.workoutsLast7Days != null &&
@@ -61,8 +62,7 @@ export function computeReadiness(input: ReadinessInput): Readiness {
   }
 
   // Schlaf: 0–30 Punkte (8h = voll); fehlende Quellen werden nicht neutral erfunden.
-  const sleepPts =
-    input.sleepMin == null ? null : Math.min(30, Math.round((input.sleepMin / 480) * 30));
+  const sleepPts = sleepMin == null ? null : Math.min(30, Math.round((sleepMin / 480) * 30));
 
   // Trainingslast: 0–25 Punkte — 3–5 Sessions/Woche optimal, >6 zu viel
   const w = input.workoutsLast7Days;

@@ -217,3 +217,62 @@ html[data-design-style="performance"] .authenticated-shell:has(.sport-health-pag
 html[data-design-style="performance"] .authenticated-shell:has(.sport-ai-page) .homebar-link {
   border-radius: 999px;
 }
+/* The list, not its account strip, consumes the remaining height. */
+html[data-design-style="performance"] .sport-chat-sidebar {
+  min-height: 0;
+  overflow: hidden;
+}
+html[data-design-style="performance"] .community-list-heading,
+html[data-design-style="performance"] .community-list-controls,
+html[data-design-style="performance"] .community-account {
+  flex-shrink: 0;
+}
+html[data-design-style="performance"] .community-list-scroll {
+  min-height: 0;
+  overscroll-behavior: contain;
+  scroll-padding-bottom: 5rem;
+}
+html[data-design-style="performance"] .community-filter-chips {
+  flex-wrap: wrap;
+}
+html[data-design-style="performance"] .community-quick-replies {
+  flex-wrap: wrap;
+  overflow: visible;
+  gap: 0.4rem;
+}
+html[data-design-style="performance"] .community-quick-replies button {
+  min-height: 32px;
+  white-space: normal;
+}
+@media (max-width: 767px) {
+  html[data-design-style="performance"] .sport-chat-app .sport-chat-composer {
+    margin-bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.75rem));
+  }
+}
+/* Beat the layout primitive specificity: complete labels even at 320px. */
+@media (max-width: 420px) {
+  html[data-design-style="performance"][data-navigation-layout] .app-homebar .homebar-link {
+    flex-direction: column;
+    padding-inline: 0;
+    font-size: 10px;
+    letter-spacing: -0.035em;
+    min-width: 0;
+    gap: 0.25rem;
+  }
+  html[data-design-style="performance"][data-navigation-layout] .app-homebar .homebar-link span {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+  html[data-design-style="performance"][data-navigation-layout] .app-homebar .homebar-icon {
+    display: block;
+  }
+}
+@media (max-width: 350px) {
+  html[data-design-style="performance"][data-navigation-layout]
+    .app-homebar
+    .homebar-items
+    > li:has(a[href="/chat"]) {
+    flex-grow: 1.25;
+  }
+}

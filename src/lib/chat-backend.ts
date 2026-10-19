@@ -73,7 +73,7 @@ export async function loadMessages(
     .select(
       "id, room_id, conversation_id, user_id, content, created_at, edited_at, reply_to_id" as never,
     )
-    .order("created_at" as never)
+    .order("created_at" as never, { ascending: false })
     .limit(200);
 
   q =
@@ -82,7 +82,7 @@ export async function loadMessages(
       : q.eq("conversation_id" as never, target.id as never);
 
   const { data } = await q;
-  const messages = (data ?? []) as unknown as LocalMessage[];
+  const messages = [...((data ?? []) as unknown as LocalMessage[])].reverse();
   const ids = messages.map((m) => m.id);
   let reactions: LocalReaction[] = [];
   if (ids.length) {

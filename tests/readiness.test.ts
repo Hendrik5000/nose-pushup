@@ -37,3 +37,24 @@ test("no saved workouts and invalid sleep do not create available readiness", ()
     false,
   );
 });
+
+test("zero, negative, and NaN sleep are unknown rather than measured sleep", () => {
+  for (const sleepMin of [0, -1, NaN]) {
+    const result = computeReadiness({
+      sleepMin,
+      steps: 9000,
+      workoutsLast7Days: 4,
+      streak: 5,
+    });
+
+    assert.equal(
+      result.available,
+      false,
+      `sleepMin=${sleepMin} must not produce numeric readiness`,
+    );
+    assert.equal(result.score, 0);
+    assert.equal(result.dataCoverage, 1);
+    assert.deepEqual(result.sources, ["Workouts der letzten 7 Tage"]);
+    assert.deepEqual(result.missingSources, ["Schlaf"]);
+  }
+});

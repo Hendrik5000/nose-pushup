@@ -42,8 +42,18 @@ export function useReadiness({
       ]);
       if (!active) return;
 
+      const storedSleepMin = healthError
+        ? null
+        : ((he as { sleep_min?: number } | null)?.sleep_min ?? null);
+      const sleepMin =
+        storedSleepMin != null &&
+        Number.isFinite(storedSleepMin) &&
+        storedSleepMin > 0 &&
+        storedSleepMin <= 1440
+          ? storedSleepMin
+          : null;
       const result = computeReadiness({
-        sleepMin: healthError ? null : ((he as { sleep_min?: number } | null)?.sleep_min ?? null),
+        sleepMin,
         steps: healthError ? null : ((he as { steps?: number } | null)?.steps ?? null),
         workoutsLast7Days: workouts.error ? null : (workouts.count ?? 0),
         streak,

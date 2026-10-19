@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { getStepsGoal, setStepsGoal } from "@/lib/extra-features";
+import { measuredHealthValue } from "@/lib/health-glance";
 
-export function WeeklyStepsGoal({ todaySteps }: { todaySteps: number }) {
+export function WeeklyStepsGoal({ todaySteps }: { todaySteps: number | null }) {
   const [goal, setGoal] = useState(() => getStepsGoal());
-  const pct = Math.min(1, todaySteps / goal);
+  const measuredSteps = measuredHealthValue(todaySteps);
+  const pct = measuredSteps === null ? null : Math.min(1, measuredSteps / goal);
 
   return (
     <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
@@ -13,17 +15,30 @@ export function WeeklyStepsGoal({ todaySteps }: { todaySteps: number }) {
             Schritt-Ziel
           </div>
           <div className="mt-1 text-xl font-semibold tabular-nums">
-            {todaySteps.toLocaleString("de-DE")} / {goal.toLocaleString("de-DE")}
+            {measuredSteps === null
+              ? "Noch nicht erfasst"
+              : `${measuredSteps.toLocaleString("de-DE")} / ${goal.toLocaleString("de-DE")}`}
           </div>
         </div>
         <span className="text-3xl">👟</span>
       </div>
-      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
+      {pct !== null ? (
         <div
-          className="h-full rounded-full bg-emerald-400 transition-all"
-          style={{ width: `${pct * 100}%` }}
-        />
-      </div>
+          className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary"
+          role="progressbar"
+          aria-label="Tagesfortschritt zum Schritt-Ziel"
+          aria-valuemin={0}
+          aria-valuemax={goal}
+          aria-valuenow={Math.min(measuredSteps ?? 0, goal)}
+        >
+          <div
+            className="h-full rounded-full bg-emerald-400 transition-all"
+            style={{ width: `${pct * 100}%` }}
+          />
+        </div>
+      ) : (
+        <p className="mt-3 text-xs text-muted-foreground">Ziel-Fortschritt unbekannt</p>
+      )}
       <div className="mt-3 flex gap-2">
         {[6000, 8000, 10000, 12000].map((g) => (
           <button
