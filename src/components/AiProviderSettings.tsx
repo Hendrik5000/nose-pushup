@@ -6,7 +6,7 @@ import {
   type ProviderConfig,
 } from "@/lib/ai-providers";
 
-export function AiProviderSettings() {
+export function AiProviderSettings({ onSaved }: { onSaved?: () => void }) {
   const [list, setList] = useState<ProviderConfig[]>(DEFAULT_PROVIDERS);
   const [saved, setSaved] = useState(false);
 
@@ -22,6 +22,7 @@ export function AiProviderSettings() {
   const onSave = () => {
     saveProviders(list);
     setSaved(true);
+    onSaved?.();
   };
 
   return (

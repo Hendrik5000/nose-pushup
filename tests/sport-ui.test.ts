@@ -102,6 +102,30 @@ test("performance home puts today's workout before status metrics and keeps widg
   assert.match(read("routes/_authenticated/route.tsx"), /<TopNav \/>/);
 });
 
+test("performance AI coach has focused subviews, task-first entry points and keeps the classic view", () => {
+  const ai = read("routes/_authenticated/ai.tsx");
+  assert.match(ai, /<DesignView variant="classic">/);
+  assert.match(ai, /<DesignView variant="sport">/);
+  assert.match(ai, /KI-Coach-Bereiche/);
+  assert.match(ai, /Trainingsplan erstellen/);
+  assert.match(ai, /Coach fragen/);
+  assert.match(ai, /Schnelle Einstiege/);
+  assert.match(ai, /Weitere Coach-Aufgaben/);
+  assert.match(ai, /Gespeicherte Gespräche/);
+  assert.match(ai, /AiProviderSettings\s+onSaved=/);
+  assert.match(ai, /sport-chat-stage/);
+  assert.match(ai, /sport-chat-composer/);
+
+  const styles = read("sport.css");
+  assert.match(styles, /sport-ai-hub/);
+  assert.match(styles, /sport-ai-primary-actions/);
+  assert.match(styles, /sport-ai-chat-grid/);
+  assert.match(styles, /safe-area-inset-bottom/);
+  assert.match(styles, /font-size: 0\.7rem/);
+  assert.match(styles, /sport-ai-chat-main[\s\S]*max-height: calc\(100dvh - 12rem\)/);
+  assert.match(styles, /sport-chat-composer[\s\S]*position: sticky/);
+});
+
 test("sport page components render semantic content and permit real data actions", () => {
   const intro = renderToStaticMarkup(
     createElement(SportPageIntro, {

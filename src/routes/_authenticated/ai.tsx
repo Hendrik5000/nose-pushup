@@ -51,6 +51,7 @@ export const Route = createFileRoute("/_authenticated/ai")({
 });
 
 type Msg = AiSession["messages"][number];
+type SportAiView = "coach" | "chat" | "history";
 
 function describeContext(ctx: AppContextPack): string {
   const labels: Record<string, string> = {
@@ -105,6 +106,9 @@ function SuperAiPage() {
   const [contextLoading, setContextLoading] = useState(false);
   const [listening, setListening] = useState(false);
   const [lastTask, setLastTask] = useState<AiTask | null>(null);
+  const [sportAiView, setSportAiView] = useState<SportAiView>("coach");
+  const [, refreshProviderStatus] = useState(0);
+  const activeProvider = pickProvider(loadProviders(), lastTask ?? "general");
   const lastFeedback = getMostRecentPlanFeedback(messages);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
@@ -170,6 +174,7 @@ function SuperAiPage() {
     setMessages(s?.messages ?? []);
     setSessionsOpen(false);
     setError(null);
+    setSportAiView("chat");
   };
 
   const startNewSession = () => {
@@ -178,6 +183,7 @@ function SuperAiPage() {
     setMessages([]);
     setSessionsOpen(false);
     setError(null);
+    setSportAiView("chat");
   };
 
   const submit = async (textOverride?: string) => {
@@ -192,6 +198,7 @@ function SuperAiPage() {
       setSettingsOpen(true);
       return;
     }
+    setSportAiView("chat");
 
     const nextMsgs: Msg[] = [...messages, { role: "user", content: text }];
     setMessages(nextMsgs);
@@ -735,404 +742,553 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
       <DesignView variant="sport">
         <main className="sport-only sport-ai-page mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8">
           <SportPageIntro
-            eyebrow="AI COMMAND CENTER"
+            eyebrow="DEIN KI-COACH"
             title="Super-AI"
-            description={`Dein Gespräch: ${activeTitle}. Assistenz mit Workout-, Gesundheits- und App-Kontext.`}
-          >
-            <Link
-              to="/"
-              className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
-            >
-              ← Übersicht
-            </Link>
-            <button
-              onClick={() => setSessionsOpen((v) => !v)}
-              className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
-            >
-              Gespräche {sessions.length}
-            </button>
-            <button
-              onClick={() => setSettingsOpen((v) => !v)}
-              className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
-            >
-              KI-Zugang
-            </button>
-          </SportPageIntro>
-          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
-            <div className="flex min-w-0 flex-col gap-5">
-              <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-5 sm:p-6">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-[0.17em] text-primary">
-                      Aktive Assistenz
-                    </div>
-                    <h2 className="mt-1 text-xl font-bold">Persönlichkeit wählen</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Pass den Fokus für dein Gespräch an.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <IconBtn label="Werkzeuge" onClick={() => setToolsOpen((v) => !v)}>
-                      ✦
-                    </IconBtn>
-                    <IconBtn label="Kontext" onClick={() => setContextOpen((v) => !v)}>
-                      ⧉
-                    </IconBtn>
-                  </div>
+            description="Trainingsplanung, Fortschritt und Fragen – in einem klaren Coach-Bereich."
+          />
+          <section className="sport-ai-hub" aria-label="KI-Coach-Navigation">
+            <div className="sport-ai-provider-status">
+              <div>
+                <span className="sport-ai-status-dot" aria-hidden="true" />
+                <span className="font-semibold">{activeProvider?.label ?? "Kein Anbieter"}</span>
+                <span className="text-muted-foreground">
+                  {activeProvider ? "bereit" : "Zugang fehlt"}
+                </span>
+              </div>
+              <button type="button" onClick={() => setSettingsOpen((v) => !v)}>
+                {settingsOpen ? "Einstellungen schließen" : "KI-Einstellungen"}
+              </button>
+            </div>
+            <nav className="sport-ai-tabs" aria-label="KI-Coach-Bereiche">
+              {(["coach", "chat", "history"] as const).map((view) => (
+                <button
+                  key={view}
+                  type="button"
+                  aria-pressed={sportAiView === view}
+                  className={sportAiView === view ? "is-active" : ""}
+                  aria-label={
+                    view === "history" && sessions.length > 0
+                      ? `Verlauf, ${sessions.length} Gespräche`
+                      : view === "chat"
+                        ? "Coach-Chat"
+                        : view === "coach"
+                          ? "Coach"
+                          : "Verlauf"
+                  }
+                  onClick={() => {
+                    setSportAiView(view);
+                    setSessionsOpen(false);
+                  }}
+                >
+                  <span>
+                    {view === "chat" ? "Coach-Chat" : view === "history" ? "Verlauf" : "Coach"}
+                  </span>
+                  {view === "history" && sessions.length > 0 && (
+                    <span className="sport-ai-tab-count" aria-hidden="true">
+                      {sessions.length}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </section>
+          {settingsOpen && (
+            <section className="sport-ai-settings-card rounded-[1.5rem] border border-border/70 bg-card/75 p-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-bold">KI-Anbieter und Zugangsdaten</h2>
+                <button
+                  type="button"
+                  className="text-sm font-semibold text-primary"
+                  onClick={() => setSettingsOpen(false)}
+                >
+                  Schließen
+                </button>
+              </div>
+              <AiProviderSettings
+                onSaved={() => refreshProviderStatus((revision) => revision + 1)}
+              />
+            </section>
+          )}
+          {sportAiView === "coach" && (
+            <section className="sport-ai-home" aria-labelledby="sport-ai-home-title">
+              <div className="sport-ai-home-heading">
+                <div>
+                  <p className="sport-kicker">Dein nächster Schritt</p>
+                  <h2 id="sport-ai-home-title">Wobei soll ich dir helfen?</h2>
+                  <p>Dein Coach nutzt verfügbare Trainingsdaten. Fehlendes bleibt unbekannt.</p>
                 </div>
-                <div className="mt-5 grid gap-2 sm:grid-cols-3">
-                  {PERSONAS.map((p) => (
+                <details className="sport-ai-persona-details">
+                  <summary>
+                    Coach-Stil: {PERSONAS.find((p) => p.id === persona)?.label ?? "Coach"}
+                  </summary>
+                  <div className="sport-ai-persona-options">
+                    {PERSONAS.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => onPersona(p.id)}
+                        aria-pressed={persona === p.id}
+                      >
+                        <span className="block font-semibold">{p.label}</span>
+                        <span className="text-xs text-muted-foreground">{p.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                </details>
+              </div>
+              <div className="sport-ai-primary-actions">
+                <button
+                  type="button"
+                  onClick={() =>
+                    void submit(SUPER_TOOLS.find((tool) => tool.id === "week_plan")?.prompt)
+                  }
+                  disabled={loading}
+                  className="sport-ai-primary-card"
+                >
+                  <span className="sport-ai-action-icon" aria-hidden="true">
+                    📅
+                  </span>
+                  <span>
+                    <strong>Trainingsplan erstellen</strong>
+                    <small>Eine passende Woche aus deinen verfügbaren Daten</small>
+                  </span>
+                  <span aria-hidden="true">→</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSportAiView("chat")}
+                  className="sport-ai-secondary-card"
+                >
+                  <span className="sport-ai-action-icon" aria-hidden="true">
+                    💬
+                  </span>
+                  <span>
+                    <strong>Coach fragen</strong>
+                    <small>Stell eine freie Frage zu Training oder Erholung</small>
+                  </span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
+              <div className="sport-ai-quick-starts">
+                <div>
+                  <h3>Schnelle Einstiege</h3>
+                  <p>Drei häufige Fragen, ein Tipp genügt.</p>
+                </div>
+                <div className="sport-ai-quick-grid">
+                  {SUPER_TOOLS.filter((tool) =>
+                    ["week_review", "form_check", "recovery"].includes(tool.id),
+                  ).map((tool) => (
                     <button
-                      key={p.id}
+                      key={tool.id}
                       type="button"
-                      onClick={() => onPersona(p.id)}
-                      aria-pressed={persona === p.id}
-                      className={`rounded-2xl border p-4 text-left transition ${persona === p.id ? "border-primary/60 bg-primary/10 shadow-sm" : "border-border/70 bg-background/40 hover:border-primary/30"}`}
+                      onClick={() => void submit(tool.prompt)}
+                      disabled={loading}
                     >
-                      <span className="block text-sm font-bold">{p.label}</span>
-                      <span className="mt-1 block text-xs text-muted-foreground">{p.hint}</span>
-                      {persona === p.id && (
-                        <span className="mt-3 inline-block rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                          Ausgewählt
-                        </span>
-                      )}
+                      <span aria-hidden="true">{tool.icon}</span>
+                      <span>
+                        <strong>{tool.label}</strong>
+                        <small>{tool.description}</small>
+                      </span>
                     </button>
                   ))}
                 </div>
-                {lastTask && (
-                  <p className="mt-4 rounded-xl bg-background/50 px-3 py-2 text-xs text-muted-foreground">
-                    Frage eingeordnet · <strong className="text-foreground">{lastTask}</strong>
-                  </p>
-                )}
-              </section>
-              {sessionsOpen && (
-                <section className="rounded-[1.5rem] border border-border/70 bg-card/75 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="font-bold">Gespeicherte Gespräche</h3>
-                    <button
-                      type="button"
-                      onClick={startNewSession}
-                      className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
-                    >
-                      + Neuer Chat
-                    </button>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {sessions.map((session) => (
+                <details className="sport-ai-more-tools">
+                  <summary>Weitere Coach-Aufgaben · {SUPER_TOOLS.length - 4}</summary>
+                  <div className="sport-ai-quick-grid">
+                    {SUPER_TOOLS.filter(
+                      (tool) =>
+                        !["week_plan", "week_review", "form_check", "recovery"].includes(tool.id),
+                    ).map((tool) => (
                       <button
-                        key={session.id}
+                        key={tool.id}
                         type="button"
-                        onClick={() => switchSession(session.id)}
-                        className={`rounded-xl border p-3 text-left ${session.id === activeId ? "border-primary/50 bg-primary/10" : "border-border/70 bg-background/40"}`}
+                        onClick={() => void submit(tool.prompt)}
+                        disabled={loading}
                       >
-                        <span className="block truncate text-sm font-semibold">
-                          {session.title || "Chat"}
-                        </span>
-                        <span className="mt-1 block text-xs text-muted-foreground">
-                          {new Date(session.updatedAt).toLocaleString("de-DE")}
+                        <span aria-hidden="true">{tool.icon}</span>
+                        <span>
+                          <strong>{tool.label}</strong>
+                          <small>{tool.description}</small>
                         </span>
                       </button>
                     ))}
-                    {sessions.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        Noch keine gespeicherten Chats.
-                      </p>
-                    )}
                   </div>
-                </section>
-              )}
-              {settingsOpen && (
-                <section className="rounded-[1.5rem] border border-border/70 bg-card/75 p-5">
-                  <h3 className="mb-3 text-lg font-bold">KI-Anbieter und API-Zugangsdaten</h3>
-                  <AiProviderSettings />
-                </section>
-              )}
-              {contextOpen && (
-                <section className="rounded-[1.5rem] border border-border/70 bg-card/75 p-5 text-sm">
-                  <h3 className="font-bold">App-Kontext & Datenschutz</h3>
-                  <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
-                    {contextLoading
-                      ? "App-Daten werden geladen …"
-                      : appContext
-                        ? describeContext(appContext)
-                        : userId
-                          ? "App-Kontext gerade nicht verfügbar; es werden keine App-Daten ergänzt."
-                          : "Noch nicht angemeldet oder kein App-Kontext geladen; es werden keine App-Daten ergänzt."}
-                  </p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Deine Eingabe und dieser Chatverlauf werden ergänzt. Fehlende Werte bleiben
-                    unbekannt. Routing heißt: Die App wählt passend zur Frage ein Modell.
-                  </p>
-                </section>
-              )}
-              <div className="flex flex-wrap gap-2">
-                <SmallAction onClick={regenerate} disabled={loading || messages.length === 0}>
-                  Neu generieren
-                </SmallAction>
-                <SmallAction onClick={exportChat} disabled={messages.length === 0}>
-                  Chat exportieren
-                </SmallAction>
-                <SmallAction
-                  onClick={() => {
-                    setMessages([]);
-                    setError(null);
-                  }}
-                >
-                  Verlauf leeren
-                </SmallAction>
-              </div>
-              <SportSectionLabel number="01">Gesprächsverlauf</SportSectionLabel>
-              <div
-                ref={scrollRef}
-                className="sport-chat-stage flex min-h-[38vh] flex-1 flex-col gap-4 overflow-y-auto rounded-[2rem] border border-border/70 bg-card/55 p-4 shadow-sm sm:p-6"
-              >
-                {messages.length === 0 && (
-                  <div className="mx-auto my-auto max-w-lg py-8 text-center">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-primary/10 text-3xl">
-                      ⚡
-                    </div>
-                    <h3 className="mt-4 text-xl font-bold">Womit kann ich dich unterstützen?</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Frag nach Training, Erholung oder deinen gespeicherten Werten.
-                    </p>
-                  </div>
-                )}
-                {messages.map((m, i) => (
-                  <div
-                    key={i}
-                    className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                </details>
+                {messages.length > 0 && (
+                  <button
+                    type="button"
+                    className="sport-ai-resume"
+                    onClick={() => setSportAiView("chat")}
                   >
-                    <article
-                      className={`sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/70 bg-background/80"}`}
-                    >
-                      <p className="whitespace-pre-wrap">{m.content}</p>
-                      {m.role === "assistant" && m.plan && (
-                        <section className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-                          <div className="text-xs font-bold uppercase tracking-wider text-primary">
-                            Trainingsvorschau
-                          </div>
-                          <h4 className="mt-1 font-bold">{m.plan.title}</h4>
-                          <p className="mt-2 text-sm">
-                            {m.plan.sets} Sätze × {m.plan.reps} Wiederholungen · {m.plan.rest_s} s
-                            Pause
-                          </p>
-                          <p className="mt-2 text-xs text-muted-foreground">{m.plan.rationale}</p>
-                          <p className="mt-2 text-[11px] text-muted-foreground">
-                            Nur Vorschlag – startet nicht automatisch als Training.
-                          </p>
-                          <Link
-                            to="/workout/$exerciseId"
-                            params={{ exerciseId: m.plan.exercise_id }}
-                            search={
-                              {
-                                mode: "manual",
-                                sets: m.plan.sets,
-                                reps: m.plan.reps,
-                                rest_s: m.plan.rest_s,
-                                title: m.plan.title,
-                              } as never
-                            }
-                            className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
-                          >
-                            Trainingsvorschau öffnen →
-                          </Link>
-                          <div
-                            className="mt-3 flex flex-wrap gap-2"
-                            aria-label="Trainingsvorschlag bewerten"
-                          >
-                            {(["zu_schwer", "zu_leicht", "passt_nicht", "passt"] as const).map(
-                              (rating) => (
-                                <button
-                                  key={rating}
-                                  type="button"
-                                  onClick={() => {
-                                    setMessages((current) =>
-                                      current.map((message, index) =>
-                                        index === i ? { ...message, feedback: rating } : message,
-                                      ),
-                                    );
-                                    setContextHint(
-                                      `Danke — „${rating === "zu_schwer" ? "zu schwer" : rating === "zu_leicht" ? "zu leicht" : rating === "passt_nicht" ? "passt nicht" : "passt"}“ beeinflusst den nächsten Trainingsvorschlag.`,
-                                    );
-                                  }}
-                                  aria-pressed={m.feedback === rating}
-                                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${m.feedback === rating ? "border-primary bg-primary/15" : "border-border text-muted-foreground"}`}
-                                >
-                                  {rating === "zu_schwer"
-                                    ? "Zu schwer"
-                                    : rating === "zu_leicht"
-                                      ? "Zu leicht"
-                                      : rating === "passt_nicht"
-                                        ? "Passt nicht"
-                                        : "Passt"}
-                                </button>
-                              ),
-                            )}
-                          </div>
-                        </section>
-                      )}
-                      {m.role === "assistant" && (
-                        <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border/50 pt-2 text-[10px]">
-                          {m.meta && (
-                            <span className="text-muted-foreground">
-                              {m.meta.provider} · {m.meta.model} · {m.meta.task}
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            className="font-semibold text-primary"
-                            onClick={() => void copyText(m.content)}
-                          >
-                            Kopieren
-                          </button>
-                          <button
-                            type="button"
-                            className="font-semibold text-muted-foreground"
-                            onClick={() => setFavs(toggleFavPrompt(m.content.slice(0, 120)))}
-                          >
-                            ★ Merken
-                          </button>
-                        </div>
-                      )}
-                    </article>
-                  </div>
-                ))}
-                {loading && (
-                  <div className="self-start rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
-                    Super-AI denkt…
-                  </div>
+                    Letzten Chat fortsetzen · {activeTitle} <span aria-hidden="true">→</span>
+                  </button>
                 )}
               </div>
-              {error && (
-                <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-                  {error}
+            </section>
+          )}
+          {sportAiView === "history" && (
+            <section className="sport-ai-history rounded-[1.5rem] border border-border/70 bg-card/75 p-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-bold">Gespeicherte Gespräche</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Deine letzten Coach-Chats auf diesem Gerät.
+                  </p>
                 </div>
-              )}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void submit();
-                }}
-                className="sport-chat-composer flex items-end gap-2 rounded-[1.5rem] border border-border/70 bg-card/85 p-3 shadow-lg"
-              >
                 <button
                   type="button"
-                  onClick={toggleVoice}
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
-                  aria-label="Spracheingabe"
+                  onClick={startNewSession}
+                  className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
                 >
-                  🎤
+                  + Neuer Chat
                 </button>
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      void submit();
-                    }
-                  }}
-                  placeholder="Deine Frage an Super-AI…"
-                  aria-label="Deine Frage an den KI-Coach"
-                  rows={1}
-                  className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
-                  style={{ maxHeight: 140 }}
-                  disabled={loading}
-                />
-                <button
-                  type="submit"
-                  aria-label="Nachricht senden"
-                  disabled={loading || !input.trim()}
-                  className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
-                >
-                  Senden ↑
-                </button>
-              </form>
-            </div>
-            <aside className="flex flex-col gap-4 lg:sticky lg:top-5">
-              <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-5">
-                <div className="text-xs font-bold uppercase tracking-[0.17em] text-primary">
-                  Dein Workspace
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {sessions.map((session) => (
+                  <button
+                    key={session.id}
+                    type="button"
+                    onClick={() => switchSession(session.id)}
+                    className={`rounded-xl border p-3 text-left ${session.id === activeId ? "border-primary/50 bg-primary/10" : "border-border/70 bg-background/40"}`}
+                  >
+                    <span className="block truncate text-sm font-semibold">
+                      {session.title || "Chat"}
+                    </span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {new Date(session.updatedAt).toLocaleString("de-DE")}
+                    </span>
+                  </button>
+                ))}
+                {sessions.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Noch keine gespeicherten Chats.</p>
+                )}
+              </div>
+            </section>
+          )}
+          {sportAiView === "chat" && (
+            <div className="sport-ai-chat-grid">
+              <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
+                <section className="sport-ai-chat-toolbar rounded-2xl border border-border/70 bg-card/70 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-primary">
+                        {PERSONAS.find((p) => p.id === persona)?.label ?? "Coach"}
+                        {lastTask && <span className="text-muted-foreground"> · {lastTask}</span>}
+                      </p>
+                      <h2 className="truncate text-sm font-bold">{activeTitle}</h2>
+                    </div>
+                    <details className="sport-ai-persona-details">
+                      <summary>Coach-Stil</summary>
+                      <div className="sport-ai-persona-options">
+                        {PERSONAS.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => onPersona(p.id)}
+                            aria-pressed={persona === p.id}
+                          >
+                            <span className="block font-semibold">{p.label}</span>
+                            <span className="text-xs text-muted-foreground">{p.hint}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                  <button
+                    type="button"
+                    className="mt-2 text-xs font-semibold text-muted-foreground"
+                    onClick={() => setContextOpen((v) => !v)}
+                  >
+                    {contextOpen ? "Kontextdetails ausblenden" : "Welche App-Daten gehen mit?"}
+                  </button>
+                </section>
+                {contextOpen && (
+                  <section className="rounded-[1.5rem] border border-border/70 bg-card/75 p-5 text-sm">
+                    <h3 className="font-bold">App-Kontext & Datenschutz</h3>
+                    <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
+                      {contextLoading
+                        ? "App-Daten werden geladen …"
+                        : appContext
+                          ? describeContext(appContext)
+                          : userId
+                            ? "App-Kontext gerade nicht verfügbar; es werden keine App-Daten ergänzt."
+                            : "Noch nicht angemeldet oder kein App-Kontext geladen; es werden keine App-Daten ergänzt."}
+                    </p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Deine Eingabe und dieser Chatverlauf werden ergänzt. Fehlende Werte bleiben
+                      unbekannt. Routing heißt: Die App wählt passend zur Frage ein Modell.
+                    </p>
+                  </section>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <SmallAction onClick={regenerate} disabled={loading || messages.length === 0}>
+                    Neu generieren
+                  </SmallAction>
+                  <SmallAction onClick={exportChat} disabled={messages.length === 0}>
+                    Chat exportieren
+                  </SmallAction>
+                  <SmallAction
+                    onClick={() => {
+                      setMessages([]);
+                      setError(null);
+                    }}
+                  >
+                    Verlauf leeren
+                  </SmallAction>
                 </div>
-                <h2 className="mt-2 text-lg font-bold">Schnellzugriff</h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Wähle ein Thema, um direkt zu starten.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setToolsOpen((v) => !v)}
-                  className="mt-3 text-xs font-semibold text-primary"
+                <SportSectionLabel number="01">Gesprächsverlauf</SportSectionLabel>
+                <div
+                  ref={scrollRef}
+                  className="sport-chat-stage flex min-h-[38vh] flex-1 flex-col gap-4 overflow-y-auto rounded-[2rem] border border-border/70 bg-card/55 p-4 shadow-sm sm:p-6"
                 >
-                  {toolsOpen ? "Werkzeuge ausblenden" : "Werkzeuge anzeigen"}
-                </button>
-                {toolsOpen && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setToolsExpanded((expanded) => !expanded)}
-                      className="mt-3 block text-xs text-muted-foreground"
+                  {messages.length === 0 && (
+                    <div className="mx-auto my-auto max-w-lg py-8 text-center">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-primary/10 text-3xl">
+                        ⚡
+                      </div>
+                      <h3 className="mt-4 text-xl font-bold">Womit kann ich dich unterstützen?</h3>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Frag nach Training, Erholung oder deinen gespeicherten Werten.
+                      </p>
+                    </div>
+                  )}
+                  {messages.map((m, i) => (
+                    <div
+                      key={i}
+                      className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
                     >
-                      {toolsExpanded ? "Weniger Vorschläge" : "Alle 10 Vorschläge ansehen"}
-                    </button>
-                    <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-1">
-                      {(toolsExpanded ? SUPER_TOOLS : SUPER_TOOLS.slice(0, 3)).map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          disabled={loading}
-                          onClick={() => void submit(t.prompt)}
-                          className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/50 p-3 text-left transition hover:border-primary/40 disabled:opacity-50"
-                          title={t.description}
-                        >
-                          <span className="text-xl">{t.icon}</span>
-                          <span>
-                            <span className="block text-xs font-bold">{t.label}</span>
-                            <span className="mt-1 block text-[10px] text-muted-foreground">
-                              Frage starten
+                      <article
+                        className={`sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/70 bg-background/80"}`}
+                      >
+                        <p className="whitespace-pre-wrap">{m.content}</p>
+                        {m.role === "assistant" && m.plan && (
+                          <section className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                            <div className="text-xs font-bold uppercase tracking-wider text-primary">
+                              Trainingsvorschau
+                            </div>
+                            <h4 className="mt-1 font-bold">{m.plan.title}</h4>
+                            <p className="mt-2 text-sm">
+                              {m.plan.sets} Sätze × {m.plan.reps} Wiederholungen · {m.plan.rest_s} s
+                              Pause
+                            </p>
+                            <p className="mt-2 text-xs text-muted-foreground">{m.plan.rationale}</p>
+                            <p className="mt-2 text-[11px] text-muted-foreground">
+                              Nur Vorschlag – startet nicht automatisch als Training.
+                            </p>
+                            <Link
+                              to="/workout/$exerciseId"
+                              params={{ exerciseId: m.plan.exercise_id }}
+                              search={
+                                {
+                                  mode: "manual",
+                                  sets: m.plan.sets,
+                                  reps: m.plan.reps,
+                                  rest_s: m.plan.rest_s,
+                                  title: m.plan.title,
+                                } as never
+                              }
+                              className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
+                            >
+                              Trainingsvorschau öffnen →
+                            </Link>
+                            <div
+                              className="mt-3 flex flex-wrap gap-2"
+                              aria-label="Trainingsvorschlag bewerten"
+                            >
+                              {(["zu_schwer", "zu_leicht", "passt_nicht", "passt"] as const).map(
+                                (rating) => (
+                                  <button
+                                    key={rating}
+                                    type="button"
+                                    onClick={() => {
+                                      setMessages((current) =>
+                                        current.map((message, index) =>
+                                          index === i ? { ...message, feedback: rating } : message,
+                                        ),
+                                      );
+                                      setContextHint(
+                                        `Danke — „${rating === "zu_schwer" ? "zu schwer" : rating === "zu_leicht" ? "zu leicht" : rating === "passt_nicht" ? "passt nicht" : "passt"}“ beeinflusst den nächsten Trainingsvorschlag.`,
+                                      );
+                                    }}
+                                    aria-pressed={m.feedback === rating}
+                                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${m.feedback === rating ? "border-primary bg-primary/15" : "border-border text-muted-foreground"}`}
+                                  >
+                                    {rating === "zu_schwer"
+                                      ? "Zu schwer"
+                                      : rating === "zu_leicht"
+                                        ? "Zu leicht"
+                                        : rating === "passt_nicht"
+                                          ? "Passt nicht"
+                                          : "Passt"}
+                                  </button>
+                                ),
+                              )}
+                            </div>
+                          </section>
+                        )}
+                        {m.role === "assistant" && (
+                          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border/50 pt-2 text-[10px]">
+                            {m.meta && (
+                              <span className="text-muted-foreground">
+                                {m.meta.provider} · {m.meta.model} · {m.meta.task}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              className="font-semibold text-primary"
+                              onClick={() => void copyText(m.content)}
+                            >
+                              Kopieren
+                            </button>
+                            <button
+                              type="button"
+                              className="font-semibold text-muted-foreground"
+                              onClick={() => setFavs(toggleFavPrompt(m.content.slice(0, 120)))}
+                            >
+                              ★ Merken
+                            </button>
+                          </div>
+                        )}
+                      </article>
+                    </div>
+                  ))}
+                  {loading && (
+                    <div className="self-start rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
+                      Super-AI denkt…
+                    </div>
+                  )}
+                </div>
+                {error && (
+                  <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                    {error}
+                  </div>
+                )}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void submit();
+                  }}
+                  className="sport-chat-composer flex items-end gap-2 rounded-[1.5rem] border border-border/70 bg-card/85 p-3 shadow-lg"
+                >
+                  <button
+                    type="button"
+                    onClick={toggleVoice}
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
+                    aria-label="Spracheingabe"
+                  >
+                    🎤
+                  </button>
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        void submit();
+                      }
+                    }}
+                    placeholder="Deine Frage an Super-AI…"
+                    aria-label="Deine Frage an den KI-Coach"
+                    rows={1}
+                    className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
+                    style={{ maxHeight: 140 }}
+                    disabled={loading}
+                  />
+                  <button
+                    type="submit"
+                    aria-label="Nachricht senden"
+                    disabled={loading || !input.trim()}
+                    className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
+                  >
+                    Senden ↑
+                  </button>
+                </form>
+              </div>
+              <aside className="sport-ai-chat-aside flex flex-col gap-4 lg:sticky lg:top-5">
+                <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-5">
+                  <div className="text-xs font-bold uppercase tracking-[0.17em] text-primary">
+                    Dein Workspace
+                  </div>
+                  <h2 className="mt-2 text-lg font-bold">Schnellzugriff</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Wähle ein Thema, um direkt zu starten.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setToolsOpen((v) => !v)}
+                    className="mt-3 text-xs font-semibold text-primary"
+                  >
+                    {toolsOpen ? "Werkzeuge ausblenden" : "Werkzeuge anzeigen"}
+                  </button>
+                  {toolsOpen && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setToolsExpanded((expanded) => !expanded)}
+                        className="mt-3 block text-xs text-muted-foreground"
+                      >
+                        {toolsExpanded ? "Weniger Vorschläge" : "Alle 10 Vorschläge ansehen"}
+                      </button>
+                      <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-1">
+                        {(toolsExpanded ? SUPER_TOOLS : SUPER_TOOLS.slice(0, 3)).map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            disabled={loading}
+                            onClick={() => void submit(t.prompt)}
+                            className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/50 p-3 text-left transition hover:border-primary/40 disabled:opacity-50"
+                            title={t.description}
+                          >
+                            <span className="text-xl">{t.icon}</span>
+                            <span>
+                              <span className="block text-xs font-bold">{t.label}</span>
+                              <span className="mt-1 block text-[10px] text-muted-foreground">
+                                Frage starten
+                              </span>
                             </span>
-                          </span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </section>
+                {favs.length > 0 && (
+                  <section className="rounded-[1.5rem] border border-border/70 bg-card/75 p-5">
+                    <h3 className="font-bold">Favoriten</h3>
+                    <div className="mt-3 flex flex-col gap-2">
+                      {favs.map((f) => (
+                        <button
+                          key={f}
+                          type="button"
+                          onClick={() => void submit(f)}
+                          className="rounded-xl border border-border/70 p-3 text-left text-xs"
+                        >
+                          ★ {f}
                         </button>
                       ))}
                     </div>
-                  </>
+                  </section>
                 )}
-              </section>
-              {favs.length > 0 && (
-                <section className="rounded-[1.5rem] border border-border/70 bg-card/75 p-5">
-                  <h3 className="font-bold">Favoriten</h3>
-                  <div className="mt-3 flex flex-col gap-2">
-                    {favs.map((f) => (
-                      <button
-                        key={f}
-                        type="button"
-                        onClick={() => void submit(f)}
-                        className="rounded-xl border border-border/70 p-3 text-left text-xs"
-                      >
-                        ★ {f}
-                      </button>
-                    ))}
-                  </div>
+                <section className="rounded-[1.5rem] border border-border/70 bg-card/60 p-5">
+                  <h3 className="font-bold">Kontext beim Senden</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    {contextLoading
+                      ? "App-Daten werden geladen …"
+                      : appContext
+                        ? `${appContext.recentWorkouts.length} letzte Trainings · ${appContext.health.length} Tage Gesundheitsdaten · ${appContext.chatRooms.length} Chat-Räume`
+                        : "Keine App-Daten verfügbar. Fehlende Werte werden nicht erfunden."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setContextOpen((v) => !v)}
+                    className="mt-3 text-xs font-semibold text-primary"
+                  >
+                    {contextOpen ? "Kontext schließen" : "Details anzeigen →"}
+                  </button>
                 </section>
-              )}
-              <section className="rounded-[1.5rem] border border-border/70 bg-card/60 p-5">
-                <h3 className="font-bold">Kontext beim Senden</h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  {contextLoading
-                    ? "App-Daten werden geladen …"
-                    : appContext
-                      ? `${appContext.recentWorkouts.length} letzte Trainings · ${appContext.health.length} Tage Gesundheitsdaten · ${appContext.chatRooms.length} Chat-Räume`
-                      : "Keine App-Daten verfügbar. Fehlende Werte werden nicht erfunden."}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setContextOpen((v) => !v)}
-                  className="mt-3 text-xs font-semibold text-primary"
-                >
-                  {contextOpen ? "Kontext schließen" : "Details anzeigen →"}
-                </button>
-              </section>
-            </aside>
-          </div>
+              </aside>
+            </div>
+          )}
           <BottomNav />
         </main>
       </DesignView>
