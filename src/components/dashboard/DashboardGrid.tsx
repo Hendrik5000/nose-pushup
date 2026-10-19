@@ -4,6 +4,7 @@ import {
   nextSize,
   resetLayout,
   saveLayout,
+  sizeLabel,
   sizeClass,
   widgetMeta,
   WIDGET_CATALOG,
@@ -143,11 +144,11 @@ export function DashboardGrid({
 
       {editing && (
         <p className="mb-2 text-[11px] text-muted-foreground">
-          Ziehen zum Sortieren · Größe tippen (S/M/L) · × zum Entfernen
+          Ziehen zum Sortieren · Größe tippen (Klein/Mittel/Groß) · × zum Entfernen
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
         {layout.map((item) => {
           const body = renderWidget(item.id, item.size);
           // Hide empty slots (e.g. challenges before login id is ready) unless editing
@@ -183,9 +184,9 @@ export function DashboardGrid({
                     type="button"
                     className="rounded px-1.5 text-[10px] font-bold uppercase text-primary"
                     onClick={() => resize(item.id)}
-                    aria-label="Größe ändern"
+                    aria-label={`Größe ändern (aktuell ${sizeLabel(item.size)})`}
                   >
-                    {item.size}
+                    {sizeLabel(item.size)}
                   </button>
                   <button
                     type="button"

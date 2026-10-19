@@ -15,7 +15,10 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Anmelden — Nose Push" },
-      { name: "description", content: "Melde dich an, um deine Push-Up-Bestwerte geräteübergreifend zu speichern." },
+      {
+        name: "description",
+        content: "Melde dich an, um deine Push-Up-Bestwerte geräteübergreifend zu speichern.",
+      },
     ],
   }),
   beforeLoad: async ({ search }) => {
@@ -152,12 +155,22 @@ function AuthPage() {
           </p>
 
           <div className="mt-6 space-y-2">
-            <OAuthButton label="Mit Google fortfahren" onClick={() => handleOAuth("google")} disabled={loading} />
-            <OAuthButton label="Mit Apple fortfahren" onClick={() => handleOAuth("apple")} disabled={loading} />
+            <OAuthButton
+              label="Mit Google fortfahren"
+              onClick={() => handleOAuth("google")}
+              disabled={loading}
+            />
+            <OAuthButton
+              label="Mit Apple fortfahren"
+              onClick={() => handleOAuth("apple")}
+              disabled={loading}
+            />
           </div>
 
           <div className="my-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />oder<span className="h-px flex-1 bg-border" />
+            <span className="h-px flex-1 bg-border" />
+            oder
+            <span className="h-px flex-1 bg-border" />
           </div>
 
           <form onSubmit={handleEmail} className="space-y-3">
@@ -198,7 +211,6 @@ function AuthPage() {
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute inset-y-0 right-0 flex items-center px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground"
                   aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
-                  tabIndex={-1}
                 >
                   {showPassword ? "🙈" : "👁"}
                 </button>
@@ -242,7 +254,15 @@ function AuthPage() {
               👤 Als Gast fortfahren
             </button>
             <p className="mt-2 text-center text-[10px] text-muted-foreground">
-              Ohne Anmeldung starten. Fortschritt bleibt an dieses Gerät gebunden.
+              Starte dein erstes Training ohne E-Mail: Empfehlung wählen, Wiederholungen erfassen
+              und speichern.
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Dein Training wird im Gastkonto auf dem Server gespeichert. Der Zugang zu diesem Konto
+              liegt nur in diesem Browser auf diesem Gerät. Ein anderer Browser, gelöschte
+              Websitedaten oder das Abmelden können diesen Zugang verlieren lassen. Unter Profil
+              kannst du das Gastkonto mit E-Mail und Passwort sichern. Die Anmeldung bei einem
+              anderen bestehenden Konto führt die Daten nicht automatisch zusammen.
             </p>
           </div>
         </div>
@@ -286,7 +306,15 @@ function Field({
   );
 }
 
-function OAuthButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+function OAuthButton({
+  label,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"

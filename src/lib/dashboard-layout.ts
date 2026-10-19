@@ -38,14 +38,29 @@ export type WidgetMeta = {
 };
 
 export const WIDGET_CATALOG: WidgetMeta[] = [
-  { id: "readiness", label: "Readiness", description: "Tagesform", defaultSize: "md" },
-  { id: "briefing", label: "Daily Briefing", description: "Kurzer Überblick", defaultSize: "md" },
+  {
+    id: "readiness",
+    label: "Tagesform",
+    description: "Datengestützte Readiness",
+    defaultSize: "md",
+  },
+  { id: "briefing", label: "Tagesüberblick", description: "Kurzer Überblick", defaultSize: "md" },
   { id: "quickActions", label: "Schnellaktionen", description: "4 Shortcuts", defaultSize: "md" },
   { id: "mood", label: "Stimmung", description: "Check-in", defaultSize: "sm" },
   { id: "water", label: "Wasser", description: "Trinkziel", defaultSize: "sm" },
   { id: "notes", label: "Notizen", description: "Trainingsnotizen", defaultSize: "md" },
-  { id: "microChallenge", label: "Micro-Challenge", description: "Tägliche Challenge", defaultSize: "md" },
-  { id: "streakFreeze", label: "Streak Freeze", description: "Streak absichern", defaultSize: "sm" },
+  {
+    id: "microChallenge",
+    label: "Micro-Challenge",
+    description: "Tägliche Challenge",
+    defaultSize: "md",
+  },
+  {
+    id: "streakFreeze",
+    label: "Streak Freeze",
+    description: "Streak absichern",
+    defaultSize: "sm",
+  },
   { id: "recoveryCal", label: "Recovery-Kalender", description: "Erholung", defaultSize: "md" },
   { id: "statsRing", label: "Stats & Level", description: "Ring + XP", defaultSize: "lg" },
   { id: "reminder", label: "Smart Reminder", description: "Hinweis", defaultSize: "sm" },
@@ -63,29 +78,11 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
 
 export const DEFAULT_LAYOUT: LayoutItem[] = [
   { id: "readiness", size: "md" },
-  { id: "briefing", size: "md" },
   { id: "quickActions", size: "md" },
   { id: "mood", size: "sm" },
-  { id: "water", size: "sm" },
-  { id: "microChallenge", size: "md" },
-  { id: "streakFreeze", size: "sm" },
-  { id: "statsRing", size: "lg" },
-  { id: "reminder", size: "sm" },
-  { id: "miniBlock", size: "md" },
-  { id: "tiles", size: "md" },
-  { id: "pushupHero", size: "lg" },
-  { id: "notes", size: "md" },
-  { id: "weekPlan", size: "md" },
-  { id: "weeklyReview", size: "md" },
-  { id: "aiCoach", size: "md" },
-  { id: "challenges", size: "md" },
-  { id: "friends", size: "md" },
-  { id: "history", size: "md" },
-  { id: "recoveryCal", size: "md" },
-  { id: "exercises", size: "lg" },
 ];
 
-const STORAGE_KEY = "np-dashboard-layout-v1";
+const STORAGE_KEY = "np-dashboard-layout-v2";
 
 function isWidgetId(v: unknown): v is WidgetId {
   return typeof v === "string" && WIDGET_CATALOG.some((w) => w.id === v);
@@ -130,12 +127,14 @@ export function resetLayout(): LayoutItem[] {
 }
 
 export function widgetMeta(id: WidgetId): WidgetMeta {
-  return WIDGET_CATALOG.find((w) => w.id === id) ?? {
-    id,
-    label: id,
-    description: "",
-    defaultSize: "md",
-  };
+  return (
+    WIDGET_CATALOG.find((w) => w.id === id) ?? {
+      id,
+      label: id,
+      description: "",
+      defaultSize: "md",
+    }
+  );
 }
 
 export function nextSize(s: WidgetSize): WidgetSize {
@@ -146,6 +145,12 @@ export function nextSize(s: WidgetSize): WidgetSize {
 
 export function sizeClass(s: WidgetSize): string {
   if (s === "sm") return "col-span-1";
-  if (s === "lg") return "col-span-2 min-h-[12rem]";
-  return "col-span-2";
+  if (s === "lg") return "col-span-1 md:col-span-3 xl:col-span-4 min-h-[12rem]";
+  return "col-span-1 md:col-span-2";
+}
+
+export function sizeLabel(s: WidgetSize): string {
+  if (s === "sm") return "Klein";
+  if (s === "md") return "Mittel";
+  return "Groß";
 }

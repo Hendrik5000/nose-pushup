@@ -98,7 +98,7 @@ async function trySupabaseInsert(report: ErrorReport) {
       created_at: report.ts,
     };
     // Table may not exist yet — ignore failures
-    await supabase.from("error_reports").insert(row as never);
+    await supabase.from("error_reports" as never).insert(row as never);
   } catch {
     // offline / missing table
   }

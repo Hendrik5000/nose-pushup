@@ -24,7 +24,8 @@
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-ring: var(--ring);
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-display:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
 }
 
 /* Apple Health default: pure black + warm orange accent */
@@ -151,22 +152,29 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body { height: 100%; overscroll-behavior: none; }
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
+    height: 100%;
+    overscroll-behavior: none;
+  }
   html {
     background: var(--color-background);
     scroll-behavior: smooth;
   }
   body {
-    transition: background-color 280ms ease, color 280ms ease;
+    transition:
+      background-color 280ms ease,
+      color 280ms ease;
     /* Apple Health: warm glow only at top */
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--primary) 55%, #1a0a00) 0%,
-        #000000 28%,
-        #000000 100%
-      );
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--primary) 55%, #1a0a00) 0%,
+      #000000 28%,
+      #000000 100%
+    );
     color: var(--color-foreground);
     font-family: var(--font-display);
     -webkit-tap-highlight-color: transparent;
@@ -180,15 +188,53 @@
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
-  #root { min-height: 100%; min-height: var(--app-viewport-height); }
-  .min-h-screen { min-height: var(--app-viewport-height) !important; }
-  .h-screen { height: var(--app-viewport-height) !important; }
+  #root {
+    min-height: 100%;
+    min-height: var(--app-viewport-height);
+  }
+  .min-h-screen {
+    min-height: var(--app-viewport-height) !important;
+  }
+  .h-screen {
+    height: var(--app-viewport-height) !important;
+  }
   html:fullscreen {
     --app-viewport-height: 100vh;
   }
-  button, [role="button"], a, input, select, textarea {
+  button,
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea {
     touch-action: manipulation;
   }
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  summary {
+    min-height: 44px;
+  }
+  a[class] {
+    min-height: 44px;
+  }
+  :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--color-ring) !important;
+    outline-offset: 4px;
+  }
+  :where(input, textarea, p) {
+    user-select: text;
+  }
+}
+
+/* Dark text meets normal-text contrast on these bright accent backgrounds. */
+:root,
+[data-theme="solar"],
+[data-theme="ember"],
+[data-theme="violet"] {
+  --primary-foreground: #000000;
 }
 
 @layer components {
@@ -248,7 +294,10 @@
     letter-spacing: -0.01em;
     text-align: center;
     color: var(--color-muted-foreground);
-    transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+    transition:
+      background-color 180ms ease,
+      color 180ms ease,
+      box-shadow 180ms ease;
   }
   .ah-segment a.active,
   .ah-segment a[data-status="active"],
@@ -269,18 +318,36 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
   @keyframes pulse-ring {
-    0% { transform: scale(1); opacity: 0.6; }
-    100% { transform: scale(1.6); opacity: 0; }
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
   }
-  .animate-pulse-ring { animation: pulse-ring 1.4s ease-out infinite; }
+  .animate-pulse-ring {
+    animation: pulse-ring 1.4s ease-out infinite;
+  }
   @keyframes count-pop {
-    0% { transform: scale(1); }
-    40% { transform: scale(1.18); }
-    100% { transform: scale(1); }
+    0% {
+      transform: scale(1);
+    }
+    40% {
+      transform: scale(1.18);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
-  .animate-count-pop { animation: count-pop 220ms ease-out; }
+  .animate-count-pop {
+    animation: count-pop 220ms ease-out;
+  }
   @keyframes route-enter {
     0% {
       opacity: 0;
@@ -295,7 +362,9 @@
     animation: route-enter 220ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
+    html {
+      scroll-behavior: auto;
+    }
     .route-enter {
       animation: none;
     }

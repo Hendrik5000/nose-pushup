@@ -1,17 +1,18 @@
 import { Link } from "@tanstack/react-router";
 
 const ACTIONS = [
-  { to: "/workout/pushup" as const, label: "Push-Ups", icon: "💪" },
   { to: "/ai" as const, label: "Super-AI", icon: "✦" },
-  { to: "/health" as const, label: "Health", icon: "💚" },
+  { to: "/health" as const, label: "Gesundheit", icon: "💚" },
   { to: "/chat" as const, label: "Chat", icon: "💬" },
 ];
 
 export function QuickActionsBar() {
   return (
     <section className="mt-4">
-      <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Schnellaktionen</div>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        Schnellaktionen
+      </div>
+      <div className="grid grid-cols-3 gap-2">
         {ACTIONS.map((a) => (
           <Link
             key={a.to}

@@ -114,11 +114,7 @@ export function openHealthConnectApp(): void {
   if (typeof window === "undefined") return;
 
   // Try Android intent to launch Health Connect
-  const intent =
-    `intent://#Intent;` +
-    `scheme=android-app;` +
-    `package=${HC_PACKAGE};` +
-    `end`;
+  const intent = `intent://#Intent;` + `scheme=android-app;` + `package=${HC_PACKAGE};` + `end`;
 
   const fallbackTimer = window.setTimeout(() => {
     window.open(HC_PLAY_STORE, "_blank", "noopener,noreferrer");
@@ -155,30 +151,14 @@ function normalizeSummary(raw: unknown): HealthConnectSummary | null {
   const steps = Number(o.steps ?? o.stepCount ?? 0) || 0;
   const activeKcal = Number(o.activeKcal ?? o.active_kcal ?? o.calories ?? 0) || 0;
   const sleepMin =
-    Number(
-      o.sleepMin ??
-        o.sleep_min ??
-        (o.sleepHours != null ? Number(o.sleepHours) * 60 : 0) ??
-        0,
-    ) || 0;
+    Number(o.sleepMin ?? o.sleep_min ?? (o.sleepHours != null ? Number(o.sleepHours) * 60 : 0)) ||
+    0;
   const weightKg =
-    o.weightKg != null
-      ? Number(o.weightKg)
-      : o.weight_kg != null
-        ? Number(o.weight_kg)
-        : null;
+    o.weightKg != null ? Number(o.weightKg) : o.weight_kg != null ? Number(o.weight_kg) : null;
   const restingHr =
-    o.restingHr != null
-      ? Number(o.restingHr)
-      : o.resting_hr != null
-        ? Number(o.resting_hr)
-        : null;
+    o.restingHr != null ? Number(o.restingHr) : o.resting_hr != null ? Number(o.resting_hr) : null;
   const distanceM =
-    o.distanceM != null
-      ? Number(o.distanceM)
-      : o.distance_m != null
-        ? Number(o.distance_m)
-        : null;
+    o.distanceM != null ? Number(o.distanceM) : o.distance_m != null ? Number(o.distance_m) : null;
   const day =
     typeof o.day === "string"
       ? o.day.slice(0, 10)
@@ -240,9 +220,7 @@ export async function requestHealthConnectPermissions(): Promise<{
 /**
  * Read today's (or range) summary from bridge. Returns null if no bridge / no data.
  */
-export async function readHealthConnectSummary(
-  days = 1,
-): Promise<HealthConnectSummary | null> {
+export async function readHealthConnectSummary(days = 1): Promise<HealthConnectSummary | null> {
   const bridge = getHealthConnectBridge();
   if (!bridge?.readSummary) return getHcCachedSummary();
 
@@ -286,10 +264,7 @@ export async function persistHealthConnectSummary(
     if (error) return { error: error.message };
 
     if (summary.weightKg) {
-      await supabase
-        .from("profiles")
-        .update({ weight_kg: summary.weightKg })
-        .eq("id", u.user.id);
+      await supabase.from("profiles").update({ weight_kg: summary.weightKg }).eq("id", u.user.id);
     }
 
     cacheSummary(summary);

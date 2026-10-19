@@ -5,10 +5,12 @@ import type { ExerciseMeta } from "@/lib/exercises";
 import { levelProgress } from "@/lib/level";
 import {
   getQuickStartPlan,
-  getRecoverySummary,
+  getDashboardRecommendation,
   getSmartReminder,
   getWeeklyProgress,
 } from "@/lib/workout-plans";
+import { getTrainingWeekBounds, localDateKey, sumTrainingWeekReps } from "@/lib/training-dates";
+import type { Readiness } from "@/lib/readiness";
 import { AiCoachCard } from "@/components/AiCoachCard";
 import { WeekPlanCard } from "@/components/WeekPlanCard";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
@@ -33,7 +35,10 @@ export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Nosy Push-Ups — Dashboard" },
-      { name: "description", content: "Zähle Push-Ups mit der Nase, sammle XP, halte deine Streak." },
+      {
+        name: "description",
+        content: "Zähle Push-Ups mit der Nase, sammle XP, halte deine Streak.",
+      },
     ],
   }),
   component: Dashboard,
@@ -64,6 +69,9 @@ function Dashboard() {
   const [userId, setUserId] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
   const [todaySteps, setTodaySteps] = useState(0);
+  const [hasWorkoutData, setHasWorkoutData] = useState(false);
+  const [weekReps, setWeekReps] = useState<number | null>(null);
+  const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
   const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
@@ -73,12 +81,25 @@ function Dashboard() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       setUserId(u.user.id);
-      const today = new Date().toISOString().slice(0, 10);
-      const [{ data: ex }, { data: p }, { data: ds }, { data: he }] = await Promise.all([
+      const now = new Date();
+      const today = localDateKey(now);
+      const week = getTrainingWeekBounds(now);
+      const [{ data: ex }, { data: p }, { data: he }, workouts] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         supabase.from("profiles").select(PROFILE_COLS).eq("id", u.user.id).maybeSingle(),
-        supabase.from("daily_stats").select("day, total_reps").eq("user_id", u.user.id).eq("day", today).maybeSingle(),
-        supabase.from("health_entries").select("steps").eq("user_id", u.user.id).eq("day", today).maybeSingle(),
+        supabase
+          .from("health_entries")
+          .select("steps")
+          .eq("user_id", u.user.id)
+          .eq("day", today)
+          .maybeSingle(),
+        supabase
+          .from("workouts")
+          .select("count, created_at")
+          .eq("user_id", u.user.id)
+          .eq("exercise_id", "pushup")
+          .gte("created_at", week.startInclusive)
+          .lt("created_at", week.endExclusive),
       ]);
       if (ex) setExercises(ex as ExerciseMeta[]);
       let prof = p;
@@ -101,8 +122,18 @@ function Dashboard() {
         };
         setProfile({ ...raw, personal_bests: raw.personal_bests ?? {} });
       }
-      if (ds) setTodayReps(ds.total_reps ?? 0);
+      setHasWorkoutData(!workouts.error && (workouts.data?.length ?? 0) > 0);
+      setTodayReps(
+        (workouts.data ?? []).reduce(
+          (sum, row) =>
+            row.created_at && localDateKey(new Date(row.created_at)) === today
+              ? sum + (row.count ?? 0)
+              : sum,
+          0,
+        ),
+      );
       if (he) setTodaySteps(he.steps ?? 0);
+      setWeekReps(workouts.error ? null : sumTrainingWeekReps(workouts.data ?? [], now));
       setLoading(false);
     })();
   }, []);
@@ -114,8 +145,10 @@ function Dashboard() {
   const goalPct = Math.min(1, todayReps / goal);
   const streakActive = (() => {
     if (!profile?.last_workout_date) return false;
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const today = localDateKey(new Date());
+    const previous = new Date();
+    previous.setDate(previous.getDate() - 1);
+    const yesterday = localDateKey(previous);
     return profile.last_workout_date === today || profile.last_workout_date === yesterday;
   })();
   const pushupBest = profile?.personal_bests?.pushup ?? profile?.best_count ?? 0;
@@ -127,46 +160,40 @@ function Dashboard() {
     day: "numeric",
     month: "long",
   });
-  const weeklyTarget = Math.max(200, goal * 6);
-  const weeklyReps = Math.min(
-    weeklyTarget,
-    todayReps + Math.max(0, streak * 8) + Math.round((pushupBest || 10) / 2),
-  );
-  const weeklyProgress = getWeeklyProgress({ weekReps: weeklyReps, target: weeklyTarget });
-  const recovery = getRecoverySummary({
-    steps: todaySteps,
-    sleepMin: 420,
-    activeKcal: Math.max(0, todayReps * 3 + streak * 15),
-    streak,
-    goal,
-    weekReps: weeklyReps,
+  const weeklyTarget = goal * 7;
+  const weeklyProgress =
+    weekReps == null ? null : getWeeklyProgress({ weekReps, target: weeklyTarget });
+  const recommendation = getDashboardRecommendation({
+    plan: quickStart,
+    readinessAvailable: readiness?.available ?? false,
+    readinessLabel: readiness?.label,
+    readinessLevel: readiness?.level,
   });
-  const reminder = getSmartReminder({ score: recovery.score, todayReps, goal, streak });
+  const reminder = getSmartReminder({ todayReps, goal, streak });
   const routineConfig = {
-    push: { label: "Power Push", sets: quickStart.sets, reps: quickStart.reps, rest: quickStart.rest_s },
+    push: {
+      label: "Power Push",
+      sets: quickStart.sets,
+      reps: quickStart.reps,
+      rest: quickStart.rest_s,
+    },
     strength: { label: "Kraft-Block", sets: 3, reps: 12, rest: 50 },
     mobility: { label: "Mobilität", sets: 2, reps: 30, rest: 35 },
   } as const;
   const routine = routineConfig[routineMode];
 
   const wrap = (node: ReactNode, size: WidgetSize) => (
-    <div className={size === "sm" ? "[&>section]:mt-0 [&>div]:mt-0" : "[&>section]:mt-0"}>{node}</div>
+    <div className={size === "sm" ? "[&>section]:mt-0 [&>div]:mt-0" : "[&>section]:mt-0"}>
+      {node}
+    </div>
   );
 
   const renderWidget = (id: WidgetId, size: WidgetSize): ReactNode => {
     switch (id) {
       case "readiness":
-        return wrap(<ReadinessCard streak={streak} />, size);
+        return wrap(<ReadinessCard streak={streak} onReadinessChange={setReadiness} />, size);
       case "briefing":
-        return wrap(
-          <DailyBriefingCard
-            streak={streak}
-            todayReps={todayReps}
-            goal={goal}
-            readinessScore={recovery.score}
-          />,
-          size,
-        );
+        return wrap(<DailyBriefingCard streak={streak} todayReps={todayReps} goal={goal} />, size);
       case "quickActions":
         return wrap(<QuickActionsBar />, size);
       case "mood":
@@ -183,9 +210,7 @@ function Dashboard() {
             dailyGoal={goal}
             todayReps={todayReps}
             streak={streak}
-            readinessLevel={
-              recovery.score >= 70 ? "green" : recovery.score >= 45 ? "yellow" : "red"
-            }
+            readinessLevel={readiness?.available ? readiness.level : "yellow"}
             plankBest={profile?.personal_bests?.plank}
           />,
           size,
@@ -213,6 +238,7 @@ function Dashboard() {
                 />
               </div>
             </div>
+
             <div className="mt-5 border-t border-border pt-4">
               <div className="flex items-baseline justify-between text-xs">
                 <span className="font-semibold">
@@ -241,7 +267,9 @@ function Dashboard() {
             <div className="mt-2 text-sm font-semibold">{reminder.title}</div>
             <p className="mt-1 text-xs text-muted-foreground">{reminder.text}</p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Woche: {weeklyProgress.percent}% · Recovery {recovery.score}%
+              {weeklyProgress
+                ? `Woche: ${weeklyProgress.weekReps} / ${weeklyProgress.target} Reps (${weeklyProgress.percent} %)`
+                : "Wochenfortschritt noch nicht verfügbar."}
             </p>
           </section>,
           size,
@@ -269,7 +297,13 @@ function Dashboard() {
             <Link
               to="/workout/$exerciseId"
               params={{ exerciseId: "pushup" }}
-              search={{ mode }}
+              search={{
+                mode,
+                sets: routine.sets,
+                reps: routine.reps,
+                rest_s: routine.rest,
+                title: routine.label,
+              }}
               className="mt-3 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
             >
               Mini-Block starten →
@@ -294,13 +328,20 @@ function Dashboard() {
           <section className="rounded-3xl border border-border bg-card/50 p-5">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Haupt-Übung</div>
+                <div className="text-[10px] uppercase tracking-[0.25em] text-primary">
+                  Haupt-Übung
+                </div>
                 <h2 className="mt-1 text-3xl font-bold">Push-Ups</h2>
               </div>
               <span className="text-5xl">{pushupEx?.icon ?? "💪"}</span>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2">
-              <ModeChip active={mode === "nose"} onClick={() => setMode("nose")} icon="👃" label="Nase" />
+              <ModeChip
+                active={mode === "nose"}
+                onClick={() => setMode("nose")}
+                icon="👃"
+                label="Nase"
+              />
               <ModeChip
                 active={mode === "manual"}
                 onClick={() => setMode("manual")}
@@ -377,10 +418,12 @@ function Dashboard() {
   };
 
   return (
-    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-8">
+    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
       <header className="flex items-center justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{dateLabel}</div>
+          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+            {dateLabel}
+          </div>
           <h1 className="mt-0.5 text-xl font-bold tracking-tight">
             Hallo {profile?.display_name || "Athlet"} 👋
           </h1>
@@ -398,7 +441,121 @@ function Dashboard() {
         </Link>
       </header>
 
-      <DashboardGrid renderWidget={renderWidget} />
+      <section
+        className="mt-6 rounded-3xl border border-primary/25 bg-primary/5 p-5"
+        aria-labelledby="today-plan-title"
+      >
+        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+          Dein Start heute
+        </div>
+        <h2 id="today-plan-title" className="mt-2 text-2xl font-bold">
+          {recommendation.headline}
+        </h2>
+        {weekReps === 0 && todayReps === 0 && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Schön, dass du da bist. Starte entspannt mit dem kurzen Plan unten – saubere Technik
+            geht vor Tempo.
+          </p>
+        )}
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          {recommendation.detail}
+        </p>
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <PlanMetric label="Sätze" value={recommendation.sets} />
+          <PlanMetric label="Reps je Satz" value={recommendation.reps} />
+          <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">{recommendation.readinessNote}</p>
+        <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Zählmethode">
+          <ModeChip
+            active={mode === "nose"}
+            onClick={() => setMode("nose")}
+            icon="👃"
+            label="Nase"
+          />
+          <ModeChip
+            active={mode === "manual"}
+            onClick={() => setMode("manual")}
+            icon="✍️"
+            label="Manuell"
+          />
+          <ModeChip
+            active={mode === "camera"}
+            onClick={() => setMode("camera")}
+            icon="📷"
+            label="Kamera"
+          />
+        </div>
+        <Link
+          to="/workout/$exerciseId"
+          params={{ exerciseId: "pushup" }}
+          search={{
+            mode,
+            sets: recommendation.sets,
+            reps: recommendation.reps,
+            rest_s: recommendation.rest_s,
+            title: recommendation.title,
+          }}
+          className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground"
+        >
+          {recommendation.recoveryDay
+            ? "Leichte Einheit (optional) →"
+            : "Workout nach Plan starten →"}
+        </Link>
+        <div className="mt-5 border-t border-border pt-4" aria-live="polite">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-sm font-semibold">Diese Woche</h3>
+            <span className="text-xs font-medium tabular-nums">
+              {weekReps == null
+                ? "Daten nicht verfügbar"
+                : !hasWorkoutData
+                  ? "Noch keine Daten"
+                  : `${weekReps} / ${weeklyTarget} Reps`}
+            </span>
+          </div>
+          {weekReps != null && hasWorkoutData && (
+            <>
+              <div
+                className="mt-2 h-2 overflow-hidden rounded-full bg-secondary"
+                role="meter"
+                aria-label="Wochenziel-Fortschritt"
+                aria-valuemin={0}
+                aria-valuemax={weeklyTarget}
+                aria-valuenow={Math.min(weekReps, weeklyTarget)}
+              >
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{
+                    width: `${Math.min(100, Math.round((weekReps / Math.max(weeklyTarget, 1)) * 100))}%`,
+                  }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {weeklyProgress?.message} Ziel: {weeklyTarget} Reps (7 × Tagesziel {goal}).
+              </p>
+            </>
+          )}
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            Gezählt werden gespeicherte Push-Up-Reps ab Montag 00:00 deiner lokalen Zeitzone.
+            Maßgeblich ist der Zeitpunkt des Trainingsspeicherns; offline vorgemerkt behält dieses
+            Datum.
+          </p>
+        </div>
+      </section>
+
+      <details className="mt-5">
+        <summary className="cursor-pointer rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold">
+          Weitere Übersicht & Werkzeuge
+        </summary>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Readiness, Check-ins und zusätzliche Widgets findest du hier. Unsichere oder fehlende
+          Messwerte werden als nicht verfügbar markiert.
+        </p>
+        <ReadinessCard streak={streak} onReadinessChange={setReadiness} />
+        <DashboardGrid
+          renderWidget={(id, size) => (id === "readiness" ? null : renderWidget(id, size))}
+        />
+      </details>
 
       <BottomNav />
     </main>
@@ -411,7 +568,14 @@ function ActivityRing({ pct, value, goal }: { pct: number; value: number; goal: 
   return (
     <div className="relative h-[110px] w-[110px] shrink-0">
       <svg width="110" height="110" className="-rotate-90">
-        <circle cx="55" cy="55" r={r} fill="none" stroke="var(--color-secondary)" strokeWidth="10" />
+        <circle
+          cx="55"
+          cy="55"
+          r={r}
+          fill="none"
+          stroke="var(--color-secondary)"
+          strokeWidth="10"
+        />
         <circle
           cx="55"
           cy="55"
@@ -427,7 +591,9 @@ function ActivityRing({ pct, value, goal }: { pct: number; value: number; goal: 
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-3xl font-bold tabular-nums">{value}</span>
-        <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">/ {goal}</span>
+        <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+          / {goal}
+        </span>
       </div>
     </div>
   );
@@ -480,5 +646,14 @@ function ModeChip({
       <span className="text-lg">{icon}</span>
       <span>{label}</span>
     </button>
+  );
+}
+
+function PlanMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl border border-border bg-card px-2 py-3">
+      <div className="text-lg font-semibold">{value}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{label}</div>
+    </div>
   );
 }

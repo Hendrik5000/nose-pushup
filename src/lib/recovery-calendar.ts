@@ -2,7 +2,8 @@
 // 7-day overview of load on wrist, shoulder, elbow, core from recent workouts
 // (via calisthenics stress tags) + daily check-in soreness.
 
-import { allSkills, loadRecentCheckins, type CaliSkill } from "./calisthenics";
+import { allSkills, type CaliSkill } from "./calisthenics";
+import { localDateKey } from "./training-dates";
 
 export type Joint = "wrist" | "shoulder" | "elbow" | "core";
 
@@ -56,13 +57,14 @@ export type WorkoutRow = {
 /** Build last 7 days of joint load from workouts + check-ins. */
 export function buildRecoveryWeek(workouts: WorkoutRow[]): DayLoad[] {
   const days: DayLoad[] = [];
-  const checkins = loadRecentCheckins(7);
-  const checkinByDay = new Map(checkins.map((c) => [c.date, c.soreness]));
+  // Device-global check-ins are not account-bound and must not affect this estimate.
 
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const d = localDateKey(date);
     const loads: Record<Joint, number> = { wrist: 0, shoulder: 0, elbow: 0, core: 0 };
-    const dayWorkouts = workouts.filter((w) => w.created_at.slice(0, 10) === d);
+    const dayWorkouts = workouts.filter((w) => localDateKey(new Date(w.created_at)) === d);
     for (const w of dayWorkouts) {
       const joints = stressForExercise(w.exercise_id);
       // Intensity proxy from count
@@ -74,7 +76,7 @@ export function buildRecoveryWeek(workouts: WorkoutRow[]): DayLoad[] {
     days.push({
       day: d,
       loads,
-      soreness: checkinByDay.get(d) ?? null,
+      soreness: null,
     });
   }
   return days;
@@ -100,7 +102,11 @@ export function summarizeJoints(week: DayLoad[]): JointSummary[] {
 
     const level = score >= 65 ? "red" : score >= 35 ? "yellow" : "green";
     const label =
-      level === "red" ? "Stark belastet" : level === "yellow" ? "Leicht belastet" : "Erholt";
+      level === "red"
+        ? "Stark belastet"
+        : level === "yellow"
+          ? "Leicht belastet"
+          : "Wenig erfasste Last";
     return { joint, score, level, label };
   });
 }

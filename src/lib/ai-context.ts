@@ -2,10 +2,13 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { loadChatStore } from "@/lib/local-chat";
+import { getTrainingWeekBounds, sumTrainingWeekReps } from "@/lib/training-dates";
 
 export type AppContextPack = {
   profile: Record<string, unknown> | null;
-  weekReps: number;
+  weekReps: number | null;
+  weeklyWorkoutCount: number | null;
+  dailyStatsDays: number;
   recentWorkouts: Array<{ exercise_id: string | null; count: number; created_at: string }>;
   health: Array<{ day: string; steps: number; sleep_min: number; active_kcal: number }>;
   chatRooms: Array<{ name: string; description?: string | null }>;
@@ -15,7 +18,8 @@ export type AppContextPack = {
 export async function buildAppContext(userId: string): Promise<AppContextPack> {
   const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
 
-  const [{ data: profile }, { data: stats }, { data: workouts }, { data: health }, roomsRes] =
+  const week = getTrainingWeekBounds();
+  const [{ data: profile }, { data: stats }, { data: workouts }, { data: health }, weeklyWorkouts] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -42,21 +46,21 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
         .gte("day", cutoff)
         .order("day", { ascending: false })
         .limit(7),
-      supabase.from("rooms" as never).select("name, description" as never).limit(10),
+      supabase
+        .from("workouts")
+        .select("count, created_at")
+        .eq("user_id", userId)
+        .eq("exercise_id", "pushup")
+        .gte("created_at", week.startInclusive)
+        .lt("created_at", week.endExclusive),
     ]);
 
   const days = (stats ?? []) as Array<{ day: string; total_reps: number }>;
-  const weekReps = days
-    .filter((d) => +new Date(d.day) >= Date.now() - 7 * 86400000)
-    .reduce((s, d) => s + (d.total_reps ?? 0), 0);
-
-  let chatRooms: AppContextPack["chatRooms"] = [];
-  if (!roomsRes.error && roomsRes.data) {
-    chatRooms = roomsRes.data as unknown as AppContextPack["chatRooms"];
-  } else {
-    const local = loadChatStore(userId);
-    chatRooms = local.rooms.map((r) => ({ name: r.name, description: r.description }));
-  }
+  const weekReps = weeklyWorkouts.error ? null : sumTrainingWeekReps(weeklyWorkouts.data ?? []);
+  // Rooms and fallback messages are always scoped to this account. Never include
+  // a device's system welcome message as if it were the user's own message.
+  const local = loadChatStore(userId);
+  const chatRooms = local.rooms.map((r) => ({ name: r.name, description: r.description }));
 
   let recentChat: AppContextPack["recentChat"] = [];
   try {
@@ -67,12 +71,10 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
       .order("created_at" as never, { ascending: false })
       .limit(15);
     if (msgs) {
-      recentChat = (msgs as unknown as Array<{ content: string; created_at: string }>).map(
-        (m) => ({
-          content: String(m.content).slice(0, 200),
-          created_at: m.created_at,
-        }),
-      );
+      recentChat = (msgs as unknown as Array<{ content: string; created_at: string }>).map((m) => ({
+        content: String(m.content).slice(0, 200),
+        created_at: m.created_at,
+      }));
     }
   } catch {
     /* tables may not exist yet */
@@ -80,6 +82,7 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
   if (recentChat.length === 0) {
     const local = loadChatStore(userId);
     recentChat = local.messages
+      .filter((message) => message.user_id === userId)
       .slice(-15)
       .reverse()
       .map((m) => ({
@@ -91,6 +94,8 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
   return {
     profile: (profile as Record<string, unknown> | null) ?? null,
     weekReps,
+    weeklyWorkoutCount: weeklyWorkouts.error ? null : (weeklyWorkouts.data?.length ?? 0),
+    dailyStatsDays: days.length,
     recentWorkouts: (workouts ?? []) as AppContextPack["recentWorkouts"],
     health: (health ?? []) as AppContextPack["health"],
     chatRooms,
@@ -100,26 +105,32 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
 
 export function contextToSystemBlock(ctx: AppContextPack): string {
   const p = ctx.profile ?? {};
-  const name = (p.display_name as string) || "Athlet";
+  const name = (p.display_name as string) || "nicht angegeben";
   const by = p.birth_year as number | undefined;
   const age = by ? new Date().getFullYear() - by : null;
-  return `Du bist Super-AI in der Nose-Pushup / Nexus-Chat Super-App. Antworte auf Deutsch, knapp und hilfreich.
+  return `Du bist Super-AI in der Nose-Pushup / Nexus-Chat Super-App. Antworte auf Deutsch, knapp und hilfreich. Erkläre App-Begriffe wie Routing in einfacher Sprache.
+
+DATENREGELN:
+- Verwende ausschließlich die Fakten in diesem Kontext und den Nachrichten des Nutzers. Erfinde keine Workouts, Health-Werte, Vorlieben, Verletzungen oder Vorgeschichte.
+- „keine Einträge“ bedeutet, dass im geladenen Zeitraum keine Datensätze vorliegen; es bedeutet nicht, dass der Wert null war. Fehlende Werte sind unbekannt.
+- Fehlt für eine sichere oder persönliche Trainingsempfehlung wichtiger Kontext (z. B. Schmerzen/Verletzungen, verfügbares Equipment, Erfahrungsstand oder Zeit), stelle zuerst eine gezielte Rückfrage statt ihn anzunehmen.
+- Bei einem einzelnen konkreten Trainingsvorschlag gib zusätzlich eine strukturierte Planvorschau zurück. Antworte dafür als JSON: {"reply":"kurze Erklärung","plan":{"title":"...","exercise_id":"pushup|situp|squat|plank|burpee","sets":3,"reps":8,"rest_s":60,"rationale":"kurze Begründung"}}. Alle Planwerte müssen explizit und realistisch sein. Wenn der nötige Kontext fehlt, frage nach und lasse plan weg. Bei anderen Anliegen antworte normal als Text.
 
 NUTZER:
 - Name: ${name}
-- Level/XP: ${p.level ?? 1} / ${p.xp ?? 0}
-- Streak: ${p.current_streak ?? 0} (max ${p.longest_streak ?? 0})
-- Best Push-Ups: ${p.best_count ?? 0}
-- Tagesziel: ${p.daily_goal ?? 50}
+- Level/XP: ${p.level ?? "nicht hinterlegt"} / ${p.xp ?? "nicht hinterlegt"}
+- Streak: ${p.current_streak ?? "nicht hinterlegt"} (max ${p.longest_streak ?? "nicht hinterlegt"})
+- Best Push-Ups: ${p.best_count ?? "nicht hinterlegt"}
+- Tagesziel: ${p.daily_goal ?? "nicht hinterlegt"}
 - Körper: Alter ${age ?? "?"}, ${p.height_cm ?? "?"} cm, ${p.weight_kg ?? "?"} kg, ${p.sex ?? "?"}
-- Reps 7 Tage: ${ctx.weekReps}
-- Letztes Training: ${p.last_workout_date ?? "nie"}
+- Liegestütze diese Kalenderwoche (lokal ab Montag): ${ctx.weekReps == null ? "nicht verfügbar" : ctx.weeklyWorkoutCount === 0 ? "noch keine gespeicherten Workouts" : ctx.weekReps}
+- Letztes Training: ${p.last_workout_date ?? "nicht hinterlegt"}
 
 LETZTE WORKOUTS:
-${ctx.recentWorkouts.map((w) => `- ${w.created_at?.slice(0, 10)} ${w.exercise_id ?? "?"} × ${w.count}`).join("\n") || "(keine)"}
+${ctx.recentWorkouts.map((w) => `- ${w.created_at?.slice(0, 10)} ${w.exercise_id ?? "unbekannt"} × ${w.count}`).join("\n") || "(keine Einträge im geladenen Zeitraum)"}
 
 HEALTH (7d):
-${ctx.health.map((h) => `- ${h.day}: ${h.steps} steps, ${(h.sleep_min / 60).toFixed(1)}h sleep`).join("\n") || "(keine)"}
+${ctx.health.map((h) => `- ${h.day}: ${h.steps ?? "unbekannt"} Schritte, ${h.sleep_min == null ? "unbekannt" : `${(h.sleep_min / 60).toFixed(1)} h`} Schlaf, ${h.active_kcal ?? "unbekannt"} aktive kcal`).join("\n") || "(keine Einträge im geladenen Zeitraum)"}
 
 CHAT-RÄUME: ${ctx.chatRooms.map((r) => r.name).join(", ") || "(keine)"}
 LETZTE EIGENE CHAT-NACHRICHTEN:

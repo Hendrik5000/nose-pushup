@@ -72,7 +72,7 @@ export function setMood(level: MoodLevel, day = today()) {
 
 export const MOOD_LABELS: Record<MoodLevel, string> = {
   1: "Schwer",
-  2: "Mausig",
+  2: "Mäßig",
   3: "Okay",
   4: "Gut",
   5: "Top",

@@ -1,12 +1,6 @@
 /** Smartwatch / wearable integration helpers (web + Health Connect bridge). */
 
-export type WatchBrand =
-  | "galaxy"
-  | "apple"
-  | "pixel"
-  | "fitbit"
-  | "garmin"
-  | "other";
+export type WatchBrand = "galaxy" | "apple" | "pixel" | "fitbit" | "garmin" | "other";
 
 export type WatchDevice = {
   id: string;
@@ -169,7 +163,7 @@ export function parseHealthJson(text: string): Partial<WatchSnapshot> | null {
     const steps = Number(data.steps ?? data.stepCount ?? data.Steps ?? 0);
     const activeKcal = Number(data.active_kcal ?? data.calories ?? data.activeCalories ?? 0);
     const sleepMin = Number(
-      data.sleep_min ?? (data.sleepHours != null ? Number(data.sleepHours) * 60 : 0) ?? 0,
+      data.sleep_min ?? (data.sleepHours != null ? Number(data.sleepHours) * 60 : 0),
     );
     const restingHr =
       data.restingHr != null

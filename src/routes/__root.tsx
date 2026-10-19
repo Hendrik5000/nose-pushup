@@ -84,7 +84,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Nosy Push-Up" },
-      { name: "description", content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone." },
+      {
+        name: "description",
+        content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone.",
+      },
       { name: "theme-color", content: "#0b0b0f" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
@@ -92,14 +95,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "Lovable" },
 
       { property: "og:title", content: "Nosy Push-Up" },
-      { property: "og:description", content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone." },
+      {
+        property: "og:description",
+        content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Nosy Push-Up" },
-      { name: "twitter:description", content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e5c2365e-a81c-4835-81d6-f8d5014655b9/id-preview-f69d2ccc--40995ef3-9b15-4ba7-9ebb-89713e15105b.lovable.app-1783159358811.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e5c2365e-a81c-4835-81d6-f8d5014655b9/id-preview-f69d2ccc--40995ef3-9b15-4ba7-9ebb-89713e15105b.lovable.app-1783159358811.png" },
+      {
+        name: "twitter:description",
+        content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e5c2365e-a81c-4835-81d6-f8d5014655b9/id-preview-f69d2ccc--40995ef3-9b15-4ba7-9ebb-89713e15105b.lovable.app-1783159358811.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e5c2365e-a81c-4835-81d6-f8d5014655b9/id-preview-f69d2ccc--40995ef3-9b15-4ba7-9ebb-89713e15105b.lovable.app-1783159358811.png",
+      },
     ],
     links: [
       { rel: "icon", type: "image/png", href: "/favicon.png" },
@@ -159,9 +176,11 @@ function RootComponent() {
     window.addEventListener("orientationchange", updateViewportHeight);
     window.visualViewport?.addEventListener("resize", updateViewportHeight);
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW reg fail:', err));
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .catch((err) => console.error("SW reg fail:", err));
       });
     }
 
@@ -179,10 +198,16 @@ function RootComponent() {
   }, []);
 
   useEffect(() => {
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
     setStandalone(isStandalone);
 
-    const handleDisplayMode = () => setStandalone(window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+    const handleDisplayMode = () =>
+      setStandalone(
+        window.matchMedia("(display-mode: standalone)").matches ||
+          (window.navigator as Navigator & { standalone?: boolean }).standalone === true,
+      );
     window.matchMedia("(display-mode: standalone)").addEventListener("change", handleDisplayMode);
 
     const onBeforeInstallPrompt = () => setInstallable(true);
@@ -194,7 +219,9 @@ function RootComponent() {
     const tryAutoFullscreen = async () => {
       if (fullscreenRequested || document.fullscreenElement) return;
 
-      const inStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+      const inStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
       const inFullscreenMode = window.matchMedia("(display-mode: fullscreen)").matches;
       if (!inStandalone && !inFullscreenMode) return;
 
@@ -231,7 +258,9 @@ function RootComponent() {
     return () => {
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
       window.removeEventListener("appinstalled", onAppInstalled);
-      window.matchMedia("(display-mode: standalone)").removeEventListener("change", handleDisplayMode);
+      window
+        .matchMedia("(display-mode: standalone)")
+        .removeEventListener("change", handleDisplayMode);
       window.removeEventListener("resize", updateViewportHeight);
       window.removeEventListener("orientationchange", updateViewportHeight);
       window.visualViewport?.removeEventListener("resize", updateViewportHeight);
@@ -247,7 +276,6 @@ function RootComponent() {
   }, [pathname]);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     let unsub: { unsubscribe: () => void } | undefined;
     (async () => {
       const { supabase } = await import("@/integrations/supabase/client");
@@ -267,9 +295,15 @@ function RootComponent() {
         <div className="fixed inset-x-3 top-3 z-50 rounded-2xl border border-primary/30 bg-background/95 px-3 py-3 shadow-lg backdrop-blur">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Installieren</div>
-              <div className="mt-1 text-sm font-semibold text-foreground">Als App auf dem Startbildschirm nutzen</div>
-              <div className="mt-1 text-xs text-muted-foreground">Öffne das Browser-Menü und wähle „Als App installieren“.</div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Installieren
+              </div>
+              <div className="mt-1 text-sm font-semibold text-foreground">
+                Als App auf dem Startbildschirm nutzen
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                Öffne das Browser-Menü und wähle „Als App installieren“.
+              </div>
             </div>
             <button
               type="button"

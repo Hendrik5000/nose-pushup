@@ -10,8 +10,8 @@ type Step = {
 const STEPS: Step[] = [
   {
     icon: "🏡",
-    title: "Startseite als Zentrum",
-    body: "Dein Dashboard zeigt dir sofort den Überblick: Tagesziel, Bestwerte, Streak und aktuelle Aktivität. So bleibst du jederzeit auf dem Laufenden.",
+    title: "Dein erstes Training",
+    body: "Wähle auf der Startseite eine Empfehlung und starte das Training. Du siehst dein Satzziel, machst Pausen und speicherst danach deine tatsächlich geschafften Wiederholungen. Erst dann erscheint dein Fortschritt.",
   },
   {
     icon: "🧭",
@@ -26,7 +26,7 @@ const STEPS: Step[] = [
   {
     icon: "🤖",
     title: "Coach und Tipps nutzen",
-    body: "Der Smart Coach begleitet dich mit personalisierten Empfehlungen, Trainingsideen und motivierenden Tipps. So wird dein Workout noch effektiver.",
+    body: "Der KI-Coach begleitet dich mit personalisierten Empfehlungen, Trainingsideen und motivierenden Tipps. So wird dein Workout noch effektiver.",
   },
   {
     icon: "⚔️",

@@ -12,6 +12,8 @@ import {
 export function RecoveryCalendar({ userId }: { userId: string | null }) {
   const [week, setWeek] = useState<DayLoad[]>([]);
   const [loading, setLoading] = useState(true);
+  const [workoutCount, setWorkoutCount] = useState(0);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -21,13 +23,15 @@ export function RecoveryCalendar({ userId }: { userId: string | null }) {
     let cancelled = false;
     (async () => {
       const since = new Date(Date.now() - 7 * 86400000).toISOString();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("workouts")
         .select("exercise_id, count, created_at")
         .eq("user_id", userId)
         .gte("created_at", since)
         .order("created_at", { ascending: true });
       if (cancelled) return;
+      setLoadError(!!error);
+      setWorkoutCount(data?.length ?? 0);
       setWeek(
         buildRecoveryWeek(
           (data ?? []) as { exercise_id: string; count: number; created_at: string }[],
@@ -47,12 +51,26 @@ export function RecoveryCalendar({ userId }: { userId: string | null }) {
   return (
     <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
       <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        Recovery Kalender
+        Belastung & Erholung
       </div>
       <h2 className="mt-1 text-sm font-semibold text-foreground">Gelenke & Belastung</h2>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Trainingsschätzung aus gespeicherten Übungen der letzten 7 Tage; keine gemessene
+        Gelenkbelastung oder körperliche Regeneration. Lokale Selbsteinschätzungen werden nicht als
+        Kontodaten verwendet.
+      </p>
 
       {loading ? (
         <p className="mt-3 text-xs text-muted-foreground">Lade…</p>
+      ) : loadError ? (
+        <p role="alert" className="mt-3 text-xs">
+          Trainingsdaten konnten nicht geladen werden.
+        </p>
+      ) : workoutCount === 0 ? (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Noch keine Daten. Nach dem ersten gespeicherten Training erscheint eine vorsichtige
+          Belastungsschätzung.
+        </p>
       ) : (
         <>
           <div className="mt-3 grid grid-cols-4 gap-2">

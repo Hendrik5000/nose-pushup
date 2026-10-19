@@ -4,13 +4,11 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-type DayStat = {
-  day: string;        // YYYY-MM-DD
-  total_reps: number;
-};
+import { getTrainingWeekBounds, localDateKey } from "@/lib/training-dates";
+import { readWorkoutMetadata } from "@/lib/workout-session";
 
 type WorkoutRow = {
+  id: string;
   created_at: string;
   exercise_id: string;
   count: number;
@@ -19,8 +17,9 @@ type WorkoutRow = {
 const DAYS = 35; // 5 weeks
 
 function dateStr(offsetDays: number): string {
-  const d = new Date(Date.now() - offsetDays * 86400000);
-  return d.toISOString().slice(0, 10);
+  const d = new Date();
+  d.setDate(d.getDate() - offsetDays);
+  return localDateKey(d);
 }
 
 function dayOfWeek(dateStr: string): number {
@@ -33,7 +32,7 @@ function intensity(reps: number, max: number): 0 | 1 | 2 | 3 | 4 {
   if (reps === 0 || max === 0) return 0;
   const pct = reps / max;
   if (pct < 0.25) return 1;
-  if (pct < 0.5)  return 2;
+  if (pct < 0.5) return 2;
   if (pct < 0.75) return 3;
   return 4;
 }
@@ -53,6 +52,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
   const [stats, setStats] = useState<Map<string, number>>(new Map());
   const [recentWorkouts, setRecentWorkouts] = useState<WorkoutRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -60,27 +60,32 @@ export function WorkoutHistory({ userId }: { userId: string }) {
       const fromDate = dateStr(DAYS - 1);
       const today = dateStr(0);
 
-      const [{ data: ds }, { data: wk }] = await Promise.all([
-        supabase
-          .from("daily_stats")
-          .select("day, total_reps")
-          .eq("user_id", userId)
-          .gte("day", fromDate)
-          .lte("day", today)
-          .order("day"),
-        supabase
+      const rows: WorkoutRow[] = [];
+      for (let offset = 0; ; offset += 500) {
+        const { data, error } = await supabase
           .from("workouts")
-          .select("created_at, exercise_id, count")
+          .select("id, created_at, exercise_id, count")
           .eq("user_id", userId)
-          .gte("created_at", fromDate + "T00:00:00Z")
+          .gte("created_at", new Date(fromDate + "T00:00:00").toISOString())
+          .lte("created_at", new Date().toISOString())
           .order("created_at", { ascending: false })
-          .limit(50),
-      ]);
-
+          .order("id", { ascending: false })
+          .range(offset, offset + 499);
+        if (error) {
+          setLoadError(true);
+          break;
+        }
+        rows.push(...(data ?? []));
+        if (!data || data.length < 500) break;
+      }
       const map = new Map<string, number>();
-      (ds as DayStat[] | null ?? []).forEach((r) => map.set(r.day, r.total_reps));
+      for (const row of rows) {
+        if (row.exercise_id !== "pushup") continue;
+        const day = localDateKey(new Date(row.created_at));
+        map.set(day, (map.get(day) ?? 0) + row.count);
+      }
       setStats(map);
-      setRecentWorkouts((wk as WorkoutRow[] | null) ?? []);
+      setRecentWorkouts(rows);
       setLoading(false);
     })();
   }, [userId]);
@@ -89,7 +94,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
   const days: string[] = [];
   for (let i = DAYS - 1; i >= 0; i--) days.push(dateStr(i));
 
-  const maxReps = Math.max(1, ...Array.from(stats.values()));
+  const maxWiederholungen = Math.max(1, ...Array.from(stats.values()));
 
   // Pad so the grid starts on Monday
   const firstDow = dayOfWeek(days[0]);
@@ -111,7 +116,11 @@ export function WorkoutHistory({ userId }: { userId: string }) {
     byDate.get(d)!.push({ exercise_id: w.exercise_id, count: w.count });
   });
 
-  const totalThisWeek = weeklyTotals.reduce((a, b) => a + b, 0);
+  const week = getTrainingWeekBounds();
+  const totalThisWeek = Array.from(stats.entries()).reduce(
+    (sum, [day, count]) => (day >= week.startDay && day < week.endDayExclusive ? sum + count : sum),
+    0,
+  );
   const trainedDays = days.filter((d) => (stats.get(d) ?? 0) > 0).length;
 
   if (loading) {
@@ -122,6 +131,21 @@ export function WorkoutHistory({ userId }: { userId: string }) {
     );
   }
 
+  if (loadError)
+    return (
+      <p role="alert" className="rounded-2xl border border-border p-4 text-sm">
+        Verlauf konnte nicht vollständig geladen werden. Bitte lade die Seite erneut.
+      </p>
+    );
+  if (!recentWorkouts.length)
+    return (
+      <section className="rounded-2xl border border-border bg-card p-4">
+        <h3 className="font-semibold">Noch keine Daten</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Speichere dein erstes Training. Hier erscheinen dann deine Einheiten und dein Fortschritt.
+        </p>
+      </section>
+    );
   return (
     <div className="rounded-2xl border border-border bg-card/50 p-4 backdrop-blur space-y-4">
       {/* Header */}
@@ -130,13 +154,23 @@ export function WorkoutHistory({ userId }: { userId: string }) {
           Verlauf
         </h3>
         <div className="flex gap-3 text-[10px] text-muted-foreground">
-          <span><span className="font-semibold text-foreground">{trainedDays}</span> Tage</span>
-          <span><span className="font-semibold text-foreground">{totalThisWeek.toLocaleString("de-DE")}</span> Reps diese Woche</span>
+          <span>
+            <span className="font-semibold text-foreground">{trainedDays}</span> Tage
+          </span>
+          <span>
+            <span className="font-semibold text-foreground">
+              {totalThisWeek.toLocaleString("de-DE")}
+            </span>{" "}
+            Liegestütze diese Woche
+          </span>
         </div>
       </div>
 
       <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-foreground">
-        <span className="font-semibold">Momentum:</span> {trainedDays >= 5 ? "Du bist im Flow und bleibst konsistent." : "Ein paar kleine Sessions reichen schon, um den Rhythmus zu halten."}
+        <span className="font-semibold">Momentum:</span>{" "}
+        {trainedDays >= 5
+          ? "Du bist im Flow und bleibst konsistent."
+          : "Ein paar kleine Sessions reichen schon, um den Rhythmus zu halten."}
       </div>
 
       {/* 7-day bar chart */}
@@ -154,7 +188,9 @@ export function WorkoutHistory({ userId }: { userId: string }) {
                   style={{ height: `${Math.max(4, Math.round(pct * 100))}%` }}
                 />
               </div>
-              <span className={`text-[9px] ${isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>
+              <span
+                className={`text-[9px] ${isToday ? "text-primary font-bold" : "text-muted-foreground"}`}
+              >
                 {WEEKDAY_ABBR[i]}
               </span>
             </div>
@@ -166,22 +202,26 @@ export function WorkoutHistory({ userId }: { userId: string }) {
       <div>
         <div className="grid grid-cols-7 gap-[3px] text-[8px] text-muted-foreground mb-1">
           {DAY_LABELS.map((l) => (
-            <div key={l} className="text-center">{l}</div>
+            <div key={l} className="text-center">
+              {l}
+            </div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-[3px]">
           {/* padding before first day */}
-          {Array(padBefore).fill(null).map((_, i) => (
-            <div key={`pad-${i}`} className="aspect-square" />
-          ))}
+          {Array(padBefore)
+            .fill(null)
+            .map((_, i) => (
+              <div key={`pad-${i}`} className="aspect-square" />
+            ))}
           {days.map((d) => {
             const reps = stats.get(d) ?? 0;
-            const level = intensity(reps, maxReps);
+            const level = intensity(reps, maxWiederholungen);
             const isToday = d === dateStr(0);
             return (
               <div
                 key={d}
-                title={reps > 0 ? `${d}: ${reps} Reps` : d}
+                title={reps > 0 ? `${d}: ${reps} Wiederholungen` : d}
                 className={`aspect-square rounded-[3px] ${CELL_COLORS[level]} ${
                   isToday ? "ring-1 ring-primary ring-offset-1 ring-offset-background" : ""
                 }`}
@@ -195,24 +235,35 @@ export function WorkoutHistory({ userId }: { userId: string }) {
       {recentWorkouts.length > 0 && (
         <div className="space-y-1.5 pt-1">
           <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Letzte Sessions
+            Letzte Trainings
           </div>
           {recentWorkouts.slice(0, 6).map((w, i) => {
+            const meta = readWorkoutMetadata(localStorage, userId, w.id);
             const date = new Date(w.created_at).toLocaleDateString("de-DE", {
               weekday: "short",
               day: "numeric",
               month: "short",
             });
             const label = w.exercise_id.startsWith("cali_")
-              ? w.exercise_id.replace("cali_", "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+              ? w.exercise_id
+                  .replace("cali_", "")
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase())
               : w.exercise_id.charAt(0).toUpperCase() + w.exercise_id.slice(1);
             return (
               <div
-                key={i}
+                key={w.id}
                 className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2"
               >
                 <div className="flex flex-col">
                   <span className="text-xs font-medium text-foreground">{label}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {meta
+                      ? meta.partial
+                        ? "Teiltraining"
+                        : "Plan abgeschlossen"
+                      : "Training gespeichert"}
+                  </span>
                   <span className="text-[10px] text-muted-foreground">{date}</span>
                 </div>
                 <div className="text-sm font-semibold tabular-nums text-foreground">

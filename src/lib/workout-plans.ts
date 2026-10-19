@@ -6,12 +6,18 @@ export type QuickStartPlan = {
   reps: number;
   rest_s: number;
   remaining: number;
+  plannedReps: number;
+};
+
+export type DashboardRecommendation = QuickStartPlan & {
+  readinessNote: string;
+  recoveryDay: boolean;
 };
 
 export function getQuickStartPlan({
   best,
   todayReps,
-  streak,
+  streak: _streak,
   goal,
 }: {
   best: number;
@@ -20,32 +26,78 @@ export function getQuickStartPlan({
   goal: number;
 }): QuickStartPlan {
   const remaining = Math.max(0, goal - todayReps);
-  const baseTarget = Math.max(8, Math.round((best || 10) * 1.05) + (streak > 0 ? 2 : 0));
-  const sets = streak > 0 ? 3 : 2;
-  const reps = Math.max(8, Math.min(20, Math.round(baseTarget / sets)));
-
-  const headline = remaining > 0 ? `Noch ${remaining} Reps bis zum Ziel` : "Ziel für heute schon drin";
-  const detail =
-    streak === 0
-      ? "Ein kurzer, sauberer Start reicht heute schon."
-      : remaining > 0
-        ? "Eine kompakte Session bringt dich noch sicher über den Tag."
-        : "Heute warst du schon aktiv – gönn dir einen lockeren Finish.";
+  const beginner = best <= 0;
+  const sets = beginner ? 2 : remaining > 30 ? 3 : 2;
+  const reps = beginner
+    ? 5
+    : remaining > 0
+      ? Math.max(1, Math.min(20, Math.max(1, Math.round(best / 3)), Math.ceil(remaining / sets)))
+      : Math.max(1, Math.min(8, Math.round((best || 10) / 5)));
+  const plannedReps = sets * reps;
+  const headline = beginner
+    ? "Dein erster kurzer Trainingsplan"
+    : remaining > 0
+      ? `${remaining} Reps bis zum Tagesziel`
+      : "Tagesziel erreicht";
+  const detail = beginner
+    ? "Allgemeiner Einstiegsplan ohne Leistungsprognose: 2 Sätze × 5 Wiederholungen mit 45 Sekunden Pause. Passe die Wiederholungen nach unten an, wenn die saubere Ausführung schwerfällt."
+    : remaining > 0
+      ? `Vorschlag: ${sets} Sätze × ${reps} Reps (${plannedReps} geplant). Das bringt dich rechnerisch auf ${todayReps + plannedReps} von ${goal} Tages-Reps, wenn du alle Wiederholungen schaffst.`
+      : `Dein Tagesziel von ${goal} Reps ist erreicht. Wenn es sich gut anfühlt: locker ${sets} × ${reps} Reps als optionaler Zusatz.`;
 
   return {
-    title: "Schnellstart",
+    title: "Dein Start",
     headline,
     detail,
     sets,
     reps,
     rest_s: 45,
     remaining,
+    plannedReps,
+  };
+}
+
+/** A shared, structured dashboard recommendation; readiness never comes from proxies. */
+export function getDashboardRecommendation({
+  plan,
+  readinessAvailable,
+  readinessLabel,
+  readinessLevel,
+}: {
+  plan: QuickStartPlan;
+  readinessAvailable: boolean;
+  readinessLabel?: string;
+  readinessLevel?: "green" | "yellow" | "red";
+}): DashboardRecommendation {
+  if (readinessAvailable && readinessLevel === "red") {
+    return {
+      ...plan,
+      title: "Optionaler Regenerationsblock",
+      headline: "Heute regenerieren",
+      detail:
+        "Heute ist eine Pause sinnvoll. Wenn du dich beschwerdefrei bewegen möchtest, ist höchstens eine sehr leichte Einheit optional: 1 Satz × 3 Wiederholungen, ohne Leistungsziel. Bei Schmerzen oder Unwohlsein nicht trainieren.",
+      sets: 1,
+      reps: 3,
+      rest_s: 60,
+      plannedReps: 3,
+      recoveryDay: true,
+      readinessNote:
+        "Niedrige geschätzte Tagesform: kein intensives Training empfohlen. Die Schätzung ersetzt nicht dein Körpergefühl.",
+    };
+  }
+  return {
+    ...plan,
+    recoveryDay: false,
+    readinessNote:
+      readinessAvailable && readinessLabel
+        ? `Readiness: ${readinessLabel}. Höre zusätzlich auf dein Körpergefühl.`
+        : "Readiness noch nicht verfügbar. Dieser allgemeine Plan verwendet keine geschätzte Tagesform; dafür fehlen ausreichende Schlaf- und Trainingsdaten.",
   };
 }
 
 export function getCoachFocus(best: number, weekReps: number, streak: number) {
   if (streak === 0) {
-    return "Starte heute mit zwei sauberen Sets und baue dir sofort Vertrauen auf.";
+    return "Starte behutsam und achte zuerst auf eine saubere Ausführung.";
   }
 
   if (weekReps < 80) {
@@ -68,56 +120,18 @@ export function getWeeklyProgress({ weekReps, target }: { weekReps: number; targ
   return { weekReps, target, percent, state, message };
 }
 
-export function getRecoverySummary({
-  steps,
-  sleepMin,
-  activeKcal,
-  streak,
-  goal,
-  weekReps,
-}: {
-  steps: number;
-  sleepMin: number;
-  activeKcal: number;
-  streak: number;
-  goal: number;
-  weekReps: number;
-}) {
-  let score = 70;
-  score += Math.min(15, Math.round((sleepMin - 360) / 8));
-  score -= Math.min(20, Math.round(activeKcal / 100));
-  score -= Math.min(10, Math.max(0, streak - 5));
-  score -= weekReps > goal * 7 ? 10 : 0;
-  score += steps > 0 && steps < 12000 ? 5 : 0;
-  score = Math.max(10, Math.min(100, score));
-  const label = score >= 75 ? "Gut erholt" : score >= 50 ? "Solide" : "Erholung nötig";
-  const detail =
-    score >= 75
-      ? "Dein Körper ist bereit für eine intensive Einheit."
-      : score >= 50
-        ? "Normales Training ist okay, achte auf saubere Technik."
-        : "Heute lieber locker trainieren oder pausieren.";
-  const recommendation =
-    score >= 75 ? "Volle Power" : score >= 50 ? "Moderat trainieren" : "Mobilität & Pause";
-  return { score, label, detail, recommendation };
-}
-
 export function getSmartReminder({
-  score,
   todayReps,
   goal,
   streak,
 }: {
-  score: number;
+  score?: number | null;
   todayReps: number;
   goal: number;
   streak: number;
 }) {
   if (todayReps >= goal) {
     return { title: "Tagesziel erreicht", text: "Super! Gönn dir Erholung oder hol dir Bonus-XP." };
-  }
-  if (score < 50) {
-    return { title: "Sanft bleiben", text: "Ein kurzer, lockerer Satz hält deine Serie am Leben." };
   }
   if (streak > 0) {
     return {

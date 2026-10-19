@@ -1,5 +1,7 @@
 /** Super-AI skill tools + personas + session helpers. */
 
+import type { AiWorkoutPlan } from "@/lib/ai-plan";
+
 export type AiPersona = "coach" | "analyst" | "motivator";
 
 export const PERSONAS: Array<{ id: AiPersona; label: string; hint: string; system: string }> = [
@@ -125,6 +127,7 @@ export type AiSession = {
   messages: Array<{
     role: "user" | "assistant";
     content: string;
+    plan?: AiWorkoutPlan;
     meta?: { provider?: string; model?: string; task?: string };
   }>;
 };
@@ -189,14 +192,12 @@ export function toggleFavPrompt(text: string): string[] {
   return next;
 }
 
-export function exportChatMarkdown(
-  title: string,
-  messages: AiSession["messages"],
-): string {
+export function exportChatMarkdown(title: string, messages: AiSession["messages"]): string {
   const lines = [`# ${title}`, `Export: ${new Date().toLocaleString("de-DE")}`, ""];
   for (const m of messages) {
     lines.push(m.role === "user" ? "## Du" : "## Super-AI");
-    if (m.meta) lines.push(`_${m.meta.task ?? ""} · ${m.meta.provider ?? ""}/${m.meta.model ?? ""}_`);
+    if (m.meta)
+      lines.push(`_${m.meta.task ?? ""} · ${m.meta.provider ?? ""}/${m.meta.model ?? ""}_`);
     lines.push(m.content, "");
   }
   return lines.join("\n");

@@ -1,3 +1,4 @@
+import { readWorkoutMetadata } from "@/lib/workout-session";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -48,7 +49,13 @@ type Profile = {
   haptics_enabled: boolean;
 };
 
-type Workout = { id: string; count: number; duration_ms: number; created_at: string; exercise_id: string | null };
+type Workout = {
+  id: string;
+  count: number;
+  duration_ms: number;
+  created_at: string;
+  exercise_id: string | null;
+};
 
 const PROFILE_COLS =
   "id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes, birth_year, height_cm, weight_kg, sex, daily_goal, share_activity, theme, sound_enabled, haptics_enabled";
@@ -171,7 +178,10 @@ export function ProfilePage() {
 
   const saveSetting = async (patch: Partial<Profile>) => {
     if (!profile) return;
-    const { error } = await supabase.from("profiles").update(patch as never).eq("id", profile.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update(patch as never)
+      .eq("id", profile.id);
     if (!error) setProfile({ ...profile, ...patch } as Profile);
   };
 
@@ -238,11 +248,19 @@ export function ProfilePage() {
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
       <header className="flex items-center justify-between">
-        <Link to="/" className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition">
+        <Link
+          to="/"
+          className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
+        >
           ← Zurück
         </Link>
-        <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Einstellungen</span>
-        <button onClick={signOut} className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-destructive transition">
+        <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+          Einstellungen
+        </span>
+        <button
+          onClick={signOut}
+          className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-destructive transition"
+        >
           Abmelden
         </button>
       </header>
@@ -259,7 +277,9 @@ export function ProfilePage() {
           <div className="truncate text-base font-semibold">
             {profile?.display_name || "Ohne Namen"}
             {isAnonymous && (
-              <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 align-middle text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Gast</span>
+              <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 align-middle text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                Gast
+              </span>
             )}
           </div>
           <div className="truncate text-xs text-muted-foreground">
@@ -271,12 +291,30 @@ export function ProfilePage() {
       {isAnonymous && (
         <section className="mt-4 rounded-3xl border border-primary/40 bg-primary/5 p-5 backdrop-blur">
           <h2 className="text-sm font-semibold text-primary">🔒 Fortschritt sichern</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Erstelle ein Konto, um XP, Streaks und Bestwerte zu behalten.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Erstelle ein Konto, um XP, Streaks und Bestwerte zu behalten.
+          </p>
           <form onSubmit={upgradeAccount} className="mt-3 space-y-2">
-            <input type="email" value={upgradeEmail} onChange={(e) => setUpgradeEmail(e.target.value)} placeholder="E-Mail" className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary" />
-            <input type="password" value={upgradePassword} onChange={(e) => setUpgradePassword(e.target.value)} placeholder="Passwort (min. 6 Zeichen)" className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary" />
+            <input
+              type="email"
+              value={upgradeEmail}
+              onChange={(e) => setUpgradeEmail(e.target.value)}
+              placeholder="E-Mail"
+              className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
+            <input
+              type="password"
+              value={upgradePassword}
+              onChange={(e) => setUpgradePassword(e.target.value)}
+              placeholder="Passwort (min. 6 Zeichen)"
+              className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
             {upgradeMsg && <p className="text-xs text-muted-foreground">{upgradeMsg}</p>}
-            <button type="submit" disabled={upgrading} className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
+            <button
+              type="submit"
+              disabled={upgrading}
+              className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            >
               {upgrading ? "Erstelle…" : "Konto erstellen"}
             </button>
           </form>
@@ -286,18 +324,29 @@ export function ProfilePage() {
       <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Level {lp.level} · {lp.title}</div>
-            <div className="mt-1 text-2xl font-semibold tabular-nums">{lp.xp.toLocaleString("de-DE")} XP</div>
+            <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+              Level {lp.level} · {lp.title}
+            </div>
+            <div className="mt-1 text-2xl font-semibold tabular-nums">
+              {lp.xp.toLocaleString("de-DE")} XP
+            </div>
           </div>
-          <div className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${
-            streakActive && streak > 0 ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"
-          }`}>
+          <div
+            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${
+              streakActive && streak > 0
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border bg-secondary text-muted-foreground"
+            }`}
+          >
             <span className="text-lg leading-none">{streak > 0 && streakActive ? "🔥" : "❄️"}</span>
             <span className="tabular-nums">{streak}</span>
           </div>
         </div>
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-secondary">
-          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${lp.progress * 100}%` }} />
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${lp.progress * 100}%` }}
+          />
         </div>
       </section>
 
@@ -315,18 +364,41 @@ export function ProfilePage() {
         <SettingsSection icon="🎨" title="Design" subtitle="Farbwelten">
           <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
         </SettingsSection>
-        <SettingsSection icon="🐞" title="Fehlerberichte" subtitle="Automatisch erfasst — für Auto-Fix an Grok senden">
+        <SettingsSection
+          icon="🐞"
+          title="Fehlerberichte"
+          subtitle="Automatisch erfasst — für Auto-Fix an Grok senden"
+        >
           <ErrorReportsPanel />
         </SettingsSection>
         <SettingsSection icon="🏅" title="Badges" subtitle="Erfolge">
           <BadgeGallery />
         </SettingsSection>
-        <SettingsSection icon="✏️" title="Profil bearbeiten" subtitle={profile?.display_name || "Ohne Namen"}>
+        <SettingsSection
+          icon="✏️"
+          title="Profil bearbeiten"
+          subtitle={profile?.display_name || "Ohne Namen"}
+        >
           <div className="space-y-3">
-            <Field label="Anzeigename" value={displayName} onChange={setDisplayName} maxLength={60} />
-            <Field label="Avatar-URL" value={avatarUrl} onChange={setAvatarUrl} placeholder="https://…" maxLength={500} />
+            <Field
+              label="Anzeigename"
+              value={displayName}
+              onChange={setDisplayName}
+              maxLength={60}
+            />
+            <Field
+              label="Avatar-URL"
+              value={avatarUrl}
+              onChange={setAvatarUrl}
+              placeholder="https://…"
+              maxLength={500}
+            />
             {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
-            <button onClick={save} disabled={saving || !profile} className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60">
+            <button
+              onClick={save}
+              disabled={saving || !profile}
+              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            >
               {saving ? "Speichere…" : "Speichern"}
             </button>
           </div>
@@ -340,23 +412,47 @@ export function ProfilePage() {
         </SettingsSection>
         {profile && (
           <SettingsSection icon="🌐" title="Öffentliches Profil" subtitle="Teilen & Einladen">
-            <PublicProfileSettings userId={profile.id} />
+            <PublicProfileSettings />
           </SettingsSection>
         )}
         <SettingsSection icon="🔔" title="Benachrichtigungen" subtitle="Erinnerungen">
           <NotificationSettings />
         </SettingsSection>
         <SettingsSection icon="❓" title="Hilfe" subtitle="Tour neu starten">
-          <button type="button" onClick={() => restartWelcomeTour()} className="w-full rounded-xl border border-border px-4 py-3 text-sm font-medium">
+          <button
+            type="button"
+            onClick={() => {
+              if (profile) restartWelcomeTour(profile.id);
+            }}
+            className="w-full rounded-xl border border-border px-4 py-3 text-sm font-medium"
+          >
             Willkommenstour starten
           </button>
         </SettingsSection>
-        <SettingsSection icon="📋" title="Letzte Trainings" subtitle={`${workouts.length} Einträge`}>
+        <SettingsSection
+          icon="📋"
+          title="Letzte Trainings"
+          subtitle={`${workouts.length} Einträge`}
+        >
           <ul className="space-y-2">
             {workouts.slice(0, 8).map((w) => (
-              <li key={w.id} className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-xs">
-                <span>{w.count} · {new Date(w.created_at).toLocaleDateString("de-DE")}</span>
-                <button type="button" onClick={() => deleteWorkout(w.id)} className="text-muted-foreground">Löschen</button>
+              <li
+                key={w.id}
+                className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-xs"
+              >
+                <span>
+                  {w.count} · {new Date(w.created_at).toLocaleDateString("de-DE")}
+                  {profile && readWorkoutMetadata(localStorage, profile.id, w.id)?.partial
+                    ? " · Teiltraining"
+                    : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => deleteWorkout(w.id)}
+                  className="text-muted-foreground"
+                >
+                  Löschen
+                </button>
               </li>
             ))}
           </ul>
@@ -368,13 +464,25 @@ export function ProfilePage() {
 }
 
 function Field({
-  label, value, onChange, placeholder, maxLength, numeric,
+  label,
+  value,
+  onChange,
+  placeholder,
+  maxLength,
+  numeric,
 }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; maxLength?: number; numeric?: boolean;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  maxLength?: number;
+  numeric?: boolean;
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
+      <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+        {label}
+      </span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -389,10 +497,18 @@ function Field({
 
 function ToggleRow({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
   return (
-    <button type="button" onClick={onToggle} className="flex w-full items-center justify-between rounded-xl border border-border px-3 py-3 text-sm">
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center justify-between rounded-xl border border-border px-3 py-3 text-sm"
+    >
       <span>{label}</span>
-      <span className={`flex h-6 w-11 items-center rounded-full p-0.5 transition ${on ? "bg-primary" : "bg-secondary"}`}>
-        <span className={`h-5 w-5 rounded-full bg-background transition ${on ? "translate-x-5" : ""}`} />
+      <span
+        className={`flex h-6 w-11 items-center rounded-full p-0.5 transition ${on ? "bg-primary" : "bg-secondary"}`}
+      >
+        <span
+          className={`h-5 w-5 rounded-full bg-background transition ${on ? "translate-x-5" : ""}`}
+        />
       </span>
     </button>
   );

@@ -5,8 +5,8 @@ import { getWeekPlan } from "@/lib/coach-plan.functions";
 import type { WeekPlan } from "@/lib/coach-plan.server";
 
 const FOCUS_LABEL: Record<string, string> = {
-  push: "Push",
-  core: "Core",
+  push: "Drückübungen",
+  core: "Rumpf",
   legs: "Beine",
   mobility: "Mobilität",
   full: "Ganzkörper",
@@ -16,7 +16,8 @@ const FOCUS_LABEL: Record<string, string> = {
 const DAY_LABEL = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 export function WeekPlanCard({ compact = false }: { compact?: boolean }) {
@@ -94,16 +95,22 @@ export function WeekPlanCard({ compact = false }: { compact?: boolean }) {
                 <Link
                   to="/workout/$exerciseId"
                   params={{ exerciseId: todayEntry.exercise_id }}
+                  search={{
+                    sets: todayEntry.sets,
+                    reps: todayEntry.reps,
+                    rest_s: todayEntry.rest_s,
+                    title: FOCUS_LABEL[todayEntry.focus] ?? todayEntry.focus,
+                  }}
                   className="mt-3 flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
                 >
-                  Session starten →
+                  Training starten →
                 </Link>
               )}
             </div>
           )}
 
           {!compact && (
-            <ul className="mt-4 grid grid-cols-7 gap-1 text-center">
+            <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7 text-center">
               {plan.days.map((d, i) => {
                 const isToday = d.day === today;
                 return (
@@ -116,7 +123,9 @@ export function WeekPlanCard({ compact = false }: { compact?: boolean }) {
                     }`}
                   >
                     <div className="font-semibold">{DAY_LABEL[i]}</div>
-                    <div className="mt-0.5 truncate">{FOCUS_LABEL[d.focus] ?? d.focus}</div>
+                    <div className="mt-0.5 break-words hyphens-auto">
+                      {FOCUS_LABEL[d.focus] ?? d.focus}
+                    </div>
                     {d.sets > 0 && (
                       <div className="mt-0.5 tabular-nums">
                         {d.sets}×{d.reps}

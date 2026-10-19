@@ -18,7 +18,6 @@ const CHECK_INTERVAL_MS = 60_000;
 export function useNotifications() {
   useEffect(() => {
     let cancelled = false;
-    let timer: ReturnType<typeof setInterval> | undefined;
     let channel: ReturnType<typeof supabase.channel> | undefined;
 
     const checkReminder = async () => {
@@ -34,7 +33,12 @@ export function useNotifications() {
       const today = new Date().toISOString().slice(0, 10);
       const [{ data: prof }, { data: stat }] = await Promise.all([
         supabase.from("profiles").select("daily_goal, current_streak").eq("id", uid).maybeSingle(),
-        supabase.from("daily_stats").select("total_reps").eq("user_id", uid).eq("day", today).maybeSingle(),
+        supabase
+          .from("daily_stats")
+          .select("total_reps")
+          .eq("user_id", uid)
+          .eq("day", today)
+          .maybeSingle(),
       ]);
       const goal = prof?.daily_goal ?? 50;
       const done = stat?.total_reps ?? 0;
@@ -51,7 +55,7 @@ export function useNotifications() {
     };
 
     void checkReminder();
-    timer = setInterval(() => void checkReminder(), CHECK_INTERVAL_MS);
+    const timer = setInterval(() => void checkReminder(), CHECK_INTERVAL_MS);
 
     (async () => {
       const { data: u } = await supabase.auth.getUser();
@@ -62,10 +66,21 @@ export function useNotifications() {
         .channel("np-notifications")
         .on(
           "postgres_changes",
-          { event: "INSERT", schema: "public", table: "friendships", filter: `addressee_id=eq.${uid}` },
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "friendships",
+            filter: `addressee_id=eq.${uid}`,
+          },
           () => {
-            toast("Neue Freundschaftsanfrage", { description: "Schau im Profil unter Freunde vorbei." });
-            void showNotification("Neue Freundschaftsanfrage", "Jemand möchte dich als Trainingspartner.", "np-friend");
+            toast("Neue Freundschaftsanfrage", {
+              description: "Schau im Profil unter Freunde vorbei.",
+            });
+            void showNotification(
+              "Neue Freundschaftsanfrage",
+              "Jemand möchte dich als Trainingspartner.",
+              "np-friend",
+            );
           },
         )
         .on(
@@ -75,7 +90,11 @@ export function useNotifications() {
             const row = payload.new as { status?: string; guest_id?: string | null };
             if (row.status === "active" && row.guest_id) {
               toast("Dein Battle startet", { description: "Ein Gegner ist beigetreten." });
-              void showNotification("Battle startet", "Ein Gegner ist deinem Battle beigetreten.", "np-battle");
+              void showNotification(
+                "Battle startet",
+                "Ein Gegner ist deinem Battle beigetreten.",
+                "np-battle",
+              );
             }
           },
         )

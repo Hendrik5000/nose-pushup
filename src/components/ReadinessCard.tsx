@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { localDateKey } from "@/lib/training-dates";
 import {
   computeReadiness,
   recordReadiness,
@@ -7,28 +8,30 @@ import {
   type Readiness,
 } from "@/lib/readiness";
 
-/**
- * Prominenter Readiness-Score auf der Startseite: Ampel + 14-Tage-Verlauf.
- * Daten: health_entries (Schlaf/Schritte), workouts (7 Tage), Profil-Streak,
- * Cali-Check-in (lokal).
- */
-export function ReadinessCard({ streak }: { streak: number }) {
+export function ReadinessCard({
+  streak,
+  onReadinessChange,
+}: {
+  streak: number;
+  onReadinessChange?: (readiness: Readiness) => void;
+}) {
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [history, setHistory] = useState<{ day: string; score: number }[]>([]);
+  const [asOf, setAsOf] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
     (async () => {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      const today = new Date().toISOString().slice(0, 10);
-      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-
-      const [{ data: he }, { count }] = await Promise.all([
+      if (!u.user || !active) return;
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
+      const [{ data: he, error: healthError }, workouts] = await Promise.all([
         supabase
           .from("health_entries")
           .select("sleep_min, steps")
           .eq("user_id", u.user.id)
-          .eq("day", today)
+          .eq("day", localDateKey(now))
           .maybeSingle(),
         supabase
           .from("workouts")
@@ -36,71 +39,126 @@ export function ReadinessCard({ streak }: { streak: number }) {
           .eq("user_id", u.user.id)
           .gte("created_at", sevenDaysAgo),
       ]);
+      if (!active) return;
 
-      const r = computeReadiness({
-        sleepMin: (he as { sleep_min?: number } | null)?.sleep_min ?? null,
-        steps: (he as { steps?: number } | null)?.steps ?? null,
-        workoutsLast7Days: count ?? 0,
+      const result = computeReadiness({
+        sleepMin: healthError ? null : ((he as { sleep_min?: number } | null)?.sleep_min ?? null),
+        steps: healthError ? null : ((he as { steps?: number } | null)?.steps ?? null),
+        workoutsLast7Days: workouts.error ? null : (workouts.count ?? 0),
         streak,
       });
-      recordReadiness(r.score);
-      setReadiness(r);
-      setHistory(readinessHistory());
+      if (result.available) {
+        recordReadiness(result.score, u.user.id);
+        setHistory(readinessHistory(u.user.id));
+      } else {
+        setHistory(readinessHistory(u.user.id));
+      }
+      setReadiness(result);
+      onReadinessChange?.(result);
+      setAsOf(now.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }));
     })();
-  }, [streak]);
+    return () => {
+      active = false;
+    };
+  }, [streak, onReadinessChange]);
 
   if (!readiness) return null;
-
-  const barColor =
-    readiness.level === "green"
-      ? "bg-green-400"
-      : readiness.level === "yellow"
-        ? "bg-yellow-400"
-        : "bg-red-400";
+  const barColor = readiness.available ? "bg-primary" : "bg-secondary";
 
   return (
-    <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
-      <div className="flex items-center justify-between">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-          Readiness
+    <section
+      className="rounded-3xl border border-border bg-card/60 p-4 backdrop-blur"
+      aria-labelledby="readiness-title"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div
+          className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
+          id="readiness-title"
+        >
+          Tagesform (Readiness)
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-lg">{readiness.emoji}</span>
-          <span className="text-lg font-semibold tabular-nums">{readiness.score}</span>
+          <span aria-hidden="true" className="text-lg">
+            {readiness.emoji}
+          </span>
+          <span className="text-sm font-semibold">
+            {readiness.available ? `${readiness.score} / 100` : "Nicht berechnet"}
+          </span>
         </div>
       </div>
-
-      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
+      {readiness.available && (
         <div
-          className={`h-full rounded-full transition-all ${barColor}`}
-          style={{ width: `${readiness.score}%` }}
-        />
-      </div>
-
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-foreground">{readiness.label}</div>
-          <p className="mt-1 text-xs text-muted-foreground">{readiness.detail}</p>
+          className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary"
+          role="meter"
+          aria-label="Readiness-Wert"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={readiness.score}
+        >
+          <div
+            className={`h-full rounded-full transition-all ${barColor}`}
+            style={{ width: `${readiness.score}%` }}
+          />
         </div>
+      )}
+      <div className="mt-3">
+        <div className="text-sm font-semibold text-foreground">{readiness.label}</div>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{readiness.detail}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Trainingsschätzung, keine Messung deiner körperlichen Erholung und keine medizinische
+          Empfehlung.
+        </p>
       </div>
-
+      <details className="mt-3 border-t border-border pt-3">
+        <summary className="cursor-pointer text-xs font-medium text-primary">
+          Berechnung & Datenstand
+        </summary>
+        <div className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+          <p>
+            {readiness.available
+              ? `Datenquellen (${readiness.dataCoverage}/2): ${readiness.sources.join(", ")}.`
+              : `Erfasst (${readiness.dataCoverage}/2): ${readiness.sources.length ? readiness.sources.join(", ") : "keine der zwei Readiness-Quellen"}. Beide accountgebundenen Quellen sind nötig.`}
+          </p>
+          {readiness.available && readiness.missingSources.length > 0 && (
+            <p>Nicht vorhanden: {readiness.missingSources.join(", ")}.</p>
+          )}
+          <p>
+            Berechnung: Schlaf (bis 30), Trainingshäufigkeit der letzten 7 Tage (bis 25),
+            Streak-Bonus (bis 15); die verfügbaren gewichteten Punkte werden auf 100 normiert. Ein
+            Score entsteht erst, wenn Schlaf und Workout-Abfrage vorliegen.
+          </p>
+          <p>
+            Schritte und geräte-lokale Check-ins werden nicht in den Wert einbezogen: Check-ins sind
+            nicht an dieses Konto gebunden. Fehlende Schlaf-/Workout-Daten werden nicht durch Streak
+            oder Bestwert ersetzt.
+          </p>
+          <p>
+            Zuletzt berechnet: {asOf ?? "—"}. Verlauf lokal auf diesem Gerät, aber nach Konto
+            getrennt. Gespeicherte Workouts werden nach ihrem Zeitstempel gezählt.
+          </p>
+        </div>
+      </details>
       {history.length > 1 && (
-        <div className="mt-4">
+        <div className="mt-4 border-t border-border pt-3">
           <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-            Letzte {history.length} Tage
+            Letzte {history.length} berechnete Tage (Wert / 100)
           </div>
-          <div className="mt-2 flex h-10 items-end gap-1">
+          <ol className="mt-2 flex h-10 items-end gap-1" aria-label="Readiness-Verlauf">
             {history.map((h) => (
-              <div
+              <li
                 key={h.day}
-                title={`${h.day}: ${h.score}`}
-                className={`flex-1 rounded-sm ${
-                  h.score >= 70 ? "bg-green-400/70" : h.score >= 45 ? "bg-yellow-400/70" : "bg-red-400/70"
-                }`}
-                style={{ height: `${Math.max(15, h.score)}%` }}
-              />
+                title={`${h.day}: ${h.score} / 100`}
+                aria-label={`${h.day}: ${h.score} von 100`}
+                className="flex flex-1 flex-col justify-end"
+              >
+                <span className="mb-1 text-center text-[8px] text-muted-foreground">{h.score}</span>
+                <div
+                  className="rounded-sm bg-primary/60"
+                  style={{ height: `${Math.max(15, h.score)}%` }}
+                />
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       )}
     </section>

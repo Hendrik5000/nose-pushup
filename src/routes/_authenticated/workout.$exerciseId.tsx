@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useExerciseEngine, ensureMotionPermission } from "@/hooks/useExerciseEngine";
 import { useCameraDetection, type RepQuality } from "@/hooks/useCameraDetection";
@@ -7,16 +7,27 @@ import { feedbackRep, feedbackSuccess } from "@/lib/feedback";
 import { saveOrQueue } from "@/lib/offline-queue";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { getConfig } from "@/lib/exercises";
-
+import {
+  createWorkoutSession,
+  finishWorkoutSet,
+  extendWorkoutRest,
+  pauseWorkout,
+  readWorkoutSession,
+  recordWorkoutRep,
+  startWorkoutSet,
+  summarizeWorkout,
+  undoWorkoutRep,
+  validateWorkoutSearch,
+  workoutSessionStorageKey,
+  writeWorkoutMetadata,
+  writeWorkoutSession,
+  type WorkoutSession,
+} from "@/lib/workout-session";
 
 type PushMode = "nose" | "manual" | "camera";
 
 export const Route = createFileRoute("/_authenticated/workout/$exerciseId")({
-  validateSearch: (search: Record<string, unknown>): { mode?: PushMode } => {
-    const raw = search.mode;
-    if (raw === "nose" || raw === "manual" || raw === "camera") return { mode: raw };
-    return {};
-  },
+  validateSearch: (search: Record<string, unknown>) => validateWorkoutSearch(search),
   head: ({ params }) => ({
     meta: [{ title: `${params.exerciseId} — Nosy Push-Ups` }],
   }),
@@ -62,22 +73,44 @@ function WorkoutScreen() {
   const [summary, setSummary] = useState<{
     count: number;
     durationMs: number;
-    xp: number;
     isBest: boolean;
     formScore?: number | null;
     cleanReps?: number | null;
     rpe?: number | null;
+    plannedSets?: number;
+    actualSets?: number;
+    plannedReps?: number | null;
+    actualReps?: number;
+    partial?: boolean;
   } | null>(null);
   const [repGrades, setRepGrades] = useState<{ grade: number; full: boolean }[]>([]);
   // RPE-Abfrage (1–10) vor dem endgültigen Speichern
   const [awaitingRpe, setAwaitingRpe] = useState(false);
-
-
+  const [session, setSession] = useState<WorkoutSession | null>(null);
+  const [sessionHydrated, setSessionHydrated] = useState(false);
+  const observedCount = useRef(0);
+  const restRemaining =
+    session?.phase === "rest" && session.restEndsAt
+      ? Math.max(0, Math.ceil((session.restEndsAt - now) / 1000))
+      : null;
 
   const isPushup = exerciseId === "pushup";
-  const pushMode: PushMode = isPushup ? (search.mode ?? "nose") : "nose";
+  const pushMode: PushMode =
+    isPushup && (search.mode === "nose" || search.mode === "manual" || search.mode === "camera")
+      ? search.mode
+      : "nose";
   const useCamera = isPushup && pushMode === "camera";
   const useManual = isPushup && pushMode === "manual";
+  const isPlanned = !!(search.sets || search.reps || search.rest_s || search.title);
+  const plan = useMemo(
+    () => ({
+      sets: search.sets ?? 1,
+      reps: search.reps ?? null,
+      restSeconds: search.rest_s ?? 60,
+      title: search.title ?? null,
+    }),
+    [search.sets, search.reps, search.rest_s, search.title],
+  );
 
   // Effective detection: for push-ups we honor the mode toggle.
   const detection = useMemo(() => {
@@ -89,7 +122,14 @@ function WorkoutScreen() {
     return exercise.detection_type;
   }, [exercise, isPushup, useCamera, useManual]);
 
-  const { count, pop, bump, reset: resetEngine } = useExerciseEngine({
+  const {
+    count,
+    pop,
+    bump,
+    reset: resetEngine,
+    setCount: setEngineCount,
+    decrement,
+  } = useExerciseEngine({
     exerciseId,
     detection,
     active: useCamera ? false : active, // when camera-driven, we bump() from camera
@@ -100,7 +140,6 @@ function WorkoutScreen() {
       }
     },
   });
-
 
   // Camera detector — only mounted for camera mode
   const cameraBump = useCallback(
@@ -122,6 +161,13 @@ function WorkoutScreen() {
     active: useCamera && active,
     onRep: cameraBump,
   });
+
+  useEffect(() => {
+    if (!useCamera || !cameraError) return;
+    setActive(false);
+    setStartedAt(null);
+    setSession((current) => (current ? pauseWorkout(current) : current));
+  }, [useCamera, cameraError]);
 
   const formStats = useMemo(() => {
     if (repGrades.length === 0) return null;
@@ -155,7 +201,8 @@ function WorkoutScreen() {
           .maybeSingle();
         if (p) {
           const pb = (p as { personal_bests: Record<string, number> | null }).personal_bests ?? {};
-          const fallback = exerciseId === "pushup" ? (p as { best_count: number }).best_count ?? 0 : 0;
+          const fallback =
+            exerciseId === "pushup" ? ((p as { best_count: number }).best_count ?? 0) : 0;
           setBest(pb[exerciseId] ?? fallback);
         }
       }
@@ -166,10 +213,72 @@ function WorkoutScreen() {
   }, [exerciseId, navigate]);
 
   useEffect(() => {
-    if (!startedAt) return;
+    if (!userId || typeof window === "undefined") return;
+    setSessionHydrated(false);
+    const key = workoutSessionStorageKey(userId, exerciseId);
+    const restored = readWorkoutSession(window.localStorage, key);
+    if (
+      restored &&
+      restored.phase !== "completed" &&
+      restored.plan.sets === plan.sets &&
+      restored.plan.reps === plan.reps &&
+      restored.plan.restSeconds === plan.restSeconds &&
+      restored.plan.title === plan.title
+    ) {
+      const safeRestore = restored.phase === "active" ? pauseWorkout(restored) : restored;
+      setSession(safeRestore);
+      setEngineCount(safeRestore.currentReps);
+      if (useManual) setManualInput(safeRestore.currentReps ? String(safeRestore.currentReps) : "");
+      setActive(safeRestore.phase === "active");
+      setStartedAt(safeRestore.startedAt ?? null);
+      observedCount.current = restored.currentReps;
+    } else {
+      setSession(isPlanned ? createWorkoutSession(plan) : null);
+      setEngineCount(0);
+      setManualInput("");
+      setActive(false);
+      setStartedAt(null);
+      observedCount.current = 0;
+    }
+    setSessionHydrated(true);
+  }, [userId, exerciseId, isPlanned, plan, setEngineCount, useManual]);
+
+  useEffect(() => {
+    if (!userId || !session || !sessionHydrated || typeof window === "undefined") return;
+    writeWorkoutSession(window.localStorage, workoutSessionStorageKey(userId, exerciseId), session);
+  }, [userId, exerciseId, session, sessionHydrated]);
+
+  // Keep a paused draft if the user navigates away or backgrounds this page.
+  const sessionRef = useRef(session);
+  const userRef = useRef(userId);
+  useEffect(() => {
+    sessionRef.current = session;
+    userRef.current = userId;
+  }, [session, userId]);
+  useEffect(() => {
+    const persistPaused = () => {
+      const current = sessionRef.current;
+      const uid = userRef.current;
+      if (!current || !uid || current.phase === "completed" || current.phase === "paused") return;
+      writeWorkoutSession(
+        window.localStorage,
+        workoutSessionStorageKey(uid, exerciseId),
+        pauseWorkout(current, Date.now()),
+      );
+    };
+    window.addEventListener("pagehide", persistPaused);
+    window.addEventListener("beforeunload", persistPaused);
+    return () => {
+      window.removeEventListener("pagehide", persistPaused);
+      window.removeEventListener("beforeunload", persistPaused);
+    };
+  }, [exerciseId]);
+
+  useEffect(() => {
+    if (!startedAt && session?.phase !== "rest") return;
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
-  }, [startedAt]);
+  }, [startedAt, session?.phase]);
 
   useEffect(() => {
     if (countdown === null) return;
@@ -177,6 +286,8 @@ function WorkoutScreen() {
       setCountdown(null);
       setActive(true);
       setStartedAt((s) => s ?? Date.now());
+      if (isPlanned)
+        setSession((current) => (current ? startWorkoutSet(current) : createWorkoutSession(plan)));
       setMotionError(null);
       setSavedHint(null);
       return;
@@ -184,7 +295,30 @@ function WorkoutScreen() {
 
     const id = window.setTimeout(() => setCountdown((value) => (value ?? 0) - 1), 900);
     return () => window.clearTimeout(id);
-  }, [countdown]);
+  }, [countdown, isPlanned, plan]);
+
+  useEffect(() => {
+    if (!isPlanned || !session || session.phase !== "active") {
+      observedCount.current = count;
+      return;
+    }
+    const delta = count - observedCount.current;
+    observedCount.current = count;
+    if (delta <= 0) return;
+    setSession((current) => {
+      if (!current || current.phase !== "active") return current;
+      let next = current;
+      for (let i = 0; i < delta; i++) next = recordWorkoutRep(next);
+      if (next.plan.reps !== null && next.currentReps >= next.plan.reps) {
+        next = finishWorkoutSet(next);
+        setActive(false);
+        setStartedAt(null);
+        observedCount.current = 0;
+        resetEngine();
+      }
+      return next;
+    });
+  }, [count, isPlanned, session, resetEngine]);
 
   const start = useCallback(async () => {
     if (detection === "motion_vertical" || detection === "combo") {
@@ -195,22 +329,33 @@ function WorkoutScreen() {
       }
     }
     setCountdown(3);
+    if (isPlanned)
+      setSession((current) =>
+        current
+          ? { ...current, phase: "preparation", startedAt: current.startedAt ?? Date.now() }
+          : createWorkoutSession(plan),
+      );
     setActive(false);
     setStartedAt(null);
     setMotionError(null);
     setSavedHint(null);
     setSummary(null);
-  }, [detection]);
+  }, [detection, isPlanned, plan]);
 
   const handleSurfaceTap = useCallback(() => {
     if (useCamera) return;
     if (detection === "timer" || detection === "motion_vertical") return;
-    if (!active) start();
+    if (!active) {
+      if (isPlanned && session && ["rest", "paused", "completed"].includes(session.phase)) return;
+      start();
+      return;
+    }
     bump();
-  }, [useCamera, detection, active, start, bump]);
+  }, [useCamera, detection, active, start, bump, isPlanned, session]);
 
   const finish = () => {
-    if (count <= 0 || !userId || !exercise) {
+    const total = isPlanned && session ? summarizeWorkout(session, Date.now()).actualReps : count;
+    if (total <= 0 || !userId || !exercise) {
       resetAll();
       return;
     }
@@ -219,62 +364,80 @@ function WorkoutScreen() {
   };
 
   const saveWithRpe = async (rpe: number | null) => {
-    if (count <= 0 || !userId || !exercise) {
+    const sessionSummary = isPlanned && session ? summarizeWorkout(session, Date.now()) : null;
+    const savedCount = Math.min(1000, sessionSummary?.actualReps ?? count);
+    if (savedCount <= 0 || !userId || !exercise) {
       resetAll();
       return;
     }
     setAwaitingRpe(false);
     setSaving(true);
-    const duration_ms = startedAt ? Date.now() - startedAt : 0;
+    const duration_ms =
+      sessionSummary?.actualDurationMs ?? (startedAt ? Date.now() - startedAt : 0);
+    const rowId = session?.id ?? crypto.randomUUID();
+    const createdAt = new Date().toISOString();
     // Offline landet das Training in der Warteschlange und wird später nachgesendet.
-    const { error } = await saveOrQueue("workouts", {
+    const { error, queued } = await saveOrQueue("workouts", {
+      id: rowId,
       user_id: userId,
       exercise_id: exerciseId,
-      count,
+      count: savedCount,
       duration_ms,
+      created_at: createdAt,
       form_score: formStats?.formScore ?? null,
       clean_reps: formStats?.cleanReps ?? null,
       rpe,
     });
     if (!error) {
       feedbackSuccess();
-      const newBest = count > best;
-      const xpGained = exercise.unit === "seconds"
-        ? Math.max(1, Math.floor(duration_ms / 1000))
-        : count * 10;
+      const newBest = !sessionSummary?.partial && savedCount > best;
       setSummary({
-        count,
+        count: savedCount,
         durationMs: duration_ms,
-        xp: xpGained,
-        isBest: newBest,
+        isBest: newBest && !queued,
         formScore: formStats?.formScore ?? null,
         cleanReps: formStats?.cleanReps ?? null,
         rpe,
+        plannedSets: sessionSummary?.plannedSets,
+        actualSets: sessionSummary?.actualSets,
+        plannedReps: sessionSummary?.plannedReps,
+        actualReps: sessionSummary?.actualReps,
+        partial: sessionSummary?.partial,
       });
 
-      if (newBest) {
-        setBest(count);
-        setSavedHint(`🏆 Neuer Bestwert: ${count}${exercise.unit === "seconds" ? " Sek." : ""}`);
-        // Client-side personal_bests update — belt-and-suspenders alongside the DB trigger.
-        // Needed especially for cali_* skill IDs.
-        (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)
-          ("update_personal_best", {
-            p_user_id: userId,
-            p_exercise_id: exerciseId,
-            p_count: count,
-          })
-          .then(() => {/* fire-and-forget; trigger also handles it */});
+      if (isPlanned && sessionSummary && typeof window !== "undefined") {
+        writeWorkoutMetadata(window.localStorage, {
+          version: 1,
+          rowId,
+          userId,
+          exerciseId,
+          partial: sessionSummary.partial,
+          summary: { ...sessionSummary, actualReps: savedCount },
+          createdAt,
+        });
+      }
+      if (queued) {
+        setSavedHint("Auf diesem Gerät vorgemerkt – Bestwert nach Synchronisierung prüfen");
+      } else if (newBest) {
+        setBest(savedCount);
+        setSavedHint(`Neuer Bestwert: ${savedCount}${exercise.unit === "seconds" ? " Sek." : ""}`);
       } else {
-        setSavedHint(`Gespeichert · +${xpGained} XP`);
+        setSavedHint(queued ? "Auf diesem Gerät vorgemerkt" : "Workout gespeichert");
       }
     } else {
-      setSavedHint("Speichern fehlgeschlagen");
+      setSavedHint("Speichern fehlgeschlagen – deine Daten bleiben erhalten");
+      setAwaitingRpe(true);
+      setSaving(false);
+      return;
     }
     setSaving(false);
     setActive(false);
     setStartedAt(null);
     setCountdown(null);
     resetEngine();
+    setSession(null);
+    if (userId && typeof window !== "undefined")
+      window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
   };
 
   const resetAll = () => {
@@ -283,16 +446,19 @@ function WorkoutScreen() {
     setCountdown(null);
     setSummary(null);
     setAwaitingRpe(false);
+    setManualInput("");
     resetEngine();
     setSavedHint(null);
     setMotivation(null);
     setRepGrades([]);
+    setSession(isPlanned ? createWorkoutSession(plan) : null);
+    if (userId && typeof window !== "undefined")
+      window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
   };
 
   const elapsed = startedAt ? now - startedAt : 0;
-  const pace = startedAt && count > 0 && exercise?.unit !== "seconds"
-    ? count / (elapsed / 60000)
-    : 0;
+  const pace =
+    startedAt && count > 0 && exercise?.unit !== "seconds" ? count / (elapsed / 60000) : 0;
   const cfg = exercise ? getConfig(exerciseId) : null;
   const isTapDriven = !useCamera && (detection === "touch" || detection === "combo");
 
@@ -308,37 +474,85 @@ function WorkoutScreen() {
 
   // Manual mode: user just types how many they did.
   const submitManual = () => {
-    const n = Math.max(0, Math.min(9999, parseInt(manualInput, 10) || 0));
+    const n = Math.max(0, Math.min(1000, parseInt(manualInput, 10) || 0));
     if (n <= 0 || !userId || !exercise) return;
+    if (isPlanned && session) {
+      if (session.phase !== "active") return;
+      let next = { ...session, currentReps: n };
+      next = finishWorkoutSet(next);
+      setSession(next);
+      if (next.phase === "completed") {
+        const total = next.setReps.reduce((sum, value) => sum + value, 0);
+        setManualInput(String(total));
+        setAwaitingRpe(true);
+      } else {
+        setManualInput("");
+      }
+      return;
+    }
     setAwaitingRpe(true);
   };
 
   const saveManualWithRpe = async (rpe: number | null) => {
-    const n = Math.max(0, Math.min(9999, parseInt(manualInput, 10) || 0));
+    const sessionSummary = isPlanned && session ? summarizeWorkout(session) : null;
+    const n = Math.min(
+      1000,
+      sessionSummary?.actualReps ?? Math.max(0, Math.min(1000, parseInt(manualInput, 10) || 0)),
+    );
     if (n <= 0 || !userId || !exercise) return;
     setAwaitingRpe(false);
     setSaving(true);
-    const { error } = await saveOrQueue("workouts", {
+    const rowId = session?.id ?? crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    const { error, queued } = await saveOrQueue("workouts", {
+      id: rowId,
       user_id: userId,
       exercise_id: exerciseId,
       count: n,
-      duration_ms: 0,
+      duration_ms: sessionSummary?.actualDurationMs ?? 0,
+      created_at: createdAt,
       rpe,
     });
     if (!error) {
       feedbackSuccess();
-      const newBest = n > best;
-      setSummary({ count: n, durationMs: 0, xp: n * 10, isBest: newBest, rpe });
+      const newBest = !sessionSummary?.partial && n > best;
+      setSummary({
+        count: n,
+        durationMs: sessionSummary?.actualDurationMs ?? 0,
+        isBest: newBest && !queued,
+        rpe,
+        plannedSets: sessionSummary?.plannedSets,
+        actualSets: sessionSummary?.actualSets,
+        plannedReps: sessionSummary?.plannedReps,
+        actualReps: sessionSummary?.actualReps,
+        partial: sessionSummary?.partial,
+      });
+      if (isPlanned && sessionSummary && typeof window !== "undefined")
+        writeWorkoutMetadata(window.localStorage, {
+          version: 1,
+          rowId,
+          userId,
+          exerciseId,
+          partial: sessionSummary.partial,
+          summary: sessionSummary,
+          createdAt,
+        });
 
-      if (newBest) {
+      if (queued) {
+        setSavedHint("Auf diesem Gerät vorgemerkt – Bestwert nach Synchronisierung prüfen");
+      } else if (newBest) {
         setBest(n);
-        setSavedHint(`🏆 Neuer Bestwert: ${n}`);
+        setSavedHint(`Neuer Bestwert: ${n}`);
       } else {
-        setSavedHint(`Gespeichert · +${n * 10} XP`);
+        setSavedHint("Workout gespeichert");
       }
       setManualInput("");
+      setSession(null);
+      if (userId && typeof window !== "undefined")
+        window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
     } else {
-      setSavedHint("Speichern fehlgeschlagen");
+      setSavedHint("Speichern fehlgeschlagen – deine Eingaben bleiben erhalten");
+      setAwaitingRpe(true);
     }
     setSaving(false);
   };
@@ -370,53 +584,198 @@ function WorkoutScreen() {
           <Stat label="Modus" value="✍️ Manuell" />
         </section>
 
-        <section className="mt-6 flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 p-6 text-center backdrop-blur">
-          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
-            Wie viele Push-Ups?
-          </span>
-          <input
-            type="number"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            min={1}
-            max={9999}
-            value={manualInput}
-            onChange={(e) => setManualInput(e.target.value.replace(/[^0-9]/g, ""))}
-            placeholder="0"
-            className="mt-4 w-full max-w-[14rem] rounded-2xl border border-border bg-background/60 py-4 text-center font-display text-[5rem] font-bold tabular-nums text-foreground focus:border-primary focus:outline-none"
-          />
-          <p className="mt-4 max-w-[16rem] text-sm text-muted-foreground">
-            Trage die Anzahl deiner gerade absolvierten Push-Ups ein und speichere.
-          </p>
-        </section>
-
-        {awaitingRpe ? (
-          <RpePicker saving={saving} onPick={saveManualWithRpe} />
-        ) : (
-          <button
-            onClick={submitManual}
-            disabled={saving || !manualInput || parseInt(manualInput, 10) <= 0}
-            className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+        {isPlanned && session && (
+          <section
+            className="mt-3 rounded-2xl border border-border bg-card/50 p-3 text-center"
+            aria-live="polite"
           >
-            {saving ? "Speichere…" : "Workout speichern"}
-          </button>
+            {plan.title && <div className="mb-1 text-sm font-semibold">{plan.title}</div>}
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Satz {Math.min(session.currentSet, plan.sets)} / {plan.sets} ·{" "}
+              {session.phase === "preparation"
+                ? "Vorbereitung"
+                : session.phase === "rest"
+                  ? `Pause ${restRemaining ?? 0}s`
+                  : session.phase === "paused"
+                    ? "Pausiert"
+                    : session.phase === "completed"
+                      ? "Plan abgeschlossen"
+                      : "Aktiver Satz"}
+              {plan.reps ? ` · Ziel ${plan.reps} je Satz` : ""}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Bisher {session.setReps.reduce((a, b) => a + b, 0) + session.currentReps}{" "}
+              Wiederholungen
+            </div>
+            {session.phase === "preparation" && (
+              <button
+                onClick={() => setSession((s) => (s ? startWorkoutSet(s) : s))}
+                className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+              >
+                Satz starten
+              </button>
+            )}
+            {session.phase === "rest" && (
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={() => setSession((s) => (s ? extendWorkoutRest(s, 30) : s))}
+                  className="flex-1 rounded-lg border border-border px-3 py-2 text-xs"
+                >
+                  +30 Sek.
+                </button>
+                <button
+                  onClick={() => setSession((s) => (s ? startWorkoutSet(s) : s))}
+                  className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                >
+                  Fortsetzen
+                </button>
+              </div>
+            )}
+            {session.phase === "paused" && (
+              <button
+                onClick={() => setSession((s) => (s ? startWorkoutSet(s) : s))}
+                className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+              >
+                Fortsetzen
+              </button>
+            )}
+            {session.phase === "active" && (
+              <button
+                onClick={() => setSession((s) => (s ? pauseWorkout(s) : s))}
+                className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
+              >
+                Pausieren
+              </button>
+            )}
+            {session.phase !== "completed" &&
+              (session.currentReps > 0 || session.setReps.some((r) => r > 0)) && (
+                <button
+                  onClick={finish}
+                  className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
+                >
+                  Teiltraining speichern
+                </button>
+              )}
+            {!summary && (
+              <button
+                type="button"
+                onClick={resetAll}
+                className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
+              >
+                Verwerfen
+              </button>
+            )}
+          </section>
         )}
 
+        {!summary && (
+          <>
+            <section className="mt-6 flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 p-6 text-center backdrop-blur">
+              {isPlanned && session && (
+                <div className="text-xs font-medium text-muted-foreground">
+                  {session.phase === "completed"
+                    ? "Plan abgeschlossen"
+                    : `Satz ${Math.min(session.currentSet, plan.sets)} / ${plan.sets} · ${session.phase === "rest" ? `Pause ${restRemaining ?? 0}s` : "Wiederholungen eintragen"}`}
+                </div>
+              )}
+              <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+                Wie viele Push-Ups?
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                min={1}
+                max={1000}
+                value={manualInput}
+                disabled={isPlanned && session?.phase !== "active"}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, "");
+                  setManualInput(value);
+                  if (isPlanned)
+                    setSession((s) =>
+                      s?.phase === "active"
+                        ? { ...s, currentReps: Math.min(1000, parseInt(value, 10) || 0) }
+                        : s,
+                    );
+                }}
+                placeholder="0"
+                className="mt-4 w-full max-w-[14rem] rounded-2xl border border-border bg-background/60 py-4 text-center font-display text-[5rem] font-bold tabular-nums text-foreground focus:border-primary focus:outline-none"
+              />
+              <p className="mt-4 max-w-[16rem] text-sm text-muted-foreground">
+                Trage die Anzahl deiner gerade absolvierten Push-Ups ein und speichere.
+              </p>
+            </section>
+
+            {awaitingRpe ? (
+              <RpePicker saving={saving} onPick={saveManualWithRpe} />
+            ) : (
+              <button
+                onClick={submitManual}
+                disabled={
+                  saving ||
+                  !manualInput ||
+                  parseInt(manualInput, 10) <= 0 ||
+                  (isPlanned && session?.phase !== "active")
+                }
+                className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+              >
+                {saving
+                  ? "Speichere…"
+                  : isPlanned && session?.phase !== "completed"
+                    ? "Satz speichern"
+                    : "Workout speichern"}
+              </button>
+            )}
+          </>
+        )}
         {summary && (
           <div className="mt-4 w-full rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Session abgeschlossen</div>
-            <div className="mt-2 text-lg font-semibold text-foreground">{summary.count} Einheiten</div>
-            <div className="mt-1 text-sm text-muted-foreground">+{summary.xp} XP · {summary.isBest ? "Neuer Bestwert" : "Gut gemacht"}</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Session abgeschlossen
+            </div>
+            <div className="mt-2 text-lg font-semibold text-foreground">
+              {summary.count} Wiederholungen
+            </div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {summary.isBest
+                ? "Neuer Bestwert"
+                : summary.partial
+                  ? "Teiltraining gespeichert"
+                  : "Gut gemacht"}
+            </div>
+            {summary.plannedSets !== undefined && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Plan: {summary.plannedSets} Sätze
+                {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} · Tatsächlich:{" "}
+                {summary.actualSets ?? 0} Sätze / {summary.actualReps ?? summary.count} Wdh. ·{" "}
+                Tatsächliche Dauer: {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
+              </div>
+            )}
           </div>
         )}
 
+        {summary && (
+          <button
+            onClick={resetAll}
+            className="mt-3 w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium"
+          >
+            Neues Training
+          </button>
+        )}
+
+        {isPlanned && (
+          <p className="mt-2 text-center text-[10px] text-muted-foreground">
+            Zusammenfassung und Teiltraining-Markierung werden nur auf diesem Gerät lokal
+            zugeordnet.
+          </p>
+        )}
         <p className="mt-3 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
           {savedHint ?? "Ehrlichkeitsmodus 🙏"}
         </p>
       </main>
     );
   }
-
 
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
@@ -445,11 +804,101 @@ function WorkoutScreen() {
         <Stat label="Zeit" value={formatTime(elapsed)} />
         <Stat
           label={exercise.unit === "seconds" ? "Status" : "Tempo"}
-          value={exercise.unit === "seconds" ? (active ? "Läuft" : "Aus") : (pace ? pace.toFixed(0) : "—")}
+          value={
+            exercise.unit === "seconds" ? (active ? "Läuft" : "Aus") : pace ? pace.toFixed(0) : "—"
+          }
           unit={exercise.unit === "seconds" ? undefined : "/min"}
         />
-        <Stat label="Bestwert" value={best.toString()} unit={exercise.unit === "seconds" ? "Sek." : undefined} />
+        <Stat
+          label="Bestwert"
+          value={best.toString()}
+          unit={exercise.unit === "seconds" ? "Sek." : undefined}
+        />
       </section>
+
+      {isPlanned && session && (
+        <section
+          className="mt-3 rounded-2xl border border-border bg-card/50 p-3 text-center"
+          aria-live="polite"
+        >
+          {plan.title && (
+            <div className="mb-1 text-sm font-semibold text-foreground">{plan.title}</div>
+          )}
+          <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            {session.phase === "preparation"
+              ? "Vorbereitung"
+              : session.phase === "rest"
+                ? "Pause"
+                : session.phase === "paused"
+                  ? "Pausiert"
+                  : session.phase === "completed"
+                    ? "Abgeschlossen"
+                    : "Aktiver Satz"}
+          </div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-foreground">
+            Satz {Math.min(session.currentSet, plan.sets)} / {plan.sets}
+            {plan.reps ? ` · ${count} / ${plan.reps} Wiederholungen` : ""}
+          </div>
+          {restRemaining !== null && (
+            <div className="mt-1 text-2xl font-bold tabular-nums text-primary">
+              {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, "0")}
+            </div>
+          )}
+          {session.phase === "rest" && (
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={() => setSession((s) => (s ? extendWorkoutRest(s, 30) : s))}
+                className="flex-1 rounded-lg border border-border px-3 py-2 text-xs"
+              >
+                +30 Sek.
+              </button>
+              <button
+                onClick={() => {
+                  setSession((s) => (s ? startWorkoutSet(s) : s));
+                  setActive(true);
+                  setStartedAt(Date.now());
+                }}
+                className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+              >
+                Fortsetzen
+              </button>
+            </div>
+          )}
+          {session.phase === "paused" && (
+            <button
+              onClick={() => {
+                setSession((s) => (s ? startWorkoutSet(s) : s));
+                setActive(true);
+                setStartedAt(Date.now());
+              }}
+              className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+            >
+              Fortsetzen
+            </button>
+          )}
+        </section>
+      )}
+      {useCamera && (!active || !!cameraError) && (
+        <aside className="mt-3 rounded-xl border border-border bg-card/50 p-3 text-xs text-muted-foreground">
+          Kamera wird erst nach „Starten“ angefragt. Die Erkennungssoftware und das Modell werden
+          von einem CDN und Google heruntergeladen. Die Pose-Erkennung läuft danach lokal; Video
+          wird nicht gespeichert oder übertragen. Handy seitlich aufstellen, ganzer Körper
+          (Schulter, Ellbogen, Handgelenk, Hüfte und Knie) sichtbar.{" "}
+          <button
+            type="button"
+            className="underline"
+            onClick={() =>
+              navigate({
+                to: "/workout/$exerciseId",
+                params: { exerciseId },
+                search: { ...search, mode: "manual" },
+              })
+            }
+          >
+            Manuell fortfahren
+          </button>
+        </aside>
+      )}
 
       <button
         onPointerDown={handleSurfaceTap}
@@ -489,11 +938,19 @@ function WorkoutScreen() {
             {count}
           </span>
           <span className="mt-2 max-w-[16rem] text-sm text-muted-foreground">
-            {motivation ?? (!active && count === 0 ? cfg?.idleHint : cfg?.activeHint)}
+            {motivation ??
+              (useCamera
+                ? "Handy seitlich aufstellen: Der ganze Körper muss gut beleuchtet sichtbar sein. Die Erkennung kann Wiederholungen übersehen."
+                : !active && count === 0
+                  ? cfg?.idleHint
+                  : cfg?.activeHint)}
           </span>
           {motionError && <span className="text-xs text-destructive">{motionError}</span>}
           {useCamera && cameraError && (
-            <span className="text-xs text-destructive">{cameraError}</span>
+            <span role="alert" className="text-xs text-destructive">
+              Kamera nicht verfügbar oder nicht freigegeben. Bitte nutze „Manuell fortfahren“ oder
+              prüfe die Kameraberechtigung.
+            </span>
           )}
           {useCamera && active && !cameraReady && !cameraError && (
             <span className="text-xs text-muted-foreground">{cameraStatus}</span>
@@ -564,42 +1021,108 @@ function WorkoutScreen() {
         <Corner className="left-3 bottom-3 -rotate-90" />
       </button>
 
-      {!active && count === 0 && !isTapDriven && (
-        <button
-          onClick={start}
-          className="mt-4 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
-        >
-          Starten
-        </button>
-      )}
-
-      {awaitingRpe && (
-        <RpePicker saving={saving} onPick={saveWithRpe} />
-      )}
-
-      {!awaitingRpe && (active || count > 0) && (
-        <div className="mt-4 grid grid-cols-2 gap-3">
+      {!active &&
+        count === 0 &&
+        !isTapDriven &&
+        countdown === null &&
+        (!isPlanned || session?.phase === "preparation") && (
           <button
-            onClick={resetAll}
-            className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80 active:scale-[0.98]"
+            onClick={start}
+            className="mt-4 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
           >
-            Verwerfen
+            Starten
+          </button>
+        )}
+
+      {isPlanned && session && active && !awaitingRpe && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              decrement();
+              setSession((s) => (s ? undoWorkoutRep(s) : s));
+            }}
+            disabled={count <= 0}
+            className="rounded-xl border border-border bg-secondary px-2 py-3 text-xs disabled:opacity-40"
+          >
+            Korrigieren −1
           </button>
           <button
-            onClick={finish}
-            disabled={saving || count === 0}
-            className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+            type="button"
+            onClick={() => {
+              setActive(false);
+              setStartedAt(null);
+              setSession((s) => (s ? pauseWorkout(s) : s));
+            }}
+            className="rounded-xl border border-border bg-secondary px-2 py-3 text-xs"
           >
-            {saving ? "Speichere…" : "Workout speichern"}
+            Pausieren
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSession((s) => (s ? finishWorkoutSet(s, Date.now()) : s));
+              setActive(false);
+              setStartedAt(null);
+              observedCount.current = 0;
+              resetEngine();
+            }}
+            className="rounded-xl border border-border bg-secondary px-2 py-3 text-xs"
+          >
+            Satz abschließen
           </button>
         </div>
       )}
+      {awaitingRpe && <RpePicker saving={saving} onPick={saveWithRpe} />}
+
+      {!awaitingRpe &&
+        (active ||
+          count > 0 ||
+          (isPlanned && !!session && ["rest", "paused", "completed"].includes(session.phase))) && (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <button
+              onClick={resetAll}
+              className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80 active:scale-[0.98]"
+            >
+              Verwerfen
+            </button>
+            <button
+              onClick={finish}
+              disabled={
+                saving ||
+                (isPlanned && session ? summarizeWorkout(session).actualReps <= 0 : count === 0)
+              }
+              className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+            >
+              {saving
+                ? "Speichere…"
+                : isPlanned && session?.phase !== "completed"
+                  ? "Teiltraining speichern"
+                  : "Workout speichern"}
+            </button>
+          </div>
+        )}
 
       {summary && !active && (
         <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Session abgeschlossen</div>
-          <div className="mt-2 text-lg font-semibold text-foreground">{summary.count} {exercise.unit === "seconds" ? "Sekunden" : "Wiederholungen"}</div>
-          <div className="mt-1 text-sm text-muted-foreground">+{summary.xp} XP · {summary.isBest ? "Neuer Bestwert" : "Gut gemacht"}</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Session abgeschlossen
+          </div>
+          <div className="mt-2 text-lg font-semibold text-foreground">
+            {summary.count} {exercise.unit === "seconds" ? "Sekunden" : "Wiederholungen"}
+          </div>
+          <div className="mt-1 text-sm text-muted-foreground">
+            {summary.isBest ? "Neuer Bestwert" : "Gut gemacht"}
+          </div>
+          {summary.plannedSets !== undefined && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              Plan: {summary.plannedSets} Sätze
+              {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} · Tatsächlich:{" "}
+              {summary.actualSets ?? 0} Sätze / {summary.actualReps ?? summary.count} Wdh. ·{" "}
+              Tatsächliche Dauer: {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
+              {summary.partial ? " · Teiltraining" : ""}
+            </div>
+          )}
           {summary.formScore != null && (
             <div className="mt-2 flex items-center justify-between rounded-xl bg-background/50 px-3 py-2 text-xs">
               <span className="text-muted-foreground">Technik-Note</span>
@@ -611,17 +1134,26 @@ function WorkoutScreen() {
         </div>
       )}
 
+      {isPlanned && (
+        <p className="mt-2 text-center text-[10px] text-muted-foreground">
+          Zusammenfassung und Teiltraining-Markierung werden nur auf diesem Gerät lokal zugeordnet.
+        </p>
+      )}
       <p className="mt-3 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
         {savedHint ??
           (useCamera
-            ? active
-              ? "Kamera erkennt dich"
-              : "Starten · Kamera-Modus"
+            ? cameraError
+              ? "Kamera nicht verfügbar – manuell fortfahren"
+              : active
+                ? cameraReady
+                  ? "Kameraerkennung bereit"
+                  : "Kameraerkennung wird vorbereitet"
+                : "Starten · Kamera-Modus"
             : isTapDriven
-            ? "Tippe irgendwo auf die Fläche"
-            : active
-            ? "Erkennung aktiv"
-            : "Bereit zum Start")}
+              ? "Tippe irgendwo auf die Fläche"
+              : active
+                ? "Erkennung aktiv"
+                : "Bereit zum Start")}
       </p>
     </main>
   );
@@ -650,13 +1182,7 @@ function Corner({ className = "" }: { className?: string }) {
 }
 
 /** RPE-Abfrage (1–10) nach dem Satz — ein Tippen genügt, überspringbar. */
-function RpePicker({
-  saving,
-  onPick,
-}: {
-  saving: boolean;
-  onPick: (rpe: number | null) => void;
-}) {
+function RpePicker({ saving, onPick }: { saving: boolean; onPick: (rpe: number | null) => void }) {
   return (
     <div className="mt-4 rounded-2xl border border-primary/25 bg-primary/5 p-4">
       <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">

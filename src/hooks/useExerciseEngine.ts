@@ -71,7 +71,16 @@ export function useExerciseEngine({ exerciseId, detection, active, onTick }: Arg
     motionState.current = { phase: "up", peak: 0 };
   }, []);
 
-  return { count, pop, bump, reset };
+  const setCountValue = useCallback((value: number) => {
+    setCount(Math.max(0, Math.min(1000, Math.floor(value))));
+    lastBump.current = Date.now();
+  }, []);
+
+  const decrement = useCallback(() => {
+    setCount((value) => Math.max(0, value - 1));
+  }, []);
+
+  return { count, pop, bump, reset, setCount: setCountValue, decrement };
 }
 
 /**
