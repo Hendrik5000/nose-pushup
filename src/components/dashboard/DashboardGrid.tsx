@@ -83,7 +83,7 @@ export function DashboardGrid({
             setEditing((e) => !e);
             setAddOpen(false);
           }}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+          className={`min-h-11 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
             editing
               ? "bg-primary text-primary-foreground"
               : "border border-border bg-secondary/50 text-muted-foreground"
@@ -96,14 +96,14 @@ export function DashboardGrid({
             <button
               type="button"
               onClick={() => setAddOpen((v) => !v)}
-              className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
+              className="min-h-11 rounded-full border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary"
             >
               + Widget
             </button>
             <button
               type="button"
               onClick={() => commit(resetLayout())}
-              className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground"
+              className="min-h-11 rounded-full border border-border px-4 py-2.5 text-sm text-muted-foreground"
             >
               Standard
             </button>
@@ -139,7 +139,7 @@ export function DashboardGrid({
 
       {editing && (
         <p className="mb-2 text-[11px] text-muted-foreground">
-          Ziehen zum Sortieren · Größe tippen (S/M/L) · × zum Entfernen
+          Ziehen zum Sortieren · Größe ändern · Widget entfernen
         </p>
       )}
 
@@ -158,10 +158,10 @@ export function DashboardGrid({
               className={`${sizeClass(item.size)} relative ${editing ? "rounded-2xl ring-1 ring-primary/30" : ""}`}
             >
               {editing && (
-                <div className="absolute -top-2 right-1 z-10 flex items-center gap-0.5 rounded-full border border-border bg-background/95 px-1 py-0.5 shadow-md backdrop-blur">
+                <div className="absolute -top-3 right-1 z-10 flex min-h-12 items-center gap-1 rounded-2xl border border-border bg-background/95 px-2 py-1 shadow-md backdrop-blur">
                   <button
                     type="button"
-                    className="px-1.5 text-[10px] text-muted-foreground"
+                    className="flex min-h-10 min-w-10 items-center justify-center rounded-xl px-2 text-sm font-semibold text-muted-foreground active:bg-secondary"
                     onClick={() => move(item.id, -1)}
                     aria-label="Nach oben"
                   >
@@ -169,7 +169,7 @@ export function DashboardGrid({
                   </button>
                   <button
                     type="button"
-                    className="px-1.5 text-[10px] text-muted-foreground"
+                    className="flex min-h-10 min-w-10 items-center justify-center rounded-xl px-2 text-sm font-semibold text-muted-foreground active:bg-secondary"
                     onClick={() => move(item.id, 1)}
                     aria-label="Nach unten"
                   >
@@ -177,21 +177,21 @@ export function DashboardGrid({
                   </button>
                   <button
                     type="button"
-                    className="rounded px-1.5 text-[10px] font-bold uppercase text-primary"
+                    className="flex min-h-10 min-w-14 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 px-2 text-sm font-bold uppercase text-primary active:bg-primary/20"
                     onClick={() => resize(item.id)}
                     aria-label="Größe ändern"
                   >
-                    {item.size}
+                    {item.size === "sm" ? "Klein" : item.size === "md" ? "Mittel" : "Groß"}
                   </button>
                   <button
                     type="button"
-                    className="px-1.5 text-xs text-destructive"
+                    className="flex min-h-10 min-w-10 items-center justify-center rounded-xl px-2 text-lg font-semibold text-destructive active:bg-destructive/10"
                     onClick={() => remove(item.id)}
                     aria-label="Entfernen"
                   >
                     ×
                   </button>
-                  <span className="cursor-grab px-1 text-[10px] text-muted-foreground" title="Ziehen">
+                  <span className="cursor-grab px-2 text-sm text-muted-foreground" title="Widget ziehen zum Sortieren" aria-hidden="true">
                     ⋮⋮
                   </span>
                 </div>
