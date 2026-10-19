@@ -93,7 +93,7 @@ export function DashboardGrid({
   return (
     <div className="mt-3">
       <div className="dashboard-customize-bar mb-3 flex flex-wrap items-center gap-2">
-        <SportSectionLabel number="03">Dein Cockpit</SportSectionLabel>
+        <SportSectionLabel number="04">Dein Cockpit</SportSectionLabel>
         <button
           type="button"
           aria-pressed={editing}
@@ -177,6 +177,7 @@ export function DashboardGrid({
             <div
               key={item.id}
               data-widget-id={item.id}
+              data-widget-size={item.size}
               draggable={editing}
               onDragStart={() => onDragStart(item.id)}
               onDragOver={(e) => onDragOver(e, item.id)}

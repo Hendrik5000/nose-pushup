@@ -81,6 +81,27 @@ test("new and old markup are mutually exclusive without rewriting saved appearan
   assert.ok(root.indexOf("href: sportCss") > root.indexOf("href: appCss"));
 });
 
+test("performance home puts today's workout before status metrics and keeps widget sizing responsive", () => {
+  const home = read("routes/_authenticated/index.tsx");
+  assert.match(home, /sport-dashboard-title">Heute trainieren/);
+  assert.ok(
+    home.indexOf('className="sport-only training-hero') <
+      home.indexOf('aria-label="Dein Trainingsstatus"'),
+    "the workout plan should appear before compact progress metrics",
+  );
+  assert.match(home, /className="sport-counting-group" role="group" aria-label="Zählmethode"/);
+
+  const dashboard = read("components/dashboard/DashboardGrid.tsx");
+  assert.match(dashboard, /data-widget-size=\{item\.size\}/);
+
+  const styles = read("sport.css");
+  assert.match(styles, /grid-template-columns: minmax\(0, 1fr\) !important/);
+  assert.match(styles, /@media \(min-width: 720px\)/);
+  assert.match(styles, /@media \(min-width: 1200px\)/);
+  assert.match(styles, /grid-column: span 3 !important/);
+  assert.match(read("routes/_authenticated/route.tsx"), /<TopNav \/>/);
+});
+
 test("sport page components render semantic content and permit real data actions", () => {
   const intro = renderToStaticMarkup(
     createElement(SportPageIntro, {

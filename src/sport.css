@@ -312,34 +312,32 @@ html[data-design-style="performance"] .sport-section-label h2 {
   font-weight: 750;
 }
 .sport-dashboard-title {
-  font-size: clamp(2.25rem, 5.7vw, 4.5rem) !important;
-  line-height: 1.03 !important;
-  margin-top: 0.9rem;
+  font-size: clamp(1.65rem, 3.4vw, 2.4rem) !important;
+  line-height: 1.1 !important;
+  margin-top: 0.35rem;
 }
 .sport-dashboard-title > span {
   display: block;
   color: var(--primary);
 }
 .sport-dashboard-subtitle {
-  margin-top: 1rem;
+  margin-top: 0.35rem;
   font-size: 0.85rem;
   color: var(--muted-foreground);
-  line-height: 1.6;
+  line-height: 1.45;
 }
 .sport-overview-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 2rem;
-  border: 1px solid var(--sport-line);
-  border-radius: 1.25rem;
-  background: var(--card);
+  gap: 0.75rem;
+  margin-top: 0;
 }
 .sport-overview-metrics > div {
-  padding: 1.35rem;
+  padding: 1rem;
   min-width: 0;
-}
-.sport-overview-metrics > div + div {
-  border-left: 1px solid var(--sport-line);
+  border: 1px solid var(--sport-line);
+  border-radius: 1rem;
+  background: var(--card);
 }
 .sport-overview-metrics dt {
   display: flex;
@@ -441,6 +439,11 @@ html[data-design-style="performance"] .training-hero > [aria-label="Zählmethode
   grid-column: 1;
   grid-row: 2;
   margin-top: 0;
+}
+html[data-design-style="performance"] .sport-counting-group {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
 }
 html[data-design-style="performance"] .training-hero > a {
   grid-column: 2;
@@ -641,7 +644,7 @@ html[data-design-style="performance"] [data-slot="dialog-content"] {
     flex-shrink: 1;
   }
   .sport-overview-metrics > div {
-    padding: 1.05rem 0.75rem;
+    padding: 0.85rem 0.65rem;
   }
   .sport-overview-metrics dt {
     font-size: 0.55rem;
@@ -659,8 +662,26 @@ html[data-design-style="performance"] [data-slot="dialog-content"] {
   html[data-design-style="performance"] main .training-hero {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    padding: 1.5rem !important;
+    gap: 1rem;
+    padding: 1.25rem !important;
+  }
+  html[data-design-style="performance"] .training-hero > .sport-hero-heading {
+    order: 0;
+  }
+  html[data-design-style="performance"] .training-hero > .training-plan-metrics {
+    order: 1;
+  }
+  html[data-design-style="performance"] .training-hero > .sport-counting-group {
+    order: 2;
+  }
+  html[data-design-style="performance"] .training-hero > a {
+    order: 3;
+  }
+  html[data-design-style="performance"] .training-hero > p {
+    order: 4;
+  }
+  html[data-design-style="performance"] .training-hero > details {
+    order: 5;
   }
   html[data-design-style="performance"] .training-hero .training-plan-metrics {
     width: 100%;
@@ -767,6 +788,31 @@ html[data-design-style="performance"] .sport-chat-composer {
   border: 1px solid var(--sport-line);
   border-radius: 1.25rem;
   background: var(--card);
+}
+html[data-design-style="performance"] .dashboard-widget-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+html[data-design-style="performance"] .dashboard-widget-grid > [data-widget-size] {
+  grid-column: span 1 !important;
+}
+@media (min-width: 720px) {
+  html[data-design-style="performance"] .dashboard-widget-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  html[data-design-style="performance"] .dashboard-widget-grid > [data-widget-size="lg"] {
+    grid-column: span 2 !important;
+  }
+}
+@media (min-width: 1200px) {
+  html[data-design-style="performance"] .dashboard-widget-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  html[data-design-style="performance"] .dashboard-widget-grid > [data-widget-size="md"] {
+    grid-column: span 2 !important;
+  }
+  html[data-design-style="performance"] .dashboard-widget-grid > [data-widget-size="lg"] {
+    grid-column: span 3 !important;
+  }
 }
 @media (max-width: 389px) {
   .sport-brand small {

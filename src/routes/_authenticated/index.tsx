@@ -551,11 +551,10 @@ function Dashboard() {
             <span aria-hidden="true" />
             {dateLabel}
           </div>
-          <h1 className="sport-dashboard-title">
-            Dein nächstes<span>Level beginnt hier.</span>
-          </h1>
+          <h1 className="sport-dashboard-title">Heute trainieren</h1>
           <p className="sport-dashboard-subtitle">
-            Hallo {profile?.display_name || "Athlet"}. Zeit, etwas für dich zu tun.
+            Hallo {profile?.display_name || "Athlet"}. Dein Plan und dein Fortschritt auf einen
+            Blick.
           </p>
         </div>
         <Link to="/profile" className="sport-avatar" aria-label="Profil öffnen">
@@ -566,39 +565,7 @@ function Dashboard() {
           )}
         </Link>
       </div>
-      <dl className="sport-only sport-overview-metrics" aria-label="Dein Trainingsstatus">
-        <div>
-          <dt>
-            <Target aria-hidden="true" />
-            HEUTE
-          </dt>
-          <dd>
-            {loading ? "—" : todayReps}
-            <small>/ {goal} Wdh.</small>
-          </dd>
-        </div>
-        <div>
-          <dt>
-            <Flame aria-hidden="true" />
-            DEINE SERIE
-          </dt>
-          <dd>
-            {loading ? "—" : streak}
-            <small>{streak === 1 ? "Tag" : "Tage"} in Folge</small>
-          </dd>
-        </div>
-        <div>
-          <dt>
-            <Trophy aria-hidden="true" />
-            DEIN LEVEL
-          </dt>
-          <dd>
-            {loading ? "—" : lp.level}
-            <small>{loading ? "Lädt…" : lp.title}</small>
-          </dd>
-        </div>
-      </dl>
-      <SportSectionLabel number="01">Dein Training heute</SportSectionLabel>
+      <SportSectionLabel number="01">Dein Plan heute</SportSectionLabel>
       <section
         className="sport-only training-hero rounded-3xl border border-border bg-card p-5"
         aria-labelledby="sport-today-plan-title"
@@ -618,7 +585,7 @@ function Dashboard() {
           <PlanMetric label="Wdh. je Satz" value={recommendation.reps} />
           <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
         </div>
-        <div className="grid grid-cols-3 gap-2" aria-label="Zählmethode">
+        <div className="sport-counting-group" role="group" aria-label="Zählmethode">
           <ModeChip
             active={mode === "nose"}
             onClick={() => setMode("nose")}
@@ -663,7 +630,40 @@ function Dashboard() {
           )}
         </details>
       </section>
-      <SportSectionLabel number="02">Finde deinen Fokus</SportSectionLabel>
+      <SportSectionLabel number="02">Dein Fortschritt</SportSectionLabel>
+      <dl className="sport-only sport-overview-metrics" aria-label="Dein Trainingsstatus">
+        <div>
+          <dt>
+            <Target aria-hidden="true" />
+            HEUTE
+          </dt>
+          <dd>
+            {loading ? "—" : todayReps}
+            <small>/ {goal} Wdh.</small>
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <Flame aria-hidden="true" />
+            DEINE SERIE
+          </dt>
+          <dd>
+            {loading ? "—" : streak}
+            <small>{streak === 1 ? "Tag" : "Tage"} in Folge</small>
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <Trophy aria-hidden="true" />
+            DEIN LEVEL
+          </dt>
+          <dd>
+            {loading ? "—" : lp.level}
+            <small>{loading ? "Lädt…" : lp.title}</small>
+          </dd>
+        </div>
+      </dl>
+      <SportSectionLabel number="03">Finde deinen Fokus</SportSectionLabel>
       <nav className="sport-only sport-shortcuts" aria-label="Trainingsbereiche">
         <Link to="/exercises" className="sport-shortcut">
           <Dumbbell aria-hidden="true" />

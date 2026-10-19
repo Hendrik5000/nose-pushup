@@ -94,9 +94,10 @@ export function SportAppHeader() {
           className="sport-menu-trigger"
           aria-expanded={open}
           aria-controls="sport-area-menu"
+          aria-label={open ? "Weitere Bereiche schließen" : "Weitere Bereiche öffnen"}
           onClick={() => setOpen(!open)}
         >
-          <span>Bereiche</span>
+          <span>Mehr</span>
           {open ? (
             <X className="h-5 w-5" aria-hidden="true" />
           ) : (
