@@ -395,7 +395,7 @@ export function LocalChatShell() {
   );
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-background">
+    <div className="app-chat-shell flex overflow-hidden bg-background">
       <aside className="hidden w-72 shrink-0 border-r border-border md:block">{sidebar}</aside>
 
       <section className="flex min-w-0 flex-1 flex-col">

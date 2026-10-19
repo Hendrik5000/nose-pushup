@@ -18,6 +18,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
 import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
+import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
 
 function NotFoundComponent() {
   return (
@@ -189,6 +190,7 @@ function RootComponent() {
     }
 
     applyDesignStyle(getStoredDesignStyle());
+    applyNavigationLayout(getStoredNavigationLayout());
     applyTheme(getStoredTheme());
     // Theme des Kontos laden, damit es auch ohne Profilbesuch sofort greift.
     (async () => {

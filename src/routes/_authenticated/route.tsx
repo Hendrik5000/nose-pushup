@@ -18,7 +18,7 @@ function AuthenticatedLayout() {
   useNotifications();
   const { user } = Route.useRouteContext();
   return (
-    <div className="min-h-[100dvh] pt-[calc(3.1rem+env(safe-area-inset-top))]">
+    <div className="authenticated-shell min-h-[100dvh]">
       <TopNav />
       <Outlet />
       <WelcomeTour userId={user.id} />

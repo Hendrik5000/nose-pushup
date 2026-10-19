@@ -21,6 +21,7 @@ import { FriendsPanel } from "@/components/FriendsPanel";
 import { BadgeGallery } from "@/components/BadgeGallery";
 import { ThemePicker } from "@/components/ThemePicker";
 import { DesignStylePicker } from "@/components/DesignStylePicker";
+import { NavigationLayoutPicker } from "@/components/NavigationLayoutPicker";
 import { ErrorReportsPanel } from "@/components/ErrorReportsPanel";
 import { BottomNav } from "@/components/BottomNav";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -365,6 +366,10 @@ export function ProfilePage() {
         <SettingsSection icon="🎨" title="Design" subtitle="Stil, Schrift, Layout & Farben">
           <h3 className="mb-2 text-base font-semibold">Designstil</h3>
           <DesignStylePicker />
+          <div className="mt-6 border-t border-border pt-5">
+            <h3 className="mb-2 text-base font-semibold">Homebar & Navigation</h3>
+            <NavigationLayoutPicker />
+          </div>
           <div className="mt-6 border-t border-border pt-5">
             <h3 className="mb-2 text-base font-semibold">Farbwelt</h3>
             <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />

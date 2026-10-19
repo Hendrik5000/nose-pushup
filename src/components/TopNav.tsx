@@ -1,25 +1,21 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { House, Dumbbell, Sparkles, MessageCircle, UserRound } from "lucide-react";
 
-type Item = { to: string; label: string };
-
-const ITEMS: Item[] = [
-  { to: "/", label: "Übersicht" },
-  { to: "/exercises", label: "Training" },
-  { to: "/ai", label: "Super-KI" },
-  { to: "/chat", label: "Chat" },
-  { to: "/profile", label: "Profil" },
+const ITEMS = [
+  { to: "/", label: "Übersicht", icon: House },
+  { to: "/exercises", label: "Training", icon: Dumbbell },
+  { to: "/ai", label: "Super-KI", icon: Sparkles },
+  { to: "/chat", label: "Chat", icon: MessageCircle },
+  { to: "/profile", label: "Profil", icon: UserRound },
 ];
 
-/** Segmentierte Hauptnavigation im Stil einer Gesundheits-App. */
+/** One shared homebar; position and variant are controlled by the saved layout. */
 export function TopNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <nav
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-3 pb-2 pt-[max(0.35rem,env(safe-area-inset-top))]"
-      aria-label="Hauptnavigation"
-    >
-      <ul className="ah-segment pointer-events-auto w-full max-w-md shadow-lg shadow-black/40">
+    <nav className="app-homebar" aria-label="Hauptnavigation">
+      <ul className="ah-segment homebar-items">
         {ITEMS.map((it) => {
           const active =
             it.to === "/"
@@ -31,9 +27,10 @@ export function TopNav() {
                 to={it.to}
                 activeOptions={{ exact: it.to === "/" }}
                 aria-current={active ? "page" : undefined}
-                className={`block w-full truncate ${active ? "is-active" : ""}`}
+                className={`homebar-link ${active ? "is-active" : ""}`}
               >
-                {it.label}
+                <it.icon className="homebar-icon" aria-hidden="true" />
+                <span>{it.label}</span>
               </Link>
             </li>
           );
@@ -43,7 +40,7 @@ export function TopNav() {
   );
 }
 
-/** @deprecated Use TopNav — kept so existing imports keep working. */
+/** Navigation is rendered once by AuthenticatedLayout, not by individual pages. */
 export function BottomNav() {
   return null;
 }
