@@ -10,13 +10,13 @@ import {
   getWeeklyProgress,
 } from "@/lib/workout-plans";
 import { getTrainingWeekBounds, localDateKey, sumTrainingWeekReps } from "@/lib/training-dates";
-import type { Readiness } from "@/lib/readiness";
 import { AiCoachCard } from "@/components/AiCoachCard";
 import { WeekPlanCard } from "@/components/WeekPlanCard";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
-import { ReadinessCard } from "@/components/ReadinessCard";
+import { ReadinessSummary } from "@/components/ReadinessCard";
+import { useReadiness } from "@/hooks/useReadiness";
 import { MicroChallengeCard } from "@/components/MicroChallengeCard";
 import { StreakFreezeCard } from "@/components/StreakFreezeCard";
 import { RecoveryCalendar } from "@/components/RecoveryCalendar";
@@ -72,7 +72,6 @@ function Dashboard() {
   const [todaySteps, setTodaySteps] = useState(0);
   const [hasWorkoutData, setHasWorkoutData] = useState(false);
   const [weekReps, setWeekReps] = useState<number | null>(null);
-  const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
   const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
@@ -142,6 +141,8 @@ function Dashboard() {
   const lp = useMemo(() => levelProgress(profile?.xp ?? 0), [profile?.xp]);
   const initials = (profile?.display_name || "?").slice(0, 1).toUpperCase();
   const streak = profile?.current_streak ?? 0;
+  const readinessData = useReadiness({ streak });
+  const { readiness } = readinessData;
   const goal = profile?.daily_goal || 50;
   const goalPct = Math.min(1, todayReps / goal);
   const streakActive = (() => {
@@ -191,8 +192,89 @@ function Dashboard() {
 
   const renderWidget = (id: WidgetId, size: WidgetSize): ReactNode => {
     switch (id) {
+      case "trainingProgress":
+        return wrap(
+          <section
+            className="rounded-3xl border border-border bg-card/60 p-4"
+            aria-label="Trainingsfortschritt"
+          >
+            <h2 className="text-sm font-semibold">Dein Fortschritt</h2>
+            <dl className="mt-3 grid grid-cols-2 gap-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">Tagesziel · Liegestütze</dt>
+                <dd className="mt-1 text-xl font-bold tabular-nums">
+                  {loading ? "—" : `${todayReps} / ${goal}`}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Trainingsserie</dt>
+                <dd className="mt-1 text-xl font-bold tabular-nums">
+                  {loading ? "—" : `${streak} ${streak === 1 ? "Tag" : "Tage"}`}
+                </dd>
+              </div>
+            </dl>
+            {!loading && (
+              <div
+                className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"
+                role="meter"
+                aria-label="Tagesziel-Fortschritt"
+                aria-valuemin={0}
+                aria-valuemax={goal}
+                aria-valuenow={Math.min(todayReps, goal)}
+              >
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${goalPct * 100}%` }}
+                />
+              </div>
+            )}
+            <div className="mt-4 border-t border-border pt-4" aria-live="polite">
+              <div className="flex items-baseline justify-between gap-2">
+                <h3 className="text-sm font-semibold">Diese Woche</h3>
+                <span className="text-xs font-medium tabular-nums">
+                  {weekReps == null
+                    ? "Daten nicht verfügbar"
+                    : !hasWorkoutData
+                      ? "Noch keine Daten"
+                      : `${weekReps} / ${weeklyTarget} Wiederholungen`}
+                </span>
+              </div>
+              {weekReps != null && hasWorkoutData && (
+                <>
+                  <div
+                    className="mt-2 h-2 overflow-hidden rounded-full bg-secondary"
+                    role="meter"
+                    aria-label="Wochenziel-Fortschritt"
+                    aria-valuemin={0}
+                    aria-valuemax={weeklyTarget}
+                    aria-valuenow={Math.min(weekReps, weeklyTarget)}
+                  >
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{
+                        width: `${Math.min(100, Math.round((weekReps / Math.max(weeklyTarget, 1)) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">{weeklyProgress?.message}</p>
+                </>
+              )}
+              <details className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                <summary className="cursor-pointer">So wird gezählt</summary>
+                <p className="mt-1">
+                  Gezählt werden gespeicherte Liegestütz-Wiederholungen ab Montag 00:00 deiner
+                  lokalen Zeitzone. Maßgeblich ist der Zeitpunkt des Trainingsspeicherns; offline
+                  vorgemerkt behält dieses Datum. Das Wochenziel entspricht 7 × Tagesziel:{" "}
+                  {weeklyTarget} Wiederholungen.
+                </p>
+              </details>
+            </div>
+          </section>,
+          size,
+        );
+
       case "readiness":
-        return wrap(<ReadinessCard streak={streak} onReadinessChange={setReadiness} />, size);
+        return wrap(<ReadinessSummary {...readinessData} />, size);
       case "briefing":
         return wrap(<DailyBriefingCard streak={streak} todayReps={todayReps} goal={goal} />, size);
       case "quickActions":
@@ -458,21 +540,11 @@ function Dashboard() {
         <h2 id="today-plan-title" className="mt-2 text-2xl font-bold">
           {recommendation.headline}
         </h2>
-        {weekReps === 0 && todayReps === 0 && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Schön, dass du da bist. Starte entspannt mit dem kurzen Plan unten – saubere Technik
-            geht vor Tempo.
-          </p>
-        )}
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {recommendation.detail}
-        </p>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
           <PlanMetric label="Sätze" value={recommendation.sets} />
           <PlanMetric label="Wiederholungen je Satz" value={recommendation.reps} />
           <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">{recommendation.readinessNote}</p>
         <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Zählmethode">
           <ModeChip
             active={mode === "nose"}
@@ -509,61 +581,17 @@ function Dashboard() {
             ? "Leichte Einheit (optional) →"
             : "Training nach Plan starten →"}
         </Link>
-        <div className="mt-5 border-t border-border pt-4" aria-live="polite">
-          <div className="flex items-baseline justify-between gap-2">
-            <h3 className="text-sm font-semibold">Diese Woche</h3>
-            <span className="text-xs font-medium tabular-nums">
-              {weekReps == null
-                ? "Daten nicht verfügbar"
-                : !hasWorkoutData
-                  ? "Noch keine Daten"
-                  : `${weekReps} / ${weeklyTarget} Wiederholungen`}
-            </span>
-          </div>
-          {weekReps != null && hasWorkoutData && (
-            <>
-              <div
-                className="mt-2 h-2 overflow-hidden rounded-full bg-secondary"
-                role="meter"
-                aria-label="Wochenziel-Fortschritt"
-                aria-valuemin={0}
-                aria-valuemax={weeklyTarget}
-                aria-valuenow={Math.min(weekReps, weeklyTarget)}
-              >
-                <div
-                  className="h-full rounded-full bg-primary"
-                  style={{
-                    width: `${Math.min(100, Math.round((weekReps / Math.max(weeklyTarget, 1)) * 100))}%`,
-                  }}
-                />
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {weeklyProgress?.message} Ziel: {weeklyTarget} Wiederholungen (7 × Tagesziel {goal}
-                ).
-              </p>
-            </>
+        <p className="mt-3 text-xs text-muted-foreground">{recommendation.readinessNote}</p>
+        <details className="mt-3 text-xs text-muted-foreground">
+          <summary className="cursor-pointer">Warum dieser Plan?</summary>
+          <p className="mt-2 leading-relaxed">{recommendation.detail}</p>
+          {weekReps === 0 && todayReps === 0 && (
+            <p className="mt-2">Starte entspannt – saubere Technik geht vor Tempo.</p>
           )}
-          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            Gezählt werden gespeicherte Liegestütz-Wiederholungen ab Montag 00:00 deiner lokalen
-            Zeitzone. Maßgeblich ist der Zeitpunkt des Trainingsspeicherns; offline vorgemerkt
-            behält dieses Datum.
-          </p>
-        </div>
+        </details>
       </section>
 
-      <details className="mt-5">
-        <summary className="cursor-pointer rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold">
-          Weitere Übersicht & Werkzeuge
-        </summary>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Readiness, Check-ins und zusätzliche Widgets findest du hier. Unsichere oder fehlende
-          Messwerte werden als nicht verfügbar markiert.
-        </p>
-        <ReadinessCard streak={streak} onReadinessChange={setReadiness} />
-        <DashboardGrid
-          renderWidget={(id, size) => (id === "readiness" ? null : renderWidget(id, size))}
-        />
-      </details>
+      <DashboardGrid renderWidget={renderWidget} />
 
       <BottomNav />
     </main>

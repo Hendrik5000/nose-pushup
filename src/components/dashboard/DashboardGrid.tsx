@@ -1,4 +1,4 @@
-import { useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useState, type DragEvent, type ReactNode } from "react";
 import {
   loadLayout,
   nextSize,
@@ -18,10 +18,16 @@ export function DashboardGrid({
 }: {
   renderWidget: (id: WidgetId, size: WidgetSize) => ReactNode;
 }) {
-  const [layout, setLayout] = useState<LayoutItem[]>(() => loadLayout());
+  const [loadedLayout, setLayout] = useState<LayoutItem[] | null>(null);
+  const layout = loadedLayout ?? [];
   const [editing, setEditing] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [dragId, setDragId] = useState<WidgetId | null>(null);
+
+  // Server and first client render match. Never persist defaults during hydration.
+  useEffect(() => {
+    setLayout(loadLayout());
+  }, []);
 
   const commit = (next: LayoutItem[]) => {
     setLayout(next);
@@ -75,11 +81,20 @@ export function DashboardGrid({
 
   const missing = WIDGET_CATALOG.filter((w) => !layout.some((l) => l.id === w.id));
 
+  if (loadedLayout === null) {
+    return (
+      <p className="mt-4 text-xs text-muted-foreground" role="status">
+        Übersicht wird geladen…
+      </p>
+    );
+  }
+
   return (
     <div className="mt-3">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
+          aria-pressed={editing}
           onClick={() => {
             setEditing((e) => !e);
             setAddOpen(false);
@@ -103,7 +118,10 @@ export function DashboardGrid({
             </button>
             <button
               type="button"
-              onClick={() => commit(resetLayout())}
+              onClick={() => {
+                setLayout(resetLayout());
+                setAddOpen(false);
+              }}
               className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground"
             >
               Standard
@@ -156,6 +174,7 @@ export function DashboardGrid({
           return (
             <div
               key={item.id}
+              data-widget-id={item.id}
               draggable={editing}
               onDragStart={() => onDragStart(item.id)}
               onDragOver={(e) => onDragOver(e, item.id)}

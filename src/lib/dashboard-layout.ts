@@ -3,6 +3,7 @@
 export type WidgetSize = "sm" | "md" | "lg";
 
 export type WidgetId =
+  | "trainingProgress"
   | "readiness"
   | "briefing"
   | "quickActions"
@@ -38,6 +39,12 @@ export type WidgetMeta = {
 };
 
 export const WIDGET_CATALOG: WidgetMeta[] = [
+  {
+    id: "trainingProgress",
+    label: "Trainingsfortschritt",
+    description: "Tagesziel, Trainingsserie und Wochenfortschritt",
+    defaultSize: "lg",
+  },
   {
     id: "readiness",
     label: "Tagesform",
@@ -76,11 +83,7 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
   { id: "exercises", label: "Weitere Übungen", description: "Bibliothek", defaultSize: "lg" },
 ];
 
-export const DEFAULT_LAYOUT: LayoutItem[] = [
-  { id: "readiness", size: "md" },
-  { id: "quickActions", size: "md" },
-  { id: "mood", size: "sm" },
-];
+export const DEFAULT_LAYOUT: LayoutItem[] = [{ id: "trainingProgress", size: "lg" }];
 
 const STORAGE_KEY = "np-dashboard-layout-v2";
 
@@ -93,12 +96,14 @@ function isSize(v: unknown): v is WidgetSize {
 }
 
 export function loadLayout(): LayoutItem[] {
-  if (typeof window === "undefined") return DEFAULT_LAYOUT;
+  if (typeof window === "undefined") return DEFAULT_LAYOUT.map((x) => ({ ...x }));
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_LAYOUT.map((x) => ({ ...x }));
     const parsed = JSON.parse(raw) as LayoutItem[];
-    if (!Array.isArray(parsed) || !parsed.length) return DEFAULT_LAYOUT.map((x) => ({ ...x }));
+    if (!Array.isArray(parsed)) return DEFAULT_LAYOUT.map((x) => ({ ...x }));
+    // An explicitly empty overview is a personal choice, not a missing default.
+    if (parsed.length === 0) return [];
     const cleaned = parsed
       .filter((i) => i && isWidgetId(i.id) && isSize(i.size))
       .map((i) => ({ id: i.id, size: i.size }));
@@ -117,7 +122,11 @@ export function loadLayout(): LayoutItem[] {
 
 export function saveLayout(layout: LayoutItem[]) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+  } catch {
+    // Editing still works for this session when browser storage is unavailable.
+  }
 }
 
 export function resetLayout(): LayoutItem[] {
