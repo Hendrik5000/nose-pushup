@@ -13,6 +13,12 @@ export function NavigationLayoutPicker() {
   const [message, setMessage] = useState("");
   useEffect(() => {
     setActive(getStoredNavigationLayout());
+    const sync = () => {
+      setActive(getStoredNavigationLayout());
+      setMessage("");
+    };
+    window.addEventListener("np-appearance-change", sync);
+    return () => window.removeEventListener("np-appearance-change", sync);
   }, []);
 
   return (

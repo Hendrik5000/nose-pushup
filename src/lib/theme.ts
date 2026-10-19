@@ -10,7 +10,8 @@ export type ThemeId =
   | "forest"
   | "midnight"
   | "rose"
-  | "contrast";
+  | "contrast"
+  | "glacier";
 
 export type ThemeMode = "light" | "dark";
 
@@ -146,9 +147,19 @@ export const THEMES: ThemeDefinition[] = [
     foreground: "#ffffff",
     swatch: ["#ffeb00", "#000000"],
   },
+  {
+    id: "glacier",
+    label: "Eisblau",
+    description: "Kühles Eisblau auf Anthrazit",
+    mode: "dark",
+    background: "#14181e",
+    card: "#20262f",
+    foreground: "#f1f6fb",
+    swatch: ["#9bddff", "#14181e"],
+  },
 ];
 
-export const DEFAULT_THEME: ThemeId = "solar";
+export const DEFAULT_THEME: ThemeId = "glacier";
 const STORAGE_KEY = "np-theme";
 
 export function isThemeId(value: unknown): value is ThemeId {

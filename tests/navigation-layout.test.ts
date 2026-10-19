@@ -51,11 +51,11 @@ afterEach(() => {
   restoreGlobal("document", originalDocument);
 });
 
-test("catalog exposes four distinct navigation layouts and defaults to top", () => {
+test("catalog exposes four distinct navigation layouts and defaults to floating", () => {
   const expected = ["top", "bottom", "floating", "top-tabs"];
   assert.deepEqual(NAVIGATION_LAYOUTS.map((layout) => layout.id).sort(), expected.sort());
   assert.equal(new Set(NAVIGATION_LAYOUTS.map((layout) => layout.id)).size, 4);
-  assert.equal(DEFAULT_NAVIGATION_LAYOUT, "top");
+  assert.equal(DEFAULT_NAVIGATION_LAYOUT, "floating");
   for (const layout of NAVIGATION_LAYOUTS) {
     assert.ok(layout.label.length > 0);
     assert.ok(layout.description.length > 0);
@@ -76,6 +76,10 @@ test("stored layout safely defaults in SSR, for missing/invalid data, and blocke
   assert.equal(getStoredNavigationLayout(), DEFAULT_NAVIGATION_LAYOUT);
   mockGlobals({ stored: "top-tabs" });
   assert.equal(getStoredNavigationLayout(), "top-tabs");
+  mockGlobals({ stored: "top" });
+  assert.equal(getStoredNavigationLayout(), "top");
+  mockGlobals({ stored: "floating" });
+  assert.equal(getStoredNavigationLayout(), "floating");
   mockGlobals({ stored: "invalid" });
   assert.equal(getStoredNavigationLayout(), DEFAULT_NAVIGATION_LAYOUT);
   mockGlobals({ blockedRead: true });

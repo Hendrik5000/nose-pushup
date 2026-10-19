@@ -1,4 +1,4 @@
-export type DesignStyleId = "soft" | "compact" | "editorial" | "studio";
+export type DesignStyleId = "soft" | "compact" | "editorial" | "studio" | "performance";
 
 export interface DesignStyleDefinition {
   id: DesignStyleId;
@@ -27,9 +27,14 @@ export const DESIGN_STYLES: DesignStyleDefinition[] = [
     label: "Studio",
     description: "Monospace, harte 2-px-Rahmen, versetzte Schatten und Tab-Navigation.",
   },
+  {
+    id: "performance",
+    label: "Performance",
+    description: "Großzügige sportliche Karten mit kraftvoller, klarer Typografie.",
+  },
 ];
 
-export const DEFAULT_DESIGN_STYLE: DesignStyleId = "soft";
+export const DEFAULT_DESIGN_STYLE: DesignStyleId = "performance";
 const STORAGE_KEY = "np-design-style";
 
 export function isDesignStyleId(value: unknown): value is DesignStyleId {

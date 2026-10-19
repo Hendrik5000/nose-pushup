@@ -16,6 +16,12 @@ export function DesignStylePicker() {
     const stored = getStoredDesignStyle();
     setActive(stored);
     applyDesignStyle(stored);
+    const sync = () => {
+      setActive(getStoredDesignStyle());
+      setMessage("");
+    };
+    window.addEventListener("np-appearance-change", sync);
+    return () => window.removeEventListener("np-appearance-change", sync);
   }, []);
 
   const select = (id: DesignStyleId) => {

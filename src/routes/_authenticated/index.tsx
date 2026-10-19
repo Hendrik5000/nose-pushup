@@ -195,7 +195,7 @@ function Dashboard() {
       case "trainingProgress":
         return wrap(
           <section
-            className="rounded-3xl border border-border bg-card/60 p-4"
+            className="training-progress rounded-3xl border border-border bg-card/60 p-4"
             aria-label="Trainingsfortschritt"
           >
             <h2 className="text-sm font-semibold">Dein Fortschritt</h2>
@@ -508,7 +508,7 @@ function Dashboard() {
 
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
-      <header className="flex items-center justify-between">
+      <header className="dashboard-header flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
             {dateLabel}
@@ -531,7 +531,7 @@ function Dashboard() {
       </header>
 
       <section
-        className="mt-6 rounded-3xl border border-primary/25 bg-primary/5 p-5"
+        className="training-hero mt-6 rounded-3xl border border-primary/25 bg-primary/5 p-5"
         aria-labelledby="today-plan-title"
       >
         <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
@@ -540,7 +540,7 @@ function Dashboard() {
         <h2 id="today-plan-title" className="mt-2 text-2xl font-bold">
           {recommendation.headline}
         </h2>
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+        <div className="training-plan-metrics mt-4 grid grid-cols-3 gap-2 text-center">
           <PlanMetric label="Sätze" value={recommendation.sets} />
           <PlanMetric label="Wiederholungen je Satz" value={recommendation.reps} />
           <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
@@ -675,7 +675,7 @@ function ModeChip({
       onClick={onClick}
       type="button"
       aria-pressed={active}
-      className={`flex min-w-0 flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs font-medium ${
+      className={`counting-mode flex min-w-0 flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs font-medium ${
         active
           ? "border-primary bg-primary/15"
           : "border-border bg-secondary/60 text-muted-foreground"
@@ -690,8 +690,8 @@ function ModeChip({
 
 function PlanMetric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-2 py-3">
-      <div className="text-lg font-semibold">{value}</div>
+    <div className="plan-metric rounded-xl border border-border bg-card px-2 py-3">
+      <div className="plan-metric-value text-lg font-semibold">{value}</div>
       <div className="mt-1 text-xs text-muted-foreground">{label}</div>
     </div>
   );

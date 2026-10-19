@@ -76,6 +76,7 @@ test("catalog contains each existing and new theme ID exactly once", () => {
     "midnight",
     "rose",
     "contrast",
+    "glacier",
   ];
   assert.deepEqual(
     THEMES.map((theme) => theme.id),
@@ -84,7 +85,12 @@ test("catalog contains each existing and new theme ID exactly once", () => {
   for (const id of expected) assert.equal(isThemeId(id), true);
   assert.equal(isThemeId("not-a-theme"), false);
   assert.equal(isThemeId(null), false);
-  assert.equal(DEFAULT_THEME, "solar");
+  assert.equal(DEFAULT_THEME, "glacier");
+  const glacier = THEMES.find((theme) => theme.id === "glacier");
+  assert.equal(glacier?.label, "Eisblau");
+  assert.equal(glacier?.background, "#14181e");
+  assert.equal(glacier?.card, "#20262f");
+  assert.equal(glacier?.foreground, "#f1f6fb");
   for (const theme of THEMES) {
     assert.ok(["light", "dark"].includes(theme.mode));
     assert.match(theme.background, /^#[\da-f]{6}$/i);
@@ -100,6 +106,8 @@ test("stored theme falls back for SSR, missing and invalid values, and blocked s
   assert.doesNotThrow(() => applyTheme("solar"));
   mockGlobals({ stored: "forest" });
   assert.equal(getStoredTheme(), "forest");
+  mockGlobals({ stored: "glacier" });
+  assert.equal(getStoredTheme(), "glacier");
   mockGlobals({ stored: "invalid" });
   assert.equal(getStoredTheme(), DEFAULT_THEME);
   mockGlobals({ blockedRead: true });
@@ -144,7 +152,7 @@ function contrast(a: string, b: string) {
 
 test("new themes define all semantic CSS tokens and readable foreground pairs", () => {
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-  const newIds = ["daylight", "sand", "forest", "midnight", "rose", "contrast"] as const;
+  const newIds = ["daylight", "sand", "forest", "midnight", "rose", "contrast", "glacier"] as const;
   const requiredTokens = [
     "background",
     "foreground",
@@ -175,6 +183,13 @@ test("new themes define all semantic CSS tokens and readable foreground pairs", 
     for (const token of requiredTokens)
       assert.match(block!, new RegExp(`--${token}\\s*:`), `${id} missing --${token}`);
     assert.match(block!, new RegExp(`color-scheme:\\s*${theme.mode}`));
+    if (id === "glacier") {
+      assert.match(block!, /--background:\s*#14181e/i);
+      assert.match(block!, /--card:\s*#20262f/i);
+      assert.match(block!, /--foreground:\s*#f1f6fb/i);
+      assert.match(block!, /--primary:\s*#9bddff/i);
+      assert.match(block!, /--primary-foreground:\s*#102332/i);
+    }
     assert.ok(
       contrast(theme.foreground, theme.background) >= 4.5,
       `${id}: foreground/background contrast`,

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { applyDesignStyle, type DesignStyleId } from "@/lib/design-style";
+import { applyNavigationLayout, type NavigationLayoutId } from "@/lib/navigation-layout";
 import {
   applyTheme,
   DEFAULT_THEME,
@@ -52,8 +54,47 @@ export function ThemePicker({
     }
   };
 
+  const selectPreset = (style: DesignStyleId, theme: ThemeId, layout: NavigationLayoutId) => {
+    if (savingRef.current) return;
+    applyDesignStyle(style);
+    applyNavigationLayout(layout);
+    window.dispatchEvent(new Event("np-appearance-change"));
+    void select(theme);
+  };
+
   return (
     <div>
+      <div className="mb-5 rounded-2xl border border-border p-4">
+        <h3 className="text-sm font-semibold">Komplette Looks</h3>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Mit einem Klick wechseln – oder Stil, Farben und Homebar frei kombinieren. Deine Widgets
+          und Trainingsdaten bleiben unverändert.
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => selectPreset("performance", "glacier", "floating")}
+            className="rounded-xl border border-primary/40 bg-primary/10 p-3 text-left disabled:opacity-50"
+          >
+            <span className="block text-sm font-semibold">Performance-Gesamtlook</span>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Anthrazit + Eisblau · großzügige Karten · schwebende Homebar unten
+            </span>
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => selectPreset("soft", "solar", "top")}
+            className="rounded-xl border border-border p-3 text-left disabled:opacity-50"
+          >
+            <span className="block text-sm font-semibold">Klassischer Gesamtlook</span>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Bisheriger Soft-Stil · Health-Orange · Homebar oben
+            </span>
+          </button>
+        </div>
+      </div>
       <p className="mb-3 text-sm text-muted-foreground">
         {THEMES.length} Farbwelten – von hell und ruhig bis dunkel und kontrastreich. Deine Auswahl
         verändert die gesamte App sofort.

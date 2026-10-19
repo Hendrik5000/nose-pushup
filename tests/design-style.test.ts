@@ -44,14 +44,16 @@ afterEach(() => {
   restoreGlobal("document", originalDocument);
 });
 
-test("catalog exposes the four independent design styles and keeps soft as default", () => {
-  const expected = ["soft", "compact", "editorial", "studio"];
+test("catalog exposes all independent design styles and defaults to performance", () => {
+  const expected = ["soft", "compact", "editorial", "studio", "performance"];
   assert.deepEqual(
     DESIGN_STYLES.map((style) => style.id),
     expected,
   );
-  assert.equal(DEFAULT_DESIGN_STYLE, "soft");
+  assert.equal(DEFAULT_DESIGN_STYLE, "performance");
+  assert.equal(DESIGN_STYLES.find((style) => style.id === "soft")?.label, "Soft");
   assert.equal(DESIGN_STYLES.find((style) => style.id === "compact")?.label, "Kompakt");
+  assert.equal(DESIGN_STYLES.find((style) => style.id === "performance")?.label, "Performance");
   for (const style of DESIGN_STYLES) {
     assert.ok(style.label.length > 0);
     assert.ok(style.description.length > 0);
@@ -68,6 +70,10 @@ test("stored style safely defaults in SSR, for missing/invalid data, and blocked
   assert.doesNotThrow(() => applyDesignStyle("soft"));
   mockGlobals({ stored: "editorial" });
   assert.equal(getStoredDesignStyle(), "editorial");
+  mockGlobals({ stored: "soft" });
+  assert.equal(getStoredDesignStyle(), "soft");
+  mockGlobals({ stored: "performance" });
+  assert.equal(getStoredDesignStyle(), "performance");
   mockGlobals({ stored: "invalid" });
   assert.equal(getStoredDesignStyle(), DEFAULT_DESIGN_STYLE);
   mockGlobals({ blockedRead: true });
@@ -101,7 +107,7 @@ test("CSS exposes distinct preview tokens and real dashboard/card/heading/naviga
     "--design-shadow",
   ];
   const valuesByStyle = new Map<string, Record<string, string>>();
-  for (const id of ["soft", "compact", "editorial", "studio"]) {
+  for (const id of ["soft", "compact", "editorial", "studio", "performance"]) {
     const tokenBlock = css.match(
       new RegExp(`\\[data-design-style="${id}"\\]\\s*\\{([^}]*)\\}`),
     )?.[1];
@@ -117,17 +123,17 @@ test("CSS exposes distinct preview tokens and real dashboard/card/heading/naviga
       ),
     );
   }
-  for (const token of [
-    "--design-card-radius",
-    "--design-heading-font",
-    "--design-gap",
-    "--design-shadow",
-  ])
+  for (const token of ["--design-card-radius", "--design-heading-font", "--design-shadow"])
     assert.equal(
       new Set([...valuesByStyle.values()].map((values) => values[token])).size,
-      4,
+      5,
       `${token} differs across styles`,
     );
+  assert.equal(
+    new Set([...valuesByStyle.values()].map((values) => values["--design-gap"])).size,
+    4,
+    "the four existing styles retain distinct gaps; performance may share a gap",
+  );
   assert.equal(
     new Set([...valuesByStyle.values()].map((values) => values["--design-border-width"])).size,
     2,
@@ -156,10 +162,13 @@ test("CSS exposes distinct preview tokens and real dashboard/card/heading/naviga
     /html\[data-design-style="editorial"\] \.ah-segment\s*\{[^}]*background:\s*var\(--color-background\)/s,
   );
   assert.match(css, /min-block-size:\s*44px/);
-  assert.doesNotMatch(
-    css.slice(css.indexOf("/* Design styles change layout language")),
-    /--primary\s*:/,
-  );
+  for (const id of ["soft", "compact", "editorial", "studio", "performance"]) {
+    const tokenBlock = css.match(
+      new RegExp(`^\\[data-design-style="${id}"\\]\\s*\\{([^}]*)\\}`, "m"),
+    )?.[1];
+    assert.ok(tokenBlock, `missing root style token block for ${id}`);
+    assert.doesNotMatch(tokenBlock!, /--primary\s*:/);
+  }
 });
 
 test("layered card radii use style tokens and fixed navigation tracks never become transparent", () => {

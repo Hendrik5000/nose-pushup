@@ -27,7 +27,7 @@ export const NAVIGATION_LAYOUTS: {
   },
 ];
 
-export const DEFAULT_NAVIGATION_LAYOUT: NavigationLayoutId = "top";
+export const DEFAULT_NAVIGATION_LAYOUT: NavigationLayoutId = "floating";
 const STORAGE_KEY = "np-navigation-layout";
 
 export function isNavigationLayoutId(value: unknown): value is NavigationLayoutId {
