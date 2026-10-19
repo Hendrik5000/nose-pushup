@@ -275,7 +275,7 @@ export function LocalChatShell() {
   const modeLabel = mode === "supabase" ? "Cloud · Supabase" : "Lokal · Gerät";
 
   const sidebar = (
-    <div className="flex h-full flex-col bg-card/40">
+    <div className="flex h-full min-h-0 flex-col bg-card/40">
       <div className="border-b border-border bg-gradient-to-br from-primary/15 to-transparent px-4 py-4">
         <div className="flex items-center gap-2">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20 text-xl">
@@ -290,7 +290,7 @@ export function LocalChatShell() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-3">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin]">
         <div className="mb-1 flex items-center justify-between px-1">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Räume</span>
           <button
@@ -409,8 +409,8 @@ export function LocalChatShell() {
     <div className="flex h-[100dvh] overflow-hidden bg-background">
       <aside className="hidden w-72 shrink-0 border-r border-border md:block">{sidebar}</aside>
 
-      <section className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-border bg-card/50 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex shrink-0 items-center gap-2 border-b border-border bg-card/70 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] shadow-sm backdrop-blur">
           <button
             type="button"
             className="rounded-xl border border-border px-2 py-1.5 text-sm md:hidden"
@@ -552,7 +552,7 @@ export function LocalChatShell() {
           </div>
         )}
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-4 pb-5 [scrollbar-width:thin]">
           {messages.map((m, i) => {
             const own = m.user_id === userId;
             const prev = messages[i - 1];
@@ -723,7 +723,7 @@ export function LocalChatShell() {
               key={q.id}
               type="button"
               onClick={() => void onSend(q.text)}
-              className="shrink-0 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[10px] font-medium"
+              className="min-h-10 shrink-0 rounded-full border border-border bg-background/60 px-3 py-2 text-xs font-medium transition active:scale-95"
             >
               {q.label}
             </button>
@@ -731,7 +731,7 @@ export function LocalChatShell() {
           <button
             type="button"
             onClick={() => void onSend(workoutShareTemplate(todayReps || 20))}
-            className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary"
+            className="min-h-10 shrink-0 rounded-full border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary transition active:scale-95"
           >
             🏋️ Workout teilen
           </button>
@@ -742,12 +742,12 @@ export function LocalChatShell() {
             e.preventDefault();
             void onSend();
           }}
-          className="flex items-end gap-2 border-t border-border bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+          className="flex shrink-0 items-end gap-2 border-t border-border bg-card/80 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-20px_hsl(var(--foreground))] backdrop-blur"
         >
           <button
             type="button"
             onClick={toggleVoice}
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm ${
+            className={`flex size-11 shrink-0 items-center justify-center rounded-xl border text-sm transition active:scale-95 ${
               listening
                 ? "border-primary bg-primary/20 text-primary"
                 : "border-border bg-secondary/40"
@@ -777,7 +777,7 @@ export function LocalChatShell() {
           <button
             type="submit"
             disabled={!active || !draft.trim()}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-40"
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-sm transition active:scale-95 disabled:opacity-40"
           >
             ↑
           </button>
@@ -817,7 +817,7 @@ function HeadBtn({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-xl border border-border text-sm"
+      className="flex size-10 items-center justify-center rounded-xl border border-border bg-background/40 text-sm transition active:scale-95"
     >
       {children}
     </button>

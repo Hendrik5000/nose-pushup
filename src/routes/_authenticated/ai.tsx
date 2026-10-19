@@ -239,9 +239,9 @@ function SuperAiPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pt-5 pb-3">
+    <main className="mx-auto flex h-[100dvh] min-h-0 w-full max-w-md flex-col overflow-hidden px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-0">
       {/* Header */}
-      <header className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/20 via-card/80 to-background p-4">
+      <header className="relative shrink-0 overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/20 via-card/80 to-background p-4 shadow-sm">
         <div className="flex items-start justify-between gap-2">
           <div>
             <Link to="/" className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -401,7 +401,7 @@ function SuperAiPage() {
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="mt-3 flex-1 space-y-3 overflow-y-auto rounded-3xl border border-border bg-card/30 p-3 backdrop-blur"
+        className="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain rounded-3xl border border-border bg-card/30 p-3 pb-5 backdrop-blur [scrollbar-width:thin]"
       >
         {messages.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-8 text-center">
@@ -471,7 +471,7 @@ function SuperAiPage() {
       )}
 
       {/* Composer */}
-      <div className="mt-2 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur">
+      <div className="mt-2 shrink-0 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur">
         <div className="mb-1.5 flex gap-1">
           <SmallAction onClick={regenerate} disabled={loading || messages.length === 0}>
             Neu generieren
@@ -498,7 +498,7 @@ function SuperAiPage() {
           <button
             type="button"
             onClick={toggleVoice}
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm ${
+            className={`flex size-11 shrink-0 items-center justify-center rounded-xl border text-sm transition active:scale-95 ${
               listening
                 ? "border-primary bg-primary/20 text-primary"
                 : "border-border bg-secondary/40 text-muted-foreground"
@@ -518,21 +518,21 @@ function SuperAiPage() {
             }}
             placeholder="Frag Super-AI…"
             rows={1}
-            className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm outline-none"
+            className="min-h-11 min-w-0 flex-1 resize-none rounded-xl bg-background/40 px-3 py-2.5 text-base outline-none ring-0 placeholder:text-muted-foreground/70 focus:bg-background/70"
             style={{ maxHeight: 140 }}
             disabled={loading}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-40"
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-sm transition active:scale-95 disabled:opacity-40"
           >
             ↑
           </button>
         </form>
       </div>
 
-      <BottomNav />
+      <div className="shrink-0"><BottomNav /></div>
     </main>
   );
 }
@@ -561,7 +561,7 @@ function IconBtn({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/70 bg-background/50 text-sm backdrop-blur transition active:scale-95"
+      className="flex size-11 items-center justify-center rounded-xl border border-border/70 bg-background/50 text-sm backdrop-blur transition active:scale-95"
     >
       {children}
     </button>
@@ -582,7 +582,7 @@ function SmallAction({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="rounded-lg border border-border px-2 py-0.5 text-[10px] text-muted-foreground disabled:opacity-40"
+      className="min-h-10 rounded-xl border border-border px-3 py-2 text-xs font-medium text-muted-foreground transition active:scale-95 disabled:opacity-40"
     >
       {children}
     </button>
