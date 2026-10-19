@@ -1006,7 +1006,7 @@ export function LocalChatShell() {
                             refresh(userId, active),
                           );
                         }}
-                        className={`rounded-full border px-2 py-0.5 text-xs ${
+                        className={`community-reaction-button rounded-full border px-2 py-0.5 text-xs ${
                           info.mine ? "border-primary bg-primary/15" : "border-border bg-card/50"
                         }`}
                       >
@@ -1150,7 +1150,7 @@ export function LocalChatShell() {
             e.preventDefault();
             void onSend();
           }}
-          className="classic-only flex items-end gap-2 border-t border-border bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+          className="classic-only community-chat-composer flex items-end gap-2 border-t border-border bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         >
           <button
             type="button"

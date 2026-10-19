@@ -133,3 +133,21 @@ test("Alo uses the supplied wordmark and brand image without replacing the compa
   assert.match(read("routes/__root.tsx"), /\/alo-brand\.jpg/);
   assert.match(read("routes/__root.tsx"), /\/alo-apple-touch-icon\.png/);
 });
+
+test("mobile review fixes preserve skill routing and constrain narrow controls without removing features", () => {
+  const c = read("routes/_authenticated/calisthenics.tsx");
+  assert.match(c, /to="\/cali-workout\/\$skillId"/);
+  assert.match(c, /params=\{\{ skillId: dailyFocus\.skill\.id \}\}/);
+  const css = read("alo-mobile.css");
+  assert.match(css, /battle-join-row[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(css, /run-metric-value[\s\S]*?overflow-wrap: anywhere/);
+  assert.match(css, /cali-skill-card[\s\S]*?flex-wrap: wrap/);
+  assert.match(css, /min-width: 44px[\s\S]*?min-height: 44px/);
+  assert.match(
+    css,
+    /design-style-picker \[role="group"\][\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
+  );
+  const settings = read("routes/_authenticated/profile-page-impl.tsx");
+  assert.equal((settings.match(/profileAppearance/g) ?? []).length, 2);
+  assert.match(settings, /window\.location\.hash !== "#appearance"/);
+});

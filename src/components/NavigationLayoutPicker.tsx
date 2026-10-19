@@ -27,7 +27,7 @@ export function NavigationLayoutPicker() {
   }, []);
 
   return (
-    <div>
+    <div className="navigation-layout-picker">
       <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-border p-3">
         <div>
           <p className="text-sm font-semibold">Erweiterte Navigation</p>

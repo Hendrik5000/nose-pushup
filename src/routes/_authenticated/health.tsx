@@ -554,7 +554,7 @@ function Input({
   placeholder?: string;
 }) {
   return (
-    <label className="block">
+    <label className={`block min-w-0 ${type === "date" ? "col-span-full" : ""}`}>
       <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
         {label}
       </span>
@@ -564,7 +564,7 @@ function Input({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+        className="box-border w-full min-w-0 max-w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
       />
     </label>
   );

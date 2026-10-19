@@ -1458,15 +1458,15 @@ function WorkoutScreen() {
             countdown === null &&
             (!isPlanned || session?.phase === "preparation") && (
               <button
+                className="alo-workout-start inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 text-base font-bold text-primary-foreground"
                 onClick={start}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 text-base font-bold text-primary-foreground"
               >
                 <Play size={18} />
                 Starten
               </button>
             )}
           {isPlanned && session && active && !awaitingRpe && (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="alo-workout-actions grid grid-cols-2 gap-2 sm:grid-cols-3">
               <button
                 type="button"
                 onClick={() => {
@@ -1511,7 +1511,7 @@ function WorkoutScreen() {
               (isPlanned &&
                 !!session &&
                 ["rest", "paused", "completed"].includes(session.phase))) && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="alo-workout-actions grid grid-cols-2 gap-3">
                 <button
                   onClick={resetAll}
                   className="alo-training-discard rounded-2xl border border-border bg-secondary px-4 py-4 text-sm font-semibold"

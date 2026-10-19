@@ -176,8 +176,8 @@ function CalisthenicsPage() {
                     </p>
                     {dailyFocus.skill && (
                       <Link
-                        to="/workout/$exerciseId"
-                        params={{ exerciseId: dailyFocus.skill.id }}
+                        to="/cali-workout/$skillId"
+                        params={{ skillId: dailyFocus.skill.id }}
                         className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"
                       >
                         <Dumbbell size={16} /> {dailyFocus.skill.name} trainieren{" "}
@@ -212,12 +212,12 @@ function CalisthenicsPage() {
               )}
               <section className="sport-feature-card rounded-3xl border border-border bg-card/55 p-4 sm:p-6">
                 <SportSectionLabel number="04">Progressionspfade</SportSectionLabel>
-                <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl border border-border bg-background/40 p-1.5">
+                <div className="cali-path-tabs mt-4 grid grid-cols-2 gap-2 rounded-2xl border border-border bg-background/40 p-1.5 sm:grid-cols-3">
                   {CALI_PATHS.map((path, i) => (
                     <button
                       key={path.id}
                       onClick={() => setActiveTab(i)}
-                      className={`rounded-xl px-2 py-3 text-xs font-semibold transition ${activeTab === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      className={`min-w-0 whitespace-normal break-words rounded-xl px-2 py-3 text-xs font-semibold transition ${activeTab === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
                     >
                       {path.name}
                     </button>

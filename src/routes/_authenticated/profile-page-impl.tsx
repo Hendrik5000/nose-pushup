@@ -1,6 +1,6 @@
 import { DesignView } from "@/components/DesignView";
 import { readWorkoutMetadata } from "@/lib/workout-session";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -66,6 +66,7 @@ const PROFILE_COLS =
 
 export function ProfilePage() {
   const navigate = useNavigate();
+  const routeHash = useRouterState({ select: (state) => state.location.hash });
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>("");
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -135,6 +136,22 @@ export function ProfilePage() {
       if (w) setWorkouts(w as Workout[]);
     })();
   }, []);
+
+  useEffect(() => {
+    const revealAppearance = () => {
+      if (window.location.hash !== "#appearance") return;
+      const section = [...document.querySelectorAll<HTMLElement>("[data-profile-appearance]")].find(
+        (element) => element.getClientRects().length > 0,
+      );
+      if (!section) return;
+      const heading = section.querySelector<HTMLButtonElement>("button[aria-expanded]");
+      if (heading?.getAttribute("aria-expanded") === "false") heading.click();
+      window.setTimeout(() => section.scrollIntoView({ block: "start", behavior: "smooth" }), 80);
+    };
+    revealAppearance();
+    window.addEventListener("hashchange", revealAppearance);
+    return () => window.removeEventListener("hashchange", revealAppearance);
+  }, [routeHash]);
 
   const numOrNull = (v: string, min: number, max: number) => {
     const cleaned = v.replace(",", ".").replace(/[^0-9.]/g, "");
@@ -381,11 +398,18 @@ export function ProfilePage() {
               </SettingsSection>
             )}
             <SettingsSection
-              id="appearance"
               icon="🎨"
               title="Design"
               subtitle="Stil, Schrift, Layout & Farben"
+              profileAppearance
             >
+              <button
+                type="button"
+                className="profile-appearance-back mb-3 min-h-11 text-sm font-medium text-primary"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              >
+                ← Zurück zu Einstellungen
+              </button>
               <h3 className="mb-2 text-base font-semibold">Designstil</h3>
               <DesignStylePicker />
               <div className="mt-6 border-t border-border pt-5">
@@ -696,10 +720,17 @@ export function ProfilePage() {
             </SettingsSection>
             <SettingsSection
               icon="🎨"
-              id="appearance"
               title="Design & Navigation"
               subtitle="Stil, Schrift, Layout & Farben"
+              profileAppearance
             >
+              <button
+                type="button"
+                className="profile-appearance-back mb-3 min-h-11 text-sm font-semibold text-primary"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              >
+                ← Zurück zu Einstellungen
+              </button>
               <h3 className="mb-2 text-sm font-bold">Designstil</h3>
               <DesignStylePicker />
               <div className="mt-5 border-t border-border pt-5">

@@ -39,6 +39,14 @@ const TABS = [
   { id: "shortcuts", label: "Schnellaktionen", icon: Zap },
   { id: "privacy", label: "Daten & Datenschutz", icon: ShieldCheck },
 ] as const;
+const MENU_LABELS: Record<(typeof TABS)[number]["id"], string> = {
+  today: "Heute",
+  search: "Suchen",
+  capture: "Speichern",
+  collections: "Sammlungen",
+  shortcuts: "Aktionen",
+  privacy: "Datenschutz",
+};
 export function AloWorkspace({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   const launcher = useRef<HTMLElement | null>(null);
@@ -162,9 +170,9 @@ export function AloWorkspace({ userId }: { userId: string }) {
                 {tab === "menu" && (
                   <div className="alo-command-list">
                     {[TABS[2], TABS[1], TABS[0], ...TABS.slice(3)].map((t) => (
-                      <button key={t.id} onClick={() => setTab(t.id)}>
+                      <button key={t.id} aria-label={t.label} onClick={() => setTab(t.id)}>
                         <t.icon size={20} aria-hidden="true" />
-                        <span>{t.label}</span>
+                        <span>{MENU_LABELS[t.id]}</span>
                         <span aria-hidden="true">→</span>
                       </button>
                     ))}

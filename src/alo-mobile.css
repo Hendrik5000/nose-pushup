@@ -932,3 +932,263 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+
+/* Targeted mobile review fixes: preserve the existing layouts and give content room to wrap. */
+@media (max-width: 767px) {
+  html[data-design-style] .alo-area-sheet {
+    box-sizing: border-box;
+    width: min(calc(100vw - 24px), 720px);
+    max-width: calc(100vw - 24px);
+  }
+  html[data-design-style] .alo-area-sheet #sport-area-menu,
+  html[data-design-style] .alo-area-sheet #sport-area-menu > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+  html[data-design-style] .alo-area-sheet .sport-area-link {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  html[data-design-style] .alo-area-sheet .sport-area-link > svg:first-child {
+    flex: 0 0 auto;
+  }
+  html[data-design-style] .alo-area-sheet .sport-area-link > svg:last-child {
+    margin-left: 0.25rem;
+  }
+
+  /* The page header's Plus/menu is the access point on these focused screens. */
+  .authenticated-shell:has(.sport-ai-page) .alo-module-switcher,
+  .authenticated-shell:has(.sport-ai-page) .alo-launcher,
+  .authenticated-shell:has(.alo-training-focus) .alo-module-switcher,
+  .authenticated-shell:has(.alo-training-focus) .alo-launcher {
+    display: none !important;
+  }
+
+  html[data-design-style] .alo-training-focus[data-training-focus="true"] .alo-training-secondary {
+    display: none;
+  }
+  html[data-design-style] .alo-training-focus[data-training-focus="true"] .alo-workout-start,
+  html[data-design-style] .alo-training-focus[data-training-focus="true"] .alo-workout-actions {
+    order: 5;
+    margin-block: 0;
+  }
+  html[data-design-style] .alo-training-focus[data-training-focus="true"] .sport-workout-stage {
+    order: 6;
+    min-height: clamp(13rem, 34dvh, 17rem);
+    padding: 14px;
+  }
+  html[data-design-style] .alo-training-focus[data-training-focus="true"] .sport-workout-stage > span.relative {
+    margin-top: 0.6rem;
+    font-size: clamp(5rem, 24vw, 7rem);
+  }
+  html[data-design-style] .alo-training-focus[data-training-focus="true"] .sport-workout-stage > span.mt-4 {
+    margin-top: 0.6rem;
+  }
+
+  html[data-design-style] .battle-join-row,
+  html[data-design-style] .club-join-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  html[data-design-style] .battle-join-row input,
+  html[data-design-style] .club-join-row input {
+    width: 100%;
+    min-width: 0;
+  }
+  html[data-design-style] .battle-join-row button,
+  html[data-design-style] .club-join-row button {
+    min-height: 44px;
+  }
+
+  html[data-design-style] .run-stat-grid > .run-metric {
+    min-width: 0;
+    padding-inline: 0.35rem;
+  }
+  html[data-design-style] .run-metric-label {
+    font-size: 0.52rem;
+    letter-spacing: 0.1em;
+    overflow-wrap: anywhere;
+  }
+  html[data-design-style] .run-metric-value {
+    min-width: 0;
+    font-size: clamp(0.9rem, 4.5vw, 1.1rem);
+    overflow-wrap: anywhere;
+  }
+
+  html[data-design-style] .cali-skill-card {
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding: 0.8rem;
+  }
+  html[data-design-style] .cali-skill-card > div:nth-of-type(2) {
+    min-width: 0;
+    flex: 1 1 calc(100% - 60px);
+  }
+  html[data-design-style] .cali-skill-card > a {
+    min-height: 44px;
+    margin-left: 3.75rem;
+    padding: 0.65rem 0.8rem;
+  }
+  html[data-design-style] .cali-skill-card p,
+  html[data-design-style] .cali-skill-card span {
+    overflow-wrap: anywhere;
+  }
+
+  html[data-design-style] .programs-header-title h1 {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+  }
+
+  html[data-design-style] .alo-dialog > button.absolute,
+  html[data-design-style] [data-slot="dialog-content"] > button.absolute {
+    box-sizing: border-box;
+    display: grid;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    place-items: center;
+    padding: 12px;
+    right: 6px;
+    top: 6px;
+    border-radius: 12px;
+  }
+  html[data-design-style] .alo-dialog > button.absolute:focus-visible,
+  html[data-design-style] [data-slot="dialog-content"] > button.absolute:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  html[data-design-style] .alo-dialog > h2,
+  html[data-design-style] .alo-dialog > header,
+  html[data-design-style] [data-slot="dialog-content"] > header {
+    padding-right: 40px;
+  }
+
+  .alo-message-actions > div > button,
+  .community-reaction-button,
+  .community-chat-composer button {
+    box-sizing: border-box;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  html[data-design-style] .sport-ai-chat-mode .sport-ai-tabs button {
+    min-height: 44px;
+    padding: 0.55rem 0.8rem;
+  }
+  html[data-design-style] .sport-ai-chat-mode .sport-ai-tabs {
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 420px) {
+  html[data-design-style] .design-style-picker [role="group"],
+  html[data-design-style] .navigation-layout-picker [role="group"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  html[data-design-style] .settings-section-content {
+    padding-inline: 12px;
+  }
+  html[data-design-style] .settings-section > button {
+    gap: 12px;
+    padding-inline: 12px;
+  }
+  html[data-design-style] .design-style-picker button,
+  html[data-design-style] .navigation-layout-picker button {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  html[data-design-style] .design-style-picker button > span:last-of-type,
+  html[data-design-style] .navigation-layout-picker button > span:last-of-type {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  html[data-design-style] .settings-section[data-profile-appearance] {
+    scroll-margin-top: calc(var(--homebar-top-space, 0px) + var(--alo-header-space, 60px) + 12px);
+  }
+  html[data-design-style] .settings-section[data-profile-appearance] > button {
+    position: sticky;
+    top: calc(var(--homebar-top-space, 0px) + var(--alo-header-space, 60px));
+    z-index: 20;
+    background: var(--background);
+  }
+}
+
+@media (max-width: 350px) {
+  html[data-design-style] .welcome-tour-card {
+    box-sizing: border-box;
+    max-height: calc(100dvh - 16px);
+    margin: 8px;
+    padding: 16px;
+  }
+  html[data-design-style] .welcome-tour-card > div:last-child {
+    position: sticky;
+    bottom: -16px;
+    z-index: 2;
+    padding: 12px 0 16px;
+    background: var(--card);
+  }
+  html[data-design-style] .welcome-tour-card > div.mt-4:has(span) {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  html[data-design-style] .health-entry-grid input[type="date"] {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+
+@media (max-width: 767px) {
+  html[data-design-style] .alo-area-sheet .sport-area-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  html[data-design-style] .alo-area-sheet .sport-area-menu > div {
+    overflow-wrap: anywhere;
+  }
+  html[data-design-style] .sport-auth-page {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  html[data-design-style] .sport-auth-page > .sport-auth-hero {
+    order: 2;
+  }
+  html[data-design-style] .sport-auth-page > section:not(.sport-auth-hero) {
+    order: 1;
+  }
+}
+
+@media (max-width: 420px) {
+  html[data-design-style] .settings-section[data-profile-appearance] {
+    overflow: visible;
+  }
+  html[data-design-style] .settings-section[data-profile-appearance] > div > div {
+    overflow: visible;
+  }
+  html[data-design-style] .profile-appearance-back {
+    position: sticky;
+    top: calc(var(--homebar-top-space, 0px) + var(--alo-header-space, 60px) + 54px);
+    z-index: 19;
+    width: 100%;
+    background: var(--background);
+    text-align: left;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-tabs button {
+    min-height: 44px;
+  }
+}

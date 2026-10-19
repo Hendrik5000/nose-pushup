@@ -80,7 +80,7 @@ function SkillCard({
 
   return (
     <div
-      className={`relative rounded-2xl border p-4 transition ${
+      className={`cali-skill-card relative flex items-start gap-3 rounded-2xl border p-4 transition ${
         isLocked
           ? "border-border/50 bg-card/20 opacity-60"
           : isMastered
@@ -97,7 +97,7 @@ function SkillCard({
         </div>
       )}
 
-      <div className="flex items-start gap-3">
+      <div className="flex min-w-0 flex-1 items-start gap-3">
         {/* Icon + status */}
         <div
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border text-2xl ${

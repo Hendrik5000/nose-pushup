@@ -10,13 +10,13 @@ import { Activity, Footprints, MapPin, Pause, Play, Square } from "lucide-react"
 export const Route = createFileRoute("/_authenticated/run")({
   head: () => ({
     meta: [
-      { title: "Lauf aufzeichnen — Nose Push" },
+      { title: "Lauf aufzeichnen — Alo" },
       {
         name: "description",
         content:
           "Zeichne deine Läufe per GPS auf: Distanz, Tempo, Dauer und Kalorien in einer Ansicht.",
       },
-      { property: "og:title", content: "Lauf aufzeichnen — Nose Push" },
+      { property: "og:title", content: "Lauf aufzeichnen — Alo" },
       { property: "og:description", content: "GPS-Lauftracking mit Distanz, Tempo und Kalorien." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -269,7 +269,7 @@ function RunPage() {
                 <span className="ml-2 text-xl font-semibold text-muted-foreground">km</span>
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className="run-stat-grid mt-4 grid grid-cols-3 gap-3">
               <Metric label="Zeit" value={fmtTime(elapsed)} />
               <Metric
                 label="Pace"
@@ -493,9 +493,11 @@ function RunPage() {
 
 function Metric({ label, value, unit }: { label: string; value: string; unit?: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-background/40 px-2 py-3">
-      <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
-      <div className="mt-1 text-lg font-semibold tabular-nums">
+    <div className="run-metric rounded-2xl border border-border bg-background/40 px-2 py-3">
+      <div className="run-metric-label text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+        {label}
+      </div>
+      <div className="run-metric-value mt-1 text-lg font-semibold tabular-nums">
         {value}
         {unit && <span className="text-[10px] text-muted-foreground">{unit}</span>}
       </div>

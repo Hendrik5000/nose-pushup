@@ -9,13 +9,13 @@ import { Coins, Medal, ShoppingBag, Trophy } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/season")({
   head: () => ({
     meta: [
-      { title: "Saison & Belohnungen — Nosy Push-Ups" },
+      { title: "Saison & Belohnungen — Alo" },
       {
         name: "description",
         content:
           "Sammle Saisonpunkte, steige von Bronze bis Elite auf und tausche Münzen gegen Themes, Rahmen und Streak-Freezes.",
       },
-      { property: "og:title", content: "Saison & Belohnungen — Nosy Push-Ups" },
+      { property: "og:title", content: "Saison & Belohnungen — Alo" },
       {
         property: "og:description",
         content: "Liga-Aufstieg von Bronze bis Elite und Belohnungen im Münz-Shop.",
@@ -327,7 +327,7 @@ function SeasonPage() {
                     <ShoppingBag className="sport-only h-6 w-6 text-primary" />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold">{item.name}</div>
-                      <div className="truncate text-[11px] text-muted-foreground">
+                      <div className="break-words text-[11px] leading-relaxed text-muted-foreground">
                         {item.description}
                       </div>
                     </div>

@@ -155,7 +155,7 @@ function AuthPage() {
               <p className="mt-1 text-sm text-muted-foreground">
                 {mode === "signin"
                   ? "Melde dich an, um deine Alo-Module zu nutzen."
-                  : "Nutze Nose-Pushup, Mira und Nexus auf allen Geräten."}
+                  : "Nutze Alo mit Nose-Pushup, Mira und Nexus auf allen Geräten."}
               </p>
 
               <div className="mt-6 space-y-2">
@@ -277,7 +277,7 @@ function AuthPage() {
         <main className="sport-only sport-auth-page mx-auto grid min-h-[100dvh] w-full max-w-6xl items-center gap-8 px-5 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:px-12">
           <section className="sport-auth-hero rounded-[2.5rem] border border-primary/20 bg-gradient-to-br from-primary/15 via-card/70 to-background p-7 sm:p-10 lg:p-14">
             <SportPageIntro
-              eyebrow="NOSE PUSH · TRAINING CLUB"
+              eyebrow="ALO · TRAINING"
               title="Stärker. Schritt für Schritt."
               description="Dein Training, deine Bestwerte und dein Fortschritt – sicher an einem Ort. Dein nächster Satz beginnt hier."
             />
@@ -304,7 +304,7 @@ function AuthPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               {mode === "signin"
                 ? "Melde dich an, um deine Alo-Module zu nutzen."
-                : "Nutze Nose-Pushup, Mira und Nexus auf allen Geräten."}
+                : "Nutze Alo mit Nose-Pushup, Mira und Nexus auf allen Geräten."}
             </p>
             <div className="mt-6 grid gap-2">
               <OAuthButton

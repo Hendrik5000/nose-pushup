@@ -11,13 +11,13 @@ import { ArrowUpRight, Check, Clock3, Dumbbell, Flag, Play, RotateCcw } from "lu
 export const Route = createFileRoute("/_authenticated/programs")({
   head: () => ({
     meta: [
-      { title: "Trainingsprogramme — Nosy Push-Ups" },
+      { title: "Trainingsprogramme — Alo" },
       {
         name: "description",
         content:
           "Mehrwöchige Push-Up- und Core-Programme mit Tagesplan, Sätzen, Pausen-Timer und Abschluss-Zertifikat.",
       },
-      { property: "og:title", content: "Trainingsprogramme — Nosy Push-Ups" },
+      { property: "og:title", content: "Trainingsprogramme — Alo" },
       {
         property: "og:description",
         content: "Folge einem Programm: Tagesplan, Sätze, Pausen-Timer, Zertifikat.",
@@ -422,15 +422,17 @@ function ProgramsPage() {
       <DesignView variant="classic">
         <main className="classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
           <header className="flex items-center justify-between">
-            <div>
+            <div className="programs-header-title min-w-0 flex-1">
               <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
                 Programme
               </div>
-              <h1 className="mt-0.5 text-xl font-bold tracking-tight">Dein Trainingsplan</h1>
+              <h1 className="mt-0.5 break-words text-xl font-bold tracking-tight">
+                Dein Trainingsplan
+              </h1>
             </div>
             <Link
               to="/"
-              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
+              className="shrink-0 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
             >
               Zurück
             </Link>

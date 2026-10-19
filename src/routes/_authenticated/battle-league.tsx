@@ -244,7 +244,7 @@ function BattleLeaguePage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold">
+                    <div className="break-words text-sm font-semibold">
                       {p.display_name || "Ohne Namen"}{" "}
                       {isMe && <span className="text-[10px] text-primary">· Du</span>}
                     </div>

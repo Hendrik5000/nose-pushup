@@ -28,6 +28,7 @@ export function SettingsSection({
   subtitle,
   defaultOpen = false,
   id,
+  profileAppearance = false,
   children,
 }: {
   icon: ReactNode;
@@ -35,6 +36,7 @@ export function SettingsSection({
   subtitle?: string;
   defaultOpen?: boolean;
   id?: string;
+  profileAppearance?: boolean;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -88,6 +90,7 @@ export function SettingsSection({
     <section
       id={id}
       className="settings-section overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur"
+      data-profile-appearance={profileAppearance ? "true" : undefined}
     >
       <button
         type="button"

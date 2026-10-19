@@ -302,13 +302,13 @@ function BattleLobby() {
         <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Battle beitreten
         </h2>
-        <div className="mt-3 flex gap-2">
+        <div className="battle-join-row mt-3 flex min-w-0 gap-2">
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="CODE"
             maxLength={8}
-            className="flex-1 rounded-xl border border-border bg-background/60 px-4 py-3 text-center font-mono text-lg tracking-[0.4em] uppercase text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none"
+            className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-4 py-3 text-center font-mono text-lg tracking-[0.4em] uppercase text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none"
           />
           <button
             onClick={handleJoin}
