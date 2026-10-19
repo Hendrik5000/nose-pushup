@@ -1,4 +1,7 @@
-/* Only deliberate module swipes animate; the header and settings stay still. */
+/* Only deliberate module swipes animate; persistent navigation stays still. */
+.alo-swipe-route {
+  overflow-x: clip;
+}
 .alo-module-surface {
   min-width: 0;
 }
@@ -14,7 +17,7 @@ html[data-module-swipe]::view-transition-new(root) {
 }
 
 html[data-module-swipe]::view-transition-group(alo-module) {
-  animation-duration: 280ms;
+  animation-duration: 380ms;
   overflow: clip;
 }
 
@@ -24,8 +27,8 @@ html[data-module-swipe]::view-transition-new(alo-module) {
   object-fit: cover;
   object-position: top;
   mix-blend-mode: normal;
-  animation-duration: 280ms;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-duration: 380ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   animation-fill-mode: both;
 }
 
@@ -44,34 +47,28 @@ html[data-module-swipe="right"]::view-transition-new(alo-module) {
 
 @keyframes alo-swipe-out-left {
   to {
-    transform: translateX(-24%);
-    opacity: 0;
+    transform: translateX(-100%);
   }
 }
 @keyframes alo-swipe-in-left {
   from {
     transform: translateX(100%);
-    opacity: 0.6;
   }
   to {
     transform: translateX(0);
-    opacity: 1;
   }
 }
 @keyframes alo-swipe-out-right {
   to {
-    transform: translateX(24%);
-    opacity: 0;
+    transform: translateX(100%);
   }
 }
 @keyframes alo-swipe-in-right {
   from {
     transform: translateX(-100%);
-    opacity: 0.6;
   }
   to {
     transform: translateX(0);
-    opacity: 1;
   }
 }
 

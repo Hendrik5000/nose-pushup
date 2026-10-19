@@ -28,6 +28,19 @@ export function startModuleSwipeTransition(
     animation?.cancel();
   };
 
+  const animateEntrance = async () => {
+    if (cancelled || !surface?.isConnected || typeof surface.animate !== "function") return;
+    animation = surface.animate(
+      [
+        { transform: `translateX(${direction === "left" ? "100%" : "-100%"})` },
+        { transform: "translateX(0)" },
+      ],
+      { duration: 380, easing: "cubic-bezier(0.4, 0, 0.2, 1)" },
+    );
+    await animation.finished.catch(() => undefined);
+    animation.cancel();
+  };
+
   const finished = (async () => {
     if (reducedMotion || !surface) {
       await navigate();
@@ -37,41 +50,36 @@ export function startModuleSwipeTransition(
     const transitionDocument = document as TransitionDocument;
     if (typeof transitionDocument.startViewTransition === "function") {
       root.dataset.moduleSwipe = direction;
-      // The router promise resolves after the new route is committed. Snapshots
-      // avoid keeping old chat/training components mounted during the animation.
+      // Keep the old screen as a snapshot, not a second live chat/workout instance.
       let navigation: Promise<void> | undefined;
       const update = () => (navigation ??= navigate());
+      let snapshotReady = true;
       try {
         try {
           transition = transitionDocument.startViewTransition(update);
-          // ready rejects on skipped snapshots, independently of finished.
-          void transition.ready?.catch(() => undefined);
+          // A supported API can still skip a snapshot. In that case animate the
+          // committed surface instead of silently dropping all visual feedback.
+          const ready = transition.ready?.catch(() => {
+            snapshotReady = false;
+          });
+          await transition.finished.catch(() => {
+            snapshotReady = false;
+          });
+          await ready;
         } catch {
-          // A browser animation failure must never prevent navigation.
-          await update();
-          return;
+          snapshotReady = false;
         }
-        await transition.finished.catch(() => undefined);
         await update();
+        if (!snapshotReady) await animateEntrance();
       } finally {
         delete root.dataset.moduleSwipe;
       }
       return;
     }
 
-    // Older browsers still get a directional entrance, without delaying routing.
+    // Older browsers get the same full-width entrance, without delaying routing.
     await navigate();
-    if (!cancelled && surface.isConnected && typeof surface.animate === "function") {
-      animation = surface.animate(
-        [
-          { transform: `translateX(${direction === "left" ? "8%" : "-8%"})`, opacity: 0.65 },
-          { transform: "translateX(0)", opacity: 1 },
-        ],
-        { duration: 240, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
-      );
-      await animation.finished.catch(() => undefined);
-      animation.cancel();
-    }
+    await animateEntrance();
   })();
 
   return { finished, cancel };

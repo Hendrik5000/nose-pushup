@@ -71,9 +71,9 @@ for (const direction of ["left", "right"] as const) {
         assert.equal(navigations, 1, "navigation is never delayed by the fallback");
         assert.equal(
           (frames as Keyframe[])[0].transform,
-          `translateX(${direction === "left" ? "8%" : "-8%"})`,
+          `translateX(${direction === "left" ? "100%" : "-100%"})`,
         );
-        assert.equal((options as KeyframeAnimationOptions).duration, 240);
+        assert.equal((options as KeyframeAnimationOptions).duration, 380);
         return {
           finished: Promise.resolve(),
           cancel() {
@@ -263,4 +263,42 @@ test("skipped native ready promises are handled without unhandled rejections", a
   } finally {
     env.restore();
   }
+});
+
+for (const failure of ["throw", "ready", "finished"] as const) {
+  test(`native ${failure} failure uses a visible full-width fallback exactly once`, async () => {
+    const env = environment();
+    try {
+      let navigations = 0;
+      let animations = 0;
+      env.document.startViewTransition = (update) => {
+        if (failure === "throw") throw Error("unavailable");
+        return {
+          ready: failure === "ready" ? Promise.reject(Error("skipped")) : Promise.resolve(),
+          finished: failure === "finished" ? Promise.reject(Error("skipped")) : update(),
+          skipTransition() {},
+        };
+      };
+      const element = surface((frames, options) => {
+        animations++;
+        assert.equal(navigations, 1);
+        assert.equal((frames as Keyframe[])[0].transform, "translateX(100%)");
+        assert.equal((options as KeyframeAnimationOptions).duration, 380);
+        return { finished: Promise.resolve(), cancel() {} };
+      });
+      await startModuleSwipeTransition(element, "left", async () => {
+        navigations++;
+      }).finished;
+      assert.equal(navigations, 1);
+      assert.equal(animations, 1);
+      assert.equal(env.dataset.moduleSwipe, undefined);
+    } finally {
+      env.restore();
+    }
+  });
+}
+
+test("the stable swipe shell cannot restart the generic route entrance after cleanup", () => {
+  const root = readFileSync(new URL("../src/routes/__root.tsx", import.meta.url), "utf8");
+  assert.match(root, /routeKey === "alo-swipe-screens" \? "alo-swipe-route" : "route-enter"/);
 });

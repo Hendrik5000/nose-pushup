@@ -325,7 +325,10 @@ function RootComponent() {
         </div>
       )}
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <div key={routeKey} className="route-enter">
+      <div
+        key={routeKey}
+        className={routeKey === "alo-swipe-screens" ? "alo-swipe-route" : "route-enter"}
+      >
         <Outlet />
       </div>
       <OfflineBanner />
