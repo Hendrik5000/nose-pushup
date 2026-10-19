@@ -1,6 +1,6 @@
 import { DesignView } from "@/components/DesignView";
 import { readWorkoutMetadata } from "@/lib/workout-session";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -66,7 +66,6 @@ const PROFILE_COLS =
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const routeHash = useRouterState({ select: (state) => state.location.hash });
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>("");
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -136,22 +135,6 @@ export function ProfilePage() {
       if (w) setWorkouts(w as Workout[]);
     })();
   }, []);
-
-  useEffect(() => {
-    const revealAppearance = () => {
-      if (window.location.hash !== "#appearance") return;
-      const section = [...document.querySelectorAll<HTMLElement>("[data-profile-appearance]")].find(
-        (element) => element.getClientRects().length > 0,
-      );
-      if (!section) return;
-      const heading = section.querySelector<HTMLButtonElement>("button[aria-expanded]");
-      if (heading?.getAttribute("aria-expanded") === "false") heading.click();
-      window.setTimeout(() => section.scrollIntoView({ block: "start", behavior: "smooth" }), 80);
-    };
-    revealAppearance();
-    window.addEventListener("hashchange", revealAppearance);
-    return () => window.removeEventListener("hashchange", revealAppearance);
-  }, [routeHash]);
 
   const numOrNull = (v: string, min: number, max: number) => {
     const cleaned = v.replace(",", ".").replace(/[^0-9.]/g, "");
@@ -402,6 +385,7 @@ export function ProfilePage() {
               title="Design"
               subtitle="Stil, Schrift, Layout & Farben"
               profileAppearance
+              revealKey={profile?.id}
             >
               <button
                 type="button"
@@ -723,6 +707,7 @@ export function ProfilePage() {
               title="Design & Navigation"
               subtitle="Stil, Schrift, Layout & Farben"
               profileAppearance
+              revealKey={profile?.id}
             >
               <button
                 type="button"

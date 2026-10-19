@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Activity,
   Award,
@@ -29,6 +29,7 @@ export function SettingsSection({
   defaultOpen = false,
   id,
   profileAppearance = false,
+  revealKey,
   children,
 }: {
   icon: ReactNode;
@@ -37,19 +38,24 @@ export function SettingsSection({
   defaultOpen?: boolean;
   id?: string;
   profileAppearance?: boolean;
+  revealKey?: string;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const sectionRef = useRef<HTMLElement>(null);
   const routeHash = useRouterState({ select: (state) => state.location.hash });
   useEffect(() => {
-    if (!id) return;
+    if (!id && !profileAppearance) return;
     let scrollTimer: ReturnType<typeof setTimeout> | undefined;
     const reveal = () => {
-      if (window.location.hash === `#${id}`) {
+      if (window.location.hash === `#${profileAppearance ? "appearance" : id}`) {
         setOpen(true);
         clearTimeout(scrollTimer);
         scrollTimer = setTimeout(() => {
-          document.getElementById(id)?.scrollIntoView({ block: "start" });
+          const section = sectionRef.current;
+          if (section && section.getClientRects().length > 0) {
+            section.scrollIntoView({ block: "start" });
+          }
         }, 350);
       }
     };
@@ -59,7 +65,7 @@ export function SettingsSection({
       clearTimeout(scrollTimer);
       window.removeEventListener("hashchange", reveal);
     };
-  }, [id, routeHash]);
+  }, [id, profileAppearance, revealKey, routeHash]);
   const SportIcon = title.includes("Coach")
     ? Brain
     : title.includes("Freund")
@@ -88,6 +94,7 @@ export function SettingsSection({
 
   return (
     <section
+      ref={sectionRef}
       id={id}
       className="settings-section overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur"
       data-profile-appearance={profileAppearance ? "true" : undefined}

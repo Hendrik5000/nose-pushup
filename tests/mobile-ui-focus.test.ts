@@ -149,5 +149,17 @@ test("mobile review fixes preserve skill routing and constrain narrow controls w
   );
   const settings = read("routes/_authenticated/profile-page-impl.tsx");
   assert.equal((settings.match(/profileAppearance/g) ?? []).length, 2);
-  assert.match(settings, /window\.location\.hash !== "#appearance"/);
+  assert.doesNotMatch(settings, /heading\.click\(\)/);
+});
+
+test("appearance deep links open idempotently and scroll only the visible design variant", () => {
+  const section = read("components/SettingsSection.tsx");
+  assert.match(section, /profileAppearance \? "appearance" : id/);
+  assert.match(section, /setOpen\(true\)/);
+  assert.match(section, /section\.getClientRects\(\)\.length > 0/);
+  assert.match(section, /section\.scrollIntoView/);
+  assert.doesNotMatch(
+    read("alo-mobile.css"),
+    /\[data-profile-appearance\] > div > div\s*\{\s*overflow: visible/,
+  );
 });

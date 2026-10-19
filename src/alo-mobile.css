@@ -1165,16 +1165,14 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
 }
 
 @media (max-width: 420px) {
+  html[data-design-style] .settings-section {
+    min-width: 0;
+    max-width: 100%;
+  }
   html[data-design-style] .settings-section[data-profile-appearance] {
     overflow: visible;
   }
-  html[data-design-style] .settings-section[data-profile-appearance] > div > div {
-    overflow: visible;
-  }
   html[data-design-style] .profile-appearance-back {
-    position: sticky;
-    top: calc(var(--homebar-top-space, 0px) + var(--alo-header-space, 60px) + 54px);
-    z-index: 19;
     width: 100%;
     background: var(--background);
     text-align: left;
