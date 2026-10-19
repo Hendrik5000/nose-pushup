@@ -53,6 +53,14 @@ const SECTIONS = [
 export function SportAppHeader() {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const referenceTitle =
+    pathname === "/health"
+      ? "Gesundheit"
+      : ["/ai", "/coach"].includes(pathname)
+        ? "KI-Coach"
+        : pathname === "/chat"
+          ? "Community"
+          : null;
   const ref = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -77,16 +85,25 @@ export function SportAppHeader() {
     };
   }, [open]);
   return (
-    <div className="sport-only sport-app-header" ref={ref}>
+    <div
+      className={`sport-only sport-app-header ${referenceTitle ? "reference-interior-header" : ""}`}
+      ref={ref}
+    >
       <div className="sport-app-header-inner">
         <Link to="/" className="sport-brand" aria-label="Nose Push · Übersicht">
-          <span className="sport-brand-symbol">
-            <Activity aria-hidden="true" />
-          </span>
-          <span>
-            NOSE<span className="text-primary">PUSH</span>
-            <small>DEIN TRAINING. DEIN FORTSCHRITT.</small>
-          </span>
+          {referenceTitle ? (
+            <span className="reference-page-title">{referenceTitle}</span>
+          ) : (
+            <>
+              <span className="sport-brand-symbol">
+                <Activity aria-hidden="true" />
+              </span>
+              <span>
+                NOSE<span className="text-primary">PUSH</span>
+                <small>DEIN TRAINING. DEIN FORTSCHRITT.</small>
+              </span>
+            </>
+          )}
         </Link>
         <div className="sport-header-actions">
           <Link

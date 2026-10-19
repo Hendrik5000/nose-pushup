@@ -7,6 +7,7 @@ import {
   Search,
   Users,
   Mic,
+  MessageCirclePlus,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
@@ -214,6 +215,7 @@ export function LocalChatShell() {
     setNewRoomOpen(false);
     if (room) {
       setActive({ kind: "room", id: room.id });
+      setMobileListOpen(false);
       await refresh(userId, { kind: "room", id: room.id });
     }
   };
@@ -288,16 +290,38 @@ export function LocalChatShell() {
       dm.other_name.toLocaleLowerCase("de-DE").includes(roomQuery.toLocaleLowerCase("de-DE")),
   );
 
+  const dmComposer = (
+    <div className="community-dm-create mb-2 flex gap-1">
+      <input
+        value={dmName}
+        onChange={(e) => setDmName(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && void onStartDm()}
+        placeholder="Name…"
+        className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-2 py-1.5 text-xs outline-none focus:border-primary"
+      />
+      <button
+        type="button"
+        onClick={() => void onStartDm()}
+        className="rounded-xl bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground"
+      >
+        DM
+      </button>
+    </div>
+  );
+
   const sidebar = (
     <div className="sport-chat-sidebar flex h-full flex-col bg-card/40">
-      <div className="border-b border-border bg-gradient-to-br from-primary/15 to-transparent px-4 py-4">
+      <div className="community-list-heading border-b border-border bg-gradient-to-br from-primary/15 to-transparent px-4 py-4">
         <div className="flex items-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20 text-xl">
+          <span className="classic-only flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20 text-xl">
             💬
           </span>
           <div>
-            <div className="text-sm font-bold">Community-Chat</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="text-sm font-bold">
+              <span className="classic-only">Community-Chat</span>
+              <span className="sport-only">Chats</span>
+            </div>
+            <div className="classic-only text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               {modeLabel}
             </div>
           </div>
@@ -338,7 +362,7 @@ export function LocalChatShell() {
             : "Mit deiner Community verbunden."}
         </p>
       </div>
-      <div className="flex-1 overflow-y-auto px-3 py-3">
+      <div className="community-list-scroll flex-1 overflow-y-auto px-3 py-3">
         <div className="mb-1 flex items-center justify-between px-1">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Räume
@@ -407,22 +431,11 @@ export function LocalChatShell() {
         <div className="mb-1 px-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Direktnachrichten
         </div>
-        <div className="mb-2 flex gap-1">
-          <input
-            value={dmName}
-            onChange={(e) => setDmName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void onStartDm()}
-            placeholder="Name…"
-            className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-2 py-1.5 text-xs outline-none focus:border-primary"
-          />
-          <button
-            type="button"
-            onClick={() => void onStartDm()}
-            className="rounded-xl bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground"
-          >
-            DM
-          </button>
-        </div>
+        <div className="classic-only">{dmComposer}</div>
+        <details className="sport-only community-dm-details">
+          <summary>Direktnachricht starten</summary>
+          {dmComposer}
+        </details>
         <div className="space-y-1">
           {dms.length === 0 && (
             <p className="px-2 py-2 text-xs text-muted-foreground">Noch keine DMs.</p>
@@ -442,7 +455,7 @@ export function LocalChatShell() {
                   : "hover:bg-secondary/60"
               }`}
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold">
+              <span className="community-room-avatar flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold">
                 {initials(d.other_name)}
               </span>
               <span className="community-room-copy truncate font-medium">
@@ -454,7 +467,7 @@ export function LocalChatShell() {
         </div>
       </div>
 
-      <div className="border-t border-border px-4 py-3">
+      <div className="community-account border-t border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
             {initials(myName)}
@@ -475,7 +488,17 @@ export function LocalChatShell() {
     <div
       className={`app-chat-shell sport-chat-app flex overflow-hidden bg-background ${mobileListOpen ? "community-show-list" : "community-show-conversation"}`}
     >
-      <div className="sport-only community-mobile-list">{sidebar}</div>
+      <div className="sport-only community-mobile-list">
+        {sidebar}
+        <button
+          type="button"
+          className="community-new-chat"
+          aria-label="Neuen Gruppenraum erstellen"
+          onClick={() => setNewRoomOpen(true)}
+        >
+          <MessageCirclePlus aria-hidden="true" />
+        </button>
+      </div>
       <aside className="hidden w-72 shrink-0 border-r border-border md:block">{sidebar}</aside>
 
       <section className="community-conversation flex min-w-0 flex-1 flex-col">
@@ -636,38 +659,6 @@ export function LocalChatShell() {
             />
             <div className="absolute inset-y-0 left-0 w-[85vw] max-w-80 border-r border-border bg-background shadow-xl">
               {sidebar}
-            </div>
-          </div>
-        )}
-
-        {newRoomOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-4">
-              <div className="text-sm font-semibold">Neuer Raum</div>
-              <input
-                autoFocus
-                value={newRoomName}
-                onChange={(e) => setNewRoomName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && void onCreateRoom()}
-                placeholder="Name"
-                className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-              />
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setNewRoomOpen(false)}
-                  className="flex-1 rounded-xl border border-border py-2 text-sm"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void onCreateRoom()}
-                  className="flex-1 rounded-xl bg-primary py-2 text-sm font-semibold text-primary-foreground"
-                >
-                  Erstellen
-                </button>
-              </div>
             </div>
           </div>
         )}
@@ -946,6 +937,42 @@ export function LocalChatShell() {
           </div>
         )}
       </section>
+      {newRoomOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Neuer Raum"
+            className="w-full max-w-sm rounded-2xl border border-border bg-card p-4"
+          >
+            <div className="text-sm font-semibold">Neuer Raum</div>
+            <input
+              autoFocus
+              value={newRoomName}
+              onChange={(e) => setNewRoomName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && void onCreateRoom()}
+              placeholder="Name"
+              className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setNewRoomOpen(false)}
+                className="flex-1 rounded-xl border border-border py-2 text-sm"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={() => void onCreateRoom()}
+                className="flex-1 rounded-xl bg-primary py-2 text-sm font-semibold text-primary-foreground"
+              >
+                Erstellen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,219 @@
+/* Reference refinements apply only to the current Performance interface. */
+html[data-design-style="performance"] .reference-interior-header {
+  border-bottom: 0;
+  background: transparent;
+}
+html[data-design-style="performance"] .reference-interior-header .reference-page-title {
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+html[data-design-style="performance"] .reference-interior-header .sport-menu-trigger {
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+  width: 44px;
+  padding: 0;
+}
+html[data-design-style="performance"] .reference-interior-header .sport-menu-trigger > span {
+  display: none;
+}
+html[data-design-style="performance"] .reference-interior-header .sport-design-shortcut {
+  background: transparent;
+}
+/* The default dark palette gets the reference's ink-and-green community canvas.
+   Explicitly selected alternative palettes keep their own color tokens. */
+html[data-design-style="performance"][data-theme="glacier"]:has(.sport-chat-app) {
+  --background: #0b1217;
+  --foreground: #edf1f4;
+  --card: #151e24;
+  --secondary: #24292e;
+  --muted-foreground: #929a9f;
+  --primary: #21c063;
+  --primary-foreground: #062d17;
+  --border: #273239;
+  --ring: #21c063;
+}
+html[data-design-style="performance"]:has(.sport-chat-app) body {
+  background: var(--background);
+}
+html[data-design-style="performance"] .sport-chat-sidebar {
+  position: relative;
+}
+html[data-design-style="performance"] .sport-chat-app > aside {
+  width: 22rem;
+}
+html[data-design-style="performance"] .community-list-heading {
+  padding: 1.15rem 1.25rem 0.75rem;
+}
+html[data-design-style="performance"] .community-list-heading .text-sm {
+  font-size: 1.6rem !important;
+  letter-spacing: -0.035em;
+}
+html[data-design-style="performance"] .community-list-controls {
+  padding: 0.5rem 1rem 0;
+}
+html[data-design-style="performance"] .community-search {
+  min-height: 48px;
+  gap: 0.7rem;
+  padding-inline: 1rem;
+}
+html[data-design-style="performance"] .community-filter-chips {
+  gap: 0.45rem;
+  margin-block: 1.25rem 0.6rem;
+}
+html[data-design-style="performance"] .community-filter-chips button {
+  min-height: 38px;
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-color: color-mix(in srgb, var(--foreground) 14%, transparent);
+}
+html[data-design-style="performance"] .community-filter-chips button[aria-pressed="true"] {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--primary) 23%, var(--background));
+  border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
+}
+html[data-design-style="performance"] .community-list-controls > p {
+  margin: 0.5rem 0.2rem 0;
+  font-size: 0.65rem;
+}
+html[data-design-style="performance"] .community-list-scroll {
+  padding: 0.75rem 0.7rem 5.5rem;
+  scrollbar-width: thin;
+}
+html[data-design-style="performance"] .community-list-scroll > .mb-1 {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.72rem;
+  padding-inline: 0.5rem;
+}
+html[data-design-style="performance"] .sport-chat-sidebar button.w-full {
+  min-height: 88px;
+  padding: 0.85rem 0.45rem;
+  gap: 0.8rem;
+  border-radius: 0.8rem;
+}
+html[data-design-style="performance"] .sport-chat-sidebar button.w-full.bg-primary {
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+html[data-design-style="performance"] .community-room-avatar {
+  width: 3rem;
+  height: 3rem;
+  background: color-mix(in srgb, var(--primary) 16%, var(--card));
+  color: color-mix(in srgb, var(--primary) 65%, var(--foreground));
+  font-size: 0.95rem;
+}
+html[data-design-style="performance"]
+  .community-list-scroll
+  button.w-full:nth-child(3n + 2)
+  .community-room-avatar {
+  background: color-mix(in srgb, var(--accent) 20%, var(--card));
+  color: var(--foreground);
+}
+html[data-design-style="performance"]
+  .community-list-scroll
+  button.w-full:nth-child(3n)
+  .community-room-avatar {
+  background: color-mix(in srgb, var(--foreground) 12%, var(--card));
+  color: var(--foreground);
+}
+html[data-design-style="performance"] .community-room-copy {
+  gap: 0.35rem;
+}
+html[data-design-style="performance"] .community-room-copy strong {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+html[data-design-style="performance"] .community-room-copy small {
+  font-size: 0.9rem;
+}
+html[data-design-style="performance"] .community-room-time {
+  font-size: 0.7rem;
+  padding-top: 0.3rem;
+}
+html[data-design-style="performance"] .community-account {
+  background: var(--background);
+  border-top-color: var(--sport-line);
+}
+html[data-design-style="performance"] .community-new-chat {
+  position: absolute;
+  right: 1rem;
+  bottom: 1.25rem;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 1.2rem;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  box-shadow: 0 5px 18px #0003;
+}
+html[data-design-style="performance"] .community-new-chat svg {
+  width: 27px;
+  height: 27px;
+}
+html[data-design-style="performance"] .sport-chat-app .sport-chat-composer {
+  background: var(--secondary);
+  border: 0;
+}
+html[data-design-style="performance"] .sport-chat-app .sport-chat-composer button[type="submit"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+html[data-design-style="performance"] .sport-chat-topbar {
+  background: var(--card);
+}
+@media (max-width: 767px) {
+  html[data-design-style="performance"] .community-mobile-list {
+    position: relative;
+  }
+  html[data-design-style="performance"] .community-mobile-list .community-list-heading {
+    display: none;
+  }
+  html[data-design-style="performance"] .community-mobile-list .community-account {
+    display: none;
+  }
+  html[data-design-style="performance"]:has(.sport-chat-app) .reference-page-title {
+    font-size: 1.65rem;
+    font-weight: 700;
+  }
+  html[data-design-style="performance"] .community-dm-create {
+    padding-inline: 0.4rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-design-style="performance"] .community-new-chat {
+    transition: none;
+  }
+}
+html[data-design-style="performance"] .community-dm-details {
+  margin: 0.25rem 0.4rem 0.75rem;
+}
+html[data-design-style="performance"] .community-dm-details > summary {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+html[data-design-style="performance"]
+  .community-mobile-list:has(.community-dm-details[open])
+  .community-new-chat {
+  display: none;
+}
+html[data-design-style="performance"] .community-list-scroll > .mb-1 > span {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.72rem;
+}
+html[data-design-style="performance"] .authenticated-shell:has(.sport-chat-app) .homebar-items,
+html[data-design-style="performance"] .authenticated-shell:has(.sport-health-page) .homebar-items,
+html[data-design-style="performance"] .authenticated-shell:has(.sport-ai-page) .homebar-items {
+  border-radius: 999px;
+}
+html[data-design-style="performance"] .authenticated-shell:has(.sport-chat-app) .homebar-link,
+html[data-design-style="performance"] .authenticated-shell:has(.sport-health-page) .homebar-link,
+html[data-design-style="performance"] .authenticated-shell:has(.sport-ai-page) .homebar-link {
+  border-radius: 999px;
+}

@@ -1,4 +1,4 @@
-import { Sparkles, Mic, ArrowUp, Plus } from "lucide-react";
+import { Sparkles, Mic, ArrowUp, Plus, Settings2 } from "lucide-react";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -113,6 +113,10 @@ export function SuperAiPage() {
   const [sportAiView, setSportAiView] = useState<SportAiView>("chat");
   const [, refreshProviderStatus] = useState(0);
   const activeProvider = pickProvider(loadProviders(), lastTask ?? "general");
+  const profileName =
+    typeof appContext?.profile?.display_name === "string"
+      ? appContext.profile.display_name.trim()
+      : "";
   const lastFeedback = getMostRecentPlanFeedback(messages);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
@@ -760,12 +764,40 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
           className={`sport-only sport-ai-page mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8 ${sportAiView === "chat" ? "sport-ai-chat-mode" : ""}`}
         >
           {sportAiView === "chat" ? (
-            <header className="sport-ai-compact-heading">
-              <p className="sport-kicker">KI-COACH · CHAT</p>
-              <h1>
-                KI-Coach <span>· {PERSONAS.find((p) => p.id === persona)?.label}</span>
-              </h1>
-            </header>
+            <div className="sport-ai-compact-heading" aria-label="Chat-Steuerung">
+              <div className="sport-ai-model-status" aria-live="polite">
+                <span className="sport-ai-model-dot" aria-hidden="true" />
+                <span>{activeProvider?.model ?? "Kein Modell eingerichtet"}</span>
+              </div>
+              <div className="sport-ai-chat-actions">
+                <button
+                  type="button"
+                  onClick={startNewSession}
+                  className="sport-ai-header-action"
+                  aria-label="Neuen Chat beginnen"
+                  title="Neuer Chat"
+                >
+                  <Plus aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen((v) => !v)}
+                  className="sport-ai-header-action"
+                  aria-label={settingsOpen ? "KI-Einstellungen schließen" : "KI-Einstellungen"}
+                  aria-pressed={settingsOpen}
+                  title="KI-Einstellungen"
+                >
+                  <Settings2 aria-hidden="true" />
+                </button>
+                <span className="sport-ai-header-avatar" aria-label={profileName || "Profil"}>
+                  {profileName ? (
+                    profileName.slice(0, 1).toLocaleUpperCase("de-DE")
+                  ) : (
+                    <Sparkles aria-hidden="true" />
+                  )}
+                </span>
+              </div>
+            </div>
           ) : (
             <SportPageIntro
               eyebrow="DEIN KI-COACH"
@@ -1116,13 +1148,10 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                 >
                   {messages.length === 0 && (
                     <div className="ai-welcome mx-auto my-auto max-w-lg py-8 text-center">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-primary/10 text-3xl">
-                        <Sparkles aria-hidden="true" />
-                      </div>
-                      <h3 className="mt-4 text-xl font-bold">Hallo, lass uns loslegen.</h3>
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        Frag nach Training, Erholung oder deinen gespeicherten Werten.
-                      </p>
+                      <span className="ai-welcome-mark" aria-hidden="true" />
+                      <h3 className="mt-4 text-xl font-bold">
+                        Hallo{profileName ? ` ${profileName}` : ""}, lass uns loslegen
+                      </h3>
                     </div>
                   )}
                   {messages.map((m, i) => (
@@ -1251,14 +1280,6 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                   >
                     <Plus aria-hidden="true" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={toggleVoice}
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
-                    aria-label="Spracheingabe"
-                  >
-                    <Mic className="h-5 w-5" aria-hidden="true" />
-                  </button>
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -1275,6 +1296,15 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                     style={{ maxHeight: 140 }}
                     disabled={loading}
                   />
+                  <button
+                    type="button"
+                    onClick={toggleVoice}
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
+                    aria-label="Spracheingabe"
+                    aria-pressed={listening}
+                  >
+                    <Mic className="h-5 w-5" aria-hidden="true" />
+                  </button>
                   <button
                     type="submit"
                     aria-label="Nachricht senden"

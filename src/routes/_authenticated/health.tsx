@@ -1,4 +1,13 @@
-import { Footprints, Moon, HeartPulse, Watch, Plus, ArrowRight } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Flame,
+  Footprints,
+  HeartPulse,
+  Moon,
+  Plus,
+  Watch,
+} from "lucide-react";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -233,18 +242,20 @@ function HealthPage() {
       </DesignView>
       <DesignView variant="sport">
         <main className="sport-only sport-health-page mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-6 px-5 py-6 pb-28 sm:px-8">
-          <SportPageIntro
-            eyebrow="DEIN WOHLBEFINDEN"
-            title="Gesundheit"
-            description="Schritte, Schlaf und Aktivität – als Trainingskontext an einem Ort."
-          >
-            <Link
-              to="/"
-              className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
+          <div className="health-page-intro sr-only">
+            <SportPageIntro
+              eyebrow="DEIN WOHLBEFINDEN"
+              title="Gesundheit"
+              description="Schritte, Schlaf und Aktivität – als Trainingskontext an einem Ort."
             >
-              ← Start
-            </Link>
-          </SportPageIntro>
+              <Link
+                to="/"
+                className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
+              >
+                ← Start
+              </Link>
+            </SportPageIntro>
+          </div>
           <nav className="health-category-nav" aria-label="Gesundheitsbereiche">
             <a href="#health-today">
               <HeartPulse aria-hidden="true" />
@@ -268,7 +279,7 @@ function HealthPage() {
             className="health-daily-hero"
             aria-labelledby="health-daily-title"
           >
-            <span className="health-hero-icon">
+            <span className="health-hero-icon" aria-hidden="true">
               <HeartPulse aria-hidden="true" />
             </span>
             <p className="sport-kicker">Dein Tag im Blick</p>
@@ -281,38 +292,63 @@ function HealthPage() {
                 : "Schritte, Schlaf und Bewegung erzählen deine Geschichte. Verbinde deine Uhr oder erfasse deine ersten Werte."}
             </p>
             <a href="#health-entry" className="health-hero-action">
-              <Plus aria-hidden="true" /> Werte erfassen <ArrowRight aria-hidden="true" />
+              <Plus aria-hidden="true" /> <span>Werte erfassen</span>{" "}
+              <ArrowRight aria-hidden="true" />
             </a>
           </section>
-          <SportSectionLabel number="01">Deine Übersicht</SportSectionLabel>
           <section id="health-activity" className="health-bento-grid grid grid-cols-2 gap-3">
-            <div className="sport-health-metric rounded-[1.75rem] border border-border/70 bg-card/80 p-6">
-              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                <Footprints aria-hidden="true" /> Schritte
+            <div className="health-energy-card">
+              <div className="health-card-heading">
+                <Flame aria-hidden="true" />
+                <span>Energie &amp; Schritte</span>
               </div>
-              <div className="mt-4 text-4xl font-bold tabular-nums tracking-tight">
-                {entries.length ? avgSteps.toLocaleString("de-DE") : "—"}
+              <div className="health-energy-values">
+                <div>
+                  <strong>
+                    {todayEntry ? todayEntry.active_kcal.toLocaleString("de-DE") : "—"}
+                  </strong>
+                  <span>Aktive kcal</span>
+                </div>
+                <div>
+                  <strong>{todayEntry ? todaySteps.toLocaleString("de-DE") : "—"}</strong>
+                  <span>Schritte</span>
+                </div>
               </div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                {todayEntry
-                  ? `Heute ${todaySteps.toLocaleString("de-DE")} Schritte`
-                  : "Heute noch nicht erfasst"}
-              </div>
+              <p>{todayEntry ? "Heute erfasst" : "Noch keine Tageswerte"}</p>
             </div>
-            <div className="sport-health-metric rounded-[1.75rem] border border-border/70 bg-card/80 p-6">
-              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                <Moon aria-hidden="true" /> Schlaf
+            <div className="health-activity-card">
+              <div className="health-card-heading">
+                <Activity aria-hidden="true" />
+                <span>Aktivität</span>
               </div>
-              <div className="mt-4 text-4xl font-bold tabular-nums tracking-tight">
-                {measuredSleep == null ? "—" : measuredSleep.toFixed(1)}{" "}
-                {measuredSleep != null && <span className="text-xl text-muted-foreground">h</span>}
+              <div className="health-rings" aria-hidden="true">
+                <span className="health-ring health-ring-outer" />
+                <span className="health-ring health-ring-middle" />
+                <span className="health-ring health-ring-inner" />
               </div>
-              <div className="mt-2 text-sm text-muted-foreground">
+              <span className="sr-only">Dekorative Ringe ohne Messwerte oder Zielvorgaben.</span>
+              <p>Illustration · keine Messwerte</p>
+            </div>
+          </section>
+          <section className="health-sleep-card" aria-labelledby="health-sleep-title">
+            <div className="health-sleep-icon">
+              <Moon aria-hidden="true" />
+            </div>
+            <div>
+              <p className="health-sleep-label">Erholung</p>
+              <h2 id="health-sleep-title">Schlaf</h2>
+              <p className="health-sleep-detail">
                 {measuredSleep == null
-                  ? "Noch keine Schlafdaten"
-                  : `Ø aus ${sleepEntries.length} erfassten Nächten`}
-              </div>
+                  ? "Noch keine Schlafdaten erfasst"
+                  : `Ø ${measuredSleep.toFixed(1)} h · ${sleepEntries.length} ${sleepEntries.length === 1 ? "Nacht" : "Nächte"} erfasst`}
+              </p>
             </div>
+            {measuredSleep != null && (
+              <strong>
+                {measuredSleep.toFixed(1)}
+                <span> h</span>
+              </strong>
+            )}
           </section>
           <div id="health-sleep" className="grid gap-5 lg:grid-cols-2">
             <div className="space-y-5">
@@ -325,7 +361,7 @@ function HealthPage() {
                 .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
             />
           </div>
-          <SportSectionLabel number="02">Verbundene Datenquellen</SportSectionLabel>
+          <SportSectionLabel number="01">Verbundene Datenquellen</SportSectionLabel>
           <div id="health-sources" className="grid gap-4 md:grid-cols-2">
             <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
               <h2 className="mb-4 text-lg font-bold">Google Health Connect</h2>
@@ -336,7 +372,7 @@ function HealthPage() {
               <SmartwatchPanel />
             </section>
           </div>
-          <SportSectionLabel number="03">Eintrag erfassen</SportSectionLabel>
+          <SportSectionLabel number="02">Eintrag erfassen</SportSectionLabel>
           <section
             id="health-entry"
             className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6"
@@ -391,7 +427,7 @@ function HealthPage() {
               {busy ? "Speichere…" : "Werte speichern"}
             </button>
           </section>
-          <SportSectionLabel number="04">Verlauf · letzte 14 Tage</SportSectionLabel>
+          <SportSectionLabel number="03">Verlauf · letzte 14 Tage</SportSectionLabel>
           {entries.length === 0 ? (
             <p className="rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
               Noch keine Gesundheitsdaten.
