@@ -52,6 +52,7 @@ export const Route = createFileRoute("/_authenticated/ai")({
 
 type Msg = AiSession["messages"][number];
 type SportAiView = "coach" | "chat" | "history";
+type SportAiHistoryFilter = "all" | "plans";
 
 function describeContext(ctx: AppContextPack): string {
   const labels: Record<string, string> = {
@@ -97,6 +98,8 @@ function SuperAiPage() {
   const [toolsOpen, setToolsOpen] = useState(true);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [sessionQuery, setSessionQuery] = useState("");
+  const [sessionFilter, setSessionFilter] = useState<SportAiHistoryFilter>("all");
   const [contextOpen, setContextOpen] = useState(false);
   const [persona, setPersona] = useState<AiPersona>(() => loadPersona());
   const [favs, setFavs] = useState<string[]>(() => loadFavPrompts());
@@ -119,6 +122,18 @@ function SuperAiPage() {
     const firstUser = messages.find((m) => m.role === "user");
     return firstUser ? firstUser.content.slice(0, 28) : "Neuer Chat";
   }, [sessions, activeId, messages]);
+
+  const filteredSessions = useMemo(() => {
+    const query = sessionQuery.trim().toLocaleLowerCase("de-DE");
+    return sessions.filter((session) => {
+      const hasPlan = session.messages.some((message) => message.plan);
+      const lastMessage = session.messages[session.messages.length - 1]?.content ?? "";
+      const matchesFilter = sessionFilter === "all" || hasPlan;
+      const matchesQuery =
+        !query || `${session.title} ${lastMessage}`.toLocaleLowerCase("de-DE").includes(query);
+      return matchesFilter && matchesQuery;
+    });
+  }, [sessions, sessionQuery, sessionFilter]);
 
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => {
@@ -740,12 +755,21 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
         </main>
       </DesignView>
       <DesignView variant="sport">
-        <main className="sport-only sport-ai-page mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8">
-          <SportPageIntro
-            eyebrow="DEIN KI-COACH"
-            title="Super-AI"
-            description="Trainingsplanung, Fortschritt und Fragen – in einem klaren Coach-Bereich."
-          />
+        <main
+          className={`sport-only sport-ai-page mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8 ${sportAiView === "chat" ? "sport-ai-chat-mode" : ""}`}
+        >
+          {sportAiView === "chat" ? (
+            <header className="sport-ai-compact-heading">
+              <p className="sport-kicker">KI-COACH · CHAT</p>
+              <h1>Coach-Chat</h1>
+            </header>
+          ) : (
+            <SportPageIntro
+              eyebrow="DEIN KI-COACH"
+              title="Super-AI"
+              description="Trainingsplanung, Fortschritt und Fragen – in einem klaren Coach-Bereich."
+            />
+          )}
           <section className="sport-ai-hub" aria-label="KI-Coach-Navigation">
             <div className="sport-ai-provider-status">
               <div>
@@ -928,39 +952,82 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
           )}
           {sportAiView === "history" && (
             <section className="sport-ai-history rounded-[1.5rem] border border-border/70 bg-card/75 p-5">
-              <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="sport-ai-history-head">
                 <div>
-                  <h2 className="text-lg font-bold">Gespeicherte Gespräche</h2>
+                  <h2>Deine Chats</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Deine letzten Coach-Chats auf diesem Gerät.
+                    Zuletzt auf diesem Gerät gespeichert.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={startNewSession}
-                  className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
-                >
-                  + Neuer Chat
+                <button type="button" onClick={startNewSession} className="sport-ai-new-chat">
+                  <span aria-hidden="true">＋</span> Neuer Chat
                 </button>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {sessions.map((session) => (
+              <label className="sport-ai-session-search">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  type="search"
+                  value={sessionQuery}
+                  onChange={(event) => setSessionQuery(event.target.value)}
+                  placeholder="Chats durchsuchen"
+                  aria-label="Gespeicherte Chats durchsuchen"
+                />
+              </label>
+              <div className="sport-ai-session-filters" role="group" aria-label="Chats filtern">
+                {(
+                  [
+                    ["all", `Alle · ${sessions.length}`],
+                    [
+                      "plans",
+                      `Mit Trainingsplan · ${sessions.filter((session) => session.messages.some((message) => message.plan)).length}`,
+                    ],
+                  ] as const
+                ).map(([filter, label]) => (
                   <button
-                    key={session.id}
+                    key={filter}
                     type="button"
-                    onClick={() => switchSession(session.id)}
-                    className={`rounded-xl border p-3 text-left ${session.id === activeId ? "border-primary/50 bg-primary/10" : "border-border/70 bg-background/40"}`}
+                    aria-pressed={sessionFilter === filter}
+                    className={sessionFilter === filter ? "is-active" : ""}
+                    onClick={() => setSessionFilter(filter)}
                   >
-                    <span className="block truncate text-sm font-semibold">
-                      {session.title || "Chat"}
-                    </span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      {new Date(session.updatedAt).toLocaleString("de-DE")}
-                    </span>
+                    {label}
                   </button>
                 ))}
+              </div>
+              <div className="sport-ai-session-list">
+                {filteredSessions.map((session) => {
+                  const latest = session.messages[session.messages.length - 1];
+                  const preview = latest
+                    ? `${latest.role === "user" ? "Du: " : "Coach: "}${latest.content}`
+                    : "Noch keine Nachrichten";
+                  return (
+                    <button
+                      key={session.id}
+                      type="button"
+                      onClick={() => switchSession(session.id)}
+                      className={`sport-ai-session-row ${session.id === activeId ? "is-active" : ""}`}
+                    >
+                      <span className="sport-ai-session-avatar" aria-hidden="true">
+                        {(session.title || "C").slice(0, 1).toLocaleUpperCase("de-DE")}
+                      </span>
+                      <span className="sport-ai-session-copy">
+                        <strong>{session.title || "Neuer Chat"}</strong>
+                        <span>{preview}</span>
+                      </span>
+                      <time dateTime={session.updatedAt}>
+                        {new Date(session.updatedAt).toLocaleDateString("de-DE", {
+                          day: "2-digit",
+                          month: "2-digit",
+                        })}
+                      </time>
+                    </button>
+                  );
+                })}
                 {sessions.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Noch keine gespeicherten Chats.</p>
+                  <p className="sport-ai-history-empty">Noch keine Gespräche gespeichert.</p>
+                )}
+                {sessions.length > 0 && filteredSessions.length === 0 && (
+                  <p className="sport-ai-history-empty">Keine Chats für diese Suche gefunden.</p>
                 )}
               </div>
             </section>

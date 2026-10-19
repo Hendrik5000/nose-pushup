@@ -111,10 +111,14 @@ test("performance AI coach has focused subviews, task-first entry points and kee
   assert.match(ai, /Coach fragen/);
   assert.match(ai, /Schnelle Einstiege/);
   assert.match(ai, /Weitere Coach-Aufgaben/);
-  assert.match(ai, /Gespeicherte Gespräche/);
+  assert.match(ai, /Deine Chats/);
+  assert.match(ai, /Chats durchsuchen/);
+  assert.match(ai, /Mit Trainingsplan/);
+  assert.match(ai, /filteredSessions\.map/);
   assert.match(ai, /AiProviderSettings\s+onSaved=/);
   assert.match(ai, /sport-chat-stage/);
   assert.match(ai, /sport-chat-composer/);
+  assert.match(ai, /sport-ai-chat-mode/);
 
   const styles = read("sport.css");
   assert.match(styles, /sport-ai-hub/);
@@ -124,6 +128,7 @@ test("performance AI coach has focused subviews, task-first entry points and kee
   assert.match(styles, /font-size: 0\.7rem/);
   assert.match(styles, /sport-ai-chat-main[\s\S]*max-height: calc\(100dvh - 12rem\)/);
   assert.match(styles, /sport-chat-composer[\s\S]*position: sticky/);
+  assert.match(styles, /sport-ai-chat-mode[\s\S]*height: min\(50dvh, 26rem\)/);
 });
 
 test("sport page components render semantic content and permit real data actions", () => {

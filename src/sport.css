@@ -1228,3 +1228,216 @@ html[data-design-style="performance"] .sport-ai-provider-status > div > span:nth
   flex: 0 0 auto;
   overflow: visible;
 }
+
+html[data-design-style="performance"] .sport-ai-compact-heading {
+  display: grid;
+  gap: 0.2rem;
+  padding-inline: 0.15rem;
+}
+html[data-design-style="performance"] .sport-ai-compact-heading h1 {
+  font-size: 1.35rem;
+  letter-spacing: -0.035em;
+}
+@media (max-width: 767px) {
+  html[data-design-style="performance"] .sport-ai-chat-mode {
+    gap: 0.55rem !important;
+    padding-top: 0.6rem !important;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-hub {
+    gap: 0.35rem;
+    padding: 0.5rem 0.65rem;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-provider-status {
+    min-height: 2.6rem;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-tabs button {
+    min-height: 40px;
+    font-size: 0.72rem;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-grid {
+    gap: 0.5rem;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-main {
+    height: min(50dvh, 26rem);
+    min-height: min(20rem, calc(100dvh - 18rem));
+    max-height: calc(100dvh - 19rem);
+    gap: 0.55rem;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-toolbar {
+    padding: 0.65rem;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-toolbar > button {
+    margin-top: 0.25rem;
+  }
+}
+
+html[data-design-style="performance"][data-navigation-layout="floating"] .app-homebar {
+  padding-top: 1.25rem;
+  background: linear-gradient(
+    to top,
+    var(--color-background) 0%,
+    var(--color-background) 68%,
+    transparent 100%
+  );
+}
+html[data-design-style="performance"][data-navigation-layout="floating"]
+  .app-homebar
+  .homebar-items {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 767px) {
+  html[data-design-style="performance"] .sport-ai-chat-aside {
+    display: none;
+  }
+}
+
+html[data-design-style="performance"] .sport-ai-history {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  max-width: 52rem;
+  margin-inline: auto;
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+html[data-design-style="performance"] .sport-ai-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+html[data-design-style="performance"] .sport-ai-history-head h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+html[data-design-style="performance"] .sport-ai-new-chat {
+  display: inline-flex;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.85rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+html[data-design-style="performance"] .sport-ai-session-search {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0 1rem;
+  border: 1px solid var(--sport-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background) 76%, var(--card));
+  color: var(--muted-foreground);
+}
+html[data-design-style="performance"] .sport-ai-session-search > span {
+  flex: 0 0 auto;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+html[data-design-style="performance"] .sport-ai-session-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 0.9rem;
+  outline: none;
+  box-shadow: none;
+}
+html[data-design-style="performance"] .sport-ai-session-filters {
+  display: flex;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: none;
+}
+html[data-design-style="performance"] .sport-ai-session-filters::-webkit-scrollbar {
+  display: none;
+}
+html[data-design-style="performance"] .sport-ai-session-filters button {
+  min-height: 40px;
+  flex: 0 0 auto;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--sport-line);
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+html[data-design-style="performance"] .sport-ai-session-filters button.is-active {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--sport-line));
+  background: color-mix(in srgb, var(--primary) 15%, var(--card));
+  color: var(--foreground);
+}
+html[data-design-style="performance"] .sport-ai-session-list {
+  display: flex;
+  flex-direction: column;
+}
+html[data-design-style="performance"] .sport-ai-session-row {
+  display: grid;
+  min-width: 0;
+  min-height: 76px;
+  grid-template-columns: 2.8rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.65rem 0.35rem;
+  border-bottom: 1px solid var(--sport-line);
+  text-align: left;
+}
+html[data-design-style="performance"] .sport-ai-session-row:last-of-type {
+  border-bottom: 0;
+}
+html[data-design-style="performance"] .sport-ai-session-row.is-active {
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+html[data-design-style="performance"] .sport-ai-session-avatar {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 18%, var(--background));
+  color: var(--primary);
+  font-size: 1rem;
+  font-weight: 800;
+}
+html[data-design-style="performance"] .sport-ai-session-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+html[data-design-style="performance"] .sport-ai-session-copy strong,
+html[data-design-style="performance"] .sport-ai-session-copy > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html[data-design-style="performance"] .sport-ai-session-copy strong {
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+html[data-design-style="performance"] .sport-ai-session-copy > span {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+html[data-design-style="performance"] .sport-ai-session-row time {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+html[data-design-style="performance"] .sport-ai-history-empty {
+  padding: 1.5rem 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  text-align: center;
+}
