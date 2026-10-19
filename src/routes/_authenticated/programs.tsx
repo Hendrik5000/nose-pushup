@@ -1,3 +1,4 @@
+import { ContentActions } from "@/components/alo/ContentActions";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -217,6 +218,14 @@ function ProgramsPage() {
                     <span className="h-2 w-2 rounded-full bg-primary" /> Läuft gerade
                   </span>
                   <h2 className="mt-2 text-3xl font-bold tracking-tight">{activeProgram.title}</h2>
+                  {userId && (
+                    <ContentActions
+                      userId={userId}
+                      title={activeProgram.title}
+                      text={`${activeProgram.title}\n${activeProgram.description}\n${programDays.map((d) => `Tag ${d.day_index}: ${d.focus}, ${d.sets} × ${d.reps}, ${d.rest_s}s Pause. ${d.note}`).join("\n")}`}
+                      source="Nose-Pushup"
+                    />
+                  )}
                   <p className="mt-2 text-sm text-muted-foreground">
                     Tag {active.current_day} von {totalDays} <span className="px-1">·</span>{" "}
                     {doneDays.length} erledigt
@@ -361,6 +370,20 @@ function ProgramsPage() {
                           <ArrowUpRight size={20} className="text-muted-foreground" />
                         </div>
                         <h3 className="mt-4 text-xl font-bold">{p.title}</h3>
+                        {userId && (
+                          <ContentActions
+                            userId={userId}
+                            title={p.title}
+                            text={`${p.title}\n${p.description}\n${days
+                              .filter((d) => d.program_id === p.id)
+                              .map(
+                                (d) =>
+                                  `Tag ${d.day_index}: ${d.focus}, ${d.sets} × ${d.reps}, ${d.rest_s}s Pause. ${d.note}`,
+                              )
+                              .join("\n")}`}
+                            source="Nose-Pushup"
+                          />
+                        )}
                         <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
                           {p.description}
                         </p>
@@ -428,6 +451,14 @@ function ProgramsPage() {
                     Läuft gerade
                   </div>
                   <h2 className="mt-1 text-2xl font-bold tracking-tight">{activeProgram.title}</h2>
+                  {userId && (
+                    <ContentActions
+                      userId={userId}
+                      title={activeProgram.title}
+                      text={`${activeProgram.title}\n${activeProgram.description}\n${programDays.map((d) => `Tag ${d.day_index}: ${d.focus}, ${d.sets} × ${d.reps}, ${d.rest_s}s Pause. ${d.note}`).join("\n")}`}
+                      source="Nose-Pushup"
+                    />
+                  )}
                   <p className="mt-1 text-xs text-muted-foreground">
                     Tag {active.current_day} von {totalDays} · {doneDays.length} erledigt
                   </p>
@@ -579,6 +610,20 @@ function ProgramsPage() {
                             <div className="flex items-center gap-2">
                               <span className="text-2xl">{p.icon}</span>
                               <span className="text-base font-semibold">{p.title}</span>
+                              {userId && (
+                                <ContentActions
+                                  userId={userId}
+                                  title={p.title}
+                                  text={`${p.title}\n${p.description}\n${days
+                                    .filter((d) => d.program_id === p.id)
+                                    .map(
+                                      (d) =>
+                                        `Tag ${d.day_index}: ${d.focus}, ${d.sets} × ${d.reps}. ${d.note}`,
+                                    )
+                                    .join("\n")}`}
+                                  source="Nose-Pushup"
+                                />
+                              )}
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
                             <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">

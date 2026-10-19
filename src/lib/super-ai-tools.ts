@@ -1,5 +1,6 @@
 /** Super-AI skill tools + personas + session helpers. */
 
+import { getAloOwner, listAlo, putAlo, removeAlo } from "@/lib/alo-store";
 import type { AiWorkoutPlan, PlanFeedback } from "@/lib/ai-plan";
 
 export type AiPersona = "general" | "writer" | "coach" | "analyst" | "motivator";
@@ -175,6 +176,7 @@ export type AiSession = {
 const SESSIONS_KEY = "super-ai-sessions-v2";
 const PERSONA_KEY = "alo-mira-persona-v1";
 const FAV_PROMPTS_KEY = "super-ai-fav-prompts";
+const accountKey = (key: string) => (getAloOwner() ? `${key}:${getAloOwner()}` : key);
 
 function canStore() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -183,7 +185,7 @@ function canStore() {
 export function loadPersona(): AiPersona {
   if (!canStore()) return "general";
   try {
-    const value = window.localStorage.getItem(PERSONA_KEY);
+    const value = window.localStorage.getItem(accountKey(PERSONA_KEY));
     return PERSONAS.find((persona) => persona.id === value)?.id ?? "general";
   } catch {
     return "general";
@@ -192,10 +194,14 @@ export function loadPersona(): AiPersona {
 
 export function savePersona(p: AiPersona) {
   if (!canStore()) return;
-  window.localStorage.setItem(PERSONA_KEY, p);
+  window.localStorage.setItem(accountKey(PERSONA_KEY), p);
 }
 
 export function loadSessions(): AiSession[] {
+  if (getAloOwner())
+    return listAlo("mira")
+      .map((r) => r.body as unknown as AiSession)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   if (!canStore()) return [];
   let sessions: AiSession[];
   try {
@@ -239,6 +245,11 @@ export function loadSessions(): AiSession[] {
 }
 
 export function saveSessions(list: AiSession[]) {
+  if (getAloOwner()) {
+    for (const session of list)
+      putAlo("mira", session as unknown as Record<string, unknown>, `mira:${session.id}`);
+    return;
+  }
   if (!canStore()) return;
   window.localStorage.setItem(SESSIONS_KEY, JSON.stringify(list));
 }
@@ -250,7 +261,7 @@ export function newSessionId() {
 export function loadFavPrompts(): string[] {
   if (!canStore()) return [];
   try {
-    const raw = window.localStorage.getItem(FAV_PROMPTS_KEY);
+    const raw = window.localStorage.getItem(accountKey(FAV_PROMPTS_KEY));
     if (!raw) return [];
     const p = JSON.parse(raw) as string[];
     return Array.isArray(p) ? p.slice(0, 8) : [];
@@ -262,7 +273,7 @@ export function loadFavPrompts(): string[] {
 export function toggleFavPrompt(text: string): string[] {
   const cur = loadFavPrompts();
   const next = cur.includes(text) ? cur.filter((x) => x !== text) : [text, ...cur].slice(0, 8);
-  if (canStore()) window.localStorage.setItem(FAV_PROMPTS_KEY, JSON.stringify(next));
+  if (canStore()) window.localStorage.setItem(accountKey(FAV_PROMPTS_KEY), JSON.stringify(next));
   return next;
 }
 

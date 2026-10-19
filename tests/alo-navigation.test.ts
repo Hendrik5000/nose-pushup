@@ -61,7 +61,8 @@ test("new onboarding, compact module controls, hidden-by-default legacy nav, and
   assert.match(nav, /hidden=\{!barVisible\}\s+inert=\{!barVisible\}/);
   const ai = read("routes/_authenticated/ai.tsx");
   assert.match(ai, /MIRA_CONTEXT_KEY/);
-  assert.match(ai, /checked=\{contextAllowed\}/);
+  assert.match(ai, /MiraContextControls/);
+  assert.match(read("components/alo/MiraContextControls.tsx"), /checked=\{grants.training\}/);
   assert.match(ai, /untrusted Kontext/);
 });
 

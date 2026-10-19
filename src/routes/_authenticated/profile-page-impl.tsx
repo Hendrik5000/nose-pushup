@@ -253,6 +253,13 @@ export function ProfilePage() {
     <>
       <DesignView variant="classic">
         <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
+          <button
+            type="button"
+            className="alo-btn mb-3"
+            onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "privacy" }))}
+          >
+            Daten & Datenschutz · Auf allen Geräten
+          </button>
           <header className="flex items-center justify-between">
             <Link
               to="/"
@@ -507,6 +514,13 @@ export function ProfilePage() {
               Abmelden
             </button>
           </SportPageIntro>
+          <button
+            type="button"
+            className="alo-btn"
+            onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "privacy" }))}
+          >
+            Daten & Datenschutz · Auf allen Geräten
+          </button>
           <nav className="sport-profile-shortcuts" aria-label="Profileinstellungen">
             <Link to="/profile" hash="appearance">
               Design & Navigation

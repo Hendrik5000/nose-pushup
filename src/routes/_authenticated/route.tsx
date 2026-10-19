@@ -8,6 +8,8 @@ import {
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
+import { setAloOwner } from "@/lib/alo-store";
+import { AloWorkspace } from "@/components/alo/AloWorkspace";
 import { WelcomeTour } from "@/components/WelcomeTour";
 import { TopNav } from "@/components/TopNav";
 import { SportAppHeader } from "@/components/SportAppHeader";
@@ -22,6 +24,7 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+    setAloOwner(data.user.id);
     return { user: data.user };
   },
   component: AuthenticatedLayout,
@@ -199,6 +202,7 @@ function AuthenticatedLayout() {
       <div ref={surface} className="alo-module-surface">
         <Outlet />
       </div>
+      <AloWorkspace userId={user.id} />
       <WelcomeTour userId={user.id} />
     </div>
   );

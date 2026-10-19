@@ -1,7 +1,8 @@
 /** Build a compact context pack from Nose-Pushup + Nexus Chat for Super-AI. */
 
 import { supabase } from "@/integrations/supabase/client";
-import { loadChatStore } from "@/lib/local-chat";
+import { loadMessages, loadRoomsForUser } from "@/lib/chat-backend";
+import { getMiraGrants, type MiraGrants } from "@/lib/alo-store";
 import { getTrainingWeekBounds, sumTrainingWeekReps } from "@/lib/training-dates";
 
 export type AppContextPack = {
@@ -20,11 +21,11 @@ export type AppContextPack = {
   recentChat: Array<{ room?: string; content: string; created_at: string }>;
 };
 
-export async function buildAppContext(userId: string): Promise<AppContextPack> {
+async function buildTrainingContext(userId: string): Promise<AppContextPack> {
   const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
 
   const week = getTrainingWeekBounds();
-  const [{ data: profile }, { data: stats }, { data: workouts }, { data: health }, weeklyWorkouts] =
+  const [profileResult, statsResult, workoutsResult, healthResult, weeklyWorkouts] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -64,41 +65,21 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
         .lt("created_at", week.endExclusive),
     ]);
 
+  if (
+    [profileResult, statsResult, workoutsResult, healthResult, weeklyWorkouts].some(
+      (result) => result.error,
+    )
+  ) {
+    throw new Error(
+      "Freigegebene Trainings-/Gesundheitsdaten konnten nicht vollständig geladen werden. Es wurden keine App-Daten an Mira gesendet. Bitte erneut versuchen oder Freigabe widerrufen.",
+    );
+  }
+  const profile = profileResult.data;
+  const stats = statsResult.data;
+  const workouts = workoutsResult.data;
+  const health = healthResult.data;
   const days = (stats ?? []) as Array<{ day: string }>;
   const weekReps = weeklyWorkouts.error ? null : sumTrainingWeekReps(weeklyWorkouts.data ?? []);
-  // Rooms and fallback messages are always scoped to this account. Never include
-  // a device's system welcome message as if it were the user's own message.
-  const local = loadChatStore(userId);
-  const chatRooms = local.rooms.map((r) => ({ name: r.name, description: r.description }));
-
-  let recentChat: AppContextPack["recentChat"] = [];
-  try {
-    const { data: msgs } = await supabase
-      .from("messages" as never)
-      .select("content, created_at, room_id" as never)
-      .eq("user_id" as never, userId as never)
-      .order("created_at" as never, { ascending: false })
-      .limit(15);
-    if (msgs) {
-      recentChat = (msgs as unknown as Array<{ content: string; created_at: string }>).map((m) => ({
-        content: String(m.content).slice(0, 200),
-        created_at: m.created_at,
-      }));
-    }
-  } catch {
-    /* tables may not exist yet */
-  }
-  if (recentChat.length === 0) {
-    const local = loadChatStore(userId);
-    recentChat = local.messages
-      .filter((message) => message.user_id === userId)
-      .slice(-15)
-      .reverse()
-      .map((m) => ({
-        content: m.content.slice(0, 200),
-        created_at: m.created_at,
-      }));
-  }
 
   return {
     profile: (profile as Record<string, unknown> | null) ?? null,
@@ -107,9 +88,55 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
     dailyStatsDays: days.length,
     recentWorkouts: (workouts ?? []) as AppContextPack["recentWorkouts"],
     health: (health ?? []) as AppContextPack["health"],
-    chatRooms,
-    recentChat,
+    chatRooms: [],
+    recentChat: [],
   };
+}
+
+/** No training or chat reads occur without the corresponding explicit grant. */
+export async function buildAppContext(
+  userId: string,
+  grants: MiraGrants = getMiraGrants(userId),
+): Promise<AppContextPack> {
+  const context: AppContextPack = grants.training
+    ? await buildTrainingContext(userId)
+    : {
+        profile: null,
+        weekReps: null,
+        weeklyWorkoutCount: null,
+        dailyStatsDays: 0,
+        recentWorkouts: [],
+        health: [],
+        chatRooms: [],
+        recentChat: [],
+      };
+  if (grants.rooms.length) {
+    const visible = (await loadRoomsForUser(userId)).filter((room) =>
+      grants.rooms.includes(room.id),
+    );
+    context.chatRooms = visible.map((room) => ({ name: room.name, description: room.description }));
+    for (const room of visible) {
+      const { messages } = await loadMessages(
+        userId,
+        { kind: "room", id: room.id },
+        { strict: true },
+      );
+      context.recentChat.push(
+        ...messages
+          .filter((m) => m.user_id !== "system")
+          .slice(-20)
+          .map((m) => ({
+            room: room.name,
+            content: m.content.slice(0, 1000),
+            created_at: m.created_at,
+          })),
+      );
+    }
+    context.recentChat = context.recentChat
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, 40);
+  }
+  return context;
 }
 
 export function contextToSystemBlock(ctx: AppContextPack): string {
@@ -145,8 +172,8 @@ HEALTH (7d):
 ${ctx.health.map((h) => `- ${h.day}: ${h.steps ?? "unbekannt"} Schritte, ${h.sleep_min == null ? "unbekannt" : `${(h.sleep_min / 60).toFixed(1)} h`} Schlaf, ${h.active_kcal ?? "unbekannt"} aktive kcal`).join("\n") || "(keine Einträge im geladenen Zeitraum)"}
 
 CHAT-RÄUME: ${ctx.chatRooms.map((r) => r.name).join(", ") || "(keine)"}
-LETZTE EIGENE CHAT-NACHRICHTEN:
-${ctx.recentChat.map((m) => `- ${m.content}`).join("\n") || "(keine)"}
+NACHRICHTEN AUS AUSGEWÄHLTEN NEXUS-RÄUMEN:
+${ctx.recentChat.map((m) => `- [${m.room ?? "Raum"}] ${m.content}`).join("\n") || "(keine)"}
 
 Du darfst Trainingspläne, Form-Tipps, Recovery und Chat-Zusammenfassungen geben. Keine medizinischen Diagnosen.`;
 }

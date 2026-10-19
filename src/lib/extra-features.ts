@@ -1,3 +1,4 @@
+import { getAloOwner, listAlo, putAlo, removeAlo } from "@/lib/alo-store";
 /** Small feature stores: water, mood, favorites, notes, step goals, PR toasts. */
 
 const WATER_KEY = "np-water";
@@ -107,23 +108,35 @@ export function isFavoriteExercise(id: string): boolean {
 export type WorkoutNote = { id: string; text: string; ts: string; exerciseId?: string };
 
 export function getWorkoutNotes(): WorkoutNote[] {
+  if (getAloOwner())
+    return listAlo("note")
+      .map((r) => r.body as unknown as WorkoutNote)
+      .sort((a, b) => b.ts.localeCompare(a.ts));
   const v = readJson<WorkoutNote[]>(NOTES_KEY, []);
   return Array.isArray(v) ? v : [];
 }
 
 export function addWorkoutNote(text: string, exerciseId?: string): WorkoutNote {
   const note: WorkoutNote = {
-    id: `${Date.now().toString(36)}`,
+    id: crypto.randomUUID(),
     text: text.trim().slice(0, 500),
     ts: new Date().toISOString(),
     exerciseId,
   };
+  if (getAloOwner()) {
+    putAlo("note", note as unknown as Record<string, unknown>, `note:${note.id}`);
+    return note;
+  }
   const list = [note, ...getWorkoutNotes()].slice(0, 50);
   writeJson(NOTES_KEY, list);
   return note;
 }
 
 export function deleteWorkoutNote(id: string) {
+  if (getAloOwner()) {
+    removeAlo(`note:${id}`);
+    return;
+  }
   writeJson(
     NOTES_KEY,
     getWorkoutNotes().filter((n) => n.id !== id),

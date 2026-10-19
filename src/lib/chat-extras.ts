@@ -1,4 +1,5 @@
 /** Extra Nexus Chat features (local prefs + helpers). */
+import { listAlo, putAlo, readRecords } from "@/lib/alo-store";
 
 const PREFS_KEY = (userId: string) => `np-chat-prefs:${userId}`;
 const DRAFTS_KEY = (userId: string) => `np-chat-drafts:${userId}`;
@@ -98,7 +99,20 @@ export function countUnread(
 }
 
 export function loadDrafts(userId: string): Record<string, string> {
-  return readJson(DRAFTS_KEY(userId), {});
+  const legacy = readJson<Record<string, string>>(DRAFTS_KEY(userId), {});
+  for (const row of readRecords(userId).filter((r) => r.kind === "draft")) {
+    if (row.deleted) {
+      delete legacy[row.id.replace(/^draft:/, "")];
+      continue;
+    }
+    if (
+      typeof row.body.target === "string" &&
+      typeof row.body.text === "string" &&
+      row.body.target !== "mira"
+    )
+      legacy[row.body.target] = row.body.text;
+  }
+  return legacy;
 }
 
 export function saveDraft(userId: string, kind: "room" | "dm", id: string, text: string) {
@@ -107,6 +121,7 @@ export function saveDraft(userId: string, kind: "room" | "dm", id: string, text:
   if (!text.trim()) delete all[k];
   else all[k] = text;
   writeJson(DRAFTS_KEY(userId), all);
+  putAlo("draft", { target: k, text }, `draft:${k}`, userId);
 }
 
 export function getDraft(userId: string, kind: "room" | "dm", id: string): string {

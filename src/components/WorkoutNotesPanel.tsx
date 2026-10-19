@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { addWorkoutNote, deleteWorkoutNote, getWorkoutNotes } from "@/lib/extra-features";
 
 export function WorkoutNotesPanel() {
   const [notes, setNotes] = useState(() => getWorkoutNotes());
   const [text, setText] = useState("");
+  useEffect(() => {
+    const refresh = () => setNotes(getWorkoutNotes());
+    window.addEventListener("alo-data-changed", refresh);
+    window.addEventListener("alo-remote-applied", refresh);
+    return () => {
+      window.removeEventListener("alo-data-changed", refresh);
+      window.removeEventListener("alo-remote-applied", refresh);
+    };
+  }, []);
 
   const save = () => {
     if (!text.trim()) return;
@@ -47,6 +56,12 @@ export function WorkoutNotesPanel() {
                 type="button"
                 className="text-muted-foreground"
                 onClick={() => {
+                  if (
+                    !window.confirm(
+                      "Trainingsnotiz löschen? Bei aktivierter Synchronisierung wird auch die Cloudkopie gelöscht.",
+                    )
+                  )
+                    return;
                   deleteWorkoutNote(n.id);
                   setNotes(getWorkoutNotes());
                 }}

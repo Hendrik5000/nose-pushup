@@ -47,7 +47,10 @@ export async function loadRooms(): Promise<LocalRoom[]> {
   return data as unknown as LocalRoom[];
 }
 
-export async function loadRoomsForUser(userId: string): Promise<LocalRoom[]> {
+export async function loadRoomsForUser(
+  userId: string,
+  options: { strict?: boolean } = {},
+): Promise<LocalRoom[]> {
   if ((await detectChatMode()) === "local") {
     return loadChatStore(userId).rooms;
   }
@@ -57,6 +60,7 @@ export async function loadRoomsForUser(userId: string): Promise<LocalRoom[]> {
 export async function loadMessages(
   userId: string,
   target: { kind: "room" | "dm"; id: string },
+  options: { strict?: boolean } = {},
 ): Promise<{ messages: LocalMessage[]; reactions: LocalReaction[] }> {
   if ((await detectChatMode()) === "local") {
     const store = loadChatStore(userId);
@@ -81,7 +85,11 @@ export async function loadMessages(
       ? q.eq("room_id" as never, target.id as never)
       : q.eq("conversation_id" as never, target.id as never);
 
-  const { data } = await q;
+  const { data, error } = await q;
+  if (error && options.strict)
+    throw new Error(
+      "Freigegebene Nexus-Nachrichten konnten nicht geladen werden. Es wurden keine App-Daten an Mira gesendet.",
+    );
   const messages = [...((data ?? []) as unknown as LocalMessage[])].reverse();
   const ids = messages.map((m) => m.id);
   let reactions: LocalReaction[] = [];

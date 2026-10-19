@@ -1,3 +1,7 @@
+import { RoomTools } from "@/components/alo/RoomTools";
+import { ContentActions } from "@/components/alo/ContentActions";
+import { ALO_REMOTE_EVENT, cloudEnabled } from "@/lib/alo-store";
+import { getSyncState } from "@/lib/alo-sync";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
@@ -72,6 +76,7 @@ export function LocalChatShell() {
   const [listening, setListening] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
+  const [, refreshSyncLabel] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef(draft);
   draftRef.current = draft;
@@ -214,6 +219,46 @@ export function LocalChatShell() {
       void supabase.removeChannel(channel);
     };
   }, [mode, userId, refresh]);
+
+  useEffect(() => {
+    const refreshDraft = () => {
+      const raw = window.sessionStorage.getItem("alo-open-nexus");
+      if (raw) {
+        try {
+          const target = JSON.parse(raw);
+          if (target.kind === "room" && rooms.some((r) => r.id === target.id)) {
+            setActive({ kind: "room", id: target.id });
+            setMobileListOpen(false);
+            window.sessionStorage.removeItem("alo-open-nexus");
+            if (target.messageId)
+              setTimeout(
+                () =>
+                  document
+                    .getElementById(`msg-${target.messageId}`)
+                    ?.scrollIntoView({ block: "center" }),
+                700,
+              );
+          }
+        } catch {
+          /* Invalid navigation request is ignored. */
+        }
+      }
+      const t = activeRef.current;
+      if (userId && t) {
+        const text = getDraft(userId, t.kind, t.id);
+        draftRef.current = text;
+        setDraft(text);
+      }
+      refreshSyncLabel((n) => n + 1);
+    };
+    refreshDraft();
+    window.addEventListener(ALO_REMOTE_EVENT, refreshDraft);
+    window.addEventListener("alo-sync-state", refreshDraft);
+    return () => {
+      window.removeEventListener(ALO_REMOTE_EVENT, refreshDraft);
+      window.removeEventListener("alo-sync-state", refreshDraft);
+    };
+  }, [userId, rooms]);
 
   const headerTitle = useMemo(() => {
     if (!active) return "Chat";
@@ -711,6 +756,19 @@ export function LocalChatShell() {
             </div>
           </details>
         </div>
+        {active?.kind === "room" && userId && (
+          <RoomTools
+            key={active.id}
+            userId={userId}
+            roomId={active.id}
+            roomName={headerTitle}
+            mode={mode}
+          />
+        )}
+        <p className="border-b border-border px-4 py-1 text-[10px] text-muted-foreground">
+          Nachrichten: {mode === "supabase" ? "Cloud · Nexus" : "nur auf diesem Gerät"} · Entwurf:{" "}
+          {cloudEnabled(userId) ? getSyncState().message : "nur auf diesem Gerät"}
+        </p>
         {searchOpen && (
           <div className="border-b border-border bg-card/40 px-3 py-2">
             <input
@@ -888,6 +946,14 @@ export function LocalChatShell() {
                       {isPinned ? "Lösen" : "Pin"}
                     </button>
                   )}
+                  {userId && (
+                    <ContentActions
+                      userId={userId}
+                      text={m.content}
+                      title={`Nachricht aus ${headerTitle}`}
+                      source="Nexus"
+                    />
+                  )}
                   {own && m.user_id !== "system" && (
                     <>
                       <button
@@ -909,6 +975,12 @@ export function LocalChatShell() {
                         className="text-[10px] text-destructive"
                         onClick={() => {
                           if (!userId || !active) return;
+                          if (
+                            !window.confirm(
+                              `Diese Nachricht ${mode === "supabase" ? "in der Cloud für alle Raumteilnehmer" : "auf diesem Gerät"} löschen? Gespeicherte Kopien in Sammlungen bleiben erhalten.`,
+                            )
+                          )
+                            return;
                           void deleteChatMessage(userId, m.id).then(() => refresh(userId, active));
                         }}
                       >
@@ -983,7 +1055,13 @@ export function LocalChatShell() {
             onChange={(e) => {
               draftRef.current = e.target.value;
               setDraft(e.target.value);
-              if (userId && active) saveDraft(userId, active.kind, active.id, e.target.value);
+              if (userId && active) {
+                try {
+                  saveDraft(userId, active.kind, active.id, e.target.value);
+                } catch {
+                  flash("Entwurf nicht gespeichert. Gerätespeicher prüfen.");
+                }
+              }
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
