@@ -20,6 +20,7 @@ import { CoachPanel } from "@/components/CoachPanel";
 import { FriendsPanel } from "@/components/FriendsPanel";
 import { BadgeGallery } from "@/components/BadgeGallery";
 import { ThemePicker } from "@/components/ThemePicker";
+import { DesignStylePicker } from "@/components/DesignStylePicker";
 import { ErrorReportsPanel } from "@/components/ErrorReportsPanel";
 import { BottomNav } from "@/components/BottomNav";
 import { NotificationSettings } from "@/components/NotificationSettings";
@@ -361,8 +362,13 @@ export function ProfilePage() {
             <FriendsPanel userId={profile.id} />
           </SettingsSection>
         )}
-        <SettingsSection icon="🎨" title="Design" subtitle="Farbwelten">
-          <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
+        <SettingsSection icon="🎨" title="Design" subtitle="Stil, Schrift, Layout & Farben">
+          <h3 className="mb-2 text-base font-semibold">Designstil</h3>
+          <DesignStylePicker />
+          <div className="mt-6 border-t border-border pt-5">
+            <h3 className="mb-2 text-base font-semibold">Farbwelt</h3>
+            <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
+          </div>
         </SettingsSection>
         <SettingsSection
           icon="🐞"

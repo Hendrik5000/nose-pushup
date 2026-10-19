@@ -148,7 +148,7 @@ export function DashboardGrid({
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
+      <div className="dashboard-widget-grid grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
         {layout.map((item) => {
           const body = renderWidget(item.id, item.size);
           // Hide empty slots (e.g. challenges before login id is ready) unless editing

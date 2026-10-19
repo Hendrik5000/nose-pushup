@@ -17,6 +17,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
+import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
 
 function NotFoundComponent() {
   return (
@@ -187,6 +188,7 @@ function RootComponent() {
       });
     }
 
+    applyDesignStyle(getStoredDesignStyle());
     applyTheme(getStoredTheme());
     // Theme des Kontos laden, damit es auch ohne Profilbesuch sofort greift.
     (async () => {
