@@ -222,7 +222,7 @@ test("empty weekly inputs do not acquire invented repetition counts", () => {
     target: 0,
     percent: 0,
     state: "behind",
-    message: "Noch 0 Reps bis zum Wochenziel.",
+    message: "Noch 0 Wiederholungen bis zum Wochenziel.",
   });
 
   const unavailableReadiness = getDashboardRecommendation({

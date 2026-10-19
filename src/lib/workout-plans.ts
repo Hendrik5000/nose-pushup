@@ -37,13 +37,13 @@ export function getQuickStartPlan({
   const headline = beginner
     ? "Dein erster kurzer Trainingsplan"
     : remaining > 0
-      ? `${remaining} Reps bis zum Tagesziel`
+      ? `${remaining} Wiederholungen bis zum Tagesziel`
       : "Tagesziel erreicht";
   const detail = beginner
     ? "Allgemeiner Einstiegsplan ohne Leistungsprognose: 2 Sätze × 5 Wiederholungen mit 45 Sekunden Pause. Passe die Wiederholungen nach unten an, wenn die saubere Ausführung schwerfällt."
     : remaining > 0
-      ? `Vorschlag: ${sets} Sätze × ${reps} Reps (${plannedReps} geplant). Das bringt dich rechnerisch auf ${todayReps + plannedReps} von ${goal} Tages-Reps, wenn du alle Wiederholungen schaffst.`
-      : `Dein Tagesziel von ${goal} Reps ist erreicht. Wenn es sich gut anfühlt: locker ${sets} × ${reps} Reps als optionaler Zusatz.`;
+      ? `Vorschlag: ${sets} Sätze × ${reps} Wiederholungen (${plannedReps} geplant). Das bringt dich rechnerisch auf ${todayReps + plannedReps} von ${goal} Tages-Wiederholungen, wenn du alle Wiederholungen schaffst.`
+      : `Dein Tagesziel von ${goal} Wiederholungen ist erreicht. Wenn es sich gut anfühlt: locker ${sets} × ${reps} Wiederholungen als optionaler Zusatz.`;
 
   return {
     title: "Dein Start",
@@ -116,7 +116,7 @@ export function getWeeklyProgress({ weekReps, target }: { weekReps: number; targ
       ? "Stark! Dein Wochenziel ist geschafft."
       : state === "ontrack"
         ? "Du bist auf Kurs – bleib dran."
-        : `Noch ${Math.max(0, target - weekReps)} Reps bis zum Wochenziel.`;
+        : `Noch ${Math.max(0, target - weekReps)} Wiederholungen bis zum Wochenziel.`;
   return { weekReps, target, percent, state, message };
 }
 
@@ -136,8 +136,8 @@ export function getSmartReminder({
   if (streak > 0) {
     return {
       title: `${streak} Tage Serie`,
-      text: `Noch ${goal - todayReps} Reps, damit die Serie weiterläuft.`,
+      text: `Noch ${goal - todayReps} Wiederholungen, damit die Serie weiterläuft.`,
     };
   }
-  return { title: "Heute starten", text: `${goal} Reps sind dein Ziel – leg los!` };
+  return { title: "Heute starten", text: `${goal} Wiederholungen sind dein Ziel – leg los!` };
 }

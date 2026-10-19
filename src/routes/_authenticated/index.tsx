@@ -34,10 +34,11 @@ import type { WidgetId, WidgetSize } from "@/lib/dashboard-layout";
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "Nosy Push-Ups — Dashboard" },
+      { title: "Nosy Push-Ups — Übersicht" },
       {
         name: "description",
-        content: "Zähle Push-Ups mit der Nase, sammle XP, halte deine Streak.",
+        content:
+          "Zähle Liegestütze mit der Nase, sammle Erfahrungspunkte und halte deine Trainingsserie.",
       },
     ],
   }),
@@ -172,13 +173,13 @@ function Dashboard() {
   const reminder = getSmartReminder({ todayReps, goal, streak });
   const routineConfig = {
     push: {
-      label: "Power Push",
+      label: "Drücktraining für den Oberkörper",
       sets: quickStart.sets,
       reps: quickStart.reps,
       rest: quickStart.rest_s,
     },
-    strength: { label: "Kraft-Block", sets: 3, reps: 12, rest: 50 },
-    mobility: { label: "Mobilität", sets: 2, reps: 30, rest: 35 },
+    strength: { label: "Ganzkörper-Krafttraining", sets: 3, reps: 12, rest: 50 },
+    mobility: { label: "Mobilitätstraining", sets: 2, reps: 30, rest: 35 },
   } as const;
   const routine = routineConfig[routineMode];
 
@@ -228,7 +229,7 @@ function Dashboard() {
                 <RingRow icon="🏆" label="Bestwert" value={`${pushupBest}`} />
                 <RingRow
                   icon={streakActive && streak > 0 ? "🔥" : "❄️"}
-                  label="Streak"
+                  label="Trainingsserie"
                   value={`${streak} Tage`}
                 />
                 <RingRow
@@ -262,13 +263,13 @@ function Dashboard() {
         return wrap(
           <section className="rounded-3xl border border-border bg-card/60 p-4">
             <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Smart Reminder
+              Trainingshinweis
             </div>
             <div className="mt-2 text-sm font-semibold">{reminder.title}</div>
             <p className="mt-1 text-xs text-muted-foreground">{reminder.text}</p>
             <p className="mt-2 text-xs text-muted-foreground">
               {weeklyProgress
-                ? `Woche: ${weeklyProgress.weekReps} / ${weeklyProgress.target} Reps (${weeklyProgress.percent} %)`
+                ? `Woche: ${weeklyProgress.weekReps} / ${weeklyProgress.target} Wiederholungen (${weeklyProgress.percent} %)`
                 : "Wochenfortschritt noch nicht verfügbar."}
             </p>
           </section>,
@@ -285,12 +286,18 @@ function Dashboard() {
                 <button
                   key={type}
                   type="button"
+                  aria-pressed={routineMode === type}
                   onClick={() => setRoutineMode(type)}
                   className={`flex-1 rounded-xl border px-2 py-2 text-[10px] font-medium uppercase ${
                     routineMode === type ? "border-primary bg-primary/15" : "border-border"
                   }`}
                 >
-                  {type === "push" ? "Push" : type === "strength" ? "Kraft" : "Mobil"}
+                  {type === "push"
+                    ? "Drücken"
+                    : type === "strength"
+                      ? "Krafttraining"
+                      : "Mobilität"}
+                  {routineMode === type ? " · gewählt" : ""}
                 </button>
               ))}
             </div>
@@ -315,11 +322,11 @@ function Dashboard() {
         return wrap(
           <section className="grid grid-cols-3 gap-2">
             <Tile to="/chat" icon="💬" label="Chat" />
-            <Tile to="/health" icon="💚" label="Health" />
-            <Tile to="/ai" icon="✦" label="Super-AI" />
+            <Tile to="/health" icon="💚" label="Gesundheit" />
+            <Tile to="/ai" icon="✦" label="Super-KI" />
             <Tile to="/programs" icon="📋" label="Programme" />
-            <Tile to="/battle" icon="⚔️" label="Battle" />
-            <Tile to="/calisthenics" icon="🤸" label="Cali" />
+            <Tile to="/battle" icon="⚔️" label="Wettkampf" />
+            <Tile to="/calisthenics" icon="🤸" label="Calisthenics" />
           </section>,
           size,
         );
@@ -331,7 +338,7 @@ function Dashboard() {
                 <div className="text-[10px] uppercase tracking-[0.25em] text-primary">
                   Haupt-Übung
                 </div>
-                <h2 className="mt-1 text-3xl font-bold">Push-Ups</h2>
+                <h2 className="mt-1 text-3xl font-bold">Liegestütze</h2>
               </div>
               <span className="text-5xl">{pushupEx?.icon ?? "💪"}</span>
             </div>
@@ -404,7 +411,7 @@ function Dashboard() {
                       <FavoriteStar exerciseId={ex.id} />
                     </div>
                     <span className="text-sm font-semibold">{ex.name}</span>
-                    <span className="text-xs text-muted-foreground">Best {best}</span>
+                    <span className="text-xs text-muted-foreground">Bestwert {best}</span>
                   </Link>
                 );
               })}
@@ -446,7 +453,7 @@ function Dashboard() {
         aria-labelledby="today-plan-title"
       >
         <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
-          Dein Start heute
+          Dein Start heute · {recommendation.title}
         </div>
         <h2 id="today-plan-title" className="mt-2 text-2xl font-bold">
           {recommendation.headline}
@@ -462,7 +469,7 @@ function Dashboard() {
         </p>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
           <PlanMetric label="Sätze" value={recommendation.sets} />
-          <PlanMetric label="Reps je Satz" value={recommendation.reps} />
+          <PlanMetric label="Wiederholungen je Satz" value={recommendation.reps} />
           <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
         </div>
         <p className="mt-3 text-xs text-muted-foreground">{recommendation.readinessNote}</p>
@@ -500,7 +507,7 @@ function Dashboard() {
         >
           {recommendation.recoveryDay
             ? "Leichte Einheit (optional) →"
-            : "Workout nach Plan starten →"}
+            : "Training nach Plan starten →"}
         </Link>
         <div className="mt-5 border-t border-border pt-4" aria-live="polite">
           <div className="flex items-baseline justify-between gap-2">
@@ -510,7 +517,7 @@ function Dashboard() {
                 ? "Daten nicht verfügbar"
                 : !hasWorkoutData
                   ? "Noch keine Daten"
-                  : `${weekReps} / ${weeklyTarget} Reps`}
+                  : `${weekReps} / ${weeklyTarget} Wiederholungen`}
             </span>
           </div>
           {weekReps != null && hasWorkoutData && (
@@ -531,14 +538,15 @@ function Dashboard() {
                 />
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                {weeklyProgress?.message} Ziel: {weeklyTarget} Reps (7 × Tagesziel {goal}).
+                {weeklyProgress?.message} Ziel: {weeklyTarget} Wiederholungen (7 × Tagesziel {goal}
+                ).
               </p>
             </>
           )}
           <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            Gezählt werden gespeicherte Push-Up-Reps ab Montag 00:00 deiner lokalen Zeitzone.
-            Maßgeblich ist der Zeitpunkt des Trainingsspeicherns; offline vorgemerkt behält dieses
-            Datum.
+            Gezählt werden gespeicherte Liegestütz-Wiederholungen ab Montag 00:00 deiner lokalen
+            Zeitzone. Maßgeblich ist der Zeitpunkt des Trainingsspeicherns; offline vorgemerkt
+            behält dieses Datum.
           </p>
         </div>
       </section>
@@ -637,14 +645,17 @@ function ModeChip({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs font-medium ${
+      type="button"
+      aria-pressed={active}
+      className={`flex min-w-0 flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs font-medium ${
         active
           ? "border-primary bg-primary/15"
           : "border-border bg-secondary/60 text-muted-foreground"
       }`}
     >
       <span className="text-lg">{icon}</span>
-      <span>{label}</span>
+      <span className="text-center">{label}</span>
+      {active && <span className="text-[10px] leading-tight">Ausgewählt</span>}
     </button>
   );
 }

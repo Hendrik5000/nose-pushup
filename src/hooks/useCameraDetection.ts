@@ -101,6 +101,8 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
     (async () => {
       try {
         setStatus("KI-Modell wird geladen…");
+        // External WASM/model files are fetched only after the user has chosen camera mode
+        // and pressed Start; camera frames remain local to this device.
         const vision = await import("@mediapipe/tasks-vision");
         const fileset = await vision.FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm",
@@ -325,7 +327,16 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
         rafRef.current = requestAnimationFrame(sample);
       } catch (e) {
         console.error("[camera-detection]", e);
-        setError(e instanceof Error ? e.message : "Kamera oder KI nicht verfügbar");
+        const name = e instanceof DOMException ? e.name : "";
+        setError(
+          name === "NotAllowedError" || name === "SecurityError"
+            ? "Kamerazugriff wurde nicht erlaubt. Du kannst sofort manuell fortfahren oder die Berechtigung in den Browser-Einstellungen ändern."
+            : name === "NotFoundError" || name === "DevicesNotFoundError"
+              ? "Keine Kamera gefunden. Du kannst sofort manuell fortfahren."
+              : name === "NotReadableError" || name === "TrackStartError"
+                ? "Die Kamera ist gerade nicht verfügbar. Du kannst sofort manuell fortfahren."
+                : "Kamera oder Erkennungsmodell nicht verfügbar. Du kannst sofort manuell fortfahren.",
+        );
       }
     })();
 

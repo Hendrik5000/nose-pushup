@@ -5,12 +5,12 @@ type Item = { to: string; label: string };
 const ITEMS: Item[] = [
   { to: "/", label: "Übersicht" },
   { to: "/exercises", label: "Training" },
-  { to: "/ai", label: "Super-AI" },
+  { to: "/ai", label: "Super-KI" },
   { to: "/chat", label: "Chat" },
   { to: "/profile", label: "Profil" },
 ];
 
-/** Apple Health–style segmented control, fixed at the top. */
+/** Segmentierte Hauptnavigation im Stil einer Gesundheits-App. */
 export function TopNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 

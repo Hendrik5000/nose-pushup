@@ -88,6 +88,8 @@ function WorkoutScreen() {
   const [awaitingRpe, setAwaitingRpe] = useState(false);
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [sessionHydrated, setSessionHydrated] = useState(false);
+  const [draftConflict, setDraftConflict] = useState<WorkoutSession | null>(null);
+  const hydratedSessionKey = useRef<string | null>(null);
   const observedCount = useRef(0);
   const restRemaining =
     session?.phase === "rest" && session.restEndsAt
@@ -214,22 +216,29 @@ function WorkoutScreen() {
 
   useEffect(() => {
     if (!userId || typeof window === "undefined") return;
-    setSessionHydrated(false);
     const key = workoutSessionStorageKey(userId, exerciseId);
+    hydratedSessionKey.current = null;
+    setSessionHydrated(false);
+    setDraftConflict(null);
     const restored = readWorkoutSession(window.localStorage, key);
-    if (
-      restored &&
-      restored.phase !== "completed" &&
-      restored.plan.sets === plan.sets &&
-      restored.plan.reps === plan.reps &&
-      restored.plan.restSeconds === plan.restSeconds &&
-      restored.plan.title === plan.title
-    ) {
+    if (restored && restored.phase !== "completed") {
+      const planMatches =
+        restored.plan.sets === plan.sets &&
+        restored.plan.reps === plan.reps &&
+        restored.plan.restSeconds === plan.restSeconds &&
+        restored.plan.title === plan.title;
+      if (!planMatches) {
+        // Do not replace an unfinished draft with a new route plan without an explicit choice.
+        setDraftConflict(restored);
+        setSession(null);
+        setSessionHydrated(true);
+        return;
+      }
       const safeRestore = restored.phase === "active" ? pauseWorkout(restored) : restored;
       setSession(safeRestore);
       setEngineCount(safeRestore.currentReps);
       if (useManual) setManualInput(safeRestore.currentReps ? String(safeRestore.currentReps) : "");
-      setActive(safeRestore.phase === "active");
+      setActive(false);
       setStartedAt(safeRestore.startedAt ?? null);
       observedCount.current = restored.currentReps;
     } else {
@@ -240,13 +249,17 @@ function WorkoutScreen() {
       setStartedAt(null);
       observedCount.current = 0;
     }
+    hydratedSessionKey.current = key;
     setSessionHydrated(true);
   }, [userId, exerciseId, isPlanned, plan, setEngineCount, useManual]);
 
   useEffect(() => {
-    if (!userId || !session || !sessionHydrated || typeof window === "undefined") return;
-    writeWorkoutSession(window.localStorage, workoutSessionStorageKey(userId, exerciseId), session);
-  }, [userId, exerciseId, session, sessionHydrated]);
+    if (!userId || !session || !sessionHydrated || draftConflict || typeof window === "undefined")
+      return;
+    const key = workoutSessionStorageKey(userId, exerciseId);
+    if (hydratedSessionKey.current !== key) return;
+    writeWorkoutSession(window.localStorage, key, session);
+  }, [userId, exerciseId, session, sessionHydrated, draftConflict]);
 
   // Keep a paused draft if the user navigates away or backgrounds this page.
   const sessionRef = useRef(session);
@@ -275,7 +288,7 @@ function WorkoutScreen() {
   }, [exerciseId]);
 
   useEffect(() => {
-    if (!startedAt && session?.phase !== "rest") return;
+    if (!startedAt && session?.phase !== "rest" && session?.phase !== "active") return;
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, [startedAt, session?.phase]);
@@ -422,7 +435,7 @@ function WorkoutScreen() {
         setBest(savedCount);
         setSavedHint(`Neuer Bestwert: ${savedCount}${exercise.unit === "seconds" ? " Sek." : ""}`);
       } else {
-        setSavedHint(queued ? "Auf diesem Gerät vorgemerkt" : "Workout gespeichert");
+        setSavedHint(queued ? "Auf diesem Gerät vorgemerkt" : "Training gespeichert");
       }
     } else {
       setSavedHint("Speichern fehlgeschlagen – deine Daten bleiben erhalten");
@@ -462,10 +475,92 @@ function WorkoutScreen() {
   const cfg = exercise ? getConfig(exerciseId) : null;
   const isTapDriven = !useCamera && (detection === "touch" || detection === "combo");
 
+  const continueSavedDraft = () => {
+    if (!draftConflict) return;
+    const savedPlan = draftConflict.plan;
+    setSessionHydrated(false);
+    setDraftConflict(null);
+    void navigate({
+      to: "/workout/$exerciseId",
+      params: { exerciseId },
+      replace: true,
+      search: {
+        mode: pushMode,
+        sets: savedPlan.sets,
+        reps: savedPlan.reps ?? undefined,
+        rest_s: savedPlan.restSeconds,
+        title: savedPlan.title ?? undefined,
+      },
+    });
+  };
+
+  const discardSavedDraft = () => {
+    if (!draftConflict || !userId || typeof window === "undefined") return;
+    const key = workoutSessionStorageKey(userId, exerciseId);
+    window.localStorage.removeItem(key);
+    hydratedSessionKey.current = key;
+    setDraftConflict(null);
+    setSession(isPlanned ? createWorkoutSession(plan) : null);
+    setEngineCount(0);
+    setManualInput("");
+    setActive(false);
+    setStartedAt(null);
+    observedCount.current = 0;
+    setSessionHydrated(true);
+  };
+
   if (!exercise) {
     return (
       <main className="flex min-h-[100dvh] items-center justify-center text-sm text-muted-foreground">
         Lade…
+      </main>
+    );
+  }
+
+  if (draftConflict) {
+    return (
+      <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col justify-center px-5 py-8">
+        <section
+          className="rounded-3xl border border-border bg-card p-5"
+          aria-labelledby="saved-draft-title"
+          role="alert"
+        >
+          <h1 id="saved-draft-title" className="text-xl font-bold text-foreground">
+            Ungespeichertes Training gefunden
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Ein neuer Plan ist geöffnet. Dein bisheriger Trainingsentwurf bleibt erhalten, bis du
+            entscheidest.
+          </p>
+          <div className="mt-4 rounded-2xl border border-border bg-background/50 p-3 text-sm">
+            <div className="font-semibold">
+              Bisheriger Entwurf: {draftConflict.plan.title ?? "Training"}
+            </div>
+            <div className="mt-1 text-muted-foreground">
+              {draftConflict.plan.sets} {draftConflict.plan.sets === 1 ? "Satz" : "Sätze"}
+              {draftConflict.plan.reps
+                ? ` · ${draftConflict.plan.reps} Wiederholungen je Satz`
+                : " · ohne Wiederholungsziel"}
+              {` · ${draftConflict.currentReps} Wiederholungen im aktuellen Satz`}
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2">
+            <button
+              type="button"
+              onClick={continueSavedDraft}
+              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+            >
+              Bisherigen Entwurf fortsetzen
+            </button>
+            <button
+              type="button"
+              onClick={discardSavedDraft}
+              className="w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground"
+            >
+              Entwurf verwerfen und neuen Plan starten
+            </button>
+          </div>
+        </section>
       </main>
     );
   }
@@ -481,6 +576,7 @@ function WorkoutScreen() {
       let next = { ...session, currentReps: n };
       next = finishWorkoutSet(next);
       setSession(next);
+      setNow(Date.now());
       if (next.phase === "completed") {
         const total = next.setReps.reduce((sum, value) => sum + value, 0);
         setManualInput(String(total));
@@ -544,7 +640,7 @@ function WorkoutScreen() {
         setBest(n);
         setSavedHint(`Neuer Bestwert: ${n}`);
       } else {
-        setSavedHint("Workout gespeichert");
+        setSavedHint("Training gespeichert");
       }
       setManualInput("");
       setSession(null);
@@ -571,7 +667,7 @@ function WorkoutScreen() {
           <div className="flex items-center gap-2">
             <span className="text-2xl">{exercise.icon}</span>
             <span className="text-sm font-medium text-foreground">
-              {exercise.name}
+              {isPushup ? "Liegestütze" : exercise.name}
               <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
                 Manuell
               </span>
@@ -609,7 +705,10 @@ function WorkoutScreen() {
             </div>
             {session.phase === "preparation" && (
               <button
-                onClick={() => setSession((s) => (s ? startWorkoutSet(s) : s))}
+                onClick={() => {
+                  setSession((s) => (s ? startWorkoutSet(s) : s));
+                  setNow(Date.now());
+                }}
                 className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
               >
                 Satz starten
@@ -624,7 +723,10 @@ function WorkoutScreen() {
                   +30 Sek.
                 </button>
                 <button
-                  onClick={() => setSession((s) => (s ? startWorkoutSet(s) : s))}
+                  onClick={() => {
+                    setSession((s) => (s ? startWorkoutSet(s) : s));
+                    setNow(Date.now());
+                  }}
                   className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
                 >
                   Fortsetzen
@@ -633,7 +735,10 @@ function WorkoutScreen() {
             )}
             {session.phase === "paused" && (
               <button
-                onClick={() => setSession((s) => (s ? startWorkoutSet(s) : s))}
+                onClick={() => {
+                  setSession((s) => (s ? startWorkoutSet(s) : s));
+                  setNow(Date.now());
+                }}
                 className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
               >
                 Fortsetzen
@@ -678,10 +783,15 @@ function WorkoutScreen() {
                     : `Satz ${Math.min(session.currentSet, plan.sets)} / ${plan.sets} · ${session.phase === "rest" ? `Pause ${restRemaining ?? 0}s` : "Wiederholungen eintragen"}`}
                 </div>
               )}
-              <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
-                Wie viele Push-Ups?
-              </span>
+              <label
+                htmlFor="manual-repetitions"
+                className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground"
+              >
+                Wie viele Liegestütze hast du gerade gemacht?
+              </label>
               <input
+                id="manual-repetitions"
+                aria-label="Anzahl der Liegestütze"
                 type="number"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -703,36 +813,38 @@ function WorkoutScreen() {
                 className="mt-4 w-full max-w-[14rem] rounded-2xl border border-border bg-background/60 py-4 text-center font-display text-[5rem] font-bold tabular-nums text-foreground focus:border-primary focus:outline-none"
               />
               <p className="mt-4 max-w-[16rem] text-sm text-muted-foreground">
-                Trage die Anzahl deiner gerade absolvierten Push-Ups ein und speichere.
+                Trage die Anzahl deiner gerade absolvierten Liegestütze ein und speichere.
               </p>
             </section>
 
             {awaitingRpe ? (
               <RpePicker saving={saving} onPick={saveManualWithRpe} />
             ) : (
-              <button
-                onClick={submitManual}
-                disabled={
-                  saving ||
-                  !manualInput ||
-                  parseInt(manualInput, 10) <= 0 ||
-                  (isPlanned && session?.phase !== "active")
-                }
-                className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
-              >
-                {saving
-                  ? "Speichere…"
-                  : isPlanned && session?.phase !== "completed"
-                    ? "Satz speichern"
-                    : "Workout speichern"}
-              </button>
+              (!isPlanned || session?.phase === "active") && (
+                <button
+                  onClick={submitManual}
+                  disabled={
+                    saving ||
+                    !manualInput ||
+                    parseInt(manualInput, 10) <= 0 ||
+                    (isPlanned && session?.phase !== "active")
+                  }
+                  className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+                >
+                  {saving
+                    ? "Speichere…"
+                    : isPlanned && session?.phase !== "completed"
+                      ? "Satz speichern"
+                      : "Training speichern"}
+                </button>
+              )
             )}
           </>
         )}
         {summary && (
           <div className="mt-4 w-full rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
             <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Session abgeschlossen
+              {summary.partial ? "Teiltraining gespeichert" : "Training abgeschlossen"}
             </div>
             <div className="mt-2 text-lg font-semibold text-foreground">
               {summary.count} Wiederholungen
@@ -746,10 +858,11 @@ function WorkoutScreen() {
             </div>
             {summary.plannedSets !== undefined && (
               <div className="mt-2 text-xs text-muted-foreground">
-                Plan: {summary.plannedSets} Sätze
+                Plan: {summary.plannedSets} {summary.plannedSets === 1 ? "Satz" : "Sätze"}
                 {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} · Tatsächlich:{" "}
-                {summary.actualSets ?? 0} Sätze / {summary.actualReps ?? summary.count} Wdh. ·{" "}
-                Tatsächliche Dauer: {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
+                {summary.actualSets ?? 0} {summary.actualSets === 1 ? "Satz" : "Sätze"} /{" "}
+                {summary.actualReps ?? summary.count} Wdh. · Tatsächliche Dauer:{" "}
+                {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
               </div>
             )}
           </div>
@@ -790,7 +903,7 @@ function WorkoutScreen() {
         <div className="flex items-center gap-2">
           <span className="text-2xl">{exercise.icon}</span>
           <span className="text-sm font-medium text-foreground">
-            {exercise.name}
+            {isPushup ? "Liegestütze" : exercise.name}
             {isPushup && (
               <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
                 {modeLabel[pushMode]}
@@ -879,11 +992,13 @@ function WorkoutScreen() {
         </section>
       )}
       {useCamera && (!active || !!cameraError) && (
-        <aside className="mt-3 rounded-xl border border-border bg-card/50 p-3 text-xs text-muted-foreground">
-          Kamera wird erst nach „Starten“ angefragt. Die Erkennungssoftware und das Modell werden
-          von einem CDN und Google heruntergeladen. Die Pose-Erkennung läuft danach lokal; Video
-          wird nicht gespeichert oder übertragen. Handy seitlich aufstellen, ganzer Körper
-          (Schulter, Ellbogen, Handgelenk, Hüfte und Knie) sichtbar.{" "}
+        <aside className="mt-3 rounded-xl border border-border bg-card/50 p-3 text-sm text-foreground">
+          Wenn du „Starten“ wählst, lädt die App zuerst die Erkennungssoftware vom jsDelivr-CDN und
+          das Pose-Modell von Google Cloud; anschließend fragt dein Browser nach Kamerazugriff. Die
+          Pose wird danach direkt auf diesem Gerät aus dem Kamerabild berechnet. Weder Video noch
+          Einzelbilder werden gespeichert oder übertragen. Stelle das Handy seitlich auf und sorge
+          für gutes Licht; Schulter, Ellbogen, Handgelenk, Hüfte und Knie müssen sichtbar sein. Die
+          automatische Erkennung kann Wiederholungen übersehen oder falsch zählen.{" "}
           <button
             type="button"
             className="underline"
@@ -895,7 +1010,7 @@ function WorkoutScreen() {
               })
             }
           >
-            Manuell fortfahren
+            Ohne Kamera manuell trainieren
           </button>
         </aside>
       )}
@@ -923,7 +1038,7 @@ function WorkoutScreen() {
 
         <div className="relative z-10 flex flex-col items-center gap-3 px-4 text-center">
           <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
-            {isPushup ? `Push-Ups · ${modeLabel[pushMode]}` : exercise.name}
+            {isPushup ? `Liegestütze · ${modeLabel[pushMode]}` : exercise.name}
           </span>
           {countdown !== null && (
             <div className="rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
@@ -948,17 +1063,19 @@ function WorkoutScreen() {
           {motionError && <span className="text-xs text-destructive">{motionError}</span>}
           {useCamera && cameraError && (
             <span role="alert" className="text-xs text-destructive">
-              Kamera nicht verfügbar oder nicht freigegeben. Bitte nutze „Manuell fortfahren“ oder
-              prüfe die Kameraberechtigung.
+              Kamera nicht verfügbar oder nicht freigegeben. Wähle „Ohne Kamera manuell trainieren“
+              oder prüfe die Kameraberechtigung.
             </span>
           )}
           {useCamera && active && !cameraReady && !cameraError && (
-            <span className="text-xs text-muted-foreground">{cameraStatus}</span>
+            <span role="status" aria-live="polite" className="text-sm text-foreground">
+              {cameraStatus}
+            </span>
           )}
           {useCamera && cameraReady && (
             <div className="flex flex-col items-center gap-1">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-primary/80">
-                🤖 KI · {cameraStatus}
+              <span role="status" aria-live="polite" className="text-sm text-foreground">
+                Kameraerkennung · {cameraStatus}
               </span>
               {elbowAngle !== null && (
                 <div className="flex items-center gap-2">
@@ -997,7 +1114,7 @@ function WorkoutScreen() {
                     {"★".repeat(Math.max(0, 5 - Math.round(lastQuality.grade)))}
                   </span>
                   {!lastQuality.full && (
-                    <span className="ml-1 text-muted-foreground">· halbe Rep</span>
+                    <span className="ml-1 text-muted-foreground">· halbe Wiederholung</span>
                   )}
                 </span>
               )}
@@ -1098,7 +1215,7 @@ function WorkoutScreen() {
                 ? "Speichere…"
                 : isPlanned && session?.phase !== "completed"
                   ? "Teiltraining speichern"
-                  : "Workout speichern"}
+                  : "Training speichern"}
             </button>
           </div>
         )}
@@ -1106,7 +1223,7 @@ function WorkoutScreen() {
       {summary && !active && (
         <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Session abgeschlossen
+            {summary.partial ? "Teiltraining gespeichert" : "Training abgeschlossen"}
           </div>
           <div className="mt-2 text-lg font-semibold text-foreground">
             {summary.count} {exercise.unit === "seconds" ? "Sekunden" : "Wiederholungen"}
@@ -1116,10 +1233,11 @@ function WorkoutScreen() {
           </div>
           {summary.plannedSets !== undefined && (
             <div className="mt-2 text-xs text-muted-foreground">
-              Plan: {summary.plannedSets} Sätze
+              Plan: {summary.plannedSets} {summary.plannedSets === 1 ? "Satz" : "Sätze"}
               {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} · Tatsächlich:{" "}
-              {summary.actualSets ?? 0} Sätze / {summary.actualReps ?? summary.count} Wdh. ·{" "}
-              Tatsächliche Dauer: {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
+              {summary.actualSets ?? 0} {(summary.actualSets ?? 0) === 1 ? "Satz" : "Sätze"} /{" "}
+              {summary.actualReps ?? summary.count} Wdh. · Tatsächliche Dauer:{" "}
+              {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
               {summary.partial ? " · Teiltraining" : ""}
             </div>
           )}
@@ -1143,7 +1261,7 @@ function WorkoutScreen() {
         {savedHint ??
           (useCamera
             ? cameraError
-              ? "Kamera nicht verfügbar – manuell fortfahren"
+              ? "Kamera nicht verfügbar – ohne Kamera manuell trainieren"
               : active
                 ? cameraReady
                   ? "Kameraerkennung bereit"

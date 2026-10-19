@@ -37,7 +37,8 @@ export function ReadinessCard({
           .from("workouts")
           .select("id", { count: "exact", head: true })
           .eq("user_id", u.user.id)
-          .gte("created_at", sevenDaysAgo),
+          .gte("created_at", sevenDaysAgo)
+          .lte("created_at", now.toISOString()),
       ]);
       if (!active) return;
 

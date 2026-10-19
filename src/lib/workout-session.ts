@@ -232,21 +232,76 @@ export function readWorkoutSession(
   try {
     const raw = storage.getItem(key);
     if (!raw) return null;
-    const value = JSON.parse(raw) as WorkoutSession;
+    const value = JSON.parse(raw) as Partial<WorkoutSession>;
+    const phase = value.phase;
     if (
       value.version !== 1 ||
       typeof value.id !== "string" ||
-      !["preparation", "active", "rest", "paused", "completed"].includes(value.phase)
+      value.id.length === 0 ||
+      value.id.length > 160 ||
+      typeof phase !== "string" ||
+      !["preparation", "active", "rest", "paused", "completed"].includes(phase)
+    )
+      return null;
+    const plan = value.plan;
+    const currentSet = value.currentSet;
+    const currentReps = value.currentReps;
+    const elapsedBeforePauseMs = value.elapsedBeforePauseMs;
+    const startedAt = value.startedAt;
+    const restEndsAt = value.restEndsAt;
+    if (
+      !plan ||
+      !Number.isInteger(plan.sets) ||
+      plan.sets < 1 ||
+      plan.sets > 20 ||
+      !(
+        plan.reps === null ||
+        (Number.isInteger(plan.reps) && plan.reps >= 1 && plan.reps <= 100)
+      ) ||
+      (plan.reps !== null && plan.reps * plan.sets > 1000) ||
+      !Number.isInteger(plan.restSeconds) ||
+      plan.restSeconds < 0 ||
+      plan.restSeconds > 600 ||
+      !(plan.title === null || (typeof plan.title === "string" && plan.title.length <= 80)) ||
+      !Array.isArray(value.setReps) ||
+      value.setReps.length > plan.sets ||
+      !value.setReps.every((reps) => Number.isInteger(reps) && reps >= 0 && reps <= 100_000) ||
+      typeof currentSet !== "number" ||
+      !Number.isInteger(currentSet) ||
+      currentSet < 1 ||
+      currentSet > plan.sets ||
+      typeof currentReps !== "number" ||
+      !Number.isInteger(currentReps) ||
+      currentReps < 0 ||
+      currentReps > 100_000 ||
+      typeof elapsedBeforePauseMs !== "number" ||
+      !Number.isFinite(elapsedBeforePauseMs) ||
+      elapsedBeforePauseMs < 0 ||
+      !(
+        startedAt === null ||
+        (typeof startedAt === "number" && Number.isFinite(startedAt) && startedAt >= 0)
+      ) ||
+      !(
+        restEndsAt === null ||
+        (typeof restEndsAt === "number" && Number.isFinite(restEndsAt) && restEndsAt >= 0)
+      ) ||
+      typeof value.partial !== "boolean" ||
+      value.setReps.length !== currentSet - 1
     )
       return null;
     if (
-      !Array.isArray(value.setReps) ||
-      !value.plan ||
-      !Number.isInteger(value.currentSet) ||
-      value.currentSet < 1
+      ((phase === "preparation" || phase === "paused") &&
+        (startedAt !== null || restEndsAt !== null)) ||
+      (phase === "active" && (startedAt === null || restEndsAt !== null)) ||
+      (phase === "rest" && (startedAt === null || restEndsAt === null)) ||
+      (phase === "completed" &&
+        (startedAt === null ||
+          restEndsAt !== null ||
+          currentSet !== plan.sets ||
+          value.setReps.length !== plan.sets))
     )
       return null;
-    return value;
+    return value as WorkoutSession;
   } catch {
     return null;
   }

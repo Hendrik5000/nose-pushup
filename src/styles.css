@@ -19,6 +19,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-ring: var(--ring);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
@@ -215,14 +216,15 @@
   select,
   textarea,
   summary {
-    min-height: 44px;
+    min-block-size: 44px;
   }
   a[class] {
-    min-height: 44px;
+    min-block-size: 44px;
   }
   :where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 3px solid var(--color-ring) !important;
     outline-offset: 4px;
+    box-shadow: 0 0 0 2px var(--color-background);
   }
   :where(input, textarea, p) {
     user-select: text;

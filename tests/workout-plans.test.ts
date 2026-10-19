@@ -11,8 +11,8 @@ test("dashboard recommendation detail agrees with the structured plan and projec
   assert.equal(plan.sets, 2);
   assert.equal(plan.reps, 10);
   assert.equal(plan.plannedReps, 20);
-  assert.match(plan.detail, /2 Sätze × 10 Reps \(20 geplant\)/);
-  assert.match(plan.detail, /40 von 50 Tages-Reps/);
+  assert.match(plan.detail, /2 Sätze × 10 Wiederholungen \(20 geplant\)/);
+  assert.match(plan.detail, /40 von 50 Tages-Wiederholungen/);
 
   const recommendation = getDashboardRecommendation({ plan, readinessAvailable: false });
   assert.equal(recommendation.sets, plan.sets);
@@ -34,7 +34,7 @@ test("weekly progress reports absolute reps and the explicit goal", () => {
     target: 350,
     percent: 37,
     state: "behind",
-    message: "Noch 222 Reps bis zum Wochenziel.",
+    message: "Noch 222 Wiederholungen bis zum Wochenziel.",
   });
 });
 

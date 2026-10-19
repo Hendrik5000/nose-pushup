@@ -123,6 +123,7 @@ export function WeekPlanCard({ compact = false }: { compact?: boolean }) {
                     }`}
                   >
                     <div className="font-semibold">{DAY_LABEL[i]}</div>
+                    {isToday && <div className="mt-0.5 font-semibold">Heute</div>}
                     <div className="mt-0.5 break-words hyphens-auto">
                       {FOCUS_LABEL[d.focus] ?? d.focus}
                     </div>
