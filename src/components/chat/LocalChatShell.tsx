@@ -19,6 +19,21 @@ import {
   loadChatStore,
 } from "@/lib/chat-backend";
 import { QUICK_EMOJIS, formatTime, initials } from "@/components/chat/types";
+import {
+  countUnread,
+  exportMessagesMarkdown,
+  getDraft,
+  loadChatPrefs,
+  markRead,
+  QUICK_REPLIES,
+  saveDraft,
+  searchMessages,
+  toggleFavoriteRoom,
+  toggleMute,
+  togglePinMessage,
+  workoutShareTemplate,
+  type ChatPrefs,
+} from "@/lib/chat-extras";
 
 type Target = { kind: "room" | "dm"; id: string };
 
@@ -37,32 +52,49 @@ export function LocalChatShell() {
   const [newRoomOpen, setNewRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [dmName, setDmName] = useState("");
+  const [prefs, setPrefs] = useState<ChatPrefs | null>(null);
+  const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [todayReps, setTodayReps] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<Target | null>(null);
   activeRef.current = active;
+  const recognitionRef = useRef<{ stop: () => void } | null>(null);
 
-  const refresh = useCallback(async (uid: string, target: Target | null) => {
-    const roomList = await loadRoomsForUser(uid);
-    setRooms(roomList);
+  const flash = (t: string) => {
+    setToast(t);
+    window.setTimeout(() => setToast(null), 2200);
+  };
 
-    if (mode === "local" || (await detectChatMode()) === "local") {
-      const store = loadChatStore(uid);
-      setDms(store.dms);
-    }
+  const refresh = useCallback(
+    async (uid: string, target: Target | null) => {
+      const roomList = await loadRoomsForUser(uid);
+      setRooms(roomList);
+      setPrefs(loadChatPrefs(uid));
 
-    const t =
-      target ??
-      (roomList[0] ? ({ kind: "room", id: roomList[0].id } as Target) : null);
-    if (!target && t) setActive(t);
-    if (!t) {
-      setMessages([]);
-      setReactions([]);
-      return;
-    }
-    const { messages: msgs, reactions: reacts } = await loadMessages(uid, t);
-    setMessages(msgs);
-    setReactions(reacts);
-  }, [mode]);
+      if (mode === "local" || (await detectChatMode()) === "local") {
+        const store = loadChatStore(uid);
+        setDms(store.dms);
+      }
+
+      const t =
+        target ??
+        (roomList[0] ? ({ kind: "room", id: roomList[0].id } as Target) : null);
+      if (!target && t) setActive(t);
+      if (!t) {
+        setMessages([]);
+        setReactions([]);
+        return;
+      }
+      const { messages: msgs, reactions: reacts } = await loadMessages(uid, t);
+      setMessages(msgs);
+      setReactions(reacts);
+      setPrefs(markRead(uid, t.kind, t.id, msgs[msgs.length - 1]?.created_at));
+    },
+    [mode],
+  );
 
   useEffect(() => {
     (async () => {
@@ -72,17 +104,24 @@ export function LocalChatShell() {
       const u = data.user;
       if (!u) return;
       setUserId(u.id);
-      const { data: p } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("id", u.id)
-        .maybeSingle();
+      const today = new Date().toISOString().slice(0, 10);
+      const [{ data: p }, { data: ds }] = await Promise.all([
+        supabase.from("profiles").select("display_name").eq("id", u.id).maybeSingle(),
+        supabase
+          .from("daily_stats")
+          .select("total_reps")
+          .eq("user_id", u.id)
+          .eq("day", today)
+          .maybeSingle(),
+      ]);
       setMyName(
         (p?.display_name as string | null) ||
           (u.user_metadata?.display_name as string | undefined) ||
           (u.is_anonymous ? "Gast" : u.email?.split("@")[0]) ||
           "Du",
       );
+      setTodayReps(ds?.total_reps ?? 0);
+      setPrefs(loadChatPrefs(u.id));
       await refresh(u.id, null);
     })();
   }, [refresh]);
@@ -91,13 +130,15 @@ export function LocalChatShell() {
     if (!userId || !active) return;
     void refresh(userId, active);
     setReplyTo(null);
+    setDraft(getDraft(userId, active.kind, active.id));
+    setSearch("");
+    setSearchOpen(false);
   }, [userId, active?.kind, active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, active?.id]);
 
-  // Realtime when on Supabase
   useEffect(() => {
     if (mode !== "supabase" || !userId) return;
     const channel = supabase
@@ -131,11 +172,30 @@ export function LocalChatShell() {
     return dms.find((d) => d.id === active.id)?.other_name ?? "DM";
   }, [active, rooms, dms]);
 
-  const onSend = async () => {
+  const sortedRooms = useMemo(() => {
+    if (!prefs) return rooms;
+    const fav = prefs.favoriteRoomIds;
+    return [...rooms].sort((a, b) => {
+      const af = fav.includes(a.id) ? 0 : 1;
+      const bf = fav.includes(b.id) ? 0 : 1;
+      if (af !== bf) return af - bf;
+      return a.name.localeCompare(b.name);
+    });
+  }, [rooms, prefs]);
+
+  const pinned = useMemo(() => {
+    if (!prefs) return [];
+    return messages.filter((m) => prefs.pinnedMessageIds.includes(m.id));
+  }, [messages, prefs]);
+
+  const hits = useMemo(() => searchMessages(messages, search), [messages, search]);
+
+  const onSend = async (text?: string) => {
     if (!userId || !active) return;
-    const content = draft.trim();
+    const content = (text ?? draft).trim();
     if (!content) return;
     setDraft("");
+    saveDraft(userId, active.kind, active.id, "");
     await postMessage(userId, {
       roomId: active.kind === "room" ? active.id : null,
       conversationId: active.kind === "dm" ? active.id : null,
@@ -159,15 +219,6 @@ export function LocalChatShell() {
 
   const onStartDm = async () => {
     if (!userId || !dmName.trim()) return;
-    if (mode === "supabase") {
-      // DMs across real users need a target uuid — local name DMs stay local-only
-      const otherId = `local-${dmName.trim().toLowerCase().replace(/\s+/g, "-")}`;
-      const dm = getOrCreateLocalDm(userId, otherId, dmName.trim());
-      setDmName("");
-      setActive({ kind: "dm", id: dm.id });
-      await refresh(userId, { kind: "dm", id: dm.id });
-      return;
-    }
     const otherId = `local-${dmName.trim().toLowerCase().replace(/\s+/g, "-")}`;
     const dm = getOrCreateLocalDm(userId, otherId, dmName.trim());
     setDmName("");
@@ -175,52 +226,120 @@ export function LocalChatShell() {
     await refresh(userId, { kind: "dm", id: dm.id });
   };
 
-  const modeLabel = mode === "supabase" ? "Cloud · Supabase" : "Lokal · dieses Gerät";
+  const toggleVoice = () => {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => SpeechRec;
+      webkitSpeechRecognition?: new () => SpeechRec;
+    };
+    const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!SR) {
+      flash("Spracheingabe nicht unterstützt");
+      return;
+    }
+    if (listening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setListening(false);
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "de-DE";
+    rec.interimResults = false;
+    rec.onresult = (ev) => {
+      const t = ev.results?.[0]?.[0]?.transcript ?? "";
+      if (t) setDraft((d) => (d ? `${d} ${t}` : t));
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    setListening(true);
+    rec.start();
+  };
+
+  const exportActive = async () => {
+    if (!active) return;
+    const md = exportMessagesMarkdown(headerTitle, messages, (uid) =>
+      uid === userId
+        ? myName
+        : uid === "system"
+          ? "System"
+          : dms.find((d) => d.other_id === uid)?.other_name || "Mitglied",
+    );
+    try {
+      await navigator.clipboard.writeText(md);
+      flash("Chat als Markdown kopiert");
+    } catch {
+      flash("Kopieren fehlgeschlagen");
+    }
+  };
+
+  const modeLabel = mode === "supabase" ? "Cloud · Supabase" : "Lokal · Gerät";
 
   const sidebar = (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-4">
-        <span className="text-xl">💬</span>
-        <div>
-          <div className="text-sm font-semibold">Nexus Chat</div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            {modeLabel}
+    <div className="flex h-full flex-col bg-card/40">
+      <div className="border-b border-border bg-gradient-to-br from-primary/15 to-transparent px-4 py-4">
+        <div className="flex items-center gap-2">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20 text-xl">
+            💬
+          </span>
+          <div>
+            <div className="text-sm font-bold">Nexus Chat</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              {modeLabel}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
         <div className="mb-1 flex items-center justify-between px-1">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Räume
-          </span>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Räume</span>
           <button
             type="button"
             onClick={() => setNewRoomOpen(true)}
-            className="rounded-full px-2 py-0.5 text-xs text-primary"
+            className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary"
           >
             +
           </button>
         </div>
         <div className="space-y-1 pb-4">
-          {rooms.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => {
-                setActive({ kind: "room", id: r.id });
-                setMenuOpen(false);
-              }}
-              className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${
-                active?.kind === "room" && active.id === r.id
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-secondary/60"
-              }`}
-            >
-              <span className="opacity-70">#</span>
-              <span className="truncate font-medium">{r.name}</span>
-            </button>
-          ))}
+          {sortedRooms.map((r) => {
+            const muted = prefs?.mutedRoomIds.includes(r.id);
+            const fav = prefs?.favoriteRoomIds.includes(r.id);
+            const storeMsgs =
+              userId && mode === "local"
+                ? loadChatStore(userId).messages.filter((m) => m.room_id === r.id)
+                : [];
+            const unread =
+              userId && prefs
+                ? countUnread(prefs, "room", r.id, storeMsgs, userId)
+                : 0;
+            return (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => {
+                  setActive({ kind: "room", id: r.id });
+                  setMenuOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                  active?.kind === "room" && active.id === r.id
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "hover:bg-secondary/60"
+                }`}
+              >
+                <span className="opacity-70">{fav ? "★" : "#"}</span>
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {r.name}
+                  {muted ? " 🔇" : ""}
+                </span>
+                {unread > 0 && active?.id !== r.id && (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="mb-1 px-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -244,9 +363,7 @@ export function LocalChatShell() {
         </div>
         <div className="space-y-1">
           {dms.length === 0 && (
-            <p className="px-2 py-2 text-xs text-muted-foreground">
-              Noch keine DMs. Namen eingeben und starten.
-            </p>
+            <p className="px-2 py-2 text-xs text-muted-foreground">Noch keine DMs.</p>
           )}
           {dms.map((d) => (
             <button
@@ -293,7 +410,7 @@ export function LocalChatShell() {
       <aside className="hidden w-72 shrink-0 border-r border-border md:block">{sidebar}</aside>
 
       <section className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-border px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <header className="flex items-center gap-2 border-b border-border bg-card/50 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
           <button
             type="button"
             className="rounded-xl border border-border px-2 py-1.5 text-sm md:hidden"
@@ -304,17 +421,90 @@ export function LocalChatShell() {
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">{headerTitle}</div>
             <div className="text-[10px] text-muted-foreground">
-              {active?.kind === "room" ? "Raum" : "Direktnachricht"} ·{" "}
-              {mode === "supabase" ? "Cloud" : "lokal"}
+              {active?.kind === "room" ? "Raum" : "DM"} · {mode === "supabase" ? "Cloud" : "lokal"}
             </div>
           </div>
-          <Link
-            to="/"
-            className="rounded-full border border-border px-3 py-1 text-[10px] uppercase tracking-[0.15em] text-muted-foreground"
-          >
-            Dashboard
-          </Link>
+          <div className="flex items-center gap-1">
+            {active?.kind === "room" && userId && (
+              <>
+                <HeadBtn
+                  label="Favorit"
+                  onClick={() => setPrefs(toggleFavoriteRoom(userId, active.id))}
+                >
+                  {prefs?.favoriteRoomIds.includes(active.id) ? "★" : "☆"}
+                </HeadBtn>
+                <HeadBtn label="Stumm" onClick={() => setPrefs(toggleMute(userId, active.id))}>
+                  {prefs?.mutedRoomIds.includes(active.id) ? "🔇" : "🔔"}
+                </HeadBtn>
+              </>
+            )}
+            <HeadBtn label="Suche" onClick={() => setSearchOpen((v) => !v)}>
+              🔍
+            </HeadBtn>
+            <HeadBtn label="Export" onClick={() => void exportActive()}>
+              ⬇
+            </HeadBtn>
+            <Link
+              to="/"
+              className="rounded-full border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
+            >
+              App
+            </Link>
+          </div>
         </header>
+
+        {searchOpen && (
+          <div className="border-b border-border bg-card/40 px-3 py-2">
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Nachrichten durchsuchen…"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            {search.trim() && (
+              <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto">
+                {hits.length === 0 && (
+                  <li className="text-xs text-muted-foreground">Keine Treffer</li>
+                )}
+                {hits.map((h) => (
+                  <li key={h.id}>
+                    <button
+                      type="button"
+                      className="w-full rounded-lg px-2 py-1.5 text-left text-xs hover:bg-secondary/50"
+                      onClick={() => {
+                        document
+                          .getElementById(`msg-${h.id}`)
+                          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }}
+                    >
+                      <span className="line-clamp-2">{h.content}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {pinned.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto border-b border-border bg-primary/5 px-3 py-2">
+            {pinned.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() =>
+                  document
+                    .getElementById(`msg-${p.id}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                }
+                className="max-w-[200px] shrink-0 rounded-xl border border-primary/30 bg-background/60 px-2 py-1.5 text-left text-[11px]"
+              >
+                📌 <span className="line-clamp-2">{p.content}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {menuOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
@@ -386,6 +576,7 @@ export function LocalChatShell() {
               acc[r.emoji] = e;
               return acc;
             }, {});
+            const isPinned = prefs?.pinnedMessageIds.includes(m.id);
 
             return (
               <div
@@ -397,16 +588,17 @@ export function LocalChatShell() {
                   <div className="flex items-center gap-2 px-1 text-[10px] text-muted-foreground">
                     <span className="font-medium">{own ? "Du" : author}</span>
                     <span>{formatTime(m.created_at)}</span>
+                    {isPinned && <span>📌</span>}
                   </div>
                 )}
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${
+                  className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
                     own
                       ? "rounded-br-sm bg-primary text-primary-foreground"
                       : m.user_id === "system"
                         ? "rounded-bl-sm border border-border bg-card/60 text-muted-foreground"
-                        : "rounded-bl-sm bg-secondary text-secondary-foreground"
-                  }`}
+                        : "rounded-bl-sm border border-border/50 bg-secondary/90 text-secondary-foreground"
+                  } ${isPinned ? "ring-1 ring-primary/40" : ""}`}
                 >
                   {reply && (
                     <div className="mb-1.5 rounded-lg border-l-2 border-primary/60 bg-background/20 px-2 py-1 text-xs opacity-80">
@@ -444,7 +636,7 @@ export function LocalChatShell() {
                   </div>
                 )}
 
-                <div className={`flex gap-1 px-1 ${own ? "justify-end" : ""}`}>
+                <div className={`flex flex-wrap gap-1 px-1 ${own ? "justify-end" : ""}`}>
                   {QUICK_EMOJIS.slice(0, 4).map((e) => (
                     <button
                       key={e}
@@ -467,6 +659,15 @@ export function LocalChatShell() {
                   >
                     Antwort
                   </button>
+                  {userId && (
+                    <button
+                      type="button"
+                      className="text-[10px] text-muted-foreground"
+                      onClick={() => setPrefs(togglePinMessage(userId, m.id))}
+                    >
+                      {isPinned ? "Lösen" : "Pin"}
+                    </button>
+                  )}
                   {own && m.user_id !== "system" && (
                     <>
                       <button
@@ -504,41 +705,121 @@ export function LocalChatShell() {
           <div ref={bottomRef} />
         </div>
 
-        <div className="border-t border-border px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-          {replyTo && (
-            <div className="mb-2 flex items-center gap-2 rounded-xl border-l-2 border-primary bg-secondary/40 px-3 py-2 text-xs">
-              <div className="min-w-0 flex-1 truncate">Antwort: {replyTo.content}</div>
-              <button type="button" onClick={() => setReplyTo(null)} className="text-muted-foreground">
-                ✕
-              </button>
-            </div>
-          )}
-          <div className="flex items-end gap-2">
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  void onSend();
-                }
-              }}
-              rows={1}
-              placeholder={active ? "Nachricht…" : "Raum wählen…"}
-              disabled={!active}
-              className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-border bg-card/50 px-3 py-2.5 text-sm outline-none focus:border-primary"
-            />
-            <button
-              type="button"
-              onClick={() => void onSend()}
-              disabled={!active || !draft.trim()}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground disabled:opacity-40"
-            >
-              ↑
+        {replyTo && (
+          <div className="flex items-center gap-2 border-t border-border bg-secondary/30 px-3 py-2 text-xs">
+            <span className="min-w-0 flex-1 truncate">
+              Antwort auf: <strong>{replyTo.content}</strong>
+            </span>
+            <button type="button" onClick={() => setReplyTo(null)} className="text-muted-foreground">
+              ×
             </button>
           </div>
+        )}
+
+        {/* Quick replies + workout share */}
+        <div className="flex gap-1.5 overflow-x-auto border-t border-border bg-card/40 px-3 py-2">
+          {QUICK_REPLIES.map((q) => (
+            <button
+              key={q.id}
+              type="button"
+              onClick={() => void onSend(q.text)}
+              className="shrink-0 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[10px] font-medium"
+            >
+              {q.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => void onSend(workoutShareTemplate(todayReps || 20))}
+            className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary"
+          >
+            🏋️ Workout teilen
+          </button>
         </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onSend();
+          }}
+          className="flex items-end gap-2 border-t border-border bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        >
+          <button
+            type="button"
+            onClick={toggleVoice}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm ${
+              listening
+                ? "border-primary bg-primary/20 text-primary"
+                : "border-border bg-secondary/40"
+            }`}
+            aria-label="Sprache"
+          >
+            🎤
+          </button>
+          <textarea
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              if (userId && active) saveDraft(userId, active.kind, active.id, e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void onSend();
+              }
+            }}
+            placeholder={active ? "Nachricht…" : "Raum wählen…"}
+            rows={1}
+            disabled={!active}
+            className="min-w-0 flex-1 resize-none rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-50"
+            style={{ maxHeight: 120 }}
+          />
+          <button
+            type="submit"
+            disabled={!active || !draft.trim()}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-40"
+          >
+            ↑
+          </button>
+        </form>
+
+        {toast && (
+          <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-xs shadow-lg">
+            {toast}
+          </div>
+        )}
       </section>
     </div>
+  );
+}
+
+type SpeechRec = {
+  lang: string;
+  interimResults: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((ev: { results?: { [i: number]: { [j: number]: { transcript?: string } } } }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+};
+
+function HeadBtn({
+  children,
+  label,
+  onClick,
+}: {
+  children: string;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className="flex h-8 w-8 items-center justify-center rounded-xl border border-border text-sm"
+    >
+      {children}
+    </button>
   );
 }
