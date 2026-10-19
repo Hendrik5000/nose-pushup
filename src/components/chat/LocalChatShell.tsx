@@ -936,8 +936,8 @@ export function LocalChatShell() {
             disabled={!active || !draft.trim()}
             className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
           >
-            <span className="sr-only sm:not-sr-only">Senden</span>
-            <ArrowUpRight className="h-5 w-5 sm:ml-2" aria-hidden="true" />
+            <span className="sr-only">Nachricht senden</span>
+            <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
           </button>
         </form>
         {toast && (
