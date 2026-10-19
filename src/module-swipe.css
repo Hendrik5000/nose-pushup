@@ -1,85 +1,19 @@
-/* Only deliberate module swipes animate; persistent navigation stays still. */
+/* Only deliberate swipes move the outlet; navigation remains stationary. */
 .alo-swipe-route {
   overflow-x: clip;
 }
 .alo-module-surface {
   min-width: 0;
 }
-
+/* Promote only during a gesture/transition, not every long page permanently. */
 html[data-module-swipe] .alo-module-surface {
-  view-transition-name: alo-module;
+  will-change: transform;
 }
-
-html[data-module-swipe]::view-transition-old(root),
-html[data-module-swipe]::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-
-html[data-module-swipe]::view-transition-group(alo-module) {
-  animation-duration: 380ms;
-  overflow: clip;
-}
-
-html[data-module-swipe]::view-transition-old(alo-module),
-html[data-module-swipe]::view-transition-new(alo-module) {
-  height: 100%;
-  object-fit: cover;
-  object-position: top;
-  mix-blend-mode: normal;
-  animation-duration: 380ms;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  animation-fill-mode: both;
-}
-
-html[data-module-swipe="left"]::view-transition-old(alo-module) {
-  animation-name: alo-swipe-out-left;
-}
-html[data-module-swipe="left"]::view-transition-new(alo-module) {
-  animation-name: alo-swipe-in-left;
-}
-html[data-module-swipe="right"]::view-transition-old(alo-module) {
-  animation-name: alo-swipe-out-right;
-}
-html[data-module-swipe="right"]::view-transition-new(alo-module) {
-  animation-name: alo-swipe-in-right;
-}
-
-@keyframes alo-swipe-out-left {
-  to {
-    transform: translateX(-100%);
-  }
-}
-@keyframes alo-swipe-in-left {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-@keyframes alo-swipe-out-right {
-  to {
-    transform: translateX(100%);
-  }
-}
-@keyframes alo-swipe-in-right {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html[data-module-swipe]::view-transition-group(alo-module),
-  html[data-module-swipe]::view-transition-old(alo-module),
-  html[data-module-swipe]::view-transition-new(alo-module) {
-    animation: none;
-  }
-}
-
 html[data-module-swipe] .route-enter {
   animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-module-swipe] .alo-module-surface {
+    will-change: auto;
+  }
 }

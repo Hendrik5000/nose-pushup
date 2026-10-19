@@ -12,22 +12,25 @@ import {
 
 function environment(reducedMotion = false) {
   const dataset: Record<string, string> = {};
-  const documentMock: {
-    documentElement: { dataset: typeof dataset };
-    startViewTransition?: (update: () => Promise<void>) => unknown;
-  } = { documentElement: { dataset } };
   const originals = ["window", "document"].map(
     (key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
   );
   Object.defineProperty(globalThis, "window", {
     configurable: true,
-    value: { matchMedia: () => ({ matches: reducedMotion }) },
+    value: { innerWidth: 400, matchMedia: () => ({ matches: reducedMotion }) },
   });
-  Object.defineProperty(globalThis, "document", { configurable: true, value: documentMock });
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: {
+      documentElement: { dataset },
+      startViewTransition() {
+        throw Error("Expensive snapshots must never be used");
+      },
+    },
+  });
   return {
-    document: documentMock,
     dataset,
-    restore: () => {
+    restore() {
       for (const [key, descriptor] of originals) {
         if (descriptor) Object.defineProperty(globalThis, key, descriptor);
         else Reflect.deleteProperty(globalThis, key);
@@ -35,150 +38,194 @@ function environment(reducedMotion = false) {
     },
   };
 }
-
 function surface(animate?: (...args: unknown[]) => unknown) {
-  return { isConnected: true, animate } as unknown as HTMLElement;
+  return {
+    isConnected: true,
+    style: { transform: "", willChange: "" },
+    animate,
+  } as unknown as HTMLElement;
 }
-
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
 for (const direction of ["left", "right"] as const) {
-  test(`native ${direction} transition navigates exactly once and clears its marker`, async () => {
+  test(`${direction}: feedback starts before navigation; entrance is directional and compositor-only`, async () => {
     const env = environment();
     try {
       let navigations = 0;
-      let snapshots = 0;
-      env.document.startViewTransition = (update) => {
-        snapshots++;
-        assert.equal(env.dataset.moduleSwipe, direction);
-        return { finished: update(), skipTransition() {} };
-      };
-      await startModuleSwipeTransition(surface(), direction, async () => {
-        navigations++;
-      }).finished;
-      assert.equal(navigations, 1);
-      assert.equal(snapshots, 1);
-      assert.equal(env.dataset.moduleSwipe, undefined);
-    } finally {
-      env.restore();
-    }
-  });
-
-  test(`fallback ${direction} entrance has the right direction and cleans up`, async () => {
-    const env = environment();
-    try {
-      let navigations = 0;
-      let cancelled = 0;
+      const calls: { frames: Keyframe[]; options: KeyframeAnimationOptions }[] = [];
       const element = surface((frames, options) => {
-        assert.equal(navigations, 1, "navigation is never delayed by the fallback");
-        assert.equal(
-          (frames as Keyframe[])[0].transform,
-          `translateX(${direction === "left" ? "100%" : "-100%"})`,
-        );
-        assert.equal((options as KeyframeAnimationOptions).duration, 380);
-        return {
-          finished: Promise.resolve(),
-          cancel() {
-            cancelled++;
-          },
-        };
+        calls.push({ frames: frames as Keyframe[], options: options as KeyframeAnimationOptions });
+        assert.equal(navigations, calls.length === 1 ? 0 : 1);
+        return { finished: Promise.resolve(), cancel() {} };
       });
-      await startModuleSwipeTransition(element, direction, async () => {
-        navigations++;
-      }).finished;
-      assert.equal(cancelled, 1);
+      await startModuleSwipeTransition(
+        element,
+        direction,
+        async () => {
+          navigations++;
+        },
+        direction === "left" ? -80 : 80,
+      ).finished;
+      assert.equal(navigations, 1);
+      assert.equal(calls.length, 2);
+      assert.equal(
+        calls[0].frames[0].transform,
+        `translate3d(${direction === "left" ? -80 : 80}px, 0, 0)`,
+      );
+      assert.equal(
+        calls[1].frames[0].transform,
+        `translate3d(${direction === "left" ? "100%" : "-100%"}, 0, 0)`,
+      );
+      assert.equal(calls[1].options.duration, 260);
+      assert.ok(
+        calls.every((call) =>
+          call.frames.every((frame) => Object.keys(frame).every((key) => key === "transform")),
+        ),
+      );
+      assert.equal(element.style.transform, "");
+      assert.equal(element.style.willChange, "");
       assert.equal(env.dataset.moduleSwipe, undefined);
     } finally {
       env.restore();
     }
   });
 }
-
-test("reduced motion and missing surfaces navigate immediately without animation", async () => {
-  for (const reduced of [true, false]) {
-    const env = environment(reduced);
-    try {
-      env.document.startViewTransition = () => {
-        throw Error("must not animate");
-      };
-      let navigations = 0;
-      await startModuleSwipeTransition(reduced ? surface() : null, "left", async () => {
-        navigations++;
-      }).finished;
-      assert.equal(navigations, 1);
-      assert.equal(env.dataset.moduleSwipe, undefined);
-    } finally {
-      env.restore();
-    }
-  }
-});
-
-test("a rejected or unavailable native snapshot never loses or repeats navigation", async () => {
-  for (const mode of ["throw", "reject"] as const) {
-    const env = environment();
-    try {
-      let navigations = 0;
-      env.document.startViewTransition = () => {
-        if (mode === "throw") throw Error("snapshot unavailable");
-        return { finished: Promise.reject(Error("snapshot skipped")), skipTransition() {} };
-      };
-      await startModuleSwipeTransition(surface(), "left", async () => {
-        navigations++;
-      }).finished;
-      assert.equal(navigations, 1);
-      assert.equal(env.dataset.moduleSwipe, undefined);
-    } finally {
-      env.restore();
-    }
-  }
-});
-
-test("route failures are reported and always clear transition state", async () => {
+test("slow routing never delays initial feedback or waits for the outgoing animation", async () => {
   const env = environment();
   try {
-    env.document.startViewTransition = (update) => ({ finished: update(), skipTransition() {} });
-    await assert.rejects(
-      startModuleSwipeTransition(surface(), "right", async () => {
-        throw Error("route failed");
-      }).finished,
-      /route failed/,
+    const navigation = deferred();
+    const neverFinished = deferred();
+    let animations = 0;
+    let navigations = 0;
+    const element = surface(() => {
+      animations++;
+      return {
+        finished: animations === 1 ? neverFinished.promise : Promise.resolve(),
+        cancel() {},
+      };
+    });
+    const transition = startModuleSwipeTransition(element, "left", () => {
+      navigations++;
+      return navigation.promise;
+    });
+    assert.equal(
+      animations,
+      1,
+      "feedback is synchronous even while the destination is still loading",
     );
+    assert.equal(navigations, 1);
+    navigation.resolve();
+    await transition.finished;
+    assert.equal(animations, 2, "navigation and outgoing feedback run in parallel");
+  } finally {
+    env.restore();
+  }
+});
+test("reduced motion, missing surfaces and missing WAAPI navigate once without animation", async () => {
+  for (const mode of ["reduced", "missing", "unsupported"] as const) {
+    const env = environment(mode === "reduced");
+    try {
+      let navigations = 0;
+      const element =
+        mode === "missing"
+          ? null
+          : surface(
+              mode === "reduced"
+                ? () => {
+                    throw Error("must not animate");
+                  }
+                : undefined,
+            );
+      await startModuleSwipeTransition(element, "left", async () => {
+        navigations++;
+      }).finished;
+      assert.equal(navigations, 1);
+      assert.equal(env.dataset.moduleSwipe, undefined);
+    } finally {
+      env.restore();
+    }
+  }
+});
+test("animation API failures cannot suppress or duplicate navigation", async () => {
+  const env = environment();
+  try {
+    let navigations = 0;
+    await startModuleSwipeTransition(
+      surface(() => {
+        throw Error("animation unavailable");
+      }),
+      "left",
+      async () => {
+        navigations++;
+      },
+    ).finished;
+    assert.equal(navigations, 1);
     assert.equal(env.dataset.moduleSwipe, undefined);
   } finally {
     env.restore();
   }
 });
-
-test("unmount cancellation skips native snapshots and suppresses a late fallback", async () => {
+test("route errors propagate and release all gesture state", async () => {
   const env = environment();
   try {
-    let resolveNavigation!: () => void;
-    const navigation = new Promise<void>((resolve) => {
-      resolveNavigation = resolve;
-    });
-    let animated = false;
-    const fallback = startModuleSwipeTransition(
-      surface(() => {
-        animated = true;
-      }),
-      "left",
-      () => navigation,
+    const element = surface(() => ({ finished: Promise.resolve(), cancel() {} }));
+    await assert.rejects(
+      startModuleSwipeTransition(element, "right", async () => {
+        throw Error("route failed");
+      }).finished,
+      /route failed/,
     );
-    fallback.cancel();
-    resolveNavigation();
-    await fallback.finished;
-    assert.equal(animated, false);
-
-    let skipped = false;
-    env.document.startViewTransition = (update) => ({
-      finished: update(),
-      skipTransition() {
-        skipped = true;
-      },
-    });
-    const native = startModuleSwipeTransition(surface(), "right", async () => {});
-    native.cancel();
-    await native.finished;
-    assert.equal(skipped, true);
+    assert.equal(element.style.transform, "");
+    assert.equal(element.style.willChange, "");
     assert.equal(env.dataset.moduleSwipe, undefined);
+  } finally {
+    env.restore();
+  }
+});
+test("unmount cancellation releases the layer and suppresses a late entrance", async () => {
+  const env = environment();
+  try {
+    const navigation = deferred();
+    let animations = 0;
+    let cancelled = 0;
+    const element = surface(() => {
+      animations++;
+      return {
+        finished: Promise.resolve(),
+        cancel() {
+          cancelled++;
+        },
+      };
+    });
+    const transition = startModuleSwipeTransition(element, "left", () => navigation.promise);
+    transition.cancel();
+    assert.equal(element.style.willChange, "");
+    navigation.resolve();
+    await transition.finished;
+    assert.equal(animations, 1);
+    assert.ok(cancelled >= 1);
+    assert.equal(env.dataset.moduleSwipe, undefined);
+  } finally {
+    env.restore();
+  }
+});
+test("a disconnected destination is not animated", async () => {
+  const env = environment();
+  try {
+    let animations = 0;
+    const element = surface(() => {
+      animations++;
+      return { finished: Promise.resolve(), cancel() {} };
+    });
+    await startModuleSwipeTransition(element, "left", async () => {
+      Object.defineProperty(element, "isConnected", { value: false });
+    }).finished;
+    assert.equal(animations, 1);
   } finally {
     env.restore();
   }
@@ -190,7 +237,7 @@ test("swipe boundaries, aliases, exact threshold and protected routes remain unc
   assert.equal(getSwipeDestination("/profile", 100, 0), "/chat");
   assert.equal(getSwipeDestination("/profile", -100, 0), null);
   assert.equal(getSwipeDestination("/profile", 100, 0, true), null);
-  assert.equal(moduleFromPath("/profile"), null, "settings is not a product module");
+  assert.equal(moduleFromPath("/profile"), null);
   assert.equal(swipeScreenFromPath("/profile"), "/profile");
   assert.equal(ALO_MODULES.length, 3);
   assert.equal(ALO_SWIPE_SCREENS.length, 4);
@@ -198,35 +245,37 @@ test("swipe boundaries, aliases, exact threshold and protected routes remain unc
   assert.equal(getSwipeDestination("/coach", 72, 0), "/");
   assert.equal(getSwipeDestination("/", -71.9, 0), null);
   assert.equal(getSwipeDestination("/", -72, 0), "/ai");
-  for (const path of ["/profile", "/settings", "/workout/one", "/cali-workout/one"]) {
+  for (const path of ["/profile", "/settings", "/workout/one", "/cali-workout/one"])
     assert.equal(getSwipeDestination(path, -120, 0), null);
-  }
   assert.equal(getSwipeDestination("/ai", -120, 0, true), null);
   assert.equal(getSwipeDestination("/ai", -120, 120), null);
 });
-
-test("the outlet alone animates; rapid swipes, reduced motion and existing guards are preserved", () => {
-  const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
+const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
+test("direct touch tracking is frame-batched and all native gesture guards remain", () => {
   const layout = read("routes/_authenticated/route.tsx");
-  const css = read("module-swipe.css");
   assert.match(layout, /if \(swipeTransition.current\)/);
   assert.match(layout, /swipeTransition.current\?\.cancel\(\)/);
   assert.match(layout, /className="alo-module-surface">\s*<Outlet \/>/);
   assert.match(layout, /parent.scrollWidth > parent.clientWidth \+ 4/);
   assert.match(layout, /passive: true/);
+  assert.match(layout, /addEventListener\("touchmove", touchMove/);
+  assert.match(layout, /removeEventListener\("touchmove", touchMove/);
+  assert.match(layout, /requestAnimationFrame/);
+  assert.match(layout, /cancelAnimationFrame/);
+  assert.match(layout, /Math.abs\(dy\) > 10/);
+  assert.match(layout, /reducedMotion/);
   assert.doesNotMatch(layout, /preventDefault\(/);
-  assert.match(css, /prefers-reduced-motion: reduce/);
-  assert.doesNotMatch(css, /\.authenticated-shell/);
-  assert.match(read("routes/__root.tsx"), /swipeScreenFromPath\(pathname\) \? "alo-swipe-screens"/);
-  assert.match(read("components/TopNav.tsx"), /aria-label="Einstellungen und Profil"/);
-  for (const direction of ["left", "right"]) {
-    assert.ok(css.includes(`alo-swipe-in-${direction}`));
-    assert.ok(css.includes(`alo-swipe-out-${direction}`));
-  }
+  assert.doesNotMatch(layout, /touch-action:/);
+  assert.doesNotMatch(read("lib/module-swipe-transition.ts"), /startViewTransition/);
+  assert.match(read("module-swipe.css"), /prefers-reduced-motion: reduce/);
+  assert.doesNotMatch(read("module-swipe.css"), /view-transition/);
+  assert.doesNotMatch(read("module-swipe.css"), /\.authenticated-shell/);
+  assert.match(
+    read("routes/__root.tsx"),
+    /routeKey === "alo-swipe-screens" \? "alo-swipe-route" : "route-enter"/,
+  );
 });
-
-test("compact menu releases its space after two seconds, returns on navigation and protects keyboard focus", () => {
-  const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
+test("compact menu retains two-second hiding, upward reflow and keyboard focus protection", () => {
   const hook = read("hooks/useAutoHideModuleMenu.ts");
   const nav = read("components/TopNav.tsx");
   const css = read("module-menu.css");
@@ -244,61 +293,4 @@ test("compact menu releases its space after two seconds, returns on navigation a
   assert.match(css, /data-navigation-expanded="true"/);
   assert.match(css, /prefers-reduced-motion: reduce/);
   assert.match(read("components/SportAppHeader.tsx"), /aria-label="Design & Navigation öffnen"/);
-});
-
-test("skipped native ready promises are handled without unhandled rejections", async () => {
-  const env = environment();
-  try {
-    let navigations = 0;
-    env.document.startViewTransition = (update) => ({
-      ready: Promise.reject(Error("snapshot skipped")),
-      finished: update(),
-      skipTransition() {},
-    });
-    await startModuleSwipeTransition(surface(), "left", async () => {
-      navigations++;
-    }).finished;
-    assert.equal(navigations, 1);
-    assert.equal(env.dataset.moduleSwipe, undefined);
-  } finally {
-    env.restore();
-  }
-});
-
-for (const failure of ["throw", "ready", "finished"] as const) {
-  test(`native ${failure} failure uses a visible full-width fallback exactly once`, async () => {
-    const env = environment();
-    try {
-      let navigations = 0;
-      let animations = 0;
-      env.document.startViewTransition = (update) => {
-        if (failure === "throw") throw Error("unavailable");
-        return {
-          ready: failure === "ready" ? Promise.reject(Error("skipped")) : Promise.resolve(),
-          finished: failure === "finished" ? Promise.reject(Error("skipped")) : update(),
-          skipTransition() {},
-        };
-      };
-      const element = surface((frames, options) => {
-        animations++;
-        assert.equal(navigations, 1);
-        assert.equal((frames as Keyframe[])[0].transform, "translateX(100%)");
-        assert.equal((options as KeyframeAnimationOptions).duration, 380);
-        return { finished: Promise.resolve(), cancel() {} };
-      });
-      await startModuleSwipeTransition(element, "left", async () => {
-        navigations++;
-      }).finished;
-      assert.equal(navigations, 1);
-      assert.equal(animations, 1);
-      assert.equal(env.dataset.moduleSwipe, undefined);
-    } finally {
-      env.restore();
-    }
-  });
-}
-
-test("the stable swipe shell cannot restart the generic route entrance after cleanup", () => {
-  const root = readFileSync(new URL("../src/routes/__root.tsx", import.meta.url), "utf8");
-  assert.match(root, /routeKey === "alo-swipe-screens" \? "alo-swipe-route" : "route-enter"/);
 });

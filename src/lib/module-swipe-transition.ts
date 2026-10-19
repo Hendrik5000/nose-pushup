@@ -1,86 +1,78 @@
 export type ModuleSwipeDirection = "left" | "right";
 
-interface SwipeTransition {
-  finished: Promise<void>;
-  ready?: Promise<void>;
-  skipTransition(): void;
-}
-
-type TransitionDocument = Document & {
-  startViewTransition?: (update: () => Promise<void>) => SwipeTransition;
-};
-
-/** Animate only deliberate module swipes, never ordinary links or initial loads. */
+/** Compositor-only feedback starts before routing; no full-page snapshots or freezes. */
 export function startModuleSwipeTransition(
   surface: HTMLElement | null,
   direction: ModuleSwipeDirection,
   navigate: () => Promise<void>,
+  dragOffset = 0,
 ): { finished: Promise<void>; cancel: () => void } {
   const root = document.documentElement;
-  let cancelled = false;
-  let transition: SwipeTransition | undefined;
-  let animation: Animation | undefined;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
+  let cancelled = false;
+  let outgoing: Animation | undefined;
+  let incoming: Animation | undefined;
+  const clear = () => {
+    outgoing?.cancel();
+    incoming?.cancel();
+    if (surface) {
+      surface.style.transform = "";
+      surface.style.willChange = "";
+    }
+    delete root.dataset.moduleSwipe;
+  };
   const cancel = () => {
     cancelled = true;
-    transition?.skipTransition();
-    animation?.cancel();
+    clear();
   };
-
-  const animateEntrance = async () => {
-    if (cancelled || !surface?.isConnected || typeof surface.animate !== "function") return;
-    animation = surface.animate(
-      [
-        { transform: `translateX(${direction === "left" ? "100%" : "-100%"})` },
-        { transform: "translateX(0)" },
-      ],
-      { duration: 380, easing: "cubic-bezier(0.4, 0, 0.2, 1)" },
-    );
-    await animation.finished.catch(() => undefined);
-    animation.cancel();
-  };
-
   const finished = (async () => {
-    if (reducedMotion || !surface) {
-      await navigate();
-      return;
-    }
-
-    const transitionDocument = document as TransitionDocument;
-    if (typeof transitionDocument.startViewTransition === "function") {
-      root.dataset.moduleSwipe = direction;
-      // Keep the old screen as a snapshot, not a second live chat/workout instance.
-      let navigation: Promise<void> | undefined;
-      const update = () => (navigation ??= navigate());
-      let snapshotReady = true;
+    if (reducedMotion || !surface || typeof surface.animate !== "function") {
       try {
-        try {
-          transition = transitionDocument.startViewTransition(update);
-          // A supported API can still skip a snapshot. In that case animate the
-          // committed surface instead of silently dropping all visual feedback.
-          const ready = transition.ready?.catch(() => {
-            snapshotReady = false;
-          });
-          await transition.finished.catch(() => {
-            snapshotReady = false;
-          });
-          await ready;
-        } catch {
-          snapshotReady = false;
-        }
-        await update();
-        if (!snapshotReady) await animateEntrance();
+        await navigate();
       } finally {
-        delete root.dataset.moduleSwipe;
+        clear();
       }
       return;
     }
-
-    // Older browsers get the same full-width entrance, without delaying routing.
-    await navigate();
-    await animateEntrance();
+    root.dataset.moduleSwipe = direction;
+    surface.style.willChange = "transform";
+    try {
+      // Start visible feedback immediately, in parallel with auth/chunk loading.
+      // Keep the old route alive until the router commits; never duplicate modules.
+      const sign = direction === "left" ? -1 : 1;
+      try {
+        outgoing = surface.animate(
+          [
+            { transform: `translate3d(${dragOffset}px, 0, 0)` },
+            {
+              transform: `translate3d(${sign * Math.max(Math.abs(dragOffset), window.innerWidth * 0.32)}px, 0, 0)`,
+            },
+          ],
+          { duration: 120, easing: "ease-out", fill: "forwards" },
+        );
+        void outgoing.finished.catch(() => undefined);
+      } catch {
+        // An animation failure must never prevent navigation.
+      }
+      await navigate();
+      outgoing?.cancel();
+      if (cancelled || !surface.isConnected) return;
+      surface.style.transform = "";
+      try {
+        incoming = surface.animate(
+          [
+            { transform: `translate3d(${direction === "left" ? "100%" : "-100%"}, 0, 0)` },
+            { transform: "translate3d(0, 0, 0)" },
+          ],
+          { duration: 260, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+        );
+        await incoming.finished.catch(() => undefined);
+      } catch {
+        // Rendering the destination is more important than visual feedback.
+      }
+    } finally {
+      clear();
+    }
   })();
-
   return { finished, cancel };
 }

@@ -18,6 +18,11 @@
   transition: padding-top 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Reflow once when revealing the menu, not on every frame of a swipe. */
+html[data-module-swipe] .authenticated-shell {
+  transition: none;
+}
+
 /* Higher specificity than the optional-bar overrides in all design families. */
 html:root[data-module-menu-visible="false"][data-navigation-layout][data-navigation-visible]
   .authenticated-shell {
