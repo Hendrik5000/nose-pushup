@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { createBattle, finishBattle, startBattle } from "@/lib/battle.functions";
 import { feedbackRep, feedbackWin, feedbackLose, feedbackSuccess } from "@/lib/feedback";
 
-
 export const Route = createFileRoute("/_authenticated/battle/$id")({
   head: () => ({
     meta: [{ title: "Battle Arena — Nosy Push-Ups" }],
@@ -148,9 +147,11 @@ function BattleArena() {
     };
   }, [battle?.is_bot, battle?.status, iAmHost, countdown, battle]);
 
-  const remaining = battle?.ends_at ? Math.max(0, +new Date(battle.ends_at) - now) : battle?.duration_s
-    ? battle.duration_s * 1000
-    : 0;
+  const remaining = battle?.ends_at
+    ? Math.max(0, +new Date(battle.ends_at) - now)
+    : battle?.duration_s
+      ? battle.duration_s * 1000
+      : 0;
 
   // Modus "Erster auf X": beenden, sobald jemand das Ziel erreicht.
   useEffect(() => {
@@ -208,8 +209,6 @@ function BattleArena() {
     else feedbackSuccess();
   }, [battle, userId]);
 
-
-
   const doStart = async () => {
     setError(null);
     try {
@@ -237,7 +236,9 @@ function BattleArena() {
     return (
       <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
         <header className="flex items-center justify-between">
-          <Link to="/battle" className="text-sm text-muted-foreground">← Lobby</Link>
+          <Link to="/battle" className="text-sm text-muted-foreground">
+            ← Lobby
+          </Link>
           <span className="text-sm font-medium">⚔️ Warteraum</span>
         </header>
         <section className="mt-8 rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/15 to-card/60 p-6 text-center backdrop-blur">
@@ -267,9 +268,7 @@ function BattleArena() {
               {opponentReady ? "Battle starten" : "Warte auf Gegner…"}
             </button>
           )}
-          {!iAmHost && (
-            <div className="mt-6 text-sm text-muted-foreground">Warten auf Host…</div>
-          )}
+          {!iAmHost && <div className="mt-6 text-sm text-muted-foreground">Warten auf Host…</div>}
           {error && (
             <div className="mt-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
               {error}
@@ -354,7 +353,8 @@ function BattleArena() {
     >
       <header className="flex items-center justify-between">
         <span className="text-sm font-medium">
-          ⚔️ {battle.mode === "first_to"
+          ⚔️{" "}
+          {battle.mode === "first_to"
             ? `Erster auf ${battle.target_reps ?? 30}`
             : battle.mode === "sprint"
               ? "60s Sprint"
@@ -369,11 +369,15 @@ function BattleArena() {
 
       <section className="mt-6 grid grid-cols-2 gap-3">
         <div className="rounded-2xl border border-primary/40 bg-primary/10 p-4 text-center">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{meLabel}</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            {meLabel}
+          </div>
           <div className="mt-1 text-5xl font-bold tabular-nums text-primary">{myCount}</div>
         </div>
         <div className="rounded-2xl border border-border bg-card/60 p-4 text-center">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{oppLabel}</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            {oppLabel}
+          </div>
           <div className="mt-1 text-5xl font-bold tabular-nums">{oppCount}</div>
         </div>
       </section>
@@ -385,14 +389,18 @@ function BattleArena() {
       <div className="mt-6 flex flex-1 select-none items-center justify-center rounded-[2rem] border border-border bg-card/50 backdrop-blur">
         {countdown !== null ? (
           <div className="text-center">
-            <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Los in</div>
+            <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+              Los in
+            </div>
             <div className="mt-2 text-8xl font-bold tabular-nums text-primary">
               {countdown === 0 ? "GO!" : countdown}
             </div>
           </div>
         ) : (
           <div className="text-center">
-            <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Tippe mit der Nase</div>
+            <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+              Tippe mit der Nase
+            </div>
             <div className="mt-2 font-display text-[8rem] leading-none font-bold tabular-nums">
               {myCount}
             </div>

@@ -94,7 +94,10 @@ function SeasonPage() {
         const { data: profs } = await supabase
           .from("profiles")
           .select("id, display_name")
-          .in("id", rows.map((r) => r.user_id));
+          .in(
+            "id",
+            rows.map((r) => r.user_id),
+          );
         const map: Record<string, string> = {};
         for (const p of profs ?? []) map[p.id as string] = (p.display_name as string) ?? "Athlet";
         setNames(map);
@@ -134,10 +137,7 @@ function SeasonPage() {
   const nextLeague = LEAGUES[myLeagueIdx + 1];
   const myRank = scores.findIndex((s) => s.user_id === userId) + 1;
   const daysLeft = season
-    ? Math.max(
-        0,
-        Math.ceil((new Date(season.ends_on).getTime() - Date.now()) / 86400000),
-      )
+    ? Math.max(0, Math.ceil((new Date(season.ends_on).getTime() - Date.now()) / 86400000))
     : 0;
 
   return (
@@ -259,9 +259,7 @@ function SeasonPage() {
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Belohnungs-Shop
             </h2>
-            {hint && (
-              <p className="mb-2 text-center text-xs text-muted-foreground">{hint}</p>
-            )}
+            {hint && <p className="mb-2 text-center text-xs text-muted-foreground">{hint}</p>}
             <div className="space-y-2">
               {items.map((item) => {
                 const has = owned.includes(item.id) && item.kind !== "streak_freeze";

@@ -14,7 +14,8 @@ export const Route = createFileRoute("/_authenticated/health")({
       { title: "Health Connect — Nose Push" },
       {
         name: "description",
-        content: "Google Health Connect, Smartwatch und Gesundheitsdaten mit dem Training verbinden.",
+        content:
+          "Google Health Connect, Smartwatch und Gesundheitsdaten mit dem Training verbinden.",
       },
       { property: "og:title", content: "Health Connect — Nose Push" },
       { property: "og:description", content: "Schritte, Schlaf und Aktivität synchronisieren." },
@@ -73,7 +74,9 @@ function HealthPage() {
       sleep_min: Math.max(0, Math.min(1440, Math.round((parseFloat(sleepH || "0") || 0) * 60))),
       source: "manual",
     };
-    const { error } = await supabase.from("health_entries").upsert(payload, { onConflict: "user_id,day" });
+    const { error } = await supabase
+      .from("health_entries")
+      .upsert(payload, { onConflict: "user_id,day" });
     setBusy(false);
     if (error) {
       setMsg("Speichern fehlgeschlagen.");
@@ -90,7 +93,9 @@ function HealthPage() {
   };
 
   const week = entries.slice(0, 7);
-  const avgSteps = week.length ? Math.round(week.reduce((s, e) => s + e.steps, 0) / week.length) : 0;
+  const avgSteps = week.length
+    ? Math.round(week.reduce((s, e) => s + e.steps, 0) / week.length)
+    : 0;
   const avgSleep = week.length ? week.reduce((s, e) => s + e.sleep_min, 0) / week.length / 60 : 0;
   const todaySteps = entries.find((e) => e.day === today())?.steps ?? 0;
 
@@ -137,10 +142,34 @@ function HealthPage() {
         </h2>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <Input label="Datum" type="date" value={day} onChange={setDay} />
-          <Input label="Schritte" type="number" value={steps} onChange={setSteps} placeholder="8000" />
-          <Input label="Aktive kcal" type="number" value={kcal} onChange={setKcal} placeholder="450" />
-          <Input label="Schlaf (h)" type="number" value={sleepH} onChange={setSleepH} placeholder="7.5" />
-          <Input label="Gewicht (kg)" type="number" value={weight} onChange={setWeight} placeholder="78" />
+          <Input
+            label="Schritte"
+            type="number"
+            value={steps}
+            onChange={setSteps}
+            placeholder="8000"
+          />
+          <Input
+            label="Aktive kcal"
+            type="number"
+            value={kcal}
+            onChange={setKcal}
+            placeholder="450"
+          />
+          <Input
+            label="Schlaf (h)"
+            type="number"
+            value={sleepH}
+            onChange={setSleepH}
+            placeholder="7.5"
+          />
+          <Input
+            label="Gewicht (kg)"
+            type="number"
+            value={weight}
+            onChange={setWeight}
+            placeholder="78"
+          />
         </div>
         {msg && <p className="mt-3 text-xs text-muted-foreground">{msg}</p>}
         <button
@@ -169,14 +198,17 @@ function HealthPage() {
               >
                 <span className="font-semibold">
                   {new Date(e.day).toLocaleDateString("de-DE")}
-                  {(e.source === "health_connect" || e.source === "watch" || e.source?.startsWith("watch")) && (
+                  {(e.source === "health_connect" ||
+                    e.source === "watch" ||
+                    e.source?.startsWith("watch")) && (
                     <span className="ml-2 text-[10px] text-primary">
                       {e.source === "health_connect" ? "HC" : "⌚"}
                     </span>
                   )}
                 </span>
                 <span className="tabular-nums text-muted-foreground">
-                  {e.steps.toLocaleString("de-DE")} · {e.active_kcal} kcal · {(e.sleep_min / 60).toFixed(1)} h
+                  {e.steps.toLocaleString("de-DE")} · {e.active_kcal} kcal ·{" "}
+                  {(e.sleep_min / 60).toFixed(1)} h
                 </span>
               </li>
             ))}
@@ -213,7 +245,9 @@ function Input({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
+      <span className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        {label}
+      </span>
       <input
         type={type}
         inputMode={type === "number" ? "decimal" : undefined}

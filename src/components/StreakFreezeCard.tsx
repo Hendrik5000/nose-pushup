@@ -60,9 +60,7 @@ export function StreakFreezeCard({ streak }: { streak: number }) {
       >
         {frozen ? "Freeze aktiv" : "Freeze für heute aktivieren"}
       </button>
-      {msg && (
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">{msg}</p>
-      )}
+      {msg && <p className="mt-2 text-center text-[11px] text-muted-foreground">{msg}</p>}
     </section>
   );
 }

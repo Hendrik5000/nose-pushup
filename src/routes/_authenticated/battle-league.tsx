@@ -44,7 +44,9 @@ function BattleLeaguePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [leaders, setLeaders] = useState<RatedProfile[]>([]);
   const [battles, setBattles] = useState<BattleRow[]>([]);
-  const [names, setNames] = useState<Map<string, { name: string; avatar: string | null }>>(new Map());
+  const [names, setNames] = useState<Map<string, { name: string; avatar: string | null }>>(
+    new Map(),
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,9 +76,7 @@ function BattleLeaguePage() {
 
       // Gegner-Namen laden
       const opponentIds = [
-        ...new Set(
-          myBattles.map((b) => (b.host_id === u.user.id ? b.guest_id! : b.host_id)),
-        ),
+        ...new Set(myBattles.map((b) => (b.host_id === u.user.id ? b.guest_id! : b.host_id))),
       ];
       if (opponentIds.length) {
         const { data: ps } = await supabase
@@ -84,7 +84,11 @@ function BattleLeaguePage() {
           .select("id, display_name, avatar_url")
           .in("id", opponentIds);
         const map = new Map<string, { name: string; avatar: string | null }>();
-        for (const p of (ps ?? []) as unknown as Array<{ id: string; display_name: string | null; avatar_url: string | null }>) {
+        for (const p of (ps ?? []) as unknown as Array<{
+          id: string;
+          display_name: string | null;
+          avatar_url: string | null;
+        }>) {
           map.set(p.id, { name: p.display_name ?? "Unbekannt", avatar: p.avatar_url });
         }
         setNames(map);
@@ -136,21 +140,25 @@ function BattleLeaguePage() {
 
       {/* Eigene Platzierung */}
       <section className="mt-6 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card/70 to-card/60 p-5 backdrop-blur">
-        <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Deine Platzierung</div>
+        <div className="text-[10px] uppercase tracking-[0.25em] text-primary">
+          Deine Platzierung
+        </div>
         <div className="mt-2 flex items-end justify-between">
           <div>
-            <div className="text-4xl font-bold tabular-nums">
-              {myRank > 0 ? `#${myRank}` : "—"}
-            </div>
+            <div className="text-4xl font-bold tabular-nums">{myRank > 0 ? `#${myRank}` : "—"}</div>
             <div className="mt-1 text-xs text-muted-foreground">
-              {me ? `${me.battle_wins ?? 0} Siege · ${me.battle_losses ?? 0} Niederlagen` : "Noch keine Battles"}
+              {me
+                ? `${me.battle_wins ?? 0} Siege · ${me.battle_losses ?? 0} Niederlagen`
+                : "Noch keine Battles"}
             </div>
           </div>
           <div className="text-right">
             <div className="text-2xl font-semibold tabular-nums text-primary">
               {me?.battle_rating ?? 1000}
             </div>
-            <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Wertung</div>
+            <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+              Wertung
+            </div>
           </div>
         </div>
       </section>
@@ -161,7 +169,9 @@ function BattleLeaguePage() {
           Rangliste
         </h2>
         {loading ? (
-          <p className="rounded-2xl border border-border bg-card/40 p-4 text-center text-sm text-muted-foreground">Lade…</p>
+          <p className="rounded-2xl border border-border bg-card/40 p-4 text-center text-sm text-muted-foreground">
+            Lade…
+          </p>
         ) : (
           <ul className="space-y-2">
             {leaders.slice(0, 20).map((p, i) => {
@@ -184,13 +194,16 @@ function BattleLeaguePage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold">
-                      {p.display_name || "Ohne Namen"} {isMe && <span className="text-[10px] text-primary">· Du</span>}
+                      {p.display_name || "Ohne Namen"}{" "}
+                      {isMe && <span className="text-[10px] text-primary">· Du</span>}
                     </div>
                     <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
                       {p.battle_wins ?? 0}W / {p.battle_losses ?? 0}L
                     </div>
                   </div>
-                  <div className="text-base font-semibold tabular-nums">{p.battle_rating ?? 1000}</div>
+                  <div className="text-base font-semibold tabular-nums">
+                    {p.battle_rating ?? 1000}
+                  </div>
                 </li>
               );
             })}

@@ -79,9 +79,7 @@ export function LocalChatShell() {
         setDms(store.dms);
       }
 
-      const t =
-        target ??
-        (roomList[0] ? ({ kind: "room", id: roomList[0].id } as Target) : null);
+      const t = target ?? (roomList[0] ? ({ kind: "room", id: roomList[0].id } as Target) : null);
       if (!target && t) setActive(t);
       if (!t) {
         setMessages([]);
@@ -143,22 +141,14 @@ export function LocalChatShell() {
     if (mode !== "supabase" || !userId) return;
     const channel = supabase
       .channel("nose-chat-stream")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        () => {
-          const t = activeRef.current;
-          if (t) void refresh(userId, t);
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "message_reactions" },
-        () => {
-          const t = activeRef.current;
-          if (t) void refresh(userId, t);
-        },
-      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
+        const t = activeRef.current;
+        if (t) void refresh(userId, t);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, () => {
+        const t = activeRef.current;
+        if (t) void refresh(userId, t);
+      })
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
@@ -167,8 +157,7 @@ export function LocalChatShell() {
 
   const headerTitle = useMemo(() => {
     if (!active) return "Chat";
-    if (active.kind === "room")
-      return rooms.find((r) => r.id === active.id)?.name ?? "Raum";
+    if (active.kind === "room") return rooms.find((r) => r.id === active.id)?.name ?? "Raum";
     return dms.find((d) => d.id === active.id)?.other_name ?? "DM";
   }, [active, rooms, dms]);
 
@@ -292,7 +281,9 @@ export function LocalChatShell() {
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
         <div className="mb-1 flex items-center justify-between px-1">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Räume</span>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Räume
+          </span>
           <button
             type="button"
             onClick={() => setNewRoomOpen(true)}
@@ -310,9 +301,7 @@ export function LocalChatShell() {
                 ? loadChatStore(userId).messages.filter((m) => m.room_id === r.id)
                 : [];
             const unread =
-              userId && prefs
-                ? countUnread(prefs, "room", r.id, storeMsgs, userId)
-                : 0;
+              userId && prefs ? countUnread(prefs, "room", r.id, storeMsgs, userId) : 0;
             return (
               <button
                 key={r.id}
@@ -563,19 +552,18 @@ export function LocalChatShell() {
                 : own
                   ? myName
                   : dms.find((d) => d.other_id === m.user_id)?.other_name || "Mitglied";
-            const reply = m.reply_to_id
-              ? messages.find((x) => x.id === m.reply_to_id)
-              : null;
+            const reply = m.reply_to_id ? messages.find((x) => x.id === m.reply_to_id) : null;
             const msgReactions = reactions.filter((r) => r.message_id === m.id);
-            const grouped = msgReactions.reduce<
-              Record<string, { count: number; mine: boolean }>
-            >((acc, r) => {
-              const e = acc[r.emoji] ?? { count: 0, mine: false };
-              e.count += 1;
-              if (r.user_id === userId) e.mine = true;
-              acc[r.emoji] = e;
-              return acc;
-            }, {});
+            const grouped = msgReactions.reduce<Record<string, { count: number; mine: boolean }>>(
+              (acc, r) => {
+                const e = acc[r.emoji] ?? { count: 0, mine: false };
+                e.count += 1;
+                if (r.user_id === userId) e.mine = true;
+                acc[r.emoji] = e;
+                return acc;
+              },
+              {},
+            );
             const isPinned = prefs?.pinnedMessageIds.includes(m.id);
 
             return (
@@ -607,9 +595,7 @@ export function LocalChatShell() {
                     </div>
                   )}
                   <div className="whitespace-pre-wrap break-words">{m.content}</div>
-                  {m.edited_at && (
-                    <div className="mt-0.5 text-[10px] opacity-60">(bearbeitet)</div>
-                  )}
+                  {m.edited_at && <div className="mt-0.5 text-[10px] opacity-60">(bearbeitet)</div>}
                 </div>
 
                 {Object.keys(grouped).length > 0 && (
@@ -625,9 +611,7 @@ export function LocalChatShell() {
                           );
                         }}
                         className={`rounded-full border px-2 py-0.5 text-xs ${
-                          info.mine
-                            ? "border-primary bg-primary/15"
-                            : "border-border bg-card/50"
+                          info.mine ? "border-primary bg-primary/15" : "border-border bg-card/50"
                         }`}
                       >
                         {emoji} {info.count}
@@ -644,9 +628,7 @@ export function LocalChatShell() {
                       className="text-xs opacity-40 transition hover:opacity-100"
                       onClick={() => {
                         if (!userId || !active) return;
-                        void reactToMessage(userId, m.id, e).then(() =>
-                          refresh(userId, active),
-                        );
+                        void reactToMessage(userId, m.id, e).then(() => refresh(userId, active));
                       }}
                     >
                       {e}
@@ -689,9 +671,7 @@ export function LocalChatShell() {
                         className="text-[10px] text-destructive"
                         onClick={() => {
                           if (!userId || !active) return;
-                          void deleteChatMessage(userId, m.id).then(() =>
-                            refresh(userId, active),
-                          );
+                          void deleteChatMessage(userId, m.id).then(() => refresh(userId, active));
                         }}
                       >
                         Löschen
@@ -710,7 +690,11 @@ export function LocalChatShell() {
             <span className="min-w-0 flex-1 truncate">
               Antwort auf: <strong>{replyTo.content}</strong>
             </span>
-            <button type="button" onClick={() => setReplyTo(null)} className="text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => setReplyTo(null)}
+              className="text-muted-foreground"
+            >
               ×
             </button>
           </div>
@@ -798,7 +782,8 @@ type SpeechRec = {
   interimResults: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((ev: { results?: { [i: number]: { [j: number]: { transcript?: string } } } }) => void) | null;
+  onresult:
+    ((ev: { results?: { [i: number]: { [j: number]: { transcript?: string } } } }) => void) | null;
   onerror: (() => void) | null;
   onend: (() => void) | null;
 };

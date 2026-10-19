@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { backfillAchievements, listAchievements, markAchievementsSeen } from "@/lib/achievements.functions";
+import {
+  backfillAchievements,
+  listAchievements,
+  markAchievementsSeen,
+} from "@/lib/achievements.functions";
 
 type Achievement = {
   id: string;
@@ -99,7 +103,8 @@ export function BadgeGallery() {
     );
   }
 
-  const progress = achievements.length > 0 ? Math.round((unlocked.length / achievements.length) * 100) : 0;
+  const progress =
+    achievements.length > 0 ? Math.round((unlocked.length / achievements.length) * 100) : 0;
 
   return (
     <div>
@@ -126,7 +131,11 @@ export function BadgeGallery() {
                 : "border-border bg-secondary/60 text-muted-foreground hover:text-foreground"
             }`}
           >
-            {cat === "all" ? "Alle" : cat === "unlocked" ? "Freigeschaltet" : CATEGORIES[cat]?.label ?? cat}
+            {cat === "all"
+              ? "Alle"
+              : cat === "unlocked"
+                ? "Freigeschaltet"
+                : (CATEGORIES[cat]?.label ?? cat)}
           </button>
         ))}
       </div>
@@ -134,7 +143,8 @@ export function BadgeGallery() {
       <div className="mt-4 grid grid-cols-4 gap-3">
         {filtered.map((ach) => {
           const isUnlocked = unlockedIds.has(ach.id);
-          const catStyle = CATEGORIES[ach.category]?.color ?? "bg-secondary text-muted-foreground border-border";
+          const catStyle =
+            CATEGORIES[ach.category]?.color ?? "bg-secondary text-muted-foreground border-border";
           return (
             <div
               key={ach.id}
@@ -143,14 +153,18 @@ export function BadgeGallery() {
                 isUnlocked ? catStyle : "border-border bg-secondary/40 text-muted-foreground"
               }`}
             >
-              <span className={`text-2xl transition ${isUnlocked ? "grayscale-0" : "grayscale opacity-40"}`}>
+              <span
+                className={`text-2xl transition ${isUnlocked ? "grayscale-0" : "grayscale opacity-40"}`}
+              >
                 {ach.icon}
               </span>
               {isUnlocked && (
                 <span className="mt-1 text-[9px] font-medium leading-tight">+{ach.xp_reward}</span>
               )}
               {!isUnlocked && ach.hidden && (
-                <span className="absolute inset-0 flex items-center justify-center text-lg opacity-30">?</span>
+                <span className="absolute inset-0 flex items-center justify-center text-lg opacity-30">
+                  ?
+                </span>
               )}
             </div>
           );

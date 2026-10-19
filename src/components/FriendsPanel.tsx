@@ -59,7 +59,15 @@ export function FriendsPanel({ userId }: { userId: string }) {
         const otherId = f.requester_id === userId ? f.addressee_id : f.requester_id;
         return {
           friendship: f,
-          other: byId.get(otherId) ?? { id: otherId, display_name: null, avatar_url: null, level: 0, xp: 0, current_streak: 0, battle_wins: 0 },
+          other: byId.get(otherId) ?? {
+            id: otherId,
+            display_name: null,
+            avatar_url: null,
+            level: 0,
+            xp: 0,
+            current_streak: 0,
+            battle_wins: 0,
+          },
         };
       }),
     );
@@ -94,7 +102,9 @@ export function FriendsPanel({ userId }: { userId: string }) {
       .insert({ requester_id: userId, addressee_id: addresseeId, status: "pending" } as never);
     setBusy(null);
     if (error) {
-      setMsg(error.message.includes("unique") ? "Anfrage besteht bereits" : "Anfrage fehlgeschlagen");
+      setMsg(
+        error.message.includes("unique") ? "Anfrage besteht bereits" : "Anfrage fehlgeschlagen",
+      );
     } else {
       setMsg("Anfrage gesendet");
       load();
@@ -103,14 +113,20 @@ export function FriendsPanel({ userId }: { userId: string }) {
 
   const respond = async (id: string, status: "accepted" | "declined") => {
     setBusy(id);
-    await supabase.from("friendships" as never).update({ status } as never).eq("id", id);
+    await supabase
+      .from("friendships" as never)
+      .update({ status } as never)
+      .eq("id", id);
     setBusy(null);
     load();
   };
 
   const removeFriend = async (id: string) => {
     setBusy(id);
-    await supabase.from("friendships" as never).delete().eq("id", id);
+    await supabase
+      .from("friendships" as never)
+      .delete()
+      .eq("id", id);
     setBusy(null);
     load();
   };
@@ -125,7 +141,6 @@ export function FriendsPanel({ userId }: { userId: string }) {
 
   return (
     <div>
-
       <div className="flex overflow-x-auto rounded-full border border-border bg-background/60 p-0.5 text-[10px] uppercase tracking-[0.18em]">
         <TabBtn active={tab === "friends"} onClick={() => setTab("friends")}>
           Freunde
@@ -244,9 +259,7 @@ export function FriendsPanel({ userId }: { userId: string }) {
                 Suchen
               </button>
             </div>
-            {results.length === 0 && search.trim().length >= 2 && (
-              <Empty text="Keine Treffer." />
-            )}
+            {results.length === 0 && search.trim().length >= 2 && <Empty text="Keine Treffer." />}
             {results.map((p) => {
               const existing = rows.find((r) => r.other.id === p.id);
               return (
@@ -290,9 +303,7 @@ function FriendRow({ profile, right }: { profile: PublicProfile; right: React.Re
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold">
-          {profile.display_name || "Ohne Namen"}
-        </div>
+        <div className="truncate text-sm font-semibold">{profile.display_name || "Ohne Namen"}</div>
         <div className="truncate text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Lv {profile.level ?? 1} · {profile.xp ?? 0} XP · 🔥 {profile.current_streak ?? 0} · ⚔️{" "}
           {profile.battle_wins ?? 0}
@@ -316,7 +327,9 @@ function TabBtn({
     <button
       onClick={onClick}
       className={`flex-1 whitespace-nowrap rounded-full px-3 py-1.5 transition ${
-        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+        active
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:text-foreground"
       }`}
     >
       {children}

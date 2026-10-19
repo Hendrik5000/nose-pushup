@@ -57,15 +57,19 @@ function LeaderboardPage() {
           .select("requester_id, addressee_id, status")
           .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
           .eq("status", "accepted");
-        const friendIds = ((fs ?? []) as unknown as Array<{
-          requester_id: string;
-          addressee_id: string;
-        }>).map((f) => (f.requester_id === userId ? f.addressee_id : f.requester_id));
+        const friendIds = (
+          (fs ?? []) as unknown as Array<{
+            requester_id: string;
+            addressee_id: string;
+          }>
+        ).map((f) => (f.requester_id === userId ? f.addressee_id : f.requester_id));
         ids = [...friendIds, userId];
       }
       let query = supabase
         .from("public_profiles" as never)
-        .select("id, display_name, avatar_url, level, xp, current_streak, longest_streak, best_count, battle_wins")
+        .select(
+          "id, display_name, avatar_url, level, xp, current_streak, longest_streak, best_count, battle_wins",
+        )
         .order(metric, { ascending: false })
         .limit(50);
       if (ids) query = query.in("id", ids);
@@ -128,14 +132,10 @@ function LeaderboardPage() {
               <div
                 key={p.id}
                 className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 backdrop-blur ${
-                  isMe
-                    ? "border-primary/50 bg-primary/10"
-                    : "border-border bg-card/40"
+                  isMe ? "border-primary/50 bg-primary/10" : "border-border bg-card/40"
                 }`}
               >
-                <div className="w-8 text-center text-sm font-semibold tabular-nums">
-                  {medal}
-                </div>
+                <div className="w-8 text-center text-sm font-semibold tabular-nums">{medal}</div>
                 <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold">
                   {p.avatar_url ? (
                     <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -145,14 +145,17 @@ function LeaderboardPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold">
-                    {p.display_name || "Ohne Namen"} {isMe && <span className="text-[10px] text-primary">· Du</span>}
+                    {p.display_name || "Ohne Namen"}{" "}
+                    {isMe && <span className="text-[10px] text-primary">· Du</span>}
                   </div>
                   <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                     Lv {p.level ?? 1}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-base font-semibold tabular-nums">{value.toLocaleString("de-DE")}</div>
+                  <div className="text-base font-semibold tabular-nums">
+                    {value.toLocaleString("de-DE")}
+                  </div>
                   <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
                     {METRIC_LABEL[metric]}
                   </div>
@@ -179,7 +182,9 @@ function Tab({
     <button
       onClick={onClick}
       className={`flex-1 whitespace-nowrap rounded-full px-3 py-1.5 transition ${
-        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+        active
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:text-foreground"
       }`}
     >
       {children}

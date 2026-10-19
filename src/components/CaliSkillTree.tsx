@@ -113,7 +113,9 @@ function SkillCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-sm font-semibold ${isLocked ? "text-muted-foreground" : "text-foreground"}`}>
+            <span
+              className={`text-sm font-semibold ${isLocked ? "text-muted-foreground" : "text-foreground"}`}
+            >
               {skill.name}
             </span>
             <span className="rounded-full border border-border/60 bg-secondary/50 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
@@ -122,7 +124,9 @@ function SkillCard({
           </div>
 
           {!isLocked && (
-            <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2">{skill.description}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2">
+              {skill.description}
+            </p>
           )}
 
           {isLocked && skill.prerequisite && (
@@ -137,12 +141,14 @@ function SkillCard({
             <div className="mt-2 space-y-1">
               <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>
-                  Best: <span className="font-semibold text-foreground tabular-nums">
+                  Best:{" "}
+                  <span className="font-semibold text-foreground tabular-nums">
                     {best > 0 ? `${best}${skill.unit === "seconds" ? "s" : ""}` : "—"}
                   </span>
                 </span>
                 <span>
-                  Ziel: {skill.mastery_threshold}{skill.unit === "seconds" ? "s" : " Reps"}
+                  Ziel: {skill.mastery_threshold}
+                  {skill.unit === "seconds" ? "s" : " Reps"}
                 </span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
@@ -156,7 +162,8 @@ function SkillCard({
 
           {isMastered && (
             <div className="mt-1 text-[11px] font-semibold text-primary">
-              ✓ Gemeistert · Best: {best}{skill.unit === "seconds" ? "s" : " Reps"}
+              ✓ Gemeistert · Best: {best}
+              {skill.unit === "seconds" ? "s" : " Reps"}
             </div>
           )}
         </div>
@@ -181,7 +188,8 @@ function SkillCard({
       {!isLocked && !isMastered && isRecommended && (
         <div className="mt-3 rounded-xl bg-background/40 px-3 py-2 border border-border/50">
           <p className="text-[11px] text-muted-foreground">
-            <span className="font-medium text-foreground">💡 Tipp: </span>{skill.tip}
+            <span className="font-medium text-foreground">💡 Tipp: </span>
+            {skill.tip}
           </p>
         </div>
       )}

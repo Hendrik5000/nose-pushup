@@ -20,15 +20,22 @@ export const Route = createFileRoute("/_authenticated/cali-workout/$skillId")({
 });
 
 type SetRecord = {
-  count: number;   // reps or seconds
-  rpe: number;     // 1–10
+  count: number; // reps or seconds
+  rpe: number; // 1–10
 };
 
 const DEFAULT_REST_S = 90;
 const RPE_LABELS: Record<number, string> = {
-  1: "Sehr leicht",  2: "Leicht",  3: "Moderat",  4: "Etwas schwer",
-  5: "Schwer",       6: "Schwer+", 7: "Sehr schwer", 8: "Extrem",
-  9: "Maximal",      10: "Total failure",
+  1: "Sehr leicht",
+  2: "Leicht",
+  3: "Moderat",
+  4: "Etwas schwer",
+  5: "Schwer",
+  6: "Schwer+",
+  7: "Sehr schwer",
+  8: "Extrem",
+  9: "Maximal",
+  10: "Total failure",
 };
 
 function formatSec(s: number): string {
@@ -159,7 +166,9 @@ function CaliWorkoutScreen() {
       feedbackSuccess();
       // Client-side PB update
       if (bestSet > prevBest) {
-        await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)("update_personal_best", {
+        await (
+          supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>
+        )("update_personal_best", {
           p_user_id: userId,
           p_exercise_id: skillId,
           p_count: bestSet,
@@ -181,7 +190,10 @@ function CaliWorkoutScreen() {
       <main className="flex min-h-[100dvh] items-center justify-center flex-col gap-4 text-sm text-muted-foreground p-6 text-center">
         <span className="text-4xl">🤷</span>
         <p>Skill nicht gefunden.</p>
-        <button onClick={() => navigate({ to: "/calisthenics" })} className="text-primary underline">
+        <button
+          onClick={() => navigate({ to: "/calisthenics" })}
+          className="text-primary underline"
+        >
           Zurück zu Calisthenics
         </button>
       </main>
@@ -234,7 +246,9 @@ function CaliWorkoutScreen() {
             <div>
               <p className="text-lg font-bold">{savedMsg}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {sets.length} Sets · Ø {isHold ? "" : ""}{Math.round(sets.reduce((a, s) => a + s.count, 0) / sets.length)}{isHold ? " Sek." : " Reps"}
+                {sets.length} Sets · Ø {isHold ? "" : ""}
+                {Math.round(sets.reduce((a, s) => a + s.count, 0) / sets.length)}
+                {isHold ? " Sek." : " Reps"}
               </p>
             </div>
             <button
@@ -250,9 +264,16 @@ function CaliWorkoutScreen() {
         {phase === "rpe" && (
           <div className="flex flex-1 flex-col rounded-[2rem] border border-border bg-card/60 p-6 backdrop-blur">
             <div className="text-center">
-              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Set {sets.length + 1} abgeschlossen</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                Set {sets.length + 1} abgeschlossen
+              </p>
               <p className="mt-2 text-5xl font-bold tabular-nums">
-                {currentCount}{isHold ? <span className="text-2xl font-normal ml-1 text-muted-foreground">Sek.</span> : ""}
+                {currentCount}
+                {isHold ? (
+                  <span className="text-2xl font-normal ml-1 text-muted-foreground">Sek.</span>
+                ) : (
+                  ""
+                )}
               </p>
             </div>
             <div className="mt-6 flex-1 flex flex-col gap-3">
@@ -274,9 +295,7 @@ function CaliWorkoutScreen() {
                   </button>
                 ))}
               </div>
-              <p className="text-center text-sm text-muted-foreground">
-                {RPE_LABELS[rpe]}
-              </p>
+              <p className="text-center text-sm text-muted-foreground">{RPE_LABELS[rpe]}</p>
             </div>
             <button
               onClick={confirmRpe}
@@ -308,7 +327,9 @@ function CaliWorkoutScreen() {
               >
                 −15s
               </button>
-              <span className="text-xs text-muted-foreground">Pausenlänge: {formatSec(restSecs)}</span>
+              <span className="text-xs text-muted-foreground">
+                Pausenlänge: {formatSec(restSecs)}
+              </span>
               <button
                 onClick={() => setRestSecs((s) => Math.min(300, s + 15))}
                 className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium"
@@ -330,7 +351,11 @@ function CaliWorkoutScreen() {
           >
             {/* Count display */}
             <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-2">
-              {phase === "idle" ? `Set ${sets.length + 1}` : isHold ? "Halten…" : "Tippe auf die Fläche"}
+              {phase === "idle"
+                ? `Set ${sets.length + 1}`
+                : isHold
+                  ? "Halten…"
+                  : "Tippe auf die Fläche"}
             </p>
             <span
               className="font-display text-[7rem] leading-none font-bold tabular-nums text-foreground"
@@ -382,7 +407,9 @@ function CaliWorkoutScreen() {
       {/* Completed sets summary */}
       {sets.length > 0 && phase !== "done" && (
         <div className="mt-4 space-y-1.5">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Abgeschlossene Sets</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Abgeschlossene Sets
+          </p>
           {sets.map((s, i) => (
             <div
               key={i}
@@ -391,7 +418,8 @@ function CaliWorkoutScreen() {
               <span className="text-muted-foreground">Set {i + 1}</span>
               <div className="flex items-center gap-3">
                 <span className="font-semibold tabular-nums">
-                  {s.count}{isHold ? " Sek." : " Reps"}
+                  {s.count}
+                  {isHold ? " Sek." : " Reps"}
                 </span>
                 <span className="text-[10px] text-muted-foreground">RPE {s.rpe}</span>
               </div>
@@ -406,7 +434,9 @@ function CaliWorkoutScreen() {
 function StatCell({ label, value, unit }: { label: string; value: string; unit?: string }) {
   return (
     <div className="rounded-2xl border border-border bg-card/50 px-3 py-3 backdrop-blur text-center">
-      <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
+      <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+        {label}
+      </div>
       <div className="mt-1 flex items-baseline justify-center gap-1">
         <span className="text-xl font-semibold tabular-nums text-foreground">{value}</span>
         {unit && <span className="text-[10px] text-muted-foreground">{unit}</span>}

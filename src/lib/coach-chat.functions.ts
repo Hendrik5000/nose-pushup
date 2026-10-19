@@ -4,7 +4,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const MODEL = "google/gemini-3-flash-preview";
 const MAX_TOOL_ROUNDS = 5;
 
-type ChatMessage = { role: "system" | "user" | "assistant" | "tool"; content: string; tool_call_id?: string; tool_calls?: unknown };
+type ChatMessage = {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string;
+  tool_call_id?: string;
+  tool_calls?: unknown;
+};
 type InMsg = { role: "user" | "assistant"; content: string };
 
 const TOOLS = [
@@ -21,8 +26,18 @@ const TOOLS = [
             type: "string",
             description: "Exercise id. One of: pushup, situp, squat, plank, burpee, pullup, other.",
           },
-          count: { type: "integer", description: "Reps (for plank: seconds). 1–500.", minimum: 1, maximum: 500 },
-          duration_s: { type: "integer", description: "Optional duration in seconds (0–3600).", minimum: 0, maximum: 3600 },
+          count: {
+            type: "integer",
+            description: "Reps (for plank: seconds). 1–500.",
+            minimum: 1,
+            maximum: 500,
+          },
+          duration_s: {
+            type: "integer",
+            description: "Optional duration in seconds (0–3600).",
+            minimum: 0,
+            maximum: 3600,
+          },
         },
         required: ["exercise_id", "count"],
       },
@@ -32,7 +47,8 @@ const TOOLS = [
     type: "function",
     function: {
       name: "get_recent_stats",
-      description: "Fetch the user's daily rep totals for the last N days (max 30). Use when the user asks about progress, week/month totals, or trends.",
+      description:
+        "Fetch the user's daily rep totals for the last N days (max 30). Use when the user asks about progress, week/month totals, or trends.",
       parameters: {
         type: "object",
         properties: { days: { type: "integer", minimum: 1, maximum: 30 } },
@@ -73,7 +89,11 @@ async function callGateway(key: string, messages: ChatMessage[]) {
       message: {
         role: "assistant";
         content: string | null;
-        tool_calls?: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
+        tool_calls?: Array<{
+          id: string;
+          type: "function";
+          function: { name: string; arguments: string };
+        }>;
       };
     }>;
   };
@@ -98,37 +118,40 @@ export const coachChat = createServerFn({ method: "POST" })
 
     // Gather context for system prompt.
     const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
-    const [{ data: profile }, { data: stats }, { data: runs }, { data: health }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select(
-          "display_name, level, xp, current_streak, longest_streak, best_count, personal_bests, last_workout_date, birth_year, height_cm, weight_kg, sex, daily_goal",
-        )
-        .eq("id", userId)
-        .maybeSingle(),
-      supabase
-        .from("daily_stats")
-        .select("day, total_reps, sessions")
-        .eq("user_id", userId)
-        .gte("day", cutoff)
-        .order("day", { ascending: true }),
-      supabase
-        .from("runs")
-        .select("distance_m, duration_ms, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(5),
-      supabase
-        .from("health_entries")
-        .select("day, steps, active_kcal, sleep_min, weight_kg")
-        .eq("user_id", userId)
-        .gte("day", cutoff)
-        .order("day", { ascending: false })
-        .limit(7),
-    ]);
+    const [{ data: profile }, { data: stats }, { data: runs }, { data: health }] =
+      await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "display_name, level, xp, current_streak, longest_streak, best_count, personal_bests, last_workout_date, birth_year, height_cm, weight_kg, sex, daily_goal",
+          )
+          .eq("id", userId)
+          .maybeSingle(),
+        supabase
+          .from("daily_stats")
+          .select("day, total_reps, sessions")
+          .eq("user_id", userId)
+          .gte("day", cutoff)
+          .order("day", { ascending: true }),
+        supabase
+          .from("runs")
+          .select("distance_m, duration_ms, created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("health_entries")
+          .select("day, steps, active_kcal, sleep_min, weight_kg")
+          .eq("user_id", userId)
+          .gte("day", cutoff)
+          .order("day", { ascending: false })
+          .limit(7),
+      ]);
 
     const days = (stats ?? []) as Array<{ day: string; total_reps: number; sessions: number }>;
-    const weekReps = days.filter((d) => +new Date(d.day) >= Date.now() - 7 * 86400000).reduce((s, d) => s + d.total_reps, 0);
+    const weekReps = days
+      .filter((d) => +new Date(d.day) >= Date.now() - 7 * 86400000)
+      .reduce((s, d) => s + d.total_reps, 0);
     const name = (profile?.display_name as string | null) ?? "Athlet";
 
     const by = profile?.birth_year as number | null | undefined;
@@ -137,7 +160,11 @@ export const coachChat = createServerFn({ method: "POST" })
     const w = profile?.weight_kg as number | null | undefined;
     const bmi = h && w ? (Number(w) / Math.pow(Number(h) / 100, 2)).toFixed(1) : null;
 
-    const runList = (runs ?? []) as Array<{ distance_m: number; duration_ms: number; created_at: string }>;
+    const runList = (runs ?? []) as Array<{
+      distance_m: number;
+      duration_ms: number;
+      created_at: string;
+    }>;
     const runSummary = runList.length
       ? runList
           .map(
@@ -147,10 +174,18 @@ export const coachChat = createServerFn({ method: "POST" })
           .join("; ")
       : "keine Läufe aufgezeichnet";
 
-    const healthList = (health ?? []) as Array<{ day: string; steps: number; sleep_min: number; active_kcal: number }>;
+    const healthList = (health ?? []) as Array<{
+      day: string;
+      steps: number;
+      sleep_min: number;
+      active_kcal: number;
+    }>;
     const healthSummary = healthList.length
       ? healthList
-          .map((e) => `${e.day}: ${e.steps} Schritte, ${(e.sleep_min / 60).toFixed(1)} h Schlaf, ${e.active_kcal} kcal`)
+          .map(
+            (e) =>
+              `${e.day}: ${e.steps} Schritte, ${(e.sleep_min / 60).toFixed(1)} h Schlaf, ${e.active_kcal} kcal`,
+          )
           .join("; ")
       : "keine Health-Daten";
 
@@ -223,7 +258,8 @@ Wenn der Nutzer nach Muskelwachstum/Verbesserung fragt: konkrete Trainingsempfeh
     }
 
     return {
-      reply: "Ich habe zu viele Aktionen hintereinander gebraucht — versuch die Frage nochmal etwas kürzer.",
+      reply:
+        "Ich habe zu viele Aktionen hintereinander gebraucht — versuch die Frage nochmal etwas kürzer.",
       actions,
     };
   });
@@ -243,7 +279,7 @@ async function runTool(
     const rawId = String(args.exercise_id ?? "pushup").toLowerCase();
     const exercise_id = KNOWN_EXERCISES.has(rawId) ? rawId : "pushup";
     const count = Math.max(1, Math.min(500, Number(args.count) | 0));
-    const duration_ms = Math.max(0, Math.min(3600000, ((Number(args.duration_s) | 0) * 1000)));
+    const duration_ms = Math.max(0, Math.min(3600000, (Number(args.duration_s) | 0) * 1000));
     const { error } = await supabase
       .from("workouts")
       .insert({ user_id: userId, exercise_id, count, duration_ms });
