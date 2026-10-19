@@ -4,7 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { AiProviderSettings } from "@/components/AiProviderSettings";
 import { buildAppContext, contextToSystemBlock } from "@/lib/ai-context";
-import { applyPlanFeedback, parseAiResponse, type PlanFeedback } from "@/lib/ai-plan";
+import {
+  applyPlanFeedback,
+  getMostRecentPlanFeedback,
+  parseAiResponse,
+  type PlanFeedback,
+} from "@/lib/ai-plan";
 import type { AppContextPack } from "@/lib/ai-context";
 import {
   classifyTask,
@@ -44,23 +49,32 @@ export const Route = createFileRoute("/_authenticated/ai")({
 });
 
 type Msg = AiSession["messages"][number];
-const FEEDBACK_KEY = "super-ai-plan-feedback";
-
-function loadPlanFeedback(): PlanFeedback | null {
-  if (typeof window === "undefined") return null;
-  const value = window.localStorage.getItem(FEEDBACK_KEY);
-  return value === "zu_schwer" || value === "zu_leicht" || value === "passt" ? value : null;
-}
 
 function describeContext(ctx: AppContextPack): string {
+  const labels: Record<string, string> = {
+    display_name: "Anzeigename",
+    level: "Trainingsstufe",
+    xp: "Erfahrungspunkte",
+    current_streak: "aktuelle Trainingsserie",
+    longest_streak: "längste Trainingsserie",
+    best_count: "Liegestütz-Bestwert",
+    personal_bests: "Übungsbestwerte",
+    last_workout_date: "letzter Trainingstag",
+    birth_year: "Geburtsjahr",
+    height_cm: "Körpergröße",
+    weight_kg: "Gewicht",
+    sex: "Geschlecht",
+    daily_goal: "Tagesziel",
+  };
   const profileFields = Object.entries(ctx.profile ?? {})
     .filter(([, value]) => value !== null && value !== undefined && value !== "")
-    .map(([key]) => key);
+    .map(([key]) => labels[key] ?? key);
   return [
     `Profil: ${profileFields.length ? profileFields.join(", ") : "keine Profilwerte"}`,
-    `Tagesstatistik: ${ctx.dailyStatsDays} Tage geladen. Liegestütze diese Kalenderwoche ab Montag: ${ctx.weekReps == null ? "nicht verfügbar" : ctx.weeklyWorkoutCount === 0 ? "noch keine gespeicherten Workouts" : ctx.weekReps}`,
-    `Workouts (${ctx.recentWorkouts.length}): ${ctx.recentWorkouts.map((workout) => `${workout.created_at.slice(0, 10)} ${workout.exercise_id ?? "Übung unbekannt"} × ${workout.count}`).join("; ") || "keine Einträge"}`,
-    `Health (${ctx.health.length} Tage): ${ctx.health.map((day) => `${day.day}: ${day.steps ?? "Schritte unbekannt"} Schritte, ${day.sleep_min == null ? "Schlaf unbekannt" : `${(day.sleep_min / 60).toFixed(1)} h Schlaf`}, ${day.active_kcal ?? "Aktivitäts-kcal unbekannt"} aktive kcal`).join("; ") || "keine Einträge"}`,
+    `Datenabdeckung: ${ctx.dailyStatsDays} Tage mit Statistik-Einträgen; Wiederholungszahlen stammen nur aus gespeicherten Trainings, nicht aus diesen Tagesaggregaten.`,
+    `Liegestütze diese Kalenderwoche ab Montag: ${ctx.weekReps == null ? "nicht verfügbar" : ctx.weeklyWorkoutCount === 0 ? "noch keine gespeicherten Workouts" : ctx.weekReps}`,
+    `Trainings (${ctx.recentWorkouts.length}): ${ctx.recentWorkouts.map((workout) => `${workout.created_at.slice(0, 10)} ${workout.exercise_id ?? "Übung unbekannt"} × ${workout.count}`).join("; ") || "keine Einträge"}`,
+    `Gesundheitsdaten (${ctx.health.length} Tage): ${ctx.health.map((day) => `${day.day}: ${day.steps ?? "Schritte unbekannt"} Schritte, ${day.sleep_min == null ? "Schlaf unbekannt" : `${(day.sleep_min / 60).toFixed(1)} h Schlaf`}, ${day.active_kcal ?? "Aktivitäts-kcal unbekannt"} aktive kcal`).join("; ") || "keine Einträge"}`,
     `Chat: ${ctx.chatRooms.length} Räume und ${ctx.recentChat.length} letzte eigene Nachrichten`,
   ].join("\n");
 }
@@ -87,9 +101,9 @@ function SuperAiPage() {
   const [contextHint, setContextHint] = useState<string | null>(null);
   const [appContext, setAppContext] = useState<AppContextPack | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
-  const [lastFeedback, setLastFeedback] = useState<PlanFeedback | null>(() => loadPlanFeedback());
   const [listening, setListening] = useState(false);
   const [lastTask, setLastTask] = useState<AiTask | null>(null);
+  const lastFeedback = getMostRecentPlanFeedback(messages);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
 
@@ -172,7 +186,7 @@ function SuperAiPage() {
     setLastTask(task);
     const provider = pickProvider(loadProviders(), task);
     if (!provider) {
-      setError("Kein aktiver Provider. Öffne Keys und hinterlege einen API-Key.");
+      setError("Kein aktiver KI-Anbieter. Öffne Zugangsdaten und hinterlege einen API-Schlüssel.");
       setSettingsOpen(true);
       return;
     }
@@ -185,6 +199,10 @@ function SuperAiPage() {
       let systemExtra = `${PERSONAS.find((p) => p.id === persona)?.system ?? ""}
 
 Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routing bedeutet: die App wählt passend zur Frage ein KI-Modell). Erfinde keine persönlichen Daten oder Trainingsergebnisse. Fehlt für eine sichere oder persönliche Trainingsempfehlung wichtiger Kontext, stelle zuerst eine konkrete Rückfrage. Bei einem konkreten einzelnen Trainingsvorschlag gib zusätzlich ein JSON-Objekt mit reply und einem vollständig ausgefüllten plan (title, exercise_id, sets, reps, rest_s, rationale) aus; wenn Kontext fehlt, lasse plan weg. Normale Antworten bleiben Text.${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
+      if (lastFeedback === "passt_nicht") {
+        systemExtra +=
+          "\nDer letzte Vorschlag passt nicht. Frage gezielt, ob Übung, verfügbare Zeit, Ausrüstung oder ein anderer Grund nicht passt; ändere nicht einfach nur Wiederholungszahlen. Gib erst nach Klärung einen neuen persönlichen Plan aus.";
+      }
       if (userId) {
         const ctx = await buildAppContext(userId);
         setAppContext(ctx);
@@ -303,13 +321,13 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
             <IconBtn label="Chats" onClick={() => setSessionsOpen((v) => !v)}>
               💬
             </IconBtn>
-            <IconBtn label="Tools" onClick={() => setToolsOpen((v) => !v)}>
+            <IconBtn label="Werkzeuge" onClick={() => setToolsOpen((v) => !v)}>
               ✦
             </IconBtn>
             <IconBtn label="Kontext" onClick={() => setContextOpen((v) => !v)}>
               ⧉
             </IconBtn>
-            <IconBtn label="Keys" onClick={() => setSettingsOpen((v) => !v)}>
+            <IconBtn label="Zugangsdaten" onClick={() => setSettingsOpen((v) => !v)}>
               ⚙️
             </IconBtn>
           </div>
@@ -322,6 +340,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
               key={p.id}
               type="button"
               onClick={() => onPersona(p.id)}
+              aria-pressed={persona === p.id}
               className={`flex-1 rounded-xl border px-2 py-1.5 text-center transition ${
                 persona === p.id
                   ? "border-primary bg-primary/20 text-foreground"
@@ -330,6 +349,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
             >
               <div className="text-[11px] font-semibold">{p.label}</div>
               <div className="text-[9px] opacity-70">{p.hint}</div>
+              {persona === p.id && <span className="text-[9px]">Ausgewählt</span>}
             </button>
           ))}
         </div>
@@ -386,6 +406,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
               }
             }}
             placeholder="Frag Super-AI…"
+            aria-label="Deine Frage an den KI-Coach"
             rows={1}
             className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm outline-none"
             style={{ maxHeight: 140 }}
@@ -393,6 +414,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
           />
           <button
             type="submit"
+            aria-label="Nachricht senden"
             disabled={loading || !input.trim()}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-40"
           >
@@ -417,7 +439,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
         </p>
         <p className="mt-1">
           Dazu kommen deine Eingabe und dieser Chatverlauf. Fehlende Werte bleiben unbekannt; es
-          werden keine Trainings- oder Health-Werte erfunden.
+          werden keine Trainings- oder Gesundheitswerte erfunden.
         </p>
         <p className="mt-1">
           Routing heißt: Die App wählt anhand deiner Frage einen passenden KI-Anbieter und ein
@@ -430,7 +452,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
         <section className="mt-3 rounded-2xl border border-border bg-card/80 p-3">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Sessions
+              Gespräche
             </span>
             <button
               type="button"
@@ -472,7 +494,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
       {settingsOpen && (
         <section className="mt-3 rounded-2xl border border-border bg-card/80 p-4">
           <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            API-Provider
+            KI-Anbieter und API-Zugangsdaten
           </div>
           <AiProviderSettings />
         </section>
@@ -503,7 +525,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
               onClick={() => setToolsExpanded((expanded) => !expanded)}
               className="text-[10px] font-medium text-primary"
             >
-              {toolsExpanded ? "Weniger anzeigen" : "Mehr anzeigen"}
+              {toolsExpanded ? "Weniger Vorschläge" : "Mehr Vorschläge"}
             </button>
           </div>
           <div className="grid grid-cols-5 gap-1.5">
@@ -580,7 +602,8 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                   </div>
                   <p className="mt-1 text-[11px] text-muted-foreground">{m.plan.rationale}</p>
                   <p className="mt-2 text-[10px] text-muted-foreground">
-                    Nur ein Vorschlag – es wird nichts automatisch gestartet oder gespeichert.
+                    Nur ein Vorschlag – noch nicht als Training absolviert. Die Einheit startet
+                    erst, wenn du sie dort selbst startest.
                   </p>
                   <Link
                     to="/workout/$exerciseId"
@@ -596,36 +619,51 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                     }
                     className="mt-2 inline-flex rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
                   >
-                    Vorschau in Workoutroute öffnen
+                    Trainingsvorschau öffnen
                   </Link>
                   <div
                     className="mt-2 flex flex-wrap gap-1.5"
                     aria-label="Trainingsvorschlag bewerten"
                   >
-                    {(["zu_schwer", "zu_leicht", "passt"] as const).map((rating) => (
+                    {(["zu_schwer", "zu_leicht", "passt_nicht", "passt"] as const).map((rating) => (
                       <button
                         key={rating}
                         type="button"
                         onClick={() => {
-                          setLastFeedback(rating);
-                          window.localStorage.setItem(FEEDBACK_KEY, rating);
+                          setMessages((current) =>
+                            current.map((message, messageIndex) =>
+                              messageIndex === i ? { ...message, feedback: rating } : message,
+                            ),
+                          );
                           setContextHint(
-                            `Danke — „${rating === "zu_schwer" ? "zu schwer" : rating === "zu_leicht" ? "zu leicht" : "passt"}“ beeinflusst den nächsten Trainingsvorschlag.`,
+                            `Danke — „${rating === "zu_schwer" ? "zu schwer" : rating === "zu_leicht" ? "zu leicht" : rating === "passt_nicht" ? "passt nicht" : "passt"}“ beeinflusst den nächsten Trainingsvorschlag.`,
                           );
                         }}
-                        className={`rounded-full border px-2 py-1 text-[10px] ${lastFeedback === rating ? "border-primary bg-primary/15 text-foreground" : "border-border text-muted-foreground"}`}
+                        aria-pressed={m.feedback === rating}
+                        className={`rounded-full border px-2 py-1 text-[10px] ${m.feedback === rating ? "border-primary bg-primary/15 text-foreground" : "border-border text-muted-foreground"}`}
                       >
                         {rating === "zu_schwer"
                           ? "Zu schwer"
                           : rating === "zu_leicht"
                             ? "Zu leicht"
-                            : "Passt"}
+                            : rating === "passt_nicht"
+                              ? "Passt nicht"
+                              : "Passt"}
                       </button>
                     ))}
                   </div>
-                  {lastFeedback && (
+                  {m.feedback && (
                     <p className="mt-1 text-[10px] text-muted-foreground">
-                      Dein letztes Feedback wird bei der nächsten Antwort berücksichtigt.
+                      Bewertung:{" "}
+                      {m.feedback === "zu_schwer"
+                        ? "Zu schwer"
+                        : m.feedback === "zu_leicht"
+                          ? "Zu leicht"
+                          : m.feedback === "passt_nicht"
+                            ? "Passt nicht"
+                            : "Passt"}
+                      . Diese Rückmeldung ist mit dem Vorschlag gespeichert und wird bei der
+                      nächsten Empfehlung berücksichtigt.
                     </p>
                   )}
                 </section>

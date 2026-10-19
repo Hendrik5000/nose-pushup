@@ -1,6 +1,6 @@
 /** Super-AI skill tools + personas + session helpers. */
 
-import type { AiWorkoutPlan } from "@/lib/ai-plan";
+import type { AiWorkoutPlan, PlanFeedback } from "@/lib/ai-plan";
 
 export type AiPersona = "coach" | "analyst" | "motivator";
 
@@ -22,7 +22,7 @@ export const PERSONAS: Array<{ id: AiPersona; label: string; hint: string; syste
   {
     id: "motivator",
     label: "Motivator",
-    hint: "Energie & Streak",
+    hint: "Energie & Trainingsserie",
     system:
       "Persona: motivierender Trainingspartner. Positiv, ehrlich, kurze Pep-Talks und realistische Mini-Ziele. Kein Hype ohne Inhalt.",
   },
@@ -49,7 +49,7 @@ export const SUPER_TOOLS: SuperTool[] = [
   {
     id: "week_review",
     icon: "📊",
-    label: "Wochen-Review",
+    label: "Wochenrückblick",
     description: "Was lief gut / schwach",
     prompt:
       "Analysiere meine letzten Workouts und Health-Daten der Woche. Was lief gut, wo stockt es, 3 konkrete Verbesserungen für die nächste Woche.",
@@ -57,7 +57,7 @@ export const SUPER_TOOLS: SuperTool[] = [
   {
     id: "form_check",
     icon: "🦴",
-    label: "Form-Check",
+    label: "Technikprüfung",
     description: "Technik & Schultern",
     prompt:
       "Gib mir einen Form-Check für klassische Push-Ups: 5 häufige Fehler, wie ich sie korrigiere, und eine 5-Minuten-Mobility-Routine für Schultern/Wrist.",
@@ -65,7 +65,7 @@ export const SUPER_TOOLS: SuperTool[] = [
   {
     id: "recovery",
     icon: "😴",
-    label: "Recovery",
+    label: "Erholung",
     description: "Schlaf & Entlastung",
     prompt:
       "Erstelle einen Recovery-Plan für die nächsten 48 Stunden anhand meiner Schlaf-/Schrittdaten und Trainingslast. Inkl. wann ich trainieren sollte und wann Pause.",
@@ -73,7 +73,7 @@ export const SUPER_TOOLS: SuperTool[] = [
   {
     id: "micro",
     icon: "⚡",
-    label: "Micro-Challenge",
+    label: "Kurze Herausforderung",
     description: "Heute in 10 Min",
     prompt:
       "Schlage eine Micro-Challenge für heute vor (max. 10 Minuten), passend zu meinem Bestwert und Tagesziel. Regeln klar, XP-Feeling, machbar auch bei wenig Zeit.",
@@ -89,15 +89,15 @@ export const SUPER_TOOLS: SuperTool[] = [
   {
     id: "motivation",
     icon: "🔥",
-    label: "Motivations-Boost",
-    description: "Streak retten",
+    label: "Motivationshilfe",
+    description: "Trainingsserie erhalten",
     prompt:
       "Ich brauche einen kurzen Motivations-Boost und ein Mini-Ziel für die nächsten 15 Minuten, das meinen Streak schützt. Direkt, ehrlich, ohne Floskeln.",
   },
   {
     id: "pr_strategy",
     icon: "🏆",
-    label: "PR-Strategie",
+    label: "Bestwert-Strategie",
     description: "Nächster Bestwert",
     prompt:
       "Entwickle eine 2-Wochen-Strategie für einen neuen Push-Up-Personal-Best. Aufbau, Test-Tag, Deload, woran ich merke dass ich bereit bin.",
@@ -113,7 +113,7 @@ export const SUPER_TOOLS: SuperTool[] = [
   {
     id: "nutrition",
     icon: "🥗",
-    label: "Fuel-Tipps",
+    label: "Ernährungstipps",
     description: "Vor/nach Training",
     prompt:
       "Gib praxisnahe Ernährungs-Tipps rund ums Training (vor/nach Push-Up-Sessions), ohne Diät-Dogma. 5 konkrete, einfache Maßnahmen für den Alltag.",
@@ -128,6 +128,7 @@ export type AiSession = {
     role: "user" | "assistant";
     content: string;
     plan?: AiWorkoutPlan;
+    feedback?: PlanFeedback;
     meta?: { provider?: string; model?: string; task?: string };
   }>;
 };

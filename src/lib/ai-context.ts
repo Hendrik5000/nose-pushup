@@ -10,7 +10,12 @@ export type AppContextPack = {
   weeklyWorkoutCount: number | null;
   dailyStatsDays: number;
   recentWorkouts: Array<{ exercise_id: string | null; count: number; created_at: string }>;
-  health: Array<{ day: string; steps: number; sleep_min: number; active_kcal: number }>;
+  health: Array<{
+    day: string;
+    steps: number | null;
+    sleep_min: number | null;
+    active_kcal: number | null;
+  }>;
   chatRooms: Array<{ name: string; description?: string | null }>;
   recentChat: Array<{ room?: string; content: string; created_at: string }>;
 };
@@ -30,9 +35,13 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
         .maybeSingle(),
       supabase
         .from("daily_stats")
-        .select("day, total_reps")
+        // Aggregates can drift when legacy database triggers execute twice.
+        // Use this table only for entry coverage, never as a second rep total.
+        .select("day")
         .eq("user_id", userId)
-        .gte("day", cutoff),
+        .gte("day", cutoff)
+        .order("day", { ascending: false })
+        .limit(14),
       supabase
         .from("workouts")
         .select("exercise_id, count, created_at")
@@ -55,7 +64,7 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
         .lt("created_at", week.endExclusive),
     ]);
 
-  const days = (stats ?? []) as Array<{ day: string; total_reps: number }>;
+  const days = (stats ?? []) as Array<{ day: string }>;
   const weekReps = weeklyWorkouts.error ? null : sumTrainingWeekReps(weeklyWorkouts.data ?? []);
   // Rooms and fallback messages are always scoped to this account. Never include
   // a device's system welcome message as if it were the user's own message.
@@ -125,6 +134,9 @@ NUTZER:
 - Körper: Alter ${age ?? "?"}, ${p.height_cm ?? "?"} cm, ${p.weight_kg ?? "?"} kg, ${p.sex ?? "?"}
 - Liegestütze diese Kalenderwoche (lokal ab Montag): ${ctx.weekReps == null ? "nicht verfügbar" : ctx.weeklyWorkoutCount === 0 ? "noch keine gespeicherten Workouts" : ctx.weekReps}
 - Letztes Training: ${p.last_workout_date ?? "nicht hinterlegt"}
+
+DATENABDECKUNG:
+${ctx.dailyStatsDays} Tage mit Statistik-Einträgen im geladenen Zeitraum. Diese Anzahl ist kein Trainingsumfang. Wiederholungen ausschließlich aus den gespeicherten Trainings und ihrer Wochensumme ableiten; keine weiteren aggregierten Tageszahlen annehmen.
 
 LETZTE WORKOUTS:
 ${ctx.recentWorkouts.map((w) => `- ${w.created_at?.slice(0, 10)} ${w.exercise_id ?? "unbekannt"} × ${w.count}`).join("\n") || "(keine Einträge im geladenen Zeitraum)"}

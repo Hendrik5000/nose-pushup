@@ -9,7 +9,24 @@ export type AiWorkoutPlan = {
   rationale: string;
 };
 
-export type PlanFeedback = "zu_schwer" | "zu_leicht" | "passt";
+export type PlanFeedback = "zu_schwer" | "zu_leicht" | "passt_nicht" | "passt";
+
+/** Pick the newest rating saved on an individual recommendation in this session. */
+export function getMostRecentPlanFeedback(
+  messages: ReadonlyArray<{
+    role: "user" | "assistant";
+    plan?: AiWorkoutPlan;
+    feedback?: PlanFeedback;
+  }>,
+): PlanFeedback | null {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (message?.role === "assistant" && message.plan && message.feedback) {
+      return message.feedback;
+    }
+  }
+  return null;
+}
 
 const EXERCISES = new Set<AiWorkoutPlan["exercise_id"]>([
   "pushup",
@@ -72,7 +89,9 @@ export function applyPlanFeedback(
   plan: AiWorkoutPlan,
   feedback: PlanFeedback | null,
 ): AiWorkoutPlan {
-  if (!feedback || feedback === "passt") return plan;
+  // A mismatch is not a difficulty rating: ask what should change instead of
+  // silently increasing or decreasing the same exercise.
+  if (!feedback || feedback === "passt" || feedback === "passt_nicht") return plan;
   if (feedback === "zu_schwer") {
     return {
       ...plan,
