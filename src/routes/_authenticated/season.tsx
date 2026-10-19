@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { ShareCard } from "@/components/ShareCard";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { Coins, Medal, ShoppingBag, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/season")({
   head: () => ({
@@ -142,7 +144,7 @@ function SeasonPage() {
 
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
-      <header className="flex items-center justify-between">
+      <header className="classic-only flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
             {season?.name ?? "Saison"}
@@ -157,6 +159,17 @@ function SeasonPage() {
         </Link>
       </header>
 
+      <div className="sport-only mt-6">
+        <SportPageIntro
+          eyebrow={season?.name ?? "Saison"}
+          title="Saison. Einsatz. Aufstieg."
+          description="Sammle Punkte, steige in der Liga auf und löse deine Trainingsmünzen für echte Belohnungen ein."
+        >
+          <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+            <Coins className="h-4 w-4" /> {coins} Münzen
+          </div>
+        </SportPageIntro>
+      </div>
       {loading && (
         <div className="mt-6 rounded-2xl border border-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
           Lade…
@@ -171,10 +184,14 @@ function SeasonPage() {
 
       {!loading && season && (
         <>
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="01">Dein Saison-Fortschritt</SportSectionLabel>
+          </div>
           {/* Eigener Stand */}
           <section className="mt-5 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
             <div className="flex items-center gap-4">
-              <span className="text-5xl">{LEAGUES[myLeagueIdx]?.icon}</span>
+              <span className="classic-only text-5xl">{LEAGUES[myLeagueIdx]?.icon}</span>
+              <Medal className="sport-only h-10 w-10 text-primary" />
               <div className="min-w-0 flex-1">
                 <div className="text-lg font-bold">{LEAGUES[myLeagueIdx]?.label}-Liga</div>
                 <div className="text-xs text-muted-foreground">
@@ -182,7 +199,11 @@ function SeasonPage() {
                 </div>
               </div>
               <div className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                🪙 {coins}
+                <>
+                  <span className="classic-only">🪙 </span>
+                  <Coins className="sport-only mr-1 inline h-3.5 w-3.5" />
+                  {coins}
+                </>
               </div>
             </div>
 
@@ -219,6 +240,36 @@ function SeasonPage() {
             </div>
           </section>
 
+          {scores.length > 0 && (
+            <section className="sport-only mt-7">
+              <SportSectionLabel number="02">Saison-Podium</SportSectionLabel>
+              <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {scores.slice(0, 3).map((s, i) => (
+                  <li
+                    key={s.user_id}
+                    className={`rounded-2xl border p-4 ${s.user_id === userId ? "border-primary/50 bg-primary/10" : "border-border bg-card/60"}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                        Platz {i + 1}
+                      </span>
+                      <Trophy className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="mt-4 truncate text-base font-bold">
+                      {names[s.user_id] ?? "Athlet"}
+                      {s.user_id === userId ? " · Du" : ""}
+                    </div>
+                    <div className="mt-1 text-sm font-semibold tabular-nums text-primary">
+                      {s.points} Punkte
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="03">Volle Liga-Rangliste</SportSectionLabel>
+          </div>
           {/* Rangliste */}
           <section className="mt-5">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -242,9 +293,10 @@ function SeasonPage() {
                   <span className="w-6 text-sm font-bold tabular-nums text-muted-foreground">
                     {i + 1}
                   </span>
-                  <span className="text-lg">
+                  <span className="classic-only text-lg">
                     {LEAGUES.find((l) => l.id === s.league)?.icon ?? "🥉"}
                   </span>
+                  <Medal className="sport-only h-4 w-4 text-primary" />
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">
                     {names[s.user_id] ?? "Athlet"}
                   </span>
@@ -254,6 +306,9 @@ function SeasonPage() {
             </div>
           </section>
 
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="03">Belohnungen freischalten</SportSectionLabel>
+          </div>
           {/* Shop */}
           <section className="mt-6">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -268,7 +323,8 @@ function SeasonPage() {
                     key={item.id}
                     className="flex items-center gap-3 rounded-2xl border border-border bg-card/50 p-3"
                   >
-                    <span className="text-2xl">{item.icon}</span>
+                    <span className="classic-only text-2xl">{item.icon}</span>
+                    <ShoppingBag className="sport-only h-6 w-6 text-primary" />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold">{item.name}</div>
                       <div className="truncate text-[11px] text-muted-foreground">
@@ -280,7 +336,17 @@ function SeasonPage() {
                       disabled={has || busy === item.id || coins < item.cost}
                       className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-40"
                     >
-                      {has ? "Aktiv" : busy === item.id ? "…" : `🪙 ${item.cost}`}
+                      {has ? (
+                        "Aktiv"
+                      ) : busy === item.id ? (
+                        "…"
+                      ) : (
+                        <>
+                          <span className="classic-only">🪙 </span>
+                          <Coins className="sport-only mr-1 inline h-3.5 w-3.5" />
+                          {item.cost}
+                        </>
+                      )}
                     </button>
                   </div>
                 );

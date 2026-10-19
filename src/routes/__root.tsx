@@ -14,6 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import appCss from "../styles.css?url";
+import sportCss from "../sport.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
@@ -128,6 +129,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/favicon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: sportCss },
 
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },

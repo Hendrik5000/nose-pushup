@@ -1,8 +1,10 @@
+import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { coachChat } from "@/lib/coach-chat.functions";
 import { BottomNav } from "@/components/BottomNav";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 
 export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
@@ -107,140 +109,267 @@ function CoachChatPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
-      <header className="flex items-center justify-between">
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <span aria-hidden>←</span> Zurück
-        </Link>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">🧠 Smart Coach</span>
-        </div>
-        <button
-          onClick={clearChat}
-          className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive"
-          title="Chat leeren"
-        >
-          Neu
-        </button>
-      </header>
-
-      <div
-        ref={scrollRef}
-        className="mt-4 flex-1 space-y-4 overflow-y-auto rounded-3xl border border-border bg-card/40 p-4 backdrop-blur"
-      >
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-2xl">
-              🧠
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Dein Fitness-Coach</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Ich kenne deine Werte. Frag nach Tipps, log dein Training per Text oder frag nach
-                Progress.
-              </p>
-            </div>
-            <div className="mt-2 grid w-full gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => submit(s)}
-                  className="rounded-xl border border-border bg-background/60 px-3 py-2 text-left text-xs text-foreground transition hover:border-primary/40"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {messages.map((m, i) => (
-          <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-            <div
-              className={
-                m.role === "user"
-                  ? "max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground"
-                  : "max-w-[92%] space-y-2 text-sm leading-relaxed text-foreground"
-              }
+    <>
+      <DesignView variant="classic">
+        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
+          <header className="flex items-center justify-between">
+            <Link
+              to="/"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
-              <p className="whitespace-pre-wrap">{m.content}</p>
-              {m.actions && m.actions.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {m.actions.map((a, j) => (
-                    <span
-                      key={j}
-                      className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+              <span aria-hidden>←</span> Zurück
+            </Link>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">🧠 Smart Coach</span>
+            </div>
+            <button
+              onClick={clearChat}
+              className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive"
+              title="Chat leeren"
+            >
+              Neu
+            </button>
+          </header>
+
+          <div
+            ref={scrollRef}
+            className="mt-4 flex-1 space-y-4 overflow-y-auto rounded-3xl border border-border bg-card/40 p-4 backdrop-blur"
+          >
+            {messages.length === 0 && (
+              <div className="flex flex-col items-center gap-3 py-6 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-2xl">
+                  🧠
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Dein Fitness-Coach</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Ich kenne deine Werte. Frag nach Tipps, log dein Training per Text oder frag
+                    nach Progress.
+                  </p>
+                </div>
+                <div className="mt-2 grid w-full gap-2">
+                  {SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => submit(s)}
+                      className="rounded-xl border border-border bg-background/60 px-3 py-2 text-left text-xs text-foreground transition hover:border-primary/40"
                     >
-                      ✓ {a}
-                    </span>
+                      {s}
+                    </button>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
+              >
+                <div
+                  className={
+                    m.role === "user"
+                      ? "max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground"
+                      : "max-w-[92%] space-y-2 text-sm leading-relaxed text-foreground"
+                  }
+                >
+                  <p className="whitespace-pre-wrap">{m.content}</p>
+                  {m.actions && m.actions.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {m.actions.map((a, j) => (
+                        <span
+                          key={j}
+                          className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+                        >
+                          ✓ {a}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {loading && (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-1.5 rounded-2xl bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
+                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
+                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
+                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" />
+                  <span className="ml-1.5">Coach denkt…</span>
+                </div>
+              </div>
+            )}
           </div>
-        ))}
 
-        {loading && (
-          <div className="flex justify-start">
-            <div className="flex items-center gap-1.5 rounded-2xl bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
-              <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
-              <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
-              <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" />
-              <span className="ml-1.5">Coach denkt…</span>
+          {error && (
+            <div className="mt-2 rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+              {error}
             </div>
-          </div>
-        )}
-      </div>
+          )}
 
-      {error && (
-        <div className="mt-2 rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
-          {error}
-        </div>
-      )}
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
-        className="mt-3 flex items-end gap-2 rounded-2xl border border-border bg-card/60 p-2 backdrop-blur"
-      >
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="Nachricht an den Coach…"
-          rows={1}
-          className="min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2 text-sm text-foreground outline-none placeholder:truncate placeholder:text-muted-foreground/60"
-          style={{ maxHeight: 140 }}
-          disabled={loading}
-        />
-        <button
-          type="submit"
-          disabled={loading || !input.trim()}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition active:scale-[0.95] disabled:opacity-40"
-          aria-label="Senden"
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              submit();
+            }}
+            className="mt-3 flex items-end gap-2 rounded-2xl border border-border bg-card/60 p-2 backdrop-blur"
           >
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
-          </svg>
-        </button>
-      </form>
-      <BottomNav />
-    </main>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="Nachricht an den Coach…"
+              rows={1}
+              className="min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2 text-sm text-foreground outline-none placeholder:truncate placeholder:text-muted-foreground/60"
+              style={{ maxHeight: 140 }}
+              disabled={loading}
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition active:scale-[0.95] disabled:opacity-40"
+              aria-label="Senden"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          </form>
+          <BottomNav />
+        </main>
+      </DesignView>
+      <DesignView variant="sport">
+        <main className="sport-only sport-coach-page mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8">
+          <SportPageIntro
+            eyebrow="TRAININGSZENTRALE · COACH"
+            title="Smart Coach"
+            description="Dein Trainingspartner für Sessions, Fortschritt und klare Antworten."
+          >
+            <Link
+              to="/"
+              className="sport-back-link rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
+            >
+              ← Übersicht
+            </Link>
+            <button
+              onClick={clearChat}
+              className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
+              title="Chat leeren"
+            >
+              Neuer Chat
+            </button>
+          </SportPageIntro>
+          <SportSectionLabel number="01">Gespräch</SportSectionLabel>
+          <div
+            ref={scrollRef}
+            className="sport-chat-stage flex min-h-[46vh] flex-1 flex-col gap-4 overflow-y-auto rounded-[2rem] border border-border/70 bg-card/65 p-5 shadow-sm sm:p-7"
+          >
+            {messages.length === 0 && (
+              <div className="mx-auto my-auto w-full max-w-lg py-5 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-primary/20 bg-primary/10 text-3xl">
+                  🧠
+                </div>
+                <h2 className="mt-5 text-xl font-bold">Bereit für deinen nächsten Schritt?</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+                  Ich kenne deine Werte. Frag nach Tipps, log dein Training per Text oder frag nach
+                  deinem Progress.
+                </p>
+                <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                  {SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => submit(s)}
+                      className="rounded-2xl border border-border bg-background/65 p-4 text-left text-sm font-medium transition hover:border-primary/50"
+                    >
+                      {s}
+                      <span className="mt-2 block text-xs text-muted-foreground">
+                        Coach fragen →
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[88%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/70 bg-background/80 text-foreground"}`}
+                >
+                  <p className="whitespace-pre-wrap">{m.content}</p>
+                  {m.actions && m.actions.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {m.actions.map((a, j) => (
+                        <span
+                          key={j}
+                          className="rounded-full border border-primary/35 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
+                        >
+                          ✓ {a}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
+                  Coach denkt…
+                </div>
+              </div>
+            )}
+          </div>
+          {error && (
+            <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+          <SportSectionLabel number="02">Deine Nachricht</SportSectionLabel>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              submit();
+            }}
+            className="sport-chat-composer flex items-end gap-3 rounded-[1.5rem] border border-border/70 bg-card/80 p-3 shadow-lg"
+          >
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="Nachricht an den Coach…"
+              rows={1}
+              className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-muted-foreground/70"
+              style={{ maxHeight: 140 }}
+              disabled={loading}
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="flex h-12 min-w-12 items-center justify-center rounded-2xl bg-primary px-4 font-semibold text-primary-foreground transition active:scale-95 disabled:opacity-40"
+              aria-label="Senden"
+            >
+              Senden ↑
+            </button>
+          </form>
+          <BottomNav />
+        </main>
+      </DesignView>
+    </>
   );
 }

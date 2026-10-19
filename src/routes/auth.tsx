@@ -1,8 +1,10 @@
+import { DesignView } from "@/components/DesignView";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 
 function safeNext(raw: unknown): string {
   if (typeof raw !== "string" || !raw.startsWith("/") || raw.startsWith("//")) return "/";
@@ -135,139 +137,288 @@ function AuthPage() {
   };
 
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center px-5 py-10">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex items-center justify-center gap-2">
-          <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_var(--color-primary)]" />
-          <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">
-            Nose&nbsp;Push
-          </span>
-        </div>
-
-        <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {mode === "signin" ? "Willkommen zurück" : "Konto erstellen"}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {mode === "signin"
-              ? "Melde dich an, um deine Bestwerte zu sehen."
-              : "Speichere Bestwerte und Trainings auf allen Geräten."}
-          </p>
-
-          <div className="mt-6 space-y-2">
-            <OAuthButton
-              label="Mit Google fortfahren"
-              onClick={() => handleOAuth("google")}
-              disabled={loading}
-            />
-            <OAuthButton
-              label="Mit Apple fortfahren"
-              onClick={() => handleOAuth("apple")}
-              disabled={loading}
-            />
-          </div>
-
-          <div className="my-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            oder
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <form onSubmit={handleEmail} className="space-y-3">
-            {mode === "signup" && (
-              <Field
-                label="Anzeigename"
-                value={displayName}
-                onChange={setDisplayName}
-                placeholder="z. B. Alex"
-                autoComplete="nickname"
-              />
-            )}
-            <Field
-              label="E-Mail"
-              type="email"
-              value={email}
-              onChange={setEmail}
-              placeholder="du@beispiel.de"
-              autoComplete="email"
-              required
-            />
-            <label className="block">
-              <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                Passwort
+    <>
+      <DesignView variant="classic">
+        <main className="classic-only flex min-h-[100dvh] flex-col items-center justify-center px-5 py-10">
+          <div className="w-full max-w-sm">
+            <div className="mb-8 flex items-center justify-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_var(--color-primary)]" />
+              <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">
+                Nose&nbsp;Push
               </span>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                  required
-                  className="w-full rounded-xl border border-border bg-background/60 px-3 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+            </div>
+
+            <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {mode === "signin" ? "Willkommen zurück" : "Konto erstellen"}
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {mode === "signin"
+                  ? "Melde dich an, um deine Bestwerte zu sehen."
+                  : "Speichere Bestwerte und Trainings auf allen Geräten."}
+              </p>
+
+              <div className="mt-6 space-y-2">
+                <OAuthButton
+                  label="Mit Google fortfahren"
+                  onClick={() => handleOAuth("google")}
+                  disabled={loading}
                 />
+                <OAuthButton
+                  label="Mit Apple fortfahren"
+                  onClick={() => handleOAuth("apple")}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="my-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                <span className="h-px flex-1 bg-border" />
+                oder
+                <span className="h-px flex-1 bg-border" />
+              </div>
+
+              <form onSubmit={handleEmail} className="space-y-3">
+                {mode === "signup" && (
+                  <Field
+                    label="Anzeigename"
+                    value={displayName}
+                    onChange={setDisplayName}
+                    placeholder="z. B. Alex"
+                    autoComplete="nickname"
+                  />
+                )}
+                <Field
+                  label="E-Mail"
+                  type="email"
+                  value={email}
+                  onChange={setEmail}
+                  placeholder="du@beispiel.de"
+                  autoComplete="email"
+                  required
+                />
+                <label className="block">
+                  <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                    Passwort
+                  </span>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                      required
+                      className="w-full rounded-xl border border-border bg-background/60 px-3 py-3 pr-12 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute inset-y-0 right-0 flex items-center px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+                      aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
+                    >
+                      {showPassword ? "🙈" : "👁"}
+                    </button>
+                  </div>
+                </label>
+
+                {error && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="mt-2 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
+                >
+                  {loading ? "Bitte warten…" : mode === "signin" ? "Anmelden" : "Konto erstellen"}
+                </button>
+              </form>
+
+              <button
+                onClick={() => {
+                  setMode(mode === "signin" ? "signup" : "signin");
+                  setError(null);
+                }}
+                className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground transition"
+              >
+                {mode === "signin"
+                  ? "Noch kein Konto? Jetzt registrieren"
+                  : "Bereits registriert? Anmelden"}
+              </button>
+
+              <div className="mt-4 border-t border-border pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute inset-y-0 right-0 flex items-center px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground"
-                  aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
+                  onClick={handleGuest}
+                  disabled={loading}
+                  className="w-full rounded-xl border border-dashed border-border bg-background/40 px-4 py-3 text-sm font-medium text-muted-foreground transition hover:text-foreground hover:border-primary/40 active:scale-[0.98] disabled:opacity-60"
                 >
-                  {showPassword ? "🙈" : "👁"}
+                  👤 Als Gast fortfahren
                 </button>
+                <p className="mt-2 text-center text-[10px] text-muted-foreground">
+                  Starte dein erstes Training ohne E-Mail: Empfehlung wählen, Wiederholungen
+                  erfassen und speichern.
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  Dein Training wird im Gastkonto auf dem Server gespeichert. Der Zugang zu diesem
+                  Konto liegt nur in diesem Browser auf diesem Gerät. Ein anderer Browser, gelöschte
+                  Websitedaten oder das Abmelden können diesen Zugang verlieren lassen. Unter Profil
+                  kannst du das Gastkonto mit E-Mail und Passwort sichern. Die Anmeldung bei einem
+                  anderen bestehenden Konto führt die Daten nicht automatisch zusammen.
+                </p>
               </div>
-            </label>
-
-            {error && (
-              <p className="text-sm text-destructive" role="alert">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="mt-2 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
-            >
-              {loading ? "Bitte warten…" : mode === "signin" ? "Anmelden" : "Konto erstellen"}
-            </button>
-          </form>
-
-          <button
-            onClick={() => {
-              setMode(mode === "signin" ? "signup" : "signin");
-              setError(null);
-            }}
-            className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground transition"
-          >
-            {mode === "signin"
-              ? "Noch kein Konto? Jetzt registrieren"
-              : "Bereits registriert? Anmelden"}
-          </button>
-
-          <div className="mt-4 border-t border-border pt-4">
-            <button
-              type="button"
-              onClick={handleGuest}
-              disabled={loading}
-              className="w-full rounded-xl border border-dashed border-border bg-background/40 px-4 py-3 text-sm font-medium text-muted-foreground transition hover:text-foreground hover:border-primary/40 active:scale-[0.98] disabled:opacity-60"
-            >
-              👤 Als Gast fortfahren
-            </button>
-            <p className="mt-2 text-center text-[10px] text-muted-foreground">
-              Starte dein erstes Training ohne E-Mail: Empfehlung wählen, Wiederholungen erfassen
-              und speichern.
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Dein Training wird im Gastkonto auf dem Server gespeichert. Der Zugang zu diesem Konto
-              liegt nur in diesem Browser auf diesem Gerät. Ein anderer Browser, gelöschte
-              Websitedaten oder das Abmelden können diesen Zugang verlieren lassen. Unter Profil
-              kannst du das Gastkonto mit E-Mail und Passwort sichern. Die Anmeldung bei einem
-              anderen bestehenden Konto führt die Daten nicht automatisch zusammen.
-            </p>
+            </div>
           </div>
-        </div>
-      </div>
-    </main>
+        </main>
+      </DesignView>
+      <DesignView variant="sport">
+        <main className="sport-only sport-auth-page mx-auto grid min-h-[100dvh] w-full max-w-6xl items-center gap-8 px-5 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:px-12">
+          <section className="sport-auth-hero rounded-[2.5rem] border border-primary/20 bg-gradient-to-br from-primary/15 via-card/70 to-background p-7 sm:p-10 lg:p-14">
+            <SportPageIntro
+              eyebrow="NOSE PUSH · TRAINING CLUB"
+              title="Stärker. Schritt für Schritt."
+              description="Dein Training, deine Bestwerte und dein Fortschritt – sicher an einem Ort. Dein nächster Satz beginnt hier."
+            />
+            <div className="mt-10 grid grid-cols-3 gap-3">
+              <div className="rounded-2xl border border-border/70 bg-background/50 p-4">
+                <span className="text-xl">01</span>
+                <p className="mt-2 text-xs font-semibold">Trainieren</p>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-background/50 p-4">
+                <span className="text-xl">02</span>
+                <p className="mt-2 text-xs font-semibold">Fortschritt</p>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-background/50 p-4">
+                <span className="text-xl">03</span>
+                <p className="mt-2 text-xs font-semibold">Dranbleiben</p>
+              </div>
+            </div>
+          </section>
+          <section className="rounded-[2rem] border border-border/70 bg-card/80 p-6 shadow-xl sm:p-9">
+            <SportSectionLabel number="01">Dein Zugang</SportSectionLabel>
+            <h2 className="mt-5 text-2xl font-bold tracking-tight">
+              {mode === "signin" ? "Willkommen zurück" : "Konto erstellen"}
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {mode === "signin"
+                ? "Melde dich an, um deine Bestwerte zu sehen."
+                : "Speichere Bestwerte und Trainings auf allen Geräten."}
+            </p>
+            <div className="mt-6 grid gap-2">
+              <OAuthButton
+                label="Mit Google fortfahren"
+                onClick={() => handleOAuth("google")}
+                disabled={loading}
+              />
+              <OAuthButton
+                label="Mit Apple fortfahren"
+                onClick={() => handleOAuth("apple")}
+                disabled={loading}
+              />
+            </div>
+            <div className="my-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              oder
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <form onSubmit={handleEmail} className="space-y-3">
+              {mode === "signup" && (
+                <Field
+                  label="Anzeigename"
+                  value={displayName}
+                  onChange={setDisplayName}
+                  placeholder="z. B. Alex"
+                  autoComplete="nickname"
+                />
+              )}
+              <Field
+                label="E-Mail"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="du@beispiel.de"
+                autoComplete="email"
+                required
+              />
+              <label className="block">
+                <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                  Passwort
+                </span>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                    required
+                    className="w-full rounded-2xl border border-border bg-background/70 px-4 py-4 pr-12 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute inset-y-0 right-0 px-4 text-sm text-muted-foreground"
+                    aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
+                  >
+                    {showPassword ? "🙈" : "👁"}
+                  </button>
+                </div>
+              </label>
+              {error && (
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-2 w-full rounded-2xl bg-primary px-5 py-4 text-sm font-bold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
+              >
+                {loading ? "Bitte warten…" : mode === "signin" ? "Anmelden" : "Konto erstellen"}
+              </button>
+            </form>
+            <button
+              onClick={() => {
+                setMode(mode === "signin" ? "signup" : "signin");
+                setError(null);
+              }}
+              className="mt-4 w-full text-center text-sm font-medium text-muted-foreground hover:text-foreground transition"
+            >
+              {mode === "signin"
+                ? "Noch kein Konto? Jetzt registrieren"
+                : "Bereits registriert? Anmelden"}
+            </button>
+            <div className="mt-5 border-t border-border pt-5">
+              <button
+                type="button"
+                onClick={handleGuest}
+                disabled={loading}
+                className="w-full rounded-2xl border border-dashed border-border bg-background/40 px-5 py-4 text-sm font-semibold text-muted-foreground transition hover:border-primary/40 hover:text-foreground disabled:opacity-60"
+              >
+                Als Gast fortfahren
+              </button>
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                Training ohne E-Mail starten. Fortschritt lässt sich später im Profil sichern.
+              </p>
+              <details className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                <summary className="cursor-pointer font-medium">
+                  Wichtige Hinweise zum Gastkonto
+                </summary>
+                <p className="mt-2">
+                  Dein Training wird im Gastkonto auf dem Server gespeichert. Der Zugang zu diesem
+                  Konto liegt nur in diesem Browser auf diesem Gerät. Ein anderer Browser, gelöschte
+                  Websitedaten oder das Abmelden können diesen Zugang verlieren lassen. Unter Profil
+                  kannst du das Gastkonto mit E-Mail und Passwort sichern. Die Anmeldung bei einem
+                  anderen bestehenden Konto führt die Daten nicht automatisch zusammen.
+                </p>
+              </details>
+            </div>
+          </section>
+        </main>
+      </DesignView>
+    </>
   );
 }
 

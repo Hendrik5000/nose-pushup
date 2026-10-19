@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { Medal, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
   head: () => ({
@@ -81,7 +83,7 @@ function LeaderboardPage() {
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
-      <header className="flex items-center justify-between">
+      <header className="classic-only flex items-center justify-between">
         <Link
           to="/"
           className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
@@ -94,6 +96,20 @@ function LeaderboardPage() {
         <span className="w-10" />
       </header>
 
+      <div className="sport-only mt-6">
+        <SportPageIntro
+          eyebrow="Rangliste · Community"
+          title="Dein nächster Platz wartet."
+          description="Vergleiche Trainingsleistung mit allen Athleten oder filtere auf deinen Freundeskreis."
+        >
+          <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+            <Users className="h-4 w-4" /> {rows.length} Einträge
+          </div>
+        </SportPageIntro>
+      </div>
+      <div className="sport-only mt-7">
+        <SportSectionLabel number="01">Wettbewerb auswählen</SportSectionLabel>
+      </div>
       <section className="mt-6 space-y-3">
         <div className="flex rounded-full border border-border bg-background/60 p-0.5 text-[10px] uppercase tracking-[0.18em]">
           <Tab active={scope === "global"} onClick={() => setScope("global")}>
@@ -112,6 +128,36 @@ function LeaderboardPage() {
         </div>
       </section>
 
+      {rows.length > 0 && !loading && (
+        <section className="sport-only mt-7">
+          <SportSectionLabel number="02">Podium · {METRIC_LABEL[metric]}</SportSectionLabel>
+          <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {rows.slice(0, 3).map((p, i) => (
+              <li
+                key={p.id}
+                className={`rounded-2xl border p-4 ${p.id === userId ? "border-primary/50 bg-primary/10" : "border-border bg-card/60"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    Platz {i + 1}
+                  </span>
+                  <Medal className="h-5 w-5 text-primary" />
+                </div>
+                <div className="mt-4 truncate text-base font-bold">
+                  {p.display_name || "Ohne Namen"}
+                  {p.id === userId ? " · Du" : ""}
+                </div>
+                <div className="mt-1 text-sm font-semibold tabular-nums text-primary">
+                  {((p[metric] ?? 0) as number).toLocaleString("de-DE")} {METRIC_LABEL[metric]}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+      <div className="sport-only mt-7">
+        <SportSectionLabel number="03">Volle Athleten-Rangliste</SportSectionLabel>
+      </div>
       <section className="mt-5 space-y-2">
         {loading && (
           <p className="rounded-2xl border border-border bg-card/40 p-4 text-center text-sm text-muted-foreground">
@@ -135,7 +181,12 @@ function LeaderboardPage() {
                   isMe ? "border-primary/50 bg-primary/10" : "border-border bg-card/40"
                 }`}
               >
-                <div className="w-8 text-center text-sm font-semibold tabular-nums">{medal}</div>
+                <div className="w-8 text-center text-sm font-semibold tabular-nums">
+                  <span className="classic-only">{medal}</span>
+                  <span className="sport-only">
+                    {i < 3 ? <Medal className="mx-auto h-5 w-5 text-primary" /> : i + 1}
+                  </span>
+                </div>
                 <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold">
                   {p.avatar_url ? (
                     <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />

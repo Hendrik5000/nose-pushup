@@ -1,4 +1,5 @@
-export type DesignStyleId = "soft" | "compact" | "editorial" | "studio" | "performance";
+export type DesignStyleId =
+  "soft" | "compact" | "editorial" | "studio" | "performance" | "legacy-performance";
 
 export interface DesignStyleDefinition {
   id: DesignStyleId;
@@ -9,8 +10,9 @@ export interface DesignStyleDefinition {
 export const DESIGN_STYLES: DesignStyleDefinition[] = [
   {
     id: "soft",
-    label: "Soft",
-    description: "Der vertraute, runde Health-Stil mit ruhiger Sans-Serif.",
+    label: "Klassisch",
+    description:
+      "Das bisherige Soft-Design: vertraute runde Health-Karten und die ursprüngliche Oberfläche.",
   },
   {
     id: "compact",
@@ -30,7 +32,13 @@ export const DESIGN_STYLES: DesignStyleDefinition[] = [
   {
     id: "performance",
     label: "Performance",
-    description: "Großzügige sportliche Karten mit kraftvoller, klarer Typografie.",
+    description:
+      "Die neue Sport-Oberfläche: Fokusbereiche, große Kennzahlen, klare Linien und neue Seitenlayouts.",
+  },
+  {
+    id: "legacy-performance",
+    label: "Performance · bisher",
+    description: "Die großzügige Performance-Oberfläche vor der kompletten Neugestaltung.",
   },
 ];
 

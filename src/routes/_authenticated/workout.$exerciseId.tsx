@@ -1,6 +1,9 @@
+import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { Activity, ArrowLeft, Dumbbell, Pause, Play, RotateCcw, Timer } from "lucide-react";
 import { useExerciseEngine, ensureMotionPermission } from "@/hooks/useExerciseEngine";
 import { useCameraDetection, type RepQuality } from "@/hooks/useCameraDetection";
 import { feedbackRep, feedbackSuccess } from "@/lib/feedback";
@@ -103,6 +106,9 @@ function WorkoutScreen() {
       : "nose";
   const useCamera = isPushup && pushMode === "camera";
   const useManual = isPushup && pushMode === "manual";
+  const performanceLayout =
+    typeof document !== "undefined" &&
+    document.documentElement.dataset.designStyle === "performance";
   const isPlanned = !!(search.sets || search.reps || search.rest_s || search.title);
   const plan = useMemo(
     () => ({
@@ -519,49 +525,95 @@ function WorkoutScreen() {
 
   if (draftConflict) {
     return (
-      <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col justify-center px-5 py-8">
-        <section
-          className="rounded-3xl border border-border bg-card p-5"
-          aria-labelledby="saved-draft-title"
-          role="alert"
-        >
-          <h1 id="saved-draft-title" className="text-xl font-bold text-foreground">
-            Ungespeichertes Training gefunden
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Ein neuer Plan ist geöffnet. Dein bisheriger Trainingsentwurf bleibt erhalten, bis du
-            entscheidest.
-          </p>
-          <div className="mt-4 rounded-2xl border border-border bg-background/50 p-3 text-sm">
-            <div className="font-semibold">
-              Bisheriger Entwurf: {draftConflict.plan.title ?? "Training"}
-            </div>
-            <div className="mt-1 text-muted-foreground">
-              {draftConflict.plan.sets} {draftConflict.plan.sets === 1 ? "Satz" : "Sätze"}
-              {draftConflict.plan.reps
-                ? ` · ${draftConflict.plan.reps} Wiederholungen je Satz`
-                : " · ohne Wiederholungsziel"}
-              {` · ${draftConflict.currentReps} Wiederholungen im aktuellen Satz`}
-            </div>
-          </div>
-          <div className="mt-4 grid gap-2">
-            <button
-              type="button"
-              onClick={continueSavedDraft}
-              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+      <>
+        <DesignView variant="sport">
+          <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col justify-center gap-6 px-5 py-8 sm:px-8">
+            <SportPageIntro
+              eyebrow="WORKOUT · ENTWURF GESICHERT"
+              title="Dein Training wartet"
+              description="Ein anderer Plan ist geöffnet. Entscheide, ob du die gespeicherte Session fortsetzen oder bewusst verwerfen möchtest."
+            />
+            <section
+              className="rounded-3xl border border-primary/30 bg-card/70 p-6"
+              role="alert"
+              aria-labelledby="saved-draft-sport-title"
             >
-              Bisherigen Entwurf fortsetzen
-            </button>
-            <button
-              type="button"
-              onClick={discardSavedDraft}
-              className="w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground"
+              <SportSectionLabel number="01">Offener Trainingsentwurf</SportSectionLabel>
+              <h2 id="saved-draft-sport-title" className="mt-4 text-2xl font-bold">
+                {draftConflict.plan.title ?? "Training"}
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {draftConflict.plan.sets} {draftConflict.plan.sets === 1 ? "Satz" : "Sätze"}
+                {draftConflict.plan.reps
+                  ? ` · ${draftConflict.plan.reps} Wiederholungen je Satz`
+                  : " · ohne Wiederholungsziel"}{" "}
+                · {draftConflict.currentReps} Wiederholungen im aktuellen Satz
+              </p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={continueSavedDraft}
+                  className="rounded-2xl bg-primary px-4 py-4 text-sm font-bold text-primary-foreground"
+                >
+                  Entwurf fortsetzen
+                </button>
+                <button
+                  type="button"
+                  onClick={discardSavedDraft}
+                  className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm font-semibold"
+                >
+                  Entwurf verwerfen und neuen Plan starten
+                </button>
+              </div>
+            </section>
+          </main>
+        </DesignView>
+        <DesignView variant="classic">
+          <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col justify-center px-5 py-8">
+            <section
+              className="rounded-3xl border border-border bg-card p-5"
+              aria-labelledby="saved-draft-title"
+              role="alert"
             >
-              Entwurf verwerfen und neuen Plan starten
-            </button>
-          </div>
-        </section>
-      </main>
+              <h1 id="saved-draft-title" className="text-xl font-bold text-foreground">
+                Ungespeichertes Training gefunden
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Ein neuer Plan ist geöffnet. Dein bisheriger Trainingsentwurf bleibt erhalten, bis
+                du entscheidest.
+              </p>
+              <div className="mt-4 rounded-2xl border border-border bg-background/50 p-3 text-sm">
+                <div className="font-semibold">
+                  Bisheriger Entwurf: {draftConflict.plan.title ?? "Training"}
+                </div>
+                <div className="mt-1 text-muted-foreground">
+                  {draftConflict.plan.sets} {draftConflict.plan.sets === 1 ? "Satz" : "Sätze"}
+                  {draftConflict.plan.reps
+                    ? ` · ${draftConflict.plan.reps} Wiederholungen je Satz`
+                    : " · ohne Wiederholungsziel"}
+                  {` · ${draftConflict.currentReps} Wiederholungen im aktuellen Satz`}
+                </div>
+              </div>
+              <div className="mt-4 grid gap-2">
+                <button
+                  type="button"
+                  onClick={continueSavedDraft}
+                  className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+                >
+                  Bisherigen Entwurf fortsetzen
+                </button>
+                <button
+                  type="button"
+                  onClick={discardSavedDraft}
+                  className="w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground"
+                >
+                  Entwurf verwerfen und neuen Plan starten
+                </button>
+              </div>
+            </section>
+          </main>
+        </DesignView>
+      </>
     );
   }
 
@@ -655,168 +707,164 @@ function WorkoutScreen() {
 
   if (useManual) {
     return (
-      <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
-        <header className="flex items-center justify-between">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
-          >
-            <span aria-hidden>←</span>
-            <span>Zurück</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{exercise.icon}</span>
-            <span className="text-sm font-medium text-foreground">
-              {isPushup ? "Liegestütze" : exercise.name}
-              <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                Manuell
-              </span>
-            </span>
-          </div>
-        </header>
-
-        <section className="mt-6 grid grid-cols-2 gap-3">
-          <Stat label="Bestwert" value={best.toString()} />
-          <Stat label="Modus" value="✍️ Manuell" />
-        </section>
-
-        {isPlanned && session && (
-          <section
-            className="mt-3 rounded-2xl border border-border bg-card/50 p-3 text-center"
-            aria-live="polite"
-          >
-            {plan.title && <div className="mb-1 text-sm font-semibold">{plan.title}</div>}
-            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Satz {Math.min(session.currentSet, plan.sets)} / {plan.sets} ·{" "}
-              {session.phase === "preparation"
-                ? "Vorbereitung"
-                : session.phase === "rest"
-                  ? `Pause ${restRemaining ?? 0}s`
-                  : session.phase === "paused"
-                    ? "Pausiert"
-                    : session.phase === "completed"
-                      ? "Plan abgeschlossen"
-                      : "Aktiver Satz"}
-              {plan.reps ? ` · Ziel ${plan.reps} je Satz` : ""}
-            </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              Bisher {session.setReps.reduce((a, b) => a + b, 0) + session.currentReps}{" "}
-              Wiederholungen
-            </div>
-            {session.phase === "preparation" && (
-              <button
-                onClick={() => {
-                  setSession((s) => (s ? startWorkoutSet(s) : s));
-                  setNow(Date.now());
-                }}
-                className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-              >
-                Satz starten
-              </button>
-            )}
-            {session.phase === "rest" && (
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => setSession((s) => (s ? extendWorkoutRest(s, 30) : s))}
-                  className="flex-1 rounded-lg border border-border px-3 py-2 text-xs"
-                >
-                  +30 Sek.
-                </button>
-                <button
-                  onClick={() => {
-                    setSession((s) => (s ? startWorkoutSet(s) : s));
-                    setNow(Date.now());
-                  }}
-                  className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                >
-                  Fortsetzen
-                </button>
+      <>
+        <DesignView variant="sport">
+          <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-6 px-5 py-6 sm:px-8">
+            <SportPageIntro
+              eyebrow="SESSION · MANUELLE ERFASSUNG"
+              title={isPushup ? "Liegestütze" : exercise.name}
+              description="Du gibst dein Ergebnis selbst ein. Dein Entwurf und Satzplan bleiben während der Session erhalten."
+            >
+              <Link to="/" className="sport-back-link inline-flex items-center gap-2">
+                <ArrowLeft size={16} /> Zurück
+              </Link>
+            </SportPageIntro>
+            <section className="sport-focus-card rounded-3xl border border-border bg-card/60 p-5 sm:p-7">
+              <SportSectionLabel number="01">Dein Leistungsstand</SportSectionLabel>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <Stat label="Persönlicher Bestwert" value={best.toString()} />
+                <Stat label="Erfassungsmodus" value="Manuell" />
               </div>
-            )}
-            {session.phase === "paused" && (
-              <button
-                onClick={() => {
-                  setSession((s) => (s ? startWorkoutSet(s) : s));
-                  setNow(Date.now());
-                }}
-                className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-              >
-                Fortsetzen
-              </button>
-            )}
-            {session.phase === "active" && (
-              <button
-                onClick={() => setSession((s) => (s ? pauseWorkout(s) : s))}
-                className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
-              >
-                Pausieren
-              </button>
-            )}
-            {session.phase !== "completed" &&
-              (session.currentReps > 0 || session.setReps.some((r) => r > 0)) && (
-                <button
-                  onClick={finish}
-                  className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
-                >
-                  Teiltraining speichern
-                </button>
-              )}
-            {!summary && (
-              <button
-                type="button"
-                onClick={resetAll}
-                className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
-              >
-                Verwerfen
-              </button>
-            )}
-          </section>
-        )}
-
-        {!summary && (
-          <>
-            <section className="mt-6 flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 p-6 text-center backdrop-blur">
-              {isPlanned && session && (
-                <div className="text-xs font-medium text-muted-foreground">
-                  {session.phase === "completed"
-                    ? "Plan abgeschlossen"
-                    : `Satz ${Math.min(session.currentSet, plan.sets)} / ${plan.sets} · ${session.phase === "rest" ? `Pause ${restRemaining ?? 0}s` : "Wiederholungen eintragen"}`}
-                </div>
-              )}
-              <label
-                htmlFor="manual-repetitions"
-                className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground"
-              >
-                Wie viele Liegestütze hast du gerade gemacht?
-              </label>
-              <input
-                id="manual-repetitions"
-                aria-label="Anzahl der Liegestütze"
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                min={1}
-                max={1000}
-                value={manualInput}
-                disabled={isPlanned && session?.phase !== "active"}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, "");
-                  setManualInput(value);
-                  if (isPlanned)
-                    setSession((s) =>
-                      s?.phase === "active"
-                        ? { ...s, currentReps: Math.min(1000, parseInt(value, 10) || 0) }
-                        : s,
-                    );
-                }}
-                placeholder="0"
-                className="mt-4 w-full max-w-[14rem] rounded-2xl border border-border bg-background/60 py-4 text-center font-display text-[5rem] font-bold tabular-nums text-foreground focus:border-primary focus:outline-none"
-              />
-              <p className="mt-4 max-w-[16rem] text-sm text-muted-foreground">
-                Trage die Anzahl deiner gerade absolvierten Liegestütze ein und speichere.
-              </p>
             </section>
-
+            {isPlanned && session && (
+              <section
+                className="rounded-3xl border border-primary/25 bg-primary/5 p-5 text-center"
+                aria-live="polite"
+              >
+                <SportSectionLabel number="02">Trainingsplan</SportSectionLabel>
+                {plan.title && <div className="mt-3 text-lg font-bold">{plan.title}</div>}
+                <div className="mt-2 text-sm font-semibold text-muted-foreground">
+                  Satz {Math.min(session.currentSet, plan.sets)} / {plan.sets} ·{" "}
+                  {session.phase === "preparation"
+                    ? "Vorbereitung"
+                    : session.phase === "rest"
+                      ? `Pause ${restRemaining ?? 0}s`
+                      : session.phase === "paused"
+                        ? "Pausiert"
+                        : session.phase === "completed"
+                          ? "Plan abgeschlossen"
+                          : "Aktiver Satz"}
+                  {plan.reps ? ` · Ziel ${plan.reps} je Satz` : ""}
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Bisher {session.setReps.reduce((a, b) => a + b, 0) + session.currentReps}{" "}
+                  Wiederholungen
+                </div>
+                {session.phase === "preparation" && (
+                  <button
+                    onClick={() => {
+                      setSession((s) => (s ? startWorkoutSet(s) : s));
+                      setNow(Date.now());
+                    }}
+                    className="mt-4 w-full rounded-2xl bg-primary px-4 py-3 font-semibold text-primary-foreground"
+                  >
+                    Satz starten
+                  </button>
+                )}
+                {session.phase === "rest" && (
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setSession((s) => (s ? extendWorkoutRest(s, 30) : s))}
+                      className="rounded-xl border border-border px-3 py-3 text-sm"
+                    >
+                      +30 Sek.
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSession((s) => (s ? startWorkoutSet(s) : s));
+                        setNow(Date.now());
+                      }}
+                      className="rounded-xl bg-primary px-3 py-3 text-sm font-semibold text-primary-foreground"
+                    >
+                      Fortsetzen
+                    </button>
+                  </div>
+                )}
+                {session.phase === "paused" && (
+                  <button
+                    onClick={() => {
+                      setSession((s) => (s ? startWorkoutSet(s) : s));
+                      setNow(Date.now());
+                    }}
+                    className="mt-4 w-full rounded-xl bg-primary px-4 py-3 font-semibold text-primary-foreground"
+                  >
+                    Fortsetzen
+                  </button>
+                )}
+                {session.phase === "active" && (
+                  <button
+                    onClick={() => setSession((s) => (s ? pauseWorkout(s) : s))}
+                    className="mt-4 w-full rounded-xl border border-border px-4 py-3 text-sm"
+                  >
+                    Pausieren
+                  </button>
+                )}
+                {session.phase !== "completed" &&
+                  (session.currentReps > 0 || session.setReps.some((r) => r > 0)) && (
+                    <button
+                      onClick={finish}
+                      className="mt-2 w-full rounded-xl border border-border px-4 py-3 text-sm"
+                    >
+                      Teiltraining speichern
+                    </button>
+                  )}
+                {!summary && (
+                  <button
+                    type="button"
+                    onClick={resetAll}
+                    className="mt-2 w-full rounded-xl border border-border px-4 py-3 text-sm"
+                  >
+                    Entwurf verwerfen
+                  </button>
+                )}
+              </section>
+            )}
+            {!summary && (
+              <section className="sport-focus-card flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/65 p-6 text-center sm:p-10">
+                {isPlanned && session && (
+                  <div className="mb-5 rounded-full border border-border bg-background/50 px-4 py-2 text-xs font-semibold text-muted-foreground">
+                    {session.phase === "completed"
+                      ? "Plan abgeschlossen"
+                      : `Satz ${Math.min(session.currentSet, plan.sets)} / ${plan.sets} · ${session.phase === "rest" ? `Pause ${restRemaining ?? 0}s` : "Wiederholungen eintragen"}`}
+                  </div>
+                )}
+                <SportSectionLabel number={isPlanned ? "03" : "02"}>
+                  Erfasse deine Wiederholungen
+                </SportSectionLabel>
+                <label
+                  htmlFor="manual-repetitions-sport"
+                  className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground"
+                >
+                  Anzahl der Liegestütze
+                </label>
+                <input
+                  id="manual-repetitions-sport"
+                  aria-label="Anzahl der Liegestütze"
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min={1}
+                  max={1000}
+                  value={manualInput}
+                  disabled={isPlanned && session?.phase !== "active"}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, "");
+                    setManualInput(value);
+                    if (isPlanned)
+                      setSession((s) =>
+                        s?.phase === "active"
+                          ? { ...s, currentReps: Math.min(1000, parseInt(value, 10) || 0) }
+                          : s,
+                      );
+                  }}
+                  placeholder="0"
+                  className="mt-3 w-full max-w-xs rounded-2xl border border-border bg-background/60 px-5 py-5 text-center font-display text-7xl font-bold tabular-nums text-foreground focus:border-primary focus:outline-none"
+                />
+                <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  Trage die Anzahl deiner gerade absolvierten Liegestütze ein.
+                </p>
+              </section>
+            )}
             {awaitingRpe ? (
               <RpePicker saving={saving} onPick={saveManualWithRpe} />
             ) : (
@@ -829,451 +877,1053 @@ function WorkoutScreen() {
                     parseInt(manualInput, 10) <= 0 ||
                     (isPlanned && session?.phase !== "active")
                   }
-                  className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+                  className="w-full rounded-2xl bg-primary px-4 py-4 text-base font-bold text-primary-foreground disabled:opacity-50"
                 >
                   {saving
-                    ? "Speichere…"
+                    ? "Speichere …"
                     : isPlanned && session?.phase !== "completed"
                       ? "Satz speichern"
                       : "Training speichern"}
                 </button>
               )
             )}
-          </>
-        )}
-        {summary && (
-          <div className="mt-4 w-full rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              {summary.partial ? "Teiltraining gespeichert" : "Training abgeschlossen"}
-            </div>
-            <div className="mt-2 text-lg font-semibold text-foreground">
-              {summary.count} Wiederholungen
-            </div>
-            <div className="mt-1 text-sm text-muted-foreground">
-              {summary.isBest
-                ? "Neuer Bestwert"
-                : summary.partial
-                  ? "Teiltraining gespeichert"
-                  : "Gut gemacht"}
-            </div>
-            {summary.plannedSets !== undefined && (
-              <div className="mt-2 text-xs text-muted-foreground">
-                Plan: {summary.plannedSets} {summary.plannedSets === 1 ? "Satz" : "Sätze"}
-                {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} · Tatsächlich:{" "}
-                {summary.actualSets ?? 0} {summary.actualSets === 1 ? "Satz" : "Sätze"} /{" "}
-                {summary.actualReps ?? summary.count} Wdh. · Tatsächliche Dauer:{" "}
-                {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
+            {summary && (
+              <section className="rounded-3xl border border-primary/30 bg-primary/10 p-6">
+                <SportSectionLabel number="04">Session abgeschlossen</SportSectionLabel>
+                <div className="mt-3 text-2xl font-bold">{summary.count} Wiederholungen</div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {summary.isBest
+                    ? "Neuer Bestwert"
+                    : summary.partial
+                      ? "Teiltraining gespeichert"
+                      : "Gut gemacht"}
+                </div>
+                {summary.plannedSets !== undefined && (
+                  <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                    Plan: {summary.plannedSets} {summary.plannedSets === 1 ? "Satz" : "Sätze"}
+                    {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} ·
+                    Tatsächlich: {summary.actualSets ?? 0} Sätze /{" "}
+                    {summary.actualReps ?? summary.count} Wdh. · Dauer{" "}
+                    {formatTime(summary.durationMs)}
+                  </p>
+                )}
+              </section>
+            )}
+            {summary && (
+              <button
+                onClick={resetAll}
+                className="w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold"
+              >
+                Neues Training
+              </button>
+            )}
+            {isPlanned && (
+              <p className="text-center text-xs text-muted-foreground">
+                Zusammenfassung und Teiltraining-Markierung werden lokal zugeordnet.
+              </p>
+            )}
+            <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              {savedHint ?? "Ehrlich und in deinem Tempo"}
+            </p>
+          </main>
+        </DesignView>
+        <DesignView variant="classic">
+          <main className="classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
+            <header className="flex items-center justify-between">
+              <Link
+                to="/"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
+              >
+                <span aria-hidden>←</span>
+                <span>Zurück</span>
+              </Link>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{exercise.icon}</span>
+                <span className="text-sm font-medium text-foreground">
+                  {isPushup ? "Liegestütze" : exercise.name}
+                  <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                    Manuell
+                  </span>
+                </span>
+              </div>
+            </header>
+
+            <section className="mt-6 grid grid-cols-2 gap-3">
+              <Stat label="Bestwert" value={best.toString()} />
+              <Stat label="Modus" value="✍️ Manuell" />
+            </section>
+
+            {isPlanned && session && (
+              <section
+                className="mt-3 rounded-2xl border border-border bg-card/50 p-3 text-center"
+                aria-live="polite"
+              >
+                {plan.title && <div className="mb-1 text-sm font-semibold">{plan.title}</div>}
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Satz {Math.min(session.currentSet, plan.sets)} / {plan.sets} ·{" "}
+                  {session.phase === "preparation"
+                    ? "Vorbereitung"
+                    : session.phase === "rest"
+                      ? `Pause ${restRemaining ?? 0}s`
+                      : session.phase === "paused"
+                        ? "Pausiert"
+                        : session.phase === "completed"
+                          ? "Plan abgeschlossen"
+                          : "Aktiver Satz"}
+                  {plan.reps ? ` · Ziel ${plan.reps} je Satz` : ""}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Bisher {session.setReps.reduce((a, b) => a + b, 0) + session.currentReps}{" "}
+                  Wiederholungen
+                </div>
+                {session.phase === "preparation" && (
+                  <button
+                    onClick={() => {
+                      setSession((s) => (s ? startWorkoutSet(s) : s));
+                      setNow(Date.now());
+                    }}
+                    className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                  >
+                    Satz starten
+                  </button>
+                )}
+                {session.phase === "rest" && (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => setSession((s) => (s ? extendWorkoutRest(s, 30) : s))}
+                      className="flex-1 rounded-lg border border-border px-3 py-2 text-xs"
+                    >
+                      +30 Sek.
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSession((s) => (s ? startWorkoutSet(s) : s));
+                        setNow(Date.now());
+                      }}
+                      className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                    >
+                      Fortsetzen
+                    </button>
+                  </div>
+                )}
+                {session.phase === "paused" && (
+                  <button
+                    onClick={() => {
+                      setSession((s) => (s ? startWorkoutSet(s) : s));
+                      setNow(Date.now());
+                    }}
+                    className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                  >
+                    Fortsetzen
+                  </button>
+                )}
+                {session.phase === "active" && (
+                  <button
+                    onClick={() => setSession((s) => (s ? pauseWorkout(s) : s))}
+                    className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
+                  >
+                    Pausieren
+                  </button>
+                )}
+                {session.phase !== "completed" &&
+                  (session.currentReps > 0 || session.setReps.some((r) => r > 0)) && (
+                    <button
+                      onClick={finish}
+                      className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
+                    >
+                      Teiltraining speichern
+                    </button>
+                  )}
+                {!summary && (
+                  <button
+                    type="button"
+                    onClick={resetAll}
+                    className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-xs"
+                  >
+                    Verwerfen
+                  </button>
+                )}
+              </section>
+            )}
+
+            {!summary && (
+              <>
+                <section className="mt-6 flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 p-6 text-center backdrop-blur">
+                  {isPlanned && session && (
+                    <div className="text-xs font-medium text-muted-foreground">
+                      {session.phase === "completed"
+                        ? "Plan abgeschlossen"
+                        : `Satz ${Math.min(session.currentSet, plan.sets)} / ${plan.sets} · ${session.phase === "rest" ? `Pause ${restRemaining ?? 0}s` : "Wiederholungen eintragen"}`}
+                    </div>
+                  )}
+                  <label
+                    htmlFor="manual-repetitions"
+                    className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground"
+                  >
+                    Wie viele Liegestütze hast du gerade gemacht?
+                  </label>
+                  <input
+                    id="manual-repetitions"
+                    aria-label="Anzahl der Liegestütze"
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={1}
+                    max={1000}
+                    value={manualInput}
+                    disabled={isPlanned && session?.phase !== "active"}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, "");
+                      setManualInput(value);
+                      if (isPlanned)
+                        setSession((s) =>
+                          s?.phase === "active"
+                            ? { ...s, currentReps: Math.min(1000, parseInt(value, 10) || 0) }
+                            : s,
+                        );
+                    }}
+                    placeholder="0"
+                    className="mt-4 w-full max-w-[14rem] rounded-2xl border border-border bg-background/60 py-4 text-center font-display text-[5rem] font-bold tabular-nums text-foreground focus:border-primary focus:outline-none"
+                  />
+                  <p className="mt-4 max-w-[16rem] text-sm text-muted-foreground">
+                    Trage die Anzahl deiner gerade absolvierten Liegestütze ein und speichere.
+                  </p>
+                </section>
+
+                {awaitingRpe ? (
+                  <RpePicker saving={saving} onPick={saveManualWithRpe} />
+                ) : (
+                  (!isPlanned || session?.phase === "active") && (
+                    <button
+                      onClick={submitManual}
+                      disabled={
+                        saving ||
+                        !manualInput ||
+                        parseInt(manualInput, 10) <= 0 ||
+                        (isPlanned && session?.phase !== "active")
+                      }
+                      className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {saving
+                        ? "Speichere…"
+                        : isPlanned && session?.phase !== "completed"
+                          ? "Satz speichern"
+                          : "Training speichern"}
+                    </button>
+                  )
+                )}
+              </>
+            )}
+            {summary && (
+              <div className="mt-4 w-full rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  {summary.partial ? "Teiltraining gespeichert" : "Training abgeschlossen"}
+                </div>
+                <div className="mt-2 text-lg font-semibold text-foreground">
+                  {summary.count} Wiederholungen
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {summary.isBest
+                    ? "Neuer Bestwert"
+                    : summary.partial
+                      ? "Teiltraining gespeichert"
+                      : "Gut gemacht"}
+                </div>
+                {summary.plannedSets !== undefined && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Plan: {summary.plannedSets} {summary.plannedSets === 1 ? "Satz" : "Sätze"}
+                    {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} ·
+                    Tatsächlich: {summary.actualSets ?? 0}{" "}
+                    {summary.actualSets === 1 ? "Satz" : "Sätze"} /{" "}
+                    {summary.actualReps ?? summary.count} Wdh. · Tatsächliche Dauer:{" "}
+                    {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {summary && (
-          <button
-            onClick={resetAll}
-            className="mt-3 w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium"
-          >
-            Neues Training
-          </button>
-        )}
+            {summary && (
+              <button
+                onClick={resetAll}
+                className="mt-3 w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium"
+              >
+                Neues Training
+              </button>
+            )}
 
-        {isPlanned && (
-          <p className="mt-2 text-center text-[10px] text-muted-foreground">
-            Zusammenfassung und Teiltraining-Markierung werden nur auf diesem Gerät lokal
-            zugeordnet.
-          </p>
-        )}
-        <p className="mt-3 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-          {savedHint ?? "Ehrlichkeitsmodus 🙏"}
-        </p>
-      </main>
+            {isPlanned && (
+              <p className="mt-2 text-center text-[10px] text-muted-foreground">
+                Zusammenfassung und Teiltraining-Markierung werden nur auf diesem Gerät lokal
+                zugeordnet.
+              </p>
+            )}
+            <p className="mt-3 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+              {savedHint ?? "Ehrlichkeitsmodus 🙏"}
+            </p>
+          </main>
+        </DesignView>
+      </>
     );
   }
 
   return (
-    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
-      <header className="flex items-center justify-between">
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
-        >
-          <span aria-hidden>←</span>
-          <span>Zurück</span>
-        </Link>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{exercise.icon}</span>
-          <span className="text-sm font-medium text-foreground">
-            {isPushup ? "Liegestütze" : exercise.name}
-            {isPushup && (
-              <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                {modeLabel[pushMode]}
-              </span>
-            )}
-          </span>
-        </div>
-      </header>
-
-      <section className="mt-6 grid grid-cols-3 gap-3">
-        <Stat label="Zeit" value={formatTime(elapsed)} />
-        <Stat
-          label={exercise.unit === "seconds" ? "Status" : "Tempo"}
-          value={
-            exercise.unit === "seconds" ? (active ? "Läuft" : "Aus") : pace ? pace.toFixed(0) : "—"
-          }
-          unit={exercise.unit === "seconds" ? undefined : "/min"}
-        />
-        <Stat
-          label="Bestwert"
-          value={best.toString()}
-          unit={exercise.unit === "seconds" ? "Sek." : undefined}
-        />
-      </section>
-
-      {isPlanned && session && (
-        <section
-          className="mt-3 rounded-2xl border border-border bg-card/50 p-3 text-center"
-          aria-live="polite"
-        >
-          {plan.title && (
-            <div className="mb-1 text-sm font-semibold text-foreground">{plan.title}</div>
-          )}
-          <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            {session.phase === "preparation"
-              ? "Vorbereitung"
-              : session.phase === "rest"
-                ? "Pause"
-                : session.phase === "paused"
-                  ? "Pausiert"
-                  : session.phase === "completed"
-                    ? "Abgeschlossen"
-                    : "Aktiver Satz"}
-          </div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-foreground">
-            Satz {Math.min(session.currentSet, plan.sets)} / {plan.sets}
-            {plan.reps ? ` · ${count} / ${plan.reps} Wiederholungen` : ""}
-          </div>
-          {restRemaining !== null && (
-            <div className="mt-1 text-2xl font-bold tabular-nums text-primary">
-              {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, "0")}
-            </div>
-          )}
-          {session.phase === "rest" && (
-            <div className="mt-2 flex gap-2">
-              <button
-                onClick={() => setSession((s) => (s ? extendWorkoutRest(s, 30) : s))}
-                className="flex-1 rounded-lg border border-border px-3 py-2 text-xs"
-              >
-                +30 Sek.
-              </button>
-              <button
-                onClick={() => {
-                  setSession((s) => (s ? startWorkoutSet(s) : s));
-                  setActive(true);
-                  setStartedAt(Date.now());
-                }}
-                className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-              >
-                Fortsetzen
-              </button>
-            </div>
-          )}
-          {session.phase === "paused" && (
-            <button
-              onClick={() => {
-                setSession((s) => (s ? startWorkoutSet(s) : s));
-                setActive(true);
-                setStartedAt(Date.now());
-              }}
-              className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-            >
-              Fortsetzen
-            </button>
-          )}
-        </section>
-      )}
-      {useCamera && (!active || !!cameraError) && (
-        <aside className="mt-3 rounded-xl border border-border bg-card/50 p-3 text-sm text-foreground">
-          Wenn du „Starten“ wählst, lädt die App zuerst die Erkennungssoftware vom jsDelivr-CDN und
-          das Pose-Modell von Google Cloud; anschließend fragt dein Browser nach Kamerazugriff. Die
-          Pose wird danach direkt auf diesem Gerät aus dem Kamerabild berechnet. Weder Video noch
-          Einzelbilder werden gespeichert oder übertragen. Stelle das Handy seitlich auf und sorge
-          für gutes Licht; Schulter, Ellbogen, Handgelenk, Hüfte und Knie müssen sichtbar sein. Die
-          automatische Erkennung kann Wiederholungen übersehen oder falsch zählen.{" "}
-          <button
-            type="button"
-            className="underline"
-            onClick={() =>
-              navigate({
-                to: "/workout/$exerciseId",
-                params: { exerciseId },
-                search: { ...search, mode: "manual" },
-              })
+    <>
+      <DesignView variant="sport">
+        <main className="sport-only relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-6 px-5 py-6 sm:px-8 pb-10">
+          <SportPageIntro
+            eyebrow={isPlanned ? "WORKOUT · GEPLANTE SESSION" : "WORKOUT · LIVE-TRACKING"}
+            title={isPushup ? "Liegestütze" : "" + exercise.name}
+            description={
+              isPlanned
+                ? (plan.title ??
+                  `${plan.sets} Sätze${plan.reps ? ` · ${plan.reps} Wiederholungen je Satz` : " · Freies Wiederholungsziel"}`)
+                : "Bleib im Rhythmus. Deine Wiederholungen und Bestleistung werden live erfasst."
             }
           >
-            Ohne Kamera manuell trainieren
-          </button>
-        </aside>
-      )}
+            <Link to="/" className="sport-back-link inline-flex items-center gap-2">
+              <ArrowLeft size={16} /> Zurück
+            </Link>
+          </SportPageIntro>
+          <section className="grid gap-3 sm:grid-cols-3">
+            <Stat label="Trainingszeit" value={formatTime(elapsed)} />
+            <Stat
+              label={exercise.unit === "seconds" ? "Status" : "Tempo"}
+              value={
+                exercise.unit === "seconds"
+                  ? active
+                    ? "Läuft"
+                    : "Bereit"
+                  : pace
+                    ? pace.toFixed(0)
+                    : "—"
+              }
+              unit={exercise.unit === "seconds" ? undefined : "/min"}
+            />
+            <Stat
+              label="Persönlicher Bestwert"
+              value={best.toString()}
+              unit={exercise.unit === "seconds" ? "Sek." : undefined}
+            />
+          </section>
+          {isPlanned && session && (
+            <section
+              className="rounded-3xl border border-primary/25 bg-primary/5 p-5"
+              aria-live="polite"
+            >
+              <SportSectionLabel number="01">Satzsteuerung</SportSectionLabel>
+              {plan.title && <p className="mt-3 text-base font-bold">{plan.title}</p>}
+              <div className="mt-2 flex flex-wrap items-baseline gap-2">
+                <span className="text-xl font-bold">
+                  Satz {Math.min(session.currentSet, plan.sets)} / {plan.sets}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {session.phase === "preparation"
+                    ? "Vorbereitung"
+                    : session.phase === "rest"
+                      ? "Pause"
+                      : session.phase === "paused"
+                        ? "Pausiert"
+                        : session.phase === "completed"
+                          ? "Abgeschlossen"
+                          : "Aktiver Satz"}
+                </span>
+                {plan.reps && (
+                  <span className="text-sm text-muted-foreground">
+                    · {count} / {plan.reps} Wiederholungen
+                  </span>
+                )}
+              </div>
+              {restRemaining !== null && (
+                <div className="mt-3 font-display text-4xl font-bold tabular-nums text-primary">
+                  {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, "0")}
+                </div>
+              )}
+              {session.phase === "preparation" && (
+                <button
+                  onClick={() => {
+                    setSession((s) => (s ? startWorkoutSet(s) : s));
+                    setActive(true);
+                    setStartedAt(Date.now());
+                  }}
+                  className="mt-4 w-full rounded-2xl bg-primary px-4 py-3 font-semibold text-primary-foreground"
+                >
+                  Satz starten
+                </button>
+              )}
+              {session.phase === "rest" && (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setSession((s) => (s ? extendWorkoutRest(s, 30) : s))}
+                    className="rounded-xl border border-border px-3 py-3 text-sm"
+                  >
+                    +30 Sek.
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSession((s) => (s ? startWorkoutSet(s) : s));
+                      setActive(true);
+                      setStartedAt(Date.now());
+                    }}
+                    className="rounded-xl bg-primary px-3 py-3 text-sm font-semibold text-primary-foreground"
+                  >
+                    Fortsetzen
+                  </button>
+                </div>
+              )}
+              {session.phase === "paused" && (
+                <button
+                  onClick={() => {
+                    setSession((s) => (s ? startWorkoutSet(s) : s));
+                    setActive(true);
+                    setStartedAt(Date.now());
+                  }}
+                  className="mt-3 w-full rounded-xl bg-primary px-4 py-3 font-semibold text-primary-foreground"
+                >
+                  Fortsetzen
+                </button>
+              )}
+            </section>
+          )}
+          {useCamera && (!active || !!cameraError) && (
+            <aside className="rounded-2xl border border-border bg-card/55 p-4 text-sm leading-relaxed text-muted-foreground">
+              Beim Start lädt die App Erkennungssoftware und ein Pose-Modell. Die Pose wird lokal
+              verarbeitet; Video und Einzelbilder werden nicht gespeichert oder übertragen. Stelle
+              das Handy seitlich auf und achte auf gute Beleuchtung.{" "}
+              <button
+                type="button"
+                className="ml-1 font-semibold text-primary underline underline-offset-4"
+                onClick={() =>
+                  navigate({
+                    to: "/workout/$exerciseId",
+                    params: { exerciseId },
+                    search: { ...search, mode: "manual" },
+                  })
+                }
+              >
+                Ohne Kamera manuell trainieren
+              </button>
+            </aside>
+          )}
 
-      <button
-        onPointerDown={handleSurfaceTap}
-        aria-label={isTapDriven ? "Antippen" : "Aktiv"}
-        className="group relative mt-6 flex flex-1 select-none items-center justify-center overflow-hidden rounded-[2rem] border border-border bg-card/60 backdrop-blur active:bg-card transition-colors"
-      >
-        {useCamera && (
-          <video
-            ref={videoRef}
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40"
-            playsInline
-            muted
-          />
-        )}
-
-        {count === 0 && !active && !useCamera && (
-          <>
-            <span className="pointer-events-none absolute h-40 w-40 rounded-full bg-primary/20 animate-pulse-ring" />
-            <span className="pointer-events-none absolute h-40 w-40 rounded-full bg-primary/10 animate-pulse-ring [animation-delay:0.7s]" />
-          </>
-        )}
-
-        <div className="relative z-10 flex flex-col items-center gap-3 px-4 text-center">
-          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
-            {isPushup ? `Liegestütze · ${modeLabel[pushMode]}` : exercise.name}
-          </span>
-          {countdown !== null && (
-            <div className="rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
-              Los in {countdown}…
+          <section
+            className="sport-workout-stage relative flex min-h-[24rem] flex-1 flex-col items-center justify-center overflow-hidden rounded-[2rem] border border-primary/20 bg-card/75 px-5 py-8 text-center sm:min-h-[32rem]"
+            onPointerDown={handleSurfaceTap}
+          >
+            {useCamera && (
+              <video
+                ref={performanceLayout ? videoRef : undefined}
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35"
+                playsInline
+                muted
+              />
+            )}
+            <SportSectionLabel number={isPlanned ? "02" : "01"}>
+              {exercise.unit === "seconds" ? (
+                <>
+                  <Timer className="mr-2 inline" size={15} />
+                  {exercise.name}
+                </>
+              ) : isPushup ? (
+                `Liegestütze · ${modeLabel[pushMode]}`
+              ) : (
+                exercise.name
+              )}
+            </SportSectionLabel>
+            {countdown !== null && (
+              <span className="mt-6 rounded-full border border-primary/30 bg-primary/10 px-5 py-2 text-sm font-bold text-primary">
+                Los in {countdown} …
+              </span>
+            )}
+            <span
+              key={pop}
+              className="relative mt-4 font-display text-[8rem] font-bold leading-none tabular-nums text-foreground sm:text-[10rem]"
+            >
+              {count}
+            </span>
+            <span className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+              {motivation ??
+                (useCamera
+                  ? "Seitlich aufstellen: Der ganze Körper muss gut beleuchtet sichtbar sein."
+                  : !active && count === 0
+                    ? cfg?.idleHint
+                    : cfg?.activeHint)}
+            </span>
+            {motionError && <span className="mt-3 text-sm text-destructive">{motionError}</span>}
+            {useCamera && cameraError && (
+              <span role="alert" className="mt-3 text-sm text-destructive">
+                Kamera nicht verfügbar. Bitte manuell trainieren oder Kameraberechtigung prüfen.
+              </span>
+            )}
+            {useCamera && active && !cameraError && (
+              <span
+                role="status"
+                aria-live="polite"
+                className="mt-3 inline-flex items-center gap-2 text-sm"
+              >
+                <Activity size={16} />
+                {cameraReady ? `Kameraerkennung · ${cameraStatus}` : cameraStatus}
+              </span>
+            )}
+            {useCamera && cameraReady && elbowAngle !== null && (
+              <span className="mt-2 text-sm font-semibold tabular-nums text-primary">
+                Ellbogenwinkel {elbowAngle}° ·{" "}
+                {elbowAngle >= 155 ? "oben" : elbowAngle <= 85 ? "unten" : "Bewegung"}
+              </span>
+            )}
+            {useCamera && cameraReady && lastQuality && (
+              <span className="mt-2 text-xs text-muted-foreground">
+                Form {lastQuality.grade.toFixed(1)} / 5
+                {lastQuality.full ? " · volle Wiederholung" : " · halbe Wiederholung"}
+              </span>
+            )}
+            {useCamera && cameraReady && liveCue && (
+              <span className="mt-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold text-primary">
+                {liveCue}
+              </span>
+            )}
+            {formStats && (
+              <span className="mt-3 text-xs text-muted-foreground">
+                Technik {formStats.formScore.toFixed(1)} · {formStats.cleanReps} saubere
+                Wiederholungen
+              </span>
+            )}
+          </section>
+          {!active &&
+            count === 0 &&
+            !isTapDriven &&
+            countdown === null &&
+            (!isPlanned || session?.phase === "preparation") && (
+              <button
+                onClick={start}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 text-base font-bold text-primary-foreground"
+              >
+                <Play size={18} />
+                Starten
+              </button>
+            )}
+          {isPlanned && session && active && !awaitingRpe && (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => {
+                  decrement();
+                  setSession((s) => (s ? undoWorkoutRep(s) : s));
+                }}
+                disabled={count <= 0}
+                className="rounded-xl border border-border bg-secondary px-3 py-3 text-sm disabled:opacity-40"
+              >
+                Wiederholung −1
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActive(false);
+                  setStartedAt(null);
+                  setSession((s) => (s ? pauseWorkout(s) : s));
+                }}
+                className="rounded-xl border border-border bg-secondary px-3 py-3 text-sm"
+              >
+                Pausieren
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSession((s) => (s ? finishWorkoutSet(s, Date.now()) : s));
+                  setActive(false);
+                  setStartedAt(null);
+                  observedCount.current = 0;
+                  resetEngine();
+                }}
+                className="rounded-xl border border-border bg-secondary px-3 py-3 text-sm"
+              >
+                Satz abschließen
+              </button>
             </div>
           )}
-          <span
-            key={pop}
-            className="font-display text-[9rem] leading-none font-bold tabular-nums text-foreground animate-count-pop"
-            style={{ textShadow: "0 0 40px oklch(0.82 0.19 95 / 0.35)" }}
-          >
-            {count}
-          </span>
-          <span className="mt-2 max-w-[16rem] text-sm text-muted-foreground">
-            {motivation ??
-              (useCamera
-                ? "Handy seitlich aufstellen: Der ganze Körper muss gut beleuchtet sichtbar sein. Die Erkennung kann Wiederholungen übersehen."
-                : !active && count === 0
-                  ? cfg?.idleHint
-                  : cfg?.activeHint)}
-          </span>
-          {motionError && <span className="text-xs text-destructive">{motionError}</span>}
-          {useCamera && cameraError && (
-            <span role="alert" className="text-xs text-destructive">
-              Kamera nicht verfügbar oder nicht freigegeben. Wähle „Ohne Kamera manuell trainieren“
-              oder prüfe die Kameraberechtigung.
-            </span>
-          )}
-          {useCamera && active && !cameraReady && !cameraError && (
-            <span role="status" aria-live="polite" className="text-sm text-foreground">
-              {cameraStatus}
-            </span>
-          )}
-          {useCamera && cameraReady && (
-            <div className="flex flex-col items-center gap-1">
-              <span role="status" aria-live="polite" className="text-sm text-foreground">
-                Kameraerkennung · {cameraStatus}
-              </span>
-              {elbowAngle !== null && (
-                <div className="flex items-center gap-2">
-                  {/* Arc indicator */}
-                  <svg viewBox="0 0 48 28" className="h-7 w-12">
-                    <path
-                      d="M4 24 A20 20 0 0 1 44 24"
-                      fill="none"
-                      stroke="oklch(var(--color-secondary)/0.5)"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M4 24 A20 20 0 0 1 44 24"
-                      fill="none"
-                      stroke="oklch(var(--color-primary))"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeDasharray="62.8"
-                      strokeDashoffset={62.8 * (1 - Math.min(1, elbowAngle / 180))}
-                      className="transition-all duration-150"
-                    />
-                  </svg>
-                  <span className="text-xs font-bold tabular-nums text-foreground">
-                    {elbowAngle}°
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {elbowAngle >= 155 ? "▲ oben" : elbowAngle <= 85 ? "▼ unten" : "…"}
+          {awaitingRpe && <RpePicker saving={saving} onPick={saveWithRpe} />}
+          {!awaitingRpe &&
+            (active ||
+              count > 0 ||
+              (isPlanned &&
+                !!session &&
+                ["rest", "paused", "completed"].includes(session.phase))) && (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={resetAll}
+                  className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm font-semibold"
+                >
+                  <RotateCcw className="mr-2 inline" size={15} />
+                  Verwerfen
+                </button>
+                <button
+                  onClick={finish}
+                  disabled={
+                    saving ||
+                    (isPlanned && session ? summarizeWorkout(session).actualReps <= 0 : count === 0)
+                  }
+                  className="rounded-2xl bg-primary px-4 py-4 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                >
+                  {saving
+                    ? "Speichere …"
+                    : isPlanned && session?.phase !== "completed"
+                      ? "Teiltraining speichern"
+                      : "Training speichern"}
+                </button>
+              </div>
+            )}
+          {summary && !active && (
+            <section className="rounded-3xl border border-primary/30 bg-primary/10 p-5">
+              <SportSectionLabel number="03">Trainingsergebnis</SportSectionLabel>
+              <div className="mt-3 text-2xl font-bold">
+                {summary.count} {exercise.unit === "seconds" ? "Sekunden" : "Wiederholungen"}
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {summary.isBest
+                  ? "Neuer Bestwert"
+                  : summary.partial
+                    ? "Teiltraining gespeichert"
+                    : "Gut gemacht"}
+              </div>
+              {summary.plannedSets !== undefined && (
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                  Plan: {summary.plannedSets} Sätze
+                  {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} ·
+                  Tatsächlich {summary.actualSets ?? 0} Sätze /{" "}
+                  {summary.actualReps ?? summary.count} Wdh. · Dauer{" "}
+                  {formatTime(summary.durationMs)}
+                  {summary.partial ? " · Teiltraining" : ""}
+                </p>
+              )}
+              {summary.formScore != null && (
+                <div className="mt-3 flex justify-between rounded-xl bg-background/50 p-3 text-sm">
+                  <span>Technik-Note</span>
+                  <span className="font-bold">
+                    {summary.formScore.toFixed(1)} / 5 · {summary.cleanReps} sauber
                   </span>
                 </div>
               )}
-              {lastQuality && (
-                <span className="text-[11px] font-semibold text-foreground">
-                  {"★".repeat(Math.round(lastQuality.grade))}
-                  <span className="text-muted-foreground">
-                    {"★".repeat(Math.max(0, 5 - Math.round(lastQuality.grade)))}
+            </section>
+          )}
+          {isPlanned && (
+            <p className="text-center text-xs text-muted-foreground">
+              Zusammenfassung und Teiltraining-Markierung werden lokal zugeordnet.
+            </p>
+          )}
+          <p className="text-center text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            {savedHint ??
+              (useCamera
+                ? cameraError
+                  ? "Kamera nicht verfügbar – manuelle Erfassung möglich"
+                  : active
+                    ? cameraReady
+                      ? "Kameraerkennung bereit"
+                      : "Kameraerkennung wird vorbereitet"
+                    : "Starten · Kamera-Modus"
+                : isTapDriven
+                  ? "Tippe auf die Trainingsfläche"
+                  : active
+                    ? "Erkennung aktiv"
+                    : "Bereit zum Start")}
+          </p>
+        </main>
+      </DesignView>
+      <DesignView variant="classic">
+        <main className="classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
+          <header className="flex items-center justify-between">
+            <Link
+              to="/"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
+            >
+              <span aria-hidden>←</span>
+              <span>Zurück</span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{exercise.icon}</span>
+              <span className="text-sm font-medium text-foreground">
+                {isPushup ? "Liegestütze" : exercise.name}
+                {isPushup && (
+                  <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                    {modeLabel[pushMode]}
                   </span>
-                  {!lastQuality.full && (
-                    <span className="ml-1 text-muted-foreground">· halbe Wiederholung</span>
-                  )}
-                </span>
-              )}
-              {liveCue && (
-                <span className="rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-[11px] font-semibold text-primary">
-                  {liveCue}
-                </span>
-              )}
-              {formStats && (
-                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                  Technik {formStats.formScore.toFixed(1)} · {formStats.cleanReps} sauber
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        <Corner className="left-3 top-3" />
-        <Corner className="right-3 top-3 rotate-90" />
-        <Corner className="right-3 bottom-3 rotate-180" />
-        <Corner className="left-3 bottom-3 -rotate-90" />
-      </button>
-
-      {!active &&
-        count === 0 &&
-        !isTapDriven &&
-        countdown === null &&
-        (!isPlanned || session?.phase === "preparation") && (
-          <button
-            onClick={start}
-            className="mt-4 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
-          >
-            Starten
-          </button>
-        )}
-
-      {isPlanned && session && active && !awaitingRpe && (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              decrement();
-              setSession((s) => (s ? undoWorkoutRep(s) : s));
-            }}
-            disabled={count <= 0}
-            className="rounded-xl border border-border bg-secondary px-2 py-3 text-xs disabled:opacity-40"
-          >
-            Korrigieren −1
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActive(false);
-              setStartedAt(null);
-              setSession((s) => (s ? pauseWorkout(s) : s));
-            }}
-            className="rounded-xl border border-border bg-secondary px-2 py-3 text-xs"
-          >
-            Pausieren
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSession((s) => (s ? finishWorkoutSet(s, Date.now()) : s));
-              setActive(false);
-              setStartedAt(null);
-              observedCount.current = 0;
-              resetEngine();
-            }}
-            className="rounded-xl border border-border bg-secondary px-2 py-3 text-xs"
-          >
-            Satz abschließen
-          </button>
-        </div>
-      )}
-      {awaitingRpe && <RpePicker saving={saving} onPick={saveWithRpe} />}
-
-      {!awaitingRpe &&
-        (active ||
-          count > 0 ||
-          (isPlanned && !!session && ["rest", "paused", "completed"].includes(session.phase))) && (
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <button
-              onClick={resetAll}
-              className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80 active:scale-[0.98]"
-            >
-              Verwerfen
-            </button>
-            <button
-              onClick={finish}
-              disabled={
-                saving ||
-                (isPlanned && session ? summarizeWorkout(session).actualReps <= 0 : count === 0)
-              }
-              className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
-            >
-              {saving
-                ? "Speichere…"
-                : isPlanned && session?.phase !== "completed"
-                  ? "Teiltraining speichern"
-                  : "Training speichern"}
-            </button>
-          </div>
-        )}
-
-      {summary && !active && (
-        <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            {summary.partial ? "Teiltraining gespeichert" : "Training abgeschlossen"}
-          </div>
-          <div className="mt-2 text-lg font-semibold text-foreground">
-            {summary.count} {exercise.unit === "seconds" ? "Sekunden" : "Wiederholungen"}
-          </div>
-          <div className="mt-1 text-sm text-muted-foreground">
-            {summary.isBest ? "Neuer Bestwert" : "Gut gemacht"}
-          </div>
-          {summary.plannedSets !== undefined && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              Plan: {summary.plannedSets} {summary.plannedSets === 1 ? "Satz" : "Sätze"}
-              {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} · Tatsächlich:{" "}
-              {summary.actualSets ?? 0} {(summary.actualSets ?? 0) === 1 ? "Satz" : "Sätze"} /{" "}
-              {summary.actualReps ?? summary.count} Wdh. · Tatsächliche Dauer:{" "}
-              {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
-              {summary.partial ? " · Teiltraining" : ""}
-            </div>
-          )}
-          {summary.formScore != null && (
-            <div className="mt-2 flex items-center justify-between rounded-xl bg-background/50 px-3 py-2 text-xs">
-              <span className="text-muted-foreground">Technik-Note</span>
-              <span className="font-semibold tabular-nums text-foreground">
-                {summary.formScore.toFixed(1)} / 5 · {summary.cleanReps} sauber
+                )}
               </span>
             </div>
-          )}
-        </div>
-      )}
+          </header>
 
-      {isPlanned && (
-        <p className="mt-2 text-center text-[10px] text-muted-foreground">
-          Zusammenfassung und Teiltraining-Markierung werden nur auf diesem Gerät lokal zugeordnet.
-        </p>
-      )}
-      <p className="mt-3 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-        {savedHint ??
-          (useCamera
-            ? cameraError
-              ? "Kamera nicht verfügbar – ohne Kamera manuell trainieren"
-              : active
-                ? cameraReady
-                  ? "Kameraerkennung bereit"
-                  : "Kameraerkennung wird vorbereitet"
-                : "Starten · Kamera-Modus"
-            : isTapDriven
-              ? "Tippe irgendwo auf die Fläche"
-              : active
-                ? "Erkennung aktiv"
-                : "Bereit zum Start")}
-      </p>
-    </main>
+          <section className="mt-6 grid grid-cols-3 gap-3">
+            <Stat label="Zeit" value={formatTime(elapsed)} />
+            <Stat
+              label={exercise.unit === "seconds" ? "Status" : "Tempo"}
+              value={
+                exercise.unit === "seconds"
+                  ? active
+                    ? "Läuft"
+                    : "Aus"
+                  : pace
+                    ? pace.toFixed(0)
+                    : "—"
+              }
+              unit={exercise.unit === "seconds" ? undefined : "/min"}
+            />
+            <Stat
+              label="Bestwert"
+              value={best.toString()}
+              unit={exercise.unit === "seconds" ? "Sek." : undefined}
+            />
+          </section>
+
+          {isPlanned && session && (
+            <section
+              className="mt-3 rounded-2xl border border-border bg-card/50 p-3 text-center"
+              aria-live="polite"
+            >
+              {plan.title && (
+                <div className="mb-1 text-sm font-semibold text-foreground">{plan.title}</div>
+              )}
+              <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                {session.phase === "preparation"
+                  ? "Vorbereitung"
+                  : session.phase === "rest"
+                    ? "Pause"
+                    : session.phase === "paused"
+                      ? "Pausiert"
+                      : session.phase === "completed"
+                        ? "Abgeschlossen"
+                        : "Aktiver Satz"}
+              </div>
+              <div className="mt-1 text-lg font-semibold tabular-nums text-foreground">
+                Satz {Math.min(session.currentSet, plan.sets)} / {plan.sets}
+                {plan.reps ? ` · ${count} / ${plan.reps} Wiederholungen` : ""}
+              </div>
+              {restRemaining !== null && (
+                <div className="mt-1 text-2xl font-bold tabular-nums text-primary">
+                  {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, "0")}
+                </div>
+              )}
+              {session.phase === "rest" && (
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => setSession((s) => (s ? extendWorkoutRest(s, 30) : s))}
+                    className="flex-1 rounded-lg border border-border px-3 py-2 text-xs"
+                  >
+                    +30 Sek.
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSession((s) => (s ? startWorkoutSet(s) : s));
+                      setActive(true);
+                      setStartedAt(Date.now());
+                    }}
+                    className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                  >
+                    Fortsetzen
+                  </button>
+                </div>
+              )}
+              {session.phase === "paused" && (
+                <button
+                  onClick={() => {
+                    setSession((s) => (s ? startWorkoutSet(s) : s));
+                    setActive(true);
+                    setStartedAt(Date.now());
+                  }}
+                  className="mt-2 w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                >
+                  Fortsetzen
+                </button>
+              )}
+            </section>
+          )}
+          {useCamera && (!active || !!cameraError) && (
+            <aside className="mt-3 rounded-xl border border-border bg-card/50 p-3 text-sm text-foreground">
+              Wenn du „Starten“ wählst, lädt die App zuerst die Erkennungssoftware vom jsDelivr-CDN
+              und das Pose-Modell von Google Cloud; anschließend fragt dein Browser nach
+              Kamerazugriff. Die Pose wird danach direkt auf diesem Gerät aus dem Kamerabild
+              berechnet. Weder Video noch Einzelbilder werden gespeichert oder übertragen. Stelle
+              das Handy seitlich auf und sorge für gutes Licht; Schulter, Ellbogen, Handgelenk,
+              Hüfte und Knie müssen sichtbar sein. Die automatische Erkennung kann Wiederholungen
+              übersehen oder falsch zählen.{" "}
+              <button
+                type="button"
+                className="underline"
+                onClick={() =>
+                  navigate({
+                    to: "/workout/$exerciseId",
+                    params: { exerciseId },
+                    search: { ...search, mode: "manual" },
+                  })
+                }
+              >
+                Ohne Kamera manuell trainieren
+              </button>
+            </aside>
+          )}
+
+          <button
+            onPointerDown={handleSurfaceTap}
+            aria-label={isTapDriven ? "Antippen" : "Aktiv"}
+            className="group relative mt-6 flex flex-1 select-none items-center justify-center overflow-hidden rounded-[2rem] border border-border bg-card/60 backdrop-blur active:bg-card transition-colors"
+          >
+            {useCamera && (
+              <video
+                ref={performanceLayout ? undefined : videoRef}
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40"
+                playsInline
+                muted
+              />
+            )}
+
+            {count === 0 && !active && !useCamera && (
+              <>
+                <span className="pointer-events-none absolute h-40 w-40 rounded-full bg-primary/20 animate-pulse-ring" />
+                <span className="pointer-events-none absolute h-40 w-40 rounded-full bg-primary/10 animate-pulse-ring [animation-delay:0.7s]" />
+              </>
+            )}
+
+            <div className="relative z-10 flex flex-col items-center gap-3 px-4 text-center">
+              <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+                {isPushup ? `Liegestütze · ${modeLabel[pushMode]}` : exercise.name}
+              </span>
+              {countdown !== null && (
+                <div className="rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
+                  Los in {countdown}…
+                </div>
+              )}
+              <span
+                key={pop}
+                className="font-display text-[9rem] leading-none font-bold tabular-nums text-foreground animate-count-pop"
+                style={{ textShadow: "0 0 40px oklch(0.82 0.19 95 / 0.35)" }}
+              >
+                {count}
+              </span>
+              <span className="mt-2 max-w-[16rem] text-sm text-muted-foreground">
+                {motivation ??
+                  (useCamera
+                    ? "Handy seitlich aufstellen: Der ganze Körper muss gut beleuchtet sichtbar sein. Die Erkennung kann Wiederholungen übersehen."
+                    : !active && count === 0
+                      ? cfg?.idleHint
+                      : cfg?.activeHint)}
+              </span>
+              {motionError && <span className="text-xs text-destructive">{motionError}</span>}
+              {useCamera && cameraError && (
+                <span role="alert" className="text-xs text-destructive">
+                  Kamera nicht verfügbar oder nicht freigegeben. Wähle „Ohne Kamera manuell
+                  trainieren“ oder prüfe die Kameraberechtigung.
+                </span>
+              )}
+              {useCamera && active && !cameraReady && !cameraError && (
+                <span role="status" aria-live="polite" className="text-sm text-foreground">
+                  {cameraStatus}
+                </span>
+              )}
+              {useCamera && cameraReady && (
+                <div className="flex flex-col items-center gap-1">
+                  <span role="status" aria-live="polite" className="text-sm text-foreground">
+                    Kameraerkennung · {cameraStatus}
+                  </span>
+                  {elbowAngle !== null && (
+                    <div className="flex items-center gap-2">
+                      {/* Arc indicator */}
+                      <svg viewBox="0 0 48 28" className="h-7 w-12">
+                        <path
+                          d="M4 24 A20 20 0 0 1 44 24"
+                          fill="none"
+                          stroke="oklch(var(--color-secondary)/0.5)"
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                        />
+                        <path
+                          d="M4 24 A20 20 0 0 1 44 24"
+                          fill="none"
+                          stroke="oklch(var(--color-primary))"
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                          strokeDasharray="62.8"
+                          strokeDashoffset={62.8 * (1 - Math.min(1, elbowAngle / 180))}
+                          className="transition-all duration-150"
+                        />
+                      </svg>
+                      <span className="text-xs font-bold tabular-nums text-foreground">
+                        {elbowAngle}°
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {elbowAngle >= 155 ? "▲ oben" : elbowAngle <= 85 ? "▼ unten" : "…"}
+                      </span>
+                    </div>
+                  )}
+                  {lastQuality && (
+                    <span className="text-[11px] font-semibold text-foreground">
+                      {"★".repeat(Math.round(lastQuality.grade))}
+                      <span className="text-muted-foreground">
+                        {"★".repeat(Math.max(0, 5 - Math.round(lastQuality.grade)))}
+                      </span>
+                      {!lastQuality.full && (
+                        <span className="ml-1 text-muted-foreground">· halbe Wiederholung</span>
+                      )}
+                    </span>
+                  )}
+                  {liveCue && (
+                    <span className="rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-[11px] font-semibold text-primary">
+                      {liveCue}
+                    </span>
+                  )}
+                  {formStats && (
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Technik {formStats.formScore.toFixed(1)} · {formStats.cleanReps} sauber
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <Corner className="left-3 top-3" />
+            <Corner className="right-3 top-3 rotate-90" />
+            <Corner className="right-3 bottom-3 rotate-180" />
+            <Corner className="left-3 bottom-3 -rotate-90" />
+          </button>
+
+          {!active &&
+            count === 0 &&
+            !isTapDriven &&
+            countdown === null &&
+            (!isPlanned || session?.phase === "preparation") && (
+              <button
+                onClick={start}
+                className="mt-4 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
+              >
+                Starten
+              </button>
+            )}
+
+          {isPlanned && session && active && !awaitingRpe && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  decrement();
+                  setSession((s) => (s ? undoWorkoutRep(s) : s));
+                }}
+                disabled={count <= 0}
+                className="rounded-xl border border-border bg-secondary px-2 py-3 text-xs disabled:opacity-40"
+              >
+                Korrigieren −1
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActive(false);
+                  setStartedAt(null);
+                  setSession((s) => (s ? pauseWorkout(s) : s));
+                }}
+                className="rounded-xl border border-border bg-secondary px-2 py-3 text-xs"
+              >
+                Pausieren
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSession((s) => (s ? finishWorkoutSet(s, Date.now()) : s));
+                  setActive(false);
+                  setStartedAt(null);
+                  observedCount.current = 0;
+                  resetEngine();
+                }}
+                className="rounded-xl border border-border bg-secondary px-2 py-3 text-xs"
+              >
+                Satz abschließen
+              </button>
+            </div>
+          )}
+          {awaitingRpe && <RpePicker saving={saving} onPick={saveWithRpe} />}
+
+          {!awaitingRpe &&
+            (active ||
+              count > 0 ||
+              (isPlanned &&
+                !!session &&
+                ["rest", "paused", "completed"].includes(session.phase))) && (
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  onClick={resetAll}
+                  className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80 active:scale-[0.98]"
+                >
+                  Verwerfen
+                </button>
+                <button
+                  onClick={finish}
+                  disabled={
+                    saving ||
+                    (isPlanned && session ? summarizeWorkout(session).actualReps <= 0 : count === 0)
+                  }
+                  className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
+                >
+                  {saving
+                    ? "Speichere…"
+                    : isPlanned && session?.phase !== "completed"
+                      ? "Teiltraining speichern"
+                      : "Training speichern"}
+                </button>
+              </div>
+            )}
+
+          {summary && !active && (
+            <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 p-4 text-left">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                {summary.partial ? "Teiltraining gespeichert" : "Training abgeschlossen"}
+              </div>
+              <div className="mt-2 text-lg font-semibold text-foreground">
+                {summary.count} {exercise.unit === "seconds" ? "Sekunden" : "Wiederholungen"}
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {summary.isBest ? "Neuer Bestwert" : "Gut gemacht"}
+              </div>
+              {summary.plannedSets !== undefined && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Plan: {summary.plannedSets} {summary.plannedSets === 1 ? "Satz" : "Sätze"}
+                  {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} ·
+                  Tatsächlich: {summary.actualSets ?? 0}{" "}
+                  {(summary.actualSets ?? 0) === 1 ? "Satz" : "Sätze"} /{" "}
+                  {summary.actualReps ?? summary.count} Wdh. · Tatsächliche Dauer:{" "}
+                  {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
+                  {summary.partial ? " · Teiltraining" : ""}
+                </div>
+              )}
+              {summary.formScore != null && (
+                <div className="mt-2 flex items-center justify-between rounded-xl bg-background/50 px-3 py-2 text-xs">
+                  <span className="text-muted-foreground">Technik-Note</span>
+                  <span className="font-semibold tabular-nums text-foreground">
+                    {summary.formScore.toFixed(1)} / 5 · {summary.cleanReps} sauber
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isPlanned && (
+            <p className="mt-2 text-center text-[10px] text-muted-foreground">
+              Zusammenfassung und Teiltraining-Markierung werden nur auf diesem Gerät lokal
+              zugeordnet.
+            </p>
+          )}
+          <p className="mt-3 text-center text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+            {savedHint ??
+              (useCamera
+                ? cameraError
+                  ? "Kamera nicht verfügbar – ohne Kamera manuell trainieren"
+                  : active
+                    ? cameraReady
+                      ? "Kameraerkennung bereit"
+                      : "Kameraerkennung wird vorbereitet"
+                    : "Starten · Kamera-Modus"
+                : isTapDriven
+                  ? "Tippe irgendwo auf die Fläche"
+                  : active
+                    ? "Erkennung aktiv"
+                    : "Bereit zum Start")}
+          </p>
+        </main>
+      </DesignView>
+    </>
   );
 }
 

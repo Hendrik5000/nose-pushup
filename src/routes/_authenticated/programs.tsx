@@ -1,8 +1,11 @@
+import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { ShareCard } from "@/components/ShareCard";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { ArrowUpRight, Check, Clock3, Dumbbell, Flag, Play, RotateCcw } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/programs")({
   head: () => ({
@@ -188,215 +191,423 @@ function ProgramsPage() {
   };
 
   return (
-    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-            Programme
-          </div>
-          <h1 className="mt-0.5 text-xl font-bold tracking-tight">Dein Trainingsplan</h1>
-        </div>
-        <Link
-          to="/"
-          className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
-        >
-          Zurück
-        </Link>
-      </header>
-
-      {loading && (
-        <div className="mt-6 rounded-2xl border border-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
-          Lade…
-        </div>
-      )}
-
-      {/* Aktives Programm */}
-      {!loading && active && activeProgram && (
-        <section className="mt-5 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.25em] text-primary">
-                Läuft gerade
-              </div>
-              <h2 className="mt-1 text-2xl font-bold tracking-tight">{activeProgram.title}</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Tag {active.current_day} von {totalDays} · {doneDays.length} erledigt
-              </p>
+    <>
+      <DesignView variant="sport">
+        <main className="sport-only relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-7 px-5 py-6 sm:px-8">
+          <SportPageIntro
+            eyebrow="TRAININGSBEREICH · 02"
+            title="Trainingsprogramme"
+            description="Ein klarer Plan, ein Tag nach dem anderen. Starte eine Progression oder setze dein laufendes Programm fort."
+          >
+            <Link to="/" className="sport-back-link">
+              ← Start
+            </Link>
+          </SportPageIntro>
+          {loading && (
+            <div className="rounded-3xl border border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
+              Programme werden geladen …
             </div>
-            <span className="text-4xl">{activeProgram.icon}</span>
-          </div>
-
-          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-secondary">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${progressPct * 100}%` }}
-            />
-          </div>
-
-          {today ? (
-            <div className="mt-4 rounded-2xl border border-border bg-background/40 p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                  Heute · {today.focus}
-                </span>
-                {doneDays.includes(today.day_index) && (
-                  <span className="text-[10px] font-semibold text-primary">erledigt</span>
-                )}
+          )}
+          {!loading && active && activeProgram && (
+            <section className="sport-focus-card rounded-[2rem] border border-primary/30 bg-card/70 p-6 sm:p-8">
+              <SportSectionLabel number="01">Dein aktueller Block</SportSectionLabel>
+              <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                    <span className="h-2 w-2 rounded-full bg-primary" /> Läuft gerade
+                  </span>
+                  <h2 className="mt-2 text-3xl font-bold tracking-tight">{activeProgram.title}</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Tag {active.current_day} von {totalDays} <span className="px-1">·</span>{" "}
+                    {doneDays.length} erledigt
+                  </p>
+                </div>
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+                  <Dumbbell size={26} />
+                </div>
               </div>
-              <div className="mt-2 text-lg font-semibold">
-                {today.sets > 0
-                  ? `${today.sets} × ${today.reps || "max"} ${
-                      today.exercise_id === "plank" ? "Sek." : "Wdh."
-                    }`
-                  : "Pause / Mobilität"}
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-secondary">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${progressPct * 100}%` }}
+                />
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">{today.note}</p>
+              {today ? (
+                <div className="mt-5 rounded-3xl border border-border bg-background/40 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                      Heute · {today.focus}
+                    </span>
+                    {doneDays.includes(today.day_index) && (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                        <Check size={14} /> Erledigt
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-3 text-2xl font-bold">
+                    {today.sets > 0
+                      ? `${today.sets} × ${today.reps || "max"} ${today.exercise_id === "plank" ? "Sek." : "Wdh."}:`
+                      : "Pause / Mobilität"}
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{today.note}</p>
+                  {today.rest_s > 0 && (
+                    <button
+                      onClick={() => setRest(today.rest_s)}
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold"
+                    >
+                      <Clock3 size={17} />
+                      {rest !== null
+                        ? `Pause läuft · ${rest}s`
+                        : `Pausen-Timer starten · ${today.rest_s}s`}
+                    </button>
+                  )}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {today.exercise_id ? (
+                      <button
+                        onClick={() =>
+                          navigate({
+                            to: "/workout/$exerciseId",
+                            params: { exerciseId: today.exercise_id as string },
+                          })
+                        }
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 text-sm font-bold text-primary-foreground"
+                      >
+                        <Play size={17} /> Session starten
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => completeDay(0)}
+                        disabled={busy}
+                        className="rounded-2xl bg-primary px-4 py-4 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                      >
+                        Ruhetag abhaken
+                      </button>
+                    )}
+                    <button
+                      onClick={() => completeDay(today.sets * today.reps)}
+                      disabled={busy || doneDays.includes(today.day_index)}
+                      className="rounded-2xl border border-border bg-secondary px-4 py-4 text-sm font-semibold disabled:opacity-50"
+                    >
+                      Tag erledigt
+                    </button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap justify-between gap-3 text-xs text-muted-foreground">
+                    <button onClick={skipDay} className="underline underline-offset-4">
+                      Tag nachholen/überspringen
+                    </button>
+                    <button onClick={quitProgram} className="underline underline-offset-4">
+                      Programm beenden
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-5 rounded-3xl border border-primary/30 bg-primary/10 p-6 text-center">
+                  <Flag className="mx-auto text-primary" size={30} />
+                  <div className="mt-2 font-bold">Programm abgeschlossen!</div>
+                </div>
+              )}
+              <div className="mt-5 grid grid-cols-7 gap-2">
+                {programDays.map((d) => {
+                  const done = doneDays.includes(d.day_index);
+                  const isToday = d.day_index === active.current_day;
+                  return (
+                    <div
+                      key={d.id}
+                      className={`grid h-10 place-items-center rounded-xl text-xs font-bold ${done ? "bg-primary text-primary-foreground" : isToday ? "border border-primary text-primary" : "bg-secondary text-muted-foreground"}`}
+                    >
+                      {d.day_index}
+                    </div>
+                  );
+                })}
+              </div>
+              {doneDays.length >= totalDays && totalDays > 0 && (
+                <div className="mt-5">
+                  <ShareCard
+                    label="Zertifikat teilen"
+                    stats={{
+                      title: "Programm abgeschlossen",
+                      headline: activeProgram.title,
+                      subline: `${totalDays} Tage durchgezogen`,
+                      rows: [
+                        { label: "Programm", value: activeProgram.title },
+                        { label: "Dauer", value: `${activeProgram.weeks} Wochen` },
+                        { label: "Tage erledigt", value: `${doneDays.length}` },
+                      ],
+                    }}
+                  />
+                </div>
+              )}
+            </section>
+          )}
+          {!loading && (
+            <section className="space-y-4">
+              <SportSectionLabel number={active ? "02" : "01"}>
+                {active ? "Weitere Programme" : "Programm wählen"}
+              </SportSectionLabel>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {programs
+                  .filter((p) => p.id !== active?.program_id)
+                  .map((p) => {
+                    const count = days.filter((d) => d.program_id === p.id).length;
+                    return (
+                      <article
+                        key={p.id}
+                        className="flex min-h-56 flex-col rounded-3xl border border-border bg-card/55 p-5 sm:p-6"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+                            <Dumbbell size={23} />
+                          </div>
+                          <ArrowUpRight size={20} className="text-muted-foreground" />
+                        </div>
+                        <h3 className="mt-4 text-xl font-bold">{p.title}</h3>
+                        <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                          {p.description}
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          <span className="rounded-full bg-secondary px-3 py-1.5">
+                            {p.weeks} Wochen
+                          </span>
+                          <span className="rounded-full bg-secondary px-3 py-1.5">
+                            {count} Tage
+                          </span>
+                          <span className="rounded-full bg-secondary px-3 py-1.5">
+                            {LEVEL_LABEL[p.level] ?? p.level}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => startProgram(p.id)}
+                          disabled={busy || !!active}
+                          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-40"
+                        >
+                          <Play size={16} /> Programm starten
+                        </button>
+                      </article>
+                    );
+                  })}
+              </div>
+              {active && (
+                <p className="text-center text-xs text-muted-foreground">
+                  Beende zuerst dein laufendes Programm, um ein neues zu starten.
+                </p>
+              )}
+            </section>
+          )}
+          <BottomNav />
+        </main>
+      </DesignView>
+      <DesignView variant="classic">
+        <main className="classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
+          <header className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                Programme
+              </div>
+              <h1 className="mt-0.5 text-xl font-bold tracking-tight">Dein Trainingsplan</h1>
+            </div>
+            <Link
+              to="/"
+              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
+            >
+              Zurück
+            </Link>
+          </header>
 
-              {today.rest_s > 0 && (
-                <button
-                  onClick={() => setRest(today.rest_s)}
-                  className="mt-3 w-full rounded-xl border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground"
-                >
-                  {rest !== null ? `Pause… ${rest}s` : `Pausen-Timer (${today.rest_s}s)`}
-                </button>
+          {loading && (
+            <div className="mt-6 rounded-2xl border border-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
+              Lade…
+            </div>
+          )}
+
+          {/* Aktives Programm */}
+          {!loading && active && activeProgram && (
+            <section className="mt-5 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.25em] text-primary">
+                    Läuft gerade
+                  </div>
+                  <h2 className="mt-1 text-2xl font-bold tracking-tight">{activeProgram.title}</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Tag {active.current_day} von {totalDays} · {doneDays.length} erledigt
+                  </p>
+                </div>
+                <span className="text-4xl">{activeProgram.icon}</span>
+              </div>
+
+              <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-secondary">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${progressPct * 100}%` }}
+                />
+              </div>
+
+              {today ? (
+                <div className="mt-4 rounded-2xl border border-border bg-background/40 p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Heute · {today.focus}
+                    </span>
+                    {doneDays.includes(today.day_index) && (
+                      <span className="text-[10px] font-semibold text-primary">erledigt</span>
+                    )}
+                  </div>
+                  <div className="mt-2 text-lg font-semibold">
+                    {today.sets > 0
+                      ? `${today.sets} × ${today.reps || "max"} ${
+                          today.exercise_id === "plank" ? "Sek." : "Wdh."
+                        }`
+                      : "Pause / Mobilität"}
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{today.note}</p>
+
+                  {today.rest_s > 0 && (
+                    <button
+                      onClick={() => setRest(today.rest_s)}
+                      className="mt-3 w-full rounded-xl border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground"
+                    >
+                      {rest !== null ? `Pause… ${rest}s` : `Pausen-Timer (${today.rest_s}s)`}
+                    </button>
+                  )}
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {today.exercise_id ? (
+                      <button
+                        onClick={() =>
+                          navigate({
+                            to: "/workout/$exerciseId",
+                            params: { exerciseId: today.exercise_id as string },
+                          })
+                        }
+                        className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
+                      >
+                        Session starten
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => completeDay(0)}
+                        disabled={busy}
+                        className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                      >
+                        Ruhetag abhaken
+                      </button>
+                    )}
+                    <button
+                      onClick={() => completeDay(today.sets * today.reps)}
+                      disabled={busy || doneDays.includes(today.day_index)}
+                      className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground disabled:opacity-50"
+                    >
+                      Tag erledigt
+                    </button>
+                  </div>
+                  <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+                    <button onClick={skipDay} className="underline">
+                      Tag nachholen/überspringen
+                    </button>
+                    <button onClick={quitProgram} className="underline">
+                      Programm beenden
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 p-4 text-center">
+                  <div className="text-3xl">🏅</div>
+                  <div className="mt-1 text-sm font-semibold">Programm abgeschlossen!</div>
+                </div>
               )}
 
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {today.exercise_id ? (
-                  <button
-                    onClick={() =>
-                      navigate({
-                        to: "/workout/$exerciseId",
-                        params: { exerciseId: today.exercise_id as string },
-                      })
-                    }
-                    className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
-                  >
-                    Session starten
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => completeDay(0)}
-                    disabled={busy}
-                    className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-                  >
-                    Ruhetag abhaken
-                  </button>
-                )}
-                <button
-                  onClick={() => completeDay(today.sets * today.reps)}
-                  disabled={busy || doneDays.includes(today.day_index)}
-                  className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm font-medium text-secondary-foreground disabled:opacity-50"
-                >
-                  Tag erledigt
-                </button>
+              {/* Tagesübersicht */}
+              <div className="mt-4 grid grid-cols-7 gap-1.5">
+                {programDays.map((d) => {
+                  const done = doneDays.includes(d.day_index);
+                  const isToday = d.day_index === active.current_day;
+                  return (
+                    <div
+                      key={d.id}
+                      className={`flex h-8 items-center justify-center rounded-lg text-[11px] font-semibold ${
+                        done
+                          ? "bg-primary text-primary-foreground"
+                          : isToday
+                            ? "border border-primary text-primary"
+                            : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {d.day_index}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
-                <button onClick={skipDay} className="underline">
-                  Tag nachholen/überspringen
-                </button>
-                <button onClick={quitProgram} className="underline">
-                  Programm beenden
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 p-4 text-center">
-              <div className="text-3xl">🏅</div>
-              <div className="mt-1 text-sm font-semibold">Programm abgeschlossen!</div>
-            </div>
-          )}
 
-          {/* Tagesübersicht */}
-          <div className="mt-4 grid grid-cols-7 gap-1.5">
-            {programDays.map((d) => {
-              const done = doneDays.includes(d.day_index);
-              const isToday = d.day_index === active.current_day;
-              return (
-                <div
-                  key={d.id}
-                  className={`flex h-8 items-center justify-center rounded-lg text-[11px] font-semibold ${
-                    done
-                      ? "bg-primary text-primary-foreground"
-                      : isToday
-                        ? "border border-primary text-primary"
-                        : "bg-secondary text-muted-foreground"
-                  }`}
-                >
-                  {d.day_index}
+              {doneDays.length >= totalDays && totalDays > 0 && (
+                <div className="mt-4">
+                  <ShareCard
+                    label="Zertifikat teilen"
+                    stats={{
+                      title: "Programm abgeschlossen",
+                      headline: activeProgram.title,
+                      subline: `${totalDays} Tage durchgezogen`,
+                      rows: [
+                        { label: "Programm", value: activeProgram.title },
+                        { label: "Dauer", value: `${activeProgram.weeks} Wochen` },
+                        { label: "Tage erledigt", value: `${doneDays.length}` },
+                      ],
+                    }}
+                  />
                 </div>
-              );
-            })}
-          </div>
-
-          {doneDays.length >= totalDays && totalDays > 0 && (
-            <div className="mt-4">
-              <ShareCard
-                label="Zertifikat teilen"
-                stats={{
-                  title: "Programm abgeschlossen",
-                  headline: activeProgram.title,
-                  subline: `${totalDays} Tage durchgezogen`,
-                  rows: [
-                    { label: "Programm", value: activeProgram.title },
-                    { label: "Dauer", value: `${activeProgram.weeks} Wochen` },
-                    { label: "Tage erledigt", value: `${doneDays.length}` },
-                  ],
-                }}
-              />
-            </div>
+              )}
+            </section>
           )}
-        </section>
-      )}
 
-      {/* Programmauswahl */}
-      {!loading && (
-        <section className="mt-6">
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            {active ? "Andere Programme" : "Programm wählen"}
-          </h2>
-          <div className="space-y-3">
-            {programs
-              .filter((p) => p.id !== active?.program_id)
-              .map((p) => {
-                const count = days.filter((d) => d.program_id === p.id).length;
-                return (
-                  <div
-                    key={p.id}
-                    className="rounded-2xl border border-border bg-card/50 p-4 backdrop-blur"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">{p.icon}</span>
-                          <span className="text-base font-semibold">{p.title}</span>
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
-                        <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                          {p.weeks} Wochen · {count} Tage · {LEVEL_LABEL[p.level] ?? p.level}
+          {/* Programmauswahl */}
+          {!loading && (
+            <section className="mt-6">
+              <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                {active ? "Andere Programme" : "Programm wählen"}
+              </h2>
+              <div className="space-y-3">
+                {programs
+                  .filter((p) => p.id !== active?.program_id)
+                  .map((p) => {
+                    const count = days.filter((d) => d.program_id === p.id).length;
+                    return (
+                      <div
+                        key={p.id}
+                        className="rounded-2xl border border-border bg-card/50 p-4 backdrop-blur"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">{p.icon}</span>
+                              <span className="text-base font-semibold">{p.title}</span>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
+                            <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                              {p.weeks} Wochen · {count} Tage · {LEVEL_LABEL[p.level] ?? p.level}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => startProgram(p.id)}
+                            disabled={busy || !!active}
+                            className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+                          >
+                            Starten
+                          </button>
                         </div>
                       </div>
-                      <button
-                        onClick={() => startProgram(p.id)}
-                        disabled={busy || !!active}
-                        className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-40"
-                      >
-                        Starten
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-          {active && (
-            <p className="mt-2 text-center text-[11px] text-muted-foreground">
-              Beende zuerst dein laufendes Programm, um ein neues zu starten.
-            </p>
+                    );
+                  })}
+              </div>
+              {active && (
+                <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                  Beende zuerst dein laufendes Programm, um ein neues zu starten.
+                </p>
+              )}
+            </section>
           )}
-        </section>
-      )}
 
-      <BottomNav />
-    </main>
+          <BottomNav />
+        </main>
+      </DesignView>
+    </>
   );
 }

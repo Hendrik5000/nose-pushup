@@ -30,6 +30,21 @@ import { WaterTracker } from "@/components/WaterTracker";
 import { WorkoutNotesPanel } from "@/components/WorkoutNotesPanel";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import type { WidgetId, WidgetSize } from "@/lib/dashboard-layout";
+import { SportSectionLabel } from "@/components/SportPageIntro";
+import {
+  Activity,
+  ArrowUpRight,
+  Camera,
+  Dumbbell,
+  Flame,
+  Footprints,
+  Hand,
+  HeartPulse,
+  ScanFace,
+  Target,
+  Trophy,
+  Zap,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -508,7 +523,7 @@ function Dashboard() {
 
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
-      <header className="dashboard-header flex items-center justify-between">
+      <header className="classic-only dashboard-header flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
             {dateLabel}
@@ -530,8 +545,157 @@ function Dashboard() {
         </Link>
       </header>
 
+      <div className="sport-only sport-dashboard-welcome">
+        <div>
+          <div className="sport-eyebrow">
+            <span aria-hidden="true" />
+            {dateLabel}
+          </div>
+          <h1 className="sport-dashboard-title">
+            Dein nächstes<span>Level beginnt hier.</span>
+          </h1>
+          <p className="sport-dashboard-subtitle">
+            Hallo {profile?.display_name || "Athlet"}. Zeit, etwas für dich zu tun.
+          </p>
+        </div>
+        <Link to="/profile" className="sport-avatar" aria-label="Profil öffnen">
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            initials
+          )}
+        </Link>
+      </div>
+      <dl className="sport-only sport-overview-metrics" aria-label="Dein Trainingsstatus">
+        <div>
+          <dt>
+            <Target aria-hidden="true" />
+            HEUTE
+          </dt>
+          <dd>
+            {loading ? "—" : todayReps}
+            <small>/ {goal} Wdh.</small>
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <Flame aria-hidden="true" />
+            DEINE SERIE
+          </dt>
+          <dd>
+            {loading ? "—" : streak}
+            <small>{streak === 1 ? "Tag" : "Tage"} in Folge</small>
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <Trophy aria-hidden="true" />
+            DEIN LEVEL
+          </dt>
+          <dd>
+            {loading ? "—" : lp.level}
+            <small>{loading ? "Lädt…" : lp.title}</small>
+          </dd>
+        </div>
+      </dl>
+      <SportSectionLabel number="01">Dein Training heute</SportSectionLabel>
       <section
-        className="training-hero mt-6 rounded-3xl border border-primary/25 bg-primary/5 p-5"
+        className="sport-only training-hero rounded-3xl border border-border bg-card p-5"
+        aria-labelledby="sport-today-plan-title"
+      >
+        <div className="sport-hero-heading">
+          <div className="sport-hero-mark">
+            <Dumbbell aria-hidden="true" />
+            {recommendation.title}
+          </div>
+          <h2 id="sport-today-plan-title">{recommendation.headline}</h2>
+          <p>
+            Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter Fortschritt.
+          </p>
+        </div>
+        <div className="training-plan-metrics grid grid-cols-3 gap-2 text-center">
+          <PlanMetric label="Sätze" value={recommendation.sets} />
+          <PlanMetric label="Wdh. je Satz" value={recommendation.reps} />
+          <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
+        </div>
+        <div className="grid grid-cols-3 gap-2" aria-label="Zählmethode">
+          <ModeChip
+            active={mode === "nose"}
+            onClick={() => setMode("nose")}
+            icon="👃"
+            label="Nase"
+          />
+          <ModeChip
+            active={mode === "manual"}
+            onClick={() => setMode("manual")}
+            icon="✍️"
+            label="Manuell"
+          />
+          <ModeChip
+            active={mode === "camera"}
+            onClick={() => setMode("camera")}
+            icon="📷"
+            label="Kamera"
+          />
+        </div>
+        <Link
+          to="/workout/$exerciseId"
+          params={{ exerciseId: "pushup" }}
+          search={{
+            mode,
+            sets: recommendation.sets,
+            reps: recommendation.reps,
+            rest_s: recommendation.rest_s,
+            title: recommendation.title,
+          }}
+          className="flex rounded-2xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground"
+        >
+          <Zap className="h-4 w-4" aria-hidden="true" />
+          {recommendation.recoveryDay ? "Leichte Einheit starten" : "Training starten"}
+          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+        <p className="text-xs text-muted-foreground">{recommendation.readinessNote}</p>
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer">Warum dieser Plan?</summary>
+          <p className="mt-2 leading-relaxed">{recommendation.detail}</p>
+          {weekReps === 0 && todayReps === 0 && (
+            <p className="mt-2">Starte entspannt – saubere Technik geht vor Tempo.</p>
+          )}
+        </details>
+      </section>
+      <SportSectionLabel number="02">Finde deinen Fokus</SportSectionLabel>
+      <nav className="sport-only sport-shortcuts" aria-label="Trainingsbereiche">
+        <Link to="/exercises" className="sport-shortcut">
+          <Dumbbell aria-hidden="true" />
+          <span>
+            Alle Übungen
+            <ArrowUpRight aria-hidden="true" />
+          </span>
+        </Link>
+        <Link to="/programs" className="sport-shortcut">
+          <Target aria-hidden="true" />
+          <span>
+            Programme
+            <ArrowUpRight aria-hidden="true" />
+          </span>
+        </Link>
+        <Link to="/calisthenics" className="sport-shortcut">
+          <Activity aria-hidden="true" />
+          <span>
+            Calisthenics
+            <ArrowUpRight aria-hidden="true" />
+          </span>
+        </Link>
+        <Link to="/health" className="sport-shortcut">
+          <HeartPulse aria-hidden="true" />
+          <span>
+            Gesundheit
+            <ArrowUpRight aria-hidden="true" />
+          </span>
+        </Link>
+      </nav>
+      <section
+        className="classic-only training-hero mt-6 rounded-3xl border border-primary/25 bg-primary/5 p-5"
         aria-labelledby="today-plan-title"
       >
         <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
@@ -639,7 +803,16 @@ function RingRow({ icon, label, value }: { icon: string; label: string; value: s
   return (
     <div className="flex items-center justify-between gap-2 rounded-xl bg-background/40 px-3 py-2">
       <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
-        <span className="text-base">{icon}</span>
+        <span className="classic-only text-base">{icon}</span>
+        <span className="sport-only">
+          {label === "Bestwert" ? (
+            <Trophy className="h-4 w-4 text-primary" aria-hidden="true" />
+          ) : label === "Trainingsserie" ? (
+            <Flame className="h-4 w-4 text-primary" aria-hidden="true" />
+          ) : (
+            <Footprints className="h-4 w-4 text-primary" aria-hidden="true" />
+          )}
+        </span>
         {label}
       </span>
       <span className="text-sm font-semibold tabular-nums">{value}</span>
@@ -681,7 +854,16 @@ function ModeChip({
           : "border-border bg-secondary/60 text-muted-foreground"
       }`}
     >
-      <span className="text-lg">{icon}</span>
+      <span className="classic-only text-lg">{icon}</span>
+      <span className="sport-only" aria-hidden="true">
+        {label === "Kamera" ? (
+          <Camera className="h-4 w-4" />
+        ) : label === "Manuell" ? (
+          <Hand className="h-4 w-4" />
+        ) : (
+          <ScanFace className="h-4 w-4" />
+        )}
+      </span>
       <span className="text-center">{label}</span>
       {active && <span className="text-[10px] leading-tight">Ausgewählt</span>}
     </button>

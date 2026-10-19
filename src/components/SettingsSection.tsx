@@ -1,5 +1,20 @@
 import { useState, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import {
+  Activity,
+  Award,
+  Bell,
+  Brain,
+  Bug,
+  ChevronDown,
+  Globe,
+  HeartPulse,
+  KeyRound,
+  Palette,
+  SlidersHorizontal,
+  UserRound,
+  Users,
+  Volume2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,9 +35,34 @@ export function SettingsSection({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const SportIcon = title.includes("Coach")
+    ? Brain
+    : title.includes("Freund")
+      ? Users
+      : title.includes("Design")
+        ? Palette
+        : title.includes("Fehler")
+          ? Bug
+          : title.includes("Badge")
+            ? Award
+            : title.includes("Öffentlich")
+              ? Globe
+              : title.includes("Profil")
+                ? UserRound
+                : title.includes("Benachrichtigung")
+                  ? Bell
+                  : title.includes("Health") || title.includes("Gesund")
+                    ? HeartPulse
+                    : title.includes("API") || title.includes("KI")
+                      ? KeyRound
+                      : title.includes("Feedback") || title.includes("Sound")
+                        ? Volume2
+                        : title.includes("Training")
+                          ? Activity
+                          : SlidersHorizontal;
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur">
+    <section className="settings-section overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -30,7 +70,8 @@ export function SettingsSection({
         className="flex w-full items-center gap-4 px-5 py-4 text-left transition active:scale-[0.99]"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border bg-secondary/60 text-lg">
-          {icon}
+          <span className="classic-only">{icon}</span>
+          <SportIcon className="sport-only h-5 w-5 text-primary" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-foreground">{title}</span>
@@ -54,7 +95,9 @@ export function SettingsSection({
         )}
       >
         <div className="overflow-hidden">
-          <div className="border-t border-border px-5 py-4">{children}</div>
+          <div className="settings-section-content border-t border-border px-5 py-4">
+            {children}
+          </div>
         </div>
       </div>
     </section>

@@ -31,7 +31,7 @@ export function DesignStylePicker() {
   };
 
   return (
-    <div>
+    <div className="design-style-picker">
       <p className="mb-3 text-sm text-muted-foreground">
         Nicht nur eine andere Farbe: Ändere Schrift, Kartenformen, Abstände und Navigation. Alle
         Stile lassen sich mit jeder Farbwelt kombinieren.

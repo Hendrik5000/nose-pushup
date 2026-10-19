@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowUpRight, Mic } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { supabase } from "@/integrations/supabase/client";
 import {
   createChatRoom,
@@ -264,7 +266,7 @@ export function LocalChatShell() {
   const modeLabel = mode === "supabase" ? "Cloud · Supabase" : "Lokal · Gerät";
 
   const sidebar = (
-    <div className="flex h-full flex-col bg-card/40">
+    <div className="sport-chat-sidebar flex h-full flex-col bg-card/40">
       <div className="border-b border-border bg-gradient-to-br from-primary/15 to-transparent px-4 py-4">
         <div className="flex items-center gap-2">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20 text-xl">
@@ -395,11 +397,11 @@ export function LocalChatShell() {
   );
 
   return (
-    <div className="app-chat-shell flex overflow-hidden bg-background">
+    <div className="app-chat-shell sport-chat-app flex overflow-hidden bg-background">
       <aside className="hidden w-72 shrink-0 border-r border-border md:block">{sidebar}</aside>
 
       <section className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-border bg-card/50 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
+        <header className="classic-only flex items-center gap-2 border-b border-border bg-card/50 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
           <button
             type="button"
             className="rounded-xl border border-border px-2 py-1.5 text-sm md:hidden"
@@ -442,6 +444,44 @@ export function LocalChatShell() {
           </div>
         </header>
 
+        <div className="sport-only sport-chat-topbar border-b border-border/70 bg-card/70 px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur sm:px-6">
+          <SportPageIntro
+            eyebrow={`NEXUS CHAT · ${modeLabel.toUpperCase()}`}
+            title={headerTitle}
+            description={`${active?.kind === "room" ? "Gruppenraum" : "Direktnachricht"} · ${mode === "supabase" ? "Cloud-Synchronisierung" : "Lokal auf diesem Gerät"}`}
+          >
+            <button
+              type="button"
+              className="rounded-xl border border-border/70 px-3 py-2 text-sm md:hidden"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Räume öffnen"
+            >
+              ☰ Räume
+            </button>
+            {active?.kind === "room" && userId && (
+              <>
+                <HeadBtn
+                  label="Favorit"
+                  onClick={() => setPrefs(toggleFavoriteRoom(userId, active.id))}
+                >
+                  {prefs?.favoriteRoomIds.includes(active.id) ? "★" : "☆"}
+                </HeadBtn>
+                <HeadBtn label="Stumm" onClick={() => setPrefs(toggleMute(userId, active.id))}>
+                  {prefs?.mutedRoomIds.includes(active.id) ? "🔇" : "🔔"}
+                </HeadBtn>
+              </>
+            )}
+            <HeadBtn label="Suche" onClick={() => setSearchOpen((v) => !v)}>
+              🔍
+            </HeadBtn>
+            <HeadBtn label="Export" onClick={() => void exportActive()}>
+              ⬇
+            </HeadBtn>
+            <Link to="/" className="rounded-xl border border-border/70 px-3 py-2 text-xs font-bold">
+              App
+            </Link>
+          </SportPageIntro>
+        </div>
         {searchOpen && (
           <div className="border-b border-border bg-card/40 px-3 py-2">
             <input
@@ -541,7 +581,7 @@ export function LocalChatShell() {
           </div>
         )}
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
+        <div className="sport-chat-message-list flex-1 space-y-3 overflow-y-auto px-4 py-5 sm:px-6">
           {messages.map((m, i) => {
             const own = m.user_id === userId;
             const prev = messages[i - 1];
@@ -580,7 +620,7 @@ export function LocalChatShell() {
                   </div>
                 )}
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
+                  className={`sport-chat-bubble max-w-[85%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
                     own
                       ? "rounded-br-sm bg-primary text-primary-foreground"
                       : m.user_id === "system"
@@ -726,7 +766,7 @@ export function LocalChatShell() {
             e.preventDefault();
             void onSend();
           }}
-          className="flex items-end gap-2 border-t border-border bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+          className="classic-only flex items-end gap-2 border-t border-border bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         >
           <button
             type="button"
@@ -767,6 +807,47 @@ export function LocalChatShell() {
           </button>
         </form>
 
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onSend();
+          }}
+          className="sport-only sport-chat-composer flex items-end gap-3 border-t border-border/70 bg-card/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
+        >
+          <button
+            type="button"
+            onClick={toggleVoice}
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
+            aria-label="Spracheingabe"
+          >
+            <Mic className="h-5 w-5" aria-hidden="true" />
+          </button>
+          <textarea
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              if (userId && active) saveDraft(userId, active.kind, active.id, e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void onSend();
+              }
+            }}
+            placeholder={replyTo ? "Antwort schreiben…" : "Nachricht schreiben…"}
+            rows={1}
+            className="min-h-12 min-w-0 flex-1 resize-none rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
+            style={{ maxHeight: 120 }}
+          />
+          <button
+            type="submit"
+            disabled={!active || !draft.trim()}
+            className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
+          >
+            <span className="sr-only sm:not-sr-only">Senden</span>
+            <ArrowUpRight className="h-5 w-5 sm:ml-2" aria-hidden="true" />
+          </button>
+        </form>
         {toast && (
           <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-xs shadow-lg">
             {toast}

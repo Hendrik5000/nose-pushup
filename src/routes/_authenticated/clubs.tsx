@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { createClub, joinClubByCode } from "@/lib/club.functions";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { Flag, Users, Trophy, Send, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/clubs")({
   head: () => ({
@@ -203,17 +205,36 @@ function ClubsPage() {
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
-      <header className="flex items-center justify-between">
+      <header className="classic-only flex items-center justify-between">
         <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
           ← Zurück
         </Link>
         <span className="text-sm font-medium">🛡️ Clubs</span>
       </header>
 
+      <div className="sport-only mt-6">
+        <SportPageIntro
+          eyebrow="Teamtraining · Clubs"
+          title={club?.name ?? "Stärker zusammen."}
+          description={
+            club
+              ? club.motto ||
+                "Trainiert gemeinsam, erreicht euer Wochenziel und haltet den Teamfortschritt im Blick."
+              : "Gründe einen Club oder tritt einem Team bei – echte Mitglieder, gemeinsame Ziele."
+          }
+        >
+          <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+            <Users className="h-4 w-4" /> {club ? `${members.length} Athleten` : "Team-Modus"}
+          </div>
+        </SportPageIntro>
+      </div>
       {loading ? (
         <p className="mt-10 text-center text-sm text-muted-foreground">Lade Clubs…</p>
       ) : club ? (
         <>
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="01">Wochenziel & Teamstatus</SportSectionLabel>
+          </div>
           <section
             className="mt-6 rounded-3xl border p-5 backdrop-blur"
             style={{
@@ -223,11 +244,14 @@ function ClubsPage() {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">{club.name}</h1>
-                {club.motto && <p className="mt-1 text-sm text-muted-foreground">{club.motto}</p>}
+                <h1 className="classic-only text-2xl font-bold tracking-tight">{club.name}</h1>
+                {club.motto && (
+                  <p className="classic-only mt-1 text-sm text-muted-foreground">{club.motto}</p>
+                )}
               </div>
               <div className="text-right">
-                <div className="text-2xl">{tier.icon}</div>
+                <div className="classic-only text-2xl">{tier.icon}</div>
+                <Flag className="sport-only ml-auto h-6 w-6 text-primary" />
                 <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                   {tier.label}
                 </div>
@@ -248,7 +272,9 @@ function ClubsPage() {
                 />
               </div>
               {goalPct >= 100 && (
-                <p className="mt-2 text-xs font-semibold text-primary">🎉 Wochenziel erreicht!</p>
+                <p className="mt-2 text-xs font-semibold text-primary">
+                  <span className="classic-only">🎉 </span>Wochenziel erreicht!
+                </p>
               )}
             </div>
 
@@ -260,6 +286,32 @@ function ClubsPage() {
             </div>
           </section>
 
+          {members.length > 0 && (
+            <section className="sport-only mt-7">
+              <SportSectionLabel number="02">Team-Podium · Wochenleistung</SportSectionLabel>
+              <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {members.slice(0, 3).map((m, i) => (
+                  <li key={m.user_id} className="rounded-2xl border border-border bg-card p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                        Platz {i + 1}
+                      </span>
+                      <Trophy className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="mt-4 truncate text-base font-bold">
+                      {m.display_name ?? "Athlet"}
+                    </div>
+                    <div className="mt-1 text-sm font-semibold tabular-nums text-primary">
+                      {m.reps} Wiederholungen
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="03">Team-Rangliste</SportSectionLabel>
+          </div>
           <section className="mt-6">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Mitglieder diese Woche
@@ -285,6 +337,9 @@ function ClubsPage() {
             </ul>
           </section>
 
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="03">Club-Feed</SportSectionLabel>
+          </div>
           <section className="mt-6">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Club-Feed
@@ -302,7 +357,12 @@ function ClubsPage() {
                 disabled={busy !== null || !message.trim()}
                 className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
-                Senden
+                <>
+                  <span className="classic-only">Senden</span>
+                  <span className="sport-only flex items-center gap-1">
+                    Senden <Send className="h-3.5 w-3.5" />
+                  </span>
+                </>
               </button>
             </div>
             <ul className="mt-3 space-y-2">
@@ -330,11 +390,19 @@ function ClubsPage() {
             disabled={busy !== null}
             className="mt-6 w-full rounded-2xl border border-border bg-secondary/60 px-4 py-3 text-sm font-medium text-muted-foreground disabled:opacity-50"
           >
-            Club verlassen
+            <>
+              <span className="classic-only">Club verlassen</span>
+              <span className="sport-only inline-flex items-center gap-2">
+                Club verlassen <LogOut className="h-4 w-4" />
+              </span>
+            </>
           </button>
         </>
       ) : (
         <>
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="01">Club aufstellen</SportSectionLabel>
+          </div>
           <section className="mt-6 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 to-card/60 p-5 backdrop-blur">
             <h1 className="text-2xl font-bold tracking-tight">Club gründen</h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -378,6 +446,9 @@ function ClubsPage() {
             </button>
           </section>
 
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="02">Mit Einladung beitreten</SportSectionLabel>
+          </div>
           <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
             <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Club beitreten

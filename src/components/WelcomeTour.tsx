@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Activity, ArrowUpRight, Compass, Dumbbell, Sparkles, Users } from "lucide-react";
 
 type Step = {
   icon: string;
@@ -16,7 +17,7 @@ const STEPS: Step[] = [
   {
     icon: "🧭",
     title: "Hauptfunktionen schnell erreichen",
-    body: "Über die untere Navigation kommst du direkt zu Übungen, Coach, Together und deinen Einstellungen. So wechselst du mühelos zwischen den Kernbereichen.",
+    body: "Über die Hauptnavigation erreichst du Übersicht, Training, Super-KI, Chat und Profil. Das Bereiche-Menü öffnet alle weiteren Funktionen.",
   },
   {
     icon: "💪",
@@ -104,6 +105,7 @@ export function WelcomeTour({ userId }: { userId: string }) {
 
   const isLast = step === STEPS.length - 1;
   const current = STEPS[step];
+  const StepIcon = [Dumbbell, Compass, Activity, Sparkles, Users][step] ?? Activity;
 
   return (
     <div
@@ -124,7 +126,7 @@ export function WelcomeTour({ userId }: { userId: string }) {
 
       {/* Karte */}
       <div
-        className={`relative m-4 w-full max-w-sm rounded-3xl border border-border bg-card/90 p-6 shadow-[0_24px_80px_-20px_oklch(0_0_0/0.8)] backdrop-blur-2xl transition-all duration-200 ${
+        className={`welcome-tour-card relative m-4 w-full max-w-sm rounded-3xl border border-border bg-card/90 p-6 shadow-[0_24px_80px_-20px_oklch(0_0_0/0.8)] backdrop-blur-2xl transition-all duration-200 ${
           mounted ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
         }`}
       >
@@ -143,7 +145,8 @@ export function WelcomeTour({ userId }: { userId: string }) {
 
         <div className="mt-6 flex flex-col items-center text-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-primary/40 bg-primary/15 text-4xl shadow-[0_0_30px_-8px_var(--color-primary)]">
-            {current.icon}
+            <span className="classic-only">{current.icon}</span>
+            <StepIcon className="sport-only h-9 w-9" aria-hidden="true" />
           </div>
           <h2 id="tour-title" className="mt-5 text-xl font-bold tracking-tight text-balance">
             {current.title}
@@ -153,8 +156,18 @@ export function WelcomeTour({ userId }: { userId: string }) {
           </p>
         </div>
 
+        <div className="sport-only mt-6 flex items-center gap-3" aria-hidden="true">
+          <span className="text-xs font-bold text-primary">0{step + 1}</span>
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-secondary">
+            <div
+              className="h-full bg-primary"
+              style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">0{STEPS.length}</span>
+        </div>
         {/* Fortschritts-Punkte */}
-        <div className="mt-6 flex items-center justify-center gap-1.5">
+        <div className="classic-only mt-6 flex items-center justify-center gap-1.5">
           {STEPS.map((_, i) => (
             <span
               key={i}
@@ -181,7 +194,11 @@ export function WelcomeTour({ userId }: { userId: string }) {
             onClick={() => (isLast ? finish() : setStep((s) => s + 1))}
             className="flex-[2] rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
           >
-            {isLast ? "Los geht’s 🚀" : "Weiter"}
+            <span className="classic-only">{isLast ? "Los geht’s 🚀" : "Weiter"}</span>
+            <span className="sport-only flex items-center justify-center gap-2">
+              {isLast ? "Dein Training beginnt" : "Weiter"}
+              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+            </span>
           </button>
         </div>
       </div>

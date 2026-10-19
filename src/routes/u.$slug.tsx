@@ -1,5 +1,7 @@
+import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getPublicProfile } from "@/lib/public-profile.functions";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 
 export const Route = createFileRoute("/u/$slug")({
   loader: ({ params }) => getPublicProfile({ data: { slug: params.slug } }),
@@ -65,33 +67,97 @@ function PublicProfilePage() {
   }
 
   return (
-    <Shell>
-      <div className="rounded-3xl border border-border bg-card/60 p-6 text-center backdrop-blur">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-2xl font-bold">
-          {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-          ) : (
-            (profile.display_name || "?").slice(0, 1).toUpperCase()
-          )}
-        </div>
-        <h1 className="mt-3 text-xl font-bold tracking-tight">{profile.display_name || slug}</h1>
-        <p className="text-xs uppercase tracking-[0.25em] text-primary">Level {profile.level}</p>
+    <>
+      <div className="classic-only">
+        <Shell>
+          <div className="rounded-3xl border border-border bg-card/60 p-6 text-center backdrop-blur">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-2xl font-bold">
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+              ) : (
+                (profile.display_name || "?").slice(0, 1).toUpperCase()
+              )}
+            </div>
+            <h1 className="mt-3 text-xl font-bold tracking-tight">
+              {profile.display_name || slug}
+            </h1>
+            <p className="text-xs uppercase tracking-[0.25em] text-primary">
+              Level {profile.level}
+            </p>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 text-left">
-          <Stat label="Bestwert" value={`${profile.best_count}`} icon="🏆" />
-          <Stat label="Streak" value={`${profile.current_streak} Tage`} icon="🔥" />
-          <Stat label="Längste Serie" value={`${profile.longest_streak} Tage`} icon="📈" />
-          <Stat label="Battle-Siege" value={`${profile.battle_wins}`} icon="⚔️" />
-        </div>
+            <div className="mt-6 grid grid-cols-2 gap-3 text-left">
+              <Stat label="Bestwert" value={`${profile.best_count}`} icon="🏆" />
+              <Stat label="Streak" value={`${profile.current_streak} Tage`} icon="🔥" />
+              <Stat label="Längste Serie" value={`${profile.longest_streak} Tage`} icon="📈" />
+              <Stat label="Battle-Siege" value={`${profile.battle_wins}`} icon="⚔️" />
+            </div>
 
-        <Link
-          to="/auth"
-          className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
-        >
-          Selbst mittrainieren →
-        </Link>
+            <Link
+              to="/auth"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+            >
+              Selbst mittrainieren →
+            </Link>
+          </div>
+        </Shell>
       </div>
-    </Shell>
+      <DesignView variant="sport">
+        <main className="sport-only sport-public-profile mx-auto flex min-h-[100dvh] w-full max-w-4xl flex-col gap-6 px-5 py-8 sm:px-8">
+          <SportPageIntro
+            eyebrow="ATHLETE CARD · PUBLIC"
+            title="Trainingsprofil"
+            description="Öffentliche Bestwerte und Trainingserfolge."
+          />
+          <section className="relative overflow-hidden rounded-[2.25rem] border border-primary/25 bg-gradient-to-br from-primary/15 via-card/85 to-background p-7 shadow-sm sm:p-10">
+            <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
+              <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[2rem] border border-primary/30 bg-background/70 text-4xl font-bold">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  (profile.display_name || "?").slice(0, 1).toUpperCase()
+                )}
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                  Level {profile.level} Athlete
+                </div>
+                <h2 className="mt-2 text-3xl font-bold tracking-tight">
+                  {profile.display_name || slug}
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Öffentliches Trainingsprofil von @{slug}
+                </p>
+              </div>
+            </div>
+          </section>
+          <SportSectionLabel number="01">Leistungsübersicht</SportSectionLabel>
+          <section className="grid gap-3 sm:grid-cols-2">
+            {[
+              ["Bestwert", `${profile.best_count}`, "🏆"],
+              ["Aktuelle Serie", `${profile.current_streak} Tage`, "🔥"],
+              ["Längste Serie", `${profile.longest_streak} Tage`, "↗"],
+              ["Battle-Siege", `${profile.battle_wins}`, "⚔️"],
+            ].map(([label, value, icon]) => (
+              <div key={label} className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    {label}
+                  </span>
+                  <span className="text-xl">{icon}</span>
+                </div>
+                <div className="mt-4 text-3xl font-bold tabular-nums">{value}</div>
+              </div>
+            ))}
+          </section>
+          <Link
+            to="/auth"
+            className="inline-flex min-h-14 items-center justify-center rounded-2xl bg-primary px-6 py-4 text-sm font-bold text-primary-foreground"
+          >
+            Selbst mittrainieren →
+          </Link>
+        </main>
+      </DesignView>
+    </>
   );
 }
 

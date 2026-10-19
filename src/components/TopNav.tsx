@@ -20,7 +20,13 @@ export function TopNav() {
           const active =
             it.to === "/"
               ? pathname === "/" || pathname === ""
-              : pathname === it.to || pathname.startsWith(`${it.to}/`);
+              : pathname === it.to ||
+                pathname.startsWith(`${it.to}/`) ||
+                (it.to === "/exercises" &&
+                  ["/workout/", "/programs", "/calisthenics", "/cali-workout/", "/run"].some(
+                    (prefix) => pathname.startsWith(prefix),
+                  )) ||
+                (it.to === "/ai" && pathname === "/coach");
           return (
             <li key={it.to} className="min-w-0 flex-1">
               <Link

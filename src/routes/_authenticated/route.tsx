@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
 import { WelcomeTour } from "@/components/WelcomeTour";
 import { TopNav } from "@/components/TopNav";
+import { SportAppHeader } from "@/components/SportAppHeader";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -20,6 +21,7 @@ function AuthenticatedLayout() {
   return (
     <div className="authenticated-shell min-h-[100dvh]">
       <TopNav />
+      <SportAppHeader />
       <Outlet />
       <WelcomeTour userId={user.id} />
     </div>

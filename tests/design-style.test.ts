@@ -45,13 +45,13 @@ afterEach(() => {
 });
 
 test("catalog exposes all independent design styles and defaults to performance", () => {
-  const expected = ["soft", "compact", "editorial", "studio", "performance"];
+  const expected = ["soft", "compact", "editorial", "studio", "performance", "legacy-performance"];
   assert.deepEqual(
     DESIGN_STYLES.map((style) => style.id),
     expected,
   );
   assert.equal(DEFAULT_DESIGN_STYLE, "performance");
-  assert.equal(DESIGN_STYLES.find((style) => style.id === "soft")?.label, "Soft");
+  assert.equal(DESIGN_STYLES.find((style) => style.id === "soft")?.label, "Klassisch");
   assert.equal(DESIGN_STYLES.find((style) => style.id === "compact")?.label, "Kompakt");
   assert.equal(DESIGN_STYLES.find((style) => style.id === "performance")?.label, "Performance");
   for (const style of DESIGN_STYLES) {

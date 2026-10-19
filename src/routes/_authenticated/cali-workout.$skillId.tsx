@@ -1,3 +1,4 @@
+import { DesignView } from "@/components/DesignView";
 /**
  * Dedicated Calisthenics Workout Screen
  * - Sets × Reps or Hold-Time tracking
@@ -11,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { allSkills } from "@/lib/calisthenics";
 import type { CaliSkill } from "@/lib/calisthenics";
 import { feedbackRep, feedbackSuccess } from "@/lib/feedback";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { ArrowLeft, Check, Timer } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/cali-workout/$skillId")({
   head: ({ params }) => ({
@@ -187,247 +190,471 @@ function CaliWorkoutScreen() {
 
   if (!skill) {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center flex-col gap-4 text-sm text-muted-foreground p-6 text-center">
-        <span className="text-4xl">🤷</span>
-        <p>Skill nicht gefunden.</p>
-        <button
-          onClick={() => navigate({ to: "/calisthenics" })}
-          className="text-primary underline"
-        >
-          Zurück zu Calisthenics
-        </button>
-      </main>
+      <>
+        <DesignView variant="sport">
+          <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col items-center justify-center gap-5 px-6 py-10 text-center">
+            <SportPageIntro
+              eyebrow="CALISTHENICS · SKILL SESSION"
+              title="Skill nicht gefunden"
+              description="Dieser Trainingspfad ist nicht mehr verfügbar. Kehre zum Skill Tree zurück, um eine andere Progression auszuwählen."
+            />
+            <button
+              onClick={() => navigate({ to: "/calisthenics" })}
+              className="rounded-2xl bg-primary px-6 py-4 text-sm font-bold text-primary-foreground"
+            >
+              Zurück zum Skill Tree
+            </button>
+          </main>
+        </DesignView>
+        <DesignView variant="classic">
+          <main className="classic-only flex min-h-[100dvh] items-center justify-center flex-col gap-4 text-sm text-muted-foreground p-6 text-center">
+            <span className="text-4xl">🤷</span>
+            <p>Skill nicht gefunden.</p>
+            <button
+              onClick={() => navigate({ to: "/calisthenics" })}
+              className="text-primary underline"
+            >
+              Zurück zu Calisthenics
+            </button>
+          </main>
+        </DesignView>
+      </>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
-      {/* Header */}
-      <header className="flex items-center justify-between">
-        <Link
-          to="/calisthenics"
-          className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
-        >
-          ← Cali
-        </Link>
-        <span className="flex items-center gap-2 text-sm font-semibold">
-          <span className="text-2xl">{skill.icon}</span>
-          {skill.name}
-        </span>
-        <span className="w-12" />
-      </header>
-
-      {/* Tip card */}
-      <div className="mt-4 rounded-2xl border border-border bg-card/50 px-4 py-3 text-xs text-muted-foreground leading-relaxed backdrop-blur">
-        💡 <span className="font-medium text-foreground">Tipp:</span> {skill.tip}
-      </div>
-
-      {/* Stats row */}
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        <StatCell label="Sets" value={sets.length.toString()} />
-        <StatCell
-          label="Bestwert"
-          value={prevBest > 0 ? prevBest.toString() : "—"}
-          unit={isHold ? "Sek." : ""}
-        />
-        <StatCell
-          label="Bestes Set"
-          value={sets.length > 0 ? Math.max(...sets.map((s) => s.count)).toString() : "—"}
-          unit={isHold ? "Sek." : ""}
-        />
-      </div>
-
-      {/* Main area */}
-      <div className="mt-4 flex flex-1 flex-col">
-        {/* DONE */}
-        {phase === "done" && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-6 rounded-[2rem] border border-border bg-card/60 p-8 text-center backdrop-blur">
-            <span className="text-6xl">🎯</span>
-            <div>
-              <p className="text-lg font-bold">{savedMsg}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {sets.length} Sets · Ø {isHold ? "" : ""}
-                {Math.round(sets.reduce((a, s) => a + s.count, 0) / sets.length)}
-                {isHold ? " Sek." : " Reps"}
-              </p>
-            </div>
-            <button
-              onClick={() => navigate({ to: "/calisthenics" })}
-              className="rounded-xl bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground"
-            >
-              Zurück zum Skill Tree
-            </button>
-          </div>
-        )}
-
-        {/* RPE input */}
-        {phase === "rpe" && (
-          <div className="flex flex-1 flex-col rounded-[2rem] border border-border bg-card/60 p-6 backdrop-blur">
-            <div className="text-center">
-              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                Set {sets.length + 1} abgeschlossen
-              </p>
-              <p className="mt-2 text-5xl font-bold tabular-nums">
-                {currentCount}
-                {isHold ? (
-                  <span className="text-2xl font-normal ml-1 text-muted-foreground">Sek.</span>
-                ) : (
-                  ""
-                )}
-              </p>
-            </div>
-            <div className="mt-6 flex-1 flex flex-col gap-3">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground text-center">
-                RPE — Wie schwer war der Set?
-              </p>
-              <div className="flex gap-1 flex-wrap justify-center">
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((v) => (
+    <>
+      <DesignView variant="sport">
+        <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-6 px-5 py-6 pb-10 sm:px-8">
+          <SportPageIntro
+            eyebrow="CALISTHENICS · SKILL SESSION"
+            title={skill.name}
+            description={skill.tip}
+          >
+            <Link to="/calisthenics" className="sport-back-link inline-flex items-center gap-2">
+              <ArrowLeft size={16} /> Skill-Pfad
+            </Link>
+          </SportPageIntro>
+          <section className="grid gap-3 sm:grid-cols-3">
+            <StatCell label="Abgeschlossene Sets" value={sets.length.toString()} />
+            <StatCell
+              label="Persönlicher Bestwert"
+              value={prevBest > 0 ? prevBest.toString() : "—"}
+              unit={isHold ? "Sek." : ""}
+            />
+            <StatCell
+              label="Bestes Set"
+              value={sets.length > 0 ? Math.max(...sets.map((s) => s.count)).toString() : "—"}
+              unit={isHold ? "Sek." : ""}
+            />
+          </section>
+          <div className="sport-focus-card flex flex-1 flex-col gap-4">
+            {phase === "done" && (
+              <section className="flex flex-1 flex-col items-center justify-center gap-5 rounded-[2rem] border border-primary/25 bg-card/70 p-8 text-center">
+                <span className="grid h-16 w-16 place-items-center rounded-2xl bg-primary/10 text-primary">
+                  <Check size={34} />
+                </span>
+                <SportSectionLabel number="04">Session gespeichert</SportSectionLabel>
+                <div>
+                  <p className="text-xl font-bold">{savedMsg}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {sets.length} Sets · Ø{" "}
+                    {Math.round(sets.reduce((a, s) => a + s.count, 0) / sets.length)}
+                    {isHold ? " Sek." : " Reps"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate({ to: "/calisthenics" })}
+                  className="w-full max-w-sm rounded-2xl bg-primary px-6 py-4 text-sm font-bold text-primary-foreground"
+                >
+                  Zurück zum Skill Tree
+                </button>
+              </section>
+            )}
+            {phase === "rpe" && (
+              <section className="flex flex-1 flex-col rounded-[2rem] border border-border bg-card/65 p-6 sm:p-8">
+                <SportSectionLabel number="02">Belastung bewerten</SportSectionLabel>
+                <div className="mt-4 text-center">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Set {sets.length + 1} abgeschlossen
+                  </p>
+                  <p className="mt-2 font-display text-7xl font-bold tabular-nums">
+                    {currentCount}
+                    <span className="ml-2 text-xl font-semibold text-muted-foreground">
+                      {isHold ? "Sek." : "Reps"}
+                    </span>
+                  </p>
+                </div>
+                <p className="mt-7 text-center text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                  RPE — wie schwer war der Satz?
+                </p>
+                <div className="mt-3 grid grid-cols-5 gap-2">
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => setRpe(v)}
+                      className={`min-h-12 rounded-xl text-sm font-bold transition ${rpe === v ? "scale-105 bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:bg-secondary/70"}`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-3 text-center text-sm text-muted-foreground">{RPE_LABELS[rpe]}</p>
+                <button
+                  onClick={confirmRpe}
+                  className="mt-auto w-full rounded-2xl bg-primary py-4 text-sm font-bold text-primary-foreground"
+                >
+                  Bestätigen · Pause starten
+                </button>
+              </section>
+            )}
+            {phase === "resting" && (
+              <section className="flex flex-1 flex-col items-center justify-center gap-5 rounded-[2rem] border border-border bg-card/65 p-8 text-center">
+                <SportSectionLabel number="03">Erholung zwischen den Sätzen</SportSectionLabel>
+                <div
+                  className="relative flex h-44 w-44 items-center justify-center rounded-full border-4 border-primary/30"
+                  style={{
+                    background: `conic-gradient(oklch(var(--color-primary)/0.8) ${(restRemaining / restSecs) * 360}deg, transparent 0deg)`,
+                  }}
+                >
+                  <div className="flex h-36 w-36 items-center justify-center rounded-full bg-background">
+                    <span className="font-display text-4xl font-bold tabular-nums">
+                      {formatSec(restRemaining)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
                   <button
-                    key={v}
-                    onClick={() => setRpe(v)}
-                    className={`h-9 w-9 rounded-xl text-sm font-bold transition ${
-                      rpe === v
-                        ? "bg-primary text-primary-foreground scale-110"
-                        : "bg-secondary text-muted-foreground hover:bg-secondary/70"
-                    }`}
+                    onClick={() => setRestSecs((s) => Math.max(30, s - 15))}
+                    className="rounded-xl bg-secondary px-4 py-2 text-sm font-semibold"
                   >
-                    {v}
+                    −15s
                   </button>
+                  <span className="text-xs text-muted-foreground">Pause {formatSec(restSecs)}</span>
+                  <button
+                    onClick={() => setRestSecs((s) => Math.min(300, s + 15))}
+                    className="rounded-xl bg-secondary px-4 py-2 text-sm font-semibold"
+                  >
+                    +15s
+                  </button>
+                </div>
+                <button
+                  onClick={skipRest}
+                  className="text-sm font-semibold text-primary underline underline-offset-4"
+                >
+                  Pause überspringen
+                </button>
+              </section>
+            )}
+            {(phase === "idle" || phase === "active") && (
+              <section
+                className="sport-workout-stage flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-primary/20 bg-card/70 p-6 text-center select-none sm:min-h-[28rem]"
+                onPointerDown={!isHold && phase === "active" ? addRep : undefined}
+              >
+                <SportSectionLabel number="01">
+                  {phase === "idle"
+                    ? `Satz ${sets.length + 1}`
+                    : isHold
+                      ? "Halteposition"
+                      : "Wiederholungen erfassen"}
+                </SportSectionLabel>
+                <span className="mt-6 font-display text-[8rem] font-bold leading-none tabular-nums sm:text-[10rem]">
+                  {currentCount}
+                </span>
+                <span className="mt-3 text-sm text-muted-foreground">
+                  {phase === "active"
+                    ? isHold
+                      ? "Sekunden · halte stabil"
+                      : "Tippe · jede Wiederholung zählt"
+                    : "Bereit für deinen nächsten Satz"}
+                </span>
+              </section>
+            )}
+          </div>
+          <section className="space-y-3">
+            {phase === "idle" && (
+              <>
+                <button
+                  onClick={startSet}
+                  className="w-full rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground"
+                >
+                  {sets.length === 0 ? "Ersten Satz starten" : "Nächsten Satz starten"}
+                </button>
+                {sets.length > 0 && (
+                  <button
+                    onClick={finishWorkout}
+                    disabled={saving}
+                    className="w-full rounded-2xl border border-border bg-secondary py-3 text-sm font-semibold disabled:opacity-50"
+                  >
+                    {saving ? "Speichere …" : `Workout beenden (${sets.length} Sets)`}
+                  </button>
+                )}
+              </>
+            )}
+            {phase === "active" && (
+              <button
+                onClick={stopSet}
+                className="w-full rounded-2xl border border-destructive/60 bg-destructive/10 py-4 text-sm font-bold text-destructive"
+              >
+                {isHold ? "Halten beenden" : "Satz beenden"}
+              </button>
+            )}
+          </section>
+          {sets.length > 0 && phase !== "done" && (
+            <section className="rounded-3xl border border-border bg-card/55 p-5">
+              <SportSectionLabel number="05">Abgeschlossene Sätze</SportSectionLabel>
+              <div className="mt-3 space-y-2">
+                {sets.map((set, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3"
+                  >
+                    <span className="text-sm text-muted-foreground">Satz {i + 1}</span>
+                    <span className="flex items-center gap-4 text-sm">
+                      <b className="tabular-nums">
+                        {set.count} {isHold ? "Sek." : "Reps"}
+                      </b>
+                      <span className="text-xs text-muted-foreground">RPE {set.rpe}</span>
+                    </span>
+                  </div>
                 ))}
               </div>
-              <p className="text-center text-sm text-muted-foreground">{RPE_LABELS[rpe]}</p>
-            </div>
-            <button
-              onClick={confirmRpe}
-              className="mt-4 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground"
+            </section>
+          )}
+        </main>
+      </DesignView>
+      <DesignView variant="classic">
+        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
+          {/* Header */}
+          <header className="flex items-center justify-between">
+            <Link
+              to="/calisthenics"
+              className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
             >
-              Bestätigen → Pause
-            </button>
-          </div>
-        )}
-
-        {/* Rest timer */}
-        {phase === "resting" && (
-          <div className="flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 p-8 text-center backdrop-blur gap-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Pause</p>
-            <div
-              className="relative flex h-32 w-32 items-center justify-center rounded-full border-4 border-primary/30"
-              style={{
-                background: `conic-gradient(oklch(var(--color-primary)/0.8) ${(restRemaining / restSecs) * 360}deg, transparent 0deg)`,
-              }}
-            >
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-background">
-                <span className="text-3xl font-bold tabular-nums">{formatSec(restRemaining)}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setRestSecs((s) => Math.max(30, s - 15))}
-                className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium"
-              >
-                −15s
-              </button>
-              <span className="text-xs text-muted-foreground">
-                Pausenlänge: {formatSec(restSecs)}
-              </span>
-              <button
-                onClick={() => setRestSecs((s) => Math.min(300, s + 15))}
-                className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium"
-              >
-                +15s
-              </button>
-            </div>
-            <button onClick={skipRest} className="text-xs text-primary underline">
-              Pause überspringen
-            </button>
-          </div>
-        )}
-
-        {/* Idle / Active */}
-        {(phase === "idle" || phase === "active") && (
-          <div
-            className="flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 backdrop-blur select-none"
-            onPointerDown={!isHold && phase === "active" ? addRep : undefined}
-          >
-            {/* Count display */}
-            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-2">
-              {phase === "idle"
-                ? `Set ${sets.length + 1}`
-                : isHold
-                  ? "Halten…"
-                  : "Tippe auf die Fläche"}
-            </p>
-            <span
-              className="font-display text-[7rem] leading-none font-bold tabular-nums text-foreground"
-              style={{ textShadow: "0 0 40px oklch(0.82 0.19 95 / 0.3)" }}
-            >
-              {currentCount}
+              ← Cali
+            </Link>
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <span className="text-2xl">{skill.icon}</span>
+              {skill.name}
             </span>
-            {isHold && phase === "active" && (
-              <p className="mt-2 text-sm text-muted-foreground animate-pulse">Sekunden</p>
+            <span className="w-12" />
+          </header>
+
+          {/* Tip card */}
+          <div className="mt-4 rounded-2xl border border-border bg-card/50 px-4 py-3 text-xs text-muted-foreground leading-relaxed backdrop-blur">
+            💡 <span className="font-medium text-foreground">Tipp:</span> {skill.tip}
+          </div>
+
+          {/* Stats row */}
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <StatCell label="Sets" value={sets.length.toString()} />
+            <StatCell
+              label="Bestwert"
+              value={prevBest > 0 ? prevBest.toString() : "—"}
+              unit={isHold ? "Sek." : ""}
+            />
+            <StatCell
+              label="Bestes Set"
+              value={sets.length > 0 ? Math.max(...sets.map((s) => s.count)).toString() : "—"}
+              unit={isHold ? "Sek." : ""}
+            />
+          </div>
+
+          {/* Main area */}
+          <div className="mt-4 flex flex-1 flex-col">
+            {/* DONE */}
+            {phase === "done" && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-6 rounded-[2rem] border border-border bg-card/60 p-8 text-center backdrop-blur">
+                <span className="text-6xl">🎯</span>
+                <div>
+                  <p className="text-lg font-bold">{savedMsg}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {sets.length} Sets · Ø {isHold ? "" : ""}
+                    {Math.round(sets.reduce((a, s) => a + s.count, 0) / sets.length)}
+                    {isHold ? " Sek." : " Reps"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate({ to: "/calisthenics" })}
+                  className="rounded-xl bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground"
+                >
+                  Zurück zum Skill Tree
+                </button>
+              </div>
             )}
-            {!isHold && phase === "active" && (
-              <p className="mt-2 text-xs text-muted-foreground">Tippe · jede Rep zählt</p>
+
+            {/* RPE input */}
+            {phase === "rpe" && (
+              <div className="flex flex-1 flex-col rounded-[2rem] border border-border bg-card/60 p-6 backdrop-blur">
+                <div className="text-center">
+                  <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                    Set {sets.length + 1} abgeschlossen
+                  </p>
+                  <p className="mt-2 text-5xl font-bold tabular-nums">
+                    {currentCount}
+                    {isHold ? (
+                      <span className="text-2xl font-normal ml-1 text-muted-foreground">Sek.</span>
+                    ) : (
+                      ""
+                    )}
+                  </p>
+                </div>
+                <div className="mt-6 flex-1 flex flex-col gap-3">
+                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground text-center">
+                    RPE — Wie schwer war der Set?
+                  </p>
+                  <div className="flex gap-1 flex-wrap justify-center">
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setRpe(v)}
+                        className={`h-9 w-9 rounded-xl text-sm font-bold transition ${
+                          rpe === v
+                            ? "bg-primary text-primary-foreground scale-110"
+                            : "bg-secondary text-muted-foreground hover:bg-secondary/70"
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-center text-sm text-muted-foreground">{RPE_LABELS[rpe]}</p>
+                </div>
+                <button
+                  onClick={confirmRpe}
+                  className="mt-4 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground"
+                >
+                  Bestätigen → Pause
+                </button>
+              </div>
+            )}
+
+            {/* Rest timer */}
+            {phase === "resting" && (
+              <div className="flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 p-8 text-center backdrop-blur gap-4">
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Pause</p>
+                <div
+                  className="relative flex h-32 w-32 items-center justify-center rounded-full border-4 border-primary/30"
+                  style={{
+                    background: `conic-gradient(oklch(var(--color-primary)/0.8) ${(restRemaining / restSecs) * 360}deg, transparent 0deg)`,
+                  }}
+                >
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-background">
+                    <span className="text-3xl font-bold tabular-nums">
+                      {formatSec(restRemaining)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setRestSecs((s) => Math.max(30, s - 15))}
+                    className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium"
+                  >
+                    −15s
+                  </button>
+                  <span className="text-xs text-muted-foreground">
+                    Pausenlänge: {formatSec(restSecs)}
+                  </span>
+                  <button
+                    onClick={() => setRestSecs((s) => Math.min(300, s + 15))}
+                    className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium"
+                  >
+                    +15s
+                  </button>
+                </div>
+                <button onClick={skipRest} className="text-xs text-primary underline">
+                  Pause überspringen
+                </button>
+              </div>
+            )}
+
+            {/* Idle / Active */}
+            {(phase === "idle" || phase === "active") && (
+              <div
+                className="flex flex-1 flex-col items-center justify-center rounded-[2rem] border border-border bg-card/60 backdrop-blur select-none"
+                onPointerDown={!isHold && phase === "active" ? addRep : undefined}
+              >
+                {/* Count display */}
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-2">
+                  {phase === "idle"
+                    ? `Set ${sets.length + 1}`
+                    : isHold
+                      ? "Halten…"
+                      : "Tippe auf die Fläche"}
+                </p>
+                <span
+                  className="font-display text-[7rem] leading-none font-bold tabular-nums text-foreground"
+                  style={{ textShadow: "0 0 40px oklch(0.82 0.19 95 / 0.3)" }}
+                >
+                  {currentCount}
+                </span>
+                {isHold && phase === "active" && (
+                  <p className="mt-2 text-sm text-muted-foreground animate-pulse">Sekunden</p>
+                )}
+                {!isHold && phase === "active" && (
+                  <p className="mt-2 text-xs text-muted-foreground">Tippe · jede Rep zählt</p>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
 
-      {/* Action buttons */}
-      <div className="mt-4 space-y-2">
-        {phase === "idle" && (
-          <>
-            <button
-              onClick={startSet}
-              className="w-full rounded-xl bg-primary py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
-            >
-              {sets.length === 0 ? "Ersten Set starten" : "Nächsten Set starten"}
-            </button>
-            {sets.length > 0 && (
+          {/* Action buttons */}
+          <div className="mt-4 space-y-2">
+            {phase === "idle" && (
+              <>
+                <button
+                  onClick={startSet}
+                  className="w-full rounded-xl bg-primary py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
+                >
+                  {sets.length === 0 ? "Ersten Set starten" : "Nächsten Set starten"}
+                </button>
+                {sets.length > 0 && (
+                  <button
+                    onClick={finishWorkout}
+                    disabled={saving}
+                    className="w-full rounded-xl border border-border bg-secondary py-3 text-sm font-medium text-secondary-foreground transition active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {saving ? "Speichere…" : `Workout beenden (${sets.length} Sets)`}
+                  </button>
+                )}
+              </>
+            )}
+            {phase === "active" && (
               <button
-                onClick={finishWorkout}
-                disabled={saving}
-                className="w-full rounded-xl border border-border bg-secondary py-3 text-sm font-medium text-secondary-foreground transition active:scale-[0.98] disabled:opacity-50"
+                onClick={stopSet}
+                className="w-full rounded-xl border border-destructive/60 bg-destructive/10 py-4 text-sm font-semibold text-destructive transition active:scale-[0.98]"
               >
-                {saving ? "Speichere…" : `Workout beenden (${sets.length} Sets)`}
+                {isHold ? "Stop" : "Set beenden"}
               </button>
             )}
-          </>
-        )}
-        {phase === "active" && (
-          <button
-            onClick={stopSet}
-            className="w-full rounded-xl border border-destructive/60 bg-destructive/10 py-4 text-sm font-semibold text-destructive transition active:scale-[0.98]"
-          >
-            {isHold ? "Stop" : "Set beenden"}
-          </button>
-        )}
-      </div>
+          </div>
 
-      {/* Completed sets summary */}
-      {sets.length > 0 && phase !== "done" && (
-        <div className="mt-4 space-y-1.5">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Abgeschlossene Sets
-          </p>
-          {sets.map((s, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2 text-sm"
-            >
-              <span className="text-muted-foreground">Set {i + 1}</span>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold tabular-nums">
-                  {s.count}
-                  {isHold ? " Sek." : " Reps"}
-                </span>
-                <span className="text-[10px] text-muted-foreground">RPE {s.rpe}</span>
-              </div>
+          {/* Completed sets summary */}
+          {sets.length > 0 && phase !== "done" && (
+            <div className="mt-4 space-y-1.5">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Abgeschlossene Sets
+              </p>
+              {sets.map((s, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2 text-sm"
+                >
+                  <span className="text-muted-foreground">Set {i + 1}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold tabular-nums">
+                      {s.count}
+                      {isHold ? " Sek." : " Reps"}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">RPE {s.rpe}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
-    </main>
+          )}
+        </main>
+      </DesignView>
+    </>
   );
 }
 

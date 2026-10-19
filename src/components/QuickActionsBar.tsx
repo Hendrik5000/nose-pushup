@@ -1,3 +1,4 @@
+import { HeartPulse, MessageCircle, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 const ACTIONS = [
@@ -19,7 +20,16 @@ export function QuickActionsBar() {
             to={a.to}
             className="flex flex-col items-center gap-1 rounded-2xl border border-border bg-card/50 py-3 text-[10px] font-medium transition active:scale-[0.97]"
           >
-            <span className="text-xl leading-none">{a.icon}</span>
+            <span className="classic-only text-xl leading-none">{a.icon}</span>
+            <span className="sport-only text-primary" aria-hidden="true">
+              {a.to === "/ai" ? (
+                <Sparkles className="h-5 w-5" />
+              ) : a.to === "/health" ? (
+                <HeartPulse className="h-5 w-5" />
+              ) : (
+                <MessageCircle className="h-5 w-5" />
+              )}
+            </span>
             {a.label}
           </Link>
         ))}

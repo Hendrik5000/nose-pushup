@@ -1,3 +1,4 @@
+import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +8,7 @@ import { HealthConnectPanel } from "@/components/HealthConnectPanel";
 import { WeightTrendCard } from "@/components/WeightTrendCard";
 import { SleepDebtCard } from "@/components/SleepDebtCard";
 import { WeeklyStepsGoal } from "@/components/WeeklyStepsGoal";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 
 export const Route = createFileRoute("/_authenticated/health")({
   head: () => ({
@@ -100,124 +102,282 @@ function HealthPage() {
   const todaySteps = entries.find((e) => e.day === today())?.steps ?? 0;
 
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-8">
-      <header className="flex items-center justify-between">
-        <Link to="/" className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-          ← Start
-        </Link>
-        <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Health</span>
-        <span className="w-12" />
-      </header>
+    <>
+      <DesignView variant="classic">
+        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-8">
+          <header className="flex items-center justify-between">
+            <Link to="/" className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+              ← Start
+            </Link>
+            <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+              Health
+            </span>
+            <span className="w-12" />
+          </header>
 
-      <section className="mt-6 grid grid-cols-2 gap-3">
-        <Card label="Ø Schritte (7T)" value={avgSteps.toLocaleString("de-DE")} />
-        <Card label="Ø Schlaf (7T)" value={`${avgSleep.toFixed(1)} h`} />
-      </section>
+          <section className="mt-6 grid grid-cols-2 gap-3">
+            <Card label="Ø Schritte (7T)" value={avgSteps.toLocaleString("de-DE")} />
+            <Card label="Ø Schlaf (7T)" value={`${avgSleep.toFixed(1)} h`} />
+          </section>
 
-      <WeeklyStepsGoal todaySteps={todaySteps} />
-      <SleepDebtCard sleepMinutes={entries.slice(0, 7).map((e) => e.sleep_min)} />
-      <WeightTrendCard
-        points={entries
-          .filter((e) => e.weight_kg != null)
-          .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
-      />
-
-      <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Google Health Connect
-        </h2>
-        <HealthConnectPanel />
-      </section>
-
-      <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Smartwatch
-        </h2>
-        <SmartwatchPanel />
-      </section>
-
-      <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Tag manuell erfassen
-        </h2>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <Input label="Datum" type="date" value={day} onChange={setDay} />
-          <Input
-            label="Schritte"
-            type="number"
-            value={steps}
-            onChange={setSteps}
-            placeholder="8000"
+          <WeeklyStepsGoal todaySteps={todaySteps} />
+          <SleepDebtCard sleepMinutes={entries.slice(0, 7).map((e) => e.sleep_min)} />
+          <WeightTrendCard
+            points={entries
+              .filter((e) => e.weight_kg != null)
+              .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
           />
-          <Input
-            label="Aktive kcal"
-            type="number"
-            value={kcal}
-            onChange={setKcal}
-            placeholder="450"
-          />
-          <Input
-            label="Schlaf (h)"
-            type="number"
-            value={sleepH}
-            onChange={setSleepH}
-            placeholder="7.5"
-          />
-          <Input
-            label="Gewicht (kg)"
-            type="number"
-            value={weight}
-            onChange={setWeight}
-            placeholder="78"
-          />
-        </div>
-        {msg && <p className="mt-3 text-xs text-muted-foreground">{msg}</p>}
-        <button
-          onClick={save}
-          disabled={busy}
-          className="mt-4 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
-        >
-          {busy ? "Speichere…" : "Speichern"}
-        </button>
-      </section>
 
-      <section className="mt-6">
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Verlauf
-        </h2>
-        {entries.length === 0 ? (
-          <p className="rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground">
-            Noch keine Gesundheitsdaten.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {entries.map((e) => (
-              <li
-                key={e.day}
-                className="flex items-center justify-between rounded-2xl border border-border bg-card/40 px-4 py-3 text-xs"
-              >
-                <span className="font-semibold">
-                  {new Date(e.day).toLocaleDateString("de-DE")}
-                  {(e.source === "health_connect" ||
-                    e.source === "watch" ||
-                    e.source?.startsWith("watch")) && (
-                    <span className="ml-2 text-[10px] text-primary">
-                      {e.source === "health_connect" ? "HC" : "⌚"}
+          <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Google Health Connect
+            </h2>
+            <HealthConnectPanel />
+          </section>
+
+          <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Smartwatch
+            </h2>
+            <SmartwatchPanel />
+          </section>
+
+          <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+            <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Tag manuell erfassen
+            </h2>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <Input label="Datum" type="date" value={day} onChange={setDay} />
+              <Input
+                label="Schritte"
+                type="number"
+                value={steps}
+                onChange={setSteps}
+                placeholder="8000"
+              />
+              <Input
+                label="Aktive kcal"
+                type="number"
+                value={kcal}
+                onChange={setKcal}
+                placeholder="450"
+              />
+              <Input
+                label="Schlaf (h)"
+                type="number"
+                value={sleepH}
+                onChange={setSleepH}
+                placeholder="7.5"
+              />
+              <Input
+                label="Gewicht (kg)"
+                type="number"
+                value={weight}
+                onChange={setWeight}
+                placeholder="78"
+              />
+            </div>
+            {msg && <p className="mt-3 text-xs text-muted-foreground">{msg}</p>}
+            <button
+              onClick={save}
+              disabled={busy}
+              className="mt-4 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-60"
+            >
+              {busy ? "Speichere…" : "Speichern"}
+            </button>
+          </section>
+
+          <section className="mt-6">
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Verlauf
+            </h2>
+            {entries.length === 0 ? (
+              <p className="rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground">
+                Noch keine Gesundheitsdaten.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {entries.map((e) => (
+                  <li
+                    key={e.day}
+                    className="flex items-center justify-between rounded-2xl border border-border bg-card/40 px-4 py-3 text-xs"
+                  >
+                    <span className="font-semibold">
+                      {new Date(e.day).toLocaleDateString("de-DE")}
+                      {(e.source === "health_connect" ||
+                        e.source === "watch" ||
+                        e.source?.startsWith("watch")) && (
+                        <span className="ml-2 text-[10px] text-primary">
+                          {e.source === "health_connect" ? "HC" : "⌚"}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
-                <span className="tabular-nums text-muted-foreground">
-                  {e.steps.toLocaleString("de-DE")} · {e.active_kcal} kcal ·{" "}
-                  {(e.sleep_min / 60).toFixed(1)} h
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                    <span className="tabular-nums text-muted-foreground">
+                      {e.steps.toLocaleString("de-DE")} · {e.active_kcal} kcal ·{" "}
+                      {(e.sleep_min / 60).toFixed(1)} h
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
-      <BottomNav />
-    </main>
+          <BottomNav />
+        </main>
+      </DesignView>
+      <DesignView variant="sport">
+        <main className="sport-only sport-health-page mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-6 px-5 py-6 pb-28 sm:px-8">
+          <SportPageIntro
+            eyebrow="RECOVERY & VITALS"
+            title="Health Übersicht"
+            description="Schritte, Schlaf und Aktivität – als Trainingskontext an einem Ort."
+          >
+            <Link
+              to="/"
+              className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
+            >
+              ← Start
+            </Link>
+          </SportPageIntro>
+          <SportSectionLabel number="01">Wochenüberblick</SportSectionLabel>
+          <section className="grid gap-4 sm:grid-cols-2">
+            <div className="sport-health-metric rounded-[1.75rem] border border-border/70 bg-card/80 p-6">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Ø Schritte · letzte 7 Einträge
+              </div>
+              <div className="mt-4 text-4xl font-bold tabular-nums tracking-tight">
+                {avgSteps.toLocaleString("de-DE")}
+              </div>
+              <div className="mt-2 text-sm text-muted-foreground">
+                Heute {todaySteps.toLocaleString("de-DE")} Schritte
+              </div>
+            </div>
+            <div className="sport-health-metric rounded-[1.75rem] border border-border/70 bg-card/80 p-6">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Ø Schlaf · letzte 7 Einträge
+              </div>
+              <div className="mt-4 text-4xl font-bold tabular-nums tracking-tight">
+                {avgSleep.toFixed(1)} <span className="text-xl text-muted-foreground">h</span>
+              </div>
+              <div className="mt-2 text-sm text-muted-foreground">
+                Erholung zählt zur Trainingsleistung
+              </div>
+            </div>
+          </section>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="space-y-5">
+              <WeeklyStepsGoal todaySteps={todaySteps} />
+              <SleepDebtCard sleepMinutes={entries.slice(0, 7).map((e) => e.sleep_min)} />
+            </div>
+            <WeightTrendCard
+              points={entries
+                .filter((e) => e.weight_kg != null)
+                .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
+            />
+          </div>
+          <SportSectionLabel number="02">Verbundene Datenquellen</SportSectionLabel>
+          <div className="grid gap-4 md:grid-cols-2">
+            <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
+              <h2 className="mb-4 text-lg font-bold">Google Health Connect</h2>
+              <HealthConnectPanel />
+            </section>
+            <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
+              <h2 className="mb-4 text-lg font-bold">Smartwatch</h2>
+              <SmartwatchPanel />
+            </section>
+          </div>
+          <SportSectionLabel number="03">Eintrag erfassen</SportSectionLabel>
+          <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
+            <p className="mb-5 max-w-xl text-sm text-muted-foreground">
+              Trage Werte manuell nach. Ein gespeicherter Gewichtswert aktualisiert auch dein
+              Profil.
+            </p>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {[
+                <Input key="day" label="Datum" type="date" value={day} onChange={setDay} />,
+                <Input
+                  key="steps"
+                  label="Schritte"
+                  type="number"
+                  value={steps}
+                  onChange={setSteps}
+                  placeholder="8000"
+                />,
+                <Input
+                  key="kcal"
+                  label="Aktive kcal"
+                  type="number"
+                  value={kcal}
+                  onChange={setKcal}
+                  placeholder="450"
+                />,
+                <Input
+                  key="sleep"
+                  label="Schlaf (h)"
+                  type="number"
+                  value={sleepH}
+                  onChange={setSleepH}
+                  placeholder="7.5"
+                />,
+                <Input
+                  key="weight"
+                  label="Gewicht (kg)"
+                  type="number"
+                  value={weight}
+                  onChange={setWeight}
+                  placeholder="78"
+                />,
+              ]}
+            </div>
+            {msg && <p className="mt-4 text-sm text-muted-foreground">{msg}</p>}
+            <button
+              onClick={save}
+              disabled={busy}
+              className="mt-5 w-full rounded-2xl bg-primary px-5 py-4 text-sm font-bold text-primary-foreground transition active:scale-[0.99] disabled:opacity-60 sm:w-auto sm:min-w-48"
+            >
+              {busy ? "Speichere…" : "Werte speichern"}
+            </button>
+          </section>
+          <SportSectionLabel number="04">Verlauf · letzte 14 Tage</SportSectionLabel>
+          {entries.length === 0 ? (
+            <p className="rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
+              Noch keine Gesundheitsdaten.
+            </p>
+          ) : (
+            <ul className="grid gap-3 md:grid-cols-2">
+              {entries.map((e) => (
+                <li
+                  key={e.day}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card/60 p-4"
+                >
+                  <div>
+                    <div className="font-semibold">
+                      {new Date(e.day).toLocaleDateString("de-DE")}
+                      {(e.source === "health_connect" ||
+                        e.source === "watch" ||
+                        e.source?.startsWith("watch")) && (
+                        <span className="ml-2 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                          {e.source === "health_connect" ? "HC" : "⌚"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {e.steps.toLocaleString("de-DE")} Schritte
+                    </div>
+                  </div>
+                  <div className="text-right text-xs tabular-nums text-muted-foreground">
+                    {e.active_kcal} kcal
+                    <br />
+                    {(e.sleep_min / 60).toFixed(1)} h Schlaf
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <BottomNav />
+        </main>
+      </DesignView>
+    </>
   );
 }
 
