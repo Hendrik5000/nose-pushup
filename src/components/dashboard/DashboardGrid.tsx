@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type DragEvent, type ReactNode } from "react";
 import {
   loadLayout,
   nextSize,
@@ -55,7 +55,7 @@ export function DashboardGrid({
   };
 
   const onDragStart = (id: WidgetId) => setDragId(id);
-  const onDragOver = (e: React.DragEvent, overId: WidgetId) => {
+  const onDragOver = (e: DragEvent, overId: WidgetId) => {
     e.preventDefault();
     if (!dragId || dragId === overId) return;
     const from = layout.findIndex((x) => x.id === dragId);
@@ -63,7 +63,8 @@ export function DashboardGrid({
     if (from < 0 || to < 0) return;
     const next = [...layout];
     const [item] = next.splice(from, 1);
-    next.splice(to, 0, item!);
+    if (!item) return;
+    next.splice(to, 0, item);
     setLayout(next);
   };
   const onDragEnd = () => {
@@ -143,57 +144,68 @@ export function DashboardGrid({
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        {layout.map((item) => (
-          <div
-            key={item.id}
-            draggable={editing}
-            onDragStart={() => onDragStart(item.id)}
-            onDragOver={(e) => onDragOver(e, item.id)}
-            onDragEnd={onDragEnd}
-            className={`${sizeClass(item.size)} relative ${editing ? "rounded-2xl ring-1 ring-primary/30" : ""}`}
-          >
-            {editing && (
-              <div className="absolute -top-2 right-1 z-10 flex items-center gap-0.5 rounded-full border border-border bg-background/95 px-1 py-0.5 shadow-md backdrop-blur">
-                <button
-                  type="button"
-                  className="px-1.5 text-[10px] text-muted-foreground"
-                  onClick={() => move(item.id, -1)}
-                  aria-label="Nach oben"
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  className="px-1.5 text-[10px] text-muted-foreground"
-                  onClick={() => move(item.id, 1)}
-                  aria-label="Nach unten"
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  className="rounded px-1.5 text-[10px] font-bold uppercase text-primary"
-                  onClick={() => resize(item.id)}
-                  aria-label="Größe ändern"
-                >
-                  {item.size}
-                </button>
-                <button
-                  type="button"
-                  className="px-1.5 text-xs text-destructive"
-                  onClick={() => remove(item.id)}
-                  aria-label="Entfernen"
-                >
-                  ×
-                </button>
-                <span className="cursor-grab px-1 text-[10px] text-muted-foreground" title="Ziehen">
-                  ⋮⋮
-                </span>
+        {layout.map((item) => {
+          const body = renderWidget(item.id, item.size);
+          // Hide empty slots (e.g. challenges before login id is ready) unless editing
+          if (body == null && !editing) return null;
+          return (
+            <div
+              key={item.id}
+              draggable={editing}
+              onDragStart={() => onDragStart(item.id)}
+              onDragOver={(e) => onDragOver(e, item.id)}
+              onDragEnd={onDragEnd}
+              className={`${sizeClass(item.size)} relative ${editing ? "rounded-2xl ring-1 ring-primary/30" : ""}`}
+            >
+              {editing && (
+                <div className="absolute -top-2 right-1 z-10 flex items-center gap-0.5 rounded-full border border-border bg-background/95 px-1 py-0.5 shadow-md backdrop-blur">
+                  <button
+                    type="button"
+                    className="px-1.5 text-[10px] text-muted-foreground"
+                    onClick={() => move(item.id, -1)}
+                    aria-label="Nach oben"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className="px-1.5 text-[10px] text-muted-foreground"
+                    onClick={() => move(item.id, 1)}
+                    aria-label="Nach unten"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded px-1.5 text-[10px] font-bold uppercase text-primary"
+                    onClick={() => resize(item.id)}
+                    aria-label="Größe ändern"
+                  >
+                    {item.size}
+                  </button>
+                  <button
+                    type="button"
+                    className="px-1.5 text-xs text-destructive"
+                    onClick={() => remove(item.id)}
+                    aria-label="Entfernen"
+                  >
+                    ×
+                  </button>
+                  <span className="cursor-grab px-1 text-[10px] text-muted-foreground" title="Ziehen">
+                    ⋮⋮
+                  </span>
+                </div>
+              )}
+              <div className={editing ? "pt-3 opacity-95" : ""}>
+                {body ?? (
+                  <div className="rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">
+                    {widgetMeta(item.id).label} (noch nicht verfügbar)
+                  </div>
+                )}
               </div>
-            )}
-            <div className={editing ? "pt-3 opacity-95" : ""}>{renderWidget(item.id, item.size)}</div>
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
       {layout.length === 0 && (

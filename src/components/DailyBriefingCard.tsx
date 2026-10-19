@@ -13,10 +13,10 @@ export function DailyBriefingCard({
   goal: number;
   readinessScore?: number;
 }) {
-  const mood = getMood();
-  const water = getWaterMl();
-  const watch = getWatchSnapshot();
-  const hc = getHcCachedSummary();
+  const mood = typeof window !== "undefined" ? getMood() : null;
+  const water = typeof window !== "undefined" ? getWaterMl() : 0;
+  const watch = typeof window !== "undefined" ? getWatchSnapshot() : null;
+  const hc = typeof window !== "undefined" ? getHcCachedSummary() : null;
   const steps = hc?.steps ?? watch?.steps ?? 0;
 
   const lines: string[] = [];

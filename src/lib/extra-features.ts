@@ -9,39 +9,47 @@ const SEEN_PR_KEY = "np-seen-prs";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-// ——— Water ———
-export function getWaterMl(day = today()): number {
+function canUseStorage(): boolean {
+  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+}
+
+function readJson<T>(key: string, fallback: T): T {
+  if (!canUseStorage()) return fallback;
   try {
-    const all = JSON.parse(localStorage.getItem(WATER_KEY) || "{}") as Record<string, number>;
-    return all[day] ?? 0;
+    const raw = window.localStorage.getItem(key);
+    if (raw == null) return fallback;
+    return JSON.parse(raw) as T;
   } catch {
-    return 0;
+    return fallback;
   }
 }
 
+function writeJson(key: string, value: unknown) {
+  if (!canUseStorage()) return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // quota / private mode
+  }
+}
+
+// ——— Water ———
+export function getWaterMl(day = today()): number {
+  const all = readJson<Record<string, number>>(WATER_KEY, {});
+  return all[day] ?? 0;
+}
+
 export function addWaterMl(amount: number, day = today()): number {
-  const all = (() => {
-    try {
-      return JSON.parse(localStorage.getItem(WATER_KEY) || "{}") as Record<string, number>;
-    } catch {
-      return {};
-    }
-  })();
+  const all = readJson<Record<string, number>>(WATER_KEY, {});
   all[day] = Math.max(0, (all[day] ?? 0) + amount);
-  localStorage.setItem(WATER_KEY, JSON.stringify(all));
+  writeJson(WATER_KEY, all);
   return all[day];
 }
 
 export function setWaterMl(ml: number, day = today()): number {
-  const all = (() => {
-    try {
-      return JSON.parse(localStorage.getItem(WATER_KEY) || "{}") as Record<string, number>;
-    } catch {
-      return {};
-    }
-  })();
+  const all = readJson<Record<string, number>>(WATER_KEY, {});
   all[day] = Math.max(0, ml);
-  localStorage.setItem(WATER_KEY, JSON.stringify(all));
+  writeJson(WATER_KEY, all);
   return all[day];
 }
 
@@ -51,25 +59,15 @@ export const WATER_GOAL_ML = 2500;
 export type MoodLevel = 1 | 2 | 3 | 4 | 5;
 
 export function getMood(day = today()): MoodLevel | null {
-  try {
-    const all = JSON.parse(localStorage.getItem(MOOD_KEY) || "{}") as Record<string, number>;
-    const v = all[day];
-    return v >= 1 && v <= 5 ? (v as MoodLevel) : null;
-  } catch {
-    return null;
-  }
+  const all = readJson<Record<string, number>>(MOOD_KEY, {});
+  const v = all[day];
+  return v >= 1 && v <= 5 ? (v as MoodLevel) : null;
 }
 
 export function setMood(level: MoodLevel, day = today()) {
-  const all = (() => {
-    try {
-      return JSON.parse(localStorage.getItem(MOOD_KEY) || "{}") as Record<string, number>;
-    } catch {
-      return {};
-    }
-  })();
+  const all = readJson<Record<string, number>>(MOOD_KEY, {});
   all[day] = level;
-  localStorage.setItem(MOOD_KEY, JSON.stringify(all));
+  writeJson(MOOD_KEY, all);
 }
 
 export const MOOD_LABELS: Record<MoodLevel, string> = {
@@ -90,18 +88,14 @@ export const MOOD_EMOJI: Record<MoodLevel, string> = {
 
 // ——— Favorites ———
 export function getFavoriteExercises(): string[] {
-  try {
-    const v = JSON.parse(localStorage.getItem(FAV_KEY) || "[]") as string[];
-    return Array.isArray(v) ? v : [];
-  } catch {
-    return [];
-  }
+  const v = readJson<string[]>(FAV_KEY, []);
+  return Array.isArray(v) ? v : [];
 }
 
 export function toggleFavoriteExercise(id: string): string[] {
   const cur = getFavoriteExercises();
   const next = cur.includes(id) ? cur.filter((x) => x !== id) : [id, ...cur].slice(0, 12);
-  localStorage.setItem(FAV_KEY, JSON.stringify(next));
+  writeJson(FAV_KEY, next);
   return next;
 }
 
@@ -113,12 +107,8 @@ export function isFavoriteExercise(id: string): boolean {
 export type WorkoutNote = { id: string; text: string; ts: string; exerciseId?: string };
 
 export function getWorkoutNotes(): WorkoutNote[] {
-  try {
-    const v = JSON.parse(localStorage.getItem(NOTES_KEY) || "[]") as WorkoutNote[];
-    return Array.isArray(v) ? v : [];
-  } catch {
-    return [];
-  }
+  const v = readJson<WorkoutNote[]>(NOTES_KEY, []);
+  return Array.isArray(v) ? v : [];
 }
 
 export function addWorkoutNote(text: string, exerciseId?: string): WorkoutNote {
@@ -129,21 +119,22 @@ export function addWorkoutNote(text: string, exerciseId?: string): WorkoutNote {
     exerciseId,
   };
   const list = [note, ...getWorkoutNotes()].slice(0, 50);
-  localStorage.setItem(NOTES_KEY, JSON.stringify(list));
+  writeJson(NOTES_KEY, list);
   return note;
 }
 
 export function deleteWorkoutNote(id: string) {
-  localStorage.setItem(
+  writeJson(
     NOTES_KEY,
-    JSON.stringify(getWorkoutNotes().filter((n) => n.id !== id)),
+    getWorkoutNotes().filter((n) => n.id !== id),
   );
 }
 
 // ——— Weekly steps goal ———
 export function getStepsGoal(): number {
+  if (!canUseStorage()) return 8000;
   try {
-    const v = parseInt(localStorage.getItem(STEPS_GOAL_KEY) || "8000", 10);
+    const v = parseInt(window.localStorage.getItem(STEPS_GOAL_KEY) || "8000", 10);
     return Number.isFinite(v) ? Math.max(1000, Math.min(50000, v)) : 8000;
   } catch {
     return 8000;
@@ -151,10 +142,15 @@ export function getStepsGoal(): number {
 }
 
 export function setStepsGoal(n: number) {
-  localStorage.setItem(STEPS_GOAL_KEY, String(Math.max(1000, Math.min(50000, n))));
+  if (!canUseStorage()) return;
+  try {
+    window.localStorage.setItem(STEPS_GOAL_KEY, String(Math.max(1000, Math.min(50000, n))));
+  } catch {
+    // ignore
+  }
 }
 
-// ——— Sleep debt (hours vs 8h target over last nights) ———
+// ——— Sleep debt ———
 export function sleepDebtHours(sleepMinLast7: number[]): number {
   if (!sleepMinLast7.length) return 0;
   const target = 8 * 60;
@@ -164,13 +160,9 @@ export function sleepDebtHours(sleepMinLast7: number[]): number {
 
 // ——— PR toast tracking ———
 export function shouldCelebratePr(key: string): boolean {
-  try {
-    const seen = JSON.parse(localStorage.getItem(SEEN_PR_KEY) || "{}") as Record<string, boolean>;
-    if (seen[key]) return false;
-    seen[key] = true;
-    localStorage.setItem(SEEN_PR_KEY, JSON.stringify(seen));
-    return true;
-  } catch {
-    return true;
-  }
+  const seen = readJson<Record<string, boolean>>(SEEN_PR_KEY, {});
+  if (seen[key]) return false;
+  seen[key] = true;
+  writeJson(SEEN_PR_KEY, seen);
+  return true;
 }
