@@ -47,7 +47,7 @@ function defaultStore(): Store {
   const tipsId = uid();
   return {
     rooms: [
-      { id: generalId, name: "Allgemein", description: "Community-Chat" },
+      { id: generalId, name: "Allgemein", description: "Nexus Chat" },
       { id: tipsId, name: "Trainings-Tipps", description: "Form, Sets, Recovery" },
     ],
     messages: [

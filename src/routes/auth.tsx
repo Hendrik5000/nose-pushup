@@ -16,7 +16,7 @@ export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): { next?: string } => ({ next: safeNext(s.next) }),
   head: () => ({
     meta: [
-      { title: "Anmelden — Nose Push" },
+      { title: "Anmelden — Alo" },
       {
         name: "description",
         content: "Melde dich an, um deine Push-Up-Bestwerte geräteübergreifend zu speichern.",
@@ -144,7 +144,7 @@ function AuthPage() {
             <div className="mb-8 flex items-center justify-center gap-2">
               <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_var(--color-primary)]" />
               <span className="text-sm font-medium tracking-widest uppercase text-muted-foreground">
-                Nose&nbsp;Push
+                Alo
               </span>
             </div>
 
@@ -154,8 +154,8 @@ function AuthPage() {
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 {mode === "signin"
-                  ? "Melde dich an, um deine Bestwerte zu sehen."
-                  : "Speichere Bestwerte und Trainings auf allen Geräten."}
+                  ? "Melde dich an, um deine Alo-Module zu nutzen."
+                  : "Nutze Nose-Pushup, Mira und Nexus auf allen Geräten."}
               </p>
 
               <div className="mt-6 space-y-2">
@@ -303,8 +303,8 @@ function AuthPage() {
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               {mode === "signin"
-                ? "Melde dich an, um deine Bestwerte zu sehen."
-                : "Speichere Bestwerte und Trainings auf allen Geräten."}
+                ? "Melde dich an, um deine Alo-Module zu nutzen."
+                : "Nutze Nose-Pushup, Mira und Nexus auf allen Geräten."}
             </p>
             <div className="mt-6 grid gap-2">
               <OAuthButton

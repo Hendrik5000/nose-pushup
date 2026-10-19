@@ -2228,3 +2228,31 @@ html[data-design-style="performance"] .community-search {
   min-height: 52px;
   padding: 0.5rem 0.9rem;
 }
+
+/* Alo module switcher + optional navigation apply to every design family. */
+.alo-module-switcher {
+  display: flex !important;
+}
+.app-homebar[hidden] {
+  display: none !important;
+}
+html:not([data-navigation-visible="true"]) .app-homebar {
+  display: none !important;
+}
+html:not([data-navigation-visible="true"]) .authenticated-shell {
+  --homebar-top-space: calc(3.2rem + env(safe-area-inset-top)) !important;
+  --homebar-bottom-space: 0px !important;
+}
+html[data-navigation-visible="true"][data-navigation-layout="bottom"] .authenticated-shell,
+html[data-navigation-visible="true"][data-navigation-layout="floating"] .authenticated-shell {
+  --homebar-bottom-space: calc(5rem + env(safe-area-inset-bottom)) !important;
+}
+
+html[data-navigation-visible="true"][data-navigation-layout="top"] .authenticated-shell,
+html[data-navigation-visible="true"][data-navigation-layout="top-tabs"] .authenticated-shell {
+  --homebar-top-space: calc(6.4rem + env(safe-area-inset-top)) !important;
+}
+html[data-navigation-visible="true"][data-navigation-layout="top"] .app-homebar,
+html[data-navigation-visible="true"][data-navigation-layout="top-tabs"] .app-homebar {
+  top: calc(2.7rem + env(safe-area-inset-top));
+}

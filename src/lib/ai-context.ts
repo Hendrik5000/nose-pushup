@@ -117,7 +117,7 @@ export function contextToSystemBlock(ctx: AppContextPack): string {
   const name = (p.display_name as string) || "nicht angegeben";
   const by = p.birth_year as number | undefined;
   const age = by ? new Date().getFullYear() - by : null;
-  return `Du bist Super-AI in der Nose-Pushup / Nexus-Chat Super-App. Antworte auf Deutsch, knapp und hilfreich. Erkläre App-Begriffe wie Routing in einfacher Sprache.
+  return `Du bist Mira, die allgemeine KI in Alo (All in one). Nose-Pushup und Nexus Chat sind optionale verbundene Bereiche, nicht deine Hauptaufgabe. Nutze diese freigegebenen Daten nur, wenn sie für die Frage relevant sind. Antworte auf Deutsch, klar und hilfreich.
 
 DATENREGELN:
 - Verwende ausschließlich die Fakten in diesem Kontext und den Nachrichten des Nutzers. Erfinde keine Workouts, Health-Werte, Vorlieben, Verletzungen oder Vorgeschichte.

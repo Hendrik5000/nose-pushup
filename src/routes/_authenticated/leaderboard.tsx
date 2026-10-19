@@ -98,7 +98,7 @@ function LeaderboardPage() {
 
       <div className="sport-only mt-6">
         <SportPageIntro
-          eyebrow="Rangliste · Community"
+          eyebrow="Rangliste · Nexus Chat"
           title="Dein nächster Platz wartet."
           description="Vergleiche Trainingsleistung mit allen Athleten oder filtere auf deinen Freundeskreis."
         >

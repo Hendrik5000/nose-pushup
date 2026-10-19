@@ -115,14 +115,14 @@ test("performance coach shares the AI workspace while classic remains selectable
 test("community identifies local storage and separates mobile list from conversation", () => {
   const chat = read("components/chat/LocalChatShell.tsx");
   assert.match(chat, /Kein Versand an andere Geräte/);
-  assert.match(chat, /Community-Chats durchsuchen/);
+  assert.match(chat, /Nexus Chats durchsuchen/);
   assert.match(chat, /community-show-list/);
   assert.match(chat, /Zur Chatliste/);
   assert.match(read("sport.css"), /sport-chat-app \.sport-chat-composer\s*\{\s*position: static;/);
 });
 
 test("navigation makes community explicit and offers a direct appearance shortcut", () => {
-  assert.match(read("components/TopNav.tsx"), /label: "Community"/);
+  assert.match(read("components/TopNav.tsx"), /label: "Nexus Chat"/);
   assert.match(read("components/SportAppHeader.tsx"), /hash="appearance"/);
   assert.doesNotMatch(read("components/SportAppHeader.tsx"), /ArrowUpRight/);
   assert.match(read("components/SettingsSection.tsx"), /hashchange/);

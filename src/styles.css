@@ -1363,3 +1363,98 @@ html[data-design-style="legacy-performance"] .plan-metric > div:last-child {
     grid-column: 1 / -1;
   }
 }
+
+/* Alo: three persistent module destinations; the larger legacy bar is optional. */
+.alo-module-switcher {
+  position: fixed;
+  z-index: 60;
+  top: max(0.35rem, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-background) 92%, transparent);
+  box-shadow: 0 3px 14px #0003;
+  backdrop-filter: blur(16px);
+}
+.alo-module-link,
+.alo-module-settings {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  color: var(--color-muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.alo-module-link.is-active {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+.alo-module-settings {
+  width: 34px;
+  padding: 0;
+}
+.alo-module-settings svg {
+  width: 1rem;
+  height: 1rem;
+}
+.alo-module-switcher a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.app-homebar[hidden] {
+  display: none !important;
+}
+.authenticated-shell {
+  --homebar-top-space: calc(3.2rem + env(safe-area-inset-top));
+  --homebar-bottom-space: 0px;
+}
+html[data-navigation-layout="top"] .authenticated-shell,
+html[data-navigation-layout="top-tabs"] .authenticated-shell {
+  --homebar-top-space: calc(3.2rem + env(safe-area-inset-top));
+}
+html[data-navigation-visible="true"][data-navigation-layout="top"] .authenticated-shell,
+html[data-navigation-visible="true"][data-navigation-layout="top-tabs"] .authenticated-shell {
+  --homebar-top-space: calc(6.4rem + env(safe-area-inset-top));
+}
+html[data-navigation-visible="true"][data-navigation-layout="bottom"] .authenticated-shell,
+html[data-navigation-visible="true"][data-navigation-layout="floating"] .authenticated-shell {
+  --homebar-bottom-space: calc(5rem + env(safe-area-inset-bottom));
+}
+html[data-navigation-visible="true"][data-navigation-layout="top"] .app-homebar,
+html[data-navigation-visible="true"][data-navigation-layout="top-tabs"] .app-homebar {
+  top: calc(2.7rem + env(safe-area-inset-top));
+}
+@media (max-width: 360px) {
+  .alo-module-link {
+    padding-inline: 0.5rem;
+    font-size: 0.7rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alo-module-switcher *,
+  .app-homebar * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scroll-hidden optional bars release their reserved area as well. */
+html[data-navigation-visible]:not([data-navigation-expanded="true"])[data-navigation-layout]
+  .authenticated-shell {
+  --homebar-top-space: calc(3.2rem + env(safe-area-inset-top)) !important;
+  --homebar-bottom-space: 0px !important;
+}
+.welcome-tour-card {
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}

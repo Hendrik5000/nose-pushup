@@ -410,7 +410,7 @@ export function LocalChatShell() {
           </span>
           <div>
             <div className="text-sm font-bold">
-              <span className="classic-only">Community-Chat</span>
+              <span className="classic-only">Nexus Chat</span>
               <span className="sport-only">{mode === "local" ? "Lokale Chats" : "Chats"}</span>
             </div>
             <div className="classic-only text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -427,10 +427,10 @@ export function LocalChatShell() {
             value={roomQuery}
             onChange={(event) => setRoomQuery(event.target.value)}
             placeholder="Chats durchsuchen"
-            aria-label="Community-Chats durchsuchen"
+            aria-label="Nexus Chats durchsuchen"
           />
         </label>
-        <div className="community-filter-chips" role="group" aria-label="Community-Chats filtern">
+        <div className="community-filter-chips" role="group" aria-label="Nexus Chats filtern">
           {(
             [
               ["all", "Alle"],
@@ -451,7 +451,7 @@ export function LocalChatShell() {
         <p>
           {mode === "local"
             ? "Nur auf diesem Gerät gespeichert. Kein Versand an andere Geräte."
-            : "Mit deiner Community verbunden."}
+            : "Mit Nexus Chat verbunden."}
         </p>
       </div>
       <div className="community-list-scroll flex-1 overflow-y-auto px-3 py-3">
@@ -675,7 +675,7 @@ export function LocalChatShell() {
             </span>
             <div className="min-w-0 flex-1">
               <h1>{headerTitle}</h1>
-              <p>{mode === "local" ? "Lokal auf diesem Gerät" : "Community · Cloud"}</p>
+              <p>{mode === "local" ? "Lokal auf diesem Gerät" : "Nexus Chat · Cloud"}</p>
             </div>
           </div>
           <details className="community-conversation-menu">
@@ -992,7 +992,7 @@ export function LocalChatShell() {
               }
             }}
             placeholder={active ? "Nachricht…" : "Raum wählen…"}
-            aria-label="Nachricht an die Community"
+            aria-label="Nachricht in Nexus Chat"
             rows={1}
             disabled={!active}
             className="min-w-0 flex-1 resize-none rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-50"
@@ -1036,7 +1036,7 @@ export function LocalChatShell() {
               }
             }}
             placeholder={replyTo ? "Antwort…" : "Nachricht…"}
-            aria-label="Nachricht an die Community"
+            aria-label="Nachricht in Nexus Chat"
             rows={1}
             disabled={!active}
             className="min-h-12 min-w-0 flex-1 resize-none rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"

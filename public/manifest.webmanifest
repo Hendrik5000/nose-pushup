@@ -1,18 +1,27 @@
 {
-  "name": "Nosy Push-Up",
-  "short_name": "Nosy",
-  "description": "Push-Ups mit der Nase zählen, Streaks halten, Freunde herausfordern.",
+  "name": "Alo — All in one",
+  "short_name": "Alo",
+  "description": "Nose-Pushup-Training, Mira für Alltag und Wissen sowie Nexus Chat – drei gleichwertige Module in einer App.",
   "lang": "de",
   "dir": "ltr",
   "start_url": "/",
   "id": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "display_override": [
+    "fullscreen",
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait",
   "background_color": "#0b1017",
   "theme_color": "#0b1017",
-  "categories": ["health", "fitness", "sports"],
+  "categories": [
+    "productivity",
+    "social",
+    "health",
+    "fitness"
+  ],
   "prefer_related_applications": false,
   "icons": [
     {
@@ -36,16 +45,37 @@
   ],
   "shortcuts": [
     {
-      "name": "Workout starten",
-      "short_name": "Workout",
-      "url": "/run",
-      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+      "name": "Nose-Pushup starten",
+      "short_name": "Training",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/favicon.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
-      "name": "AI Coach",
-      "short_name": "Coach",
-      "url": "/coach",
-      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+      "name": "Mira fragen",
+      "short_name": "Mira",
+      "url": "/ai",
+      "icons": [
+        {
+          "src": "/favicon.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Nexus Chat",
+      "short_name": "Nexus",
+      "url": "/chat",
+      "icons": [
+        {
+          "src": "/favicon.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

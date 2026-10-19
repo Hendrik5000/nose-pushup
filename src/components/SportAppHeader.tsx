@@ -33,7 +33,7 @@ const SECTIONS = [
     title: "WEITERKOMMEN",
     links: [
       { to: "/health", label: "Gesundheit", icon: HeartPulse },
-      { to: "/ai", label: "KI-Coach", icon: Sparkles },
+      { to: "/ai", label: "Mira", icon: Sparkles },
       { to: "/season", label: "Saison", icon: Trophy },
     ],
   },
@@ -44,7 +44,7 @@ const SECTIONS = [
       { to: "/battle-league", label: "Battle-Liga", icon: Shield },
       { to: "/leaderboard", label: "Rangliste", icon: Trophy },
       { to: "/clubs", label: "Clubs", icon: Users },
-      { to: "/chat", label: "Community-Chat", icon: MessageCircle },
+      { to: "/chat", label: "Nexus Chat", icon: MessageCircle },
       { to: "/profile", label: "Profil & Design", icon: UserRound },
     ],
   },
@@ -57,9 +57,9 @@ export function SportAppHeader() {
     pathname === "/health"
       ? "Gesundheit"
       : ["/ai", "/coach"].includes(pathname)
-        ? "KI-Coach"
+        ? "Mira"
         : pathname === "/chat"
-          ? "Community"
+          ? "Nexus Chat"
           : null;
   const ref = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -90,7 +90,7 @@ export function SportAppHeader() {
       ref={ref}
     >
       <div className="sport-app-header-inner">
-        <Link to="/" className="sport-brand" aria-label="Nose Push · Übersicht">
+        <Link to="/" className="sport-brand" aria-label="Alo · Startseite">
           {referenceTitle ? (
             <span className="reference-page-title">{referenceTitle}</span>
           ) : (
@@ -99,8 +99,8 @@ export function SportAppHeader() {
                 <Activity aria-hidden="true" />
               </span>
               <span>
-                NOSE<span className="text-primary">PUSH</span>
-                <small>DEIN TRAINING. DEIN FORTSCHRITT.</small>
+                ALO
+                <small>ALL IN ONE · NOSE-PUSHUP · MIRA · NEXUS</small>
               </span>
             </>
           )}

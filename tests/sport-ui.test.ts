@@ -106,11 +106,11 @@ test("performance AI coach has focused subviews, task-first entry points and kee
   const ai = read("routes/_authenticated/ai.tsx");
   assert.match(ai, /<DesignView variant="classic">/);
   assert.match(ai, /<DesignView variant="sport">/);
-  assert.match(ai, /KI-Coach-Bereiche/);
-  assert.match(ai, /Trainingsplan erstellen/);
-  assert.match(ai, /Coach fragen/);
+  assert.match(ai, /Mira-Bereiche/);
+  assert.match(ai, /Ideen entwickeln/);
+  assert.match(ai, /Mira fragen/);
   assert.match(ai, /Schnelle Einstiege/);
-  assert.match(ai, /Weitere Coach-Aufgaben/);
+  assert.match(ai, /Weitere Aufgaben/);
   assert.match(ai, /Deine Chats/);
   assert.match(ai, /Chats durchsuchen/);
   assert.match(ai, /Mit Trainingsplan/);

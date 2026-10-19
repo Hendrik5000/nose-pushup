@@ -2,15 +2,29 @@
 
 import type { AiWorkoutPlan, PlanFeedback } from "@/lib/ai-plan";
 
-export type AiPersona = "coach" | "analyst" | "motivator";
+export type AiPersona = "general" | "writer" | "coach" | "analyst" | "motivator";
 
 export const PERSONAS: Array<{ id: AiPersona; label: string; hint: string; system: string }> = [
   {
-    id: "coach",
-    label: "Coach",
-    hint: "Pläne & Technik",
+    id: "general",
+    label: "Mira",
+    hint: "Alltag & Wissen",
     system:
-      "Persona: erfahrener Calisthenics-Coach. Konkrete Sets/Reps, progressive Überlastung, Form-Hinweise. Kurz und umsetzbar.",
+      "Persona: vielseitige, verlässliche Alltags-KI. Hilf bei Wissen, Schreiben, Ideen, Lernen und Planung. Passe Ton und Detailtiefe an die Frage an.",
+  },
+  {
+    id: "writer",
+    label: "Kreativ",
+    hint: "Schreiben & Ideen",
+    system:
+      "Persona: kreative Schreib- und Ideenpartnerin. Biete mehrere originelle, brauchbare Optionen und überarbeite Texte nach dem gewünschten Ton.",
+  },
+  {
+    id: "coach",
+    label: "Sport",
+    hint: "Optionaler Trainingscoach",
+    system:
+      "Persona: sachlicher Sport-Coach. Gib auf Nachfrage sichere, konkrete Trainingstipps; erfinde keine persönlichen Werte.",
   },
   {
     id: "analyst",
@@ -38,6 +52,31 @@ export type SuperTool = {
 
 /** 10 neue Super-AI Funktionen als One-Tap-Tools */
 export const SUPER_TOOLS: SuperTool[] = [
+  {
+    id: "ideas",
+    icon: "✦",
+    label: "Ideen",
+    description: "Neue Perspektiven und Ansätze",
+    prompt:
+      "Hilf mir, 10 originelle Ideen für ein Vorhaben zu sammeln. Stelle zuerst nur dann eine Rückfrage, wenn sie wirklich nötig ist.",
+  },
+  {
+    id: "draft",
+    icon: "✍️",
+    label: "Text entwerfen",
+    description: "Eine Nachricht oder einen Text verfassen",
+    prompt:
+      "Hilf mir, einen klaren, freundlichen Text zu schreiben. Bitte frage nach Empfänger, Zweck und gewünschtem Ton, falls das noch offen ist.",
+  },
+  {
+    id: "explain",
+    icon: "💡",
+    label: "Einfach erklären",
+    description: "Ein Thema verständlich machen",
+    prompt:
+      "Erkläre mir ein komplexes Thema einfach, strukturiert und mit einem anschaulichen Beispiel. Frage mich, welches Thema, falls es fehlt.",
+  },
+
   {
     id: "week_plan",
     icon: "📅",
@@ -82,7 +121,7 @@ export const SUPER_TOOLS: SuperTool[] = [
     id: "chat_summary",
     icon: "💬",
     label: "Chat-Fazit",
-    description: "Community kurz fassen",
+    description: "Nexus Chat kurz fassen",
     prompt:
       "Fasse meine letzten Chat-Nachrichten und aktiven Räume zusammen: Themen, offene Fragen, ob jemand auf Antwort wartet. Maximal 8 Bulletpoints.",
   },
@@ -134,7 +173,7 @@ export type AiSession = {
 };
 
 const SESSIONS_KEY = "super-ai-sessions-v2";
-const PERSONA_KEY = "super-ai-persona";
+const PERSONA_KEY = "alo-mira-persona-v1";
 const FAV_PROMPTS_KEY = "super-ai-fav-prompts";
 
 function canStore() {
@@ -142,10 +181,13 @@ function canStore() {
 }
 
 export function loadPersona(): AiPersona {
-  if (!canStore()) return "coach";
-  const v = window.localStorage.getItem(PERSONA_KEY);
-  if (v === "analyst" || v === "motivator" || v === "coach") return v;
-  return "coach";
+  if (!canStore()) return "general";
+  try {
+    const value = window.localStorage.getItem(PERSONA_KEY);
+    return PERSONAS.find((persona) => persona.id === value)?.id ?? "general";
+  } catch {
+    return "general";
+  }
 }
 
 export function savePersona(p: AiPersona) {
@@ -227,7 +269,7 @@ export function toggleFavPrompt(text: string): string[] {
 export function exportChatMarkdown(title: string, messages: AiSession["messages"]): string {
   const lines = [`# ${title}`, `Export: ${new Date().toLocaleString("de-DE")}`, ""];
   for (const m of messages) {
-    lines.push(m.role === "user" ? "## Du" : "## Super-AI");
+    lines.push(m.role === "user" ? "## Du" : "## Mira");
     if (m.meta)
       lines.push(`_${m.meta.task ?? ""} · ${m.meta.provider ?? ""}/${m.meta.model ?? ""}_`);
     lines.push(m.content, "");

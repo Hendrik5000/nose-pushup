@@ -624,7 +624,7 @@ export function ProfilePage() {
               <div className="text-xs text-muted-foreground">letzte Einträge</div>
             </div>
           </section>
-          <SportSectionLabel number="01">Training & Community</SportSectionLabel>
+          <SportSectionLabel number="01">Training & Nexus Chat</SportSectionLabel>
           <div className="grid gap-4 lg:grid-cols-2">
             {profile && (
               <SettingsSection

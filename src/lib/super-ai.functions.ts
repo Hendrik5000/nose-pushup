@@ -156,7 +156,7 @@ export const superAiChat = createServerFn({ method: "POST" })
     const p = data.provider;
     const system =
       data.systemExtra ||
-      "Du bist Super-AI in Nose-Pushup. Antworte auf Deutsch, motivierend und konkret.";
+      "Du bist Mira, die vielseitige allgemeine KI von Alo (All in one). Antworte auf Deutsch, hilf bei Alltagsfragen, Wissen, Schreiben, Ideen, Lernen und Planung. Sei klar, ehrlich und passe Länge und Ton an die Anfrage an. Behaupte keine App-Daten, die nicht mit der Anfrage gegeben wurden.";
 
     let reply = "";
     if (p.id === "lovable") {

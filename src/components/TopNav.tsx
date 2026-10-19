@@ -1,52 +1,119 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { House, Dumbbell, Sparkles, MessageCircle, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { House, Dumbbell, Sparkles, MessageCircle, UserRound, Settings2 } from "lucide-react";
+import { updateNavigationForScroll } from "@/lib/navigation-layout";
 
 const ITEMS = [
-  { to: "/", label: "Übersicht", icon: House },
+  { to: "/", label: "Nose-Pushup", icon: House },
+  { to: "/ai", label: "Mira", icon: Sparkles },
+  { to: "/chat", label: "Nexus Chat", icon: MessageCircle },
   { to: "/exercises", label: "Training", icon: Dumbbell },
-  { to: "/ai", label: "KI-Coach", icon: Sparkles },
-  { to: "/chat", label: "Community", icon: MessageCircle },
   { to: "/profile", label: "Profil", icon: UserRound },
-];
+] as const;
+const MODULES = [
+  { to: "/", label: "Nose" },
+  { to: "/ai", label: "Mira" },
+  { to: "/chat", label: "Nexus" },
+] as const;
 
-/** One shared homebar; position and variant are controlled by the saved layout. */
+/** Slim keyboard-accessible module switcher remains available when the full nav is hidden. */
 export function TopNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-
+  const [enabled, setEnabled] = useState(false);
+  const [scrollVisible, setScrollVisible] = useState(true);
+  useEffect(() => {
+    const sync = () => {
+      let value = false;
+      try {
+        value = window.localStorage.getItem("alo-navigation-visible") === "true";
+      } catch {
+        /* use compact default */
+      }
+      setEnabled(value);
+      setScrollVisible(true);
+    };
+    sync();
+    window.addEventListener("np-appearance-change", sync);
+    return () => window.removeEventListener("np-appearance-change", sync);
+  }, []);
+  useEffect(() => {
+    setScrollVisible(true);
+  }, [pathname]);
+  useEffect(() => {
+    if (!enabled) return;
+    let state = { visible: true, anchorY: window.scrollY };
+    const onScroll = () => {
+      const y = window.scrollY;
+      const focused =
+        document.activeElement instanceof Element &&
+        Boolean(document.activeElement.closest(".app-homebar"));
+      state = updateNavigationForScroll(state, y, focused);
+      setScrollVisible(state.visible);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [enabled, pathname]);
+  const barVisible = enabled && scrollVisible;
+  useEffect(() => {
+    document.documentElement.dataset.navigationExpanded = String(barVisible);
+  }, [barVisible]);
   return (
-    <nav className="app-homebar" aria-label="Hauptnavigation">
-      <ul className="ah-segment homebar-items">
-        {ITEMS.map((it) => {
-          const active =
-            it.to === "/"
-              ? pathname === "/" || pathname === ""
-              : pathname === it.to ||
-                pathname.startsWith(`${it.to}/`) ||
-                (it.to === "/exercises" &&
-                  ["/workout/", "/programs", "/calisthenics", "/cali-workout/", "/run"].some(
-                    (prefix) => pathname.startsWith(prefix),
-                  )) ||
-                (it.to === "/ai" && pathname === "/coach");
+    <>
+      <nav className="alo-module-switcher" aria-label="Alo · Module">
+        {MODULES.map((module) => {
+          const active = module.to === "/" ? pathname === "/" : pathname === module.to;
           return (
-            <li key={it.to} className="min-w-0 flex-1">
-              <Link
-                to={it.to}
-                activeOptions={{ exact: it.to === "/" }}
-                aria-current={active ? "page" : undefined}
-                className={`homebar-link ${active ? "is-active" : ""}`}
-              >
-                <it.icon className="homebar-icon" aria-hidden="true" />
-                <span>{it.label}</span>
-              </Link>
-            </li>
+            <Link
+              key={module.to}
+              to={module.to}
+              aria-current={active ? "page" : undefined}
+              className={`alo-module-link ${active ? "is-active" : ""}`}
+            >
+              {module.label}
+            </Link>
           );
         })}
-      </ul>
-    </nav>
+        <Link to="/profile" className="alo-module-settings" aria-label="Einstellungen und Profil">
+          <Settings2 aria-hidden="true" />
+        </Link>
+      </nav>
+      <nav
+        className="app-homebar"
+        aria-label="Erweiterte Navigation"
+        hidden={!barVisible}
+        inert={!barVisible}
+      >
+        <ul className="ah-segment homebar-items">
+          {ITEMS.map((it) => {
+            const active =
+              pathname === it.to ||
+              pathname.startsWith(`${it.to}/`) ||
+              (it.to === "/exercises" &&
+                ["/workout/", "/programs", "/calisthenics", "/cali-workout/", "/run"].some(
+                  (prefix) => pathname.startsWith(prefix),
+                )) ||
+              (it.to === "/ai" && pathname === "/coach");
+            return (
+              <li key={it.to} className="min-w-0 flex-1">
+                <Link
+                  to={it.to}
+                  activeOptions={{ exact: it.to === "/" }}
+                  aria-current={active ? "page" : undefined}
+                  className={`homebar-link ${active ? "is-active" : ""}`}
+                >
+                  <it.icon className="homebar-icon" aria-hidden="true" />
+                  <span>{it.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </>
   );
 }
 
-/** Navigation is rendered once by AuthenticatedLayout, not by individual pages. */
+/** Compatibility export; authenticated layout renders navigation only once. */
 export function BottomNav() {
   return null;
 }

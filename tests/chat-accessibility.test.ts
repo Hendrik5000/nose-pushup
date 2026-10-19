@@ -8,7 +8,7 @@ const read = (file: string) =>
 test("community composer and chat controls have explicit accessible names", () => {
   const chat = read("chat/LocalChatShell.tsx");
   assert.match(chat, /placeholder=\{replyTo \? "Antwort…" : "Nachricht…"\}/);
-  assert.match(chat, /aria-label="Nachricht an die Community"/);
+  assert.match(chat, /aria-label="Nachricht in Nexus Chat"/);
   assert.match(chat, /aria-label="Nachrichten durchsuchen"/);
   assert.match(chat, /aria-label="Name für Direktnachricht"/);
   assert.match(chat, /aria-label="Neuen Raum erstellen"/);

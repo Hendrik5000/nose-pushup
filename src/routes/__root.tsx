@@ -89,32 +89,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Nosy Push-Up" },
+      { title: "Alo — All in one" },
       {
         name: "description",
-        content:
-          "Nosy Push-Ups zählt Liegestütze, indem Nasenkontakte mit dem Smartphone erkannt werden.",
+        content: "Alo vereint Nose-Pushup-Training, Mira für Alltag und Wissen sowie Nexus Chat.",
       },
       { name: "theme-color", content: "#0b0b0f" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "Nosy" },
+      { name: "apple-mobile-web-app-title", content: "Alo" },
       { name: "author", content: "Lovable" },
 
-      { property: "og:title", content: "Nosy Push-Up" },
+      { property: "og:title", content: "Alo — All in one" },
       {
         property: "og:description",
-        content:
-          "Nosy Push-Ups zählt Liegestütze, indem Nasenkontakte mit dem Smartphone erkannt werden.",
+        content: "Alo vereint Nose-Pushup-Training, Mira für Alltag und Wissen sowie Nexus Chat.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Nosy Push-Up" },
+      { name: "twitter:title", content: "Alo — All in one" },
       {
         name: "twitter:description",
-        content:
-          "Nosy Push-Ups zählt Liegestütze, indem Nasenkontakte mit dem Smartphone erkannt werden.",
+        content: "Alo vereint Nose-Pushup-Training, Mira für Alltag und Wissen sowie Nexus Chat.",
       },
       {
         property: "og:image",

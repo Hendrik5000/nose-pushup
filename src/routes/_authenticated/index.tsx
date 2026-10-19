@@ -49,11 +49,11 @@ import {
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "Nosy Push-Ups — Übersicht" },
+      { title: "Alo — All in one" },
       {
         name: "description",
         content:
-          "Zähle Liegestütze mit der Nase, sammle Erfahrungspunkte und halte deine Trainingsserie.",
+          "Alo vereint Nose-Pushup-Training, Mira für Alltag und Wissen sowie Nexus Chat an einem Ort.",
       },
     ],
   }),
@@ -523,6 +523,62 @@ function Dashboard() {
 
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
+      <section className="mb-7" aria-labelledby="alo-home-title">
+        <div className="mb-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+            ALO · ALL IN ONE
+          </p>
+          <h1 id="alo-home-title" className="mt-1 text-2xl font-bold tracking-tight">
+            Ein Zuhause für alles, was du vorhast.
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Drei gleichwertige Bereiche. Wische links oder rechts, um zu wechseln.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Link
+            to="/workout/$exerciseId"
+            params={{ exerciseId: "pushup" }}
+            search={{ mode: "nose", sets: 3, reps: 8, rest_s: 60, title: "Nose-Pushup" }}
+            className="rounded-2xl border border-primary/40 bg-primary/10 p-4 transition hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+              01 · Training
+            </span>
+            <h2 className="mt-1 text-lg font-bold">Nose-Pushup</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Nasen-Tracking, Fortschritt und deine Sportfunktionen.
+            </p>
+            <span className="mt-3 inline-block text-sm font-semibold">Training starten →</span>
+          </Link>
+          <Link
+            to="/ai"
+            className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+              02 · Allgemeine KI
+            </span>
+            <h2 className="mt-1 text-lg font-bold">Mira</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Wissen, Schreiben, Ideen, Alltag – deine vielseitige KI.
+            </p>
+            <span className="mt-3 inline-block text-sm font-semibold">Mira fragen →</span>
+          </Link>
+          <Link
+            to="/chat"
+            className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+              03 · Gemeinsam
+            </span>
+            <h2 className="mt-1 text-lg font-bold">Nexus Chat</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Verbinde dich mit Menschen und deinen Chat-Räumen.
+            </p>
+            <span className="mt-3 inline-block text-sm font-semibold">Nexus öffnen →</span>
+          </Link>
+        </div>
+      </section>
       <header className="classic-only dashboard-header flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">

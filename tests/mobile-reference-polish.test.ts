@@ -7,7 +7,7 @@ test("empty performance coach offers editable starter tasks without sending imme
   const start = ai.indexOf('aria-label="Mit einer Aufgabe starten"');
   assert.ok(start > 0);
   const cards = ai.slice(start, ai.indexOf("{messages.map", start));
-  for (const id of ["week_plan", "week_review", "recovery"]) assert.ok(cards.includes(id));
+  for (const id of ["ideas", "draft", "explain"]) assert.ok(cards.includes(id));
   assert.match(cards, /setInput\(tool.prompt\)/);
   assert.doesNotMatch(cards, /void submit/);
 });
@@ -24,7 +24,7 @@ test("community keeps account outside a shrinking scroll region and wraps quick 
   assert.match(css, /\[data-navigation-layout\] \.app-homebar \.homebar-link span/);
 });
 
-test("AI area uses explicit Coach-Chat without renaming the Community navigation", () => {
-  assert.match(read("routes/_authenticated/ai.tsx"), /view === "chat" \? "Coach-Chat"/);
-  assert.match(read("components/TopNav.tsx"), /label: "Community"/);
+test("Mira keeps coach-chat view and exposes Nexus navigation", () => {
+  assert.match(read("routes/_authenticated/ai.tsx"), /view === "chat" \? "Mira-Chat"/);
+  assert.match(read("components/TopNav.tsx"), /label: "Nexus Chat"/);
 });

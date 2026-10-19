@@ -4,10 +4,11 @@ import { LocalChatShell } from "@/components/chat/LocalChatShell";
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({
     meta: [
-      { title: "Community-Chat — Nose Push" },
+      { title: "Nexus Chat — Alo" },
       {
         name: "description",
-        content: "Nexus Chat nativ in Nosy Push-Ups — Räume, DMs, Reaktionen (lokal).",
+        content:
+          "Nexus Chat in Alo — Räume, Direktnachrichten und Reaktionen. Lokal oder verbunden.",
       },
     ],
   }),
