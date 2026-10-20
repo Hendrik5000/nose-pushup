@@ -56,7 +56,7 @@ test("new page structures are shared across training, health, community, account
   }
   assert.match(read("components/chat/LocalChatShell.tsx"), /sport-/);
   assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage \/>/);
-  assert.match(read("routes/_authenticated/index.tsx"), /sport-overview-metrics/);
+  assert.match(read("routes/_authenticated/index.tsx"), /training-progress/);
   assert.match(read("routes/_authenticated/index.tsx"), /sport-shortcuts/);
 });
 
@@ -90,10 +90,11 @@ test("performance home puts today's workout before status metrics and keeps widg
     /Dieser Startplan:[\s\S]*?ein Schritt zum Tagesziel[\s\S]*?nicht für eine einzelne Einheit/,
   );
   assert.match(home, /Nasenmodus: Tippe den Zähler mit der Nase an/);
-  assert.ok(
-    home.indexOf('className="sport-only training-hero') <
-      home.indexOf('aria-label="Dein Trainingsstatus"'),
-    "the workout plan should appear before compact progress metrics",
+  assert.doesNotMatch(home, /aria-label="Dein Trainingsstatus"|Fortschritt öffnen/);
+  assert.equal((home.match(/aria-label="Trainingsfortschritt"/g) ?? []).length, 1);
+  assert.match(
+    home,
+    /todayProgress.measured \? `\$\{todayReps\} \/ \$\{goal\}` : todayProgress.label/,
   );
   assert.ok(
     home.indexOf('className="alo-home-intro"') >
@@ -123,7 +124,16 @@ test("performance home puts today's workout before status metrics and keeps widg
   assert.match(styles, /grid-column: span 3 !important/);
   assert.match(read("routes/_authenticated/route.tsx"), /<TopNav \/>/);
   const install = read("routes/__root.tsx");
-  assert.match(install, /fixed inset-x-3 bottom-20[\s\S]*border-border/);
+  assert.match(install, /aria-label="App installieren"[\s\S]*border-border/);
+  const installHint = install.slice(
+    install.indexOf('aria-label="App installieren"'),
+    install.indexOf("<OfflineBanner />"),
+  );
+  assert.doesNotMatch(installHint, /fixed|absolute|z-40/);
+  assert.match(installHint, /<details[\s\S]*<summary[\s\S]*min-h-11/);
+  assert.ok(install.indexOf("<Outlet />") < install.indexOf('aria-label="App installieren"'));
+  assert.match(install, /sessionStorage.getItem\("alo-install-hint-dismissed"\)/);
+  assert.match(install, /sessionStorage.setItem\("alo-install-hint-dismissed", "1"\)/);
   assert.match(install, /aria-label="Installationshinweis schließen"/);
 });
 

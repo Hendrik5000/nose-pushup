@@ -1190,3 +1190,24 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
     min-height: 44px;
   }
 }
+
+/* Nexus: one brand, one area title; reserve full-size controls before wrapping text. */
+html[data-design-style] .alo-app-header[data-module="Nexus"] .sport-app-header-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.alo-app-header[data-module="Nexus"] .alo-header-identity {
+  gap: 8px;
+}
+.alo-app-header[data-module="Nexus"] .alo-header-title {
+  flex: 1;
+  gap: 2px;
+}
+html[data-design-style] .alo-app-header[data-module="Nexus"] .alo-header-title strong {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  line-height: 1.25;
+}

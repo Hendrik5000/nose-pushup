@@ -163,3 +163,21 @@ test("appearance deep links open idempotently and scroll only the visible design
     /\[data-profile-appearance\] > div > div\s*\{\s*overflow: visible/,
   );
 });
+
+test("Nexus header names Alo once above the area and preserves all three controls", () => {
+  const header = read("components/SportAppHeader.tsx");
+  assert.match(header, /data-module=\{identity.module\}/);
+  assert.match(header, /identity.module !== "Nexus" && <span>· \{identity.module\}<\/span>/);
+  assert.match(header, /src="\/alo-wordmark\.png" alt="Alo"/);
+  assert.equal(aloPageIdentity("/chat").title, "Nexus Chat");
+  assert.equal(aloPageIdentity("/chat").back, "/");
+  assert.match(header, /<ArrowLeft aria-hidden="true"/);
+  assert.match(header, /aria-label="Alo Zentrale öffnen"/);
+  assert.match(header, /aria-controls="sport-area-menu"/);
+  const css = read("alo-mobile.css");
+  assert.match(css, /data-module="Nexus"[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto/);
+  assert.match(
+    css,
+    /data-module="Nexus"\] \.alo-header-title strong\s*\{[^}]*overflow: visible;[^}]*white-space: normal/,
+  );
+});

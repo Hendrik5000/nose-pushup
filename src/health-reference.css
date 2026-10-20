@@ -4,8 +4,8 @@ html[data-design-style="performance"] .sport-health-page {
   --health-muted: var(--muted-foreground);
   --health-panel: color-mix(in srgb, var(--card) 88%, transparent);
   --health-line: color-mix(in srgb, var(--foreground) 12%, transparent);
-  --health-blue: #286be8;
-  --health-blue-ink: #ffffff;
+  --health-blue: var(--primary);
+  --health-blue-ink: var(--primary-foreground);
   color: var(--health-ink);
 }
 
@@ -197,7 +197,11 @@ html[data-design-style="performance"]
 }
 html[data-design-style="performance"] .sport-health-page .health-bento-grid > .health-energy-card {
   border-color: transparent;
-  background: linear-gradient(145deg, #347ff3, var(--health-blue));
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--primary) 88%, var(--primary-foreground)),
+    var(--health-blue)
+  );
   color: var(--health-blue-ink);
   box-shadow: 0 12px 28px color-mix(in srgb, var(--health-blue) 22%, transparent);
 }

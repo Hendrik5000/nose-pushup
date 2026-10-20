@@ -221,7 +221,7 @@ function Dashboard() {
               <div>
                 <dt className="text-xs text-muted-foreground">Tagesziel · Liegestütze</dt>
                 <dd className="mt-1 text-xl font-bold tabular-nums">
-                  {loading ? "—" : `${todayReps} / ${goal}`}
+                  {todayProgress.measured ? `${todayReps} / ${goal}` : todayProgress.label}
                 </dd>
               </div>
               <div>
@@ -231,7 +231,7 @@ function Dashboard() {
                 </dd>
               </div>
             </dl>
-            {!loading && (
+            {todayProgress.measured && (
               <div
                 className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"
                 role="meter"
@@ -653,48 +653,7 @@ function Dashboard() {
           )}
         </details>
       </section>
-      <details className="sport-only alo-stat-details">
-        <summary>
-          <span>
-            {todayProgress.measured ? `${todayReps} / ${goal} Wdh. heute` : todayProgress.label}
-          </span>
-          <span className="text-muted-foreground"> · Fortschritt öffnen</span>
-        </summary>
-        <SportSectionLabel number="02">Dein Fortschritt</SportSectionLabel>
-        <dl className="sport-overview-metrics" aria-label="Dein Trainingsstatus">
-          <div>
-            <dt>
-              <Target aria-hidden="true" />
-              HEUTE
-            </dt>
-            <dd>
-              {todayProgress.value}
-              <small>/ {goal} Wdh.</small>
-            </dd>
-          </div>
-          <div>
-            <dt>
-              <Flame aria-hidden="true" />
-              DEINE SERIE
-            </dt>
-            <dd>
-              {loading ? "—" : streak}
-              <small>{streak === 1 ? "Tag" : "Tage"} in Folge</small>
-            </dd>
-          </div>
-          <div>
-            <dt>
-              <Trophy aria-hidden="true" />
-              DEIN LEVEL
-            </dt>
-            <dd>
-              {loading ? "—" : lp.level}
-              <small>{loading ? "Lädt…" : lp.title}</small>
-            </dd>
-          </div>
-        </dl>
-      </details>
-      <SportSectionLabel number="03">Finde deinen Fokus</SportSectionLabel>
+      <SportSectionLabel number="02">Finde deinen Fokus</SportSectionLabel>
       <nav className="sport-only sport-shortcuts" aria-label="Trainingsbereiche">
         <Link to="/exercises" className="sport-shortcut">
           <Dumbbell aria-hidden="true" />

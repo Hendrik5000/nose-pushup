@@ -34,6 +34,11 @@ type Store = {
   dms: LocalDm[];
 };
 
+const LEGACY_SYSTEM_WELCOME =
+  "Willkommen im lokalen Chat von Nosy Push-Ups! Nachrichten bleiben auf diesem Gerät (localStorage).";
+const CURRENT_SYSTEM_WELCOME =
+  "Willkommen im lokalen Chat von Alo! Nachrichten bleiben auf diesem Gerät (localStorage).";
+
 function key(userId: string) {
   return `nose-pushup-local-chat:${userId}`;
 }
@@ -56,8 +61,7 @@ function defaultStore(): Store {
         room_id: generalId,
         conversation_id: null,
         user_id: "system",
-        content:
-          "Willkommen im lokalen Chat von Nosy Push-Ups! Nachrichten bleiben auf diesem Gerät (localStorage).",
+        content: CURRENT_SYSTEM_WELCOME,
         created_at: new Date().toISOString(),
         edited_at: null,
         reply_to_id: null,
@@ -77,7 +81,22 @@ export function loadChatStore(userId: string): Store {
       saveChatStore(userId, s);
       return s;
     }
-    return JSON.parse(raw) as Store;
+    const store = JSON.parse(raw) as Store;
+    let normalized = false;
+    for (const message of store.messages) {
+      if (message.user_id === "system" && message.content === LEGACY_SYSTEM_WELCOME) {
+        message.content = CURRENT_SYSTEM_WELCOME;
+        normalized = true;
+      }
+    }
+    if (normalized) {
+      try {
+        saveChatStore(userId, store);
+      } catch {
+        // Keep the normalized in-memory store usable if localStorage is read-only.
+      }
+    }
+    return store;
   } catch {
     return defaultStore();
   }

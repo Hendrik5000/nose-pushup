@@ -88,7 +88,7 @@ export function SportAppHeader() {
     };
   }, [open]);
   return (
-    <div className="sport-app-header alo-app-header" ref={ref}>
+    <div className="sport-app-header alo-app-header" data-module={identity.module} ref={ref}>
       <div className="sport-app-header-inner">
         <div className="alo-header-identity">
           {identity.back && (
@@ -107,7 +107,7 @@ export function SportAppHeader() {
           >
             <small>
               <img src="/alo-wordmark.png" alt="Alo" width={44} height={24} />
-              <span>· {identity.module}</span>
+              {identity.module !== "Nexus" && <span>· {identity.module}</span>}
             </small>
             {identity.title !== identity.module && <strong>{identity.title}</strong>}
           </Link>

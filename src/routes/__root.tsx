@@ -221,7 +221,14 @@ function RootComponent() {
       );
     window.matchMedia("(display-mode: standalone)").addEventListener("change", handleDisplayMode);
 
-    const onBeforeInstallPrompt = () => setInstallable(true);
+    const onBeforeInstallPrompt = () => {
+      try {
+        if (sessionStorage.getItem("alo-install-hint-dismissed") === "1") return;
+      } catch {
+        // The hint remains usable when browser storage is unavailable.
+      }
+      setInstallable(true);
+    };
     const onAppInstalled = () => {
       setInstallable(false);
       setStandalone(true);
@@ -298,26 +305,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {installable && !standalone && (
-        <div className="fixed inset-x-3 bottom-20 z-40 mx-auto max-w-sm rounded-2xl border border-border bg-background/95 px-3 py-2 shadow-md backdrop-blur">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-xs font-medium text-foreground">Alo als App installieren</div>
-              <div className="mt-0.5 text-[11px] text-muted-foreground">
-                Im Browser-Menü „Zum Startbildschirm“ wählen.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setInstallable(false)}
-              aria-label="Installationshinweis schließen"
-              className="rounded-full px-2 py-1 text-[11px] text-muted-foreground transition hover:text-foreground"
-            >
-              Schließen
-            </button>
-          </div>
-        </div>
-      )}
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <div
         key={routeKey}
@@ -325,6 +312,38 @@ function RootComponent() {
       >
         <Outlet />
       </div>
+      {installable && !standalone && (
+        <aside
+          aria-label="App installieren"
+          className="mx-auto mb-24 w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-border bg-card/60 px-3 py-2"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <details className="min-w-0 flex-1 text-xs text-muted-foreground">
+              <summary className="flex min-h-11 cursor-pointer items-center font-medium text-foreground">
+                Alo als App installieren
+              </summary>
+              <p className="pb-2 leading-relaxed">
+                Im Browser-Menü „App installieren“ oder „Zum Startbildschirm“ wählen.
+              </p>
+            </details>
+            <button
+              type="button"
+              onClick={() => {
+                setInstallable(false);
+                try {
+                  sessionStorage.setItem("alo-install-hint-dismissed", "1");
+                } catch {
+                  // Closing still works for this visit without browser storage.
+                }
+              }}
+              aria-label="Installationshinweis schließen"
+              className="min-h-11 shrink-0 rounded-full px-2 text-[11px] text-muted-foreground transition hover:text-foreground"
+            >
+              Schließen
+            </button>
+          </div>
+        </aside>
+      )}
       <OfflineBanner />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
