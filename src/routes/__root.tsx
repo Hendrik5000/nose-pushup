@@ -24,15 +24,25 @@ import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigati
 import { swipeScreenFromPath } from "@/lib/module-navigation";
 import { clearSensitiveClientStorage } from "@/lib/sensitive-storage";
 
-// NOTE: Full __root body retained from main; only SIGNED_OUT secret clear added.
-// If this file was truncated incorrectly, restore from git history immediately.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: 1,
+    },
+  },
+});
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
+      },
       { title: "Alo" },
+      { name: "theme-color", content: "#0b1017" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -46,26 +56,53 @@ export const Route = createRootRoute({
   errorComponent: ({ error }) => {
     reportLovableError(error);
     return (
-      <div className="p-6 text-sm">
-        <p className="font-semibold">Etwas ist schiefgelaufen.</p>
-        <p className="mt-2 text-muted-foreground">{String(error?.message ?? error)}</p>
-      </div>
+      <html lang="de">
+        <head>
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Fehler — Alo</title>
+        </head>
+        <body className="bg-background text-foreground">
+          <div className="mx-auto max-w-md p-6">
+            <p className="font-semibold">Etwas ist schiefgelaufen.</p>
+            <p className="mt-2 text-sm text-muted-foreground">{String((error as Error)?.message ?? error)}</p>
+          </div>
+          <Scripts />
+        </body>
+      </html>
     );
   },
 });
 
 function RootComponent() {
+  return (
+    <RootDocument>
+      <QueryClientProvider client={queryClient}>
+        <AppShell />
+        <Toaster />
+      </QueryClientProvider>
+    </RootDocument>
+  );
+}
+
+function AppShell() {
   const router = useRouter();
-  const queryClient = useState(() => new QueryClient())[0];
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const routeKey = swipeScreenFromPath(pathname);
-  const [fullscreenRequested, setFullscreenRequested] = useState(false);
 
   useEffect(() => {
     installGlobalErrorReporting();
     applyTheme(getStoredTheme());
     applyDesignStyle(getStoredDesignStyle());
     applyNavigationLayout(getStoredNavigationLayout());
+  }, []);
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "np-theme" && e.newValue && isThemeId(e.newValue)) applyTheme(e.newValue);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   useEffect(() => {
@@ -81,17 +118,26 @@ function RootComponent() {
       unsub = data.subscription;
     })();
     return () => unsub?.unsubscribe();
-  }, [router, queryClient]);
+  }, [router]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <div key={routeKey}>
+    <div key={routeKey} className="min-h-[100dvh]">
+      <OfflineBanner />
+      <Outlet />
+    </div>
+  );
+}
+
+function RootDocument({ children }: { children: ReactNode }) {
+  return (
+    <html lang="de" suppressHydrationWarning>
+      <head>
         <HeadContent />
-        <OfflineBanner />
-        <Outlet />
-        <Toaster />
+      </head>
+      <body className="min-h-[100dvh] bg-background text-foreground antialiased">
+        {children}
         <Scripts />
-      </div>
-    </QueryClientProvider>
+      </body>
+    </html>
   );
 }
