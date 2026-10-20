@@ -66,6 +66,13 @@ test("new onboarding, compact module controls, hidden-by-default legacy nav, and
   assert.match(ai, /untrusted Kontext/);
 });
 
+test("Alo header does not repeat a page title already shown as the module identity", () => {
+  assert.match(
+    read("components/SportAppHeader.tsx"),
+    /identity\.title !== identity\.module && <strong>\{identity\.title\}<\/strong>/,
+  );
+});
+
 // General defaults must not remove the original optional training helpers.
 test("Mira is general by default while all existing sport helpers remain available", () => {
   const tools = read("lib/super-ai-tools.ts");

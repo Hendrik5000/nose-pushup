@@ -880,9 +880,12 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                   {m.role === "assistant" && (
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       {m.meta && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {m.meta.task} · {m.meta.provider}/{m.meta.model}
-                        </span>
+                        <details className="text-[10px] text-muted-foreground">
+                          <summary className="cursor-pointer">Technische Details</summary>
+                          <span>
+                            {m.meta.task} · {m.meta.provider}/{m.meta.model}
+                          </span>
+                        </details>
                       )}
                       <button
                         type="button"
@@ -933,7 +936,15 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
             <div className="sport-ai-compact-heading" aria-label="Chat-Steuerung">
               <div className="sport-ai-model-status" aria-live="polite">
                 <span className="sport-ai-model-dot" aria-hidden="true" />
-                <span>{activeProvider?.model ?? "Kein Modell eingerichtet"}</span>
+                <span>Mira</span>
+                <details className="text-[10px] text-muted-foreground">
+                  <summary className="cursor-pointer">Technische Details</summary>
+                  <span>
+                    {activeProvider
+                      ? `${activeProvider.label} · ${activeProvider.model}`
+                      : "Kein Modell eingerichtet"}
+                  </span>
+                </details>
               </div>
               <div className="sport-ai-chat-actions">
                 <button
@@ -1518,9 +1529,12 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                               />
                             )}
                             {m.meta && (
-                              <span className="text-muted-foreground">
-                                {m.meta.provider} · {m.meta.model} · {m.meta.task}
-                              </span>
+                              <details className="text-muted-foreground">
+                                <summary className="cursor-pointer">Technische Details</summary>
+                                <span>
+                                  {m.meta.provider} · {m.meta.model} · {m.meta.task}
+                                </span>
+                              </details>
                             )}
                             <button
                               type="button"

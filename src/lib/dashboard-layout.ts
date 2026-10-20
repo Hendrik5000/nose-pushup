@@ -69,7 +69,12 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
     defaultSize: "sm",
   },
   { id: "recoveryCal", label: "Recovery-Kalender", description: "Erholung", defaultSize: "md" },
-  { id: "statsRing", label: "Stats & Level", description: "Ring + XP", defaultSize: "lg" },
+  {
+    id: "statsRing",
+    label: "Bestwerte & Level",
+    description: "Persönlicher Bestwert, Schritte und Level – ohne Tagesziel oder Serie",
+    defaultSize: "lg",
+  },
   { id: "reminder", label: "Smart Reminder", description: "Hinweis", defaultSize: "sm" },
   { id: "miniBlock", label: "Mini-Block", description: "Routine starten", defaultSize: "md" },
   { id: "tiles", label: "Navigation", description: "Chat, Health, AI…", defaultSize: "md" },

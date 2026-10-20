@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { computeReadiness } from "../src/lib/readiness.ts";
 
@@ -15,6 +16,16 @@ test("Readiness does not present a score with fewer than two independent sources
   assert.match(result.label, /Daten/);
   assert.deepEqual(result.sources, ["Schlaf"]);
   assert.match(result.detail, /mindestens zwei Datenquellen/);
+});
+
+test("dashboard labels unavailable readiness as a friendly basis plan", () => {
+  const card = readFileSync(
+    new URL("../src/components/ReadinessCard.tsx", import.meta.url),
+    "utf8",
+  );
+  const plans = readFileSync(new URL("../src/lib/workout-plans.ts", import.meta.url), "utf8");
+  assert.match(card, /Basisplan bis mehr Daten/);
+  assert.match(plans, /Basisplan bis mehr Daten da sind/);
 });
 
 test("Readiness uses only measured values and keeps the existing numeric score contract", () => {

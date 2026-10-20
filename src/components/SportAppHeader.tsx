@@ -109,7 +109,7 @@ export function SportAppHeader() {
               <img src="/alo-wordmark.png" alt="Alo" width={44} height={24} />
               <span>· {identity.module}</span>
             </small>
-            <strong>{identity.title}</strong>
+            {identity.title !== identity.module && <strong>{identity.title}</strong>}
           </Link>
         </div>
         <div className="sport-header-actions">

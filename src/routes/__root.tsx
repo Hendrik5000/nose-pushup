@@ -299,23 +299,19 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {installable && !standalone && (
-        <div className="fixed inset-x-3 top-3 z-50 rounded-2xl border border-primary/30 bg-background/95 px-3 py-3 shadow-lg backdrop-blur">
+        <div className="fixed inset-x-3 bottom-20 z-40 mx-auto max-w-sm rounded-2xl border border-border bg-background/95 px-3 py-2 shadow-md backdrop-blur">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                Installieren
-              </div>
-              <div className="mt-1 text-sm font-semibold text-foreground">
-                Als App auf dem Startbildschirm nutzen
-              </div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                Öffne das Browser-Menü und wähle „Als App installieren“.
+              <div className="text-xs font-medium text-foreground">Alo als App installieren</div>
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                Im Browser-Menü „Zum Startbildschirm“ wählen.
               </div>
             </div>
             <button
               type="button"
               onClick={() => setInstallable(false)}
-              className="rounded-full border border-border px-2 py-1 text-[11px] text-muted-foreground"
+              aria-label="Installationshinweis schließen"
+              className="rounded-full px-2 py-1 text-[11px] text-muted-foreground transition hover:text-foreground"
             >
               Schließen
             </button>

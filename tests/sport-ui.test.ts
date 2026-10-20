@@ -84,11 +84,33 @@ test("new and old markup are mutually exclusive without rewriting saved appearan
 test("performance home puts today's workout before status metrics and keeps widget sizing responsive", () => {
   const home = read("routes/_authenticated/index.tsx");
   assert.match(home, /sport-dashboard-title">Heute trainieren/);
+  assert.equal((home.match(/<PlanGoalNote/g) ?? []).length, 2);
+  assert.match(
+    home,
+    /Dieser Startplan:[\s\S]*?ein Schritt zum Tagesziel[\s\S]*?nicht für eine einzelne Einheit/,
+  );
+  assert.match(home, /Nasenmodus: Tippe den Zähler mit der Nase an/);
   assert.ok(
     home.indexOf('className="sport-only training-hero') <
       home.indexOf('aria-label="Dein Trainingsstatus"'),
     "the workout plan should appear before compact progress metrics",
   );
+  assert.ok(
+    home.indexOf('className="alo-home-intro"') >
+      home.indexOf('className="classic-only training-hero'),
+    "Alo area cards should follow the classic and performance start plans",
+  );
+  assert.ok(
+    home.indexOf('className="sport-only training-hero') <
+      home.indexOf('className="sport-only sport-shortcuts'),
+  );
+  const statsWidget = home.slice(home.indexOf('case "statsRing"'), home.indexOf('case "reminder"'));
+  assert.match(statsWidget, /Bestwert, Schritte & Level/);
+  assert.doesNotMatch(statsWidget, /Wdh\. heute|Trainingsserie|Tagesziel/);
+  const hub = home.slice(home.indexOf('aria-label="Deine Alo-Bereiche"'));
+  assert.match(hub, /<h2 className="mt-1 text-lg font-bold">Nose-Pushup<\/h2>/);
+  assert.match(hub, /Deine Gespräche bleiben lokal auf diesem Gerät/);
+  assert.doesNotMatch(hub, /Verbinde dich mit Menschen|Chat-Räumen/);
   assert.match(home, /className="sport-counting-group" role="group" aria-label="Zählmethode"/);
 
   const dashboard = read("components/dashboard/DashboardGrid.tsx");
@@ -100,6 +122,9 @@ test("performance home puts today's workout before status metrics and keeps widg
   assert.match(styles, /@media \(min-width: 1200px\)/);
   assert.match(styles, /grid-column: span 3 !important/);
   assert.match(read("routes/_authenticated/route.tsx"), /<TopNav \/>/);
+  const install = read("routes/__root.tsx");
+  assert.match(install, /fixed inset-x-3 bottom-20[\s\S]*border-border/);
+  assert.match(install, /aria-label="Installationshinweis schließen"/);
 });
 
 test("performance AI coach has focused subviews, task-first entry points and keeps the classic view", () => {

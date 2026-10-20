@@ -2,10 +2,11 @@ import { getFatigueAdvice, getFatigueLevel, type FatigueLevel } from "@/lib/cali
 
 type Props = {
   workoutsLast7Days: number;
-  avgSoreness: number;
+  avgSoreness: number | null;
 };
 
 const TRAFFIC_COLORS: Record<FatigueLevel, string> = {
+  unknown: "bg-muted-foreground/50",
   green: "bg-green-500",
   yellow: "bg-yellow-400",
   red: "bg-red-500",
@@ -39,7 +40,10 @@ export function CaliLoadManager({ workoutsLast7Days, avgSoreness }: Props) {
 
       <div className="mt-3 grid grid-cols-2 gap-1.5">
         <StatPill label="Sessions (7 Tage)" value={String(workoutsLast7Days)} />
-        <StatPill label="Ø Gelenk-Score" value={avgSoreness > 0 ? avgSoreness.toFixed(1) : "—"} />
+        <StatPill
+          label="Ø Gelenk-Score"
+          value={avgSoreness !== null ? avgSoreness.toFixed(1) : "—"}
+        />
       </div>
     </div>
   );

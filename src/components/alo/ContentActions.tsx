@@ -8,12 +8,14 @@ export function ContentActions({
   text,
   title,
   source,
+  triggerLabel = "Alo-Aktionen",
   extra = {},
 }: {
   userId: string;
   text: string;
   title: string;
   source: string;
+  triggerLabel?: string;
   extra?: AloBody;
 }) {
   const [open, setOpen] = useState(false);
@@ -92,7 +94,7 @@ export function ContentActions({
         className="text-xs font-semibold text-primary"
         onClick={() => void begin()}
       >
-        Alo-Aktionen
+        {triggerLabel}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="alo-dialog">

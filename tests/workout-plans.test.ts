@@ -17,7 +17,7 @@ test("dashboard recommendation detail agrees with the structured plan and projec
   const recommendation = getDashboardRecommendation({ plan, readinessAvailable: false });
   assert.equal(recommendation.sets, plan.sets);
   assert.equal(recommendation.reps, plan.reps);
-  assert.match(recommendation.readinessNote, /Readiness noch nicht verfügbar/);
+  assert.match(recommendation.readinessNote, /Basisplan bis mehr Daten/);
 });
 
 test("completed day is described as an optional additional block", () => {
@@ -42,6 +42,8 @@ test("a guest without history receives an explicitly general short starter plan"
   const plan = getQuickStartPlan({ best: 0, todayReps: 0, streak: 0, goal: 50 });
   assert.equal(plan.sets, 2);
   assert.equal(plan.reps, 5);
+  assert.equal(plan.plannedReps, 10);
+  assert.equal(plan.remaining, 50);
   assert.match(plan.detail, /Allgemeiner Einstiegsplan/);
 });
 

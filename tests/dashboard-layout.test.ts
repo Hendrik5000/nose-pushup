@@ -84,6 +84,11 @@ test("catalog keeps every previous widget and defaults exactly to training progr
     [...PREVIOUS_CATALOG_IDS].sort(),
   );
   assert.equal(WIDGET_CATALOG.find(({ id }) => id === "trainingProgress")?.defaultSize, "lg");
+  assert.equal(WIDGET_CATALOG.find(({ id }) => id === "statsRing")?.label, "Bestwerte & Level");
+  assert.match(
+    WIDGET_CATALOG.find(({ id }) => id === "statsRing")?.description ?? "",
+    /ohne Tagesziel oder Serie/,
+  );
 });
 
 test("SSR defaults are fresh copies and a missing stored value defaults without writing", () => {

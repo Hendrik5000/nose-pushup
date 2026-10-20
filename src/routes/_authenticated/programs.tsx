@@ -60,8 +60,8 @@ type UserProgram = {
 
 const LEVEL_LABEL: Record<string, string> = {
   beginner: "Einsteiger",
-  intermediate: "Fortgeschritten",
-  advanced: "Profi",
+  intermediate: "Mittelstufe",
+  advanced: "Fortgeschritten",
 };
 
 function ProgramsPage() {
@@ -224,6 +224,7 @@ function ProgramsPage() {
                       title={activeProgram.title}
                       text={`${activeProgram.title}\n${activeProgram.description}\n${programDays.map((d) => `Tag ${d.day_index}: ${d.focus}, ${d.sets} × ${d.reps}, ${d.rest_s}s Pause. ${d.note}`).join("\n")}`}
                       source="Nose-Pushup"
+                      triggerLabel="Programm speichern oder teilen"
                     />
                   )}
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -353,6 +354,10 @@ function ProgramsPage() {
               <SportSectionLabel number={active ? "02" : "01"}>
                 {active ? "Weitere Programme" : "Programm wählen"}
               </SportSectionLabel>
+              <p className="text-xs text-muted-foreground">
+                Wochenzahl = hinterlegte Laufzeit; Einheiten = gespeicherte Tagespläne, nicht
+                automatisch auf Wochen verteilt.
+              </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 {programs
                   .filter((p) => p.id !== active?.program_id)
@@ -382,6 +387,7 @@ function ProgramsPage() {
                               )
                               .join("\n")}`}
                             source="Nose-Pushup"
+                            triggerLabel="Programm speichern oder teilen"
                           />
                         )}
                         <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
@@ -392,7 +398,7 @@ function ProgramsPage() {
                             {p.weeks} Wochen
                           </span>
                           <span className="rounded-full bg-secondary px-3 py-1.5">
-                            {count} Tage
+                            {count} Einheiten
                           </span>
                           <span className="rounded-full bg-secondary px-3 py-1.5">
                             {LEVEL_LABEL[p.level] ?? p.level}
@@ -459,6 +465,7 @@ function ProgramsPage() {
                       title={activeProgram.title}
                       text={`${activeProgram.title}\n${activeProgram.description}\n${programDays.map((d) => `Tag ${d.day_index}: ${d.focus}, ${d.sets} × ${d.reps}, ${d.rest_s}s Pause. ${d.note}`).join("\n")}`}
                       source="Nose-Pushup"
+                      triggerLabel="Programm speichern oder teilen"
                     />
                   )}
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -597,6 +604,10 @@ function ProgramsPage() {
               <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
                 {active ? "Andere Programme" : "Programm wählen"}
               </h2>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Wochenzahl = hinterlegte Laufzeit; Einheiten = gespeicherte Tagespläne, nicht
+                automatisch auf Wochen verteilt.
+              </p>
               <div className="space-y-3">
                 {programs
                   .filter((p) => p.id !== active?.program_id)
@@ -624,12 +635,14 @@ function ProgramsPage() {
                                     )
                                     .join("\n")}`}
                                   source="Nose-Pushup"
+                                  triggerLabel="Programm speichern oder teilen"
                                 />
                               )}
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
                             <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                              {p.weeks} Wochen · {count} Tage · {LEVEL_LABEL[p.level] ?? p.level}
+                              {p.weeks} Wochen · {count} Einheiten ·{" "}
+                              {LEVEL_LABEL[p.level] ?? p.level}
                             </div>
                           </div>
                           <button

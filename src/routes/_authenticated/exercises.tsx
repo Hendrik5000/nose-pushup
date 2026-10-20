@@ -204,10 +204,14 @@ function ExercisesPage() {
                           </span>
                         )}
                         <span className="mt-3 block text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                          Best{" "}
-                          <b className="ml-1 tabular-nums text-foreground">
-                            {best > 0 ? `${best}${ex.unit === "seconds" ? "s" : ""}` : "—"}
-                          </b>
+                          {best > 0 ? (
+                            <>
+                              Best{" "}
+                              <b className="ml-1 tabular-nums text-foreground">{`${best}${ex.unit === "seconds" ? "s" : ""}`}</b>
+                            </>
+                          ) : (
+                            "Noch kein Bestwert"
+                          )}
                         </span>
                       </span>
                       <ArrowUpRight

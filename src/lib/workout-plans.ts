@@ -91,7 +91,7 @@ export function getDashboardRecommendation({
     readinessNote:
       readinessAvailable && readinessLabel
         ? `Readiness: ${readinessLabel}. Höre zusätzlich auf dein Körpergefühl.`
-        : "Readiness noch nicht verfügbar. Dieser allgemeine Plan verwendet keine geschätzte Tagesform; dafür fehlen ausreichende Schlaf- und Trainingsdaten.",
+        : "Basisplan bis mehr Daten da sind. Für eine Tagesform-Einschätzung brauchen wir noch Schlaf- und Trainingsdaten.",
   };
 }
 

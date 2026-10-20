@@ -10,11 +10,12 @@ const ENERGY_LABELS = ["", "Erschöpft", "Müde", "Normal", "Gut", "Top-Form �
 const SORENESS_LABELS = ["", "Kein", "Leicht", "Spürbar", "Stark", "Schmerz ⚠️"];
 
 export function CaliCheckin({ existing, onSave }: Props) {
-  const [energy, setEnergy] = useState<number>(existing?.energy ?? 3);
-  const [soreness, setSoreness] = useState<number>(existing?.soreness ?? 1);
+  const [energy, setEnergy] = useState<number | null>(existing?.energy ?? null);
+  const [soreness, setSoreness] = useState<number | null>(existing?.soreness ?? null);
   const [saved, setSaved] = useState(!!existing);
 
   function handleSave() {
+    if (energy === null || soreness === null) return;
     const data: CheckinData = { energy, soreness, date: getTodayKey() };
     saveCheckin(data);
     setSaved(true);
@@ -29,7 +30,8 @@ export function CaliCheckin({ existing, onSave }: Props) {
           <div>
             <p className="text-sm font-semibold text-foreground">Tages-Check-in erledigt</p>
             <p className="text-xs text-muted-foreground">
-              Energie: {ENERGY_LABELS[energy]} · Gelenke: {SORENESS_LABELS[soreness]}
+              Energie: {energy === null ? "Noch nicht angegeben" : ENERGY_LABELS[energy]} · Gelenke:{" "}
+              {soreness === null ? "Noch nicht angegeben" : SORENESS_LABELS[soreness]}
             </p>
           </div>
         </div>
@@ -53,7 +55,9 @@ export function CaliCheckin({ existing, onSave }: Props) {
           <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
             Energielevel
           </span>
-          <span className="text-xs font-semibold text-foreground">{ENERGY_LABELS[energy]}</span>
+          <span className="text-xs font-semibold text-foreground">
+            {energy === null ? "Noch nicht angegeben" : ENERGY_LABELS[energy]}
+          </span>
         </div>
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map((v) => (
@@ -78,7 +82,9 @@ export function CaliCheckin({ existing, onSave }: Props) {
           <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
             Gelenke / Schmerz
           </span>
-          <span className="text-xs font-semibold text-foreground">{SORENESS_LABELS[soreness]}</span>
+          <span className="text-xs font-semibold text-foreground">
+            {soreness === null ? "Noch nicht angegeben" : SORENESS_LABELS[soreness]}
+          </span>
         </div>
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map((v) => (
@@ -101,7 +107,8 @@ export function CaliCheckin({ existing, onSave }: Props) {
 
       <button
         onClick={handleSave}
-        className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
+        disabled={energy === null || soreness === null}
+        className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
       >
         Check-in speichern
       </button>

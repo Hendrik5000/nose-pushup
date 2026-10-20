@@ -171,14 +171,6 @@ function Dashboard() {
   const goal = profile?.daily_goal || 50;
   const todayProgress = progressState(loading, workoutAvailable, hasTodayData, todayReps);
   const goalPct = Math.min(1, todayReps / goal);
-  const streakActive = (() => {
-    if (!profile?.last_workout_date) return false;
-    const today = localDateKey(new Date());
-    const previous = new Date();
-    previous.setDate(previous.getDate() - 1);
-    const yesterday = localDateKey(previous);
-    return profile.last_workout_date === today || profile.last_workout_date === yesterday;
-  })();
   const pushupBest = profile?.personal_bests?.pushup ?? profile?.best_count ?? 0;
   const otherExercises = exercises.filter((e) => e.id !== "pushup");
   const quickStart = getQuickStartPlan({ best: pushupBest, todayReps, streak, goal });
@@ -332,25 +324,14 @@ function Dashboard() {
         return wrap(
           <section className="rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
             <details className="alo-stat-details">
-              <summary>
-                {todayProgress.measured ? `${todayReps} / ${goal} Wdh. heute` : todayProgress.label}{" "}
-                · Details öffnen
-              </summary>
-              <div className="flex items-center gap-5">
-                <ActivityRing pct={goalPct} value={todayReps} goal={goal} state={todayProgress} />
-                <div className="min-w-0 flex-1 space-y-2.5">
-                  <RingRow icon="🏆" label="Bestwert" value={`${pushupBest}`} />
-                  <RingRow
-                    icon={streakActive && streak > 0 ? "🔥" : "❄️"}
-                    label="Trainingsserie"
-                    value={`${streak} Tage`}
-                  />
-                  <RingRow
-                    icon="👟"
-                    label="Schritte"
-                    value={todaySteps ? todaySteps.toLocaleString("de-DE") : "—"}
-                  />
-                </div>
+              <summary>Bestwert, Schritte & Level · Details öffnen</summary>
+              <div className="mt-3 space-y-2.5">
+                <RingRow icon="🏆" label="Bestwert" value={`${pushupBest}`} />
+                <RingRow
+                  icon="👟"
+                  label="Schritte"
+                  value={todaySteps ? todaySteps.toLocaleString("de-DE") : "—"}
+                />
               </div>
 
               <div className="mt-5 border-t border-border pt-4">
@@ -540,60 +521,6 @@ function Dashboard() {
 
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
-      <section className="alo-home-intro" aria-label="Deine Alo-Bereiche">
-        <button
-          className="alo-text-action"
-          onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "today" }))}
-        >
-          Deinen Tag überblicken →
-        </button>
-        <details className="alo-home-areas">
-          <summary>Mira, Nexus & Training öffnen</summary>
-          <div className="alo-home-portals">
-            <Link
-              to="/workout/$exerciseId"
-              params={{ exerciseId: "pushup" }}
-              search={{ mode: "nose", sets: 3, reps: 8, rest_s: 60, title: "Nose-Pushup" }}
-              className="rounded-2xl border border-primary/40 bg-primary/10 p-4 transition hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                01 · Training
-              </span>
-              <h2 className="mt-1 text-lg font-bold">Nose-Pushup</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Nasen-Tracking, Fortschritt und deine Sportfunktionen.
-              </p>
-              <span className="mt-3 inline-block text-sm font-semibold">Training starten →</span>
-            </Link>
-            <Link
-              to="/ai"
-              className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                02 · Allgemeine KI
-              </span>
-              <h2 className="mt-1 text-lg font-bold">Mira</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Wissen, Schreiben, Ideen, Alltag – deine vielseitige KI.
-              </p>
-              <span className="mt-3 inline-block text-sm font-semibold">Mira fragen →</span>
-            </Link>
-            <Link
-              to="/chat"
-              className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                03 · Gemeinsam
-              </span>
-              <h2 className="mt-1 text-lg font-bold">Nexus Chat</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Verbinde dich mit Menschen und deinen Chat-Räumen.
-              </p>
-              <span className="mt-3 inline-block text-sm font-semibold">Nexus öffnen →</span>
-            </Link>
-          </div>
-        </details>
-      </section>
       <header className="classic-only dashboard-header flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
@@ -656,6 +583,12 @@ function Dashboard() {
           <PlanMetric label="Wdh. je Satz" value={recommendation.reps} />
           <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
         </div>
+        <PlanGoalNote
+          sets={recommendation.sets}
+          reps={recommendation.reps}
+          plannedReps={recommendation.plannedReps}
+          goal={goal}
+        />
         <label className="alo-counting-select">
           <span>Zählen</span>
           <select
@@ -688,6 +621,10 @@ function Dashboard() {
             label="Kamera"
           />
         </div>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell erfasst du
+          selbst.
+        </p>
         <Link
           to="/workout/$exerciseId"
           params={{ exerciseId: "pushup" }}
@@ -803,6 +740,12 @@ function Dashboard() {
           <PlanMetric label="Wiederholungen je Satz" value={recommendation.reps} />
           <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
         </div>
+        <PlanGoalNote
+          sets={recommendation.sets}
+          reps={recommendation.reps}
+          plannedReps={recommendation.plannedReps}
+          goal={goal}
+        />
         <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Zählmethode">
           <ModeChip
             active={mode === "nose"}
@@ -823,6 +766,10 @@ function Dashboard() {
             label="Kamera"
           />
         </div>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell erfasst du
+          selbst.
+        </p>
         <Link
           to="/workout/$exerciseId"
           params={{ exerciseId: "pushup" }}
@@ -849,62 +796,65 @@ function Dashboard() {
         </details>
       </section>
 
+      <section className="alo-home-intro" aria-label="Deine Alo-Bereiche">
+        <button
+          className="alo-text-action"
+          onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "today" }))}
+        >
+          Deinen Tag überblicken →
+        </button>
+        <details className="alo-home-areas">
+          <summary>Mira, Nexus & Training öffnen</summary>
+          <div className="alo-home-portals">
+            <Link
+              to="/workout/$exerciseId"
+              params={{ exerciseId: "pushup" }}
+              search={{ mode: "nose", sets: 3, reps: 8, rest_s: 60, title: "Nose-Pushup" }}
+              className="rounded-2xl border border-primary/40 bg-primary/10 p-4 transition hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                01 · Training
+              </span>
+              <h2 className="mt-1 text-lg font-bold">Nose-Pushup</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Liegestütze erfassen: Nase tippt den Zähler, alternativ Kamera oder manuell.
+              </p>
+              <span className="mt-3 inline-block text-sm font-semibold">Training starten →</span>
+            </Link>
+            <Link
+              to="/ai"
+              className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                02 · Allgemeine KI
+              </span>
+              <h2 className="mt-1 text-lg font-bold">Mira</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Wissen, Schreiben, Ideen, Alltag – deine vielseitige KI.
+              </p>
+              <span className="mt-3 inline-block text-sm font-semibold">Mira fragen →</span>
+            </Link>
+            <Link
+              to="/chat"
+              className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                03 · Gemeinsam
+              </span>
+              <h2 className="mt-1 text-lg font-bold">Nexus Chat</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Deine Gespräche bleiben lokal auf diesem Gerät.
+              </p>
+              <span className="mt-3 inline-block text-sm font-semibold">Nexus öffnen →</span>
+            </Link>
+          </div>
+        </details>
+      </section>
+
       <DashboardGrid renderWidget={renderWidget} />
 
       <BottomNav />
     </main>
-  );
-}
-
-function ActivityRing({
-  pct,
-  goal,
-  state,
-}: {
-  pct: number;
-  value: number;
-  goal: number;
-  state: ReturnType<typeof progressState>;
-}) {
-  const r = 48;
-  const c = 2 * Math.PI * r;
-  return (
-    <div
-      className="alo-progress-ring relative h-[110px] w-[110px] shrink-0"
-      role="img"
-      aria-label={
-        state.measured ? `${state.value} von ${goal} Wiederholungen erfasst` : state.label
-      }
-    >
-      <svg width="110" height="110" className="-rotate-90">
-        <circle
-          cx="55"
-          cy="55"
-          r={r}
-          fill="none"
-          stroke="var(--color-secondary)"
-          strokeWidth="10"
-        />
-        <circle
-          cx="55"
-          cy="55"
-          r={r}
-          fill="none"
-          stroke="var(--color-primary)"
-          strokeWidth="10"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - (state.measured ? pct : 0))}
-          className="transition-all duration-700"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold tabular-nums">{state.value}</span>
-        <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-          / {goal}
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -985,5 +935,25 @@ function PlanMetric({ label, value }: { label: string; value: string | number })
       <div className="plan-metric-value text-lg font-semibold">{value}</div>
       <div className="mt-1 text-xs text-muted-foreground">{label}</div>
     </div>
+  );
+}
+
+function PlanGoalNote({
+  sets,
+  reps,
+  plannedReps,
+  goal,
+}: {
+  sets: number;
+  reps: number;
+  plannedReps: number;
+  goal: number;
+}) {
+  return (
+    <p className="text-xs leading-relaxed text-muted-foreground">
+      Dieser Startplan: {sets} × {reps} = {plannedReps} Wiederholungen – ein Schritt zum Tagesziel
+      von {goal}. Das Ziel gilt für den Tag, nicht für eine einzelne Einheit. Steigere nur, wenn es
+      sich gut anfühlt.
+    </p>
   );
 }

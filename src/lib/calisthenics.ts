@@ -290,7 +290,7 @@ export function skillProgress(bests: Record<string, number>, skill: CaliSkill): 
 
 // ─── Fatigue / Load Management ────────────────────────────────────────────────
 
-export type FatigueLevel = "green" | "yellow" | "red";
+export type FatigueLevel = "unknown" | "green" | "yellow" | "red";
 
 export type CheckinData = {
   energy: number; // 1–5
@@ -300,10 +300,11 @@ export type CheckinData = {
 
 export function getFatigueLevel(
   workoutsLast7Days: number,
-  avgSoreness: number, // 1–5
+  avgSoreness: number | null, // 1–5; null means no check-in history
 ): FatigueLevel {
-  if (avgSoreness >= 4 || workoutsLast7Days >= 7) return "red";
-  if (avgSoreness >= 3 || workoutsLast7Days >= 5) return "yellow";
+  if (workoutsLast7Days === 0 && avgSoreness === null) return "unknown";
+  if ((avgSoreness !== null && avgSoreness >= 4) || workoutsLast7Days >= 7) return "red";
+  if ((avgSoreness !== null && avgSoreness >= 3) || workoutsLast7Days >= 5) return "yellow";
   return "green";
 }
 
@@ -316,6 +317,16 @@ export type FatigueAdvice = {
 };
 
 export function getFatigueAdvice(level: FatigueLevel): FatigueAdvice {
+  if (level === "unknown") {
+    return {
+      level,
+      emoji: "⚪",
+      title: "Noch keine Daten",
+      message:
+        "Für die letzten 7 Tage liegen keine Trainings- oder Check-in-Daten vor. Deine Belastung lässt sich damit nicht verlässlich einschätzen. Starte vorsichtig und ergänze deine Angaben, wenn du möchtest.",
+      color: "text-muted-foreground",
+    };
+  }
   if (level === "red") {
     return {
       level,
@@ -339,8 +350,9 @@ export function getFatigueAdvice(level: FatigueLevel): FatigueAdvice {
   return {
     level,
     emoji: "🟢",
-    title: "Bereit",
-    message: "Optimale Trainingsbereitschaft. Voller Einsatz möglich. Nutze heute deine Bestform.",
+    title: "Keine hohe Belastung erkannt",
+    message:
+      "In den erfassten Daten ist keine hohe Belastung erkennbar. Steigere dich nach deinem Körpergefühl.",
     color: "text-green-400",
   };
 }

@@ -45,7 +45,13 @@ export function HealthConnectPanel() {
     setBusy(true);
     setMsg(null);
     const res = await requestHealthConnectPermissions();
-    setMsg(res.message);
+    setMsg(
+      res.via === "app"
+        ? "Health Connect geöffnet. Nach der Freigabe kannst du Werte hier manuell übernehmen."
+        : res.message.includes("Bridge")
+          ? "Die Verbindung zu Health Connect ist fehlgeschlagen. Bitte prüfe die Freigabe."
+          : res.message,
+    );
     setBusy(false);
     refresh();
   };
@@ -55,7 +61,13 @@ export function HealthConnectPanel() {
     setMsg(null);
     const res = await syncHealthConnect();
     if (res.summary) setSummary(res.summary);
-    setMsg(res.message);
+    setMsg(
+      res.ok && res.summary
+        ? `Health Connect aktualisiert: ${res.summary.steps.toLocaleString("de-DE")} Schritte.`
+        : res.message.includes("Bridge")
+          ? "Automatischer Abruf nicht verfügbar. Werte bitte manuell übernehmen."
+          : res.message,
+    );
     setBusy(false);
     refresh();
   };
@@ -77,7 +89,7 @@ export function HealthConnectPanel() {
     if (error) setMsg(error);
     else {
       setSummary(saved);
-      setMsg("Als Health-Connect-Daten gespeichert ✓");
+      setMsg("Gesundheitswerte gespeichert ✓");
       setSteps("");
       setKcal("");
       setSleepH("");
@@ -89,7 +101,11 @@ export function HealthConnectPanel() {
     const next = !status.autoSync;
     setHcAutoSync(next);
     refresh();
-    setMsg(next ? "Auto-Sync an (beim Öffnen, wenn Bridge da)" : "Auto-Sync aus");
+    setMsg(
+      next
+        ? "Automatische Aktualisierung beim Öffnen aktiviert."
+        : "Automatische Aktualisierung deaktiviert.",
+    );
   };
 
   return (
@@ -102,14 +118,14 @@ export function HealthConnectPanel() {
             </div>
             <div className="mt-1 text-base font-semibold text-foreground">
               {status.hasBridge
-                ? "Native Bridge aktiv"
+                ? "Verbindung verfügbar"
                 : status.isAndroid
-                  ? "Android · Bridge optional"
-                  : "Nur auf Android / TWA"}
+                  ? "Manuelle Übernahme"
+                  : "Manuell erfassen"}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Letzter Sync: {formatRelativeSync(status.lastSyncAt)}
-              {status.hasBridge ? " · direkter Lesezugriff" : " · App / manuell"}
+              Letzte Aktualisierung: {formatRelativeSync(status.lastSyncAt)}
+              {status.hasBridge ? "" : " · kein automatischer Abruf"}
             </p>
           </div>
           <span className="text-3xl leading-none" aria-hidden>
@@ -136,22 +152,24 @@ export function HealthConnectPanel() {
           onClick={onPermissions}
           className="rounded-xl border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm font-semibold text-primary disabled:opacity-60"
         >
-          Berechtigungen
+          Zugriff einrichten
         </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onSync}
-          className="rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
-        >
-          {busy ? "…" : "Synchronisieren"}
-        </button>
+        {status.hasBridge && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onSync}
+            className="rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            {busy ? "…" : "Jetzt aktualisieren"}
+          </button>
+        )}
         <button
           type="button"
           onClick={openHealthConnectApp}
           className="rounded-xl border border-border bg-secondary/50 px-3 py-2.5 text-sm font-semibold"
         >
-          HC öffnen
+          Health Connect öffnen
         </button>
         <button
           type="button"
@@ -162,23 +180,25 @@ export function HealthConnectPanel() {
         </button>
       </div>
 
-      <button
-        type="button"
-        onClick={toggleAuto}
-        className={`flex w-full items-center justify-between rounded-xl border px-3 py-3 text-sm ${
-          status.autoSync
-            ? "border-primary/40 bg-primary/10 text-foreground"
-            : "border-border bg-secondary/40 text-muted-foreground"
-        }`}
-      >
-        <span>Auto-Sync beim Öffnen</span>
-        <span className="text-xs font-semibold">{status.autoSync ? "AN" : "AUS"}</span>
-      </button>
+      {status.hasBridge && (
+        <button
+          type="button"
+          onClick={toggleAuto}
+          className={`flex w-full items-center justify-between rounded-xl border px-3 py-3 text-sm ${
+            status.autoSync
+              ? "border-primary/40 bg-primary/10 text-foreground"
+              : "border-border bg-secondary/40 text-muted-foreground"
+          }`}
+        >
+          <span>Beim Öffnen automatisch abrufen</span>
+          <span className="text-xs font-semibold">{status.autoSync ? "AN" : "AUS"}</span>
+        </button>
+      )}
 
       {!status.hasBridge && (
         <div className="rounded-2xl border border-border bg-background/40 p-3">
           <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Ohne Bridge: Werte übernehmen
+            Werte manuell übernehmen
           </div>
           <div className="grid grid-cols-3 gap-2">
             <input
@@ -212,17 +232,29 @@ export function HealthConnectPanel() {
             onClick={onManualSave}
             className="mt-2 w-full rounded-xl border border-border px-3 py-2 text-sm font-medium disabled:opacity-60"
           >
-            In Health-Daten speichern
+            Werte speichern
           </button>
         </div>
       )}
 
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
-        Health Connect speichert Schritte, Schlaf und Aktivität von Galaxy Watch, Pixel Watch,
-        Fitbit u. a. Direkter Lesezugriff braucht die Android-App mit Bridge (
-        <code className="text-[10px]">window.NosePushHealthConnect</code>). In der reinen Web-App:
-        Berechtigungen in Health Connect setzen und Werte hier übernehmen.
-      </p>
+      {!status.hasBridge && (
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          Ohne Android-App-Verbindung werden Werte nicht automatisch aus Health Connect übernommen.
+          Trage sie hier ein und speichere sie selbst.
+        </p>
+      )}
+      <details className="rounded-xl border border-border bg-background/40 px-3 py-2 text-xs text-muted-foreground">
+        <summary className="cursor-pointer font-medium text-foreground">
+          Technische Hinweise zur Verbindung
+        </summary>
+        <p className="mt-2 leading-relaxed">
+          Automatischer Abruf setzt eine Android-App mit Health-Connect-Integration voraus; ohne
+          diese Integration ist nur die manuelle Übernahme möglich. Die Integration liest über eine
+          native Bridge (<code>window.NosePushHealthConnect</code>) und kann beim Öffnen dieser
+          Ansicht aktualisieren, wenn die Option aktiviert ist. Im Browser allein ist kein
+          automatischer Abruf möglich.
+        </p>
+      </details>
 
       {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
     </div>

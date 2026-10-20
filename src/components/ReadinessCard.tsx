@@ -29,7 +29,7 @@ export function ReadinessSummary({ readiness, history, asOf }: ReturnType<typeof
             {readiness.emoji}
           </span>
           <span className="text-sm font-semibold">
-            {readiness.available ? `${readiness.score} / 100` : "Nicht berechnet"}
+            {readiness.available ? `${readiness.score} / 100` : "Basisplan bis mehr Daten"}
           </span>
         </div>
       </div>

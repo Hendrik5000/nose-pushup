@@ -229,6 +229,6 @@ test("empty weekly inputs do not acquire invented repetition counts", () => {
     plan: getQuickStartPlan({ best: 0, todayReps: 0, streak: 0, goal: 50 }),
     readinessAvailable: false,
   });
-  assert.match(unavailableReadiness.readinessNote, /noch nicht verfügbar/i);
+  assert.match(unavailableReadiness.readinessNote, /Basisplan bis mehr Daten/i);
   assert.doesNotMatch(unavailableReadiness.readinessNote, /readiness:/i);
 });

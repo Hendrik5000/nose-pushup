@@ -104,7 +104,7 @@ function CalisthenicsPage() {
   const avgSoreness =
     recentCheckins.length > 0
       ? recentCheckins.reduce((s, c) => s + c.soreness, 0) / recentCheckins.length
-      : 1;
+      : null;
 
   // ─── Stagnation (kein Training seit 14 Tagen) + Plateau (keine Verbesserung) ─
   const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
