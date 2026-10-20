@@ -17,6 +17,7 @@ import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
 import { ReadinessSummary } from "@/components/ReadinessCard";
+import { GymPartnerPanel } from "@/components/GymPartnerPanel";
 import { useReadiness } from "@/hooks/useReadiness";
 import { MicroChallengeCard } from "@/components/MicroChallengeCard";
 import { StreakFreezeCard } from "@/components/StreakFreezeCard";
@@ -562,6 +563,7 @@ function Dashboard() {
           )}
         </Link>
       </div>
+      <GymPartnerPanel />
       <SportSectionLabel number="01">Dein Plan heute</SportSectionLabel>
       <section
         className="sport-only training-hero rounded-3xl border border-border bg-card p-5"
