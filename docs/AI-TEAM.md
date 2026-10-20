@@ -17,3 +17,4 @@ Das Register hält fest, was die Assistenten selbst melden. Ein Eintrag allein i
 | Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Commit |
 |---|---|---|---|---|---|
 | Jarvis | unbekannt | KI-Teamregister in README, AGENTS, Copilot- und Replit-Anweisungen auffindbar machen | erledigt | 2026-10-20 | Direkte Verweise und Synchronisationshinweis ergänzt; nur interne Dokumentation |
+| Claude | Claude Sonnet 5.5 / Anthropic | GitHub-Issues #3 und #6 bis #12 angelegt (Lockfile-Fix, UX-Prüfliste); liest Repo, Issues, Pull Requests und Vercel-Builds; beauftragt Replit | aktiv | 2026-10-20 | Keine Code-Änderungen und keine Commits außer diesem Registereintrag; Issues #6 bis #11 von anderer KI geschlossen, #3, #12 und #13 offen |
