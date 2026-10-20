@@ -7,9 +7,14 @@ const HAPTICS_KEY = "np-haptics";
 let ctx: AudioContext | null = null;
 
 function readFlag(key: string): boolean {
-  if (typeof window === "undefined") return true;
-  const v = window.localStorage.getItem(key);
-  return v === null ? true : v === "1";
+  try {
+    if (typeof window === "undefined") return true;
+    const v = window.localStorage.getItem(key);
+    return v === null ? true : v === "1";
+  } catch {
+    // Preferences are optional. If they cannot be read, do not trigger feedback.
+    return false;
+  }
 }
 
 export function isSoundEnabled() {
@@ -21,22 +26,37 @@ export function isHapticsEnabled() {
 }
 
 export function setSoundEnabled(on: boolean) {
-  if (typeof window !== "undefined") window.localStorage.setItem(SOUND_KEY, on ? "1" : "0");
+  try {
+    if (typeof window !== "undefined") window.localStorage.setItem(SOUND_KEY, on ? "1" : "0");
+  } catch {
+    // Persisting an optional preference must not interrupt the calling flow.
+  }
 }
 
 export function setHapticsEnabled(on: boolean) {
-  if (typeof window !== "undefined") window.localStorage.setItem(HAPTICS_KEY, on ? "1" : "0");
+  try {
+    if (typeof window !== "undefined") window.localStorage.setItem(HAPTICS_KEY, on ? "1" : "0");
+  } catch {
+    // Persisting an optional preference must not interrupt the calling flow.
+  }
 }
 
 function getCtx(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  const Ctor =
-    window.AudioContext ??
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Ctor) return null;
-  if (!ctx) ctx = new Ctor();
-  if (ctx.state === "suspended") void ctx.resume();
-  return ctx;
+  try {
+    if (typeof window === "undefined") return null;
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return null;
+    if (!ctx) ctx = new Ctor();
+    if (ctx.state === "suspended") {
+      // resume() can reject (for example, before a user gesture); always consume it.
+      void Promise.resolve(ctx.resume()).catch(() => undefined);
+    }
+    return ctx;
+  } catch {
+    return null;
+  }
 }
 
 type ToneOpts = {
@@ -49,29 +69,33 @@ type ToneOpts = {
 };
 
 function tone({ freq, duration, type = "sine", gain = 0.12, delay = 0, slideTo }: ToneOpts) {
-  const audio = getCtx();
-  if (!audio) return;
-  const start = audio.currentTime + delay;
-  const osc = audio.createOscillator();
-  const vol = audio.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, start);
-  if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, start + duration);
-  vol.gain.setValueAtTime(0.0001, start);
-  vol.gain.exponentialRampToValueAtTime(gain, start + 0.012);
-  vol.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-  osc.connect(vol).connect(audio.destination);
-  osc.start(start);
-  osc.stop(start + duration + 0.02);
+  try {
+    const audio = getCtx();
+    if (!audio) return;
+    const start = audio.currentTime + delay;
+    const osc = audio.createOscillator();
+    const vol = audio.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, start);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, start + duration);
+    vol.gain.setValueAtTime(0.0001, start);
+    vol.gain.exponentialRampToValueAtTime(gain, start + 0.012);
+    vol.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    osc.connect(vol).connect(audio.destination);
+    osc.start(start);
+    osc.stop(start + duration + 0.02);
+  } catch {
+    // Audio is a best-effort enhancement; never let it interrupt core flows.
+  }
 }
 
 function vibrate(pattern: number | number[]) {
-  if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
-  if (!isHapticsEnabled()) return;
   try {
+    if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+    if (!isHapticsEnabled()) return;
     navigator.vibrate(pattern);
   } catch {
-    /* ignore */
+    // Ignore unavailable or failing haptics APIs.
   }
 }
 

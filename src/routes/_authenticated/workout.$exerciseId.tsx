@@ -1,4 +1,17 @@
-import { adjustManualCount, workoutBest } from "@/lib/workout-ui";
+import {
+  adjustManualCount,
+  formatWorkoutCount,
+  parseManualCount,
+  workoutBest,
+  workoutCountUnit,
+} from "@/lib/workout-ui";
+import {
+  nextWorkoutContextGeneration,
+  resolvePendingWorkoutSaveIdentity,
+  workoutContextKey,
+  workoutContextToken,
+  type PendingWorkoutSaveIdentity,
+} from "@/lib/workout-save";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -49,6 +62,8 @@ const MOTIVATIONAL = [
   "Power!",
 ];
 
+let workoutVisitSequence = 0;
+
 function formatTime(ms: number) {
   const s = Math.floor(ms / 1000);
   const m = Math.floor(s / 60);
@@ -62,19 +77,53 @@ function WorkoutScreen() {
   const navigate = useNavigate();
 
   const [exercise, setExercise] = useState<ExerciseMeta | null>(null);
+  const [exerciseLoadError, setExerciseLoadError] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const workoutVisitIdRef = useRef<number | null>(null);
+  if (workoutVisitIdRef.current === null) workoutVisitIdRef.current = ++workoutVisitSequence;
+  const workoutVisitId = workoutVisitIdRef.current;
+  const routeContextKey = workoutContextKey(userId, exerciseId, search);
+  const contextGenerationRef = useRef({ key: "", generation: 0 });
+  contextGenerationRef.current = nextWorkoutContextGeneration(
+    contextGenerationRef.current,
+    routeContextKey,
+  );
+  const currentWorkoutContext = workoutContextToken(workoutVisitId, contextGenerationRef.current);
+  const workoutContextRef = useRef(currentWorkoutContext);
+  workoutContextRef.current = currentWorkoutContext;
   const [best, setBest] = useState<number | null>(null);
   const [latestCount, setLatestCount] = useState<number | null>(null);
+  const [latestStatus, setLatestStatus] = useState<
+    "loading" | "loaded" | "empty" | "error" | "unavailable"
+  >("loading");
+  const [bestStatus, setBestStatus] = useState<
+    "loading" | "loaded" | "empty" | "error" | "unavailable"
+  >("loading");
 
   const [active, setActive] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const [focused, setFocused] = useState(true);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const savingOwnerRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+  const pendingSaveRef = useRef(new Map<string, PendingWorkoutSaveIdentity>());
+  const releaseSaveLock = useCallback((owner: string) => {
+    if (savingOwnerRef.current !== owner) return;
+    savingOwnerRef.current = null;
+    savingRef.current = false;
+    if (mountedRef.current && workoutContextRef.current === owner) setSaving(false);
+  }, []);
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [motionError, setMotionError] = useState<string | null>(null);
   const [motivation, setMotivation] = useState<string | null>(null);
   const [manualInput, setManualInput] = useState("");
+  const manualInputRef = useRef("");
+  const setManualInputValue = useCallback((value: string) => {
+    manualInputRef.current = value;
+    setManualInput(value);
+  }, []);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [summary, setSummary] = useState<{
     count: number;
@@ -97,6 +146,23 @@ function WorkoutScreen() {
   const [draftConflict, setDraftConflict] = useState<WorkoutSession | null>(null);
   const hydratedSessionKey = useRef<string | null>(null);
   const observedCount = useRef(0);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    const owner = savingOwnerRef.current;
+    if (owner && owner !== currentWorkoutContext) {
+      savingOwnerRef.current = null;
+      savingRef.current = false;
+      setSaving(false);
+    } else if (!owner) {
+      // A stale finalizer may have released its ref lock just before this effect ran.
+      setSaving(false);
+    }
+  }, [currentWorkoutContext, releaseSaveLock]);
   const restRemaining =
     session?.phase === "rest" && session.restEndsAt
       ? Math.max(0, Math.ceil((session.restEndsAt - now) / 1000))
@@ -154,7 +220,7 @@ function WorkoutScreen() {
           </span>
           <span>
             {session.currentReps}
-            {plan.reps ? `/${plan.reps}` : ""} Wdh.
+            {plan.reps ? `/${plan.reps}` : ""} {workoutCountUnit(exercise?.unit ?? "reps")}
           </span>
         </div>
       )}
@@ -229,23 +295,43 @@ function WorkoutScreen() {
   // Load exercise + user best
   useEffect(() => {
     let cancelled = false;
+    setExercise(null);
+    setExerciseLoadError(false);
     setBest(null);
     setLatestCount(null);
+    setLatestStatus("loading");
+    setBestStatus("loading");
     setUserId(null);
     (async () => {
-      const [{ data: u }, { data: ex }] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.from("exercises").select("*").eq("id", exerciseId).maybeSingle(),
-      ]);
-      if (cancelled) return;
-      if (!ex) {
-        navigate({ to: "/" });
-        return;
-      }
-      setExercise(ex as ExerciseMeta);
-      if (u.user) {
+      try {
+        const [{ data: u, error: userError }, { data: ex, error: exerciseError }] =
+          await Promise.all([
+            supabase.auth.getUser(),
+            supabase.from("exercises").select("*").eq("id", exerciseId).maybeSingle(),
+          ]);
+        if (cancelled) return;
+        if (userError || exerciseError) {
+          setExerciseLoadError(true);
+          setLatestStatus("error");
+          setBestStatus("error");
+          return;
+        }
+        if (!ex) {
+          navigate({ to: "/" });
+          return;
+        }
+        setExercise(ex as ExerciseMeta);
+        if (!u.user) {
+          setLatestStatus("unavailable");
+          setBestStatus("unavailable");
+          return;
+        }
         setUserId(u.user.id);
-        const [{ data: p }, { data: history }, { data: highest }] = await Promise.all([
+        const [
+          { data: p, error: profileError },
+          { data: history, error: historyError },
+          { data: highest, error: highestError },
+        ] = await Promise.all([
           supabase
             .from("profiles")
             .select("personal_bests, best_count")
@@ -271,14 +357,22 @@ function WorkoutScreen() {
         if (cancelled) return;
         const latest = history?.count ?? null;
         setLatestCount(latest);
-        setBest(
-          workoutBest(
-            exerciseId,
-            p?.personal_bests as Record<string, number> | null,
-            p?.best_count,
-            highest?.count ?? null,
-          ),
+        setLatestStatus(historyError ? "error" : latest === null ? "empty" : "loaded");
+        const personalBest = workoutBest(
+          exerciseId,
+          p?.personal_bests as Record<string, number> | null,
+          p?.best_count,
+          highest?.count ?? null,
         );
+        setBest(personalBest);
+        setBestStatus(
+          profileError || highestError ? "error" : personalBest === null ? "empty" : "loaded",
+        );
+      } catch {
+        if (cancelled) return;
+        setExerciseLoadError(true);
+        setLatestStatus("error");
+        setBestStatus("error");
       }
     })();
     return () => {
@@ -309,21 +403,22 @@ function WorkoutScreen() {
       const safeRestore = restored.phase === "active" ? pauseWorkout(restored) : restored;
       setSession(safeRestore);
       setEngineCount(safeRestore.currentReps);
-      if (useManual) setManualInput(safeRestore.currentReps ? String(safeRestore.currentReps) : "");
+      if (useManual)
+        setManualInputValue(safeRestore.currentReps ? String(safeRestore.currentReps) : "");
       setActive(false);
       setStartedAt(safeRestore.startedAt ?? null);
       observedCount.current = restored.currentReps;
     } else {
       setSession(isPlanned ? createWorkoutSession(plan) : null);
       setEngineCount(0);
-      setManualInput("");
+      setManualInputValue("");
       setActive(false);
       setStartedAt(null);
       observedCount.current = 0;
     }
     hydratedSessionKey.current = key;
     setSessionHydrated(true);
-  }, [userId, exerciseId, isPlanned, plan, setEngineCount, useManual]);
+  }, [userId, exerciseId, isPlanned, plan, setEngineCount, setManualInputValue, useManual]);
 
   useEffect(() => {
     if (!userId || !session || !sessionHydrated || draftConflict || typeof window === "undefined")
@@ -406,6 +501,7 @@ function WorkoutScreen() {
   }, [count, isPlanned, session, resetEngine]);
 
   const start = useCallback(async () => {
+    if (savingRef.current) return;
     if (detection === "motion_vertical" || detection === "combo") {
       const ok = await ensureMotionPermission();
       if (!ok) {
@@ -439,6 +535,7 @@ function WorkoutScreen() {
   }, [useCamera, detection, active, start, bump, isPlanned, session]);
 
   const finish = () => {
+    if (savingRef.current) return;
     const total = isPlanned && session ? summarizeWorkout(session, Date.now()).actualReps : count;
     if (total <= 0 || !userId || !exercise) {
       resetAll();
@@ -449,32 +546,82 @@ function WorkoutScreen() {
   };
 
   const saveWithRpe = async (rpe: number | null) => {
+    const saveOwner = workoutContextRef.current;
+    if (savingOwnerRef.current && savingOwnerRef.current !== saveOwner)
+      releaseSaveLock(savingOwnerRef.current);
+    if (savingRef.current) return;
     const sessionSummary = isPlanned && session ? summarizeWorkout(session, Date.now()) : null;
-    const savedCount = Math.min(1000, sessionSummary?.actualReps ?? count);
+    const savedCount = sessionSummary?.actualReps ?? count;
     if (savedCount <= 0 || !userId || !exercise) {
       resetAll();
       return;
     }
+    if (savedCount > 1000) {
+      setAwaitingRpe(false);
+      setSavedHint(
+        "Speichern nicht möglich: Pro Training sind höchstens 1.000 Wiederholungen erlaubt. Dein Entwurf bleibt erhalten.",
+      );
+      return;
+    }
     setAwaitingRpe(false);
+    savingRef.current = true;
+    savingOwnerRef.current = saveOwner;
     setSaving(true);
-    const duration_ms =
+    setActive(false);
+    const durationAtFirstAttempt =
       sessionSummary?.actualDurationMs ?? (startedAt ? Date.now() - startedAt : 0);
-    const rowId = session?.id ?? crypto.randomUUID();
-    const createdAt = new Date().toISOString();
-    // Offline landet das Training in der Warteschlange und wird später nachgesendet.
-    const { error, queued } = await saveOrQueue("workouts", {
-      id: rowId,
+    const payload = {
       user_id: userId,
       exercise_id: exerciseId,
       count: savedCount,
-      duration_ms,
-      created_at: createdAt,
       form_score: formStats?.formScore ?? null,
       clean_reps: formStats?.cleanReps ?? null,
       rpe,
-    });
-    if (!error) {
-      feedbackSuccess();
+    };
+    const draftKey = session?.id ?? `activity:${startedAt ?? "manual"}`;
+    const payloadKey = JSON.stringify(payload);
+    const identityLookupKey = JSON.stringify([saveOwner, draftKey, payloadKey]);
+    const pendingIdentity = resolvePendingWorkoutSaveIdentity(
+      saveOwner,
+      draftKey,
+      payloadKey,
+      pendingSaveRef.current.get(identityLookupKey) ?? null,
+      () => globalThis.crypto?.randomUUID?.() ?? `workout-${Date.now()}-${Math.random()}`,
+      () => new Date().toISOString(),
+      durationAtFirstAttempt,
+    );
+    pendingSaveRef.current.set(identityLookupKey, pendingIdentity);
+    const duration_ms = pendingIdentity.durationMs;
+    // Offline landet das Training in der Warteschlange und wird später nachgesendet.
+    try {
+      let saveResult;
+      try {
+        saveResult = await saveOrQueue("workouts", {
+          id: pendingIdentity.id,
+          ...payload,
+          duration_ms,
+          created_at: pendingIdentity.createdAt,
+        });
+      } catch {
+        if (mountedRef.current && workoutContextRef.current === saveOwner) {
+          setSavedHint("Speichern fehlgeschlagen – deine Daten bleiben erhalten");
+          setAwaitingRpe(true);
+        }
+        return;
+      }
+      if (!mountedRef.current || workoutContextRef.current !== saveOwner) return;
+      const { error, queued } = saveResult;
+      if (error) {
+        setSavedHint("Speichern fehlgeschlagen – deine Daten bleiben erhalten");
+        setAwaitingRpe(true);
+        return;
+      }
+      pendingSaveRef.current.delete(identityLookupKey);
+      try {
+        feedbackSuccess();
+      } catch {
+        // Optional success feedback must not turn a completed save into a retry prompt.
+      }
       const newBest = !sessionSummary?.partial && savedCount > (best ?? -1);
       setSummary({
         count: savedCount,
@@ -489,17 +636,22 @@ function WorkoutScreen() {
         actualReps: sessionSummary?.actualReps,
         partial: sessionSummary?.partial,
       });
+      setLatestCount(savedCount);
+      setLatestStatus("loaded");
 
-      if (isPlanned && sessionSummary && typeof window !== "undefined") {
-        writeWorkoutMetadata(window.localStorage, {
-          version: 1,
-          rowId,
-          userId,
-          exerciseId,
-          partial: sessionSummary.partial,
-          summary: { ...sessionSummary, actualReps: savedCount },
-          createdAt,
-        });
+      try {
+        if (isPlanned && sessionSummary && typeof window !== "undefined")
+          writeWorkoutMetadata(window.localStorage, {
+            version: 1,
+            rowId: pendingIdentity.id,
+            userId,
+            exerciseId,
+            partial: sessionSummary.partial,
+            summary: { ...sessionSummary, actualReps: savedCount, actualDurationMs: duration_ms },
+            createdAt: pendingIdentity.createdAt,
+          });
+      } catch {
+        // Metadata is optional; the workout row was already saved successfully.
       }
       if (queued) {
         setSavedHint("Auf diesem Gerät vorgemerkt – Bestwert nach Synchronisierung prüfen");
@@ -507,25 +659,27 @@ function WorkoutScreen() {
         setBest(savedCount);
         setSavedHint(`Neuer Bestwert: ${savedCount}${exercise.unit === "seconds" ? " Sek." : ""}`);
       } else {
-        setSavedHint(queued ? "Auf diesem Gerät vorgemerkt" : "Training gespeichert");
+        setSavedHint("Training gespeichert");
       }
-    } else {
-      setSavedHint("Speichern fehlgeschlagen – deine Daten bleiben erhalten");
-      setAwaitingRpe(true);
-      setSaving(false);
-      return;
+      setActive(false);
+      setStartedAt(null);
+      setCountdown(null);
+      resetEngine();
+      setSession(null);
+      try {
+        if (userId && typeof window !== "undefined")
+          window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
+      } catch {
+        // Draft cleanup is best effort; the save result remains successful.
+      }
+    } finally {
+      releaseSaveLock(saveOwner);
     }
-    setSaving(false);
-    setActive(false);
-    setStartedAt(null);
-    setCountdown(null);
-    resetEngine();
-    setSession(null);
-    if (userId && typeof window !== "undefined")
-      window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
   };
 
   const resetAll = () => {
+    if (savingRef.current) return;
+    pendingSaveRef.current.clear();
     setActive(false);
     setStartedAt(null);
     setCountdown(null);
@@ -537,18 +691,40 @@ function WorkoutScreen() {
     setMotivation(null);
     setRepGrades([]);
     setSession(isPlanned ? createWorkoutSession(plan) : null);
-    if (userId && typeof window !== "undefined")
-      window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
+    try {
+      if (userId && typeof window !== "undefined")
+        window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
+    } catch {
+      // Draft cleanup is best effort.
+    }
   };
 
   const elapsed = startedAt ? now - startedAt : 0;
   const pace =
     startedAt && count > 0 && exercise?.unit !== "seconds" ? count / (elapsed / 60000) : 0;
+  const latestStatValue =
+    latestStatus === "loading"
+      ? "Lädt …"
+      : latestStatus === "error"
+        ? "Nicht verfügbar"
+        : latestStatus === "unavailable"
+          ? "Nicht verfügbar"
+          : latestStatus === "empty"
+            ? "Noch keine Erfassung"
+            : formatWorkoutCount(latestCount ?? 0, exercise?.unit ?? "reps");
+  const bestStatValue =
+    bestStatus === "loading"
+      ? "Lädt …"
+      : bestStatus === "error" || bestStatus === "unavailable"
+        ? "Nicht verfügbar"
+        : bestStatus === "empty"
+          ? "Noch kein Bestwert"
+          : (best?.toString() ?? "Noch kein Bestwert");
   const cfg = exercise ? getConfig(exerciseId) : null;
   const isTapDriven = !useCamera && (detection === "touch" || detection === "combo");
 
   const continueSavedDraft = () => {
-    if (!draftConflict) return;
+    if (!draftConflict || savingRef.current) return;
     const savedPlan = draftConflict.plan;
     setSessionHydrated(false);
     setDraftConflict(null);
@@ -567,9 +743,14 @@ function WorkoutScreen() {
   };
 
   const discardSavedDraft = () => {
-    if (!draftConflict || !userId || typeof window === "undefined") return;
+    if (!draftConflict || !userId || savingRef.current || typeof window === "undefined") return;
     const key = workoutSessionStorageKey(userId, exerciseId);
-    window.localStorage.removeItem(key);
+    pendingSaveRef.current.clear();
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // The user explicitly discarded the in-memory draft; storage cleanup is best effort.
+    }
     hydratedSessionKey.current = key;
     setDraftConflict(null);
     setSession(isPlanned ? createWorkoutSession(plan) : null);
@@ -583,8 +764,24 @@ function WorkoutScreen() {
 
   if (!exercise) {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center text-sm text-muted-foreground">
-        Lade…
+      <main
+        className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 px-6 text-sm text-muted-foreground"
+        role={exerciseLoadError ? "alert" : "status"}
+      >
+        {exerciseLoadError ? (
+          <>
+            <p>Übung und Trainingsdaten konnten nicht geladen werden.</p>
+            <button
+              type="button"
+              className="rounded-xl border border-border px-4 py-2"
+              onClick={() => window.location.reload()}
+            >
+              Erneut versuchen
+            </button>
+          </>
+        ) : (
+          "Lade…"
+        )}
       </main>
     );
   }
@@ -615,9 +812,9 @@ function WorkoutScreen() {
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {draftConflict.plan.sets} {draftConflict.plan.sets === 1 ? "Satz" : "Sätze"}
                 {draftConflict.plan.reps
-                  ? ` · ${draftConflict.plan.reps} Wiederholungen je Satz`
-                  : " · ohne Wiederholungsziel"}{" "}
-                · {draftConflict.currentReps} Wiederholungen im aktuellen Satz
+                  ? ` · ${formatWorkoutCount(draftConflict.plan.reps, exercise.unit)} je Satz`
+                  : ` · ohne ${exercise.unit === "seconds" ? "Sekundenziel" : "Wiederholungsziel"}`}{" "}
+                · {formatWorkoutCount(draftConflict.currentReps, exercise.unit)} im aktuellen Satz
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <button
@@ -663,9 +860,9 @@ function WorkoutScreen() {
                 <div className="mt-1 text-muted-foreground">
                   {draftConflict.plan.sets} {draftConflict.plan.sets === 1 ? "Satz" : "Sätze"}
                   {draftConflict.plan.reps
-                    ? ` · ${draftConflict.plan.reps} Wiederholungen je Satz`
-                    : " · ohne Wiederholungsziel"}
-                  {` · ${draftConflict.currentReps} Wiederholungen im aktuellen Satz`}
+                    ? ` · ${formatWorkoutCount(draftConflict.plan.reps, exercise.unit)} je Satz`
+                    : ` · ohne ${exercise.unit === "seconds" ? "Sekundenziel" : "Wiederholungsziel"}`}
+                  {` · ${formatWorkoutCount(draftConflict.currentReps, exercise.unit)} im aktuellen Satz`}
                 </div>
               </div>
               <div className="mt-4 grid gap-2">
@@ -695,14 +892,19 @@ function WorkoutScreen() {
 
   const manualEnabled = !isPlanned || session?.phase === "active";
   const updateManualInput = (value: string) => {
-    const cleaned = value.replace(/[^0-9]/g, "");
-    const bounded = cleaned === "" ? "" : String(Math.min(1000, parseInt(cleaned, 10) || 0));
-    setManualInput(bounded);
+    if (savingRef.current) return;
+    const parsed = value === "" ? 0 : parseManualCount(value);
+    const nextValue = value === "" ? "" : parsed === null ? value : String(parsed);
+    setManualInputValue(nextValue);
     if (isPlanned)
       setSession((s) =>
-        s?.phase === "active" ? { ...s, currentReps: parseInt(bounded, 10) || 0 } : s,
+        s?.phase === "active" && parsed !== null ? { ...s, currentReps: parsed } : s,
       );
   };
+  const manualInputError =
+    manualInput !== "" && parseManualCount(manualInput) === null
+      ? "Nur ganze Zahlen von 0 bis 1.000 eingeben."
+      : null;
   const manualControls = (
     <div
       className="alo-manual-essential mt-4 grid w-full max-w-xs grid-cols-2 gap-3"
@@ -712,7 +914,13 @@ function WorkoutScreen() {
       <button
         type="button"
         aria-label="Eine Wiederholung weniger"
-        disabled={!manualEnabled || !manualInput || Number(manualInput) <= 0}
+        disabled={
+          !manualEnabled ||
+          saving ||
+          !manualInput ||
+          manualInputError !== null ||
+          Number(manualInput) <= 0
+        }
         onClick={() => updateManualInput(adjustManualCount(manualInput, -1))}
         className="min-h-14 min-w-14 rounded-2xl border border-border bg-secondary px-4 py-3 text-2xl font-bold disabled:opacity-40"
       >
@@ -721,7 +929,9 @@ function WorkoutScreen() {
       <button
         type="button"
         aria-label="Eine Wiederholung mehr"
-        disabled={!manualEnabled || Number(manualInput) >= 1000}
+        disabled={
+          !manualEnabled || saving || manualInputError !== null || Number(manualInput) >= 1000
+        }
         onClick={() => updateManualInput(adjustManualCount(manualInput, 1))}
         className="min-h-14 min-w-14 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-2xl font-bold text-primary disabled:opacity-40"
       >
@@ -745,7 +955,8 @@ function WorkoutScreen() {
 
   // Manual mode: user just types how many they did.
   const submitManual = () => {
-    const n = Math.max(0, Math.min(1000, parseInt(manualInput, 10) || 0));
+    if (savingRef.current) return;
+    const n = parseManualCount(manualInput) ?? 0;
     if (n <= 0 || !userId || !exercise) return;
     if (isPlanned && session) {
       if (session.phase !== "active") return;
@@ -755,10 +966,10 @@ function WorkoutScreen() {
       setNow(Date.now());
       if (next.phase === "completed") {
         const total = next.setReps.reduce((sum, value) => sum + value, 0);
-        setManualInput(String(total));
+        setManualInputValue(String(total));
         setAwaitingRpe(true);
       } else {
-        setManualInput("");
+        setManualInputValue("");
       }
       return;
     }
@@ -766,31 +977,80 @@ function WorkoutScreen() {
   };
 
   const saveManualWithRpe = async (rpe: number | null) => {
+    const saveOwner = workoutContextRef.current;
+    if (savingOwnerRef.current && savingOwnerRef.current !== saveOwner)
+      releaseSaveLock(savingOwnerRef.current);
+    if (savingRef.current) return;
+    const inputAtSave = manualInputRef.current;
     const sessionSummary = isPlanned && session ? summarizeWorkout(session) : null;
-    const n = Math.min(
-      1000,
-      sessionSummary?.actualReps ?? Math.max(0, Math.min(1000, parseInt(manualInput, 10) || 0)),
-    );
+    const n = sessionSummary?.actualReps ?? parseManualCount(inputAtSave) ?? 0;
     if (n <= 0 || !userId || !exercise) return;
+    if (n > 1000) {
+      setAwaitingRpe(false);
+      setSavedHint(
+        "Speichern nicht möglich: Pro Training sind höchstens 1.000 Wiederholungen erlaubt. Dein Entwurf bleibt erhalten.",
+      );
+      return;
+    }
     setAwaitingRpe(false);
+    savingRef.current = true;
+    savingOwnerRef.current = saveOwner;
     setSaving(true);
-    const rowId = session?.id ?? crypto.randomUUID();
-    const createdAt = new Date().toISOString();
-    const { error, queued } = await saveOrQueue("workouts", {
-      id: rowId,
+    const payload = {
       user_id: userId,
       exercise_id: exerciseId,
       count: n,
-      duration_ms: sessionSummary?.actualDurationMs ?? 0,
-      created_at: createdAt,
       rpe,
-    });
-    if (!error) {
-      feedbackSuccess();
+    };
+    const draftKey = session?.id ?? `manual:${inputAtSave}`;
+    const payloadKey = JSON.stringify(payload);
+    const identityLookupKey = JSON.stringify([saveOwner, draftKey, payloadKey]);
+    const pendingIdentity = resolvePendingWorkoutSaveIdentity(
+      saveOwner,
+      draftKey,
+      payloadKey,
+      pendingSaveRef.current.get(identityLookupKey) ?? null,
+      () => globalThis.crypto?.randomUUID?.() ?? `workout-${Date.now()}-${Math.random()}`,
+      () => new Date().toISOString(),
+      sessionSummary?.actualDurationMs ?? 0,
+    );
+    pendingSaveRef.current.set(identityLookupKey, pendingIdentity);
+    const duration_ms = pendingIdentity.durationMs;
+    try {
+      let saveResult;
+      try {
+        saveResult = await saveOrQueue("workouts", {
+          id: pendingIdentity.id,
+          ...payload,
+          duration_ms,
+          created_at: pendingIdentity.createdAt,
+        });
+      } catch {
+        if (mountedRef.current && workoutContextRef.current === saveOwner) {
+          setSavedHint("Speichern fehlgeschlagen – deine Eingaben bleiben erhalten");
+          setAwaitingRpe(true);
+        }
+        return;
+      }
+      if (!mountedRef.current || workoutContextRef.current !== saveOwner) return;
+      const { error, queued } = saveResult;
+      if (error) {
+        setSavedHint("Speichern fehlgeschlagen – deine Eingaben bleiben erhalten");
+        setAwaitingRpe(true);
+        return;
+      }
+      setLatestCount(n);
+      pendingSaveRef.current.delete(identityLookupKey);
+      setLatestStatus("loaded");
+      try {
+        feedbackSuccess();
+      } catch {
+        // Optional success feedback must not turn a completed save into a retry prompt.
+      }
       const newBest = !sessionSummary?.partial && n > (best ?? -1);
       setSummary({
         count: n,
-        durationMs: sessionSummary?.actualDurationMs ?? 0,
+        durationMs: duration_ms,
         isBest: newBest && !queued,
         rpe,
         plannedSets: sessionSummary?.plannedSets,
@@ -799,16 +1059,20 @@ function WorkoutScreen() {
         actualReps: sessionSummary?.actualReps,
         partial: sessionSummary?.partial,
       });
-      if (isPlanned && sessionSummary && typeof window !== "undefined")
-        writeWorkoutMetadata(window.localStorage, {
-          version: 1,
-          rowId,
-          userId,
-          exerciseId,
-          partial: sessionSummary.partial,
-          summary: sessionSummary,
-          createdAt,
-        });
+      try {
+        if (isPlanned && sessionSummary && typeof window !== "undefined")
+          writeWorkoutMetadata(window.localStorage, {
+            version: 1,
+            rowId: pendingIdentity.id,
+            userId,
+            exerciseId,
+            partial: sessionSummary.partial,
+            summary: { ...sessionSummary, actualDurationMs: duration_ms },
+            createdAt: pendingIdentity.createdAt,
+          });
+      } catch {
+        // Metadata is optional; the workout row was already saved successfully.
+      }
 
       if (queued) {
         setSavedHint("Auf diesem Gerät vorgemerkt – Bestwert nach Synchronisierung prüfen");
@@ -818,15 +1082,19 @@ function WorkoutScreen() {
       } else {
         setSavedHint("Training gespeichert");
       }
-      setManualInput("");
-      setSession(null);
-      if (userId && typeof window !== "undefined")
-        window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
-    } else {
-      setSavedHint("Speichern fehlgeschlagen – deine Eingaben bleiben erhalten");
-      setAwaitingRpe(true);
+      if (manualInputRef.current === inputAtSave) {
+        setManualInputValue("");
+        setSession(null);
+        try {
+          if (userId && typeof window !== "undefined")
+            window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
+        } catch {
+          // Draft cleanup is best effort; the save result remains successful.
+        }
+      }
+    } finally {
+      releaseSaveLock(saveOwner);
     }
-    setSaving(false);
   };
 
   if (useManual) {
@@ -852,14 +1120,14 @@ function WorkoutScreen() {
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <Stat
                   label="Persönlicher Bestwert"
-                  value={best === null ? "Noch kein Bestwert" : best.toString()}
-                />
-                <Stat
-                  label="Letzte Erfassung"
-                  value={
-                    latestCount === null ? "Noch keine Erfassung" : `${latestCount} Wiederholungen`
+                  value={bestStatValue}
+                  unit={
+                    best !== null && bestStatus === "loaded" && exercise.unit === "seconds"
+                      ? "Sek."
+                      : undefined
                   }
                 />
+                <Stat label="Letzte Erfassung" value={latestStatValue} />
               </div>
             </section>
             {isPlanned && session && (
@@ -1096,14 +1364,14 @@ function WorkoutScreen() {
             <section className="mt-6 grid grid-cols-2 gap-3">
               <Stat
                 label="Bestwert"
-                value={best === null ? "Noch kein Bestwert" : best.toString()}
-              />
-              <Stat
-                label="Letzte Erfassung"
-                value={
-                  latestCount === null ? "Noch keine Erfassung" : `${latestCount} Wiederholungen`
+                value={bestStatValue}
+                unit={
+                  best !== null && bestStatus === "loaded" && exercise.unit === "seconds"
+                    ? "Sek."
+                    : undefined
                 }
               />
+              <Stat label="Letzte Erfassung" value={latestStatValue} />
             </section>
 
             {isPlanned && session && (
@@ -1338,8 +1606,10 @@ function WorkoutScreen() {
             description={
               isPlanned
                 ? (plan.title ??
-                  `${plan.sets} Sätze${plan.reps ? ` · ${plan.reps} Wiederholungen je Satz` : " · Freies Wiederholungsziel"}`)
-                : "Bleib im Rhythmus. Deine Wiederholungen und Bestleistung werden live erfasst."
+                  `${plan.sets} Sätze${plan.reps ? ` · ${formatWorkoutCount(plan.reps, exercise.unit)} je Satz` : ` · Freies ${exercise.unit === "seconds" ? "Sekundenziel" : "Wiederholungsziel"}`}`)
+                : exercise.unit === "seconds"
+                  ? "Halte die Position. Deine Zeit und Bestleistung werden live erfasst."
+                  : "Bleib im Rhythmus. Deine Wiederholungen und Bestleistung werden live erfasst."
             }
           >
             <Link to="/" className="sport-back-link inline-flex items-center gap-2">
@@ -1363,8 +1633,12 @@ function WorkoutScreen() {
             />
             <Stat
               label="Persönlicher Bestwert"
-              value={best === null ? "Noch kein Bestwert" : best.toString()}
-              unit={best !== null && exercise.unit === "seconds" ? "Sek." : undefined}
+              value={bestStatValue}
+              unit={
+                best !== null && bestStatus === "loaded" && exercise.unit === "seconds"
+                  ? "Sek."
+                  : undefined
+              }
             />
           </section>
           {isPlanned && session && (
@@ -1391,7 +1665,7 @@ function WorkoutScreen() {
                 </span>
                 {plan.reps && (
                   <span className="text-sm text-muted-foreground">
-                    · {count} / {plan.reps} Wiederholungen
+                    · {count} / {plan.reps} {workoutCountUnit(exercise.unit)}
                   </span>
                 )}
               </div>
@@ -1574,7 +1848,7 @@ function WorkoutScreen() {
                 disabled={count <= 0}
                 className="rounded-xl border border-border bg-secondary px-3 py-3 text-sm disabled:opacity-40"
               >
-                Wiederholung −1
+                {exercise.unit === "seconds" ? "Sekunde −1" : "Wiederholung −1"}
               </button>
               <button
                 type="button"
@@ -1659,9 +1933,11 @@ function WorkoutScreen() {
               {summary.plannedSets !== undefined && (
                 <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                   Plan: {summary.plannedSets} Sätze
-                  {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} ·
-                  Tatsächlich {summary.actualSets ?? 0} Sätze /{" "}
-                  {summary.actualReps ?? summary.count} Wdh. · Dauer{" "}
+                  {summary.plannedReps
+                    ? ` · ${summary.plannedReps} ${workoutCountUnit(exercise.unit)} geplant`
+                    : ""}{" "}
+                  · Tatsächlich {summary.actualSets ?? 0} Sätze /{" "}
+                  {summary.actualReps ?? summary.count} {workoutCountUnit(exercise.unit)} · Dauer{" "}
                   {formatTime(summary.durationMs)}
                   {summary.partial ? " · Teiltraining" : ""}
                 </p>
@@ -1769,7 +2045,7 @@ function WorkoutScreen() {
               </div>
               <div className="mt-1 text-lg font-semibold tabular-nums text-foreground">
                 Satz {Math.min(session.currentSet, plan.sets)} / {plan.sets}
-                {plan.reps ? ` · ${count} / ${plan.reps} Wiederholungen` : ""}
+                {plan.reps ? ` · ${count} / ${plan.reps} ${workoutCountUnit(exercise.unit)}` : ""}
               </div>
               {restRemaining !== null && (
                 <div className="mt-1 text-2xl font-bold tabular-nums text-primary">
@@ -2057,11 +2333,13 @@ function WorkoutScreen() {
               {summary.plannedSets !== undefined && (
                 <div className="mt-2 text-xs text-muted-foreground">
                   Plan: {summary.plannedSets} {summary.plannedSets === 1 ? "Satz" : "Sätze"}
-                  {summary.plannedReps ? ` · ${summary.plannedReps} Wdh. geplant` : ""} ·
-                  Tatsächlich: {summary.actualSets ?? 0}{" "}
+                  {summary.plannedReps
+                    ? ` · ${summary.plannedReps} ${workoutCountUnit(exercise.unit)} geplant`
+                    : ""}{" "}
+                  · Tatsächlich: {summary.actualSets ?? 0}{" "}
                   {(summary.actualSets ?? 0) === 1 ? "Satz" : "Sätze"} /{" "}
-                  {summary.actualReps ?? summary.count} Wdh. · Tatsächliche Dauer:{" "}
-                  {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
+                  {summary.actualReps ?? summary.count} {workoutCountUnit(exercise.unit)} ·
+                  Tatsächliche Dauer: {formatTime(summary.durationMs)} · Plandauer nicht vorgegeben
                   {summary.partial ? " · Teiltraining" : ""}
                 </div>
               )}

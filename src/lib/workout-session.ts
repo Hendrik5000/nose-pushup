@@ -109,7 +109,17 @@ export function finishWorkoutSet(session: WorkoutSession, now = Date.now()): Wor
   if (session.phase !== "active") return session;
   const setReps = [...session.setReps, session.currentReps];
   if (session.currentSet >= session.plan.sets) {
-    return { ...session, phase: "completed", currentReps: 0, setReps, restEndsAt: null };
+    return {
+      ...session,
+      phase: "completed",
+      currentReps: 0,
+      setReps,
+      elapsedBeforePauseMs:
+        session.elapsedBeforePauseMs +
+        (session.startedAt !== null ? Math.max(0, now - session.startedAt) : 0),
+      startedAt: null,
+      restEndsAt: null,
+    };
   }
   return {
     ...session,
@@ -134,6 +144,7 @@ export function startWorkoutSet(session: WorkoutSession, now = Date.now()): Work
 
 export function extendWorkoutRest(session: WorkoutSession, seconds = 30): WorkoutSession {
   if (session.phase !== "rest") return session;
+  if (!Number.isFinite(seconds)) return session;
   return {
     ...session,
     restEndsAt: (session.restEndsAt ?? Date.now()) + Math.max(1, Math.min(300, seconds)) * 1000,
@@ -144,7 +155,8 @@ export function pauseWorkout(session: WorkoutSession, now = Date.now()): Workout
   if (session.phase !== "active" && session.phase !== "rest" && session.phase !== "preparation")
     return session;
   const elapsedBeforePauseMs =
-    session.elapsedBeforePauseMs + (session.startedAt ? Math.max(0, now - session.startedAt) : 0);
+    session.elapsedBeforePauseMs +
+    (session.startedAt !== null ? Math.max(0, now - session.startedAt) : 0);
   return {
     ...session,
     phase: "paused",
@@ -173,7 +185,8 @@ export function summarizeWorkout(session: WorkoutSession, now = Date.now()): Wor
   const actualReps = session.setReps.reduce((sum, reps) => sum + reps, 0) + session.currentReps;
   const actualSets = session.setReps.length + (session.currentReps > 0 ? 1 : 0);
   const actualDurationMs =
-    session.elapsedBeforePauseMs + (session.startedAt ? Math.max(0, now - session.startedAt) : 0);
+    session.elapsedBeforePauseMs +
+    (session.startedAt !== null ? Math.max(0, now - session.startedAt) : 0);
   const allSetsDone = session.phase === "completed";
   return {
     plannedSets: session.plan.sets,
@@ -285,20 +298,21 @@ export function readWorkoutSession(
         restEndsAt === null ||
         (typeof restEndsAt === "number" && Number.isFinite(restEndsAt) && restEndsAt >= 0)
       ) ||
-      typeof value.partial !== "boolean" ||
-      value.setReps.length !== currentSet - 1
+      typeof value.partial !== "boolean"
     )
       return null;
     if (
+      value.setReps.length !== (phase === "completed" ? plan.sets : currentSet - 1) ||
+      (phase === "preparation" &&
+        (currentSet !== 1 || currentReps !== 0 || elapsedBeforePauseMs !== 0)) ||
+      (phase === "rest" && (currentSet < 2 || currentReps !== 0)) ||
+      (phase === "completed" && currentReps !== 0) ||
       ((phase === "preparation" || phase === "paused") &&
         (startedAt !== null || restEndsAt !== null)) ||
       (phase === "active" && (startedAt === null || restEndsAt !== null)) ||
       (phase === "rest" && (startedAt === null || restEndsAt === null)) ||
       (phase === "completed" &&
-        (startedAt === null ||
-          restEndsAt !== null ||
-          currentSet !== plan.sets ||
-          value.setReps.length !== plan.sets))
+        (restEndsAt !== null || currentSet !== plan.sets || value.setReps.length !== plan.sets))
     )
       return null;
     return value as WorkoutSession;

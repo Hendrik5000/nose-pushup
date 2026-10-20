@@ -48,21 +48,52 @@ export function SettingsSection({
     if (open) setVisited(true);
   }, [open]);
   const sectionRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+    const revealParent = (event: Event) => {
+      if (event.target !== section) setOpen(true);
+    };
+    const revealAppearance = () => setOpen(true);
+    section.addEventListener("profile-section-reveal", revealParent);
+    section.addEventListener("profile-appearance-reveal", revealAppearance);
+    return () => {
+      section.removeEventListener("profile-section-reveal", revealParent);
+      section.removeEventListener("profile-appearance-reveal", revealAppearance);
+    };
+  }, []);
   const routeHash = useRouterState({ select: (state) => state.location.hash });
   useEffect(() => {
     if (!id && !profileAppearance) return;
     let scrollTimer: ReturnType<typeof setTimeout> | undefined;
     const reveal = () => {
-      if (window.location.hash === `#${profileAppearance ? "appearance" : id}`) {
+      const targetId = profileAppearance ? "appearance" : id;
+      if (!targetId || window.location.hash !== `#${targetId}`) return;
+
+      // Responsive profile layouts can contain equivalent targets. Only reveal
+      // the target in the layout that is currently mounted and visible.
+      const target = Array.from(document.querySelectorAll<HTMLElement>("[id]")).find(
+        (element) => element.id === targetId && element.getClientRects().length > 0,
+      );
+      const section = sectionRef.current;
+      if (!target || !section) return;
+      // A nested appearance section is mounted only after its parent opens, so
+      // it must recognize the same fragment on its first render as well.
+      if (profileAppearance && target !== section && target.contains(section)) {
         setOpen(true);
-        clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(() => {
-          const section = sectionRef.current;
-          if (section && section.getClientRects().length > 0) {
-            section.scrollIntoView({ block: "start" });
-          }
-        }, 350);
+        return;
       }
+      if (target !== section) return;
+
+      setOpen(true);
+      section.dispatchEvent(new CustomEvent("profile-section-reveal", { bubbles: true }));
+      section.querySelectorAll<HTMLElement>('[data-profile-appearance="true"]').forEach((child) => {
+        child.dispatchEvent(new CustomEvent("profile-appearance-reveal"));
+      });
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        if (section.getClientRects().length > 0) section.scrollIntoView({ block: "start" });
+      }, 350);
     };
     reveal();
     window.addEventListener("hashchange", reveal);

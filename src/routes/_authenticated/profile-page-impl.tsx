@@ -1,6 +1,7 @@
 import { workoutBest } from "@/lib/workout-ui";
 import { DesignView } from "@/components/DesignView";
 import { readWorkoutMetadata } from "@/lib/workout-session";
+import { historyExercise } from "@/lib/workout-history";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -71,6 +72,11 @@ export function ProfilePage() {
   const [email, setEmail] = useState<string>("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [workoutsLoading, setWorkoutsLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
+  const [workoutsError, setWorkoutsError] = useState(false);
+  const [sectionRevealRequest, setSectionRevealRequest] = useState(0);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [birthYear, setBirthYear] = useState("");
@@ -108,32 +114,57 @@ export function ProfilePage() {
 
   useEffect(() => {
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      setEmail(u.user.email ?? "");
-      setIsAnonymous(!!u.user.is_anonymous);
-      const [{ data: p }, { data: w }] = await Promise.all([
-        supabase.from("profiles").select(PROFILE_COLS).eq("id", u.user.id).maybeSingle(),
-        supabase
-          .from("workouts")
-          .select("id, count, duration_ms, created_at, exercise_id")
-          .order("created_at", { ascending: false })
-          .limit(20),
-      ]);
-      let prof = p;
-      if (!prof) {
-        const { data: created } = await supabase
-          .from("profiles")
-          .insert({
-            id: u.user.id,
-            display_name: u.user.is_anonymous ? "Gast" : (u.user.email?.split("@")[0] ?? null),
-          })
-          .select(PROFILE_COLS)
-          .maybeSingle();
-        prof = created;
+      try {
+        const { data: u, error: authError } = await supabase.auth.getUser();
+        if (authError || !u.user) {
+          setProfileError(true);
+          setWorkoutsError(true);
+          return;
+        }
+        setEmail(u.user.email ?? "");
+        setIsAnonymous(!!u.user.is_anonymous);
+        const [profileResult, workoutResult] = await Promise.all([
+          supabase.from("profiles").select(PROFILE_COLS).eq("id", u.user.id).maybeSingle(),
+          supabase
+            .from("workouts")
+            .select("id, count, duration_ms, created_at, exercise_id")
+            .order("created_at", { ascending: false })
+            .limit(20),
+        ]);
+
+        if (workoutResult.error) setWorkoutsError(true);
+        else setWorkouts((workoutResult.data ?? []) as Workout[]);
+        setWorkoutsLoading(false);
+
+        if (profileResult.error) {
+          setProfileError(true);
+          return;
+        }
+        let prof = profileResult.data;
+        if (!prof) {
+          const { data: created, error: createError } = await supabase
+            .from("profiles")
+            .insert({
+              id: u.user.id,
+              display_name: u.user.is_anonymous ? "Gast" : (u.user.email?.split("@")[0] ?? null),
+            })
+            .select(PROFILE_COLS)
+            .maybeSingle();
+          if (createError) {
+            setProfileError(true);
+            return;
+          }
+          prof = created;
+        }
+        if (prof) applyProfile(prof as Profile);
+        else setProfileError(true);
+      } catch {
+        setProfileError(true);
+        setWorkoutsError(true);
+      } finally {
+        setProfileLoading(false);
+        setWorkoutsLoading(false);
       }
-      if (prof) applyProfile(prof as Profile);
-      if (w) setWorkouts(w as Workout[]);
     })();
   }, []);
 
@@ -256,6 +287,9 @@ export function ProfilePage() {
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     return profile.last_workout_date === today || profile.last_workout_date === yesterday;
   })();
+  const sectionRevealKey = `${profile?.id ?? "unloaded"}:${sectionRevealRequest}`;
+  const profileBestLabel = profileBest === null ? "Noch kein Bestwert" : profileBest;
+  const workoutCountLabel = workouts.length > 0 ? workouts.length : "Noch keine Erfassung";
 
   return (
     <>
@@ -386,6 +420,7 @@ export function ProfilePage() {
               <a
                 key={href}
                 href={href}
+                onClick={() => setSectionRevealRequest((request) => request + 1)}
                 className="min-h-11 shrink-0 snap-start rounded-full border border-border bg-card/70 px-4 py-3 text-xs font-semibold text-foreground transition hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 {label}
@@ -394,16 +429,21 @@ export function ProfilePage() {
           </nav>
 
           <div className="mt-4 space-y-3">
-            {profile && (
-              <SettingsSection
-                icon="🧠"
-                title="Smart Coach"
-                subtitle="Trainingsplan & Serien-Tipps"
-                id="profile-training"
-              >
+            <SettingsSection
+              icon="🧠"
+              title="Smart Coach"
+              subtitle="Trainingsplan & Serien-Tipps"
+              id="profile-training"
+              revealKey={sectionRevealKey}
+            >
+              {profile ? (
                 <CoachPanel profile={profile} workouts={workouts} />
-              </SettingsSection>
-            )}
+              ) : (
+                <p role="status" className="text-sm text-muted-foreground">
+                  {profileLoading ? "Profil wird geladen…" : "Coach ist nicht verfügbar."}
+                </p>
+              )}
+            </SettingsSection>
             {profile && (
               <SettingsSection icon="🤝" title="Freunde" subtitle="Einladen & zusammen trainieren">
                 <FriendsPanel userId={profile.id} />
@@ -413,8 +453,9 @@ export function ProfilePage() {
               icon="🎨"
               title="Design"
               subtitle="Stil, Schrift, Layout & Farben"
+              id="appearance"
+              revealKey={sectionRevealKey}
               profileAppearance
-              revealKey={profile?.id}
             >
               <button
                 type="button"
@@ -478,6 +519,7 @@ export function ProfilePage() {
               title="Bedienung"
               subtitle="Sound, Vibration, Teilen"
               id="profile-app"
+              revealKey={sectionRevealKey}
             >
               <div className="space-y-3">
                 <ToggleRow label="Sound" on={soundOn} onToggle={toggleSound} />
@@ -507,31 +549,56 @@ export function ProfilePage() {
             <SettingsSection
               icon="📋"
               title="Letzte Trainings"
-              subtitle={`${workouts.length} Einträge`}
+              subtitle={
+                workoutsLoading
+                  ? "Trainings werden geladen…"
+                  : workoutsError
+                    ? "Verlauf nicht verfügbar"
+                    : `${workouts.length} Einträge`
+              }
               id="profile-history"
+              revealKey={sectionRevealKey}
             >
-              <ul className="space-y-2">
-                {workouts.slice(0, 8).map((w) => (
-                  <li
-                    key={w.id}
-                    className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-xs"
-                  >
-                    <span>
-                      {w.count} · {new Date(w.created_at).toLocaleDateString("de-DE")}
-                      {profile && readWorkoutMetadata(localStorage, profile.id, w.id)?.partial
-                        ? " · Teiltraining"
-                        : ""}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => deleteWorkout(w.id)}
-                      className="text-muted-foreground"
+              {workoutsLoading ? (
+                <p role="status" className="text-sm text-muted-foreground">
+                  Trainings werden geladen…
+                </p>
+              ) : workoutsError ? (
+                <p role="alert" className="text-sm text-muted-foreground">
+                  Trainingsverlauf konnte nicht geladen werden.
+                </p>
+              ) : workouts.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Noch keine Trainings erfasst.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {workouts.slice(0, 8).map((w) => (
+                    <li
+                      key={w.id}
+                      className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-xs"
                     >
-                      Löschen
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                      <span>
+                        {w.count}{" "}
+                        {historyExercise(w.exercise_id)?.unit === "seconds"
+                          ? "Sekunden"
+                          : historyExercise(w.exercise_id)?.unit === "reps"
+                            ? "Wiederholungen"
+                            : ""}{" "}
+                        · {new Date(w.created_at).toLocaleDateString("de-DE")}
+                        {profile && readWorkoutMetadata(localStorage, profile.id, w.id)?.partial
+                          ? " · Teiltraining"
+                          : ""}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => deleteWorkout(w.id)}
+                        className="text-muted-foreground"
+                      >
+                        Löschen
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </SettingsSection>
           </div>
           <BottomNav />
@@ -575,6 +642,7 @@ export function ProfilePage() {
               <a
                 key={href}
                 href={href}
+                onClick={() => setSectionRevealRequest((request) => request + 1)}
                 className="min-h-11 shrink-0 rounded-full border border-border bg-card/70 px-4 py-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 {label}
@@ -586,6 +654,7 @@ export function ProfilePage() {
             title="Konto & Fortschritt"
             subtitle={profile?.display_name || "Dein Konto"}
             id="profile-account"
+            revealKey={sectionRevealKey}
           >
             <section className="sport-identity-card relative overflow-hidden rounded-[2rem] border border-primary/25 bg-gradient-to-br from-primary/15 via-card/85 to-background p-6 shadow-sm sm:p-8">
               <div className="absolute right-0 top-0 h-48 w-48 translate-x-1/4 -translate-y-1/4 rounded-full border border-primary/15" />
@@ -610,15 +679,29 @@ export function ProfilePage() {
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold">
-                      Level {lp.level} · {lp.title}
+                      {profileLoading
+                        ? "Profil wird geladen…"
+                        : profileError
+                          ? "Profil nicht verfügbar"
+                          : `Level ${lp.level} · ${lp.title}`}
                     </span>
                     <span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold">
-                      {lp.xp.toLocaleString("de-DE")} XP
+                      {profileLoading
+                        ? "Lädt…"
+                        : profileError
+                          ? "—"
+                          : `${lp.xp.toLocaleString("de-DE")} XP`}
                     </span>
                     <span
                       className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${streakActive && streak > 0 ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-background/60 text-muted-foreground"}`}
                     >
-                      {workouts.length > 0 ? `${streak} Tage Serie` : "Noch keine Trainingsserie"}
+                      {workoutsLoading
+                        ? "Trainings werden geladen…"
+                        : workoutsError
+                          ? "Serie nicht verfügbar"
+                          : workouts.length > 0
+                            ? `${streak} Tage Serie`
+                            : "Noch keine Trainingsserie"}
                     </span>
                   </div>
                 </div>
@@ -678,9 +761,13 @@ export function ProfilePage() {
                   Bestwert
                 </div>
                 <div className="mt-2 break-words text-xl font-bold tabular-nums sm:text-3xl">
-                  {profileBest === null ? "Noch kein Bestwert" : profileBest}
+                  {workoutsLoading
+                    ? "Lädt…"
+                    : workoutsError || profileError
+                      ? "Nicht verfügbar"
+                      : profileBestLabel}
                 </div>
-                {workouts.length > 0 && (
+                {!workoutsLoading && !workoutsError && workouts.length > 0 && (
                   <div className="text-xs text-muted-foreground">Liegestütze</div>
                 )}
               </div>
@@ -689,7 +776,13 @@ export function ProfilePage() {
                   Längste Serie
                 </div>
                 <div className="mt-2 break-words text-xl font-bold tabular-nums sm:text-3xl">
-                  {workouts.length > 0 ? (profile?.longest_streak ?? 0) : "Noch keine Serie"}
+                  {workoutsLoading
+                    ? "Lädt…"
+                    : workoutsError || profileError
+                      ? "Nicht verfügbar"
+                      : workouts.length > 0
+                        ? (profile?.longest_streak ?? 0)
+                        : "Noch keine Serie"}
                 </div>
                 <div className="text-xs text-muted-foreground">Tage am Stück</div>
               </div>
@@ -698,9 +791,13 @@ export function ProfilePage() {
                   Trainings
                 </div>
                 <div className="mt-2 break-words text-xl font-bold tabular-nums sm:text-3xl">
-                  {workouts.length > 0 ? workouts.length : "Noch keine Erfassung"}
+                  {workoutsLoading
+                    ? "Lädt…"
+                    : workoutsError
+                      ? "Nicht verfügbar"
+                      : workoutCountLabel}
                 </div>
-                {workouts.length > 0 && (
+                {!workoutsLoading && !workoutsError && workouts.length > 0 && (
                   <div className="text-xs text-muted-foreground">letzte Einträge</div>
                 )}
               </div>
@@ -711,6 +808,7 @@ export function ProfilePage() {
             title="Training & Kontakte"
             subtitle="Coach, Freunde, Abzeichen & öffentliches Profil"
             id="profile-training"
+            revealKey={sectionRevealKey}
           >
             <nav className="mb-4 flex flex-wrap gap-3" aria-label="Weitere Trainingsbereiche">
               <Link to="/ai" className="alo-btn min-h-11">
@@ -721,6 +819,16 @@ export function ProfilePage() {
               </Link>
             </nav>
             <div className="grid gap-4 lg:grid-cols-2">
+              {!profile && (
+                <p
+                  role={profileError ? "alert" : "status"}
+                  className="text-sm text-muted-foreground"
+                >
+                  {profileLoading
+                    ? "Profil wird geladen…"
+                    : "Trainingsprofil konnte nicht geladen werden."}
+                </p>
+              )}
               {profile && (
                 <SettingsSection
                   icon="🧠"
@@ -754,7 +862,7 @@ export function ProfilePage() {
             title="Profil & Darstellung"
             subtitle="Persönliche Daten, 6 Stile, 13 Farben & Navigation"
             id="appearance"
-            revealKey={profile?.id}
+            revealKey={sectionRevealKey}
           >
             <div className="grid gap-4 lg:grid-cols-2">
               <SettingsSection
@@ -791,7 +899,7 @@ export function ProfilePage() {
                 title="Design & Navigation"
                 subtitle="Stil, Schrift, Layout & Farben"
                 profileAppearance
-                revealKey={profile?.id}
+                revealKey={sectionRevealKey}
               >
                 <button
                   type="button"
@@ -818,6 +926,7 @@ export function ProfilePage() {
             title="App & Datenschutz"
             subtitle="Bedienung, Benachrichtigungen, Fehlerberichte & Hilfe"
             id="profile-app"
+            revealKey={sectionRevealKey}
           >
             <div className="grid gap-4 lg:grid-cols-2">
               <SettingsSection
@@ -857,31 +966,58 @@ export function ProfilePage() {
           <SettingsSection
             icon="📋"
             title="Trainingsverlauf"
-            subtitle={workouts.length > 0 ? `${workouts.length} Einträge` : "Noch keine Erfassung"}
+            subtitle={
+              workoutsLoading
+                ? "Trainings werden geladen…"
+                : workoutsError
+                  ? "Verlauf nicht verfügbar"
+                  : workouts.length > 0
+                    ? `${workouts.length} Einträge`
+                    : "Noch keine Erfassung"
+            }
             id="profile-history"
+            revealKey={sectionRevealKey}
           >
-            <ul className="space-y-2">
-              {workouts.slice(0, 8).map((w) => (
-                <li
-                  key={w.id}
-                  className="flex items-center justify-between rounded-xl border border-border px-3 py-3 text-sm"
-                >
-                  <span>
-                    {w.count} Wiederholungen · {new Date(w.created_at).toLocaleDateString("de-DE")}
-                    {profile && readWorkoutMetadata(localStorage, profile.id, w.id)?.partial
-                      ? " · Teiltraining"
-                      : ""}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => deleteWorkout(w.id)}
-                    className="text-xs text-muted-foreground"
+            {workoutsLoading ? (
+              <p role="status" className="text-sm text-muted-foreground">
+                Trainings werden geladen…
+              </p>
+            ) : workoutsError ? (
+              <p role="alert" className="text-sm text-muted-foreground">
+                Trainingsverlauf konnte nicht geladen werden.
+              </p>
+            ) : workouts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Noch keine Trainings erfasst.</p>
+            ) : (
+              <ul className="space-y-2">
+                {workouts.slice(0, 8).map((w) => (
+                  <li
+                    key={w.id}
+                    className="flex items-center justify-between rounded-xl border border-border px-3 py-3 text-sm"
                   >
-                    Löschen
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <span>
+                      {w.count}{" "}
+                      {historyExercise(w.exercise_id)?.unit === "seconds"
+                        ? "Sekunden"
+                        : historyExercise(w.exercise_id)?.unit === "reps"
+                          ? "Wiederholungen"
+                          : ""}{" "}
+                      · {new Date(w.created_at).toLocaleDateString("de-DE")}
+                      {profile && readWorkoutMetadata(localStorage, profile.id, w.id)?.partial
+                        ? " · Teiltraining"
+                        : ""}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => deleteWorkout(w.id)}
+                      className="text-xs text-muted-foreground"
+                    >
+                      Löschen
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </SettingsSection>
           <BottomNav />
         </main>

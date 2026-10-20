@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isAnonymousCoachIdentity } from "./coach-safety";
 import type { WeekPlan } from "./coach-plan.server";
 
 const MODEL = "google/gemini-3-flash-preview";
@@ -9,52 +10,59 @@ export const getWeekPlan = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ({
     force: !!(input as { force?: boolean } | undefined)?.force,
   }))
-  .handler(async ({ data, context }): Promise<WeekPlan> => {
+  .handler(async ({ context }): Promise<WeekPlan> => {
     const { supabase, userId } = context;
+    if (isAnonymousCoachIdentity(context.claims)) {
+      throw new Error("Wochenpläne sind für Gastkonten nicht verfügbar.");
+    }
     const { mondayOf, fallbackPlan, sanitizeDays } = await import("./coach-plan.server");
     const weekStart = mondayOf();
 
-    if (!data.force) {
-      const { data: existing } = await supabase
-        .from("training_plans")
-        .select("week_start, summary")
+    const { data: existing, error: planError } = await supabase
+      .from("training_plans")
+      .select("week_start, summary")
+      .eq("user_id", userId)
+      .eq("week_start", weekStart)
+      .maybeSingle();
+    if (planError) throw new Error("Der Wochenplan-Cache konnte nicht geprüft werden.");
+    if (existing) {
+      const { data: days, error: daysError } = await supabase
+        .from("plan_days")
+        .select("day, focus, exercise_id, sets, reps, rest_s, note")
         .eq("user_id", userId)
-        .eq("week_start", weekStart)
-        .maybeSingle();
-      if (existing) {
-        const { data: days } = await supabase
-          .from("plan_days")
-          .select("day, focus, exercise_id, sets, reps, rest_s, note")
-          .eq("user_id", userId)
-          .gte("day", weekStart)
-          .order("day");
-        if (days && days.length) {
-          return {
-            week_start: weekStart,
-            summary: existing.summary as string,
-            days: days as WeekPlan["days"],
-            source: "ai",
-          };
-        }
+        .gte("day", weekStart)
+        .order("day");
+      if (daysError) throw new Error("Der Wochenplan konnte nicht sicher geladen werden.");
+      if (days && days.length) {
+        return {
+          week_start: weekStart,
+          summary: existing.summary as string,
+          days: days as WeekPlan["days"],
+          source: "ai",
+        };
       }
     }
 
     // Kontext der letzten 14 Tage
     const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
-    const [{ data: profile }, { data: stats }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select(
-          "level, xp, current_streak, best_count, birth_year, height_cm, weight_kg, daily_goal",
-        )
-        .eq("id", userId)
-        .maybeSingle(),
-      supabase
-        .from("daily_stats")
-        .select("day, total_reps")
-        .eq("user_id", userId)
-        .gte("day", cutoff),
-    ]);
+    const [{ data: profile, error: profileError }, { data: stats, error: statsError }] =
+      await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "level, xp, current_streak, best_count, birth_year, height_cm, weight_kg, daily_goal",
+          )
+          .eq("id", userId)
+          .maybeSingle(),
+        supabase
+          .from("daily_stats")
+          .select("day, total_reps")
+          .eq("user_id", userId)
+          .gte("day", cutoff),
+      ]);
+    if (profileError || statsError) {
+      throw new Error("Coach-Daten konnten nicht sicher geladen werden.");
+    }
 
     const days14 = (stats ?? []) as Array<{ day: string; total_reps: number }>;
     const weekReps = days14

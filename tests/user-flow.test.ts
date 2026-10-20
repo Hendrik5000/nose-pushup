@@ -61,7 +61,7 @@ test("guest recommendation transfers into a bounded plan, survives reload, and c
   assert.equal(session.phase, "preparation");
   assert.equal(writeWorkoutSession(storage, key, session), true);
 
-  session = startWorkoutSet(session);
+  session = startWorkoutSet(session, 1_000);
   const firstStartedAt = session.startedAt!;
   for (let i = 0; i < 5; i += 1) session = recordWorkoutRep(session);
   session = undoWorkoutRep(session); // correct an over-counted repetition
@@ -88,7 +88,7 @@ test("guest recommendation transfers into a bounded plan, survives reload, and c
   assert.equal(recovered.currentSet, 2);
   assert.equal(recovered.partial, false);
 
-  session = startWorkoutSet(recovered);
+  session = startWorkoutSet(recovered, 4_000);
   assert.equal(session.phase, "active");
   assert.equal(session.currentReps, 0);
   for (let i = 0; i < 3; i += 1) session = recordWorkoutRep(session);
@@ -103,7 +103,7 @@ test("guest recommendation transfers into a bounded plan, survives reload, and c
     plannedReps: recommendation.plannedReps,
     actualReps: 7,
     plannedDurationMs: null,
-    actualDurationMs: 2_000,
+    actualDurationMs: 4_000,
     partial: true,
   });
 });
@@ -113,18 +113,18 @@ test("finishing every set produces a completed, non-partial summary", () => {
     { sets: 2, reps: 4, restSeconds: 30, title: "Kurzprogramm" },
     1_000,
   );
-  session = startWorkoutSet(session);
+  session = startWorkoutSet(session, 1_000);
   const startedAt = session.startedAt!;
   for (let i = 0; i < 4; i += 1) session = recordWorkoutRep(session);
   session = finishWorkoutSet(session, 2_000);
   assert.equal(session.phase, "rest");
 
-  session = startWorkoutSet(session);
+  session = startWorkoutSet(session, 4_000);
   for (let i = 0; i < 3; i += 1) session = recordWorkoutRep(session);
-  session = finishWorkoutSet(session, 3_000);
+  session = finishWorkoutSet(session, startedAt + 6_000);
   assert.equal(session.phase, "completed");
 
-  assert.deepEqual(summarizeWorkout(session, startedAt + 6_000), {
+  assert.deepEqual(summarizeWorkout(session, startedAt + 60_000), {
     plannedSets: 2,
     actualSets: 2,
     plannedReps: 8,
@@ -140,19 +140,20 @@ test("pause and resume followed by completion does not leave the final summary p
     { sets: 2, reps: 2, restSeconds: 30, title: "Pausenfest" },
     1_000,
   );
-  session = startWorkoutSet(session);
+  session = startWorkoutSet(session, 1_000);
   session = recordWorkoutRep(recordWorkoutRep(session));
   session = pauseWorkout(session, session.startedAt! + 1_000);
   assert.equal(session.phase, "paused");
 
-  session = startWorkoutSet(session);
+  session = startWorkoutSet(session, 2_500);
   session = finishWorkoutSet(recordWorkoutRep(recordWorkoutRep(session)), 3_000);
   assert.equal(session.phase, "rest");
 
-  session = startWorkoutSet(session);
+  session = startWorkoutSet(session, 3_500);
   session = finishWorkoutSet(recordWorkoutRep(recordWorkoutRep(session)), 4_000);
   assert.equal(session.phase, "completed");
   assert.equal(summarizeWorkout(session, 5_000).partial, false);
+  assert.equal(summarizeWorkout(session, 5_000).actualDurationMs, 2_500);
 });
 
 test("AI recommendation and difficulty feedback can be transferred into a validated workout plan", () => {

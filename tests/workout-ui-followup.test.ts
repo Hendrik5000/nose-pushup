@@ -26,7 +26,7 @@ test("manual plus/minus are bounded and treat typed zero as a value", () => {
 test("both manual layouts expose large, labelled controls and neutral save guidance", () => {
   const workout = read("routes/_authenticated/workout.$exerciseId.tsx");
   assert.match(workout, /Noch kein Bestwert/);
-  assert.match(workout, /latestCount === null \? "Noch keine Erfassung"/);
+  assert.match(workout, /latestStatus === "empty"\s*\?\s*"Noch keine Erfassung"/);
   assert.equal((workout.match(/\{manualControls\}/g) ?? []).length, 2);
   assert.match(workout, /aria-label="Eine Wiederholung weniger"/);
   assert.match(workout, /aria-label="Eine Wiederholung mehr"/);
@@ -54,7 +54,22 @@ test("AI coach checks actual workout history before any automatic advice call", 
   const call = ai.indexOf("await load(false)");
   assert.ok(guard > 0 && call > guard);
   assert.match(ai.slice(guard, call), /setLoading\(false\);\s*return;/);
-  assert.match(ai, /disabled=\{!hasHistory \|\| !canRefresh \|\| refreshing \|\| loading\}/);
+  const guestGuard = ai.indexOf("if (isAnonymousCoachIdentity(u.user))");
+  assert.ok(guestGuard > 0 && guestGuard < ai.indexOf('.from("workouts")'));
+  assert.match(
+    ai,
+    /disabled=\{isGuest \|\| !hasHistory \|\| !canRefresh \|\| refreshing \|\| loading\}/,
+  );
   assert.match(ai, /Unverbindlicher Startvorschlag/);
   assert.doesNotMatch(ai, /\}\)\(\);\s*load\(false\)/);
+});
+
+test("week plan reload wording does not promise regeneration or bypass the cache", () => {
+  const plan = read("components/WeekPlanCard.tsx");
+  assert.match(plan, /plan \? "Aktualisieren" : "Gespeicherten Plan laden"/);
+  assert.match(plan, /title="Gespeicherten Wochenplan erneut laden"/);
+  assert.match(plan, /load\(\{ data: \{ force: false \} \}\)/);
+  assert.doesNotMatch(plan, />\s*Neu\s*</);
+  assert.match(plan, /const mounted = useRef\(false\)/);
+  assert.match(plan, /if \(isActive\(\)\) setLoading\(false\)/);
 });

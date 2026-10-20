@@ -56,7 +56,7 @@ test("rep correction, set transitions and rest extension retain phase invariants
   assert.equal(s.restEndsAt, 65_000);
   s = startWorkoutSet(s, 6000);
   s = recordWorkoutRep(recordWorkoutRep(s));
-  s = finishWorkoutSet(s);
+  s = finishWorkoutSet(s, 11_000);
   assert.equal(s.phase, "completed");
   assert.deepEqual(summarizeWorkout(s, 11_000), {
     plannedSets: 2,

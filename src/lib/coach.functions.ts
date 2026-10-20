@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isAnonymousCoachIdentity, isWithinCoachCooldown } from "./coach-safety";
 
 type CoachOutput = {
   advice: string;
@@ -28,21 +29,26 @@ export const getCoachAdvice = createServerFn({ method: "POST" })
     const force = !!(input as { force?: boolean } | undefined)?.force;
     return { force };
   })
-  .handler(async ({ data, context }): Promise<CoachOutput & { cached_at: string }> => {
+  .handler(async ({ context }): Promise<CoachOutput & { cached_at: string }> => {
     const { supabase, userId } = context;
 
+    // Anonymous accounts may have local/persisted workout history, but never trigger AI.
+    if (isAnonymousCoachIdentity(context.claims)) {
+      throw new Error("Coach-Empfehlungen sind für Gastkonten nicht verfügbar.");
+    }
+
     // Rate-limit: reuse last advice if fresh
-    const { data: last } = await supabase
+    const { data: last, error: cacheError } = await supabase
       .from("coach_advice")
       .select("advice, plan, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (cacheError) throw new Error("Coach-Cache konnte nicht geprüft werden.");
 
-    if (!data.force && last) {
-      const age = Date.now() - +new Date(last.created_at as string);
-      if (age < RATE_LIMIT_MS) {
+    if (last) {
+      if (isWithinCoachCooldown(last.created_at as string, Date.now(), RATE_LIMIT_MS)) {
         const plan = (last.plan ?? {}) as CoachOutput["plan"];
         return {
           advice: last.advice as string,
@@ -60,19 +66,23 @@ export const getCoachAdvice = createServerFn({ method: "POST" })
     // Gather context
     const today = new Date();
     const cutoff = new Date(today.getTime() - 14 * 86400000).toISOString().slice(0, 10);
-    const [{ data: profile }, { data: stats }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("level, xp, current_streak, longest_streak, best_count, last_workout_date")
-        .eq("id", userId)
-        .maybeSingle(),
-      supabase
-        .from("daily_stats")
-        .select("day, total_reps, sessions")
-        .eq("user_id", userId)
-        .gte("day", cutoff)
-        .order("day", { ascending: true }),
-    ]);
+    const [{ data: profile, error: profileError }, { data: stats, error: statsError }] =
+      await Promise.all([
+        supabase
+          .from("profiles")
+          .select("level, xp, current_streak, longest_streak, best_count, last_workout_date")
+          .eq("id", userId)
+          .maybeSingle(),
+        supabase
+          .from("daily_stats")
+          .select("day, total_reps, sessions")
+          .eq("user_id", userId)
+          .gte("day", cutoff)
+          .order("day", { ascending: true }),
+      ]);
+    if (profileError || statsError) {
+      throw new Error("Coach-Daten konnten nicht sicher geladen werden.");
+    }
 
     const days = (stats ?? []) as Array<{ day: string; total_reps: number; sessions: number }>;
     const weekReps = days

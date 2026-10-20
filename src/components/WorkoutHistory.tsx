@@ -6,13 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getTrainingWeekBounds, localDateKey } from "@/lib/training-dates";
 import { readWorkoutMetadata } from "@/lib/workout-session";
-
-type WorkoutRow = {
-  id: string;
-  created_at: string;
-  exercise_id: string;
-  count: number;
-};
+import { historyExercise, loadWorkoutHistory, type HistoryWorkout } from "@/lib/workout-history";
 
 const DAYS = 35; // 5 weeks
 
@@ -49,46 +43,55 @@ const DAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const WEEKDAY_ABBR = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 export function WorkoutHistory({ userId }: { userId: string }) {
-  const [stats, setStats] = useState<Map<string, number>>(new Map());
-  const [recentWorkouts, setRecentWorkouts] = useState<WorkoutRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [history, setHistory] = useState<{
+    ownerId: string;
+    status: "loading" | "ready" | "error";
+    rows: HistoryWorkout[];
+  }>({ ownerId: userId, status: "loading", rows: [] });
 
   useEffect(() => {
+    let cancelled = false;
+    setHistory({ ownerId: userId, status: "loading", rows: [] });
     if (!userId) return;
-    (async () => {
+    void (async () => {
       const fromDate = dateStr(DAYS - 1);
-      const today = dateStr(0);
-
-      const rows: WorkoutRow[] = [];
-      for (let offset = 0; ; offset += 500) {
-        const { data, error } = await supabase
-          .from("workouts")
-          .select("id, created_at, exercise_id, count")
-          .eq("user_id", userId)
-          .gte("created_at", new Date(fromDate + "T00:00:00").toISOString())
-          .lte("created_at", new Date().toISOString())
-          .order("created_at", { ascending: false })
-          .order("id", { ascending: false })
-          .range(offset, offset + 499);
-        if (error) {
-          setLoadError(true);
-          break;
-        }
-        rows.push(...(data ?? []));
-        if (!data || data.length < 500) break;
+      const until = new Date().toISOString();
+      try {
+        const rows = await loadWorkoutHistory(
+          (from, to) =>
+            supabase
+              .from("workouts")
+              .select("id, created_at, exercise_id, count")
+              .eq("user_id", userId)
+              .gte("created_at", new Date(fromDate + "T00:00:00").toISOString())
+              .lte("created_at", until)
+              .order("created_at", { ascending: false })
+              .order("id", { ascending: false })
+              .range(from, to),
+          () => cancelled,
+        );
+        if (!cancelled && rows !== null) setHistory({ ownerId: userId, status: "ready", rows });
+      } catch {
+        if (!cancelled) setHistory({ ownerId: userId, status: "error", rows: [] });
       }
-      const map = new Map<string, number>();
-      for (const row of rows) {
-        if (row.exercise_id !== "pushup") continue;
-        const day = localDateKey(new Date(row.created_at));
-        map.set(day, (map.get(day) ?? 0) + row.count);
-      }
-      setStats(map);
-      setRecentWorkouts(rows);
-      setLoading(false);
     })();
-  }, [userId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, attempt]);
+
+  // Ownership is checked during render, before a changed user's effect runs.
+  const loading = history.ownerId !== userId || history.status === "loading";
+  const loadError = history.ownerId === userId && history.status === "error";
+  const recentWorkouts =
+    history.ownerId === userId && history.status === "ready" ? history.rows : [];
+  const stats = new Map<string, number>();
+  for (const row of recentWorkouts) {
+    if (row.exercise_id !== "pushup") continue;
+    const day = localDateKey(new Date(row.created_at));
+    stats.set(day, (stats.get(day) ?? 0) + row.count);
+  }
 
   // Build 5-week grid (35 cells, oldest first)
   const days: string[] = [];
@@ -108,14 +111,6 @@ export function WorkoutHistory({ userId }: { userId: string }) {
   }
   const weekMax = Math.max(1, ...weeklyTotals);
 
-  // Group recent workouts by date for tooltip-like detail
-  const byDate = new Map<string, { exercise_id: string; count: number }[]>();
-  recentWorkouts.forEach((w) => {
-    const d = w.created_at.slice(0, 10);
-    if (!byDate.has(d)) byDate.set(d, []);
-    byDate.get(d)!.push({ exercise_id: w.exercise_id, count: w.count });
-  });
-
   const week = getTrainingWeekBounds();
   const totalThisWeek = Array.from(stats.entries()).reduce(
     (sum, [day, count]) => (day >= week.startDay && day < week.endDayExclusive ? sum + count : sum),
@@ -133,16 +128,24 @@ export function WorkoutHistory({ userId }: { userId: string }) {
 
   if (loadError)
     return (
-      <p role="alert" className="rounded-2xl border border-border p-4 text-sm">
-        Verlauf konnte nicht vollständig geladen werden. Bitte lade die Seite erneut.
-      </p>
+      <div role="alert" className="rounded-2xl border border-border p-4 text-sm">
+        <p>Verlauf konnte nicht vollständig geladen werden.</p>
+        <button
+          type="button"
+          className="mt-2 min-h-11 font-medium text-primary"
+          onClick={() => setAttempt((value) => value + 1)}
+        >
+          Erneut versuchen
+        </button>
+      </div>
     );
   if (!recentWorkouts.length)
     return (
       <section className="rounded-2xl border border-border bg-card p-4">
         <h3 className="font-semibold">Noch keine Daten</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Speichere dein erstes Training. Hier erscheinen dann deine Einheiten und dein Fortschritt.
+          In den letzten 35 Tagen wurden keine Einheiten gefunden. Hier erscheinen deine letzten
+          Trainings und dein Fortschritt.
         </p>
       </section>
     );
@@ -155,7 +158,8 @@ export function WorkoutHistory({ userId }: { userId: string }) {
         </h3>
         <div className="flex gap-3 text-[10px] text-muted-foreground">
           <span>
-            <span className="font-semibold text-foreground">{trainedDays}</span> Tage
+            <span className="font-semibold text-foreground">{trainedDays}</span> Tage mit
+            Liegestützen
           </span>
           <span>
             <span className="font-semibold text-foreground">
@@ -191,7 +195,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
               <span
                 className={`text-[9px] ${isToday ? "text-primary font-bold" : "text-muted-foreground"}`}
               >
-                {WEEKDAY_ABBR[i]}
+                {WEEKDAY_ABBR[dayOfWeek(dateStr(6 - i))]}
               </span>
             </div>
           );
@@ -237,26 +241,26 @@ export function WorkoutHistory({ userId }: { userId: string }) {
           <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
             Letzte Trainings
           </div>
-          {recentWorkouts.slice(0, 6).map((w, i) => {
-            const meta = readWorkoutMetadata(localStorage, userId, w.id);
+          {recentWorkouts.slice(0, 6).map((w) => {
+            let meta = null;
+            try {
+              meta = readWorkoutMetadata(window.localStorage, userId, w.id);
+            } catch {
+              // Browsers may deny access to localStorage entirely; history still works.
+            }
             const date = new Date(w.created_at).toLocaleDateString("de-DE", {
               weekday: "short",
               day: "numeric",
               month: "short",
             });
-            const label = w.exercise_id.startsWith("cali_")
-              ? w.exercise_id
-                  .replace("cali_", "")
-                  .replace(/_/g, " ")
-                  .replace(/\b\w/g, (c) => c.toUpperCase())
-              : w.exercise_id.charAt(0).toUpperCase() + w.exercise_id.slice(1);
+            const exercise = historyExercise(w.exercise_id);
             return (
               <div
                 key={w.id}
                 className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2"
               >
                 <div className="flex flex-col">
-                  <span className="text-xs font-medium text-foreground">{label}</span>
+                  <span className="text-xs font-medium text-foreground">{exercise.name}</span>
                   <span className="text-xs text-muted-foreground">
                     {meta
                       ? meta.partial
@@ -269,7 +273,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
                 <div className="text-sm font-semibold tabular-nums text-foreground">
                   {w.count}
                   <span className="ml-1 text-[10px] font-normal text-muted-foreground">
-                    {w.exercise_id.startsWith("cali_") || w.exercise_id === "plank" ? "Sek." : ""}
+                    {exercise.unit === "seconds" ? "Sek." : exercise.unit === "reps" ? "Wdh." : ""}
                   </span>
                 </div>
               </div>
