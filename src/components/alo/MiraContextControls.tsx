@@ -57,7 +57,7 @@ export function MiraContextControls({ userId }: { userId: string }) {
             )
           }
         />
-        <span>Nose-Pushup: Trainingsprofil, Trainings und Gesundheitswerte</span>
+        <span>Training: Profil, Trainingseinheiten und Gesundheitswerte</span>
       </label>
       <p className="text-xs font-semibold">
         Nexus: nur ausdrücklich ausgewählte Räume (bis zu 20 letzte Nachrichten je Raum, insgesamt

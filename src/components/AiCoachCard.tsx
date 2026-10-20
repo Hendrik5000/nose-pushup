@@ -14,6 +14,7 @@ type Advice = {
 
 export function AiCoachCard() {
   const call = useServerFn(getCoachAdvice);
+  const [hasHistory, setHasHistory] = useState(false);
   const [data, setData] = useState<Advice | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -23,6 +24,7 @@ export function AiCoachCard() {
   );
 
   const load = async (force = false) => {
+    if (!hasHistory && force) return;
     if (force) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -41,7 +43,22 @@ export function AiCoachCard() {
     let active = true;
     (async () => {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user || !active) return;
+      if (!u.user || !active) {
+        if (active) setLoading(false);
+        return;
+      }
+      const { data: history } = await supabase
+        .from("workouts")
+        .select("id")
+        .eq("user_id", u.user.id)
+        .limit(1);
+      if (!active) return;
+      const hasWorkouts = !!history?.length;
+      setHasHistory(hasWorkouts);
+      if (!hasWorkouts) {
+        setLoading(false);
+        return;
+      }
       const today = new Date().toISOString().slice(0, 10);
       const [{ data: profile }, { data: stats }] = await Promise.all([
         supabase
@@ -62,8 +79,8 @@ export function AiCoachCard() {
       const weekReps = todayReps;
       if (!active) return;
       setFocus(getCoachFocus(best, weekReps, streak));
+      await load(false);
     })();
-    load(false);
     return () => {
       active = false;
     };
@@ -92,7 +109,7 @@ export function AiCoachCard() {
           </Link>
           <button
             onClick={() => canRefresh && !refreshing && load(true)}
-            disabled={!canRefresh || refreshing || loading}
+            disabled={!hasHistory || !canRefresh || refreshing || loading}
             className="rounded-full border border-border bg-secondary px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition hover:text-foreground disabled:opacity-50"
             title={canRefresh ? "Neu generieren" : "Frühestens in 1 h wieder"}
           >
@@ -102,6 +119,24 @@ export function AiCoachCard() {
       </div>
 
       <div className="mt-4 min-h-[80px] text-sm leading-relaxed text-foreground">
+        {!loading && !hasHistory && (
+          <div className="space-y-3">
+            <p>Noch keine Trainingsgrundlage für eine persönliche Empfehlung.</p>
+            <p className="text-xs text-muted-foreground">
+              Unverbindlicher Startvorschlag: Wenn du dich fit fühlst, probiere einen lockeren Satz
+              mit bis zu 3 Liegestützen. Passe die Anzahl an dich an und stoppe bei Schmerzen. Das
+              ist keine persönliche Auswertung; es wird keine KI-Anfrage gestartet.
+            </p>
+            <Link
+              to="/workout/$exerciseId"
+              params={{ exerciseId: "pushup" }}
+              search={{ mode: "manual" }}
+              className="flex min-h-11 items-center justify-center rounded-xl border border-primary/40 px-4 py-3 text-sm font-semibold text-primary"
+            >
+              Manuelle Erfassung öffnen
+            </Link>
+          </div>
+        )}
         {loading && !data && (
           <div className="flex h-full items-center justify-center py-4 text-xs text-muted-foreground">
             Coach denkt nach…
@@ -128,8 +163,8 @@ export function AiCoachCard() {
       {data && (
         <>
           <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-            <PlanStat label="Sets" value={data.plan.sets} />
-            <PlanStat label="Reps" value={data.plan.reps} />
+            <PlanStat label="Sätze" value={data.plan.sets} />
+            <PlanStat label="Wdh." value={data.plan.reps} />
             <PlanStat label="Pause" value={`${data.plan.rest_s}s`} />
           </div>
           <Link
@@ -141,7 +176,7 @@ export function AiCoachCard() {
             Los geht’s →
           </Link>
           <div className="mt-2 text-center text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-            {data.source === "ai" ? "AI-Empfehlung" : "Basis-Empfehlung"}
+            {data.source === "ai" ? "KI-Empfehlung" : "Basis-Empfehlung"}
           </div>
         </>
       )}

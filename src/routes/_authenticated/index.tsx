@@ -53,8 +53,7 @@ export const Route = createFileRoute("/_authenticated/")({
       { title: "Alo — All in one" },
       {
         name: "description",
-        content:
-          "Alo vereint Nose-Pushup-Training, Mira für Alltag und Wissen sowie Nexus Chat an einem Ort.",
+        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat an einem Ort.",
       },
     ],
   }),
@@ -768,13 +767,13 @@ function Dashboard() {
             <Link
               to="/workout/$exerciseId"
               params={{ exerciseId: "pushup" }}
-              search={{ mode: "nose", sets: 3, reps: 8, rest_s: 60, title: "Nose-Pushup" }}
+              search={{ mode: "nose", sets: 3, reps: 8, rest_s: 60, title: "Liegestütztraining" }}
               className="rounded-2xl border border-primary/40 bg-primary/10 p-4 transition hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
               <span className="text-xs font-semibold uppercase tracking-wider text-primary">
                 01 · Training
               </span>
-              <h2 className="mt-1 text-lg font-bold">Nose-Pushup</h2>
+              <h2 className="mt-1 text-lg font-bold">Liegestütztraining</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Liegestütze erfassen: Nase tippt den Zähler, alternativ Kamera oder manuell.
               </p>

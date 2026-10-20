@@ -9,7 +9,7 @@ import { feedbackRep, feedbackWin, feedbackLose, feedbackSuccess } from "@/lib/f
 
 export const Route = createFileRoute("/_authenticated/battle/$id")({
   head: () => ({
-    meta: [{ title: "Battle Arena — Nosy Push-Ups" }],
+    meta: [{ title: "Wettkampf — Alo" }],
   }),
   component: BattleArena,
 });

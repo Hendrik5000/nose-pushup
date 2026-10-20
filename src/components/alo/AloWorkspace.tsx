@@ -26,7 +26,7 @@ import { ContentActions } from "./ContentActions";
 import "@/alo-workspace.css";
 const AREA_LABELS: Record<string, string> = {
   all: "Alo",
-  nose: "Nose-Pushup",
+  nose: "Training",
   mira: "Mira",
   nexus: "Nexus",
 };

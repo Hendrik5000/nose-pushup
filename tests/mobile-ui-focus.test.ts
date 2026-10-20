@@ -178,7 +178,7 @@ test("every app area shares the horizontal Alo brand and preserves all header co
   assert.match(brand, /src="\/alo-wordmark\.png" alt="Alo"/);
   assert.match(brand, /title !== "Alo" && <strong>\{title\}<\/strong>/);
   for (const [path, title] of [
-    ["/", "Nose-Pushup"],
+    ["/", "Training"],
     ["/ai", "Mira"],
     ["/chat", "Nexus Chat"],
     ["/health", "Gesundheit"],
@@ -206,14 +206,13 @@ test("every app area shares the horizontal Alo brand and preserves all header co
 
 test("shared brand renders each area once and never duplicates the Alo umbrella name", () => {
   for (const title of [
-    "Nose-Pushup",
+    "Training",
     "Mira",
     "Nexus Chat",
     "Gesundheit",
     "Programme",
     "Übungen",
     "Einstellungen",
-    "Training",
   ]) {
     const markup = renderToStaticMarkup(createElement(AloHeaderBrand, { title }));
     assert.equal((markup.match(/alt="Alo"/g) ?? []).length, 1);

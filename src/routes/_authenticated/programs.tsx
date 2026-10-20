@@ -223,7 +223,7 @@ function ProgramsPage() {
                       userId={userId}
                       title={activeProgram.title}
                       text={`${activeProgram.title}\n${activeProgram.description}\n${programDays.map((d) => `Tag ${d.day_index}: ${d.focus}, ${d.sets} × ${d.reps}, ${d.rest_s}s Pause. ${d.note}`).join("\n")}`}
-                      source="Nose-Pushup"
+                      source="Training"
                       triggerLabel="Programm speichern oder teilen"
                     />
                   )}
@@ -386,7 +386,7 @@ function ProgramsPage() {
                                   `Tag ${d.day_index}: ${d.focus}, ${d.sets} × ${d.reps}, ${d.rest_s}s Pause. ${d.note}`,
                               )
                               .join("\n")}`}
-                            source="Nose-Pushup"
+                            source="Training"
                             triggerLabel="Programm speichern oder teilen"
                           />
                         )}
@@ -464,7 +464,7 @@ function ProgramsPage() {
                       userId={userId}
                       title={activeProgram.title}
                       text={`${activeProgram.title}\n${activeProgram.description}\n${programDays.map((d) => `Tag ${d.day_index}: ${d.focus}, ${d.sets} × ${d.reps}, ${d.rest_s}s Pause. ${d.note}`).join("\n")}`}
-                      source="Nose-Pushup"
+                      source="Training"
                       triggerLabel="Programm speichern oder teilen"
                     />
                   )}
@@ -634,7 +634,7 @@ function ProgramsPage() {
                                         `Tag ${d.day_index}: ${d.focus}, ${d.sets} × ${d.reps}. ${d.note}`,
                                     )
                                     .join("\n")}`}
-                                  source="Nose-Pushup"
+                                  source="Training"
                                   triggerLabel="Programm speichern oder teilen"
                                 />
                               )}

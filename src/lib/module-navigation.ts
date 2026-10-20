@@ -1,5 +1,5 @@
 export const ALO_MODULES = [
-  { id: "nose", label: "Nose-Pushup", to: "/" },
+  { id: "nose", label: "Training", to: "/" },
   { id: "mira", label: "Mira", to: "/ai" },
   { id: "nexus", label: "Nexus Chat", to: "/chat" },
 ] as const;

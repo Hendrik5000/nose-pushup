@@ -799,7 +799,7 @@ html[data-design-style]
 html[data-design-style]
   .alo-training-focus[data-training-focus="true"]
   .alo-manual-entry
-  > :is(div, p) {
+  > :is(div, p):not(.alo-manual-essential) {
   display: none;
 }
 html[data-design-style] .alo-training-focus[data-training-focus="true"] .alo-manual-entry {

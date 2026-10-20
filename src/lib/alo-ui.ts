@@ -1,7 +1,7 @@
 import type { AloRecord } from "./alo-store";
 
 const PAGES: Record<string, string> = {
-  "/": "Nose-Pushup",
+  "/": "Training",
   "/ai": "Mira",
   "/coach": "Mira",
   "/chat": "Nexus Chat",
@@ -25,11 +25,11 @@ export function aloPageIdentity(path: string) {
       ? "Nexus"
       : path === "/profile"
         ? "Alo"
-        : "Nose-Pushup";
+        : "Training";
   return {
     title:
       PAGES[path] ??
-      (training ? "Training" : path.startsWith("/battle/") ? "Wettkampf" : "Nose-Pushup"),
+      (training ? "Training" : path.startsWith("/battle/") ? "Wettkampf" : "Training"),
     module,
     back:
       path === "/"

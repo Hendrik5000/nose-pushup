@@ -60,7 +60,12 @@ export function ContentActions({
           title,
           text,
           source,
-          area: source === "Nose-Pushup" ? "nose" : source === "Mira" ? "mira" : "nexus",
+          area:
+            source === "Training" || source === "Nose-Pushup"
+              ? "nose"
+              : source === "Mira"
+                ? "mira"
+                : "nexus",
           collectionId: collection,
           ...extra,
         },

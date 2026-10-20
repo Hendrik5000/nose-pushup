@@ -109,7 +109,7 @@ test("performance home puts today's workout before status metrics and keeps widg
   assert.match(statsWidget, /Bestwert, Schritte & Level/);
   assert.doesNotMatch(statsWidget, /Wdh\. heute|Trainingsserie|Tagesziel/);
   const hub = home.slice(home.indexOf('aria-label="Deine Alo-Bereiche"'));
-  assert.match(hub, /<h2 className="mt-1 text-lg font-bold">Nose-Pushup<\/h2>/);
+  assert.match(hub, /<h2 className="mt-1 text-lg font-bold">Liegestütztraining<\/h2>/);
   assert.match(hub, /Deine Gespräche bleiben lokal auf diesem Gerät/);
   assert.doesNotMatch(hub, /Verbinde dich mit Menschen|Chat-Räumen/);
   assert.match(home, /className="sport-counting-group" role="group" aria-label="Zählmethode"/);

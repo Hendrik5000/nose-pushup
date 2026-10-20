@@ -1,3 +1,4 @@
+import { workoutBest } from "@/lib/workout-ui";
 import { DesignView } from "@/components/DesignView";
 import { readWorkoutMetadata } from "@/lib/workout-session";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -29,7 +30,7 @@ import { NotificationSettings } from "@/components/NotificationSettings";
 import { PublicProfileSettings } from "@/components/PublicProfileSettings";
 import { SettingsSection } from "@/components/SettingsSection";
 import { restartWelcomeTour } from "@/components/WelcomeTour";
-import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { SportPageIntro } from "@/components/SportPageIntro";
 
 type Profile = {
   id: string;
@@ -240,6 +241,13 @@ export function ProfilePage() {
     }
   };
 
+  const pushupHistory = workouts.filter((w) => !w.exercise_id || w.exercise_id === "pushup");
+  const profileBest = workoutBest(
+    "pushup",
+    null,
+    profile?.best_count,
+    pushupHistory.length > 0 ? Math.max(...pushupHistory.map((w) => w.count)) : null,
+  );
   const lp = levelProgress(profile?.xp ?? 0);
   const streak = profile?.current_streak ?? 0;
   const streakActive = (() => {
@@ -305,7 +313,7 @@ export function ProfilePage() {
             <section className="mt-4 rounded-3xl border border-primary/40 bg-primary/5 p-5 backdrop-blur">
               <h2 className="text-sm font-semibold text-primary">🔒 Fortschritt sichern</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Erstelle ein Konto, um XP, Streaks und Bestwerte zu behalten.
+                Erstelle ein Konto, um XP, Trainingsserien und Bestwerte zu behalten.
               </p>
               <form onSubmit={upgradeAccount} className="mt-3 space-y-2">
                 <input
@@ -365,12 +373,33 @@ export function ProfilePage() {
             </div>
           </section>
 
+          <nav
+            aria-label="Profilbereiche"
+            className="mt-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+          >
+            {[
+              ["Training", "#profile-training"],
+              ["Darstellung", "#appearance"],
+              ["App & Datenschutz", "#profile-app"],
+              ["Verlauf", "#profile-history"],
+            ].map(([label, href]) => (
+              <a
+                key={href}
+                href={href}
+                className="min-h-11 shrink-0 snap-start rounded-full border border-border bg-card/70 px-4 py-3 text-xs font-semibold text-foreground transition hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+
           <div className="mt-4 space-y-3">
             {profile && (
               <SettingsSection
                 icon="🧠"
                 title="Smart Coach"
-                subtitle="Trainingsplan & Streak-Tipps"
+                subtitle="Trainingsplan & Serien-Tipps"
+                id="profile-training"
               >
                 <CoachPanel profile={profile} workouts={workouts} />
               </SettingsSection>
@@ -444,7 +473,12 @@ export function ProfilePage() {
                 </button>
               </div>
             </SettingsSection>
-            <SettingsSection icon="⚙️" title="Bedienung" subtitle="Sound, Vibration, Teilen">
+            <SettingsSection
+              icon="⚙️"
+              title="Bedienung"
+              subtitle="Sound, Vibration, Teilen"
+              id="profile-app"
+            >
               <div className="space-y-3">
                 <ToggleRow label="Sound" on={soundOn} onToggle={toggleSound} />
                 <ToggleRow label="Vibration" on={hapticsOn} onToggle={toggleHaptics} />
@@ -474,6 +508,7 @@ export function ProfilePage() {
               icon="📋"
               title="Letzte Trainings"
               subtitle={`${workouts.length} Einträge`}
+              id="profile-history"
             >
               <ul className="space-y-2">
                 {workouts.slice(0, 8).map((w) => (
@@ -505,7 +540,7 @@ export function ProfilePage() {
       <DesignView variant="sport">
         <main className="sport-only sport-profile-page mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-6 px-5 py-6 pb-28 sm:px-8">
           <SportPageIntro
-            eyebrow="ATHLETE PROFILE"
+            eyebrow="DEIN TRAININGSPROFIL"
             title="Dein Trainingsprofil"
             description="Identität, Leistung und persönliche App-Einstellungen – übersichtlich gebündelt."
           >
@@ -529,245 +564,301 @@ export function ProfilePage() {
           >
             Daten & Datenschutz · Auf allen Geräten
           </button>
-          <nav className="sport-profile-shortcuts" aria-label="Profileinstellungen">
-            <Link to="/profile" hash="appearance">
-              Design & Navigation
-            </Link>
-            <Link to="/ai">KI-Coach öffnen</Link>
-            <Link to="/health">Gesundheitsdaten</Link>
+          <nav aria-label="Profilbereiche" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            {[
+              ["Konto", "#profile-account"],
+              ["Training", "#profile-training"],
+              ["Darstellung", "#appearance"],
+              ["App & Datenschutz", "#profile-app"],
+              ["Verlauf", "#profile-history"],
+            ].map(([label, href]) => (
+              <a
+                key={href}
+                href={href}
+                className="min-h-11 shrink-0 rounded-full border border-border bg-card/70 px-4 py-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {label}
+              </a>
+            ))}
           </nav>
-          <section className="sport-identity-card relative overflow-hidden rounded-[2rem] border border-primary/25 bg-gradient-to-br from-primary/15 via-card/85 to-background p-6 shadow-sm sm:p-8">
-            <div className="absolute right-0 top-0 h-48 w-48 translate-x-1/4 -translate-y-1/4 rounded-full border border-primary/15" />
-            <div className="absolute right-8 top-8 h-28 w-28 rounded-full border border-primary/15" />
-            <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-primary/30 bg-background/70 text-3xl font-bold shadow-inner">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  (profile?.display_name || "?").slice(0, 1).toUpperCase()
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                  Athlet{isAnonymous ? " · Gastzugang" : "enprofil"}
-                </p>
-                <h2 className="mt-2 truncate text-3xl font-bold tracking-tight">
-                  {profile?.display_name || "Ohne Namen"}
-                </h2>
-                <p className="mt-1 truncate text-sm text-muted-foreground">
-                  {isAnonymous ? "Kein Konto verknüpft" : email}
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold">
-                    Level {lp.level} · {lp.title}
-                  </span>
-                  <span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold">
-                    {lp.xp.toLocaleString("de-DE")} XP
-                  </span>
-                  <span
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${streakActive && streak > 0 ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-background/60 text-muted-foreground"}`}
-                  >
-                    {streak > 0 && streakActive ? "🔥" : "❄️"} {streak} Tage Serie
-                  </span>
+          <SettingsSection
+            icon="👤"
+            title="Konto & Fortschritt"
+            subtitle={profile?.display_name || "Dein Konto"}
+            id="profile-account"
+          >
+            <section className="sport-identity-card relative overflow-hidden rounded-[2rem] border border-primary/25 bg-gradient-to-br from-primary/15 via-card/85 to-background p-6 shadow-sm sm:p-8">
+              <div className="absolute right-0 top-0 h-48 w-48 translate-x-1/4 -translate-y-1/4 rounded-full border border-primary/15" />
+              <div className="absolute right-8 top-8 h-28 w-28 rounded-full border border-primary/15" />
+              <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-primary/30 bg-background/70 text-3xl font-bold shadow-inner">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    (profile?.display_name || "?").slice(0, 1).toUpperCase()
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                    Athlet{isAnonymous ? " · Gastzugang" : "enprofil"}
+                  </p>
+                  <h2 className="mt-2 truncate text-3xl font-bold tracking-tight">
+                    {profile?.display_name || "Ohne Namen"}
+                  </h2>
+                  <p className="mt-1 truncate text-sm text-muted-foreground">
+                    {isAnonymous ? "Kein Konto verknüpft" : email}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold">
+                      Level {lp.level} · {lp.title}
+                    </span>
+                    <span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold">
+                      {lp.xp.toLocaleString("de-DE")} XP
+                    </span>
+                    <span
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${streakActive && streak > 0 ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-background/60 text-muted-foreground"}`}
+                    >
+                      {workouts.length > 0 ? `${streak} Tage Serie` : "Noch keine Trainingsserie"}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="relative mt-6">
-              <div className="mb-2 flex justify-between text-xs text-muted-foreground">
-                <span>Fortschritt zum nächsten Level</span>
-                <span>{Math.round(lp.progress * 100)}%</span>
+              <div className="relative mt-6">
+                <div className="mb-2 flex justify-between text-xs text-muted-foreground">
+                  <span>Fortschritt zum nächsten Level</span>
+                  <span>{Math.round(lp.progress * 100)}%</span>
+                </div>
+                <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${lp.progress * 100}%` }}
+                  />
+                </div>
               </div>
-              <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${lp.progress * 100}%` }}
-                />
-              </div>
-            </div>
-          </section>
-          {isAnonymous && (
-            <section className="rounded-[1.75rem] border border-primary/35 bg-primary/5 p-6">
-              <h2 className="text-lg font-bold text-primary">🔒 Fortschritt sichern</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Erstelle ein Konto, um XP, Streaks und Bestwerte zu behalten.
-              </p>
-              <form onSubmit={upgradeAccount} className="mt-4 grid gap-3 sm:grid-cols-3">
-                <input
-                  type="email"
-                  value={upgradeEmail}
-                  onChange={(e) => setUpgradeEmail(e.target.value)}
-                  placeholder="E-Mail"
-                  className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
-                />
-                <input
-                  type="password"
-                  value={upgradePassword}
-                  onChange={(e) => setUpgradePassword(e.target.value)}
-                  placeholder="Passwort (min. 6 Zeichen)"
-                  className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
-                />
-                {upgradeMsg && (
-                  <p className="self-center text-xs text-muted-foreground sm:col-span-2">
-                    {upgradeMsg}
-                  </p>
-                )}
-                <button
-                  type="submit"
-                  disabled={upgrading}
-                  className="rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
-                >
-                  {upgrading ? "Erstelle…" : "Konto erstellen"}
-                </button>
-              </form>
             </section>
-          )}
-          <section className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Bestwert
-              </div>
-              <div className="mt-2 text-3xl font-bold tabular-nums">{profile?.best_count ?? 0}</div>
-              <div className="text-xs text-muted-foreground">Liegestütze</div>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Längste Serie
-              </div>
-              <div className="mt-2 text-3xl font-bold tabular-nums">
-                {profile?.longest_streak ?? 0}
-              </div>
-              <div className="text-xs text-muted-foreground">Tage am Stück</div>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Trainings
-              </div>
-              <div className="mt-2 text-3xl font-bold tabular-nums">{workouts.length}</div>
-              <div className="text-xs text-muted-foreground">letzte Einträge</div>
-            </div>
-          </section>
-          <SportSectionLabel number="01">Training & Nexus Chat</SportSectionLabel>
-          <div className="grid gap-4 lg:grid-cols-2">
-            {profile && (
-              <SettingsSection
-                icon="🧠"
-                title="Smart Coach"
-                subtitle="Trainingsplan & Streak-Tipps"
-              >
-                <CoachPanel profile={profile} workouts={workouts} />
-              </SettingsSection>
+            {isAnonymous && (
+              <section className="rounded-[1.75rem] border border-primary/35 bg-primary/5 p-6">
+                <h2 className="text-lg font-bold text-primary">🔒 Fortschritt sichern</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Erstelle ein Konto, um XP, Trainingsserien und Bestwerte zu behalten.
+                </p>
+                <form onSubmit={upgradeAccount} className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <input
+                    type="email"
+                    value={upgradeEmail}
+                    onChange={(e) => setUpgradeEmail(e.target.value)}
+                    placeholder="E-Mail"
+                    className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
+                  />
+                  <input
+                    type="password"
+                    value={upgradePassword}
+                    onChange={(e) => setUpgradePassword(e.target.value)}
+                    placeholder="Passwort (min. 6 Zeichen)"
+                    className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
+                  />
+                  {upgradeMsg && (
+                    <p className="self-center text-xs text-muted-foreground sm:col-span-2">
+                      {upgradeMsg}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={upgrading}
+                    className="rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+                  >
+                    {upgrading ? "Erstelle…" : "Konto erstellen"}
+                  </button>
+                </form>
+              </section>
             )}
-            {profile && (
-              <SettingsSection icon="🤝" title="Freunde" subtitle="Einladen & zusammen trainieren">
-                <FriendsPanel userId={profile.id} />
-              </SettingsSection>
-            )}
-            <SettingsSection icon="🏅" title="Badges" subtitle="Deine Erfolge">
-              <BadgeGallery />
-            </SettingsSection>
-            {profile && (
-              <SettingsSection icon="🌐" title="Öffentliches Profil" subtitle="Teilen & Einladen">
-                <PublicProfileSettings />
-              </SettingsSection>
-            )}
-          </div>
-          <SportSectionLabel number="02">Persönliche Daten & Darstellung</SportSectionLabel>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <SettingsSection
-              icon="✏️"
-              title="Profil bearbeiten"
-              subtitle={profile?.display_name || "Ohne Namen"}
-            >
-              <div className="space-y-3">
-                <Field
-                  label="Anzeigename"
-                  value={displayName}
-                  onChange={setDisplayName}
-                  maxLength={60}
-                />
-                <Field
-                  label="Avatar-URL"
-                  value={avatarUrl}
-                  onChange={setAvatarUrl}
-                  placeholder="https://…"
-                  maxLength={500}
-                />
-                {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
-                <button
-                  onClick={save}
-                  disabled={saving || !profile}
-                  className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+            <section className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
+                <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Bestwert
+                </div>
+                <div className="mt-2 break-words text-xl font-bold tabular-nums sm:text-3xl">
+                  {profileBest === null ? "Noch kein Bestwert" : profileBest}
+                </div>
+                {workouts.length > 0 && (
+                  <div className="text-xs text-muted-foreground">Liegestütze</div>
+                )}
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
+                <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Längste Serie
+                </div>
+                <div className="mt-2 break-words text-xl font-bold tabular-nums sm:text-3xl">
+                  {workouts.length > 0 ? (profile?.longest_streak ?? 0) : "Noch keine Serie"}
+                </div>
+                <div className="text-xs text-muted-foreground">Tage am Stück</div>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
+                <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Trainings
+                </div>
+                <div className="mt-2 break-words text-xl font-bold tabular-nums sm:text-3xl">
+                  {workouts.length > 0 ? workouts.length : "Noch keine Erfassung"}
+                </div>
+                {workouts.length > 0 && (
+                  <div className="text-xs text-muted-foreground">letzte Einträge</div>
+                )}
+              </div>
+            </section>
+          </SettingsSection>
+          <SettingsSection
+            icon="💪"
+            title="Training & Kontakte"
+            subtitle="Coach, Freunde, Abzeichen & öffentliches Profil"
+            id="profile-training"
+          >
+            <nav className="mb-4 flex flex-wrap gap-3" aria-label="Weitere Trainingsbereiche">
+              <Link to="/ai" className="alo-btn min-h-11">
+                KI-Coach öffnen
+              </Link>
+              <Link to="/health" className="alo-btn min-h-11">
+                Gesundheitsdaten
+              </Link>
+            </nav>
+            <div className="grid gap-4 lg:grid-cols-2">
+              {profile && (
+                <SettingsSection
+                  icon="🧠"
+                  title="Smart Coach"
+                  subtitle="Trainingsplan & Serien-Tipps"
                 >
-                  {saving ? "Speichere…" : "Profil speichern"}
+                  <CoachPanel profile={profile} workouts={workouts} />
+                </SettingsSection>
+              )}
+              {profile && (
+                <SettingsSection
+                  icon="🤝"
+                  title="Freunde"
+                  subtitle="Einladen & zusammen trainieren"
+                >
+                  <FriendsPanel userId={profile.id} />
+                </SettingsSection>
+              )}
+              <SettingsSection icon="🏅" title="Badges" subtitle="Deine Erfolge">
+                <BadgeGallery />
+              </SettingsSection>
+              {profile && (
+                <SettingsSection icon="🌐" title="Öffentliches Profil" subtitle="Teilen & Einladen">
+                  <PublicProfileSettings />
+                </SettingsSection>
+              )}
+            </div>
+          </SettingsSection>
+          <SettingsSection
+            icon="🎨"
+            title="Profil & Darstellung"
+            subtitle="Persönliche Daten, 6 Stile, 13 Farben & Navigation"
+            id="appearance"
+            revealKey={profile?.id}
+          >
+            <div className="grid gap-4 lg:grid-cols-2">
+              <SettingsSection
+                icon="✏️"
+                title="Profil bearbeiten"
+                subtitle={profile?.display_name || "Ohne Namen"}
+              >
+                <div className="space-y-3">
+                  <Field
+                    label="Anzeigename"
+                    value={displayName}
+                    onChange={setDisplayName}
+                    maxLength={60}
+                  />
+                  <Field
+                    label="Avatar-URL"
+                    value={avatarUrl}
+                    onChange={setAvatarUrl}
+                    placeholder="https://…"
+                    maxLength={500}
+                  />
+                  {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
+                  <button
+                    onClick={save}
+                    disabled={saving || !profile}
+                    className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+                  >
+                    {saving ? "Speichere…" : "Profil speichern"}
+                  </button>
+                </div>
+              </SettingsSection>
+              <SettingsSection
+                icon="🎨"
+                title="Design & Navigation"
+                subtitle="Stil, Schrift, Layout & Farben"
+                profileAppearance
+                revealKey={profile?.id}
+              >
+                <button
+                  type="button"
+                  className="profile-appearance-back mb-3 min-h-11 text-sm font-semibold text-primary"
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                >
+                  ← Zurück zu Einstellungen
                 </button>
-              </div>
-            </SettingsSection>
-            <SettingsSection
-              icon="🎨"
-              title="Design & Navigation"
-              subtitle="Stil, Schrift, Layout & Farben"
-              profileAppearance
-              revealKey={profile?.id}
-            >
-              <button
-                type="button"
-                className="profile-appearance-back mb-3 min-h-11 text-sm font-semibold text-primary"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                <h3 className="mb-2 text-sm font-bold">Designstil</h3>
+                <DesignStylePicker />
+                <div className="mt-5 border-t border-border pt-5">
+                  <h3 className="mb-2 text-sm font-bold">Homebar & Navigation</h3>
+                  <NavigationLayoutPicker />
+                </div>
+                <div className="mt-5 border-t border-border pt-5">
+                  <h3 className="mb-2 text-sm font-bold">Farbwelt</h3>
+                  <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
+                </div>
+              </SettingsSection>
+            </div>
+          </SettingsSection>
+          <SettingsSection
+            icon="⚙️"
+            title="App & Datenschutz"
+            subtitle="Bedienung, Benachrichtigungen, Fehlerberichte & Hilfe"
+            id="profile-app"
+          >
+            <div className="grid gap-4 lg:grid-cols-2">
+              <SettingsSection
+                icon="⚙️"
+                title="Bedienung & Teilen"
+                subtitle="Sound, Vibration, Aktivität"
               >
-                ← Zurück zu Einstellungen
-              </button>
-              <h3 className="mb-2 text-sm font-bold">Designstil</h3>
-              <DesignStylePicker />
-              <div className="mt-5 border-t border-border pt-5">
-                <h3 className="mb-2 text-sm font-bold">Homebar & Navigation</h3>
-                <NavigationLayoutPicker />
-              </div>
-              <div className="mt-5 border-t border-border pt-5">
-                <h3 className="mb-2 text-sm font-bold">Farbwelt</h3>
-                <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
-              </div>
-            </SettingsSection>
-          </div>
-          <SportSectionLabel number="03">App & Datenschutz</SportSectionLabel>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <SettingsSection
-              icon="⚙️"
-              title="Bedienung & Teilen"
-              subtitle="Sound, Vibration, Aktivität"
-            >
-              <div className="space-y-3">
-                <ToggleRow label="Sound" on={soundOn} onToggle={toggleSound} />
-                <ToggleRow label="Vibration" on={hapticsOn} onToggle={toggleHaptics} />
-                <ToggleRow label="Aktivität teilen" on={shareActivity} onToggle={toggleShare} />
-              </div>
-            </SettingsSection>
-            <SettingsSection icon="🔔" title="Benachrichtigungen" subtitle="Erinnerungen">
-              <NotificationSettings />
-            </SettingsSection>
-            <SettingsSection
-              icon="🐞"
-              title="Fehlerberichte"
-              subtitle="Automatisch erfasst — für Auto-Fix senden"
-            >
-              <ErrorReportsPanel />
-            </SettingsSection>
-            <SettingsSection icon="❓" title="Hilfe" subtitle="Tour neu starten">
-              <button
-                type="button"
-                onClick={() => {
-                  if (profile) restartWelcomeTour(profile.id);
-                }}
-                className="w-full rounded-2xl border border-border px-4 py-3 text-sm font-semibold"
+                <div className="space-y-3">
+                  <ToggleRow label="Sound" on={soundOn} onToggle={toggleSound} />
+                  <ToggleRow label="Vibration" on={hapticsOn} onToggle={toggleHaptics} />
+                  <ToggleRow label="Aktivität teilen" on={shareActivity} onToggle={toggleShare} />
+                </div>
+              </SettingsSection>
+              <SettingsSection icon="🔔" title="Benachrichtigungen" subtitle="Erinnerungen">
+                <NotificationSettings />
+              </SettingsSection>
+              <SettingsSection
+                icon="🐞"
+                title="Fehlerberichte"
+                subtitle="Automatisch erfasst — für Auto-Fix senden"
               >
-                Willkommenstour starten
-              </button>
-            </SettingsSection>
-          </div>
-          <SportSectionLabel number="04">Letzte Trainings</SportSectionLabel>
+                <ErrorReportsPanel />
+              </SettingsSection>
+              <SettingsSection icon="❓" title="Hilfe" subtitle="Tour neu starten">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (profile) restartWelcomeTour(profile.id);
+                  }}
+                  className="w-full rounded-2xl border border-border px-4 py-3 text-sm font-semibold"
+                >
+                  Willkommenstour starten
+                </button>
+              </SettingsSection>
+            </div>
+          </SettingsSection>
           <SettingsSection
             icon="📋"
             title="Trainingsverlauf"
-            subtitle={`${workouts.length} Einträge`}
+            subtitle={workouts.length > 0 ? `${workouts.length} Einträge` : "Noch keine Erfassung"}
+            id="profile-history"
           >
             <ul className="space-y-2">
               {workouts.slice(0, 8).map((w) => (

@@ -11,13 +11,13 @@ import { Activity, ArrowUpRight, Dumbbell, Footprints, Timer, Zap } from "lucide
 export const Route = createFileRoute("/_authenticated/exercises")({
   head: () => ({
     meta: [
-      { title: "Übungen — Nose Push" },
+      { title: "Übungen — Alo" },
       {
         name: "description",
         content:
           "Alle Übungen im Überblick: Calisthenics, Push-Up, Sit-Up, Squat, Plank und Burpee.",
       },
-      { property: "og:title", content: "Übungen — Nose Push" },
+      { property: "og:title", content: "Übungen — Alo" },
       { property: "og:description", content: "Wähle eine Übung und starte dein Workout." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

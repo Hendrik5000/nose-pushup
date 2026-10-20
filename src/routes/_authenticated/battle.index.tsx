@@ -16,7 +16,7 @@ import {
 export const Route = createFileRoute("/_authenticated/battle/")({
   head: () => ({
     meta: [
-      { title: "Battle — Nosy Push-Ups" },
+      { title: "Wettkampf — Alo" },
       { name: "description", content: "1v1 Push-Up Duell in Echtzeit — fordere Freunde heraus." },
     ],
   }),

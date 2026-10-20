@@ -33,7 +33,7 @@ import {
 export const Route = createFileRoute("/_authenticated/calisthenics")({
   head: () => ({
     meta: [
-      { title: "Calisthenics — Nose Push" },
+      { title: "Calisthenics — Alo" },
       {
         name: "description",
         content:

@@ -8,7 +8,7 @@ import { Swords, Trophy } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/battle-league")({
   head: () => ({
     meta: [
-      { title: "Battle-Liga — Nosy Push-Ups" },
+      { title: "Wettkampfliga — Alo" },
       { name: "description", content: "Elo-Rangliste, Rivalen und deine Battle-Bilanz." },
     ],
   }),

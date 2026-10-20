@@ -15,13 +15,13 @@ import { averageMeasuredHealthValue, measuredHealthValue } from "@/lib/health-gl
 export const Route = createFileRoute("/_authenticated/health")({
   head: () => ({
     meta: [
-      { title: "Health Connect — Nose Push" },
+      { title: "Health Connect — Alo" },
       {
         name: "description",
         content:
           "Google Health Connect, Smartwatch und Gesundheitsdaten mit dem Training verbinden.",
       },
-      { property: "og:title", content: "Health Connect — Nose Push" },
+      { property: "og:title", content: "Health Connect — Alo" },
       { property: "og:description", content: "Schritte, Schlaf und Aktivität synchronisieren." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

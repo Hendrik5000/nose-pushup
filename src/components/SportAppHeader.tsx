@@ -96,7 +96,7 @@ export function SportAppHeader() {
             <Link
               to={identity.back}
               className="alo-icon-button"
-              aria-label={`Zurück zu ${identity.back === "/" ? "Nose-Pushup" : identity.back === "/exercises" ? "Übungen" : "Calisthenics"}`}
+              aria-label={`Zurück zu ${identity.back === "/" ? "Training" : identity.back === "/exercises" ? "Übungen" : "Calisthenics"}`}
             >
               <ArrowLeft aria-hidden="true" />
             </Link>

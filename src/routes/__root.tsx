@@ -92,7 +92,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Alo — All in one" },
       {
         name: "description",
-        content: "Alo vereint Nose-Pushup-Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
       },
       { name: "theme-color", content: "#0b0b0f" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
@@ -103,7 +103,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Alo — All in one" },
       {
         property: "og:description",
-        content: "Alo vereint Nose-Pushup-Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -111,7 +111,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "Alo — All in one" },
       {
         name: "twitter:description",
-        content: "Alo vereint Nose-Pushup-Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
       },
       {
         property: "og:image",

@@ -10,13 +10,13 @@ import { Flag, Users, Trophy, Send, LogOut } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/clubs")({
   head: () => ({
     meta: [
-      { title: "Clubs — Nosy Push-Ups" },
+      { title: "Gemeinschaft — Alo" },
       {
         name: "description",
         content:
           "Gründe einen Club, erreicht gemeinsam das Wochenziel und klettert in der Club-Liga nach oben.",
       },
-      { property: "og:title", content: "Clubs — Nosy Push-Ups" },
+      { property: "og:title", content: "Gemeinschaft — Alo" },
       {
         property: "og:description",
         content: "Gemeinsames Wochenziel, Club-Feed und Liga-Rangliste.",

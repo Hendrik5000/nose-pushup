@@ -7,12 +7,12 @@ export const Route = createFileRoute("/u/$slug")({
   loader: ({ params }) => getPublicProfile({ data: { slug: params.slug } }),
   head: ({ params }) => ({
     meta: [
-      { title: `${params.slug} — Nosy Push-Ups Profil` },
+      { title: `${params.slug} — Alo · Öffentliches Trainingsprofil` },
       {
         name: "description",
         content: `Öffentliches Trainingsprofil von ${params.slug}: Level, Streak, Bestwert und Battle-Siege.`,
       },
-      { property: "og:title", content: `${params.slug} — Nosy Push-Ups Profil` },
+      { property: "og:title", content: `${params.slug} — Alo · Öffentliches Trainingsprofil` },
       {
         property: "og:description",
         content: "Level, Streak, Bestwert und Battle-Siege ansehen.",
@@ -104,7 +104,7 @@ function PublicProfilePage() {
       <DesignView variant="sport">
         <main className="sport-only sport-public-profile mx-auto flex min-h-[100dvh] w-full max-w-4xl flex-col gap-6 px-5 py-8 sm:px-8">
           <SportPageIntro
-            eyebrow="ATHLETE CARD · PUBLIC"
+            eyebrow="ÖFFENTLICHES TRAININGSPROFIL"
             title="Trainingsprofil"
             description="Öffentliche Bestwerte und Trainingserfolge."
           />
@@ -119,7 +119,7 @@ function PublicProfilePage() {
               </div>
               <div>
                 <div className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                  Level {profile.level} Athlete
+                  Level {profile.level} · Trainingslevel
                 </div>
                 <h2 className="mt-2 text-3xl font-bold tracking-tight">
                   {profile.display_name || slug}

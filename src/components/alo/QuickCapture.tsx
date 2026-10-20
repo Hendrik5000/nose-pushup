@@ -171,7 +171,7 @@ export function QuickCapture({ userId, onSaved }: { userId: string; onSaved?: ()
             onChange={(e) => setArea(e.target.value)}
           >
             <option value="all">Alo · Allgemein</option>
-            <option value="nose">Nose-Pushup</option>
+            <option value="nose">Training</option>
             <option value="mira">Mira</option>
             <option value="nexus">Nexus</option>
           </select>

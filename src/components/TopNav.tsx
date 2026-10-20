@@ -5,14 +5,14 @@ import { updateNavigationForScroll } from "@/lib/navigation-layout";
 import { useAutoHideModuleMenu } from "@/hooks/useAutoHideModuleMenu";
 
 const ITEMS = [
-  { to: "/", label: "Nose-Pushup", icon: House },
+  { to: "/", label: "Training", icon: House },
   { to: "/ai", label: "Mira", icon: Sparkles },
   { to: "/chat", label: "Nexus Chat", icon: MessageCircle },
-  { to: "/exercises", label: "Training", icon: Dumbbell },
+  { to: "/exercises", label: "Übungen", icon: Dumbbell },
   { to: "/profile", label: "Profil", icon: UserRound },
 ] as const;
 const MODULES = [
-  { to: "/", label: "Nose" },
+  { to: "/", label: "Training" },
   { to: "/ai", label: "Mira" },
   { to: "/chat", label: "Nexus" },
 ] as const;

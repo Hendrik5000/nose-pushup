@@ -9,7 +9,7 @@ import { BottomNav } from "@/components/BottomNav";
 export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
     meta: [
-      { title: "Smart Coach — Nosy Push-Ups" },
+      { title: "Smart Coach — Alo" },
       {
         name: "description",
         content:

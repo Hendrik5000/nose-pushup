@@ -155,7 +155,7 @@ function AuthPage() {
               <p className="mt-1 text-sm text-muted-foreground">
                 {mode === "signin"
                   ? "Melde dich an, um deine Alo-Module zu nutzen."
-                  : "Nutze Alo mit Nose-Pushup, Mira und Nexus auf allen Geräten."}
+                  : "Nutze Alo mit Training, Mira und Nexus auf allen Geräten."}
               </p>
 
               <div className="mt-6 space-y-2">
@@ -304,7 +304,7 @@ function AuthPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               {mode === "signin"
                 ? "Melde dich an, um deine Alo-Module zu nutzen."
-                : "Nutze Alo mit Nose-Pushup, Mira und Nexus auf allen Geräten."}
+                : "Nutze Alo mit Training, Mira und Nexus auf allen Geräten."}
             </p>
             <div className="mt-6 grid gap-2">
               <OAuthButton

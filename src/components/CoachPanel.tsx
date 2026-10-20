@@ -95,6 +95,35 @@ export function CoachPanel({ profile, workouts }: Props) {
     };
   }, [profile.last_workout_date, workedOutToday, streakActive, streak, lp, today]);
 
+  if (workouts.length === 0) {
+    return (
+      <div className="mt-3 space-y-4">
+        <div className="rounded-2xl border border-border bg-background/50 p-4">
+          <h3 className="text-sm font-semibold">Noch keine Trainingsgrundlage</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Ohne erfasste Einheiten kann Alo keine persönliche Empfehlung aus deinem Verlauf
+            ableiten.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
+          <h3 className="text-sm font-semibold">Unverbindlicher Startvorschlag</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Wenn du dich fit fühlst: Probiere einen lockeren Satz mit bis zu 3 Liegestützen. Passe
+            die Anzahl an dich an und höre bei Schmerzen auf. Das ist keine persönliche Auswertung.
+          </p>
+          <Link
+            to="/workout/$exerciseId"
+            params={{ exerciseId: "pushup" }}
+            search={{ mode: "manual" }}
+            className="mt-4 flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+          >
+            Manuelle Erfassung öffnen
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const toneClass =
     status.tone === "good"
       ? "border-primary/40 bg-primary/10 text-primary"
@@ -117,14 +146,14 @@ export function CoachPanel({ profile, workouts }: Props) {
         <div className="mt-0.5 text-xs opacity-90">{status.text}</div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+      <div className="mt-4 grid grid-cols-1 gap-2 text-center sm:grid-cols-3">
         <MiniStat label="Streak" value={`${streak}${streakActive ? "🔥" : ""}`} />
         <MiniStat label="7 Tage" value={String(weekWiederholungen)} />
-        <MiniStat label="Freezes" value={String(profile.streak_freezes ?? 0)} />
+        <MiniStat label="Serien-Schutz" value={String(profile.streak_freezes ?? 0)} />
       </div>
 
       <div className="mt-5">
-        <div className="mb-2 flex items-baseline justify-between">
+        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Nächstes Training
           </span>
@@ -139,7 +168,7 @@ export function CoachPanel({ profile, workouts }: Props) {
               · Wechsel zu {EX_LABEL[suggestNext]} für Balance
             </span>
           </div>
-          <ul className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+          <ul className="mt-3 grid grid-cols-1 gap-2 text-center sm:grid-cols-3 text-xs">
             {reps.map((s, i) => (
               <li
                 key={i}

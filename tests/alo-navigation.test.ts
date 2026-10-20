@@ -50,7 +50,7 @@ test("optional bar hides after intentional downward scroll, returns upward, and 
 test("new onboarding, compact module controls, hidden-by-default legacy nav, and optional context are explicit", () => {
   const tour = read("components/WelcomeTour.tsx");
   assert.match(tour, /nose-push:tour-seen:\$\{VERSION\}/);
-  assert.match(tour, /Nose-Pushup/);
+  assert.match(tour, /Training/);
   assert.match(tour, /horizontal/);
   assert.match(tour, /Tour kannst du im Profil wiederholen/);
   const shell = read("routes/_authenticated/route.tsx");

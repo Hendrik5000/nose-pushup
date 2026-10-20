@@ -213,7 +213,7 @@ export async function requestHealthConnectPermissions(): Promise<{
     ok: true,
     via: "app",
     message:
-      "Health Connect geöffnet — erlaube den Zugriff für Nose Push, dann hier „Daten synchronisieren“ tippen.",
+      "Health Connect geöffnet — erlaube den Zugriff für diese App, dann hier „Daten synchronisieren“ tippen.",
   };
 }
 

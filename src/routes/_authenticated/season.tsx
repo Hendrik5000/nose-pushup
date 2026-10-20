@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/season")({
       {
         name: "description",
         content:
-          "Sammle Saisonpunkte, steige von Bronze bis Elite auf und tausche Münzen gegen Themes, Rahmen und Streak-Freezes.",
+          "Sammle Saisonpunkte, steige von Bronze bis Elite auf und tausche Münzen gegen Themes, Rahmen und Serien-Schutz.",
       },
       { property: "og:title", content: "Saison & Belohnungen — Alo" },
       {

@@ -1,3 +1,4 @@
+import { adjustManualCount, workoutBest } from "@/lib/workout-ui";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -32,7 +33,7 @@ type PushMode = "nose" | "manual" | "camera";
 export const Route = createFileRoute("/_authenticated/workout/$exerciseId")({
   validateSearch: (search: Record<string, unknown>) => validateWorkoutSearch(search),
   head: ({ params }) => ({
-    meta: [{ title: `${params.exerciseId} — Nosy Push-Ups` }],
+    meta: [{ title: `${params.exerciseId === "pushup" ? "Liegestütze" : "Training"} — Alo` }],
   }),
   component: WorkoutScreen,
 });
@@ -62,7 +63,8 @@ function WorkoutScreen() {
 
   const [exercise, setExercise] = useState<ExerciseMeta | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [best, setBest] = useState(0);
+  const [best, setBest] = useState<number | null>(null);
+  const [latestCount, setLatestCount] = useState<number | null>(null);
 
   const [active, setActive] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -227,6 +229,9 @@ function WorkoutScreen() {
   // Load exercise + user best
   useEffect(() => {
     let cancelled = false;
+    setBest(null);
+    setLatestCount(null);
+    setUserId(null);
     (async () => {
       const [{ data: u }, { data: ex }] = await Promise.all([
         supabase.auth.getUser(),
@@ -240,17 +245,40 @@ function WorkoutScreen() {
       setExercise(ex as ExerciseMeta);
       if (u.user) {
         setUserId(u.user.id);
-        const { data: p } = await supabase
-          .from("profiles")
-          .select("personal_bests, best_count")
-          .eq("id", u.user.id)
-          .maybeSingle();
-        if (p) {
-          const pb = (p as { personal_bests: Record<string, number> | null }).personal_bests ?? {};
-          const fallback =
-            exerciseId === "pushup" ? ((p as { best_count: number }).best_count ?? 0) : 0;
-          setBest(pb[exerciseId] ?? fallback);
-        }
+        const [{ data: p }, { data: history }, { data: highest }] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("personal_bests, best_count")
+            .eq("id", u.user.id)
+            .maybeSingle(),
+          supabase
+            .from("workouts")
+            .select("count")
+            .eq("user_id", u.user.id)
+            .eq("exercise_id", exerciseId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from("workouts")
+            .select("count")
+            .eq("user_id", u.user.id)
+            .eq("exercise_id", exerciseId)
+            .order("count", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+        if (cancelled) return;
+        const latest = history?.count ?? null;
+        setLatestCount(latest);
+        setBest(
+          workoutBest(
+            exerciseId,
+            p?.personal_bests as Record<string, number> | null,
+            p?.best_count,
+            highest?.count ?? null,
+          ),
+        );
       }
     })();
     return () => {
@@ -447,7 +475,7 @@ function WorkoutScreen() {
     });
     if (!error) {
       feedbackSuccess();
-      const newBest = !sessionSummary?.partial && savedCount > best;
+      const newBest = !sessionSummary?.partial && savedCount > (best ?? -1);
       setSummary({
         count: savedCount,
         durationMs: duration_ms,
@@ -665,6 +693,56 @@ function WorkoutScreen() {
 
   const modeLabel: Record<PushMode, string> = { nose: "Nase", manual: "Manuell", camera: "Kamera" };
 
+  const manualEnabled = !isPlanned || session?.phase === "active";
+  const updateManualInput = (value: string) => {
+    const cleaned = value.replace(/[^0-9]/g, "");
+    const bounded = cleaned === "" ? "" : String(Math.min(1000, parseInt(cleaned, 10) || 0));
+    setManualInput(bounded);
+    if (isPlanned)
+      setSession((s) =>
+        s?.phase === "active" ? { ...s, currentReps: parseInt(bounded, 10) || 0 } : s,
+      );
+  };
+  const manualControls = (
+    <div
+      className="alo-manual-essential mt-4 grid w-full max-w-xs grid-cols-2 gap-3"
+      role="group"
+      aria-label="Wiederholungen anpassen"
+    >
+      <button
+        type="button"
+        aria-label="Eine Wiederholung weniger"
+        disabled={!manualEnabled || !manualInput || Number(manualInput) <= 0}
+        onClick={() => updateManualInput(adjustManualCount(manualInput, -1))}
+        className="min-h-14 min-w-14 rounded-2xl border border-border bg-secondary px-4 py-3 text-2xl font-bold disabled:opacity-40"
+      >
+        −
+      </button>
+      <button
+        type="button"
+        aria-label="Eine Wiederholung mehr"
+        disabled={!manualEnabled || Number(manualInput) >= 1000}
+        onClick={() => updateManualInput(adjustManualCount(manualInput, 1))}
+        className="min-h-14 min-w-14 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-2xl font-bold text-primary disabled:opacity-40"
+      >
+        +
+      </button>
+    </div>
+  );
+  const manualHint = (
+    <p
+      id="manual-save-hint"
+      className="alo-manual-essential mt-3 text-center text-sm leading-relaxed text-muted-foreground"
+      aria-live="polite"
+    >
+      {!manualEnabled
+        ? "Starte den nächsten Satz, um Wiederholungen einzutragen."
+        : !manualInput || Number(manualInput) <= 0
+          ? "Zum Speichern mindestens 1 Wiederholung eintragen. Noch wurde nichts gespeichert."
+          : "Deine Eingabe ist noch nicht gespeichert. Danach kannst du die Belastung angeben."}
+    </p>
+  );
+
   // Manual mode: user just types how many they did.
   const submitManual = () => {
     const n = Math.max(0, Math.min(1000, parseInt(manualInput, 10) || 0));
@@ -709,7 +787,7 @@ function WorkoutScreen() {
     });
     if (!error) {
       feedbackSuccess();
-      const newBest = !sessionSummary?.partial && n > best;
+      const newBest = !sessionSummary?.partial && n > (best ?? -1);
       setSummary({
         count: n,
         durationMs: sessionSummary?.actualDurationMs ?? 0,
@@ -772,8 +850,16 @@ function WorkoutScreen() {
             <section className="alo-training-secondary sport-focus-card rounded-3xl border border-border bg-card/60 p-5 sm:p-7">
               <SportSectionLabel number="01">Dein Leistungsstand</SportSectionLabel>
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <Stat label="Persönlicher Bestwert" value={best.toString()} />
-                <Stat label="Erfassungsmodus" value="Manuell" />
+                <Stat
+                  label="Persönlicher Bestwert"
+                  value={best === null ? "Noch kein Bestwert" : best.toString()}
+                />
+                <Stat
+                  label="Letzte Erfassung"
+                  value={
+                    latestCount === null ? "Noch keine Erfassung" : `${latestCount} Wiederholungen`
+                  }
+                />
               </div>
             </section>
             {isPlanned && session && (
@@ -896,26 +982,27 @@ function WorkoutScreen() {
                   type="number"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  min={1}
+                  min={0}
                   max={1000}
                   value={manualInput}
                   disabled={isPlanned && session?.phase !== "active"}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9]/g, "");
-                    setManualInput(value);
-                    if (isPlanned)
-                      setSession((s) =>
-                        s?.phase === "active"
-                          ? { ...s, currentReps: Math.min(1000, parseInt(value, 10) || 0) }
-                          : s,
-                      );
-                  }}
-                  placeholder="0"
+                  onChange={(e) => updateManualInput(e.target.value)}
+                  placeholder="—"
                   className="mt-3 w-full max-w-xs rounded-2xl border border-border bg-background/60 px-5 py-5 text-center font-display text-7xl font-bold tabular-nums text-foreground focus:border-primary focus:outline-none"
                 />
+                {manualControls}
+                <p
+                  className="alo-manual-essential mt-3 text-sm text-muted-foreground"
+                  aria-live="polite"
+                >
+                  {manualInput === ""
+                    ? "Noch keine Erfassung"
+                    : `${manualInput} Wiederholungen eingetragen`}
+                </p>
                 <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
                   Trage die Anzahl deiner gerade absolvierten Liegestütze ein.
                 </p>
+                {manualHint}
               </section>
             )}
             {awaitingRpe ? (
@@ -924,6 +1011,7 @@ function WorkoutScreen() {
               (!isPlanned || session?.phase === "active") && (
                 <button
                   onClick={submitManual}
+                  aria-describedby="manual-save-hint"
                   disabled={
                     saving ||
                     !manualInput ||
@@ -936,7 +1024,7 @@ function WorkoutScreen() {
                     ? "Speichere …"
                     : isPlanned && session?.phase !== "completed"
                       ? "Satz speichern"
-                      : "Training speichern"}
+                      : "Einheit speichern"}
                 </button>
               )
             )}
@@ -1006,8 +1094,16 @@ function WorkoutScreen() {
             </header>
 
             <section className="mt-6 grid grid-cols-2 gap-3">
-              <Stat label="Bestwert" value={best.toString()} />
-              <Stat label="Modus" value="✍️ Manuell" />
+              <Stat
+                label="Bestwert"
+                value={best === null ? "Noch kein Bestwert" : best.toString()}
+              />
+              <Stat
+                label="Letzte Erfassung"
+                value={
+                  latestCount === null ? "Noch keine Erfassung" : `${latestCount} Wiederholungen`
+                }
+              />
             </section>
 
             {isPlanned && session && (
@@ -1128,26 +1224,27 @@ function WorkoutScreen() {
                     type="number"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    min={1}
+                    min={0}
                     max={1000}
                     value={manualInput}
                     disabled={isPlanned && session?.phase !== "active"}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/[^0-9]/g, "");
-                      setManualInput(value);
-                      if (isPlanned)
-                        setSession((s) =>
-                          s?.phase === "active"
-                            ? { ...s, currentReps: Math.min(1000, parseInt(value, 10) || 0) }
-                            : s,
-                        );
-                    }}
-                    placeholder="0"
+                    onChange={(e) => updateManualInput(e.target.value)}
+                    placeholder="—"
                     className="mt-4 w-full max-w-[14rem] rounded-2xl border border-border bg-background/60 py-4 text-center font-display text-[5rem] font-bold tabular-nums text-foreground focus:border-primary focus:outline-none"
                   />
+                  {manualControls}
+                  <p
+                    className="alo-manual-essential mt-3 text-sm text-muted-foreground"
+                    aria-live="polite"
+                  >
+                    {manualInput === ""
+                      ? "Noch keine Erfassung"
+                      : `${manualInput} Wiederholungen eingetragen`}
+                  </p>
                   <p className="mt-4 max-w-[16rem] text-sm text-muted-foreground">
                     Trage die Anzahl deiner gerade absolvierten Liegestütze ein und speichere.
                   </p>
+                  {manualHint}
                 </section>
 
                 {awaitingRpe ? (
@@ -1156,6 +1253,7 @@ function WorkoutScreen() {
                   (!isPlanned || session?.phase === "active") && (
                     <button
                       onClick={submitManual}
+                      aria-describedby="manual-save-hint"
                       disabled={
                         saving ||
                         !manualInput ||
@@ -1168,7 +1266,7 @@ function WorkoutScreen() {
                         ? "Speichere…"
                         : isPlanned && session?.phase !== "completed"
                           ? "Satz speichern"
-                          : "Training speichern"}
+                          : "Einheit speichern"}
                     </button>
                   )
                 )}
@@ -1265,8 +1363,8 @@ function WorkoutScreen() {
             />
             <Stat
               label="Persönlicher Bestwert"
-              value={best.toString()}
-              unit={exercise.unit === "seconds" ? "Sek." : undefined}
+              value={best === null ? "Noch kein Bestwert" : best.toString()}
+              unit={best !== null && exercise.unit === "seconds" ? "Sek." : undefined}
             />
           </section>
           {isPlanned && session && (
@@ -1521,6 +1619,7 @@ function WorkoutScreen() {
                 </button>
                 <button
                   onClick={finish}
+                  aria-describedby="counted-save-hint"
                   disabled={
                     saving ||
                     (isPlanned && session ? summarizeWorkout(session).actualReps <= 0 : count === 0)
@@ -1531,10 +1630,19 @@ function WorkoutScreen() {
                     ? "Speichere …"
                     : isPlanned && session?.phase !== "completed"
                       ? "Teiltraining speichern"
-                      : "Training speichern"}
+                      : "Einheit speichern"}
                 </button>
               </div>
             )}
+          {!awaitingRpe && active && count === 0 && (
+            <p id="counted-save-hint" className="mt-3 text-center text-sm text-muted-foreground">
+              Zum Speichern zuerst{" "}
+              {exercise.unit === "seconds"
+                ? "mindestens 1 Sekunde erfassen"
+                : "mindestens 1 Wiederholung erfassen"}
+              . Noch wurde nichts gespeichert.
+            </p>
+          )}
           {summary && !active && (
             <section className="rounded-3xl border border-primary/30 bg-primary/10 p-5">
               <SportSectionLabel number="03">Trainingsergebnis</SportSectionLabel>
@@ -1635,8 +1743,8 @@ function WorkoutScreen() {
             />
             <Stat
               label="Bestwert"
-              value={best.toString()}
-              unit={exercise.unit === "seconds" ? "Sek." : undefined}
+              value={best === null ? "Noch kein Bestwert" : best.toString()}
+              unit={best !== null && exercise.unit === "seconds" ? "Sek." : undefined}
             />
           </section>
 
@@ -1919,6 +2027,7 @@ function WorkoutScreen() {
                 </button>
                 <button
                   onClick={finish}
+                  aria-describedby="counted-save-hint"
                   disabled={
                     saving ||
                     (isPlanned && session ? summarizeWorkout(session).actualReps <= 0 : count === 0)
@@ -1929,7 +2038,7 @@ function WorkoutScreen() {
                     ? "Speichere…"
                     : isPlanned && session?.phase !== "completed"
                       ? "Teiltraining speichern"
-                      : "Training speichern"}
+                      : "Einheit speichern"}
                 </button>
               </div>
             )}
@@ -2001,8 +2110,10 @@ function Stat({ label, value, unit }: { label: string; value: string; unit?: str
       <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
         {label}
       </div>
-      <div className="mt-1 flex items-baseline gap-1">
-        <span className="text-xl font-semibold tabular-nums text-foreground">{value}</span>
+      <div className="mt-1 flex min-w-0 flex-wrap items-baseline gap-1">
+        <span className="break-words text-base font-semibold tabular-nums text-foreground sm:text-xl">
+          {value}
+        </span>
         {unit && <span className="text-[10px] text-muted-foreground">{unit}</span>}
       </div>
     </div>

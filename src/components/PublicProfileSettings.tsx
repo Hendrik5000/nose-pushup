@@ -70,7 +70,7 @@ export function PublicProfileSettings() {
     try {
       const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
       if (nav.share) {
-        await nav.share({ title: "Nosy Push-Ups", url: text });
+        await nav.share({ title: "Alo · Öffentliches Trainingsprofil", url: text });
       } else {
         await navigator.clipboard.writeText(text);
         setHint(`${label} kopiert`);

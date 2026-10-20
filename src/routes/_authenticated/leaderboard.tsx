@@ -7,7 +7,7 @@ import { Medal, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
   head: () => ({
-    meta: [{ title: "Leaderboard — Nosy Push-Ups" }],
+    meta: [{ title: "Bestenliste — Alo" }],
   }),
   component: LeaderboardPage,
 });

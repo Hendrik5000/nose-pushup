@@ -15,12 +15,12 @@ const STEPS: Step[] = [
   {
     icon: "✦",
     title: "Willkommen bei Alo",
-    body: "Alo heißt All in one: Drei gleichwertige Bereiche wohnen hier zusammen – Nose-Pushup fürs Training, Mira als vielseitige KI und Nexus Chat für den Austausch. Kein Bereich ist die ganze App.",
+    body: "Alo heißt All in one: Drei gleichwertige Bereiche wohnen hier zusammen – Training, Mira als vielseitige KI und Nexus Chat für den Austausch. Kein Bereich ist die ganze App.",
   },
   {
     icon: "↔",
     title: "Zwischen Modulen wischen",
-    body: "Auf einer freien Stelle horizontal wischen: nach links geht es von Nose-Pushup über Mira und Nexus Chat zu den Einstellungen. Nach rechts geht es zurück. Einstellungen sind ein eigener Bildschirm, kein viertes Modul. Vertikales Scrollen bleibt normal. Formulare, Chat-Eingaben, Dialoge, Karussells und aktive Workouts sind vom Wechsel ausgenommen.",
+    body: "Auf einer freien Stelle horizontal wischen: nach links geht es vom Training über Mira und Nexus Chat zu den Einstellungen. Nach rechts geht es zurück. Einstellungen sind ein eigener Bildschirm, kein viertes Modul. Vertikales Scrollen bleibt normal. Formulare, Chat-Eingaben, Dialoge, Karussells und aktive Workouts sind vom Wechsel ausgenommen.",
   },
   {
     icon: "✍️",
@@ -30,7 +30,7 @@ const STEPS: Step[] = [
   {
     icon: "⚙️",
     title: "Kompakt starten, alles behalten",
-    body: "Tippe oben auf Nose, Mira oder Nexus, wenn du nicht wischen möchtest. Das kompakte Menü blendet sich nach zwei Sekunden aus und gibt den Platz frei. Nach einem Seitenwechsel oder einer Berührung am oberen Bildschirmrand erscheint es kurz wieder; mit der Maus genügt der obere Rand. Die Design-Schaltfläche bleibt als direkter Weg zu den Einstellungen sichtbar. Die große Menüleiste ist anfangs aus; aktivierst du sie, verschwindet sie beim Herunterscrollen und erscheint beim Hochscrollen wieder. Diese Tour kannst du im Profil wiederholen.",
+    body: "Tippe oben auf Training, Mira oder Nexus, wenn du nicht wischen möchtest. Das kompakte Menü blendet sich nach zwei Sekunden aus und gibt den Platz frei. Nach einem Seitenwechsel oder einer Berührung am oberen Bildschirmrand erscheint es kurz wieder; mit der Maus genügt der obere Rand. Die Design-Schaltfläche bleibt als direkter Weg zu den Einstellungen sichtbar. Die große Menüleiste ist anfangs aus; aktivierst du sie, verschwindet sie beim Herunterscrollen und erscheint beim Hochscrollen wieder. Diese Tour kannst du im Profil wiederholen.",
   },
 ];
 const VERSION = "v2";
@@ -157,7 +157,7 @@ export function WelcomeTour({ userId }: { userId: string }) {
               className="mt-4 flex w-full items-center justify-between rounded-xl bg-secondary/60 px-3 py-3 text-xs font-semibold"
               aria-label="Modulfolge; links wischen führt weiter"
             >
-              <span>Nose-Pushup</span>
+              <span>Training</span>
               <ArrowLeft className="h-4 w-4 rotate-180 text-primary" aria-hidden="true" />
               <span>Mira</span>
               <ArrowRight className="h-4 w-4 text-primary" aria-hidden="true" />

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useId, type ReactNode } from "react";
 import {
   Activity,
   Award,
@@ -42,6 +42,11 @@ export function SettingsSection({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [visited, setVisited] = useState(defaultOpen);
+  const contentId = useId();
+  useEffect(() => {
+    if (open) setVisited(true);
+  }, [open]);
   const sectionRef = useRef<HTMLElement>(null);
   const routeHash = useRouterState({ select: (state) => state.location.hash });
   useEffect(() => {
@@ -103,6 +108,7 @@ export function SettingsSection({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
+        aria-controls={contentId}
         className="flex w-full items-center gap-4 px-5 py-4 text-left transition active:scale-[0.99]"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border bg-secondary/60 text-lg">
@@ -125,6 +131,9 @@ export function SettingsSection({
         </span>
       </button>
       <div
+        id={contentId}
+        aria-hidden={!open}
+        inert={!open}
         className={cn(
           "grid transition-all duration-300 ease-out",
           open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
@@ -132,7 +141,7 @@ export function SettingsSection({
       >
         <div className="overflow-hidden">
           <div className="settings-section-content border-t border-border px-5 py-4">
-            {children}
+            {(open || visited) && children}
           </div>
         </div>
       </div>

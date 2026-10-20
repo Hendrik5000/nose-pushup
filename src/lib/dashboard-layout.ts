@@ -64,7 +64,7 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
   },
   {
     id: "streakFreeze",
-    label: "Streak Freeze",
+    label: "Serien-Schutz",
     description: "Streak absichern",
     defaultSize: "sm",
   },
