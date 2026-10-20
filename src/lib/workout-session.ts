@@ -105,6 +105,27 @@ export function undoWorkoutRep(session: WorkoutSession): WorkoutSession {
   return { ...session, currentReps: session.currentReps - 1 };
 }
 
+/** Correct a finished set without rewinding or discarding the surrounding draft. */
+export function correctCompletedWorkoutSet(
+  session: WorkoutSession,
+  index: number,
+  reps: number,
+): WorkoutSession {
+  if (
+    !Number.isInteger(index) ||
+    index < 0 ||
+    index >= session.setReps.length ||
+    !Number.isSafeInteger(reps) ||
+    reps < 0 ||
+    reps > 1000 ||
+    session.setReps[index] === reps
+  )
+    return session;
+  const setReps = [...session.setReps];
+  setReps[index] = reps;
+  return { ...session, setReps };
+}
+
 export function finishWorkoutSet(session: WorkoutSession, now = Date.now()): WorkoutSession {
   if (session.phase !== "active") return session;
   const setReps = [...session.setReps, session.currentReps];

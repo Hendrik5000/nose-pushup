@@ -25,6 +25,29 @@ export function parseManualCount(value: string): number | null {
   return Number.isSafeInteger(parsed) && parsed <= 1000 ? parsed : null;
 }
 
+export function manualWorkoutInput(
+  value: string,
+  completedCount = 0,
+): {
+  count: number | null;
+  error: string | null;
+  canSubmit: boolean;
+} {
+  const count = parseManualCount(value);
+  const remaining = Math.max(0, 1000 - completedCount);
+  const error =
+    value !== "" && count === null
+      ? "Nur ganze Zahlen von 0 bis 1.000 eingeben."
+      : count !== null && count > remaining
+        ? `Pro Training sind insgesamt höchstens 1.000 Wiederholungen möglich. Für diesen Satz bleiben ${remaining}. Bitte korrigiere die Eingabe; dein Entwurf bleibt erhalten.`
+        : null;
+  return {
+    count,
+    error,
+    canSubmit: count !== null && count > 0 && error === null,
+  };
+}
+
 export function formatWorkoutCount(count: number, unit: "reps" | "seconds"): string {
   if (unit === "seconds") return `${count} ${count === 1 ? "Sekunde" : "Sekunden"}`;
   return `${count} ${count === 1 ? "Wiederholung" : "Wiederholungen"}`;

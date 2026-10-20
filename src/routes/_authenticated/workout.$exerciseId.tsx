@@ -1,16 +1,22 @@
 import {
   adjustManualCount,
   formatWorkoutCount,
+  manualWorkoutInput,
   parseManualCount,
   workoutBest,
   workoutCountUnit,
 } from "@/lib/workout-ui";
 import {
+  finalizeWorkoutSave,
+  captureWorkoutDraft,
+  clearPendingWorkoutSaveContext,
   nextWorkoutContextGeneration,
+  pendingWorkoutSaveCache,
   resolvePendingWorkoutSaveIdentity,
+  unplannedWorkoutDraftKey,
+  workoutSaveIdentityLookupKey,
   workoutContextKey,
   workoutContextToken,
-  type PendingWorkoutSaveIdentity,
 } from "@/lib/workout-save";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
@@ -27,6 +33,7 @@ import { getConfig } from "@/lib/exercises";
 import {
   createWorkoutSession,
   finishWorkoutSet,
+  correctCompletedWorkoutSet,
   extendWorkoutRest,
   pauseWorkout,
   readWorkoutSession,
@@ -83,6 +90,7 @@ function WorkoutScreen() {
   if (workoutVisitIdRef.current === null) workoutVisitIdRef.current = ++workoutVisitSequence;
   const workoutVisitId = workoutVisitIdRef.current;
   const routeContextKey = workoutContextKey(userId, exerciseId, search);
+  const saveContextKey = workoutContextKey(userId, exerciseId, {});
   const contextGenerationRef = useRef({ key: "", generation: 0 });
   contextGenerationRef.current = nextWorkoutContextGeneration(
     contextGenerationRef.current,
@@ -108,7 +116,6 @@ function WorkoutScreen() {
   const savingRef = useRef(false);
   const savingOwnerRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
-  const pendingSaveRef = useRef(new Map<string, PendingWorkoutSaveIdentity>());
   const releaseSaveLock = useCallback((owner: string) => {
     if (savingOwnerRef.current !== owner) return;
     savingOwnerRef.current = null;
@@ -119,6 +126,11 @@ function WorkoutScreen() {
   const [motionError, setMotionError] = useState<string | null>(null);
   const [motivation, setMotivation] = useState<string | null>(null);
   const [manualInput, setManualInput] = useState("");
+  const unplannedDraftRevision = useRef(0);
+  const [editingCompletedSet, setEditingCompletedSet] = useState<number | null>(null);
+  const [completedSetEditValue, setCompletedSetEditValue] = useState("");
+  const [completedSetEditError, setCompletedSetEditError] = useState<string | null>(null);
+  const [completedSetEditOwner, setCompletedSetEditOwner] = useState<string | null>(null);
   const manualInputRef = useRef("");
   const setManualInputValue = useCallback((value: string) => {
     manualInputRef.current = value;
@@ -144,8 +156,18 @@ function WorkoutScreen() {
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [sessionHydrated, setSessionHydrated] = useState(false);
   const [draftConflict, setDraftConflict] = useState<WorkoutSession | null>(null);
+  const completedEditOwnerRef = useRef("");
   const hydratedSessionKey = useRef<string | null>(null);
   const observedCount = useRef(0);
+  useEffect(() => {
+    const editOwner = JSON.stringify([routeContextKey, session?.id ?? null]);
+    if (completedEditOwnerRef.current === editOwner) return;
+    completedEditOwnerRef.current = editOwner;
+    setEditingCompletedSet(null);
+    setCompletedSetEditValue("");
+    setCompletedSetEditError(null);
+    setCompletedSetEditOwner(null);
+  }, [routeContextKey, session?.id]);
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -386,8 +408,15 @@ function WorkoutScreen() {
     hydratedSessionKey.current = null;
     setSessionHydrated(false);
     setDraftConflict(null);
-    const restored = readWorkoutSession(window.localStorage, key);
-    if (restored && restored.phase !== "completed") {
+    setSummary(null);
+    setAwaitingRpe(false);
+    let restored: WorkoutSession | null = null;
+    try {
+      restored = readWorkoutSession(window.localStorage, key);
+    } catch {
+      // A blocked Storage accessor must not prevent an in-memory workout.
+    }
+    if (restored) {
       const planMatches =
         restored.plan.sets === plan.sets &&
         restored.plan.reps === plan.reps &&
@@ -403,8 +432,13 @@ function WorkoutScreen() {
       const safeRestore = restored.phase === "active" ? pauseWorkout(restored) : restored;
       setSession(safeRestore);
       setEngineCount(safeRestore.currentReps);
-      if (useManual)
-        setManualInputValue(safeRestore.currentReps ? String(safeRestore.currentReps) : "");
+      if (useManual) {
+        const restoredCount =
+          safeRestore.phase === "completed"
+            ? summarizeWorkout(safeRestore).actualReps
+            : safeRestore.currentReps;
+        setManualInputValue(restoredCount ? String(restoredCount) : "");
+      }
       setActive(false);
       setStartedAt(safeRestore.startedAt ?? null);
       observedCount.current = restored.currentReps;
@@ -536,6 +570,10 @@ function WorkoutScreen() {
 
   const finish = () => {
     if (savingRef.current) return;
+    if (useManual && editingCompletedSet !== null) {
+      setSavedHint("Bitte die Satzkorrektur zuerst übernehmen oder abbrechen.");
+      return;
+    }
     const total = isPlanned && session ? summarizeWorkout(session, Date.now()).actualReps : count;
     if (total <= 0 || !userId || !exercise) {
       resetAll();
@@ -578,19 +616,41 @@ function WorkoutScreen() {
       clean_reps: formStats?.cleanReps ?? null,
       rpe,
     };
-    const draftKey = session?.id ?? `activity:${startedAt ?? "manual"}`;
+    const draftKey =
+      session?.id ??
+      unplannedWorkoutDraftKey(
+        workoutVisitId,
+        unplannedDraftRevision.current,
+        "activity",
+        startedAt,
+      );
     const payloadKey = JSON.stringify(payload);
-    const identityLookupKey = JSON.stringify([saveOwner, draftKey, payloadKey]);
-    const pendingIdentity = resolvePendingWorkoutSaveIdentity(
-      saveOwner,
+    const identityContextKey = saveContextKey;
+    const identityLookupKey = workoutSaveIdentityLookupKey(
+      identityContextKey,
       draftKey,
       payloadKey,
-      pendingSaveRef.current.get(identityLookupKey) ?? null,
+    );
+    const pendingIdentity = resolvePendingWorkoutSaveIdentity(
+      identityContextKey,
+      draftKey,
+      payloadKey,
+      pendingWorkoutSaveCache.get(identityLookupKey) ?? null,
       () => globalThis.crypto?.randomUUID?.() ?? `workout-${Date.now()}-${Math.random()}`,
       () => new Date().toISOString(),
       durationAtFirstAttempt,
     );
-    pendingSaveRef.current.set(identityLookupKey, pendingIdentity);
+    pendingWorkoutSaveCache.set(identityLookupKey, pendingIdentity);
+    const draftStorageKey = workoutSessionStorageKey(userId, exerciseId);
+    let draftStorage: Storage | null = null;
+    try {
+      if (typeof window !== "undefined") draftStorage = window.localStorage;
+    } catch {
+      // Storage may be blocked; save completion must still be handled safely.
+    }
+    const capturedDraft = draftStorage
+      ? captureWorkoutDraft(draftStorage, draftStorageKey, session)
+      : null;
     const duration_ms = pendingIdentity.durationMs;
     // Offline landet das Training in der Warteschlange und wird später nachgesendet.
     try {
@@ -609,14 +669,48 @@ function WorkoutScreen() {
         }
         return;
       }
-      if (!mountedRef.current || workoutContextRef.current !== saveOwner) return;
-      const { error, queued } = saveResult;
-      if (error) {
-        setSavedHint("Speichern fehlgeschlagen – deine Daten bleiben erhalten");
-        setAwaitingRpe(true);
+      let error: unknown;
+      let queued: boolean;
+      try {
+        ({ error, queued } = saveResult);
+      } catch {
+        if (mountedRef.current && workoutContextRef.current === saveOwner) {
+          setSavedHint("Speichern fehlgeschlagen – deine Daten bleiben erhalten");
+          setAwaitingRpe(true);
+        }
         return;
       }
-      pendingSaveRef.current.delete(identityLookupKey);
+      if (error) {
+        if (mountedRef.current && workoutContextRef.current === saveOwner) {
+          setSavedHint("Speichern fehlgeschlagen – deine Daten bleiben erhalten");
+          setAwaitingRpe(true);
+        }
+        return;
+      }
+      const uiContextStillCurrent =
+        mountedRef.current &&
+        workoutContextRef.current === saveOwner &&
+        JSON.stringify(sessionRef.current) === JSON.stringify(session);
+      const finalization = finalizeWorkoutSave({
+        outcome: queued ? "queued" : "saved",
+        storage: draftStorage,
+        captured: capturedDraft,
+        identityLookupKey,
+        uiCurrent: uiContextStillCurrent,
+        onConfirmedSuccess: () => {
+          if (isPlanned && sessionSummary && draftStorage)
+            writeWorkoutMetadata(draftStorage, {
+              version: 1,
+              rowId: pendingIdentity.id,
+              userId,
+              exerciseId,
+              partial: sessionSummary.partial,
+              summary: { ...sessionSummary, actualReps: savedCount, actualDurationMs: duration_ms },
+              createdAt: pendingIdentity.createdAt,
+            });
+        },
+      });
+      if (!uiContextStillCurrent) return;
       try {
         feedbackSuccess();
       } catch {
@@ -638,40 +732,28 @@ function WorkoutScreen() {
       });
       setLatestCount(savedCount);
       setLatestStatus("loaded");
-
-      try {
-        if (isPlanned && sessionSummary && typeof window !== "undefined")
-          writeWorkoutMetadata(window.localStorage, {
-            version: 1,
-            rowId: pendingIdentity.id,
-            userId,
-            exerciseId,
-            partial: sessionSummary.partial,
-            summary: { ...sessionSummary, actualReps: savedCount, actualDurationMs: duration_ms },
-            createdAt: pendingIdentity.createdAt,
-          });
-      } catch {
-        // Metadata is optional; the workout row was already saved successfully.
-      }
       if (queued) {
         setSavedHint("Auf diesem Gerät vorgemerkt – Bestwert nach Synchronisierung prüfen");
       } else if (newBest) {
         setBest(savedCount);
+        setBestStatus("loaded");
         setSavedHint(`Neuer Bestwert: ${savedCount}${exercise.unit === "seconds" ? " Sek." : ""}`);
       } else {
         setSavedHint("Training gespeichert");
+      }
+      if (!finalization.uiDraftClosed) {
+        setSavedHint(
+          queued
+            ? "Auf diesem Gerät vorgemerkt. Der lokale Entwurf konnte nicht sicher bereinigt werden."
+            : "Training gespeichert. Der lokale Entwurf konnte nicht sicher bereinigt werden.",
+        );
       }
       setActive(false);
       setStartedAt(null);
       setCountdown(null);
       resetEngine();
       setSession(null);
-      try {
-        if (userId && typeof window !== "undefined")
-          window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
-      } catch {
-        // Draft cleanup is best effort; the save result remains successful.
-      }
+      if (!session) unplannedDraftRevision.current += 1;
     } finally {
       releaseSaveLock(saveOwner);
     }
@@ -679,7 +761,16 @@ function WorkoutScreen() {
 
   const resetAll = () => {
     if (savingRef.current) return;
-    pendingSaveRef.current.clear();
+    const draftKey =
+      session?.id ??
+      unplannedWorkoutDraftKey(
+        workoutVisitId,
+        unplannedDraftRevision.current,
+        useManual ? "manual" : "activity",
+        useManual ? manualInputRef.current : startedAt,
+      );
+    clearPendingWorkoutSaveContext(saveContextKey, draftKey);
+    unplannedDraftRevision.current += 1;
     setActive(false);
     setStartedAt(null);
     setCountdown(null);
@@ -745,7 +836,7 @@ function WorkoutScreen() {
   const discardSavedDraft = () => {
     if (!draftConflict || !userId || savingRef.current || typeof window === "undefined") return;
     const key = workoutSessionStorageKey(userId, exerciseId);
-    pendingSaveRef.current.clear();
+    clearPendingWorkoutSaveContext(saveContextKey, draftConflict.id);
     try {
       window.localStorage.removeItem(key);
     } catch {
@@ -901,10 +992,123 @@ function WorkoutScreen() {
         s?.phase === "active" && parsed !== null ? { ...s, currentReps: parsed } : s,
       );
   };
-  const manualInputError =
-    manualInput !== "" && parseManualCount(manualInput) === null
-      ? "Nur ganze Zahlen von 0 bis 1.000 eingeben."
-      : null;
+  const beginCompletedSetEdit = (index: number) => {
+    if (!session || session.setReps[index] === undefined || savingRef.current) return;
+    setEditingCompletedSet(index);
+    setCompletedSetEditValue(String(session.setReps[index] ?? ""));
+    setCompletedSetEditError(null);
+    setCompletedSetEditOwner(JSON.stringify([routeContextKey, session.id]));
+    setAwaitingRpe(false);
+  };
+  const cancelCompletedSetEdit = () => {
+    setEditingCompletedSet(null);
+    setCompletedSetEditValue("");
+    setCompletedSetEditError(null);
+    setCompletedSetEditOwner(null);
+  };
+  const applyCompletedSetEdit = () => {
+    if (savingRef.current) return;
+    const parsed = parseManualCount(completedSetEditValue);
+    if (
+      parsed === null ||
+      editingCompletedSet === null ||
+      !session ||
+      completedSetEditOwner !== JSON.stringify([routeContextKey, session.id])
+    ) {
+      setCompletedSetEditError("Bitte eine ganze Zahl zwischen 0 und 1.000 eingeben.");
+      return;
+    }
+    const next = correctCompletedWorkoutSet(session, editingCompletedSet, parsed);
+    if (next === session && session.setReps[editingCompletedSet] !== parsed) {
+      setCompletedSetEditError("Dieser Satz kann nicht korrigiert werden.");
+      return;
+    }
+    setSession(next);
+    if (next.phase === "completed") setManualInputValue(String(summarizeWorkout(next).actualReps));
+    setAwaitingRpe(false);
+    cancelCompletedSetEdit();
+  };
+  const manualCompletedSetsReview =
+    isPlanned && session && session.setReps.length > 0 ? (
+      <div className="mt-4 w-full max-w-xl space-y-2 rounded-xl border border-border p-3 text-left">
+        <p className="text-sm font-semibold">Abgeschlossene Sätze korrigieren</p>
+        {session.setReps.map((reps, index) => (
+          <div key={`${session.id}-${index}`} className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="min-w-24">
+              Satz {index + 1}: {reps}
+            </span>
+            {editingCompletedSet === index ? (
+              <>
+                <input
+                  aria-label={`Korrektur für Satz ${index + 1}`}
+                  type="number"
+                  min={0}
+                  max={1000}
+                  value={completedSetEditValue}
+                  aria-invalid={completedSetEditError !== null}
+                  onChange={(event) => {
+                    setCompletedSetEditValue(event.target.value);
+                    setCompletedSetEditError(null);
+                  }}
+                  className="w-24 rounded-lg border border-border bg-background px-2 py-1"
+                />
+                <button
+                  type="button"
+                  onClick={applyCompletedSetEdit}
+                  className="rounded-lg bg-primary px-3 py-1 text-primary-foreground"
+                >
+                  Übernehmen
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelCompletedSetEdit}
+                  className="rounded-lg border border-border px-3 py-1"
+                >
+                  Abbrechen
+                </button>
+                {completedSetEditError && (
+                  <span role="alert" className="w-full text-destructive">
+                    {completedSetEditError}
+                  </span>
+                )}
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => beginCompletedSetEdit(index)}
+                className="rounded-lg border border-border px-3 py-1"
+              >
+                Korrigieren
+              </button>
+            )}
+          </div>
+        ))}
+        <p className="text-xs text-muted-foreground">
+          Gesamt: {summarizeWorkout(session).actualReps} / 1.000 Wiederholungen.
+        </p>
+        {session.phase === "completed" && (
+          <button
+            type="button"
+            disabled={
+              saving ||
+              editingCompletedSet !== null ||
+              summarizeWorkout(session).actualReps <= 0 ||
+              summarizeWorkout(session).actualReps > 1000
+            }
+            onClick={() => setAwaitingRpe(true)}
+            className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+          >
+            Ergebnis speichern
+          </button>
+        )}
+      </div>
+    ) : null;
+
+  const completedManualReps =
+    session?.phase === "active" ? session.setReps.reduce((sum, reps) => sum + reps, 0) : 0;
+  const manualInputState = manualWorkoutInput(manualInput, completedManualReps);
+  const { error: manualInputError } = manualInputState;
+  const canSubmitManual = manualInputState.canSubmit && editingCompletedSet === null;
   const manualControls = (
     <div
       className="alo-manual-essential mt-4 grid w-full max-w-xs grid-cols-2 gap-3"
@@ -945,21 +1149,37 @@ function WorkoutScreen() {
       className="alo-manual-essential mt-3 text-center text-sm leading-relaxed text-muted-foreground"
       aria-live="polite"
     >
-      {!manualEnabled
-        ? "Starte den nächsten Satz, um Wiederholungen einzutragen."
-        : !manualInput || Number(manualInput) <= 0
-          ? "Zum Speichern mindestens 1 Wiederholung eintragen. Noch wurde nichts gespeichert."
-          : "Deine Eingabe ist noch nicht gespeichert. Danach kannst du die Belastung angeben."}
+      {manualInputError ??
+        (isPlanned && session?.phase === "active"
+          ? `Verbleibendes Trainingsbudget: ${Math.max(0, 1000 - completedManualReps)} Wiederholungen.`
+          : !manualEnabled
+            ? "Starte den nächsten Satz, um Wiederholungen einzutragen."
+            : !manualInput || Number(manualInput) <= 0
+              ? "Zum Speichern mindestens 1 Wiederholung eintragen. Noch wurde nichts gespeichert."
+              : "Deine Eingabe ist noch nicht gespeichert. Danach kannst du die Belastung angeben.")}
     </p>
   );
 
   // Manual mode: user just types how many they did.
   const submitManual = () => {
     if (savingRef.current) return;
-    const n = parseManualCount(manualInput) ?? 0;
-    if (n <= 0 || !userId || !exercise) return;
+    if (editingCompletedSet !== null) {
+      setSavedHint("Bitte die Satzkorrektur zuerst übernehmen oder abbrechen.");
+      return;
+    }
+    const { count: n, error, canSubmit } = manualWorkoutInput(manualInput, completedManualReps);
+    if (!canSubmit || n === null) {
+      setSavedHint(error ?? "Zum Speichern mindestens 1 Wiederholung eintragen.");
+      return;
+    }
+    if (!userId || !exercise) return;
     if (isPlanned && session) {
       if (session.phase !== "active") return;
+      const activeBudgetState = manualWorkoutInput(manualInput, completedManualReps);
+      if (activeBudgetState.error) {
+        setSavedHint(activeBudgetState.error);
+        return;
+      }
       let next = { ...session, currentReps: n };
       next = finishWorkoutSet(next);
       setSession(next);
@@ -967,7 +1187,11 @@ function WorkoutScreen() {
       if (next.phase === "completed") {
         const total = next.setReps.reduce((sum, value) => sum + value, 0);
         setManualInputValue(String(total));
-        setAwaitingRpe(true);
+        setAwaitingRpe(total <= 1000);
+        if (total > 1000)
+          setSavedHint(
+            "Pro Training sind höchstens 1.000 Wiederholungen erlaubt. Korrigiere einen Satz; dein Entwurf bleibt erhalten.",
+          );
       } else {
         setManualInputValue("");
       }
@@ -981,10 +1205,25 @@ function WorkoutScreen() {
     if (savingOwnerRef.current && savingOwnerRef.current !== saveOwner)
       releaseSaveLock(savingOwnerRef.current);
     if (savingRef.current) return;
+    if (editingCompletedSet !== null) {
+      setSavedHint("Bitte die Satzkorrektur zuerst übernehmen oder abbrechen.");
+      return;
+    }
     const inputAtSave = manualInputRef.current;
+    const completedCountAtSave =
+      session?.phase === "active" ? session.setReps.reduce((sum, reps) => sum + reps, 0) : 0;
+    const inputState = manualWorkoutInput(inputAtSave, completedCountAtSave);
+    if (inputState.error) {
+      setSavedHint(inputState.error);
+      return;
+    }
     const sessionSummary = isPlanned && session ? summarizeWorkout(session) : null;
-    const n = sessionSummary?.actualReps ?? parseManualCount(inputAtSave) ?? 0;
-    if (n <= 0 || !userId || !exercise) return;
+    const n = sessionSummary?.actualReps ?? inputState.count ?? 0;
+    if (n <= 0) {
+      setSavedHint("Zum Speichern mindestens 1 Wiederholung eintragen.");
+      return;
+    }
+    if (!userId || !exercise) return;
     if (n > 1000) {
       setAwaitingRpe(false);
       setSavedHint(
@@ -1000,21 +1239,45 @@ function WorkoutScreen() {
       user_id: userId,
       exercise_id: exerciseId,
       count: n,
+      form_score: null,
+      clean_reps: null,
       rpe,
     };
-    const draftKey = session?.id ?? `manual:${inputAtSave}`;
+    const draftKey =
+      session?.id ??
+      unplannedWorkoutDraftKey(
+        workoutVisitId,
+        unplannedDraftRevision.current,
+        "manual",
+        inputAtSave,
+      );
     const payloadKey = JSON.stringify(payload);
-    const identityLookupKey = JSON.stringify([saveOwner, draftKey, payloadKey]);
-    const pendingIdentity = resolvePendingWorkoutSaveIdentity(
-      saveOwner,
+    const identityContextKey = saveContextKey;
+    const identityLookupKey = workoutSaveIdentityLookupKey(
+      identityContextKey,
       draftKey,
       payloadKey,
-      pendingSaveRef.current.get(identityLookupKey) ?? null,
+    );
+    const pendingIdentity = resolvePendingWorkoutSaveIdentity(
+      identityContextKey,
+      draftKey,
+      payloadKey,
+      pendingWorkoutSaveCache.get(identityLookupKey) ?? null,
       () => globalThis.crypto?.randomUUID?.() ?? `workout-${Date.now()}-${Math.random()}`,
       () => new Date().toISOString(),
       sessionSummary?.actualDurationMs ?? 0,
     );
-    pendingSaveRef.current.set(identityLookupKey, pendingIdentity);
+    pendingWorkoutSaveCache.set(identityLookupKey, pendingIdentity);
+    const draftStorageKey = workoutSessionStorageKey(userId, exerciseId);
+    let draftStorage: Storage | null = null;
+    try {
+      if (typeof window !== "undefined") draftStorage = window.localStorage;
+    } catch {
+      // Storage may be blocked; save completion must still be handled safely.
+    }
+    const capturedDraft = draftStorage
+      ? captureWorkoutDraft(draftStorage, draftStorageKey, session)
+      : null;
     const duration_ms = pendingIdentity.durationMs;
     try {
       let saveResult;
@@ -1032,15 +1295,50 @@ function WorkoutScreen() {
         }
         return;
       }
-      if (!mountedRef.current || workoutContextRef.current !== saveOwner) return;
-      const { error, queued } = saveResult;
-      if (error) {
-        setSavedHint("Speichern fehlgeschlagen – deine Eingaben bleiben erhalten");
-        setAwaitingRpe(true);
+      let error: unknown;
+      let queued: boolean;
+      try {
+        ({ error, queued } = saveResult);
+      } catch {
+        if (mountedRef.current && workoutContextRef.current === saveOwner) {
+          setSavedHint("Speichern fehlgeschlagen – deine Eingaben bleiben erhalten");
+          setAwaitingRpe(true);
+        }
         return;
       }
+      if (error) {
+        if (mountedRef.current && workoutContextRef.current === saveOwner) {
+          setSavedHint("Speichern fehlgeschlagen – deine Eingaben bleiben erhalten");
+          setAwaitingRpe(true);
+        }
+        return;
+      }
+      const uiContextStillCurrent =
+        mountedRef.current &&
+        workoutContextRef.current === saveOwner &&
+        manualInputRef.current === inputAtSave &&
+        JSON.stringify(sessionRef.current) === JSON.stringify(session);
+      const finalization = finalizeWorkoutSave({
+        outcome: queued ? "queued" : "saved",
+        storage: draftStorage,
+        captured: capturedDraft,
+        identityLookupKey,
+        uiCurrent: uiContextStillCurrent,
+        onConfirmedSuccess: () => {
+          if (isPlanned && sessionSummary && draftStorage)
+            writeWorkoutMetadata(draftStorage, {
+              version: 1,
+              rowId: pendingIdentity.id,
+              userId,
+              exerciseId,
+              partial: sessionSummary.partial,
+              summary: { ...sessionSummary, actualDurationMs: duration_ms },
+              createdAt: pendingIdentity.createdAt,
+            });
+        },
+      });
+      if (!uiContextStillCurrent) return;
       setLatestCount(n);
-      pendingSaveRef.current.delete(identityLookupKey);
       setLatestStatus("loaded");
       try {
         feedbackSuccess();
@@ -1059,39 +1357,25 @@ function WorkoutScreen() {
         actualReps: sessionSummary?.actualReps,
         partial: sessionSummary?.partial,
       });
-      try {
-        if (isPlanned && sessionSummary && typeof window !== "undefined")
-          writeWorkoutMetadata(window.localStorage, {
-            version: 1,
-            rowId: pendingIdentity.id,
-            userId,
-            exerciseId,
-            partial: sessionSummary.partial,
-            summary: { ...sessionSummary, actualDurationMs: duration_ms },
-            createdAt: pendingIdentity.createdAt,
-          });
-      } catch {
-        // Metadata is optional; the workout row was already saved successfully.
-      }
-
       if (queued) {
         setSavedHint("Auf diesem Gerät vorgemerkt – Bestwert nach Synchronisierung prüfen");
       } else if (newBest) {
         setBest(n);
+        setBestStatus("loaded");
         setSavedHint(`Neuer Bestwert: ${n}`);
       } else {
         setSavedHint("Training gespeichert");
       }
-      if (manualInputRef.current === inputAtSave) {
-        setManualInputValue("");
-        setSession(null);
-        try {
-          if (userId && typeof window !== "undefined")
-            window.localStorage.removeItem(workoutSessionStorageKey(userId, exerciseId));
-        } catch {
-          // Draft cleanup is best effort; the save result remains successful.
-        }
+      if (!finalization.uiDraftClosed) {
+        setSavedHint(
+          queued
+            ? "Auf diesem Gerät vorgemerkt. Der lokale Entwurf konnte nicht sicher bereinigt werden."
+            : "Training gespeichert. Der lokale Entwurf konnte nicht sicher bereinigt werden.",
+        );
       }
+      setManualInputValue("");
+      setSession(null);
+      if (!session) unplannedDraftRevision.current += 1;
     } finally {
       releaseSaveLock(saveOwner);
     }
@@ -1253,6 +1537,8 @@ function WorkoutScreen() {
                   min={0}
                   max={1000}
                   value={manualInput}
+                  aria-invalid={manualInputError !== null}
+                  aria-describedby="manual-save-hint"
                   disabled={isPlanned && session?.phase !== "active"}
                   onChange={(e) => updateManualInput(e.target.value)}
                   placeholder="—"
@@ -1263,14 +1549,16 @@ function WorkoutScreen() {
                   className="alo-manual-essential mt-3 text-sm text-muted-foreground"
                   aria-live="polite"
                 >
-                  {manualInput === ""
-                    ? "Noch keine Erfassung"
-                    : `${manualInput} Wiederholungen eingetragen`}
+                  {manualInputError ??
+                    (manualInput === ""
+                      ? "Noch keine Erfassung"
+                      : `${manualInput} Wiederholungen eingetragen`)}
                 </p>
                 <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
                   Trage die Anzahl deiner gerade absolvierten Liegestütze ein.
                 </p>
                 {manualHint}
+                {manualCompletedSetsReview}
               </section>
             )}
             {awaitingRpe ? (
@@ -1281,10 +1569,7 @@ function WorkoutScreen() {
                   onClick={submitManual}
                   aria-describedby="manual-save-hint"
                   disabled={
-                    saving ||
-                    !manualInput ||
-                    parseInt(manualInput, 10) <= 0 ||
-                    (isPlanned && session?.phase !== "active")
+                    saving || !canSubmitManual || (isPlanned && session?.phase !== "active")
                   }
                   className="w-full rounded-2xl bg-primary px-4 py-4 text-base font-bold text-primary-foreground disabled:opacity-50"
                 >
@@ -1495,6 +1780,8 @@ function WorkoutScreen() {
                     min={0}
                     max={1000}
                     value={manualInput}
+                    aria-invalid={manualInputError !== null}
+                    aria-describedby="manual-save-hint"
                     disabled={isPlanned && session?.phase !== "active"}
                     onChange={(e) => updateManualInput(e.target.value)}
                     placeholder="—"
@@ -1505,14 +1792,16 @@ function WorkoutScreen() {
                     className="alo-manual-essential mt-3 text-sm text-muted-foreground"
                     aria-live="polite"
                   >
-                    {manualInput === ""
-                      ? "Noch keine Erfassung"
-                      : `${manualInput} Wiederholungen eingetragen`}
+                    {manualInputError ??
+                      (manualInput === ""
+                        ? "Noch keine Erfassung"
+                        : `${manualInput} Wiederholungen eingetragen`)}
                   </p>
                   <p className="mt-4 max-w-[16rem] text-sm text-muted-foreground">
                     Trage die Anzahl deiner gerade absolvierten Liegestütze ein und speichere.
                   </p>
                   {manualHint}
+                  {manualCompletedSetsReview}
                 </section>
 
                 {awaitingRpe ? (
@@ -1523,10 +1812,7 @@ function WorkoutScreen() {
                       onClick={submitManual}
                       aria-describedby="manual-save-hint"
                       disabled={
-                        saving ||
-                        !manualInput ||
-                        parseInt(manualInput, 10) <= 0 ||
-                        (isPlanned && session?.phase !== "active")
+                        saving || !canSubmitManual || (isPlanned && session?.phase !== "active")
                       }
                       className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
                     >

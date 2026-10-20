@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  correctCompletedWorkoutSet,
   createWorkoutSession,
   discardWorkout,
   extendWorkoutRest,
@@ -41,6 +42,66 @@ function parseStored(session: unknown) {
   storage.setItem(key, JSON.stringify(session));
   return readWorkoutSession(storage, key);
 }
+
+test("a legacy completed 600 plus 600 draft can be corrected without losing its other set", () => {
+  let session = startWorkoutSet(
+    createWorkoutSession(
+      { sets: 2, reps: null, restSeconds: 0, title: null },
+      0,
+      "legacy-over-cap",
+    ),
+    1_000,
+  );
+  session = finishWorkoutSet({ ...session, currentReps: 600 }, 2_000);
+  session = startWorkoutSet(session, 3_000);
+  session = finishWorkoutSet({ ...session, currentReps: 600 }, 4_000);
+  assert.equal(summarizeWorkout(session).actualReps, 1200);
+  roundtrip(session);
+  const corrected = correctCompletedWorkoutSet(session, 1, 400);
+  assert.deepEqual(corrected.setReps, [600, 400]);
+  assert.deepEqual(session.setReps, [600, 600]);
+  assert.equal(corrected.id, session.id);
+  assert.equal(corrected.phase, "completed");
+  assert.equal(corrected.startedAt, session.startedAt);
+  assert.equal(corrected.elapsedBeforePauseMs, session.elapsedBeforePauseMs);
+  assert.equal(summarizeWorkout(corrected).actualReps, 1000);
+  roundtrip(corrected);
+  for (const [index, reps] of [
+    [-1, 400],
+    [2, 400],
+    [0.5, 400],
+    [0, -1],
+    [0, 1001],
+    [0, 1.5],
+    [0, NaN],
+  ]) {
+    assert.equal(correctCompletedWorkoutSet(session, index, reps), session);
+  }
+});
+
+test("finished-set corrections preserve active input and allow incremental repair of old drafts", () => {
+  const base = createWorkoutSession(
+    { sets: 3, reps: null, restSeconds: 0, title: null },
+    0,
+    "incremental-repair",
+  );
+  const active: WorkoutSession = {
+    ...base,
+    phase: "active",
+    currentSet: 3,
+    setReps: [600, 600],
+    currentReps: 600,
+    startedAt: 1_000,
+  };
+  const first = correctCompletedWorkoutSet(active, 0, 0);
+  assert.equal(summarizeWorkout(first).actualReps, 1200);
+  assert.equal(first.currentReps, 600);
+  assert.equal(first.phase, "active");
+  const repaired = correctCompletedWorkoutSet(first, 1, 400);
+  assert.equal(summarizeWorkout(repaired).actualReps, 1000);
+  assert.equal(repaired.currentReps, 600);
+  roundtrip(repaired);
+});
 
 test("all legitimate lifecycle phases survive in-memory write/read roundtrips", () => {
   const plan = { sets: 2, reps: 3, restSeconds: 30, title: "Roundtrip" };
