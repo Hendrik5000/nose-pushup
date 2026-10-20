@@ -31,6 +31,8 @@ Read `docs/AI-HANDOFF.md` at the start of each coding task. It contains product 
 
 In the first or final internal work report, identify your actual assistant name and model/provider. If either is not reliably available, say `unknown`; never guess. Never describe a GitHub push as a live deployment; Lovable publishing is manual and belongs to the user.
 
+Before starting work, add your own row to `docs/AI-TEAM.md` with name, model/provider, task, status, and date. Update only your row as work progresses and when it is done; leave other assistants' rows untouched. This register is not app content.
+
 ## Dependency changes and Vercel
 
 - Keep `package-lock.json` synchronized with `package.json` in every dependency change. Vercel installs with `npm ci`, which rejects an inconsistent lockfile.

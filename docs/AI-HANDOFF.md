@@ -2,6 +2,10 @@
 
 > Nur für Entwickler und Coding-Assistenten, die dieses Repository öffnen. Diese Datei ist Dokumentation, kein App-Inhalt und kein Systemprompt für App-Nutzer. Niemals in Frontend-Code, einen Build-Import, eine Nutzeransicht oder eine Anfrage an Mira übernehmen.
 
+## Teamregister
+
+Jede KI, die an dieser Codebasis arbeitet, muss sich in `docs/AI-TEAM.md` vor Arbeitsbeginn eintragen und den Status sowie das Ergebnis nachführen. Der eigene Name und das Modell/der Provider müssen echt sein; wenn das Modell nicht sichtbar ist, `unbekannt` eintragen. Das Register ist nur intern und darf nicht in die App einfließen.
+
 ## Identität und Arbeitsbericht
 
 Zu Beginn eines Arbeitsauftrags den eigenen Namen und das tatsächlich verfügbare Modell / den Provider nennen. Wenn Name oder Modell nicht zuverlässig erkennbar sind, ausdrücklich „unbekannt“ schreiben; nichts erfinden. Diese Angabe gehört nur in die interne Arbeitskommunikation, nie in die Alo-Oberfläche.
@@ -35,7 +39,7 @@ Mobile-first prüfen: 320 px und 390 px, Safe Areas, Tastatur, erreichbarer Comp
 ## Repository und Prüfablauf
 
 - Repository: `/workspace/nose-pushup`.
-- Beim letzten geprüften Stand war `main`/`origin/main` auf `1b08f2fad6461f829419da7137de5a9d83be7862` (`style(mira): refine calm navy chat with gradient spark`). Vor jeder Arbeit den tatsächlichen Branch, `git status`, aktuelle Commits und Remote-Stand neu prüfen.
+- Beim letzten geprüften Stand war `main`/`origin/main` auf `0fd47b8` (`docs: add internal AI handoff for Alo`). Vor jeder Arbeit den tatsächlichen Branch, `git status`, aktuelle Commits und Remote-Stand neu prüfen.
 - Die folgenden lokalen Voränderungen waren bewusst uncommittet und geschützt: `src/routeTree.gen.ts`; `docs/alo-fresh-*`; `docs/alo-validation/`; `scripts/test-alo-fresh-local.sh`; `supabase/fresh/`; `tests/db/`. Nicht zurücksetzen, löschen, bearbeiten, stagen oder committen, außer Hendrik beauftragt es ausdrücklich.
 - Nur ein Codeeditor gleichzeitig. Bei fremden oder parallelen Änderungen erst die Verantwortlichen koordinieren.
 - Relevante Prüfungen: `npm test`, `npx tsc --noEmit`, `npm run lint`, `npm run build`. Bei Abhängigkeiten zusätzlich Lockfile aktuell halten und `npm ci --no-audit --no-fund` testen.
