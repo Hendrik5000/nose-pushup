@@ -264,6 +264,17 @@ html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer t
   line-height: 1.35;
   box-shadow: none;
 }
+/* Keep Mira's focus visible through its background, without any focus line.
+   Buttons and other composers keep their existing rings. */
+@layer base {
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer textarea:focus-visible {
+    /* Match the global accessibility layer so this scoped important rule wins. */
+    outline: none !important;
+    background: color-mix(in srgb, var(--foreground) 8%, var(--card)) !important;
+    border-radius: 0.5rem;
+    box-shadow: none;
+  }
+}
 html[data-design-style="performance"]
   .sport-ai-chat-mode
   .sport-chat-composer
