@@ -1,17 +1,18 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { Link } from "@tanstack/react-router";
 import {
-  Mic,
   ArrowUp,
+  ImagePlus,
+  Menu,
+  Mic,
   Plus,
   Settings2,
   Sparkles,
+  X,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
 import { AiProviderSettings } from "@/components/AiProviderSettings";
-import { MiraPhotoAttach } from "@/components/MiraPhotoAttach";
 import { BottomNav } from "@/components/BottomNav";
-import { SportPageIntro } from "@/components/SportPageIntro";
 import {
   classifyTask,
   describeProviderSelection,
@@ -21,6 +22,8 @@ import {
   type AiTask,
 } from "@/lib/ai-providers";
 import { parseAiResponse } from "@/lib/ai-plan";
+import { miraDraftId, readMiraDraft } from "@/lib/mira-handoff";
+import { putAlo } from "@/lib/alo-store";
 import { superAiChat } from "@/lib/super-ai.functions";
 import {
   loadPersona,
@@ -31,8 +34,6 @@ import {
   type AiPersona,
   type AiSession,
 } from "@/lib/super-ai-tools";
-import { miraDraftId, readMiraDraft } from "@/lib/mira-handoff";
-import { putAlo } from "@/lib/alo-store";
 import { supabase } from "@/integrations/supabase/client";
 
 type Msg = {
@@ -41,7 +42,12 @@ type Msg = {
   meta?: { provider?: string; model?: string; task?: string; routingReason?: string };
 };
 
-type SportAiView = "coach" | "chat" | "history";
+const SUGGESTIONS = [
+  { label: "Ideen finden", prompt: "Gib mir 5 frische Ideen für mein nächstes Projekt." },
+  { label: "Text schreiben", prompt: "Schreibe einen kurzen, freundlichen Textentwurf." },
+  { label: "Einfach erklären", prompt: "Erkläre mir Routing bei KI-Modellen in einfachen Worten." },
+  { label: "Foto analysieren", prompt: "Was siehst du auf dem Foto? Beschreibe es klar und hilf mir weiter." },
+];
 
 export function SuperAiPage() {
   const send = useServerFn(superAiChat);
@@ -53,8 +59,7 @@ export function SuperAiPage() {
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [sessionsOpen, setSessionsOpen] = useState(false);
-  const [sportAiView, setSportAiView] = useState<SportAiView>("chat");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [persona] = useState<AiPersona>(() => loadPersona());
   const [userId, setUserId] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
@@ -62,11 +67,11 @@ export function SuperAiPage() {
   const generationRef = useRef(0);
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const previewTask = input.trim() ? classifyTask(input) : (lastTask ?? "general");
   const providerPreview = selectProvider(loadProviders(userId), previewTask);
   const activeProvider = providerPreview.provider;
-  const providerPreviewReason = describeProviderSelection(providerPreview, previewTask);
 
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => {
@@ -113,7 +118,7 @@ export function SuperAiPage() {
     const s = sessions.find((x) => x.id === activeId);
     if (s?.title) return s.title;
     const firstUser = messages.find((m) => m.role === "user");
-    return firstUser ? firstUser.content.slice(0, 28) : "Neuer Chat";
+    return firstUser ? firstUser.content.slice(0, 32) : "Neuer Chat";
   }, [sessions, activeId, messages]);
 
   const startNewSession = () => {
@@ -124,9 +129,8 @@ export function SuperAiPage() {
     setMessages([]);
     setInput(readMiraDraft(id));
     setPendingImage(null);
-    setSessionsOpen(false);
+    setMenuOpen(false);
     setError(null);
-    setSportAiView("chat");
   };
 
   const switchSession = (id: string) => {
@@ -137,9 +141,22 @@ export function SuperAiPage() {
     setMessages((s?.messages as Msg[]) ?? []);
     setInput(readMiraDraft(id));
     setPendingImage(null);
-    setSessionsOpen(false);
+    setMenuOpen(false);
     setError(null);
-    setSportAiView("chat");
+  };
+
+  const onPickImage = (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 1_200_000) {
+      setError("Foto max. ca. 1,2 MB — bitte kleiner wählen.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") setPendingImage(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const submit = async (textOverride?: string) => {
@@ -154,11 +171,10 @@ export function SuperAiPage() {
     const selection = selectProvider(loadProviders(userId), task);
     const provider = selection.provider;
     if (!provider) {
-      setError("Kein aktiver KI-Anbieter. Öffne Zugangsdaten und hinterlege einen API-Schlüssel.");
+      setError("Kein aktiver KI-Anbieter. Öffne die Einstellungen und hinterlege einen API-Schlüssel.");
       setSettingsOpen(true);
       return;
     }
-    setSportAiView("chat");
     const userContent =
       text || (imageDataUrl ? "📷 Foto angehängt — bitte beschreiben und helfen." : "");
     const nextMsgs: Msg[] = [...messages, { role: "user", content: userContent }];
@@ -168,7 +184,7 @@ export function SuperAiPage() {
     const generation = ++generationRef.current;
     setLoading(true);
     try {
-      let systemExtra = `Du bist Mira, die vielseitige allgemeine KI von Alo (All in one). Hilf bei Alltag, Wissen, Schreiben, Ideen, Lernen und Planung. Sei verlässlich und klar. Antworte auf Deutsch. ${PERSONAS.find((p) => p.id === persona)?.system ?? ""}`;
+      let systemExtra = `Du bist Mira, die vielseitige KI von Alo. Antworte auf Deutsch, klar und hilfreich. ${PERSONAS.find((p) => p.id === persona)?.system ?? ""}`;
       if (imageDataUrl) {
         systemExtra +=
           "\n\nDer Nutzer hat ein Foto angehängt. Beschreibe relevante Inhalte und hilf konkret. Erfinde keine nicht sichtbaren Details.";
@@ -249,279 +265,248 @@ export function SuperAiPage() {
     rec.start();
   };
 
-  const suggestions = ["Ideen", "Text entwerfen", "Einfach erklären"];
+  const empty = messages.length === 0 && !loading;
 
   return (
-    <div
-      className={`sport-only sport-ai-page mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8 ${
-        sportAiView === "chat" ? "sport-ai-chat-mode" : ""
-      }`}
-    >
-      {sportAiView === "chat" ? (
-        <div className="sport-ai-compact-heading" aria-label="Chat-Steuerung">
-          <div className="sport-ai-model-status" aria-live="polite">
-            <span className="sport-ai-model-dot" aria-hidden="true" />
-            <span>Mira</span>
-            <span className="text-[10px] text-muted-foreground">
-              Vorschau: {activeProvider?.label ?? "Kein Anbieter"}
-            </span>
-            <details className="text-[10px] text-muted-foreground">
-              <summary className="cursor-pointer">Technische Details</summary>
-              <span>
-                {activeProvider
-                  ? `${activeProvider.model} · ${providerPreviewReason}`
-                  : "Kein Modell eingerichtet"}
-              </span>
-            </details>
-          </div>
-          <div className="sport-ai-chat-actions flex items-center gap-2">
-            <button
-              type="button"
-              onClick={startNewSession}
-              className="sport-ai-header-action flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-card"
-              aria-label="Neuen Chat beginnen"
-              title="Neuer Chat"
-            >
-              <Plus className="h-5 w-5" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSessionsOpen((v) => !v)}
-              className="rounded-2xl border border-border bg-card px-3 py-2 text-xs font-semibold"
-            >
-              Verlauf
-            </button>
-            <button
-              type="button"
-              onClick={() => setSettingsOpen((v) => !v)}
-              className="sport-ai-header-action flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-card"
-              aria-label="KI-Einstellungen"
-              title="KI-Einstellungen"
-            >
-              <Settings2 className="h-5 w-5" aria-hidden="true" />
-            </button>
-            <details className="alo-mira-view-menu">
-              <summary
-                className="cursor-pointer rounded-2xl border border-border bg-card px-3 py-2 text-xs"
-                aria-label="Mira-Ansicht wechseln"
-              >
-                •••
-              </summary>
-              <div className="mt-1 flex flex-col gap-1 rounded-xl border border-border bg-card p-2 text-xs">
-                <button
-                  type="button"
-                  className="rounded-lg px-2 py-1 text-left hover:bg-secondary/40"
-                  onClick={() => setSportAiView("chat")}
-                >
-                  Chat
-                </button>
-                <button
-                  type="button"
-                  className="rounded-lg px-2 py-1 text-left hover:bg-secondary/40"
-                  onClick={() => setSportAiView("coach")}
-                >
-                  Coach
-                </button>
-                <button
-                  type="button"
-                  className="rounded-lg px-2 py-1 text-left hover:bg-secondary/40"
-                  onClick={() => setSportAiView("history")}
-                >
-                  Verlauf-Ansicht
-                </button>
-              </div>
-            </details>
+    <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-500/10 via-background to-background pb-28 text-foreground">
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/40 bg-background/80 px-4 py-3 backdrop-blur-xl">
+        <button
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary/60"
+          aria-label="Menü"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 text-center">
+          <div className="truncate text-sm font-semibold tracking-tight">Mira</div>
+          <div className="truncate text-[11px] text-muted-foreground">
+            {activeProvider?.label ?? "Kein Anbieter"} · {activeTitle}
           </div>
         </div>
-      ) : (
-        <SportPageIntro
-          eyebrow="Mira"
-          title="Dein KI-Begleiter"
-          description="Chat, Ideen und optionale Trainingshilfe — mit Foto-Upload."
-        />
-      )}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={startNewSession}
+            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary/60"
+            aria-label="Neuer Chat"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen((v) => !v)}
+            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary/60"
+            aria-label="Einstellungen"
+          >
+            <Settings2 className="h-5 w-5" />
+          </button>
+        </div>
+      </header>
 
-      {sessionsOpen && (
-        <div className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-border bg-card/80 p-2">
+      {menuOpen && (
+        <div className="absolute inset-x-0 top-[57px] z-30 mx-3 max-h-[50vh] overflow-y-auto rounded-3xl border border-border/60 bg-card/95 p-3 shadow-2xl backdrop-blur-xl">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Chats
+            </span>
+            <button type="button" onClick={() => setMenuOpen(false)} className="rounded-full p-1 hover:bg-secondary/50">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {sessions.length === 0 && (
+            <p className="px-2 py-3 text-sm text-muted-foreground">Noch keine Chats.</p>
+          )}
           {sessions.map((s) => (
             <button
               key={s.id}
               type="button"
               onClick={() => switchSession(s.id)}
-              className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${
-                s.id === activeId ? "bg-primary/15 font-semibold" : "hover:bg-secondary/40"
+              className={`mb-1 block w-full rounded-2xl px-3 py-2.5 text-left text-sm transition ${
+                s.id === activeId ? "bg-primary/15 font-semibold" : "hover:bg-secondary/50"
               }`}
             >
               {s.title || "Chat"}
             </button>
           ))}
+          <Link
+            to="/"
+            className="mt-2 block rounded-2xl px-3 py-2 text-center text-xs font-medium text-primary hover:bg-secondary/40"
+          >
+            Zur Übersicht
+          </Link>
         </div>
       )}
 
       {settingsOpen && (
-        <div className="rounded-2xl border border-border bg-card/80 p-3">
+        <div className="mx-4 mt-3 rounded-3xl border border-border/60 bg-card/90 p-4 shadow-lg backdrop-blur">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">KI-Anbieter & API-Keys</h2>
+            <button type="button" onClick={() => setSettingsOpen(false)} className="text-xs text-primary">
+              Fertig
+            </button>
+          </div>
           <AiProviderSettings userId={userId} />
-          <button type="button" className="mt-2 text-xs text-primary" onClick={() => setSettingsOpen(false)}>
-            Schließen
-          </button>
         </div>
       )}
 
       {error && (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-xs">{error}</div>
+        <div className="mx-4 mt-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error}
+        </div>
       )}
 
-      {sportAiView === "coach" && (
-        <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-5">
-          <div className="flex items-center gap-2 text-primary">
-            <Sparkles className="h-5 w-5" />
-            <h2 className="text-lg font-bold">Coach</h2>
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Frag Mira nach Trainingsideen, Technik-Tipps oder einem Plan für heute.
-          </p>
-          <button
-            type="button"
-            className="mt-4 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-            onClick={() => {
-              setSportAiView("chat");
-              void submit("Gib mir einen kurzen Trainingsvorschlag für heute.");
-            }}
-          >
-            Vorschlag holen
-          </button>
-        </section>
-      )}
-
-      {sportAiView === "history" && (
-        <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-5">
-          <h2 className="text-lg font-bold">Verlauf</h2>
-          <ul className="mt-3 space-y-2">
-            {sessions.map((s) => (
-              <li key={s.id}>
+      <div ref={scrollRef} className="flex flex-1 flex-col overflow-y-auto px-4 pb-4 pt-6">
+        {empty ? (
+          <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-8 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-violet-500 to-amber-400 shadow-lg shadow-violet-500/20">
+              <Sparkles className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Hallo, ich bin Mira</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Frag mich etwas, lade ein Foto hoch oder starte mit einer Idee.
+              </p>
+            </div>
+            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
+              {SUGGESTIONS.map((s) => (
                 <button
+                  key={s.label}
                   type="button"
-                  className="w-full rounded-xl border border-border px-3 py-2 text-left text-sm hover:bg-secondary/30"
-                  onClick={() => switchSession(s.id)}
+                  onClick={() => void submit(s.prompt)}
+                  className="rounded-2xl border border-border/70 bg-card/70 px-4 py-3 text-left text-sm shadow-sm transition hover:border-primary/40 hover:bg-card"
                 >
-                  <div className="font-semibold">{s.title || "Chat"}</div>
-                  <div className="text-[11px] text-muted-foreground">{s.updatedAt?.slice(0, 16)}</div>
+                  <span className="font-medium">{s.label}</span>
+                  <span className="mt-0.5 block text-[11px] text-muted-foreground line-clamp-2">
+                    {s.prompt}
+                  </span>
                 </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {sportAiView === "chat" && (
-        <>
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto">
-            {messages.length === 0 && (
-              <div className="rounded-[1.75rem] border border-border/70 bg-card/60 p-5">
-                <p className="text-sm text-muted-foreground">
-                  Hallo — tippe eine Frage oder hänge mit 📷 ein Foto an.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {suggestions.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => void submit(s)}
-                      className="rounded-full border border-border bg-secondary/30 px-3 py-1.5 text-xs font-semibold"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-3 text-[11px] text-muted-foreground">
-                  {activeTitle} · Routing: {activeProvider?.label ?? "—"}
-                </p>
-              </div>
-            )}
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`rounded-2xl px-3 py-2 text-sm ${
-                  m.role === "user" ? "ml-8 bg-primary/15" : "mr-8 bg-secondary/40"
-                }`}
+                className={`flex gap-3 ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                {m.content}
-                {m.meta?.routingReason && (
-                  <div className="mt-1 text-[10px] text-muted-foreground">{m.meta.routingReason}</div>
+                {m.role === "assistant" && (
+                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-violet-500 to-amber-400">
+                    <Sparkles className="h-3.5 w-3.5 text-white" />
+                  </div>
                 )}
+                <div
+                  className={`max-w-[85%] rounded-[1.35rem] px-4 py-3 text-[15px] leading-relaxed ${
+                    m.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary/50 text-foreground"
+                  }`}
+                >
+                  <div className="whitespace-pre-wrap">{m.content}</div>
+                  {m.meta?.routingReason && (
+                    <div className="mt-2 text-[10px] opacity-70">{m.meta.routingReason}</div>
+                  )}
+                </div>
               </div>
             ))}
-            {loading && <div className="text-xs text-muted-foreground">Mira denkt…</div>}
-          </div>
-
-          <div className="sticky bottom-16 z-10">
-            {pendingImage && (
-              <div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-2 py-1.5">
-                <img src={pendingImage} alt="Anhang für Mira" className="h-14 w-14 rounded-lg object-cover" />
-                <div className="min-w-0 flex-1 text-[11px] text-muted-foreground">
-                  Foto bereit — wird mit der nächsten Nachricht gesendet.
+            {loading && (
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-violet-500 to-amber-400">
+                  <Sparkles className="h-3.5 w-3.5 animate-pulse text-white" />
                 </div>
-                <button
-                  type="button"
-                  className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-primary"
-                  onClick={() => setPendingImage(null)}
-                >
-                  Entfernen
-                </button>
+                <div className="rounded-[1.35rem] bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
+                  Mira denkt …
+                </div>
               </div>
             )}
-            <form
-              className="sport-chat-composer flex items-end gap-2 rounded-[1.5rem] border border-border/70 bg-card/85 p-3 shadow-lg"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void submit();
-              }}
-            >
-              <MiraPhotoAttach value={pendingImage} onChange={setPendingImage} disabled={loading} />
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void submit();
-                  }
-                }}
-                placeholder="Deine Frage…"
-                aria-label="Deine Frage an Mira"
-                rows={1}
-                className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
-                style={{ maxHeight: 140 }}
-                disabled={loading}
-              />
+          </div>
+        )}
+      </div>
+
+      <div className="pointer-events-none fixed inset-x-0 bottom-16 z-20 flex justify-center px-3">
+        <div className="pointer-events-auto w-full max-w-2xl">
+          {pendingImage && (
+            <div className="mb-2 flex items-center gap-2 rounded-2xl border border-border/60 bg-card/95 px-3 py-2 shadow-lg backdrop-blur">
+              <img src={pendingImage} alt="Anhang" className="h-12 w-12 rounded-xl object-cover" />
+              <span className="min-w-0 flex-1 text-xs text-muted-foreground">Foto wird mitgesendet</span>
               <button
                 type="button"
-                onClick={toggleVoice}
-                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${
-                  listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"
-                }`}
-                aria-label="Spracheingabe"
-                aria-pressed={listening}
+                onClick={() => setPendingImage(null)}
+                className="rounded-full p-1.5 hover:bg-secondary/60"
+                aria-label="Foto entfernen"
               >
-                <Mic className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
-              <button
-                type="submit"
-                aria-label="Nachricht senden"
-                disabled={loading || (!input.trim() && !pendingImage)}
-                className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
-              >
-                <ArrowUp className="h-5 w-5" />
-              </button>
-            </form>
-            <p className="mt-2 text-center text-[10px] text-muted-foreground">
-              <Link to="/" className="underline">
-                Zur Übersicht
-              </Link>
-            </p>
-          </div>
-        </>
-      )}
+            </div>
+          )}
+          <form
+            className="flex items-end gap-1 rounded-[1.75rem] border border-border/60 bg-card/95 p-2 shadow-xl shadow-black/10 backdrop-blur-xl"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submit();
+            }}
+          >
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                onPickImage(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={loading}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary/70 disabled:opacity-40"
+              aria-label="Foto anhängen"
+            >
+              <ImagePlus className="h-5 w-5" />
+            </button>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void submit();
+                }
+              }}
+              placeholder="Frag Mira etwas…"
+              aria-label="Nachricht an Mira"
+              rows={1}
+              disabled={loading}
+              className="max-h-32 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-1 py-2.5 text-[15px] outline-none placeholder:text-muted-foreground/70"
+            />
+            <button
+              type="button"
+              onClick={toggleVoice}
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
+                listening ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary/70"
+              }`}
+              aria-label="Spracheingabe"
+              aria-pressed={listening}
+            >
+              <Mic className="h-5 w-5" />
+            </button>
+            <button
+              type="submit"
+              disabled={loading || (!input.trim() && !pendingImage)}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md disabled:opacity-35"
+              aria-label="Senden"
+            >
+              <ArrowUp className="h-5 w-5" />
+            </button>
+          </form>
+          <p className="mt-1.5 text-center text-[10px] text-muted-foreground/80">
+            Mira kann Fehler machen · Prüfe wichtige Infos
+          </p>
+        </div>
+      </div>
 
       <BottomNav />
     </div>
