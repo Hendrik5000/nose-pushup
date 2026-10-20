@@ -57,7 +57,9 @@ export function LocalChatShell() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [headerVisible, setHeaderVisible] = useState(true);
   const [todayReps, setTodayReps] = useState(0);
+  const headerTimerRef = useRef<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<Target | null>(null);
   activeRef.current = active;
@@ -134,6 +136,24 @@ export function LocalChatShell() {
     setSearch("");
     setSearchOpen(false);
   }, [userId, active?.kind, active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const wakeHeader = useCallback(() => {
+    setHeaderVisible(true);
+    if (headerTimerRef.current) window.clearTimeout(headerTimerRef.current);
+    headerTimerRef.current = window.setTimeout(() => setHeaderVisible(false), 4500);
+  }, []);
+
+  useEffect(() => {
+    wakeHeader();
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.clientY < 88) wakeHeader();
+    };
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      if (headerTimerRef.current) window.clearTimeout(headerTimerRef.current);
+    };
+  }, [wakeHeader]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -410,7 +430,14 @@ export function LocalChatShell() {
       <aside className="hidden w-72 shrink-0 border-r border-border md:block">{sidebar}</aside>
 
       <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex shrink-0 items-center gap-2 border-b border-border bg-card/70 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] shadow-sm backdrop-blur">
+        <header
+          onPointerDown={wakeHeader}
+          className={`grid shrink-0 overflow-hidden border-b border-border bg-card/70 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] shadow-sm backdrop-blur transition-[grid-template-rows,padding,opacity] duration-500 ${
+            headerVisible ? "grid-rows-[1fr] pb-3 opacity-100" : "grid-rows-[0fr] pb-0 opacity-0"
+          }`}
+          aria-hidden={!headerVisible}
+        >
+          <div className="min-h-0 flex items-center gap-2">
           <button
             type="button"
             className="rounded-xl border border-border px-2 py-1.5 text-sm md:hidden"
@@ -451,6 +478,7 @@ export function LocalChatShell() {
               App
             </Link>
           </div>
+        </div>
         </header>
 
         {searchOpen && (

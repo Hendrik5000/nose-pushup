@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { AiProviderSettings } from "@/components/AiProviderSettings";
 import { buildAppContext, contextToSystemBlock } from "@/lib/ai-context";
@@ -64,7 +64,9 @@ function SuperAiPage() {
   const [contextHint, setContextHint] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [lastTask, setLastTask] = useState<AiTask | null>(null);
+  const [headerVisible, setHeaderVisible] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const headerTimerRef = useRef<number | null>(null);
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
 
   const activeTitle = useMemo(() => {
@@ -99,6 +101,24 @@ function SuperAiPage() {
       return next;
     });
   }, [messages, activeId]);
+
+  const wakeHeader = useCallback(() => {
+    setHeaderVisible(true);
+    if (headerTimerRef.current) window.clearTimeout(headerTimerRef.current);
+    headerTimerRef.current = window.setTimeout(() => setHeaderVisible(false), 4500);
+  }, []);
+
+  useEffect(() => {
+    wakeHeader();
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.clientY < 88) wakeHeader();
+    };
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      if (headerTimerRef.current) window.clearTimeout(headerTimerRef.current);
+    };
+  }, [wakeHeader]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -241,7 +261,14 @@ function SuperAiPage() {
   return (
     <main className="mx-auto flex h-[100dvh] min-h-0 w-full max-w-md flex-col overflow-hidden px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-0">
       {/* Header */}
-      <header className="relative shrink-0 overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/20 via-card/80 to-background p-4 shadow-sm">
+      <header
+        onPointerDown={wakeHeader}
+        className={`relative grid shrink-0 overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/20 via-card/80 to-background p-4 shadow-sm transition-[grid-template-rows,padding,opacity] duration-500 ${
+          headerVisible ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] p-0 opacity-0"
+        }`}
+        aria-hidden={!headerVisible}
+      >
+        <div className="min-h-0">
         <div className="flex items-start justify-between gap-2">
           <div>
             <Link to="/" className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -299,6 +326,7 @@ function SuperAiPage() {
             )}
           </div>
         )}
+        </div>
       </header>
 
       {/* Sessions drawer */}
