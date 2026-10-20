@@ -59,7 +59,13 @@ export function SportAppHeader() {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const identity = aloPageIdentity(pathname);
-  const immersive = identity.module === "Mira" || pathname.startsWith("/ai");
+  const hideChrome =
+    pathname.startsWith("/ai") ||
+    pathname.startsWith("/exercises") ||
+    pathname.startsWith("/chat") ||
+    pathname.startsWith("/profile");
+  const immersive =
+    hideChrome || identity.module === "Mira" || pathname.startsWith("/ai");
   const { headerRef, visible: headerVisible, reveal: revealHeader, scheduleHide } =
     useAutoHideAppHeader(pathname, immersive);
   const ref = headerRef;
@@ -106,6 +112,15 @@ export function SportAppHeader() {
       document.removeEventListener("keydown", close);
     };
   }, [open]);
+  useEffect(() => {
+    if (!hideChrome) return;
+    document.documentElement.style.setProperty("--alo-header-space", "0px");
+  }, [hideChrome, pathname]);
+
+  if (hideChrome) {
+    return null;
+  }
+
   return (
     <div
       className="sport-app-header alo-app-header"
