@@ -11,6 +11,8 @@ const GLOBAL_SECRET_KEYS = [
   "np-hc-last-sync",
   "np-hc-auto-sync",
   "np-hc-cache",
+  "alo-mira-memory-enabled-v1",
+  "alo-mira-memory-notes-v1",
 ] as const;
 
 const PREFIX_KEYS = [
@@ -18,6 +20,8 @@ const PREFIX_KEYS = [
   "np-watch-devices:",
   "np-watch-snapshot:",
   "np-hc-cache:",
+  "alo-mira-memory-enabled-v1:",
+  "alo-mira-memory-notes-v1:",
 ] as const;
 
 /** Remove BYOK keys and wearable/health caches from this browser. */
