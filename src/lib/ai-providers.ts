@@ -112,16 +112,17 @@ export function classifyTask(text: string, opts?: { hasImage?: boolean }): AiTas
   if (/(hab|habe|gemacht|geschafft|absolviert|logg|logge)/.test(t) && /\d+/.test(t))
     return "quick_log";
   if (/(plan|programm|split|wochenplan|trainingsplan)/.test(t)) return "training_plan";
-  if (/(form|technik|haltung|nacken|rücken|schulter|winkel)/.test(t)) return "form_technique";
+  // Specialized domains before broad training "form" keywords (avoid "Formel" → form_technique)
+  if (/(bild|foto|skizze|screenshot|siehst du|was ist auf)/.test(t)) return "vision";
+  if (/(physik|chemie|biologie|mathe|theorem|wissenschaft|paper|studie|\bformel\b)/.test(t))
+    return "science";
+  if (/(gedicht|geschichte|roman|kreativ|erzähl|metapher|songtext|skript)/.test(t)) return "creative";
+  if (/(code|typescript|python|bug|funktion|api|sql|regex|compili)/.test(t)) return "coding";
+  if (/(?:\bform\b|technik|haltung|nacken|rücken|schulter|winkel)/.test(t)) return "form_technique";
   if (/(regen|recovery|schmerz|pause|müde|schlaf|überlast)/.test(t)) return "recovery";
   if (/(statistik|fortschritt|woche|trend|analyse|wie war)/.test(t)) return "stats_analysis";
   if (/(chat|nachricht|raum|dm|zusammenfassung|freund)/.test(t)) return "chat_summary";
   if (/(motiv|nicht lust|faul|durchhalten|streak)/.test(t)) return "motivation";
-  if (/(code|typescript|python|bug|funktion|api|sql|regex|compili)/.test(t)) return "coding";
-  if (/(physik|chemie|biologie|mathe|theorem|wissenschaft|paper|studie|formel)/.test(t))
-    return "science";
-  if (/(gedicht|geschichte|roman|kreativ|erzähl|metapher|songtext|skript)/.test(t)) return "creative";
-  if (/(bild|foto|skizze|screenshot|siehst du|was ist auf)/.test(t)) return "vision";
   return "general";
 }
 
