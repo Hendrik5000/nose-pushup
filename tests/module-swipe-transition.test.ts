@@ -53,7 +53,7 @@ function deferred() {
   return { promise, resolve };
 }
 for (const direction of ["left", "right"] as const) {
-  test(`${direction}: feedback starts before navigation; entrance is directional and compositor-only`, async () => {
+  test(`${direction}: settling starts from the finger before navigation and stays compositor-only`, async () => {
     const env = environment();
     try {
       let navigations = 0;
@@ -72,16 +72,13 @@ for (const direction of ["left", "right"] as const) {
         direction === "left" ? -80 : 80,
       ).finished;
       assert.equal(navigations, 1);
-      assert.equal(calls.length, 2);
+      assert.equal(calls.length, 1);
       assert.equal(
         calls[0].frames[0].transform,
         `translate3d(${direction === "left" ? -80 : 80}px, 0, 0)`,
       );
-      assert.equal(
-        calls[1].frames[0].transform,
-        `translate3d(${direction === "left" ? "100%" : "-100%"}, 0, 0)`,
-      );
-      assert.equal(calls[1].options.duration, 260);
+      assert.equal(calls[0].frames[1].transform, "translate3d(0, 0, 0)");
+      assert.equal(calls[0].options.duration, 160);
       assert.ok(
         calls.every((call) =>
           call.frames.every((frame) => Object.keys(frame).every((key) => key === "transform")),
@@ -95,33 +92,38 @@ for (const direction of ["left", "right"] as const) {
     }
   });
 }
-test("slow routing never delays initial feedback or waits for the outgoing animation", async () => {
+test("routing and settling run in parallel; route readiness unlocks reversal before animation ends", async () => {
   const env = environment();
   try {
     const navigation = deferred();
-    const neverFinished = deferred();
+    const animation = deferred();
     let animations = 0;
-    let navigations = 0;
     const element = surface(() => {
       animations++;
       return {
-        finished: animations === 1 ? neverFinished.promise : Promise.resolve(),
-        cancel() {},
+        finished: animation.promise,
+        cancel() {
+          animation.resolve();
+        },
       };
     });
-    const transition = startModuleSwipeTransition(element, "left", () => {
-      navigations++;
-      return navigation.promise;
-    });
-    assert.equal(
-      animations,
-      1,
-      "feedback is synchronous even while the destination is still loading",
-    );
-    assert.equal(navigations, 1);
+    const transition = startModuleSwipeTransition(element, "left", () => navigation.promise, -96);
+    assert.equal(animations, 1);
+    assert.equal(transition.navigating, true);
     navigation.resolve();
+    await Promise.resolve();
+    assert.equal(transition.navigating, false, "a running animation must not block a new gesture");
+    transition.cancel();
+    element.style.transform = "translate3d(24px, 0, 0)";
+    env.dataset.moduleSwipe = "right";
     await transition.finished;
-    assert.equal(animations, 2, "navigation and outgoing feedback run in parallel");
+    assert.equal(
+      element.style.transform,
+      "translate3d(24px, 0, 0)",
+      "late cleanup cannot wipe a newer drag",
+    );
+    assert.equal(env.dataset.moduleSwipe, "right");
+    assert.equal(animations, 1, "no second full-screen entrance after routing");
   } finally {
     env.restore();
   }
@@ -253,19 +255,15 @@ test("swipe boundaries, aliases, exact threshold and protected routes remain unc
 const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
 test("direct touch tracking is frame-batched and all native gesture guards remain", () => {
   const layout = read("routes/_authenticated/route.tsx");
-  assert.match(layout, /if \(swipeTransition.current\)/);
-  assert.match(layout, /swipeTransition.current\?\.cancel\(\)/);
+  const gesture = read("lib/module-swipe-gesture.ts");
+  assert.match(layout, /installModuleSwipeGesture/);
+  assert.match(layout, /getPathname: \(\) => currentPath.current/);
   assert.match(layout, /className="alo-module-surface">\s*<Outlet \/>/);
-  assert.match(layout, /parent.scrollWidth > parent.clientWidth \+ 4/);
-  assert.match(layout, /passive: true/);
-  assert.match(layout, /addEventListener\("touchmove", touchMove/);
-  assert.match(layout, /removeEventListener\("touchmove", touchMove/);
-  assert.match(layout, /requestAnimationFrame/);
-  assert.match(layout, /cancelAnimationFrame/);
-  assert.match(layout, /Math.abs\(dy\) > 10/);
-  assert.match(layout, /reducedMotion/);
-  assert.doesNotMatch(layout, /preventDefault\(/);
-  assert.doesNotMatch(layout, /touch-action:/);
+  assert.doesNotMatch(gesture, /useState|setState/);
+  assert.match(gesture, /requestAnimationFrame/);
+  assert.match(gesture, /cancelAnimationFrame/);
+  assert.match(gesture, /passive: true/);
+  assert.doesNotMatch(gesture, /preventDefault\(/);
   assert.doesNotMatch(read("lib/module-swipe-transition.ts"), /startViewTransition/);
   assert.match(read("module-swipe.css"), /prefers-reduced-motion: reduce/);
   assert.doesNotMatch(read("module-swipe.css"), /view-transition/);
