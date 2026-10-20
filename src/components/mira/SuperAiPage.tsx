@@ -12,7 +12,6 @@ import {
   X,
 } from "lucide-react";
 import { AiProviderSettings } from "@/components/AiProviderSettings";
-import { BottomNav } from "@/components/BottomNav";
 import {
   classifyTask,
   describeProviderSelection,
@@ -268,7 +267,7 @@ export function SuperAiPage() {
   const empty = messages.length === 0 && !loading;
 
   return (
-    <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-500/10 via-background to-background pb-28 text-foreground">
+    <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-500/10 via-background to-background pb-24 text-foreground">
       <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/40 bg-background/80 px-4 py-3 backdrop-blur-xl">
         <button
           type="button"
@@ -424,7 +423,7 @@ export function SuperAiPage() {
         )}
       </div>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-16 z-20 flex justify-center px-3">
+      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-20 flex justify-center px-3">
         <div className="pointer-events-auto w-full max-w-2xl">
           {pendingImage && (
             <div className="mb-2 flex items-center gap-2 rounded-2xl border border-border/60 bg-card/95 px-3 py-2 shadow-lg backdrop-blur">
@@ -507,8 +506,6 @@ export function SuperAiPage() {
           </p>
         </div>
       </div>
-
-      <BottomNav />
     </div>
   );
 }
