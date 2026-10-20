@@ -12,18 +12,19 @@ export type AiTask =
   | "stats_analysis"
   | "chat_summary"
   | "quick_log"
-  | "motivation";
+  | "motivation"
+  | "science"
+  | "creative"
+  | "coding"
+  | "vision";
 
 export type ProviderConfig = {
   id: ProviderId;
   label: string;
   enabled: boolean;
   apiKey: string;
-  /** OpenAI-compatible base URL (custom only) */
   baseUrl?: string;
-  /** Default model id for this provider */
   model: string;
-  /** Preferred for these tasks */
   tasks: AiTask[];
 };
 
@@ -36,7 +37,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     enabled: false,
     apiKey: "",
     model: "gpt-4o-mini",
-    tasks: ["general", "stats_analysis", "training_plan"],
+    tasks: ["general", "stats_analysis", "training_plan", "coding", "science"],
   },
   {
     id: "anthropic",
@@ -44,7 +45,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     enabled: false,
     apiKey: "",
     model: "claude-3-5-haiku-latest",
-    tasks: ["form_technique", "recovery", "training_plan"],
+    tasks: ["form_technique", "recovery", "training_plan", "creative", "science"],
   },
   {
     id: "google",
@@ -52,7 +53,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     enabled: false,
     apiKey: "",
     model: "gemini-2.0-flash",
-    tasks: ["quick_log", "motivation", "general"],
+    tasks: ["quick_log", "motivation", "general", "vision", "creative"],
   },
   {
     id: "lovable",
@@ -60,7 +61,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     enabled: true,
     apiKey: "",
     model: "google/gemini-3-flash-preview",
-    tasks: ["general", "quick_log", "motivation"],
+    tasks: ["general", "quick_log", "motivation", "vision", "creative"],
   },
   {
     id: "custom",
@@ -77,7 +78,6 @@ export function loadProviders(userId?: string | null): ProviderConfig[] {
   try {
     const key = providersStorageKey(userId);
     let raw = localStorage.getItem(key);
-    // One-time migrate from legacy global key into account-scoped storage
     if (!raw && userId) {
       raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -88,7 +88,6 @@ export function loadProviders(userId?: string | null): ProviderConfig[] {
     if (!raw) return structuredClone(DEFAULT_PROVIDERS);
     const parsed = JSON.parse(raw) as ProviderConfig[];
     if (!Array.isArray(parsed) || parsed.length === 0) return structuredClone(DEFAULT_PROVIDERS);
-    // Merge with defaults so new fields appear after updates
     return DEFAULT_PROVIDERS.map((d) => {
       const found = parsed.find((p) => p.id === d.id);
       return found ? { ...d, ...found, id: d.id, label: d.label } : d;
@@ -99,7 +98,6 @@ export function loadProviders(userId?: string | null): ProviderConfig[] {
 }
 
 export function saveProviders(list: ProviderConfig[], userId?: string | null) {
-  // Never persist full secrets into logs; strip empty keys only
   const sanitized = list.map((p) => ({
     ...p,
     apiKey: typeof p.apiKey === "string" ? p.apiKey : "",
@@ -108,7 +106,8 @@ export function saveProviders(list: ProviderConfig[], userId?: string | null) {
 }
 
 /** Classify user message into a task for model routing. */
-export function classifyTask(text: string): AiTask {
+export function classifyTask(text: string, opts?: { hasImage?: boolean }): AiTask {
+  if (opts?.hasImage) return "vision";
   const t = text.toLowerCase();
   if (/(hab|habe|gemacht|geschafft|absolviert|logg|logge)/.test(t) && /\d+/.test(t))
     return "quick_log";
@@ -118,6 +117,11 @@ export function classifyTask(text: string): AiTask {
   if (/(statistik|fortschritt|woche|trend|analyse|wie war)/.test(t)) return "stats_analysis";
   if (/(chat|nachricht|raum|dm|zusammenfassung|freund)/.test(t)) return "chat_summary";
   if (/(motiv|nicht lust|faul|durchhalten|streak)/.test(t)) return "motivation";
+  if (/(code|typescript|python|bug|funktion|api|sql|regex|compili)/.test(t)) return "coding";
+  if (/(physik|chemie|biologie|mathe|theorem|wissenschaft|paper|studie|formel)/.test(t))
+    return "science";
+  if (/(gedicht|geschichte|roman|kreativ|erzähl|metapher|songtext|skript)/.test(t)) return "creative";
+  if (/(bild|foto|skizze|screenshot|siehst du|was ist auf)/.test(t)) return "vision";
   return "general";
 }
 
@@ -135,9 +139,12 @@ const TASK_LABELS: Record<AiTask, string> = {
   chat_summary: "Chat-Zusammenfassung",
   quick_log: "schnelles Trainingsprotokoll",
   motivation: "Motivation",
+  science: "wissenschaftliche Frage",
+  creative: "kreatives Schreiben",
+  coding: "Programmieren / Technik",
+  vision: "Bild verstehen",
 };
 
-/** Explain the exact configured rule used to choose an enabled provider. */
 export function selectProvider(providers: ProviderConfig[], task: AiTask): ProviderSelection {
   const enabled = providers.filter((p) => p.enabled && (p.id === "lovable" || p.apiKey.trim()));
   if (enabled.length === 0) return { provider: null, reason: "no_provider" };
@@ -164,4 +171,13 @@ export function enabledProviderSummary(providers: ProviderConfig[]): string {
   const on = providers.filter((p) => p.enabled && (p.id === "lovable" || p.apiKey.trim()));
   if (on.length === 0) return "Keine Anbieter aktiv";
   return on.map((p) => p.label).join(", ");
+}
+
+export function toPayload(p: ProviderConfig) {
+  return {
+    id: p.id,
+    apiKey: p.apiKey,
+    baseUrl: p.baseUrl,
+    model: p.model,
+  };
 }
