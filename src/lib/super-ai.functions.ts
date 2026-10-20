@@ -12,7 +12,7 @@ type ProviderPayload = {
   model: string;
 };
 
-type InMsg = { role: "user" | "assistant"; content: string };
+type InMsg = { role: "user" | "assistant"; content: string; imageDataUrl?: string };
 
 type SuperAiResult = {
   reply: string;
@@ -70,11 +70,6 @@ function isPrivateIp(ip: string): boolean {
   return false;
 }
 
-/**
- * Validate custom OpenAI-compatible base URL against SSRF.
- * HTTPS only, no credentials in URL, DNS must not resolve to private ranges,
- * optional allowlist via CUSTOM_AI_HOST_ALLOWLIST (comma-separated hosts).
- */
 async function assertSafeCustomBaseUrl(raw: string): Promise<string> {
   let url: URL;
   try {
@@ -142,6 +137,24 @@ function checkUserRateLimit(userId: string) {
   }
 }
 
+function toOpenAiMessages(system: string, messages: InMsg[]) {
+  return [
+    { role: "system" as const, content: system },
+    ...messages.map((m) => {
+      if (m.role === "user" && m.imageDataUrl) {
+        return {
+          role: "user" as const,
+          content: [
+            { type: "text" as const, text: m.content },
+            { type: "image_url" as const, image_url: { url: m.imageDataUrl } },
+          ],
+        };
+      }
+      return { role: m.role, content: m.content };
+    }),
+  ];
+}
+
 async function callOpenAICompat(
   baseUrl: string,
   apiKey: string,
@@ -159,7 +172,7 @@ async function callOpenAICompat(
     body: JSON.stringify({
       model,
       max_tokens: MAX_OUTPUT_HINT,
-      messages: [{ role: "system", content: system }, ...messages],
+      messages: toOpenAiMessages(system, messages),
     }),
   });
   if (!res.ok) {
@@ -204,10 +217,19 @@ async function callAnthropic(apiKey: string, model: string, system: string, mess
 
 async function callGoogle(apiKey: string, model: string, system: string, messages: InMsg[]) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  const contents = messages.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
+  const contents = messages.map((m) => {
+    const parts: Array<Record<string, unknown>> = [{ text: m.content }];
+    if (m.role === "user" && m.imageDataUrl?.startsWith("data:")) {
+      const match = /^data:([^;]+);base64,(.+)$/.exec(m.imageDataUrl);
+      if (match) {
+        parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+      }
+    }
+    return {
+      role: m.role === "assistant" ? "model" : "user",
+      parts,
+    };
+  });
   const res = await fetch(url, {
     method: "POST",
     redirect: "error",
@@ -244,7 +266,7 @@ async function callLovable(model: string, system: string, messages: InMsg[]) {
     body: JSON.stringify({
       model,
       max_tokens: MAX_OUTPUT_HINT,
-      messages: [{ role: "system", content: system }, ...messages],
+      messages: toOpenAiMessages(system, messages),
     }),
   });
   if (!res.ok) {
@@ -272,7 +294,19 @@ export const superAiChat = createServerFn({ method: "POST" })
     const cleaned = messages
       .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
       .slice(-16)
-      .map((m) => ({ role: m.role, content: m.content.slice(0, 6000) }));
+      .map((m, idx, arr) => {
+        const base: InMsg = { role: m.role, content: m.content.slice(0, 6000) };
+        if (
+          idx === arr.length - 1 &&
+          m.role === "user" &&
+          typeof m.imageDataUrl === "string" &&
+          m.imageDataUrl.startsWith("data:image/") &&
+          m.imageDataUrl.length < 1_500_000
+        ) {
+          base.imageDataUrl = m.imageDataUrl;
+        }
+        return base;
+      });
     if (cleaned.length === 0) throw new Error("Keine Nachricht");
     const totalChars = cleaned.reduce((n, m) => n + m.content.length, 0);
     if (totalChars > MAX_INPUT_CHARS) {
@@ -299,6 +333,14 @@ export const superAiChat = createServerFn({ method: "POST" })
     const p = data.provider;
     if (p.id === "lovable" && !p.model) p.model = "google/gemini-3-flash-preview";
     assertModelAllowed(p.id, p.model);
+
+    const hasImage = data.messages.some((m) => Boolean(m.imageDataUrl));
+    if (hasImage && p.id === "anthropic") {
+      for (const m of data.messages) delete m.imageDataUrl;
+      data.systemExtra =
+        (data.systemExtra ? data.systemExtra + "\n" : "") +
+        "Hinweis: Ein Bild war angehängt; Anthropic ist in diesem Gateway text-only — nur der Text wurde gesendet.";
+    }
 
     const system =
       data.systemExtra ||
