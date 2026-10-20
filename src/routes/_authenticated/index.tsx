@@ -521,6 +521,7 @@ function Dashboard() {
 
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
+      <GymPartnerPanel />
       <header className="classic-only dashboard-header flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
@@ -563,7 +564,6 @@ function Dashboard() {
           )}
         </Link>
       </div>
-      <GymPartnerPanel />
       <SportSectionLabel number="01">Dein Plan heute</SportSectionLabel>
       <section
         className="sport-only training-hero rounded-3xl border border-border bg-card p-5"

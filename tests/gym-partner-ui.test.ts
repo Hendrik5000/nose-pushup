@@ -75,3 +75,20 @@ test("new gym data is not wired to the automatic Mira context or tools", () => {
   }
   assert.doesNotMatch(source, /buildAppContext|miraSend|aiContext/);
 });
+
+test("Gym card is the first home content before date labels and today's plan", () => {
+  const home = readFileSync(
+    new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(home, /<main\b[^>]*>\s*<GymPartnerPanel \/>/);
+  assert.equal((home.match(/<GymPartnerPanel \/>/g) ?? []).length, 1);
+  assert.ok(
+    home.indexOf("<GymPartnerPanel />") < home.indexOf('className="classic-only dashboard-header'),
+  );
+  assert.ok(
+    home.indexOf("<GymPartnerPanel />") <
+      home.indexOf('className="sport-only sport-dashboard-welcome"'),
+  );
+  assert.ok(home.indexOf("<GymPartnerPanel />") < home.indexOf('number="01">Dein Plan heute'));
+});
