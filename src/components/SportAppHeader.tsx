@@ -102,14 +102,25 @@ export function SportAppHeader() {
           )}
           <Link
             to={identity.module === "Mira" ? "/ai" : identity.module === "Nexus" ? "/chat" : "/"}
-            className="alo-header-title"
+            className={`alo-header-title${identity.module === "Nexus" ? " alo-nexus-lockup" : ""}`}
             aria-label={`Alo · ${identity.title}`}
           >
-            <small>
-              <img src="/alo-wordmark.png" alt="Alo" width={44} height={24} />
-              {identity.module !== "Nexus" && <span>· {identity.module}</span>}
-            </small>
-            {identity.title !== identity.module && <strong>{identity.title}</strong>}
+            {identity.module === "Nexus" ? (
+              <>
+                <span className="alo-nexus-mark">
+                  <img src="/alo-wordmark.png" alt="Alo" width={28} height={16} />
+                </span>
+                <strong>{identity.title}</strong>
+              </>
+            ) : (
+              <>
+                <small>
+                  <img src="/alo-wordmark.png" alt="Alo" width={44} height={24} />
+                  <span>· {identity.module}</span>
+                </small>
+                {identity.title !== identity.module && <strong>{identity.title}</strong>}
+              </>
+            )}
           </Link>
         </div>
         <div className="sport-header-actions">

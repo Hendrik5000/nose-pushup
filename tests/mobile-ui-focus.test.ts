@@ -164,10 +164,16 @@ test("appearance deep links open idempotently and scroll only the visible design
   );
 });
 
-test("Nexus header names Alo once above the area and preserves all three controls", () => {
+test("Nexus header uses a horizontal brand seal and preserves all three controls", () => {
   const header = read("components/SportAppHeader.tsx");
   assert.match(header, /data-module=\{identity.module\}/);
-  assert.match(header, /identity.module !== "Nexus" && <span>· \{identity.module\}<\/span>/);
+  assert.match(header, /identity.module === "Nexus" \? \([\s\S]*className="alo-nexus-mark"/);
+  assert.match(header, /alo-nexus-lockup/);
+  const nexusBranch = header.slice(header.indexOf('identity.module === "Nexus" ? ('));
+  assert.ok(
+    nexusBranch.indexOf('className="alo-nexus-mark"') <
+      nexusBranch.indexOf("<strong>{identity.title}</strong>"),
+  );
   assert.match(header, /src="\/alo-wordmark\.png" alt="Alo"/);
   assert.equal(aloPageIdentity("/chat").title, "Nexus Chat");
   assert.equal(aloPageIdentity("/chat").back, "/");
@@ -176,8 +182,14 @@ test("Nexus header names Alo once above the area and preserves all three control
   assert.match(header, /aria-controls="sport-area-menu"/);
   const css = read("alo-mobile.css");
   assert.match(css, /data-module="Nexus"[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto/);
+  assert.match(css, /\.alo-nexus-lockup\s*\{[^}]*flex-direction: row;[^}]*align-items: center/);
+  assert.match(css, /\.alo-nexus-mark\s*\{[^}]*flex: 0 0 34px/);
   assert.match(
     css,
-    /data-module="Nexus"\] \.alo-header-title strong\s*\{[^}]*overflow: visible;[^}]*white-space: normal/,
+    /data-module="Nexus"\]\s+\.alo-header-title\s+strong\s*\{[^}]*overflow: visible;[^}]*white-space: normal/,
+  );
+  assert.doesNotMatch(
+    css.slice(css.indexOf("/* Nexus lockup:")),
+    /display: none|(?:^|\n)\s*width: 0;/,
   );
 });
