@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { aloPageIdentity } from "@/lib/alo-ui";
 import { AloHeaderBrand } from "@/components/AloHeaderBrand";
+import { useAutoHideAppHeader } from "@/hooks/useAutoHideAppHeader";
 
 const SECTIONS = [
   {
@@ -58,23 +59,40 @@ export function SportAppHeader() {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const identity = aloPageIdentity(pathname);
-  const ref = useRef<HTMLDivElement>(null);
+  const immersive = identity.module === "Mira" || pathname.startsWith("/ai");
+  const { headerRef, visible: headerVisible, reveal: revealHeader, scheduleHide } =
+    useAutoHideAppHeader(pathname, immersive);
+  const ref = headerRef;
   const trigger = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (open) {
+      revealHeader();
+      return;
+    }
+    if (immersive) scheduleHide();
+  }, [open, immersive, revealHeader, scheduleHide]);
   useEffect(() => {
     const element = ref.current;
     if (!element || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() =>
-      document.documentElement.style.setProperty(
-        "--alo-header-space",
-        `${element.getBoundingClientRect().height}px`,
-      ),
-    );
+    const observer = new ResizeObserver(() => {
+      const h =
+        element.getAttribute("data-visible") === "false"
+          ? 0
+          : element.getBoundingClientRect().height;
+      document.documentElement.style.setProperty("--alo-header-space", `${h}px`);
+    });
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const h = headerVisible ? element.getBoundingClientRect().height : 0;
+    document.documentElement.style.setProperty("--alo-header-space", `${h}px`);
+  }, [headerVisible]);
   useEffect(() => {
     if (!open) return;
     const close = (event: KeyboardEvent) => {
@@ -89,14 +107,26 @@ export function SportAppHeader() {
     };
   }, [open]);
   return (
-    <div className="sport-app-header alo-app-header" data-module={identity.module} ref={ref}>
+    <div
+      className="sport-app-header alo-app-header"
+      data-module={identity.module}
+      data-immersive={immersive ? "true" : "false"}
+      data-visible={headerVisible ? "true" : "false"}
+      ref={ref}
+    >
       <div className="sport-app-header-inner">
         <div className="alo-header-identity">
           {identity.back && (
             <Link
               to={identity.back}
               className="alo-icon-button"
-              aria-label={`Zurück zu ${identity.back === "/" ? "Training" : identity.back === "/exercises" ? "Übungen" : "Calisthenics"}`}
+              aria-label={`Zurück zu ${
+                identity.back === "/"
+                  ? "Training"
+                  : identity.back === "/exercises"
+                    ? "Übungen"
+                    : "Calisthenics"
+              }`}
             >
               <ArrowLeft aria-hidden="true" />
             </Link>
