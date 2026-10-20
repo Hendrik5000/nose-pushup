@@ -276,7 +276,7 @@ html[data-design-style] .alo-home-portals > a {
     .authenticated-shell {
     --homebar-top-space: env(safe-area-inset-top, 0px) !important;
   }
-  html:root[data-design-style][data-navigation-visible="true"]:is(
+  html:root[data-design-style][data-navigation-visible="true"][data-navigation-expanded="true"]:is(
       [data-navigation-layout="top"],
       [data-navigation-layout="top-tabs"]
     )

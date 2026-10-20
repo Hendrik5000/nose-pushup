@@ -18,6 +18,7 @@ import { installModuleSwipeGesture } from "@/lib/module-swipe-gesture";
 import "@/module-swipe.css";
 import "@/module-menu.css";
 import "@/alo-mobile.css";
+import "@/alo-header-layout.css";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -52,9 +53,9 @@ function AuthenticatedLayout() {
   }, [navigate]);
 
   return (
-    <div className="authenticated-shell min-h-[100dvh]">
-      <TopNav />
+    <div className="authenticated-shell alo-header-first min-h-[100dvh]">
       <SportAppHeader />
+      <TopNav />
       <div ref={surface} className="alo-module-surface">
         <Outlet />
       </div>

@@ -1,0 +1,40 @@
+/* Header first: body already supplies the top safe-area inset in styles.css.
+   Reserve navigation space below the header, never above the Alo / Mira brand. */
+html:root .authenticated-shell.alo-header-first {
+  padding-top: 0;
+  --alo-top-module-offset: 2.7rem;
+}
+html:root .authenticated-shell.alo-header-first > .alo-app-header {
+  top: env(safe-area-inset-top, 0px);
+}
+html:root .authenticated-shell.alo-header-first > .alo-module-surface {
+  padding-top: max(0px, calc(var(--homebar-top-space, 0px) - env(safe-area-inset-top, 0px)));
+  transition: padding-top 240ms cubic-bezier(0.22, 1, 0.3, 1);
+}
+html:root .authenticated-shell.alo-header-first > .alo-module-switcher {
+  top: calc(env(safe-area-inset-top, 0px) + var(--alo-header-space, 60px) + 0.35rem);
+}
+html:root[data-navigation-layout="top"] .authenticated-shell.alo-header-first > .app-homebar,
+html:root[data-navigation-layout="top-tabs"] .authenticated-shell.alo-header-first > .app-homebar {
+  top: calc(
+    env(safe-area-inset-top, 0px) + var(--alo-header-space, 60px) + var(--alo-top-module-offset)
+  );
+  /* The safe area is accounted for in top, not again inside the toolbar. */
+  padding-top: 0.35rem;
+}
+html:root[data-module-menu-visible="false"] .authenticated-shell.alo-header-first {
+  --alo-top-module-offset: 0px;
+}
+@media (max-width: 767px) {
+  html:root .authenticated-shell.alo-header-first {
+    --alo-top-module-offset: 0px;
+  }
+}
+html[data-module-swipe] .authenticated-shell.alo-header-first > .alo-module-surface {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:root .authenticated-shell.alo-header-first > .alo-module-surface {
+    transition: none;
+  }
+}
