@@ -1,4 +1,5 @@
-/* Mira immersive: Alo header slides away for near-fullscreen chat */
+/* Mira immersive: Alo header (Alo · Mira, +, Menü) slides away after idle */
+
 .sport-app-header[data-immersive="true"] {
   position: sticky;
   top: 0;
@@ -6,27 +7,55 @@
     transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 220ms ease,
     max-height 280ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 220ms ease;
+    min-height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms ease,
+    padding 220ms ease;
   will-change: transform, opacity;
+  overflow: hidden;
 }
+
+/* Higher specificity than alo-mobile sticky rules */
+html[data-design-style] .alo-app-header.sport-app-header[data-immersive="true"][data-visible="false"],
 .sport-app-header[data-immersive="true"][data-visible="false"] {
   transform: translateY(-110%);
   opacity: 0;
   pointer-events: none;
-  max-height: 0;
-  border-bottom-color: transparent;
-  overflow: hidden;
+  max-height: 0 !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  overflow: hidden !important;
 }
-html[data-app-header-visible="false"] .authenticated-shell.alo-header-first::before {
+
+html[data-design-style]
+  .alo-app-header.sport-app-header[data-immersive="true"][data-visible="false"]
+  .sport-app-header-inner,
+.sport-app-header[data-immersive="true"][data-visible="false"] .sport-app-header-inner {
+  min-height: 0 !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  opacity: 0;
+}
+
+/* Slim top hit-zone to pull the header back (safe-area aware) */
+html[data-app-header-visible="false"] .authenticated-shell.alo-header-first::before,
+html[data-app-header-visible="false"] body::before {
   content: "";
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: calc(12px + env(safe-area-inset-top, 0px));
-  z-index: 60;
+  height: calc(14px + env(safe-area-inset-top, 0px));
+  z-index: 70;
   pointer-events: auto;
 }
+
 @media (prefers-reduced-motion: reduce) {
   .sport-app-header[data-immersive="true"] {
     transition: none;
