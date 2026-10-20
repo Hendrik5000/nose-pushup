@@ -49,7 +49,24 @@ GRANT EXECUTE ON FUNCTION auth.uid(), auth.jwt() TO anon, authenticated, service
 SQL
 
 # Apply exactly the requested migration; deliberately do not run the project's migration stack.
-"$PG_BIN/psql" -X -v ON_ERROR_STOP=1 -f "$MIGRATION" >/dev/null
+# First prove all DDL, including the auth trigger, disappears on rollback.
+{
+  printf 'BEGIN;\n'
+  cat "$MIGRATION"
+  printf '\nROLLBACK;\n'
+} | "$PG_BIN/psql" -X -v ON_ERROR_STOP=1 -q >/dev/null
+"$PG_BIN/psql" -X -v ON_ERROR_STOP=1 -q <<'SQL'
+DO $$ BEGIN
+  IF to_regclass('public.gym_sessions') IS NOT NULL
+    OR to_regprocedure('public.gym_detach_deleted_account()') IS NOT NULL
+    OR EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid = 'auth.users'::regclass
+      AND tgname = 'gym_detach_account_before_delete') THEN
+    RAISE EXCEPTION 'ASSERT: migration DDL was not fully rolled back';
+  END IF;
+END $$;
+SQL
+"$PG_BIN/psql" -X -v ON_ERROR_STOP=1 --single-transaction -f "$MIGRATION" >/dev/null
+echo "PASS: migration DDL rollback and atomic installation"
 
 # Seed identities as the local database owner, then exercise all product calls as authenticated.
 "$PG_BIN/psql" -X -v ON_ERROR_STOP=1 -q <<'SQL'
@@ -444,4 +461,8 @@ if (( TEST_FAILURE )); then
   echo "FAIL: gym-partner migration has the known closed-session delete bug (see above)" >&2
   exit 1
 fi
+
+# Dedicated account-deletion cases run in the same disposable local-only cluster.
+"$PG_BIN/psql" -X -v ON_ERROR_STOP=1 -q -f "$ROOT/tests/gym-account-deletion.sql"
+source "$ROOT/tests/gym-account-deletion-concurrency.sh"
 echo "PASS: local gym-partner migration integration checks completed"

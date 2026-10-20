@@ -2,12 +2,14 @@
 -- the browser role never receives direct table privileges.
 CREATE TABLE public.gym_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  host_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  -- A deleted host must never cascade-delete the surviving partner's history.
+  host_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   status text NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting','active','closed')),
   invite_code text UNIQUE,
   invite_expires_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   closed_at timestamptz,
+  CHECK (host_id IS NOT NULL OR status = 'closed'),
   CHECK ((status = 'closed') OR closed_at IS NULL),
   CHECK (invite_code IS NULL OR (status = 'waiting' AND invite_expires_at IS NOT NULL))
 );
@@ -66,6 +68,41 @@ ALTER TABLE public.gym_visits ENABLE ROW LEVEL SECURITY;
 -- below are the only supported access path; no browser role can bypass them.
 REVOKE ALL ON TABLE public.gym_sessions, public.gym_memberships,
   public.gym_active_memberships, public.gym_sets, public.gym_visits FROM PUBLIC, anon, authenticated;
+
+-- Runs before auth FK cascades, in the deleting transaction. Preserve each
+-- survivor's own sets/membership/calendar, but end the relationship completely.
+-- The deleted account's membership, sets and visits are then removed by FKs.
+-- No account ID or alias is copied into the retained session/history.
+CREATE OR REPLACE FUNCTION public.gym_detach_deleted_account()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
+DECLARE affected_session uuid;
+BEGIN
+  -- Match the session locks used by RPCs; deterministic order for old histories.
+  FOR affected_session IN
+    SELECT s.id FROM public.gym_sessions s
+    WHERE s.host_id = OLD.id OR EXISTS (
+      SELECT 1 FROM public.gym_memberships m
+      WHERE m.session_id = s.id AND m.user_id = OLD.id
+    )
+    ORDER BY s.id FOR UPDATE OF s
+  LOOP
+    UPDATE public.gym_sessions
+      SET status = 'closed', invite_code = NULL, invite_expires_at = NULL,
+        closed_at = coalesce(closed_at, clock_timestamp()),
+        host_id = CASE WHEN host_id = OLD.id THEN NULL ELSE host_id END
+      WHERE id = affected_session;
+    UPDATE public.gym_memberships
+      SET sharing = false, visit_share_counts = false, visit_share_days = false
+      WHERE session_id = affected_session;
+    DELETE FROM public.gym_active_memberships WHERE session_id = affected_session;
+  END LOOP;
+  RETURN OLD;
+END $$;
+REVOKE ALL ON FUNCTION public.gym_detach_deleted_account() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER gym_detach_account_before_delete
+  BEFORE DELETE ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.gym_detach_deleted_account();
 
 CREATE OR REPLACE FUNCTION public.gym_snapshot_payload(
   p_session_id uuid, p_today date DEFAULT CURRENT_DATE
