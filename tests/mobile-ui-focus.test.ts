@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { AloHeaderBrand } from "../src/components/AloHeaderBrand";
 import {
   aloPageIdentity,
   chatRowSummary,
@@ -129,7 +132,7 @@ test("Nexus keeps quick answers and message tools secondary and never invents a 
 });
 
 test("Alo uses the supplied wordmark and brand image without replacing the compact header", () => {
-  assert.match(read("components/SportAppHeader.tsx"), /src="\/alo-wordmark\.png"/);
+  assert.match(read("components/AloHeaderBrand.tsx"), /src="\/alo-wordmark\.png"/);
   assert.match(read("routes/__root.tsx"), /\/alo-brand\.jpg/);
   assert.match(read("routes/__root.tsx"), /\/alo-apple-touch-icon\.png/);
 });
@@ -164,32 +167,59 @@ test("appearance deep links open idempotently and scroll only the visible design
   );
 });
 
-test("Nexus header uses a horizontal brand seal and preserves all three controls", () => {
+test("every app area shares the horizontal Alo brand and preserves all header controls", () => {
   const header = read("components/SportAppHeader.tsx");
+  const brand = read("components/AloHeaderBrand.tsx");
   assert.match(header, /data-module=\{identity.module\}/);
-  assert.match(header, /identity.module === "Nexus" \? \([\s\S]*className="alo-nexus-mark"/);
-  assert.match(header, /alo-nexus-lockup/);
-  const nexusBranch = header.slice(header.indexOf('identity.module === "Nexus" ? ('));
-  assert.ok(
-    nexusBranch.indexOf('className="alo-nexus-mark"') <
-      nexusBranch.indexOf("<strong>{identity.title}</strong>"),
-  );
-  assert.match(header, /src="\/alo-wordmark\.png" alt="Alo"/);
-  assert.equal(aloPageIdentity("/chat").title, "Nexus Chat");
+  assert.match(header, /<AloHeaderBrand title=\{identity.title\} \/>/);
+  assert.match(header, /className="alo-header-title alo-brand-lockup"/);
+  assert.doesNotMatch(header, /alo-nexus|<small>|identity.module !== "Nexus"/);
+  assert.match(brand, /className="alo-brand-mark"/);
+  assert.match(brand, /src="\/alo-wordmark\.png" alt="Alo"/);
+  assert.match(brand, /title !== "Alo" && <strong>\{title\}<\/strong>/);
+  for (const [path, title] of [
+    ["/", "Nose-Pushup"],
+    ["/ai", "Mira"],
+    ["/chat", "Nexus Chat"],
+    ["/health", "Gesundheit"],
+    ["/programs", "Programme"],
+    ["/exercises", "Übungen"],
+    ["/profile", "Einstellungen"],
+  ]) {
+    assert.equal(aloPageIdentity(path).title, title);
+  }
   assert.equal(aloPageIdentity("/chat").back, "/");
   assert.match(header, /<ArrowLeft aria-hidden="true"/);
   assert.match(header, /aria-label="Alo Zentrale öffnen"/);
   assert.match(header, /aria-controls="sport-area-menu"/);
   const css = read("alo-mobile.css");
-  assert.match(css, /data-module="Nexus"[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto/);
-  assert.match(css, /\.alo-nexus-lockup\s*\{[^}]*flex-direction: row;[^}]*align-items: center/);
-  assert.match(css, /\.alo-nexus-mark\s*\{[^}]*flex: 0 0 34px/);
+  const shared = css.slice(css.indexOf("/* Shared Alo app lockup:"));
+  assert.match(shared, /grid-template-columns: minmax\(0, 1fr\) auto/);
+  assert.match(shared, /\.alo-brand-lockup\s*\{[^}]*flex-direction: row;[^}]*align-items: center/);
+  assert.match(shared, /\.alo-brand-mark\s*\{[^}]*flex: 0 0 34px/);
   assert.match(
-    css,
-    /data-module="Nexus"\]\s+\.alo-header-title\s+strong\s*\{[^}]*overflow: visible;[^}]*white-space: normal/,
+    shared,
+    /\.alo-header-title\s+strong\s*\{[^}]*overflow: visible;[^}]*white-space: normal;[^}]*overflow-wrap: anywhere/,
   );
-  assert.doesNotMatch(
-    css.slice(css.indexOf("/* Nexus lockup:")),
-    /display: none|(?:^|\n)\s*width: 0;/,
-  );
+  assert.doesNotMatch(shared, /data-module|display: none|(?:^|\n)\s*width: 0;/);
+});
+
+test("shared brand renders each area once and never duplicates the Alo umbrella name", () => {
+  for (const title of [
+    "Nose-Pushup",
+    "Mira",
+    "Nexus Chat",
+    "Gesundheit",
+    "Programme",
+    "Übungen",
+    "Einstellungen",
+    "Training",
+  ]) {
+    const markup = renderToStaticMarkup(createElement(AloHeaderBrand, { title }));
+    assert.equal((markup.match(/alt="Alo"/g) ?? []).length, 1);
+    assert.ok(markup.includes(`<strong>${title}</strong>`));
+  }
+  const umbrella = renderToStaticMarkup(createElement(AloHeaderBrand, { title: "Alo" }));
+  assert.equal((umbrella.match(/alt="Alo"/g) ?? []).length, 1);
+  assert.doesNotMatch(umbrella, /<strong>/);
 });

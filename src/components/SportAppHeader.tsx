@@ -21,6 +21,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { aloPageIdentity } from "@/lib/alo-ui";
+import { AloHeaderBrand } from "@/components/AloHeaderBrand";
 
 const SECTIONS = [
   {
@@ -102,25 +103,10 @@ export function SportAppHeader() {
           )}
           <Link
             to={identity.module === "Mira" ? "/ai" : identity.module === "Nexus" ? "/chat" : "/"}
-            className={`alo-header-title${identity.module === "Nexus" ? " alo-nexus-lockup" : ""}`}
-            aria-label={`Alo · ${identity.title}`}
+            className="alo-header-title alo-brand-lockup"
+            aria-label={identity.title === "Alo" ? "Alo" : `Alo · ${identity.title}`}
           >
-            {identity.module === "Nexus" ? (
-              <>
-                <span className="alo-nexus-mark">
-                  <img src="/alo-wordmark.png" alt="Alo" width={28} height={16} />
-                </span>
-                <strong>{identity.title}</strong>
-              </>
-            ) : (
-              <>
-                <small>
-                  <img src="/alo-wordmark.png" alt="Alo" width={44} height={24} />
-                  <span>· {identity.module}</span>
-                </small>
-                {identity.title !== identity.module && <strong>{identity.title}</strong>}
-              </>
-            )}
+            <AloHeaderBrand title={identity.title} />
           </Link>
         </div>
         <div className="sport-header-actions">

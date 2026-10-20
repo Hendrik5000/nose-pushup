@@ -66,10 +66,15 @@ test("new onboarding, compact module controls, hidden-by-default legacy nav, and
   assert.match(ai, /untrusted Kontext/);
 });
 
-test("Alo header does not repeat a page title already shown as the module identity", () => {
+test("Alo header renders one shared area title without a duplicate module line", () => {
   assert.match(
     read("components/SportAppHeader.tsx"),
-    /identity\.title !== identity\.module && <strong>\{identity\.title\}<\/strong>/,
+    /<AloHeaderBrand title=\{identity\.title\} \/>/,
+  );
+  assert.doesNotMatch(read("components/SportAppHeader.tsx"), /<small>|<strong>/);
+  assert.match(
+    read("components/AloHeaderBrand.tsx"),
+    /title !== "Alo" && <strong>\{title\}<\/strong>/,
   );
 });
 
