@@ -34,21 +34,29 @@ export function SmartwatchPanel() {
     refresh();
   };
 
-  const syncToCloud = async (day: string, steps: number, activeKcal: number, sleepMin: number) => {
+  const syncToCloud = async (
+    day: string,
+    fields: { steps?: number; activeKcal?: number; sleepMin?: number },
+  ) => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    await supabase.from("health_entries").upsert(
-      {
-        user_id: u.user.id,
-        day,
-        steps,
-        active_kcal: activeKcal,
-        sleep_min: sleepMin,
-        weight_kg: null,
-        source: "watch",
-      },
-      { onConflict: "user_id,day" },
-    );
+    // Merge: only overwrite fields that were actually imported (CSV steps-only must not zero sleep/kcal)
+    const { data: existing } = await supabase
+      .from("health_entries")
+      .select("steps, active_kcal, sleep_min, weight_kg")
+      .eq("user_id", u.user.id)
+      .eq("day", day)
+      .maybeSingle();
+    const payload = {
+      user_id: u.user.id,
+      day,
+      steps: fields.steps ?? existing?.steps ?? 0,
+      active_kcal: fields.activeKcal ?? existing?.active_kcal ?? 0,
+      sleep_min: fields.sleepMin ?? existing?.sleep_min ?? 0,
+      weight_kg: existing?.weight_kg ?? null,
+      source: "watch",
+    };
+    await supabase.from("health_entries").upsert(payload, { onConflict: "user_id,day" });
   };
 
   const onQuickSync = async () => {
@@ -58,14 +66,12 @@ export function SmartwatchPanel() {
     }
     setBusy(true);
     setMsg(null);
-    // Quick sync: reuse last snapshot or prompt values via existing health form —
-    // here we mark sync and keep snapshot if present
-    const day = new Date().toISOString().slice(0, 10);
+    const day = snapshot?.day || new Date().toISOString().slice(0, 10);
     const steps = snapshot?.steps ?? 0;
     const activeKcal = snapshot?.activeKcal ?? 0;
     const sleepMin = snapshot?.sleepMin ?? 0;
     if (steps || activeKcal || sleepMin) {
-      await syncToCloud(day, steps, activeKcal, sleepMin);
+      await syncToCloud(day, { steps, activeKcal, sleepMin });
       markWatchSynced(devices[0].id);
       setMsg("Mit Cloud synchronisiert ✓");
     } else {
@@ -96,14 +102,18 @@ export function SmartwatchPanel() {
             deviceId: devices[0]?.id ?? null,
           };
           saveWatchSnapshot(snap);
-          await syncToCloud(snap.day, snap.steps, snap.activeKcal, snap.sleepMin);
+          await syncToCloud(snap.day, {
+            steps: snap.steps,
+            activeKcal: snap.activeKcal,
+            sleepMin: snap.sleepMin,
+          });
           if (devices[0]) markWatchSynced(devices[0].id);
           imported = 1;
         }
       } else {
         const rows = parseStepsCsv(text);
         for (const row of rows.slice(0, 31)) {
-          await syncToCloud(row.day, row.steps, 0, 0);
+          await syncToCloud(row.day, { steps: row.steps });
           imported += 1;
         }
         if (rows[0]) {
@@ -135,13 +145,10 @@ export function SmartwatchPanel() {
 
   return (
     <div className="space-y-4">
-      {/* Status */}
       <div className="rounded-2xl border border-border bg-secondary/30 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Smartwatch
-            </div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Smartwatch</div>
             <div className="mt-1 text-base font-semibold text-foreground">
               {primary ? primary.name : "Keine Uhr gekoppelt"}
             </div>
@@ -169,11 +176,8 @@ export function SmartwatchPanel() {
         )}
       </div>
 
-      {/* Pair */}
       <div>
-        <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-          Gerät koppeln
-        </div>
+        <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Gerät koppeln</div>
         <div className="grid grid-cols-3 gap-2">
           {WATCH_BRANDS.map((b) => (
             <button
@@ -199,7 +203,6 @@ export function SmartwatchPanel() {
         </button>
       </div>
 
-      {/* Actions */}
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
