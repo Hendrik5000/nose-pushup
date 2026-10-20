@@ -6,13 +6,19 @@ import {
   type ProviderConfig,
 } from "@/lib/ai-providers";
 
-export function AiProviderSettings({ onSaved }: { onSaved?: () => void }) {
+export function AiProviderSettings({
+  onSaved,
+  userId,
+}: {
+  onSaved?: () => void;
+  userId?: string | null;
+}) {
   const [list, setList] = useState<ProviderConfig[]>(DEFAULT_PROVIDERS);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setList(loadProviders());
-  }, []);
+    setList(loadProviders(userId));
+  }, [userId]);
 
   const update = (id: string, patch: Partial<ProviderConfig>) => {
     setList((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
@@ -20,7 +26,7 @@ export function AiProviderSettings({ onSaved }: { onSaved?: () => void }) {
   };
 
   const onSave = () => {
-    saveProviders(list);
+    saveProviders(list, userId);
     setSaved(true);
     onSaved?.();
   };
@@ -28,8 +34,9 @@ export function AiProviderSettings({ onSaved }: { onSaved?: () => void }) {
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Keys bleiben nur auf diesem Gerät (localStorage). Super-AI wählt je nach Aufgabe den
-        passenden Provider.
+        Keys sind kontogebunden auf diesem Gerät (localStorage) und werden beim Abmelden gelöscht.
+        Super-AI wählt je nach Aufgabe den passenden Provider. Custom-URL: nur HTTPS, serverseitig
+        gegen interne Netze gesperrt.
       </p>
       {list.map((p) => (
         <div key={p.id} className="rounded-2xl border border-border bg-background/40 p-3 space-y-2">

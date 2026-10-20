@@ -1,5 +1,7 @@
 /** Client-side BYOK multi-provider config for Super-AI. */
 
+import { providersStorageKey } from "@/lib/sensitive-storage";
+
 export type ProviderId = "openai" | "anthropic" | "google" | "lovable" | "custom";
 
 export type AiTask =
@@ -71,9 +73,18 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
 ];
 
-export function loadProviders(): ProviderConfig[] {
+export function loadProviders(userId?: string | null): ProviderConfig[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const key = providersStorageKey(userId);
+    let raw = localStorage.getItem(key);
+    // One-time migrate from legacy global key into account-scoped storage
+    if (!raw && userId) {
+      raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        localStorage.setItem(key, raw);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
     if (!raw) return structuredClone(DEFAULT_PROVIDERS);
     const parsed = JSON.parse(raw) as ProviderConfig[];
     if (!Array.isArray(parsed) || parsed.length === 0) return structuredClone(DEFAULT_PROVIDERS);
@@ -87,8 +98,13 @@ export function loadProviders(): ProviderConfig[] {
   }
 }
 
-export function saveProviders(list: ProviderConfig[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+export function saveProviders(list: ProviderConfig[], userId?: string | null) {
+  // Never persist full secrets into logs; strip empty keys only
+  const sanitized = list.map((p) => ({
+    ...p,
+    apiKey: typeof p.apiKey === "string" ? p.apiKey : "",
+  }));
+  localStorage.setItem(providersStorageKey(userId), JSON.stringify(sanitized));
 }
 
 /** Classify user message into a task for model routing. */
@@ -144,23 +160,8 @@ export function providerLabel(id: ProviderId | string): string {
   return DEFAULT_PROVIDERS.find((provider) => provider.id === id)?.label ?? id;
 }
 
-/** Apply the configured task preference or the first enabled provider; this is not a quality ranking. */
-export function pickProvider(providers: ProviderConfig[], task: AiTask): ProviderConfig | null {
-  return selectProvider(providers, task).provider;
-}
-
-export type ClientProviderPayload = {
-  id: ProviderId;
-  apiKey: string;
-  baseUrl?: string;
-  model: string;
-};
-
-export function toPayload(p: ProviderConfig): ClientProviderPayload {
-  return {
-    id: p.id,
-    apiKey: p.apiKey,
-    baseUrl: p.baseUrl,
-    model: p.model,
-  };
+export function enabledProviderSummary(providers: ProviderConfig[]): string {
+  const on = providers.filter((p) => p.enabled && (p.id === "lovable" || p.apiKey.trim()));
+  if (on.length === 0) return "Keine Anbieter aktiv";
+  return on.map((p) => p.label).join(", ");
 }
