@@ -19,6 +19,7 @@ import "@/module-swipe.css";
 import "@/module-menu.css";
 import "@/alo-mobile.css";
 import "@/alo-header-layout.css";
+import "@/mira-immersive.css";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
