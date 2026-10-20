@@ -25,6 +25,12 @@ Profil → Abschnitt „Fehlerberichte“ → **Alle kopieren (für Auto-Fix)** 
 - Apple Health–inspired UI, TopNav segmented control
 - Super-AI (BYOK), Nexus Chat hybrid, workout + micro-challenges
 
+## AI handoff (read before coding)
+
+Read `docs/AI-HANDOFF.md` at the start of each coding task. It contains product decisions, privacy boundaries, current status, and protected files. It is internal repository guidance: never display it in the app or send it to Mira as content.
+
+In the first or final internal work report, identify your actual assistant name and model/provider. If either is not reliably available, say `unknown`; never guess. Never describe a GitHub push as a live deployment; Lovable publishing is manual and belongs to the user.
+
 ## Dependency changes and Vercel
 
 - Keep `package-lock.json` synchronized with `package.json` in every dependency change. Vercel installs with `npm ci`, which rejects an inconsistent lockfile.
