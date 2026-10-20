@@ -1,10 +1,17 @@
-import { Mic, ArrowUp, Plus, Settings2 } from "lucide-react";
+import {
+  Mic,
+  ArrowUp,
+  Plus,
+  Settings2,
+  Sparkles,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AiProviderSettings } from "@/components/AiProviderSettings";
 import { MiraPhotoAttach } from "@/components/MiraPhotoAttach";
 import { BottomNav } from "@/components/BottomNav";
+import { SportPageIntro } from "@/components/SportPageIntro";
 import {
   classifyTask,
   describeProviderSelection,
@@ -34,6 +41,8 @@ type Msg = {
   meta?: { provider?: string; model?: string; task?: string; routingReason?: string };
 };
 
+type SportAiView = "coach" | "chat" | "history";
+
 export function SuperAiPage() {
   const send = useServerFn(superAiChat);
   const [sessions, setSessions] = useState<AiSession[]>(() => loadSessions());
@@ -45,6 +54,7 @@ export function SuperAiPage() {
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [sportAiView, setSportAiView] = useState<SportAiView>("chat");
   const [persona] = useState<AiPersona>(() => loadPersona());
   const [userId, setUserId] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
@@ -55,6 +65,8 @@ export function SuperAiPage() {
 
   const previewTask = input.trim() ? classifyTask(input) : (lastTask ?? "general");
   const providerPreview = selectProvider(loadProviders(userId), previewTask);
+  const activeProvider = providerPreview.provider;
+  const providerPreviewReason = describeProviderSelection(providerPreview, previewTask);
 
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => {
@@ -73,7 +85,7 @@ export function SuperAiPage() {
   useEffect(() => {
     if (!messages.length) return;
     const title = messages.find((m) => m.role === "user")?.content.slice(0, 40) || "Neuer Chat";
-    setSessions((prev) => {
+    setSessions(() => {
       const others = loadSessions().filter((s) => s.id !== activeId);
       const next: AiSession[] = [
         {
@@ -114,6 +126,7 @@ export function SuperAiPage() {
     setPendingImage(null);
     setSessionsOpen(false);
     setError(null);
+    setSportAiView("chat");
   };
 
   const switchSession = (id: string) => {
@@ -126,6 +139,7 @@ export function SuperAiPage() {
     setPendingImage(null);
     setSessionsOpen(false);
     setError(null);
+    setSportAiView("chat");
   };
 
   const submit = async (textOverride?: string) => {
@@ -144,6 +158,7 @@ export function SuperAiPage() {
       setSettingsOpen(true);
       return;
     }
+    setSportAiView("chat");
     const userContent =
       text || (imageDataUrl ? "📷 Foto angehängt — bitte beschreiben und helfen." : "");
     const nextMsgs: Msg[] = [...messages, { role: "user", content: userContent }];
@@ -237,42 +252,97 @@ export function SuperAiPage() {
   const suggestions = ["Ideen", "Text entwerfen", "Einfach erklären"];
 
   return (
-    <div className="relative mx-auto flex min-h-[100dvh] max-w-3xl flex-col bg-background pb-24">
-      <header className="flex items-center justify-between gap-2 px-4 pt-4">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Alo</div>
-          <h1 className="text-xl font-bold">Mira</h1>
-          <p className="text-xs text-muted-foreground">{activeTitle}</p>
+    <div
+      className={`sport-only sport-ai-page mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8 ${
+        sportAiView === "chat" ? "sport-ai-chat-mode" : ""
+      }`}
+    >
+      {sportAiView === "chat" ? (
+        <div className="sport-ai-compact-heading" aria-label="Chat-Steuerung">
+          <div className="sport-ai-model-status" aria-live="polite">
+            <span className="sport-ai-model-dot" aria-hidden="true" />
+            <span>Mira</span>
+            <span className="text-[10px] text-muted-foreground">
+              Vorschau: {activeProvider?.label ?? "Kein Anbieter"}
+            </span>
+            <details className="text-[10px] text-muted-foreground">
+              <summary className="cursor-pointer">Technische Details</summary>
+              <span>
+                {activeProvider
+                  ? `${activeProvider.model} · ${providerPreviewReason}`
+                  : "Kein Modell eingerichtet"}
+              </span>
+            </details>
+          </div>
+          <div className="sport-ai-chat-actions flex items-center gap-2">
+            <button
+              type="button"
+              onClick={startNewSession}
+              className="sport-ai-header-action flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-card"
+              aria-label="Neuen Chat beginnen"
+              title="Neuer Chat"
+            >
+              <Plus className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSessionsOpen((v) => !v)}
+              className="rounded-2xl border border-border bg-card px-3 py-2 text-xs font-semibold"
+            >
+              Verlauf
+            </button>
+            <button
+              type="button"
+              onClick={() => setSettingsOpen((v) => !v)}
+              className="sport-ai-header-action flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-card"
+              aria-label="KI-Einstellungen"
+              title="KI-Einstellungen"
+            >
+              <Settings2 className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <details className="alo-mira-view-menu">
+              <summary
+                className="cursor-pointer rounded-2xl border border-border bg-card px-3 py-2 text-xs"
+                aria-label="Mira-Ansicht wechseln"
+              >
+                •••
+              </summary>
+              <div className="mt-1 flex flex-col gap-1 rounded-xl border border-border bg-card p-2 text-xs">
+                <button
+                  type="button"
+                  className="rounded-lg px-2 py-1 text-left hover:bg-secondary/40"
+                  onClick={() => setSportAiView("chat")}
+                >
+                  Chat
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg px-2 py-1 text-left hover:bg-secondary/40"
+                  onClick={() => setSportAiView("coach")}
+                >
+                  Coach
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg px-2 py-1 text-left hover:bg-secondary/40"
+                  onClick={() => setSportAiView("history")}
+                >
+                  Verlauf-Ansicht
+                </button>
+              </div>
+            </details>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={startNewSession}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-card"
-            aria-label="Neuer Chat"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setSessionsOpen((v) => !v)}
-            className="rounded-2xl border border-border bg-card px-3 py-2 text-xs font-semibold"
-          >
-            Verlauf
-          </button>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen((v) => !v)}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-card"
-            aria-label="Einstellungen"
-          >
-            <Settings2 className="h-5 w-5" />
-          </button>
-        </div>
-      </header>
+      ) : (
+        <SportPageIntro
+          eyebrow="Mira"
+          title="Dein KI-Begleiter"
+          description="Chat, Ideen und optionale Trainingshilfe — mit Foto-Upload."
+        />
+      )}
 
       {sessionsOpen && (
-        <div className="mx-4 mt-3 max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-border bg-card/80 p-2">
+        <div className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-border bg-card/80 p-2">
           {sessions.map((s) => (
             <button
               key={s.id}
@@ -289,7 +359,7 @@ export function SuperAiPage() {
       )}
 
       {settingsOpen && (
-        <div className="mx-4 mt-3 rounded-2xl border border-border bg-card/80 p-3">
+        <div className="rounded-2xl border border-border bg-card/80 p-3">
           <AiProviderSettings userId={userId} />
           <button type="button" className="mt-2 text-xs text-primary" onClick={() => setSettingsOpen(false)}>
             Schließen
@@ -298,116 +368,160 @@ export function SuperAiPage() {
       )}
 
       {error && (
-        <div className="mx-4 mt-3 rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-xs">{error}</div>
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-xs">{error}</div>
       )}
 
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {messages.length === 0 && (
-          <div className="rounded-[1.75rem] border border-border/70 bg-card/60 p-5">
-            <p className="text-sm text-muted-foreground">
-              Hallo — tippe eine Frage oder hänge mit 📷 ein Foto an.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {suggestions.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => void submit(s)}
-                  className="rounded-full border border-border bg-secondary/30 px-3 py-1.5 text-xs font-semibold"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-            {providerPreview.provider && (
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                Routing: {providerPreview.provider.label ?? providerPreview.provider.id}
-              </p>
-            )}
+      {sportAiView === "coach" && (
+        <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-5">
+          <div className="flex items-center gap-2 text-primary">
+            <Sparkles className="h-5 w-5" />
+            <h2 className="text-lg font-bold">Coach</h2>
           </div>
-        )}
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`rounded-2xl px-3 py-2 text-sm ${
-              m.role === "user" ? "ml-8 bg-primary/15" : "mr-8 bg-secondary/40"
-            }`}
-          >
-            {m.content}
-            {m.meta?.routingReason && (
-              <div className="mt-1 text-[10px] text-muted-foreground">{m.meta.routingReason}</div>
-            )}
-          </div>
-        ))}
-        {loading && <div className="text-xs text-muted-foreground">Mira denkt…</div>}
-      </div>
-
-      <div className="sticky bottom-16 border-t border-border/50 bg-background/95 px-4 py-3 backdrop-blur">
-        {pendingImage && (
-          <div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-2 py-1.5">
-            <img src={pendingImage} alt="Anhang für Mira" className="h-14 w-14 rounded-lg object-cover" />
-            <div className="min-w-0 flex-1 text-[11px] text-muted-foreground">
-              Foto bereit — wird mit der nächsten Nachricht gesendet.
-            </div>
-            <button
-              type="button"
-              className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-primary"
-              onClick={() => setPendingImage(null)}
-            >
-              Entfernen
-            </button>
-          </div>
-        )}
-        <form
-          className="sport-chat-composer flex items-end gap-2 rounded-[1.5rem] border border-border/70 bg-card/85 p-3 shadow-lg"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void submit();
-          }}
-        >
-          <MiraPhotoAttach value={pendingImage} onChange={setPendingImage} disabled={loading} />
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void submit();
-              }
-            }}
-            placeholder="Deine Frage…"
-            aria-label="Deine Frage an Mira"
-            rows={1}
-            className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
-            style={{ maxHeight: 140 }}
-            disabled={loading}
-          />
+          <p className="mt-2 text-sm text-muted-foreground">
+            Frag Mira nach Trainingsideen, Technik-Tipps oder einem Plan für heute.
+          </p>
           <button
             type="button"
-            onClick={toggleVoice}
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${
-              listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"
-            }`}
-            aria-label="Spracheingabe"
-            aria-pressed={listening}
+            className="mt-4 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            onClick={() => {
+              setSportAiView("chat");
+              void submit("Gib mir einen kurzen Trainingsvorschlag für heute.");
+            }}
           >
-            <Mic className="h-5 w-5" />
+            Vorschlag holen
           </button>
-          <button
-            type="submit"
-            aria-label="Nachricht senden"
-            disabled={loading || (!input.trim() && !pendingImage)}
-            className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
-          >
-            <ArrowUp className="h-5 w-5" />
-          </button>
-        </form>
-        <p className="mt-2 text-center text-[10px] text-muted-foreground">
-          <Link to="/" className="underline">
-            Zur Übersicht
-          </Link>
-        </p>
-      </div>
+        </section>
+      )}
+
+      {sportAiView === "history" && (
+        <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-5">
+          <h2 className="text-lg font-bold">Verlauf</h2>
+          <ul className="mt-3 space-y-2">
+            {sessions.map((s) => (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  className="w-full rounded-xl border border-border px-3 py-2 text-left text-sm hover:bg-secondary/30"
+                  onClick={() => switchSession(s.id)}
+                >
+                  <div className="font-semibold">{s.title || "Chat"}</div>
+                  <div className="text-[11px] text-muted-foreground">{s.updatedAt?.slice(0, 16)}</div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {sportAiView === "chat" && (
+        <>
+          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto">
+            {messages.length === 0 && (
+              <div className="rounded-[1.75rem] border border-border/70 bg-card/60 p-5">
+                <p className="text-sm text-muted-foreground">
+                  Hallo — tippe eine Frage oder hänge mit 📷 ein Foto an.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => void submit(s)}
+                      className="rounded-full border border-border bg-secondary/30 px-3 py-1.5 text-xs font-semibold"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  {activeTitle} · Routing: {activeProvider?.label ?? "—"}
+                </p>
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={`rounded-2xl px-3 py-2 text-sm ${
+                  m.role === "user" ? "ml-8 bg-primary/15" : "mr-8 bg-secondary/40"
+                }`}
+              >
+                {m.content}
+                {m.meta?.routingReason && (
+                  <div className="mt-1 text-[10px] text-muted-foreground">{m.meta.routingReason}</div>
+                )}
+              </div>
+            ))}
+            {loading && <div className="text-xs text-muted-foreground">Mira denkt…</div>}
+          </div>
+
+          <div className="sticky bottom-16 z-10">
+            {pendingImage && (
+              <div className="mb-2 flex items-center gap-2 rounded-xl border border-border bg-secondary/30 px-2 py-1.5">
+                <img src={pendingImage} alt="Anhang für Mira" className="h-14 w-14 rounded-lg object-cover" />
+                <div className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+                  Foto bereit — wird mit der nächsten Nachricht gesendet.
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-primary"
+                  onClick={() => setPendingImage(null)}
+                >
+                  Entfernen
+                </button>
+              </div>
+            )}
+            <form
+              className="sport-chat-composer flex items-end gap-2 rounded-[1.5rem] border border-border/70 bg-card/85 p-3 shadow-lg"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void submit();
+              }}
+            >
+              <MiraPhotoAttach value={pendingImage} onChange={setPendingImage} disabled={loading} />
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void submit();
+                  }
+                }}
+                placeholder="Deine Frage…"
+                aria-label="Deine Frage an Mira"
+                rows={1}
+                className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
+                style={{ maxHeight: 140 }}
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={toggleVoice}
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${
+                  listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"
+                }`}
+                aria-label="Spracheingabe"
+                aria-pressed={listening}
+              >
+                <Mic className="h-5 w-5" />
+              </button>
+              <button
+                type="submit"
+                aria-label="Nachricht senden"
+                disabled={loading || (!input.trim() && !pendingImage)}
+                className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
+              >
+                <ArrowUp className="h-5 w-5" />
+              </button>
+            </form>
+            <p className="mt-2 text-center text-[10px] text-muted-foreground">
+              <Link to="/" className="underline">
+                Zur Übersicht
+              </Link>
+            </p>
+          </div>
+        </>
+      )}
 
       <BottomNav />
     </div>
