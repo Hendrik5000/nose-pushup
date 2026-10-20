@@ -239,7 +239,10 @@ test("malformed record arrays are rejected instead of overwriting unknown data",
     assert.throws(() => readRecords(), /beschädigt/);
   }));
 test("Mira deletion and tab grants include regression guards for review findings", () => {
-  const ai = readFileSync(new URL("../src/routes/_authenticated/ai.tsx", import.meta.url), "utf8");
+  const ai = readFileSync(
+    new URL("../src/components/mira/SuperAiPage.tsx", import.meta.url),
+    "utf8",
+  );
   assert.match(ai, /generation !== generationRef.current/);
   assert.match(
     ai,

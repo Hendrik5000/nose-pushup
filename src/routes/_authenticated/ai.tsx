@@ -7,7 +7,8 @@ export const Route = createFileRoute("/_authenticated/ai")({
       { title: "Mira — Alo" },
       {
         name: "description",
-        content: "Mira — deine KI im Gemini-Stil. Text, Foto und klare Antworten.",
+        content:
+          "Mira — deine vielseitige KI für Alltag, Wissen, Schreiben und Ideen. Fotos und Dateien sendest du nur mit deiner Freigabe.",
       },
     ],
   }),

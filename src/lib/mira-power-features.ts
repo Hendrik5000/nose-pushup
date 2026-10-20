@@ -38,7 +38,8 @@ export const MIRA_POWER_FEATURES: Array<{
   {
     id: "persona_mixer",
     title: "Persona-Mixer",
-    blurb: "Mischt Ton: Empathie, Logik, Kreativität — steuert den System-Prompt, nicht stille Multi-KI.",
+    blurb:
+      "Mischt Ton: Empathie, Logik, Kreativität — steuert den System-Prompt, nicht stille Multi-KI.",
     multiCall: false,
   },
   {
@@ -71,7 +72,8 @@ export const MIRA_POWER_FEATURES: Array<{
   {
     id: "workflow",
     title: "Workflow-Kette",
-    blurb: "Ziel in Schritte zerlegen (Brainstorm → Plan → Checkliste) — Schritte nacheinander, mit Bestätigung.",
+    blurb:
+      "Ziel in Schritte zerlegen (Brainstorm → Plan → Checkliste) — Schritte nacheinander, mit Bestätigung.",
     multiCall: true,
     callsHint: "3 Anfragen nacheinander",
   },

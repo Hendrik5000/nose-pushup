@@ -167,6 +167,7 @@ export type AiSession = {
   messages: Array<{
     role: "user" | "assistant";
     content: string;
+    attachments?: Array<{ name: string; mime: string; size: number }>;
     plan?: AiWorkoutPlan;
     media?: import("./runware").RunwareResult;
     feedback?: PlanFeedback;

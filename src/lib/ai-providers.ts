@@ -116,7 +116,8 @@ export function classifyTask(text: string, opts?: { hasImage?: boolean }): AiTas
   if (/(bild|foto|skizze|screenshot|siehst du|was ist auf)/.test(t)) return "vision";
   if (/(physik|chemie|biologie|mathe|theorem|wissenschaft|paper|studie|\bformel\b)/.test(t))
     return "science";
-  if (/(gedicht|geschichte|roman|kreativ|erzähl|metapher|songtext|skript)/.test(t)) return "creative";
+  if (/(gedicht|geschichte|roman|kreativ|erzähl|metapher|songtext|skript)/.test(t))
+    return "creative";
   if (/(code|typescript|python|bug|funktion|api|sql|regex|compili)/.test(t)) return "coding";
   if (/(?:\bform\b|technik|haltung|nacken|rücken|schulter|winkel)/.test(t)) return "form_technique";
   if (/(regen|recovery|schmerz|pause|müde|schlaf|überlast)/.test(t)) return "recovery";

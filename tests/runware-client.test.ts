@@ -57,7 +57,7 @@ test("stream parsing rejects malformed streams and cancellation rather than sile
 
 test("Runware is isolated from legacy browser keys and normal chat submission", () => {
   const ui = read("src/components/alo/MiraRunwareTools.tsx");
-  const page = read("src/routes/_authenticated/ai.tsx");
+  const page = read("src/components/mira/SuperAiPage.tsx");
   assert.doesNotMatch(ui, /localStorage|sessionStorage|apiKey\s*:/);
   assert.match(ui, /Nicht eingerichtet/);
   assert.match(ui, /Kostenschätzung/);

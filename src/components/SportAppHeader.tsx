@@ -64,10 +64,13 @@ export function SportAppHeader() {
     pathname.startsWith("/exercises") ||
     pathname.startsWith("/chat") ||
     pathname.startsWith("/profile");
-  const immersive =
-    hideChrome || identity.module === "Mira" || pathname.startsWith("/ai");
-  const { headerRef, visible: headerVisible, reveal: revealHeader, scheduleHide } =
-    useAutoHideAppHeader(pathname, immersive);
+  const immersive = hideChrome || identity.module === "Mira" || pathname.startsWith("/ai");
+  const {
+    headerRef,
+    visible: headerVisible,
+    reveal: revealHeader,
+    scheduleHide,
+  } = useAutoHideAppHeader(pathname, immersive);
   const ref = headerRef;
   const trigger = useRef<HTMLButtonElement>(null);
   useEffect(() => {

@@ -122,9 +122,7 @@ export function MiraPowerPanel({
           <div className="grid gap-2 sm:grid-cols-2">
             {MIRA_POWER_FEATURES.filter(
               (f) =>
-                f.id !== "routing_ui" &&
-                f.id !== "persona_mixer" &&
-                f.id !== "memory_architect",
+                f.id !== "routing_ui" && f.id !== "persona_mixer" && f.id !== "memory_architect",
             ).map((f) => (
               <button
                 key={f.id}
@@ -180,7 +178,9 @@ export function MiraPowerPanel({
                     type="button"
                     disabled={loading}
                     className="rounded-full border border-border px-2.5 py-1 text-[10px] font-semibold"
-                    onClick={() => request({ type: "style", text: answer, style: s.id }, "1 Anfrage")}
+                    onClick={() =>
+                      request({ type: "style", text: answer, style: s.id }, "1 Anfrage")
+                    }
                   >
                     {s.label}
                   </button>

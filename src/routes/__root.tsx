@@ -25,7 +25,6 @@ import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
 import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
 import { swipeScreenFromPath } from "@/lib/module-navigation";
 import { clearSensitiveClientStorage } from "@/lib/sensitive-storage";
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -101,6 +100,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Alo" },
       { name: "author", content: "Lovable" },
+
       { property: "og:title", content: "Alo — All in one" },
       {
         property: "og:description",
@@ -114,20 +114,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "twitter:description",
         content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
       },
-      { property: "og:image", content: "/alo-brand.jpg" },
-      { name: "twitter:image", content: "/alo-brand.jpg" },
+      {
+        property: "og:image",
+        content: "/alo-brand.jpg",
+      },
+      {
+        name: "twitter:image",
+        content: "/alo-brand.jpg",
+      },
     ],
     links: [
       { rel: "icon", type: "image/png", href: "/alo-icon-192.png" },
-      { rel: "apple-touch-icon", href: "/alo-icon-192.png" },
+      { rel: "apple-touch-icon", href: "/alo-apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: sportCss },
       { rel: "stylesheet", href: communityReferenceCss },
       { rel: "stylesheet", href: healthReferenceCss },
       { rel: "stylesheet", href: aiReferenceCss },
+
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap",
+      },
     ],
   }),
+  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
@@ -135,11 +149,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="de" suppressHydrationWarning>
+    <html lang="de">
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-[100dvh] bg-background text-foreground antialiased">
+      <body>
         {children}
         <Scripts />
       </body>
@@ -148,30 +162,139 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
   const router = useRouter();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const routeKey = swipeScreenFromPath(pathname);
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
-      }),
-  );
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const [installable, setInstallable] = useState(false);
+  const [standalone, setStandalone] = useState(false);
+  // Keep the shared shell mounted between modules so a swipe can finish.
+  const routeKey = swipeScreenFromPath(pathname) ? "alo-swipe-screens" : pathname;
+  const [fullscreenRequested, setFullscreenRequested] = useState(false);
+
+  const updateViewportHeight = () => {
+    const height = window.visualViewport?.height ?? window.innerHeight;
+    document.documentElement.style.setProperty("--app-viewport-height", `${Math.max(height, 0)}px`);
+  };
 
   useEffect(() => {
     installGlobalErrorReporting();
-    applyTheme(getStoredTheme());
-    applyDesignStyle(getStoredDesignStyle());
-    applyNavigationLayout(getStoredNavigationLayout());
-  }, []);
-
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "np-theme" && e.newValue && isThemeId(e.newValue)) applyTheme(e.newValue);
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "np-theme" && event.newValue && isThemeId(event.newValue))
+        applyTheme(event.newValue);
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+
+  useEffect(() => {
+    updateViewportHeight();
+    window.addEventListener("resize", updateViewportHeight);
+    window.addEventListener("orientationchange", updateViewportHeight);
+    window.visualViewport?.addEventListener("resize", updateViewportHeight);
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .catch((err) => console.error("SW reg fail:", err));
+      });
+    }
+
+    applyDesignStyle(getStoredDesignStyle());
+    applyNavigationLayout(getStoredNavigationLayout());
+    applyTheme(getStoredTheme());
+    // Theme des Kontos laden, damit es auch ohne Profilbesuch sofort greift.
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) return;
+      const { data } = await supabase.from("profiles").select("theme").eq("id", uid).maybeSingle();
+      const t = data?.theme;
+      if (isThemeId(t)) applyTheme(t);
+    })();
+  }, []);
+
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    setStandalone(isStandalone);
+
+    const handleDisplayMode = () =>
+      setStandalone(
+        window.matchMedia("(display-mode: standalone)").matches ||
+          (window.navigator as Navigator & { standalone?: boolean }).standalone === true,
+      );
+    window.matchMedia("(display-mode: standalone)").addEventListener("change", handleDisplayMode);
+
+    const onBeforeInstallPrompt = () => {
+      try {
+        if (sessionStorage.getItem("alo-install-hint-dismissed") === "1") return;
+      } catch {
+        // The hint remains usable when browser storage is unavailable.
+      }
+      setInstallable(true);
+    };
+    const onAppInstalled = () => {
+      setInstallable(false);
+      setStandalone(true);
+    };
+
+    const tryAutoFullscreen = async () => {
+      if (fullscreenRequested || document.fullscreenElement) return;
+
+      const inStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+      const inFullscreenMode = window.matchMedia("(display-mode: fullscreen)").matches;
+      if (!inStandalone && !inFullscreenMode) return;
+
+      setFullscreenRequested(true);
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch {
+        // Browsers block autoplay/fullscreen without a user interaction. We fall back to the first tap.
+      }
+    };
+
+    const onFirstInteraction = () => {
+      void tryAutoFullscreen();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        window.setTimeout(() => {
+          void tryAutoFullscreen();
+        }, 200);
+      }
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onAppInstalled);
+    window.addEventListener("pointerdown", onFirstInteraction, { passive: true });
+    window.addEventListener("touchstart", onFirstInteraction, { passive: true });
+    window.addEventListener("keydown", onFirstInteraction, { passive: true });
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.setTimeout(() => {
+      void tryAutoFullscreen();
+    }, 400);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onAppInstalled);
+      window
+        .matchMedia("(display-mode: standalone)")
+        .removeEventListener("change", handleDisplayMode);
+      window.removeEventListener("resize", updateViewportHeight);
+      window.removeEventListener("orientationchange", updateViewportHeight);
+      window.visualViewport?.removeEventListener("resize", updateViewportHeight);
+      window.removeEventListener("pointerdown", onFirstInteraction);
+      window.removeEventListener("touchstart", onFirstInteraction);
+      window.removeEventListener("keydown", onFirstInteraction);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [fullscreenRequested]);
 
   useEffect(() => {
     let unsub: { unsubscribe: () => void } | undefined;
@@ -189,15 +312,48 @@ function RootComponent() {
   }, [router, queryClient]);
 
   return (
-    <RootShell>
-      <QueryClientProvider client={queryClient}>
-        <div key={routeKey} className="min-h-[100dvh]">
-          <OfflineBanner />
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-          <Toaster />
-        </div>
-      </QueryClientProvider>
-    </RootShell>
+    <QueryClientProvider client={queryClient}>
+      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      <div
+        key={routeKey}
+        className={routeKey === "alo-swipe-screens" ? "alo-swipe-route" : "route-enter"}
+      >
+        <Outlet />
+      </div>
+      {installable && !standalone && (
+        <aside
+          aria-label="App installieren"
+          className="mx-auto mb-24 w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-border bg-card/60 px-3 py-2"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <details className="min-w-0 flex-1 text-xs text-muted-foreground">
+              <summary className="flex min-h-11 cursor-pointer items-center font-medium text-foreground">
+                Alo als App installieren
+              </summary>
+              <p className="pb-2 leading-relaxed">
+                Im Browser-Menü „App installieren“ oder „Zum Startbildschirm“ wählen.
+              </p>
+            </details>
+            <button
+              type="button"
+              onClick={() => {
+                setInstallable(false);
+                try {
+                  sessionStorage.setItem("alo-install-hint-dismissed", "1");
+                } catch {
+                  // Closing still works for this visit without browser storage.
+                }
+              }}
+              aria-label="Installationshinweis schließen"
+              className="min-h-11 shrink-0 rounded-full px-2 text-[11px] text-muted-foreground transition hover:text-foreground"
+            >
+              Schließen
+            </button>
+          </div>
+        </aside>
+      )}
+      <OfflineBanner />
+      <Toaster position="top-center" richColors />
+    </QueryClientProvider>
   );
 }

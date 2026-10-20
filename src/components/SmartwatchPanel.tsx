@@ -148,7 +148,9 @@ export function SmartwatchPanel() {
       <div className="rounded-2xl border border-border bg-secondary/30 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Smartwatch</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Smartwatch
+            </div>
             <div className="mt-1 text-base font-semibold text-foreground">
               {primary ? primary.name : "Keine Uhr gekoppelt"}
             </div>
@@ -177,7 +179,9 @@ export function SmartwatchPanel() {
       </div>
 
       <div>
-        <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Gerät koppeln</div>
+        <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          Gerät koppeln
+        </div>
         <div className="grid grid-cols-3 gap-2">
           {WATCH_BRANDS.map((b) => (
             <button

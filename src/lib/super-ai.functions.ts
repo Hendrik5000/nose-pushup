@@ -1,3 +1,13 @@
+import { fetchAiProvider } from "@/lib/ai-provider-fetch";
+import {
+  assertMiraAttachmentProvider,
+  validateMiraAttachments,
+  miraAttachmentText,
+  openAiAttachmentParts,
+  googleAttachmentParts,
+  anthropicAttachmentParts,
+  type MiraAttachment,
+} from "@/lib/mira-attachments";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { lookup } from "node:dns/promises";
@@ -12,7 +22,12 @@ type ProviderPayload = {
   model: string;
 };
 
-type InMsg = { role: "user" | "assistant"; content: string; imageDataUrl?: string };
+type InMsg = {
+  role: "user" | "assistant";
+  content: string;
+  imageDataUrl?: string;
+  attachments?: MiraAttachment[];
+};
 
 type SuperAiResult = {
   reply: string;
@@ -47,7 +62,7 @@ const MODEL_ALLOW: Record<Exclude<ProviderId, "custom">, string[]> = {
 
 function assertModelAllowed(id: ProviderId, model: string) {
   if (id === "custom") {
-    if (!model || model.length > 80 || /[^\w.\/\-:]/.test(model)) {
+    if (!model || model.length > 80 || /[^\w./:-]/.test(model)) {
       throw new Error("Ungültiger Modellname");
     }
     return;
@@ -141,20 +156,12 @@ function toOpenAiMessages(system: string, messages: InMsg[]) {
   return [
     { role: "system" as const, content: system },
     ...messages.map((m) => {
-      if (m.role === "user" && m.imageDataUrl) {
-        return {
-          role: "user" as const,
-          content: [
-            { type: "text" as const, text: m.content },
-            { type: "image_url" as const, image_url: { url: m.imageDataUrl } },
-          ],
-        };
-      }
-      return { role: m.role, content: m.content };
+      const text = m.content + miraAttachmentText(m.attachments ?? []);
+      const images = openAiAttachmentParts(m.attachments ?? []);
+      return { role: m.role, content: images.length ? [{ type: "text", text }, ...images] : text };
     }),
   ];
 }
-
 async function callOpenAICompat(
   baseUrl: string,
   apiKey: string,
@@ -162,9 +169,8 @@ async function callOpenAICompat(
   system: string,
   messages: InMsg[],
 ) {
-  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
+  const res = await fetchAiProvider(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
-    redirect: "error",
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${apiKey}`,
@@ -186,9 +192,8 @@ async function callOpenAICompat(
 }
 
 async function callAnthropic(apiKey: string, model: string, system: string, messages: InMsg[]) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetchAiProvider("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    redirect: "error",
     headers: {
       "content-type": "application/json",
       "x-api-key": apiKey,
@@ -198,7 +203,13 @@ async function callAnthropic(apiKey: string, model: string, system: string, mess
       model,
       max_tokens: MAX_OUTPUT_HINT,
       system,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: [
+          { type: "text", text: m.content + miraAttachmentText(m.attachments ?? []) },
+          ...anthropicAttachmentParts(m.attachments ?? []),
+        ],
+      })),
     }),
   });
   if (!res.ok) {
@@ -218,21 +229,17 @@ async function callAnthropic(apiKey: string, model: string, system: string, mess
 async function callGoogle(apiKey: string, model: string, system: string, messages: InMsg[]) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const contents = messages.map((m) => {
-    const parts: Array<Record<string, unknown>> = [{ text: m.content }];
-    if (m.role === "user" && m.imageDataUrl?.startsWith("data:")) {
-      const match = /^data:([^;]+);base64,(.+)$/.exec(m.imageDataUrl);
-      if (match) {
-        parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
-      }
-    }
+    const parts: Array<Record<string, unknown>> = [
+      { text: m.content + miraAttachmentText(m.attachments ?? []) },
+      ...googleAttachmentParts(m.attachments ?? []),
+    ];
     return {
       role: m.role === "assistant" ? "model" : "user",
       parts,
     };
   });
-  const res = await fetch(url, {
+  const res = await fetchAiProvider(url, {
     method: "POST",
-    redirect: "error",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
@@ -256,9 +263,8 @@ async function callGoogle(apiKey: string, model: string, system: string, message
 async function callLovable(model: string, system: string, messages: InMsg[]) {
   const key = process.env.LOVABLE_API_KEY;
   if (!key) throw new Error("Lovable Gateway nicht konfiguriert (LOVABLE_API_KEY).");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const res = await fetchAiProvider("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
-    redirect: "error",
     headers: {
       "content-type": "application/json",
       "Lovable-API-Key": key,
@@ -286,6 +292,7 @@ export const superAiChat = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const raw = (input ?? {}) as {
       messages?: InMsg[];
+      attachments?: unknown;
       provider?: ProviderPayload;
       task?: string;
       systemExtra?: string;
@@ -296,20 +303,36 @@ export const superAiChat = createServerFn({ method: "POST" })
       .slice(-16)
       .map((m, idx, arr) => {
         const base: InMsg = { role: m.role, content: m.content.slice(0, 6000) };
-        if (
-          idx === arr.length - 1 &&
-          m.role === "user" &&
-          typeof m.imageDataUrl === "string" &&
-          m.imageDataUrl.startsWith("data:image/") &&
-          m.imageDataUrl.length < 1_500_000
-        ) {
-          base.imageDataUrl = m.imageDataUrl;
+        if (idx === arr.length - 1 && m.imageDataUrl !== undefined) {
+          if (m.role !== "user" || typeof m.imageDataUrl !== "string")
+            throw new Error("Ungültiger Bildanhang.");
+          const match = /^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/.exec(m.imageDataUrl);
+          if (!match) throw new Error("Ungültiger Bildanhang.");
+          const ext = match[1].split("/")[1];
+          base.attachments = validateMiraAttachments([
+            {
+              name: `Foto.${ext}`,
+              mime: match[1],
+              size:
+                Math.floor((match[2].length * 3) / 4) -
+                (match[2].endsWith("==") ? 2 : match[2].endsWith("=") ? 1 : 0),
+              dataUrl: m.imageDataUrl,
+            },
+          ]);
         }
         return base;
       });
     if (cleaned.length === 0) throw new Error("Keine Nachricht");
+    const attachments = validateMiraAttachments(raw.attachments);
+    const last = cleaned[cleaned.length - 1];
+    if (attachments.length) {
+      if (last.role !== "user" || last.attachments?.length)
+        throw new Error("Anhänge nur an der letzten Nutzernachricht erlaubt.");
+      last.attachments = attachments;
+    }
+    const attachmentChars = attachments.reduce((sum, item) => sum + (item.text?.length ?? 0), 0);
     const totalChars = cleaned.reduce((n, m) => n + m.content.length, 0);
-    if (totalChars > MAX_INPUT_CHARS) {
+    if (totalChars + attachmentChars > MAX_INPUT_CHARS) {
       throw new Error(`Eingabe zu lang (max. ${MAX_INPUT_CHARS} Zeichen insgesamt)`);
     }
     if (!raw.provider?.id) throw new Error("Kein Provider gewählt");
@@ -334,14 +357,10 @@ export const superAiChat = createServerFn({ method: "POST" })
     if (p.id === "lovable" && !p.model) p.model = "google/gemini-3-flash-preview";
     assertModelAllowed(p.id, p.model);
 
-    const hasImage = data.messages.some((m) => Boolean(m.imageDataUrl));
-    if (hasImage && p.id === "anthropic") {
-      for (const m of data.messages) delete m.imageDataUrl;
-      data.systemExtra =
-        (data.systemExtra ? data.systemExtra + "\n" : "") +
-        "Hinweis: Ein Bild war angehängt; Anthropic ist in diesem Gateway text-only — nur der Text wurde gesendet.";
-    }
-
+    assertMiraAttachmentProvider(
+      p.id,
+      data.messages.flatMap((m) => m.attachments ?? []),
+    );
     const system =
       data.systemExtra ||
       "Du bist Mira, die vielseitige allgemeine KI von Alo (All in one). Antworte auf Deutsch, hilf bei Alltagsfragen, Wissen, Schreiben, Ideen, Lernen und Planung. Sei klar, ehrlich und passe Länge und Ton an die Anfrage an. Behaupte keine App-Daten, die nicht mit der Anfrage gegeben wurden.";

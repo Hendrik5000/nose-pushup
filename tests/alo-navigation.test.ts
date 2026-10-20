@@ -59,7 +59,7 @@ test("new onboarding, compact module controls, hidden-by-default legacy nav, and
   const nav = read("components/TopNav.tsx");
   assert.match(nav, /aria-label="Alo · Module"/);
   assert.match(nav, /hidden=\{!barVisible\}\s+inert=\{!barVisible\}/);
-  const ai = read("routes/_authenticated/ai.tsx");
+  const ai = read("components/mira/SuperAiPage.tsx");
   assert.match(ai, /MIRA_CONTEXT_KEY/);
   assert.match(ai, /MiraContextControls/);
   assert.match(read("components/alo/MiraContextControls.tsx"), /checked=\{grants.training\}/);

@@ -5,13 +5,21 @@ import test from "node:test";
 const css = readFileSync(new URL("../src/ai-reference.css", import.meta.url), "utf8");
 
 test("Mira's composer has no focus line and retains a visible background focus state", () => {
-  const selector = 'html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer textarea:focus-visible';
-  const rule = css.slice(css.indexOf(`${selector} {`)).split("}")[0];
-  assert.ok(css.includes(`${selector} {`), "focus override is scoped to Mira's message field");
+  const selector =
+    'html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer textarea:focus-visible';
+  const flatCss = css.replace(/\s+/g, " ");
+  const rule = flatCss.slice(flatCss.indexOf(`${selector} {`)).split("}")[0];
+  assert.ok(flatCss.includes(`${selector} {`), "focus override is scoped to Mira's message field");
   // Important layered rules outrank unlayered ones: match the global base layer.
-  assert.match(css, /@layer base\s*\{\s*html\[data-design-style="performance"\] \.sport-ai-chat-mode \.sport-chat-composer textarea:focus-visible\s*\{/);
+  assert.match(
+    flatCss,
+    /@layer base\s*\{\s*html\[data-design-style="performance"\] \.sport-ai-chat-mode \.sport-chat-composer textarea:focus-visible\s*\{/,
+  );
   assert.match(rule, /outline: none !important;/);
-  assert.match(rule, /background: color-mix\(in srgb, var\(--foreground\) 8%, var\(--card\)\) !important;/);
+  assert.match(
+    rule,
+    /background: color-mix\(in srgb, var\(--foreground\) 8%, var\(--card\)\) !important;/,
+  );
   assert.match(rule, /border-radius: 0\.5rem;/);
   assert.match(rule, /box-shadow: none;/);
   assert.doesNotMatch(rule, /var\(--(?:ring|primary)\)|outline: \d/);

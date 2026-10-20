@@ -8,7 +8,10 @@ import {
   selectProvider,
 } from "../src/lib/ai-providers.ts";
 
-const route = readFileSync(new URL("../src/routes/_authenticated/ai.tsx", import.meta.url), "utf8");
+const route = readFileSync(
+  new URL("../src/components/mira/SuperAiPage.tsx", import.meta.url),
+  "utf8",
+);
 
 function disabledProviders() {
   return structuredClone(DEFAULT_PROVIDERS).map((provider) => ({

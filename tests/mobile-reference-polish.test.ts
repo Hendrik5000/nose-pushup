@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 const read = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 test("empty performance coach offers editable starter tasks without sending immediately", () => {
-  const ai = read("routes/_authenticated/ai.tsx");
+  const ai = read("components/mira/SuperAiPage.tsx");
   const start = ai.indexOf('aria-label="Mit einer Aufgabe starten"');
   assert.ok(start > 0);
   const cards = ai.slice(start, ai.indexOf("{messages.map", start));
@@ -25,6 +25,6 @@ test("community keeps account outside a shrinking scroll region and wraps quick 
 });
 
 test("Mira keeps coach-chat view and exposes Nexus navigation", () => {
-  assert.match(read("routes/_authenticated/ai.tsx"), /view === "chat" \? "Mira-Chat"/);
+  assert.match(read("components/mira/SuperAiPage.tsx"), /view === "chat" \? "Mira-Chat"/);
   assert.match(read("components/TopNav.tsx"), /label: "Nexus Chat"/);
 });

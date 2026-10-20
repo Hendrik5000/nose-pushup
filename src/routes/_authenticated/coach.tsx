@@ -1,4 +1,4 @@
-import { SuperAiPage } from "./ai";
+import { SuperAiPage } from "@/components/mira/SuperAiPage";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";

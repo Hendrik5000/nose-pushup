@@ -108,8 +108,8 @@ test("performance coach shares the AI workspace while classic remains selectable
   assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage \/>/);
   assert.match(read("routes/_authenticated/coach.tsx"), /<DesignView variant="classic">/);
   assert.match(read("components/AiCoachCard.tsx"), /to="\/ai"/);
-  assert.match(read("routes/_authenticated/ai.tsx"), /useState<SportAiView>\("chat"\)/);
-  assert.match(read("routes/_authenticated/ai.tsx"), /sport-ai-chat-options/);
+  assert.match(read("components/mira/SuperAiPage.tsx"), /useState<SportAiView>\("chat"\)/);
+  assert.match(read("components/mira/SuperAiPage.tsx"), /sport-ai-chat-options/);
 });
 
 test("community identifies local storage and separates mobile list from conversation", () => {

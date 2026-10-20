@@ -22,7 +22,8 @@ export function MiraMemoryPanel({ userId }: { userId?: string | null }) {
         <div>
           <div className="text-sm font-semibold">Kontext-Gedächtnis</div>
           <p className="text-[11px] text-muted-foreground">
-            Nur lokal auf diesem Gerät. Wird nur mitgeschickt, wenn aktiv und Notizen vorhanden sind.
+            Nur lokal auf diesem Gerät. Wird nur mitgeschickt, wenn aktiv und Notizen vorhanden
+            sind.
           </p>
         </div>
         <button
@@ -33,7 +34,9 @@ export function MiraMemoryPanel({ userId }: { userId?: string | null }) {
             setEnabled(next);
           }}
           className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-            enabled ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"
+            enabled
+              ? "bg-primary text-primary-foreground"
+              : "border border-border text-muted-foreground"
           }`}
         >
           {enabled ? "An" : "Aus"}

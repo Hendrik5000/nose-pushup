@@ -1,618 +1,242 @@
-/* Gemini-inspired performance chat; every declaration is isolated from the classic UI. */
+/* Mira conversation workspace: compact controls, readable chat, no floating overlay.
+   Scoped to the performance design; the classic layout remains independently usable. */
 html[data-design-style="performance"] main.sport-ai-page.sport-ai-chat-mode {
   width: 100%;
-  max-width: none;
-  padding: 0.65rem clamp(1rem, 3.5vw, 3rem) 0.75rem !important;
-  gap: 0.45rem !important;
+  max-width: 72rem;
+  padding: 0.75rem clamp(0.75rem, 3vw, 2rem) 0.75rem !important;
+  gap: 0.65rem !important;
 }
-
 html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-compact-heading {
   display: flex;
   min-width: 0;
-  min-height: 2.5rem;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0 0.15rem;
 }
 html[data-design-style="performance"] .sport-ai-model-status {
   display: flex;
+  flex: 1 1 0;
   min-width: 0;
-  align-items: center;
-  gap: 0.45rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  overflow-wrap: anywhere;
+  font-size: 0.75rem;
   color: var(--muted-foreground);
-  font-size: 0.72rem;
-  line-height: 1.2;
 }
-html[data-design-style="performance"] .sport-ai-model-status > span:last-child {
-  overflow: hidden;
-  max-width: min(34vw, 20rem);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+html[data-design-style="performance"] .sport-ai-model-status > strong {
+  color: var(--foreground);
+  font-size: 0.95rem;
 }
-html[data-design-style="performance"] .sport-ai-model-dot {
-  width: 0.4rem;
-  height: 0.4rem;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: var(--primary);
-  box-shadow: 0 0 0.7rem color-mix(in srgb, var(--primary) 55%, transparent);
+html[data-design-style="performance"] .sport-ai-model-status details {
+  max-width: 100%;
 }
 html[data-design-style="performance"] .sport-ai-chat-actions {
   display: flex;
   flex: 0 0 auto;
-  align-items: center;
-  gap: 0.45rem;
+  gap: 0.25rem;
 }
 html[data-design-style="performance"] .sport-ai-header-action,
-html[data-design-style="performance"] .sport-ai-header-avatar {
+html[data-design-style="performance"] .alo-mira-view-menu > summary {
   display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
   place-items: center;
-  border: 1px solid var(--sport-line);
-  border-radius: 50%;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
   background: var(--card);
   color: var(--foreground);
-}
-html[data-design-style="performance"] .sport-ai-header-action {
-  transition:
-    background-color 140ms ease,
-    border-color 140ms ease,
-    transform 140ms ease;
-}
-html[data-design-style="performance"] .sport-ai-header-action:hover {
-  border-color: color-mix(in srgb, var(--primary) 45%, var(--sport-line));
-  background: var(--secondary);
-}
-html[data-design-style="performance"] .sport-ai-header-action:active {
-  transform: scale(0.96);
+  cursor: pointer;
 }
 html[data-design-style="performance"] .sport-ai-header-action svg {
-  width: 1rem;
-  height: 1rem;
+  width: 1.1rem;
+  height: 1.1rem;
 }
-html[data-design-style="performance"] .sport-ai-header-avatar {
-  border-color: color-mix(in srgb, var(--primary) 32%, var(--sport-line));
-  background: color-mix(in srgb, var(--primary) 15%, var(--card));
-  color: var(--primary);
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-html[data-design-style="performance"] .sport-ai-header-avatar svg {
-  width: 1rem;
-  height: 1rem;
-}
-html[data-design-style="performance"] .sport-ai-header-action:focus-visible,
-html[data-design-style="performance"] .sport-ai-tabs button:focus-visible,
-html[data-design-style="performance"] .sport-chat-composer :is(button, textarea):focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
 html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-hub {
-  width: fit-content;
+  display: block;
+  width: 100%;
   max-width: 100%;
-  align-self: center;
+  flex: 0 0 auto;
   border: 0;
-  background: transparent;
   padding: 0;
+  background: transparent;
 }
 html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-provider-status {
   display: none;
 }
 html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-tabs {
-  gap: 0.1rem;
-  border: 1px solid var(--sport-line);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 78%, transparent);
-  padding: 0.18rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.2rem;
+  background: var(--card);
 }
 html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-tabs button {
-  min-height: 2rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-}
-
-html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-settings-card {
-  width: min(100%, 54rem);
-  align-self: center;
-  border-radius: 1.2rem;
-  background: var(--card);
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 0.75rem;
+  padding: 0.4rem;
+  font-size: 0.75rem;
+  white-space: normal;
 }
 html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-grid {
   display: flex;
   width: 100%;
+  min-width: 0;
   min-height: 0;
   flex: 1 1 0;
-  gap: 0;
+  align-items: stretch;
+  gap: 1rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-main {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  flex: 1 1 0;
+  gap: 0.65rem;
 }
 html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-aside {
   display: none;
 }
-html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-main {
-  flex: 1 1 0%;
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  max-height: none;
-  gap: 0.4rem;
-  overflow: hidden;
-}
 html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-stage {
-  position: relative;
-  isolation: isolate;
-  width: 100%;
-  min-height: 0;
+  min-height: 5rem;
   max-height: none;
   flex: 1 1 0;
+  overflow-y: auto;
   overflow-x: hidden;
-  padding: clamp(0.8rem, 2.5vw, 1.5rem);
-  border: 0;
-  border-radius: 1.4rem;
-  background: radial-gradient(
-    ellipse 68% 24% at 50% 100%,
-    color-mix(in srgb, var(--accent) 15%, transparent),
-    transparent 100%
-  );
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--card);
+  box-shadow: none;
+  overscroll-behavior: contain;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-bubble {
+  max-width: min(90%, 48rem);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border-radius: 1rem;
   box-shadow: none;
 }
-html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-stage > * {
-  position: relative;
-  z-index: 1;
-}
 html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome {
-  display: flex;
-  width: min(100%, 40rem);
+  width: min(100%, 38rem);
   min-height: 0;
-  flex: 1 1 0%;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-block: 0 !important;
-  padding: 2rem 1rem;
+  margin-block: auto !important;
+  padding: 1.25rem 0;
 }
 html[data-design-style="performance"] .ai-welcome-mark {
-  display: block;
-  width: 2rem;
-  height: 2rem;
-  flex: 0 0 auto;
-  background: linear-gradient(
-    135deg,
-    #fa6d78 0%,
-    #f6bd4f 24%,
-    #5bd69b 48%,
-    #5da7ff 72%,
-    #c17aff 100%
-  );
-  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
-  filter: drop-shadow(0 0 1rem color-mix(in srgb, var(--accent) 35%, transparent));
+  display: inline-grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: 0.8rem;
+  background: var(--secondary);
+  color: var(--primary);
+}
+html[data-design-style="performance"] .ai-welcome-mark svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 html[data-design-style="performance"] .ai-welcome h3 {
-  max-width: 32ch;
-  margin-top: 1.4rem;
-  color: var(--foreground);
-  font-size: clamp(1.55rem, 4vw, 2.55rem);
-  font-weight: 450;
-  letter-spacing: -0.045em;
-  line-height: 1.17;
+  margin-top: 0.85rem;
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
   overflow-wrap: anywhere;
 }
 html[data-design-style="performance"] .ai-welcome p {
-  max-width: 34ch;
-  margin-top: 0.8rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
   color: var(--muted-foreground);
-  font-size: 0.88rem;
-  line-height: 1.55;
 }
-html[data-design-style="performance"]
-  .sport-ai-chat-mode
-  .sport-chat-stage
-  > .flex
-  > .sport-ai-bubble {
-  max-width: min(78%, 54rem);
-  border-color: var(--sport-line);
-  border-radius: 1.25rem;
-  box-shadow: none;
-}
-html[data-design-style="performance"]
-  .sport-ai-chat-mode
-  .sport-chat-stage
-  > .flex
-  > .sport-ai-bubble.bg-primary {
-  border-color: transparent;
-}
-html[data-design-style="performance"]
-  .sport-ai-chat-mode
-  .sport-chat-stage
-  > .flex
-  > .sport-ai-bubble:not(.bg-primary) {
-  background: color-mix(in srgb, var(--card) 84%, transparent);
-}
-html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer {
-  position: static;
-  inset: auto;
-  z-index: 2;
-  display: flex;
+html[data-design-style="performance"] .ai-welcome > .ai-starter-grid {
+  display: grid;
   width: 100%;
-  min-height: 3.5rem;
-  flex: 0 0 auto;
+  height: auto;
+  flex-shrink: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  margin-top: 1rem;
+  background: transparent;
+}
+html[data-design-style="performance"] .ai-starter-card {
+  display: flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.45rem;
-  border: 1px solid var(--sport-line);
-  border-radius: 999px;
-  background: var(--card);
-  box-shadow: 0 0.6rem 2rem color-mix(in srgb, var(--foreground) 5%, transparent);
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--background);
+  text-align: left;
 }
-html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer textarea {
-  order: 1;
-  width: 0;
-  min-width: 0;
-  min-height: 2.7rem;
-  max-height: 8.75rem;
-  flex: 1 1 auto;
-  resize: none;
-  border: 0 !important;
-  border-radius: 0;
-  background: transparent !important;
-  padding: 0.7rem 0.25rem;
-  color: var(--foreground);
-  font-size: 0.9rem;
-  line-height: 1.35;
-  box-shadow: none;
+html[data-design-style="performance"] .ai-starter-card > svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: 0 0 auto;
+  color: var(--primary);
 }
-/* Keep Mira's focus visible through its background, without any focus line.
-   Buttons and other composers keep their existing rings. */
+html[data-design-style="performance"] .ai-starter-card > svg:last-child {
+  margin-left: auto;
+}
+html[data-design-style="performance"] .ai-starter-card strong,
+html[data-design-style="performance"] .ai-starter-card small {
+  display: block;
+  font-size: 0.8rem;
+}
+html[data-design-style="performance"] .ai-starter-card small,
+html[data-design-style="performance"] .ai-starter-hint {
+  margin-top: 0.2rem;
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+}
+html[data-design-style="performance"] .ai-starter-hint {
+  display: block;
+  margin-top: 0.75rem;
+}
+html[data-design-style="performance"] .sport-ai-header-action:focus-visible,
+html[data-design-style="performance"] .ai-starter-card:focus-visible,
+html[data-design-style="performance"] .sport-ai-tabs button:focus-visible,
+html[data-design-style="performance"] .sport-chat-composer :is(button, textarea):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+/* Retain the requested background-only focus for the message input. */
 @layer base {
-  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer textarea:focus-visible {
-    /* Match the global accessibility layer so this scoped important rule wins. */
+  html[data-design-style="performance"]
+    .sport-ai-chat-mode
+    .sport-chat-composer
+    textarea:focus-visible {
     outline: none !important;
     background: color-mix(in srgb, var(--foreground) 8%, var(--card)) !important;
     border-radius: 0.5rem;
     box-shadow: none;
   }
 }
-html[data-design-style="performance"]
-  .sport-ai-chat-mode
-  .sport-chat-composer
-  textarea::placeholder {
-  color: var(--muted-foreground);
-  opacity: 0.85;
-}
-html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer button {
-  width: 2.45rem;
-  min-width: 2.45rem;
-  height: 2.45rem;
-  min-height: 2.45rem;
-  flex: 0 0 auto;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-}
-html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer .ai-new-session {
-  order: 0;
-  display: grid;
-  place-items: center;
-  background: transparent;
-  color: var(--muted-foreground);
-}
-html[data-design-style="performance"]
-  .sport-ai-chat-mode
-  .sport-chat-composer
-  .ai-new-session:hover,
-html[data-design-style="performance"]
-  .sport-ai-chat-mode
-  .sport-chat-composer
-  button[aria-label="Spracheingabe"]:hover {
-  background: var(--secondary);
-  color: var(--foreground);
-}
-html[data-design-style="performance"]
-  .sport-ai-chat-mode
-  .sport-chat-composer
-  button[aria-label="Spracheingabe"] {
-  order: 2;
-  background: transparent;
-  color: var(--muted-foreground);
-}
-html[data-design-style="performance"]
-  .sport-ai-chat-mode
-  .sport-chat-composer
-  button[aria-label="Spracheingabe"][aria-pressed="true"] {
-  background: color-mix(in srgb, var(--primary) 16%, var(--card));
-  color: var(--primary);
-}
-html[data-design-style="performance"]
-  .sport-ai-chat-mode
-  .sport-chat-composer
-  button[type="submit"] {
-  order: 3;
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-html[data-design-style="performance"]
-  .sport-ai-chat-mode
-  .sport-chat-composer
-  button[type="submit"]:disabled {
-  opacity: 0.45;
-}
-html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer button svg {
-  width: 1.15rem;
-  height: 1.15rem;
-}
-
-html[data-design-style="performance"][data-theme="daylight"] .sport-chat-stage,
-html[data-design-style="performance"][data-theme="sand"] .sport-chat-stage,
-html[data-design-style="performance"][data-theme="rose"] .sport-chat-stage {
-  background: radial-gradient(
-    ellipse 68% 22% at 50% 100%,
-    color-mix(in srgb, var(--accent) 24%, transparent),
-    transparent 100%
-  );
-}
-html[data-design-style="performance"][data-theme="contrast"] .sport-chat-stage {
-  background: transparent;
-}
-html[data-design-style="performance"][data-theme="glacier"] main.sport-ai-page.sport-ai-chat-mode {
-  --background: #000000;
-  --card: #1c1c1e;
-  --secondary: #2c2c2e;
-  --muted: #2c2c2e;
-  --border: rgba(255, 255, 255, 0.14);
-  --sport-line: rgba(255, 255, 255, 0.14);
-  --accent: #0a84ff;
-}
-html[data-design-style="performance"][data-theme="glacier"] .sport-ai-chat-mode .sport-chat-stage {
-  background: radial-gradient(
-    ellipse 68% 24% at 50% 100%,
-    rgba(10, 132, 255, 0.2),
-    transparent 100%
-  );
-}
-html[data-design-style="performance"][data-theme="contrast"] .ai-welcome-mark {
-  background: linear-gradient(145deg, #fff900, #ffeb00);
-  filter: none;
-}
-
-@media (max-width: 767px) {
-  html[data-design-style="performance"] main.sport-ai-page.sport-ai-chat-mode {
-    padding: 0.45rem max(0.75rem, env(safe-area-inset-left), env(safe-area-inset-right)) 0.5rem !important;
-    gap: 0.35rem !important;
-  }
-  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-main {
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    gap: 0.35rem;
-  }
-  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-tabs button {
-    min-height: 1.9rem;
-    padding-inline: 0.75rem;
-  }
-  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-stage {
-    min-height: 0;
-    max-height: none;
-    padding: 0.55rem;
-    border-radius: 1rem;
-  }
-  html[data-design-style="performance"]
-    .sport-ai-chat-mode
-    .sport-chat-stage
-    > .flex
-    > .sport-ai-bubble {
-    max-width: 91%;
-    padding: 0.85rem 1rem;
-  }
-  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer {
-    min-height: 3.25rem;
-    gap: 0.15rem;
-    padding: 0.25rem 0.35rem;
-  }
-  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer button {
-    width: 2.25rem;
-    min-width: 2.25rem;
-    height: 2.25rem;
-    min-height: 2.25rem;
-  }
-  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer textarea {
-    min-height: 2.45rem;
-    padding-inline: 0.1rem;
-    font-size: 0.85rem;
-  }
-}
-
-@media (max-width: 380px) {
-  html[data-design-style="performance"] .sport-ai-model-status > span:last-child {
-    max-width: 37vw;
-  }
-  html[data-design-style="performance"] .sport-ai-chat-actions {
-    gap: 0.3rem;
-  }
-  html[data-design-style="performance"] .sport-ai-header-action,
-  html[data-design-style="performance"] .sport-ai-header-avatar {
-    width: 2rem;
-    height: 2rem;
-  }
-  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-tabs button {
-    padding-inline: 0.55rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html[data-design-style="performance"] .sport-ai-header-action {
-    transition: none;
-  }
-}
-/* The default chat glow belongs to the full canvas rather than a dashboard card. */
-html[data-design-style="performance"][data-theme="glacier"] body:has(.sport-ai-chat-mode) {
-  background: radial-gradient(ellipse at 50% 110%, #153d91 0%, #080f27 30%, #000 67%);
-  background-attachment: fixed;
-}
-html[data-design-style="performance"][data-theme="glacier"] .sport-ai-chat-mode .sport-chat-stage {
-  background: transparent;
-}
-/* Stretch also at desktop widths: the former dashboard grid aligned its items to start. */
-html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-grid {
-  align-items: stretch;
-}
-html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-main {
-  max-width: 60rem;
-  margin-inline: auto;
-}
-/* Useful first-run prompts live in the scrollable canvas, never behind the composer. */
-html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome {
-  flex: 0 0 auto;
-  min-height: 100%;
-  padding: clamp(0.8rem, 3vh, 2rem) 0.25rem;
-}
-html[data-design-style="performance"] .ai-welcome h3 {
-  margin-top: 0.8rem;
-}
-html[data-design-style="performance"] .ai-welcome > .ai-starter-grid {
-  display: grid;
-  width: min(100%, 34rem);
-  height: auto;
-  flex-shrink: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.6rem;
-  margin-top: 1.25rem;
-  text-align: left;
-}
-html[data-design-style="performance"] .ai-starter-card {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  min-height: 64px;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--sport-line);
-  border-radius: 1.2rem;
-  background: color-mix(in srgb, var(--card) 85%, transparent);
-  color: var(--foreground);
-}
-html[data-design-style="performance"] .ai-starter-card:hover {
-  border-color: var(--primary);
-  background: var(--secondary);
-}
-html[data-design-style="performance"] .ai-starter-card:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-html[data-design-style="performance"] .ai-starter-card > svg {
-  width: 1.2rem;
-  height: 1.2rem;
-  flex-shrink: 0;
-  color: var(--primary);
-}
-html[data-design-style="performance"] .ai-starter-card > svg:last-child {
-  width: 1rem;
-  height: 1rem;
-  margin-left: auto;
-  color: var(--muted-foreground);
-}
-html[data-design-style="performance"] .ai-starter-card strong,
-html[data-design-style="performance"] .ai-starter-card small {
-  display: block;
-}
-html[data-design-style="performance"] .ai-starter-card strong {
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-html[data-design-style="performance"] .ai-starter-card small {
-  margin-top: 0.15rem;
-  font-size: 0.73rem;
-  color: var(--muted-foreground);
-}
-html[data-design-style="performance"] .ai-starter-hint {
-  margin-top: 0.85rem;
-  font-size: 0.68rem;
-  color: var(--muted-foreground);
-}
 @media (max-width: 767px) {
   html[data-design-style="performance"] main.sport-ai-page.sport-ai-chat-mode {
     padding-bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.75rem)) !important;
   }
-  html[data-design-style="performance"] .ai-welcome h3 {
-    max-width: 22ch;
-    font-size: 1.65rem;
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-stage {
+    padding: 0.65rem;
   }
-  html[data-design-style="performance"] .ai-welcome p {
-    margin-top: 0.55rem;
-    font-size: 0.8rem;
-  }
-}
-@media (max-height: 700px) and (max-width: 767px) {
-  html[data-design-style="performance"] .ai-welcome-mark {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-  html[data-design-style="performance"] .ai-welcome > .ai-starter-grid {
-    gap: 0.4rem;
-    margin-top: 0.85rem;
-  }
-  html[data-design-style="performance"] .ai-starter-card {
-    min-height: 52px;
-    padding: 0.6rem 0.8rem;
-  }
-  html[data-design-style="performance"] .ai-starter-card small {
-    display: none;
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-options[open] {
+    max-height: 40dvh;
+    overflow-y: auto;
+    flex-shrink: 0;
   }
 }
-@media (max-height: 700px) and (max-width: 767px) {
-  html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome {
-    padding-block: 0.5rem;
-  }
-  html[data-design-style="performance"] .ai-welcome h3 {
-    font-size: 1.2rem;
-    margin-top: 0.5rem;
-    max-width: none;
-  }
-  html[data-design-style="performance"] .ai-welcome p {
-    margin-top: 0.35rem;
-  }
-  html[data-design-style="performance"] .ai-welcome > .ai-starter-grid {
-    margin-top: 0.65rem;
-  }
-  html[data-design-style="performance"] .ai-starter-card {
-    min-height: 44px;
-    padding-block: 0.45rem;
-  }
-  html[data-design-style="performance"] .ai-starter-hint {
-    display: none;
-  }
-}
-@media (min-width: 768px) and (max-height: 800px) {
-  html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome {
-    padding-block: 0.5rem;
-  }
-  html[data-design-style="performance"] .ai-welcome h3 {
-    font-size: 1.6rem;
-    margin-top: 0.5rem;
-    max-width: none;
-  }
-  html[data-design-style="performance"] .ai-welcome p {
-    margin-top: 0.35rem;
-  }
-  html[data-design-style="performance"] .ai-welcome > .ai-starter-grid {
-    width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-top: 0.8rem;
-  }
-  html[data-design-style="performance"] .ai-starter-card {
-    min-width: 0;
-    min-height: 96px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding: 0.75rem;
-  }
-  html[data-design-style="performance"] .ai-starter-card > svg:last-child,
-  html[data-design-style="performance"] .ai-starter-hint {
-    display: none;
+@media (min-width: 1024px) {
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-aside {
+    display: flex;
+    width: 16rem;
+    flex: 0 0 16rem;
+    max-height: 65dvh;
+    overflow-y: auto;
   }
 }

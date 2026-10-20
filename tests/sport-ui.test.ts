@@ -50,7 +50,9 @@ test("new page structures are shared across training, health, community, account
     "u.$slug.tsx",
   ];
   for (const page of pages) {
-    const source = read(`routes/${page}`);
+    const source = read(
+      page === "_authenticated/ai.tsx" ? "components/mira/SuperAiPage.tsx" : `routes/${page}`,
+    );
     assert.match(source, /SportPageIntro/, `${page}: must use the new structural introduction`);
     assert.match(source, /classic-only/, `${page}: must preserve the original presentation`);
   }
@@ -138,7 +140,7 @@ test("performance home puts today's workout before status metrics and keeps widg
 });
 
 test("performance AI coach has focused subviews, task-first entry points and keeps the classic view", () => {
-  const ai = read("routes/_authenticated/ai.tsx");
+  const ai = read("components/mira/SuperAiPage.tsx");
   assert.match(ai, /<DesignView variant="classic">/);
   assert.match(ai, /<DesignView variant="sport">/);
   assert.match(ai, /Mira-Bereiche/);

@@ -29,10 +29,10 @@ test("an untouched Calisthenics check-in cannot save default or unreported healt
 });
 
 test("Mira exposes technical model identifiers only through secondary details", () => {
-  const ai = read("routes/_authenticated/ai.tsx");
+  const ai = read("components/mira/SuperAiPage.tsx");
   assert.match(
     ai,
-    /<span>Mira<\/span>[\s\S]*?<summary className="cursor-pointer">Technische Details<\/summary>[\s\S]*?activeProvider\.model/,
+    /<strong>\{activeTitle\}<\/strong>[\s\S]*?<summary className="cursor-pointer">Technische Details<\/summary>[\s\S]*?activeProvider\.model/,
   );
   assert.match(
     ai,

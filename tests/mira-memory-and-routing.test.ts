@@ -41,8 +41,12 @@ function installMemoryStorage() {
       return store.size;
     },
   };
-  (globalThis as { localStorage?: typeof localStorage; window?: { localStorage: typeof localStorage } }).localStorage =
-    localStorage;
+  (
+    globalThis as {
+      localStorage?: typeof localStorage;
+      window?: { localStorage: typeof localStorage };
+    }
+  ).localStorage = localStorage;
   (globalThis as { window?: { localStorage: typeof localStorage } }).window = { localStorage };
   return store;
 }
@@ -123,6 +127,9 @@ test("clearSensitiveClientStorage removes mira memory keys", () => {
 });
 
 test("memory panel component exists", () => {
-  const panel = readFileSync(new URL("../src/components/MiraMemoryPanel.tsx", import.meta.url), "utf8");
+  const panel = readFileSync(
+    new URL("../src/components/MiraMemoryPanel.tsx", import.meta.url),
+    "utf8",
+  );
   assert.match(panel, /Kontext-Gedächtnis/);
 });
