@@ -11,14 +11,7 @@ import {
   Moon,
   ArrowUpRight,
 } from "lucide-react";
-import {
-  ALO_EVENT,
-  ALO_REMOTE_EVENT,
-  getMiraGrants,
-  listAlo,
-  putAlo,
-  removeAlo,
-} from "@/lib/alo-store";
+import { ALO_EVENT, ALO_REMOTE_EVENT, getMiraGrants, putAlo, removeAlo } from "@/lib/alo-store";
 import { MiraContextControls } from "@/components/alo/MiraContextControls";
 import { MiraRunwareTools } from "@/components/alo/MiraRunwareTools";
 import { ContentActions } from "@/components/alo/ContentActions";
@@ -30,6 +23,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { AiProviderSettings } from "@/components/AiProviderSettings";
 import { buildAppContext, contextToSystemBlock } from "@/lib/ai-context";
+import { miraDraftId, readMiraDraft, rememberMiraSession } from "@/lib/mira-handoff";
 import {
   applyPlanFeedback,
   getMostRecentPlanFeedback,
@@ -39,8 +33,10 @@ import {
 import type { AppContextPack } from "@/lib/ai-context";
 import {
   classifyTask,
+  describeProviderSelection,
   loadProviders,
-  pickProvider,
+  providerLabel,
+  selectProvider,
   toPayload,
   type AiTask,
 } from "@/lib/ai-providers";
@@ -75,7 +71,10 @@ export const Route = createFileRoute("/_authenticated/ai")({
   component: SuperAiPage,
 });
 
-type Msg = AiSession["messages"][number];
+type StoredMsg = AiSession["messages"][number];
+type Msg = Omit<StoredMsg, "meta"> & {
+  meta?: NonNullable<StoredMsg["meta"]> & { routingReason?: string };
+};
 type SportAiView = "coach" | "chat" | "history";
 type SportAiHistoryFilter = "all" | "plans";
 // Legacy MIRA_CONTEXT_KEY (alo-mira-context-enabled) is deliberately not migrated: consent defaults off per account.
@@ -121,9 +120,7 @@ export function SuperAiPage() {
     return list[0]?.id ?? newSessionId();
   });
   const [messages, setMessages] = useState<Msg[]>(() => loadSessions()[0]?.messages ?? []);
-  const [input, setInput] = useState(() =>
-    String(listAlo("draft").find((r) => r.id === "draft:mira")?.body.text ?? ""),
-  );
+  const [input, setInput] = useState(() => readMiraDraft(loadSessions()[0]?.id ?? ""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -150,7 +147,10 @@ export function SuperAiPage() {
   const [lastTask, setLastTask] = useState<AiTask | null>(null);
   const [sportAiView, setSportAiView] = useState<SportAiView>("chat");
   const [, refreshProviderStatus] = useState(0);
-  const activeProvider = pickProvider(loadProviders(), lastTask ?? "general");
+  const previewTask = input.trim() ? classifyTask(input) : (lastTask ?? "general");
+  const providerPreview = selectProvider(loadProviders(), previewTask);
+  const activeProvider = providerPreview.provider;
+  const providerPreviewReason = describeProviderSelection(providerPreview, previewTask);
   const profileName =
     typeof appContext?.profile?.display_name === "string"
       ? appContext.profile.display_name.trim()
@@ -234,17 +234,34 @@ export function SuperAiPage() {
       const selected = window.sessionStorage.getItem("alo-open-mira");
       if (selected) window.sessionStorage.removeItem("alo-open-mira");
       const session = all.find((s) => s.id === (selected || activeId));
-      if (session && !loading) {
+      let draftSessionId = session?.id ?? activeId;
+      if (selected) {
+        generationRef.current += 1;
+        setLoading(false);
+        if (session) {
+          setActiveId(session.id);
+          setMessages(session.messages);
+          setInput(readMiraDraft(session.id));
+          setSportAiView("chat");
+        } else {
+          const id = newSessionId();
+          draftSessionId = id;
+          setMessages([]);
+          setActiveId(id);
+        }
+      } else if (session && !loading) {
         setActiveId(session.id);
         setMessages(session.messages);
         setSportAiView("chat");
       } else if (!session) {
         generationRef.current += 1;
         setLoading(false);
+        const id = newSessionId();
+        draftSessionId = id;
         setMessages([]);
-        setActiveId(newSessionId());
+        setActiveId(id);
       }
-      setInput(String(listAlo("draft").find((r) => r.id === "draft:mira")?.body.text ?? ""));
+      setInput(readMiraDraft(draftSessionId));
     };
     window.addEventListener(ALO_REMOTE_EVENT, refresh);
     const requested = window.sessionStorage.getItem("alo-open-mira");
@@ -253,11 +270,11 @@ export function SuperAiPage() {
   }, [activeId, loading]);
   useEffect(() => {
     try {
-      putAlo("draft", { target: "mira", text: input }, "draft:mira");
+      putAlo("draft", { target: "mira", text: input }, miraDraftId(activeId));
     } catch {
       setError("Entwurf konnte nicht lokal gespeichert werden. Gerätespeicher prüfen.");
     }
-  }, [input]);
+  }, [input, activeId]);
 
   // Persist active session
   useEffect(() => {
@@ -287,6 +304,10 @@ export function SuperAiPage() {
   }, [messages, activeId]);
 
   useEffect(() => {
+    rememberMiraSession(activeId);
+  }, [activeId]);
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
@@ -296,6 +317,7 @@ export function SuperAiPage() {
     const s = sessions.find((x) => x.id === id);
     setActiveId(id);
     setMessages(s?.messages ?? []);
+    setInput(readMiraDraft(id));
     setSessionsOpen(false);
     setError(null);
     setSportAiView("chat");
@@ -307,6 +329,7 @@ export function SuperAiPage() {
     const id = newSessionId();
     setActiveId(id);
     setMessages([]);
+    setInput(readMiraDraft(id));
     setSessionsOpen(false);
     setError(null);
     setSportAiView("chat");
@@ -318,7 +341,8 @@ export function SuperAiPage() {
     setError(null);
     const task: AiTask = classifyTask(text);
     setLastTask(task);
-    const provider = pickProvider(loadProviders(), task);
+    const selection = selectProvider(loadProviders(), task);
+    const provider = selection.provider;
     if (!provider) {
       setError("Kein aktiver KI-Anbieter. Öffne Zugangsdaten und hinterlege einen API-Schlüssel.");
       setSettingsOpen(true);
@@ -368,7 +392,12 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
             parsed.reply ||
             (plan ? "Hier ist dein unverbindlicher Trainingsvorschlag." : res.reply),
           ...(plan ? { plan } : {}),
-          meta: { provider: res.provider, model: res.model, task: res.task },
+          meta: {
+            provider: res.provider,
+            model: res.model,
+            task: res.task,
+            routingReason: describeProviderSelection(selection, task),
+          },
         },
       ]);
     } catch (e) {
@@ -512,6 +541,12 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                   Frage eingeordnet: {lastTask}
                 </p>
               )}
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Anbietervorschau für die nächste Anfrage: {activeProvider?.label ?? "Kein Anbieter"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Auswahlregel: {providerPreviewReason}
+              </p>
             </header>
 
             <div className="mb-1.5 flex gap-1">
@@ -880,12 +915,28 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                   {m.role === "assistant" && (
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       {m.meta && (
-                        <details className="text-[10px] text-muted-foreground">
-                          <summary className="cursor-pointer">Technische Details</summary>
-                          <span>
-                            {m.meta.task} · {m.meta.provider}/{m.meta.model}
+                        <>
+                          <span className="text-[10px] text-muted-foreground">
+                            Anbieter für diese Antwort:{" "}
+                            {providerLabel(m.meta.provider ?? "unbekannt")}
                           </span>
-                        </details>
+                          {m.meta.routingReason && (
+                            <span className="text-[10px] text-muted-foreground">
+                              Auswahlregel: {m.meta.routingReason}
+                            </span>
+                          )}
+                          {m.meta.provider === "lovable" && (
+                            <span className="text-[10px] text-muted-foreground">
+                              Lovable Gateway; das interne Backend ist nicht ausgewiesen.
+                            </span>
+                          )}
+                          <details className="text-[10px] text-muted-foreground">
+                            <summary className="cursor-pointer">Technische Details</summary>
+                            <span>
+                              {m.meta.task} · {m.meta.provider} · Modellkennung: {m.meta.model}
+                            </span>
+                          </details>
+                        </>
                       )}
                       <button
                         type="button"
@@ -937,14 +988,18 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
               <div className="sport-ai-model-status" aria-live="polite">
                 <span className="sport-ai-model-dot" aria-hidden="true" />
                 <span>Mira</span>
+                <span className="text-[10px] text-muted-foreground">
+                  Vorschau nächste Anfrage: {activeProvider?.label ?? "Kein Anbieter"}
+                </span>
                 <details className="text-[10px] text-muted-foreground">
                   <summary className="cursor-pointer">Technische Details</summary>
                   <span>
                     {activeProvider
-                      ? `${activeProvider.label} · ${activeProvider.model}`
+                      ? `${activeProvider.model} · ${providerPreviewReason}`
                       : "Kein Modell eingerichtet"}
                   </span>
                 </details>
+                <span className="text-[10px] text-muted-foreground">{providerPreviewReason}</span>
               </div>
               <div className="sport-ai-chat-actions">
                 <button
@@ -1020,9 +1075,11 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
             <div className="sport-ai-provider-status">
               <div>
                 <span className="sport-ai-status-dot" aria-hidden="true" />
-                <span className="font-semibold">{activeProvider?.label ?? "Kein Anbieter"}</span>
+                <span className="font-semibold">
+                  Vorschau: {activeProvider?.label ?? "Kein Anbieter"}
+                </span>
                 <span className="text-muted-foreground">
-                  {activeProvider ? "bereit" : "Zugang fehlt"}
+                  {activeProvider ? "für nächste Anfrage" : "Zugang fehlt"}
                 </span>
               </div>
               <button type="button" onClick={() => setSettingsOpen((v) => !v)}>
@@ -1529,12 +1586,29 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
                               />
                             )}
                             {m.meta && (
-                              <details className="text-muted-foreground">
-                                <summary className="cursor-pointer">Technische Details</summary>
-                                <span>
-                                  {m.meta.provider} · {m.meta.model} · {m.meta.task}
+                              <>
+                                <span className="text-muted-foreground">
+                                  Anbieter für diese Antwort:{" "}
+                                  {providerLabel(m.meta.provider ?? "unbekannt")}
                                 </span>
-                              </details>
+                                {m.meta.routingReason && (
+                                  <span className="text-muted-foreground">
+                                    Auswahlregel: {m.meta.routingReason}
+                                  </span>
+                                )}
+                                {m.meta.provider === "lovable" && (
+                                  <span className="text-muted-foreground">
+                                    Lovable Gateway; das interne Backend ist nicht ausgewiesen.
+                                  </span>
+                                )}
+                                <details className="text-muted-foreground">
+                                  <summary className="cursor-pointer">Technische Details</summary>
+                                  <span>
+                                    {m.meta.task} · {m.meta.provider} · Modellkennung:{" "}
+                                    {m.meta.model}
+                                  </span>
+                                </details>
+                              </>
                             )}
                             <button
                               type="button"

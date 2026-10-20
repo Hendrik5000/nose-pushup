@@ -23,6 +23,7 @@ import { GlobalSearch } from "./GlobalSearch";
 import { QuickCapture } from "./QuickCapture";
 import { AloPrivacy } from "./AloPrivacy";
 import { ContentActions } from "./ContentActions";
+import { MiraHandoff } from "./MiraHandoff";
 import "@/alo-workspace.css";
 const AREA_LABELS: Record<string, string> = {
   all: "Alo",
@@ -195,7 +196,9 @@ export function AloWorkspace({ userId }: { userId: string }) {
                   />
                 )}
                 {tab === "capture" && <QuickCapture userId={userId} />}
-                {tab === "collections" && <Collections userId={userId} rows={rows} />}
+                {tab === "collections" && (
+                  <Collections userId={userId} rows={rows} onNavigate={() => setOpen(false)} />
+                )}
                 {tab === "shortcuts" && (
                   <Shortcuts
                     userId={userId}
@@ -529,7 +532,15 @@ function Today({
     </div>
   );
 }
-function Collections({ userId, rows }: { userId: string; rows: AloRecord[] }) {
+function Collections({
+  userId,
+  rows,
+  onNavigate,
+}: {
+  userId: string;
+  rows: AloRecord[];
+  onNavigate: () => void;
+}) {
   const [name, setName] = useState("");
   const [selected, setSelected] = useState("");
   const [status, setStatus] = useState("");
@@ -679,6 +690,7 @@ function Collections({ userId, rows }: { userId: string; rows: AloRecord[] }) {
                 title={String(r.body.title)}
                 source={String(r.body.source ?? "Alo")}
                 extra={a ? { attachment: a } : {}}
+                onMiraNavigate={onNavigate}
               />
               <button className="text-xs text-destructive" onClick={() => remove(r)}>
                 Ablage löschen
@@ -711,21 +723,7 @@ function Shortcuts({
   const [status, setStatus] = useState("");
   const shortcuts = rows.filter((r) => r.kind === "shortcut");
   const execute = (r: AloRecord) => {
-    if (r.body.target === "mira") {
-      try {
-        putAlo(
-          "draft",
-          { target: "mira", text: String(r.body.prompt ?? "") },
-          "draft:mira",
-          userId,
-        );
-        onNavigate();
-        void navigate({ to: "/ai" });
-        window.dispatchEvent(new Event(ALO_REMOTE_EVENT));
-      } catch {
-        setStatus("Entwurf nicht gespeichert.");
-      }
-    } else if (r.body.target === "training") {
+    if (r.body.target === "training") {
       onNavigate();
       void navigate({ to: "/programs" });
     } else if (TABS.some((t) => t.id === r.body.target)) onTab(r.body.target as Tab);
@@ -740,9 +738,20 @@ function Shortcuts({
       <div className="grid grid-cols-2 gap-2">
         {shortcuts.map((r) => (
           <div className="alo-card" key={r.id}>
-            <button className="w-full text-left font-semibold" onClick={() => execute(r)}>
-              {String(r.body.title)} →
-            </button>
+            {r.body.target === "mira" ? (
+              <MiraHandoff
+                userId={userId}
+                text={String(r.body.prompt ?? "")}
+                source="Schnellaktion"
+                label={`${String(r.body.title)} →`}
+                className="w-full text-left font-semibold"
+                onNavigate={onNavigate}
+              />
+            ) : (
+              <button className="w-full text-left font-semibold" onClick={() => execute(r)}>
+                {String(r.body.title)} →
+              </button>
+            )}
             <button
               className="mt-3 text-xs text-muted-foreground"
               onClick={() => {

@@ -263,7 +263,13 @@ export function GlobalSearch({
                   Quelle öffnen
                 </Link>
               )}
-              <ContentActions userId={userId} title={h.title} text={h.text} source={h.source} />
+              <ContentActions
+                userId={userId}
+                title={h.title}
+                text={h.text}
+                source={h.source}
+                onMiraNavigate={onNavigate}
+              />
             </div>
           </article>
         ))}

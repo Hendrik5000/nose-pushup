@@ -105,12 +105,48 @@ export function classifyTask(text: string): AiTask {
   return "general";
 }
 
-/** Pick best enabled provider for a task (first with key or lovable). */
-export function pickProvider(providers: ProviderConfig[], task: AiTask): ProviderConfig | null {
+export type ProviderSelection = {
+  provider: ProviderConfig | null;
+  reason: "task_preference" | "first_enabled_fallback" | "no_provider";
+};
+
+const TASK_LABELS: Record<AiTask, string> = {
+  general: "allgemeine Anfrage",
+  training_plan: "Trainingsplan",
+  form_technique: "Form und Technik",
+  recovery: "Erholung",
+  stats_analysis: "Statistikanalyse",
+  chat_summary: "Chat-Zusammenfassung",
+  quick_log: "schnelles Trainingsprotokoll",
+  motivation: "Motivation",
+};
+
+/** Explain the exact configured rule used to choose an enabled provider. */
+export function selectProvider(providers: ProviderConfig[], task: AiTask): ProviderSelection {
   const enabled = providers.filter((p) => p.enabled && (p.id === "lovable" || p.apiKey.trim()));
-  if (enabled.length === 0) return null;
+  if (enabled.length === 0) return { provider: null, reason: "no_provider" };
   const preferred = enabled.find((p) => p.tasks.includes(task));
-  return preferred ?? enabled[0];
+  return preferred
+    ? { provider: preferred, reason: "task_preference" }
+    : { provider: enabled[0], reason: "first_enabled_fallback" };
+}
+
+export function describeProviderSelection(selection: ProviderSelection, task: AiTask): string {
+  if (!selection.provider) return "Kein aktivierter Anbieter mit den nötigen Zugangsdaten.";
+  const taskLabel = TASK_LABELS[task];
+  if (selection.reason === "task_preference") {
+    return `„${taskLabel}“ ist bei ${selection.provider.label} als Aufgabenbereich eingetragen; gewählt wird der erste aktivierte passende Anbieter.`;
+  }
+  return `Kein aktivierter Anbieter ist für „${taskLabel}“ eingetragen; deshalb wird der erste aktivierte Anbieter in der Liste (${selection.provider.label}) gewählt.`;
+}
+
+export function providerLabel(id: ProviderId | string): string {
+  return DEFAULT_PROVIDERS.find((provider) => provider.id === id)?.label ?? id;
+}
+
+/** Apply the configured task preference or the first enabled provider; this is not a quality ranking. */
+export function pickProvider(providers: ProviderConfig[], task: AiTask): ProviderConfig | null {
+  return selectProvider(providers, task).provider;
 }
 
 export type ClientProviderPayload = {

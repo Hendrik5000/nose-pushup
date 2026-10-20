@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { listAlo, putAlo, type AloBody } from "@/lib/alo-store";
 import { loadRoomsForUser, detectChatMode, postMessage, type LocalRoom } from "@/lib/chat-backend";
 import { addWorkoutNote } from "@/lib/extra-features";
+import { MiraHandoff } from "./MiraHandoff";
 export function ContentActions({
   userId,
   text,
@@ -10,6 +11,7 @@ export function ContentActions({
   source,
   triggerLabel = "Alo-Aktionen",
   extra = {},
+  onMiraNavigate,
 }: {
   userId: string;
   text: string;
@@ -17,6 +19,7 @@ export function ContentActions({
   source: string;
   triggerLabel?: string;
   extra?: AloBody;
+  onMiraNavigate?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [rooms, setRooms] = useState<LocalRoom[]>([]);
@@ -94,6 +97,7 @@ export function ContentActions({
   };
   return (
     <>
+      <MiraHandoff userId={userId} text={text} source={source} onNavigate={onMiraNavigate} />
       <button
         type="button"
         className="text-xs font-semibold text-primary"
