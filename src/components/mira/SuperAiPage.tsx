@@ -1,6 +1,7 @@
 import "@/mira-attachments.css";
 // Conversation UI restored selectively from 34f2313; current routing/security remain in their modules.
 import { MiraAttachmentPicker, MiraAttachmentPreview } from "@/components/mira/MiraAttachments";
+import { MiraSpark } from "@/components/mira/MiraSpark";
 import {
   assertMiraAttachmentProvider,
   checkMiraFile,
@@ -14,14 +15,13 @@ import { loadPersonaMix, personaMixSystemBlock } from "@/lib/mira-power-features
 import { MiraRunwareResult } from "@/components/alo/MiraRunwareResult";
 import { MiraSources } from "@/components/alo/MiraSources";
 import {
-  Sparkles,
+  Lightbulb,
+  PenLine,
+  BookOpen,
   Mic,
   ArrowUp,
   Plus,
   Settings2,
-  CalendarDays,
-  Activity,
-  Moon,
   ArrowUpRight,
 } from "lucide-react";
 import { ALO_EVENT, ALO_REMOTE_EVENT, getMiraGrants, putAlo, removeAlo } from "@/lib/alo-store";
@@ -1444,6 +1444,15 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
                 <details className="sport-ai-chat-options">
                   <summary>Gesprächsoptionen & Datenschutz</summary>
+                  {favs.length > 0 && (
+                    <div className="mira-option-favorites" role="group" aria-label="Favoriten">
+                      {favs.map((favorite) => (
+                        <button key={favorite} type="button" onClick={() => setInput(favorite)}>
+                          {favorite}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <MiraPowerPanel
                     key={userId ?? "guest"}
                     userId={userId}
@@ -1569,7 +1578,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   {messages.length === 0 && (
                     <div className="ai-welcome mx-auto my-auto max-w-lg py-8 text-center">
                       <span className="ai-welcome-mark" aria-hidden="true">
-                        <Sparkles />
+                        <MiraSpark />
                       </span>
                       <h3 className="mt-4 text-xl font-bold">
                         Hallo{profileName ? ` ${profileName}` : ""}, wobei kann ich helfen?
@@ -1583,15 +1592,15 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                         {[
                           {
                             id: "ideas",
-                            icon: CalendarDays,
+                            icon: Lightbulb,
                             hint: "Neue Ideen für dein Vorhaben",
                           },
                           {
                             id: "draft",
-                            icon: Activity,
+                            icon: PenLine,
                             hint: "Einen passenden Text schreiben",
                           },
-                          { id: "explain", icon: Moon, hint: "Komplexes einfach verstehen" },
+                          { id: "explain", icon: BookOpen, hint: "Komplexes einfach verstehen" },
                         ].map(({ id, icon: Icon, hint }) => {
                           const tool = SUPER_TOOLS.find((item) => item.id === id)!;
                           return (
@@ -1795,7 +1804,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Deine Frage…"
+                    placeholder="Frag Mira …"
                     aria-label="Deine Frage an Mira"
                     rows={1}
                     className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
@@ -1820,10 +1829,13 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     <ArrowUp className="h-5 w-5" aria-hidden="true" />
                   </button>
                 </form>
-                <p className="text-[10px] text-muted-foreground">
-                  Bis 4 Anhänge, zusammen 3 MB. Bilder/PDF je 1 MB; Text je 128 KB, zusammen 6000
-                  Zeichen. PDF: Google. Word/Excel als PDF, TXT oder CSV exportieren.
-                </p>
+                <details className="mira-file-help text-[10px] text-muted-foreground">
+                  <summary>Anhänge bleiben lokal, bis du sendest · Dateilimits</summary>
+                  <p>
+                    Bis 4 Anhänge, zusammen 3 MB. Bilder/PDF je 1 MB; Text je 128 KB, zusammen 6000
+                    Zeichen. PDF: Google. Word/Excel als PDF, TXT oder CSV exportieren.
+                  </p>
+                </details>
               </div>
               <aside className="sport-ai-chat-aside flex flex-col gap-4 lg:sticky lg:top-5">
                 <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-5">
