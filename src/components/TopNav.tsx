@@ -20,6 +20,11 @@ const MODULES = [
 /** Slim keyboard-accessible module switcher remains available when the full nav is hidden. */
 export function TopNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const hideModuleChrome =
+    pathname.startsWith("/ai") ||
+    pathname.startsWith("/exercises") ||
+    pathname.startsWith("/chat") ||
+    pathname.startsWith("/profile");
   const moduleMenu = useAutoHideModuleMenu(pathname);
   const [enabled, setEnabled] = useState(false);
   const [scrollVisible, setScrollVisible] = useState(true);
@@ -55,7 +60,7 @@ export function TopNav() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [enabled, pathname]);
-  const barVisible = enabled && scrollVisible;
+  const barVisible = enabled && scrollVisible && !hideModuleChrome;
   useEffect(() => {
     document.documentElement.dataset.navigationExpanded = String(barVisible);
   }, [barVisible]);
@@ -65,7 +70,9 @@ export function TopNav() {
         ref={moduleMenu.menuRef}
         className="alo-module-switcher"
         aria-label="Alo · Module"
-        data-visible={moduleMenu.visible}
+        data-visible={hideModuleChrome ? "false" : moduleMenu.visible}
+        hidden={hideModuleChrome}
+        {...(hideModuleChrome ? { inert: true } : {})}
         onFocusCapture={moduleMenu.reveal}
         onBlurCapture={moduleMenu.scheduleHide}
         onPointerMove={moduleMenu.reveal}
