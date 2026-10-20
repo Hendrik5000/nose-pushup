@@ -16,4 +16,4 @@ Das Register hält fest, was die Assistenten selbst melden. Ein Eintrag allein i
 
 | Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Commit |
 |---|---|---|---|---|---|
-| Jarvis | unbekannt | Internes Teamregister einrichten und Repo-Regeln verknüpfen | erledigt | 2026-10-20 | Register erstellt; nur Dokumentation geändert |
+| Jarvis | unbekannt | KI-Teamregister in README, AGENTS, Copilot- und Replit-Anweisungen auffindbar machen | erledigt | 2026-10-20 | Direkte Verweise und Synchronisationshinweis ergänzt; nur interne Dokumentation |

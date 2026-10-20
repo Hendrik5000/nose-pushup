@@ -39,7 +39,7 @@ Mobile-first prüfen: 320 px und 390 px, Safe Areas, Tastatur, erreichbarer Comp
 ## Repository und Prüfablauf
 
 - Repository: `/workspace/nose-pushup`.
-- Beim letzten geprüften Stand war `main`/`origin/main` auf `0fd47b8` (`docs: add internal AI handoff for Alo`). Vor jeder Arbeit den tatsächlichen Branch, `git status`, aktuelle Commits und Remote-Stand neu prüfen.
+- Beim letzten geprüften Stand war `main`/`origin/main` auf `32bc73a` (`docs: track AI contributors in internal register`). Vor jeder Arbeit den tatsächlichen Branch, `git status`, aktuelle Commits und Remote-Stand neu prüfen.
 - Die folgenden lokalen Voränderungen waren bewusst uncommittet und geschützt: `src/routeTree.gen.ts`; `docs/alo-fresh-*`; `docs/alo-validation/`; `scripts/test-alo-fresh-local.sh`; `supabase/fresh/`; `tests/db/`. Nicht zurücksetzen, löschen, bearbeiten, stagen oder committen, außer Hendrik beauftragt es ausdrücklich.
 - Nur ein Codeeditor gleichzeitig. Bei fremden oder parallelen Änderungen erst die Verantwortlichen koordinieren.
 - Relevante Prüfungen: `npm test`, `npx tsc --noEmit`, `npm run lint`, `npm run build`. Bei Abhängigkeiten zusätzlich Lockfile aktuell halten und `npm ci --no-audit --no-fund` testen.

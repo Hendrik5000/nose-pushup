@@ -34,6 +34,10 @@ Set in `.env` (already present):
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon key |
 | `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` | Same values, used server-side (SSR) |
 
+## AI coding handoff
+
+Before changing code, read `AGENTS.md`, `README.md`, `docs/AI-HANDOFF.md`, and `docs/AI-TEAM.md`. Add your actual name, model/provider, task, date, and status to the team register before work; if the model is unknown, write `unbekannt`. Update only your own entry. This is internal developer guidance, not app content.
+
 ## Notes
 
 - Node.js 20 lacks native WebSocket; the Supabase client passes the `ws` npm package as the realtime transport for SSR.

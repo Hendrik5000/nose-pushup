@@ -3,6 +3,10 @@
 Diese Datei gilt für Copilot Chat / Coding Agent, Replit Agent, Manus und alle
 anderen Agenten, die über GitHub an diesem Repo arbeiten.
 
+## Vor jeder Aufgabe: interne KI-Übergabe
+
+Lies zuerst die Root-Dateien `AGENTS.md` und `README.md`, dann `docs/AI-HANDOFF.md` und `docs/AI-TEAM.md`. Trage dich vor Arbeitsbeginn mit deinem tatsächlichen Assistentennamen, Modell/Provider, Aufgabe, Datum und Status im Teamregister ein. Modell nicht sichtbar? Schreibe `unbekannt`; rate nicht. Aktualisiere nur deinen eigenen Eintrag. Diese Hinweise sind interne Entwicklerdokumentation und dürfen nicht in der App oder als Mira-Nutzerinhalt erscheinen.
+
 ## Wichtig: Lovable-Sync
 
 Das Repo ist mit [Lovable](https://lovable.dev) verbunden. **Niemals** gepushte
