@@ -36,7 +36,7 @@ Set in `.env` (already present):
 
 ## AI coding handoff
 
-Before changing code, read `AGENTS.md`, `README.md`, `docs/AI-HANDOFF.md`, and `docs/AI-TEAM.md`. Add your actual name, model/provider, task, date, and status to the team register before work; if the model is unknown, write `unbekannt`. Update only your own entry. This is internal developer guidance, not app content.
+Before changing any file, read `AGENTS.md`, `README.md`, `docs/AI-HANDOFF.md`, and `docs/AI-TEAM.md`. Add your actual assistant name, model/provider (or `unbekannt`), task, date, and status to the single shared team register. Update only your own row; at completion record the work actually done, exact changed file paths, checks/tests and results (or why they were not run), and commit SHA if present. Never invent or overwrite another assistant's work. This is internal developer guidance, not app content.
 
 ## Notes
 

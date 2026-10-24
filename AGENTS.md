@@ -10,7 +10,7 @@ The app records client errors automatically:
 
 ### Protocol on every coding session
 
-1. Ask the user whether new errors appeared, or paste from **Profil → Fehlerberichte → Alle kopieren**.
+1. If the user has not already supplied reports for this task, ask whether new errors appeared, or request a copy from **Profil → Fehlerberichte → Alle kopieren**. Never ask again for reports already supplied.
 2. If JSON reports are provided, **fix the root causes before new features**.
 3. Prefer minimal, targeted patches; mark reports fixed after deploy.
 4. Do not ignore repeated stack traces on the same route.
@@ -27,11 +27,11 @@ Profil → Abschnitt „Fehlerberichte“ → **Alle kopieren (für Auto-Fix)** 
 
 ## AI handoff (read before coding)
 
-Read `docs/AI-HANDOFF.md` at the start of each coding task. It contains product decisions, privacy boundaries, current status, and protected files. It is internal repository guidance: never display it in the app or send it to Mira as content.
+Read `docs/AI-HANDOFF.md` at the start of each coding task. It contains product decisions, privacy boundaries, current status, and protected files. This is internal repository guidance: never display it in the app or send it to Mira as content.
 
-In the first or final internal work report, identify your actual assistant name and model/provider. If either is not reliably available, say `unknown`; never guess. Never describe a GitHub push as a live deployment; Lovable publishing is manual and belongs to the user.
+In the first or final internal work report, identify your actual assistant name and model/provider. If either is not reliably available, say `unknown`; never guess. At completion, report the exact files changed, tests/checks run and their results (or why they were not run), commit SHA, push status, and live-publish status. Never describe a GitHub push as a live deployment; Lovable publishing is manual and belongs to the user.
 
-Before starting work, add your own row to `docs/AI-TEAM.md` with name, model/provider, task, status, and date. Update only your row as work progresses and when it is done; leave other assistants' rows untouched. This register is not app content.
+Before changing any file, add your own row to the single canonical register `docs/AI-TEAM.md` with your real assistant name, actual model/provider (or `unknown`), task, status, and date. Update only your own row as work progresses and at completion; record what you actually changed, the exact file paths, tests/checks and results (or why not run), and commit SHA if one exists. Do not infer or fabricate another assistant's work. If a concurrent edit prevents a safe update, report the conflict instead of overwriting it. The register is internal documentation, not app content.
 
 ## Dependency changes and Vercel
 

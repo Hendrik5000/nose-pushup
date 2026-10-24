@@ -4,8 +4,9 @@ Wenn du als KI an Alo arbeitest, beginne hier, bevor du Dateien änderst:
 
 1. Lies [`AGENTS.md`](AGENTS.md) für Projektregeln und den Fehlerbericht-Ablauf.
 2. Lies [`docs/AI-HANDOFF.md`](docs/AI-HANDOFF.md) für Produktziele, Datenschutzgrenzen, aktuellen Stand und geschützte Änderungen.
-3. Trage dich vor Arbeitsbeginn in [`docs/AI-TEAM.md`](docs/AI-TEAM.md) ein. Nenne deinen tatsächlichen Assistentennamen, dein Modell bzw. deinen Provider, deine Aufgabe und deinen Status. Wenn das Modell nicht erkennbar ist, schreibe `unbekannt`.
-4. Aktualisiere nur deinen eigenen Eintrag und melde Abschluss, Prüfergebnisse sowie Commit-/Push-/Live-Status ehrlich zurück.
+3. Trage dich vor jeder Dateiänderung mit deinem tatsächlichen Assistentennamen, Modell/Provider (oder `unbekannt`), Auftrag, Status und Datum in das einzige Register [`docs/AI-TEAM.md`](docs/AI-TEAM.md) ein.
+4. Aktualisiere nur deine eigene Zeile. Halte bei Abschluss die tatsächlich erledigte Arbeit, geänderte Dateien, Prüfungen samt Ergebnissen (oder warum sie nicht liefen) und den Commit-SHA fest, falls vorhanden. Erfinde keine Beiträge anderer KIs.
+5. Melde Commit-, Push- und Live-Status getrennt und ehrlich zurück; ein Push ist kein Live-Deployment.
 
 Diese Hinweise sind ausschließlich für Entwickler. Sie sind nicht Teil der Alo-App und dürfen weder in App-Bildschirme eingebaut noch als Mira-Nutzerinhalt verschickt werden.
 

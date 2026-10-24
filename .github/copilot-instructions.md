@@ -5,7 +5,7 @@ anderen Agenten, die über GitHub an diesem Repo arbeiten.
 
 ## Vor jeder Aufgabe: interne KI-Übergabe
 
-Lies zuerst die Root-Dateien `AGENTS.md` und `README.md`, dann `docs/AI-HANDOFF.md` und `docs/AI-TEAM.md`. Trage dich vor Arbeitsbeginn mit deinem tatsächlichen Assistentennamen, Modell/Provider, Aufgabe, Datum und Status im Teamregister ein. Modell nicht sichtbar? Schreibe `unbekannt`; rate nicht. Aktualisiere nur deinen eigenen Eintrag. Diese Hinweise sind interne Entwicklerdokumentation und dürfen nicht in der App oder als Mira-Nutzerinhalt erscheinen.
+Lies zuerst die Root-Dateien `AGENTS.md` und `README.md`, dann `docs/AI-HANDOFF.md` und `docs/AI-TEAM.md`. Trage dich vor jeder Dateiänderung in das zentrale Teamregister ein: tatsächlicher Assistentenname, Modell/Provider (wenn nicht zuverlässig sichtbar: `unbekannt`), Aufgabe, Status und Datum. Aktualisiere nur deinen eigenen Eintrag; halte zum Abschluss die tatsächlich erledigte Arbeit, genaue geänderte Dateipfade, Prüfungen samt Ergebnis (oder Grund für „nicht ausgeführt“) sowie den Commit-SHA fest, falls vorhanden. Keine Beiträge anderer KI erfinden oder überschreiben. Diese Hinweise sind interne Entwicklerdokumentation und dürfen nicht in der App oder als Mira-Nutzerinhalt erscheinen.
 
 ## Wichtig: Lovable-Sync
 

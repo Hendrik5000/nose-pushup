@@ -4,13 +4,13 @@
 
 ## Teamregister
 
-Jede KI, die an dieser Codebasis arbeitet, muss sich in `docs/AI-TEAM.md` vor Arbeitsbeginn eintragen und den Status sowie das Ergebnis nachführen. Der eigene Name und das Modell/der Provider müssen echt sein; wenn das Modell nicht sichtbar ist, `unbekannt` eintragen. Das Register ist nur intern und darf nicht in die App einfließen.
+Jede KI, die an dieser Codebasis arbeitet, muss sich vor jeder Dateiänderung mit einer eigenen Zeile in das einzige Register `docs/AI-TEAM.md` eintragen. Verwende den tatsächlichen Assistentennamen und Modell/Provider; wenn etwas nicht zuverlässig sichtbar ist, `unbekannt` schreiben, niemals raten. Aktualisiere nur die eigene Zeile bei Statuswechseln und zum Abschluss. Halte dort die tatsächlich erledigte Arbeit, alle geänderten Dateipfade, ausgeführte Prüfungen samt Ergebnis (oder den Grund, warum sie nicht ausgeführt wurden) sowie den Commit-SHA fest, falls vorhanden. Erfinde oder übernimm keine Arbeit anderer Assistenten. Das Register ist interne Dokumentation und darf weder in die App noch als Mira-Inhalt einfließen.
 
 ## Identität und Arbeitsbericht
 
-Zu Beginn eines Arbeitsauftrags den eigenen Namen und das tatsächlich verfügbare Modell / den Provider nennen. Wenn Name oder Modell nicht zuverlässig erkennbar sind, ausdrücklich „unbekannt“ schreiben; nichts erfinden. Diese Angabe gehört nur in die interne Arbeitskommunikation, nie in die Alo-Oberfläche.
+Zu Beginn oder im Abschlussbericht den eigenen tatsächlichen Assistentennamen und das verfügbare Modell / den Provider nennen. Wenn Name oder Modell nicht zuverlässig erkennbar sind, ausdrücklich „unbekannt“ schreiben; nichts erfinden. Diese Angabe gehört nur in die interne Arbeitskommunikation, nie in die Alo-Oberfläche.
 
-Zum Abschluss kurz nennen: was geändert wurde, welche Dateien, Commit/Push-Status, Prüfungen, noch offene Risiken und ob etwas öffentlich veröffentlicht wurde. „Auf GitHub“ bedeutet nicht „live“.
+Zum Abschluss kurz nennen: was tatsächlich geändert wurde, die exakten Dateipfade, Prüfungen und Ergebnisse (oder warum sie nicht liefen), Commit-/Push-Status, offene Risiken und ob etwas öffentlich veröffentlicht wurde. „Auf GitHub“ bedeutet nicht „live“.
 
 ## Produktziel
 
@@ -27,7 +27,7 @@ Mobile-first prüfen: 320 px und 390 px, Safe Areas, Tastatur, erreichbarer Comp
 ## Nutzerentscheidungen und Verhaltensregeln
 
 - Hendrik möchte offene Aufgaben weiterverfolgt sehen, bis sie tatsächlich erledigt oder ausdrücklich zurückgestellt sind. Status immer ehrlich benennen.
-- Vor jeder Coding-Runde die Fehlerbericht-Prozedur aus `AGENTS.md` beachten. Bereits bereitgestellte Berichte nicht erneut anfordern.
+- Vor jeder Coding-Runde die Fehlerbericht-Prozedur aus `AGENTS.md` beachten. Bereits für den Auftrag bereitgestellte Berichte direkt untersuchen und nicht erneut anfordern.
 - Änderungen zielgerichtet und ursachenorientiert umsetzen. Keine fremden Änderungen löschen, überschreiben oder mitcommitten.
 - Pushes auf GitHub `main` sind freigegeben, sofern nur die beabsichtigten Dateien enthalten sind.
 - Die öffentliche Website wird von Hendrik manuell in Lovable mit „Publish changes“ veröffentlicht. Nicht selbst veröffentlichen. Einen lokalen Build, Commit oder Push niemals als Live-Deployment bezeichnen.
