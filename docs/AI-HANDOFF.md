@@ -6,6 +6,10 @@
 
 Jede KI, die an dieser Codebasis arbeitet, muss sich vor jeder Dateiänderung mit einer eigenen Zeile in das einzige Register `docs/AI-TEAM.md` eintragen. Verwende den tatsächlichen Assistentennamen und Modell/Provider; wenn etwas nicht zuverlässig sichtbar ist, `unbekannt` schreiben, niemals raten. Aktualisiere nur die eigene Zeile bei Statuswechseln und zum Abschluss. Halte dort die tatsächlich erledigte Arbeit, alle geänderten Dateipfade, ausgeführte Prüfungen samt Ergebnis (oder den Grund, warum sie nicht ausgeführt wurden) sowie den Commit-SHA fest, falls vorhanden. Erfinde oder übernimm keine Arbeit anderer Assistenten. Das Register ist interne Dokumentation und darf weder in die App noch als Mira-Inhalt einfließen.
 
+## Alo-Roadmap
+
+Die verbindliche, fortlaufend zu aktualisierende Projekt-Roadmap liegt in [`docs/AI-ROADMAP.md`](AI-ROADMAP.md) und ist im Register `docs/AI-TEAM.md` verlinkt. Vor der Planung lesen; nur konkret erledigte, belegte Arbeit abhaken. Implementierung/lokale Tests, Remote-Datenbank, echte Geräte, GitHub-Push und Live-Publish sind getrennte Zustände. Bei Teilständen, Blockern und unbestätigten Beobachtungen bleibt das Kästchen offen; Status, Beleg und datierten Changelog-Eintrag ehrlich ergänzen. Keine fremde oder historische Arbeit als eigenen Beitrag verbuchen.
+
 ## Identität und Arbeitsbericht
 
 Zu Beginn oder im Abschlussbericht den eigenen tatsächlichen Assistentennamen und das verfügbare Modell / den Provider nennen. Wenn Name oder Modell nicht zuverlässig erkennbar sind, ausdrücklich „unbekannt“ schreiben; nichts erfinden. Diese Angabe gehört nur in die interne Arbeitskommunikation, nie in die Alo-Oberfläche.

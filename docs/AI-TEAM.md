@@ -2,6 +2,10 @@
 
 Dieses Register ist Repository-Dokumentation und wird nicht in die App eingebunden. Es soll Hendrik zeigen, welche KI-Assistenten tatsächlich an Alo mitarbeiten.
 
+## Zentrale Alo-Roadmap
+
+Die detaillierte, fortlaufend abzuhakende Projekt-Roadmap steht in [`docs/AI-ROADMAP.md`](AI-ROADMAP.md). Jede KI liest sie vor der Arbeitsplanung und hakt nur nachweislich abgeschlossene Arbeit ab. Teilstände, Blocker, unbekannte Ursachen, Remote-Migrationen, echte Geräteprüfungen, Push und Live-Publish müssen getrennt und ehrlich bleiben. Roadmap-Änderungen erhalten einen datierten Changelog-Eintrag; historische Beiträge anderer KIs werden nicht nachträglich als eigene Arbeit erfasst.
+
 ## Regeln für jede KI, die dieses Repository bearbeitet
 
 1. Lies `AGENTS.md` und `docs/AI-HANDOFF.md`.
@@ -22,3 +26,4 @@ Das Register hält fest, was die Assistenten selbst melden. Ein Eintrag allein i
 | Manus | unbekannt | KI-Registereintrag auf Nutzerwunsch; erneute Designprüfung der Alo-Website | erledigt | 2026-10-20 | Eigener Registereintrag ergänzt; keine Codeänderungen, keine Tests erforderlich; öffentliche Website nicht veröffentlicht |
 | Grok | Grok 4 / xAI | Mira Gemini-UI, Foto-Upload, obere Leiste ausblenden (Übungen/Chat/Profil/Mira), PR-Workflow `feat/mira-gemini-ui` | aktiv | 2026-10-21 | Gemini-Composer + Vision-Pfad; Header/Modul-Switcher auf /ai,/exercises,/chat,/profile verborgen; Branch `feat/mira-gemini-ui` (u.a. `8c583ca`, `2967d17`); Teile bereits auf main |
 | Cue Coding Assistant | unbekannt | Zwei vorliegende `/ai`-Fehlerberichte statisch prüfen und das vorhandene KI-Register samt Arbeitsnachweis in Alo verbindlicher machen | erledigt | 2026-10-24 | Refresh-Warnungen statisch geprüft: keine Codeursache belegt, Auth unverändert. Registerregeln synchronisiert in `AGENTS.md`, `README.md`, `docs/AI-HANDOFF.md`, `.github/copilot-instructions.md`, `replit.md` und `docs/AI-TEAM.md`. `git diff --check` bestanden; App-Tests nicht ausgeführt (nur interne Dokumentation; ohne codebelegte Ursache kein sinnvoller Auth-Regressionstest). Dokumentations-Commit `47fe78c747be59b7e6c0a154bf88665d965ea06f`; Veröffentlichung ausstehend. |
+| Cue Coding Assistant | unbekannt | Detaillierte, verifizierbare Alo-Roadmap aus Repo-Stand und nachvollziehbarer Historie erstellen; KI-Register und Contributor-Anweisungen verknüpfen, Roadmap-Status fortschreiben | in Arbeit | 2026-10-24 | Roadmap-/Codeprüfung läuft; keine früheren Arbeiten anderer Assistenten werden übernommen oder als eigene verbucht. |

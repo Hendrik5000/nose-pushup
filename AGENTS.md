@@ -33,6 +33,8 @@ In the first or final internal work report, identify your actual assistant name 
 
 Before changing any file, add your own row to the single canonical register `docs/AI-TEAM.md` with your real assistant name, actual model/provider (or `unknown`), task, status, and date. Update only your own row as work progresses and at completion; record what you actually changed, the exact file paths, tests/checks and results (or why not run), and commit SHA if one exists. Do not infer or fabricate another assistant's work. If a concurrent edit prevents a safe update, report the conflict instead of overwriting it. The register is internal documentation, not app content.
 
+Maintain the single detailed Alo roadmap in [`docs/AI-ROADMAP.md`](docs/AI-ROADMAP.md). Read it before planning work, check off only tasks actually completed with evidence, keep partial/blocked/unverified/live-release states distinct, and append an accurate dated changelog entry. Do not mark a local implementation or test as a remote migration, real-device acceptance, GitHub push, or live publish.
+
 ## Dependency changes and Vercel
 
 - Keep `package-lock.json` synchronized with `package.json` in every dependency change. Vercel installs with `npm ci`, which rejects an inconsistent lockfile.

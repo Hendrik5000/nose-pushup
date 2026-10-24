@@ -38,6 +38,8 @@ Set in `.env` (already present):
 
 Before changing any file, read `AGENTS.md`, `README.md`, `docs/AI-HANDOFF.md`, and `docs/AI-TEAM.md`. Add your actual assistant name, model/provider (or `unbekannt`), task, date, and status to the single shared team register. Update only your own row; at completion record the work actually done, exact changed file paths, checks/tests and results (or why they were not run), and commit SHA if present. Never invent or overwrite another assistant's work. This is internal developer guidance, not app content.
 
+Also read and maintain the single detailed Alo roadmap in `docs/AI-ROADMAP.md`. Check off only completed work supported by evidence; keep local implementation/tests distinct from remote migrations, real-device checks, GitHub push, and live publication. Record partial, blocked, or unverified states honestly and add a dated changelog entry for roadmap changes.
+
 ## Notes
 
 - Node.js 20 lacks native WebSocket; the Supabase client passes the `ws` npm package as the realtime transport for SSR.

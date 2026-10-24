@@ -7,6 +7,8 @@ anderen Agenten, die über GitHub an diesem Repo arbeiten.
 
 Lies zuerst die Root-Dateien `AGENTS.md` und `README.md`, dann `docs/AI-HANDOFF.md` und `docs/AI-TEAM.md`. Trage dich vor jeder Dateiänderung in das zentrale Teamregister ein: tatsächlicher Assistentenname, Modell/Provider (wenn nicht zuverlässig sichtbar: `unbekannt`), Aufgabe, Status und Datum. Aktualisiere nur deinen eigenen Eintrag; halte zum Abschluss die tatsächlich erledigte Arbeit, genaue geänderte Dateipfade, Prüfungen samt Ergebnis (oder Grund für „nicht ausgeführt“) sowie den Commit-SHA fest, falls vorhanden. Keine Beiträge anderer KI erfinden oder überschreiben. Diese Hinweise sind interne Entwicklerdokumentation und dürfen nicht in der App oder als Mira-Nutzerinhalt erscheinen.
 
+Lies und aktualisiere außerdem die zentrale Alo-Roadmap [`docs/AI-ROADMAP.md`](../docs/AI-ROADMAP.md). Hake nur tatsächlich abgeschlossene und belegte Arbeit ab; kennzeichne Teilstände, Blocker und nicht verifizierte Remote-/Live-Zustände getrennt. Füge bei eigener Roadmap-Änderung einen datierten Changelog-Eintrag hinzu. Ein lokaler Test oder Commit ist kein Remote- oder Live-Nachweis.
+
 ## Wichtig: Lovable-Sync
 
 Das Repo ist mit [Lovable](https://lovable.dev) verbunden. **Niemals** gepushte
