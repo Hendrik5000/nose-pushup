@@ -37,6 +37,7 @@ import {
   Activity,
   ArrowUpRight,
   Camera,
+  ChevronDown,
   Dumbbell,
   Flame,
   Footprints,
@@ -45,6 +46,7 @@ import {
   ScanFace,
   Target,
   Trophy,
+  Users,
   Zap,
 } from "lucide-react";
 
@@ -79,6 +81,266 @@ type PushMode = "nose" | "manual" | "camera";
 
 const PROFILE_COLS =
   "id, display_name, avatar_url, best_count, personal_bests, xp, level, current_streak, longest_streak, last_workout_date, daily_goal";
+
+function HomeAppHub({
+  displayName,
+  avatarUrl,
+}: {
+  displayName: string | null | undefined;
+  avatarUrl: string | null | undefined;
+}) {
+  const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
+
+  return (
+    <section className="mb-8" aria-labelledby="app-hub-title">
+      <header className="mb-6 flex items-start justify-between gap-3 sm:items-center">
+        <div className="min-w-0 pt-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">
+            Alo · dein digitaler Raum
+          </p>
+          <h1 id="app-hub-title" className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+            Alles an einem Ort.
+          </h1>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Öffne deine Apps und mach dort weiter, wo du möchtest.
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2 pt-1">
+          <Link
+            to="/profile"
+            hash="profile-training"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label="Freunde öffnen"
+            title="Freunde"
+          >
+            <Users className="h-5 w-5" aria-hidden="true" />
+          </Link>
+          <Link
+            to="/profile"
+            className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-foreground shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label="Profil und Einstellungen öffnen"
+            title="Profil und Einstellungen"
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              initials
+            )}
+          </Link>
+        </div>
+      </header>
+
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold tracking-wide">Deine Apps</h2>
+        <span className="text-xs text-muted-foreground">4 Bereiche</span>
+      </div>
+      <nav className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" aria-label="Alo-Apps">
+        <HubAppCard
+          to="/ai"
+          title="Mira"
+          description="Ideen sortieren, schreiben und Neues lernen."
+          artwork="mira"
+          category="Deine KI"
+        />
+        <HubAppCard
+          to="/chat"
+          title="Nexus Chat"
+          description="Gespräche und Räume öffnen."
+          artwork="nexus"
+          category="Gemeinsam"
+        />
+        <HubAppCard
+          to="/exercises"
+          title="Alo Health"
+          description="Nose Pushup, Übungen und Training."
+          artwork="health"
+          category="Bewegung"
+        />
+        <HubAppCard
+          to="/profile"
+          title="Einstellungen"
+          description="Profil, Darstellung und Optionen."
+          artwork="settings"
+          category="Dein Alo"
+        />
+        <div className="flex min-h-[210px] min-w-0 flex-col rounded-3xl border border-dashed border-border bg-card/30 p-3 text-muted-foreground sm:min-h-[250px] sm:p-4">
+          <div className="mb-3 overflow-hidden rounded-2xl opacity-70">
+            <HubArtwork kind="adventure" />
+          </div>
+          <span className="text-[9px] font-semibold uppercase tracking-[0.16em]">Spielwelt</span>
+          <h3 className="mt-1 text-sm font-semibold text-foreground">Eigenständiges Abenteuer</h3>
+          <p className="mt-1 text-xs leading-relaxed">
+            Eine eigene Welt entsteht – noch nicht spielbar.
+          </p>
+          <span className="mt-auto inline-flex min-h-8 items-center self-start pt-2 text-[10px] font-medium">
+            Privat · in Arbeit
+          </span>
+        </div>
+      </nav>
+    </section>
+  );
+}
+
+function HubAppCard({
+  to,
+  title,
+  description,
+  artwork,
+  category,
+}: {
+  to: "/ai" | "/chat" | "/exercises" | "/profile";
+  title: string;
+  description: string;
+  artwork: "mira" | "nexus" | "health" | "settings";
+  category: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="group flex min-h-[210px] min-w-0 flex-col rounded-3xl border border-border bg-card/65 p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:min-h-[250px] sm:p-4"
+    >
+      <div className="mb-3 overflow-hidden rounded-2xl transition-transform group-hover:scale-[1.015]">
+        <HubArtwork kind={artwork} />
+      </div>
+      <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {category}
+      </span>
+      <h3 className="mt-1 text-sm font-semibold text-foreground sm:text-base">{title}</h3>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">{description}</p>
+    </Link>
+  );
+}
+
+function HubArtwork({ kind }: { kind: "mira" | "nexus" | "health" | "settings" | "adventure" }) {
+  const palettes = {
+    mira: { bg: "#211c37", accent: "#c4b5fd", glow: "#8b5cf6" },
+    nexus: { bg: "#122d3a", accent: "#67e8f9", glow: "#0ea5e9" },
+    health: { bg: "#15352e", accent: "#86efac", glow: "#10b981" },
+    settings: { bg: "#3a2e1e", accent: "#fcd34d", glow: "#f59e0b" },
+    adventure: { bg: "#30233d", accent: "#f0abfc", glow: "#c026d3" },
+  } as const;
+  const palette = palettes[kind];
+
+  return (
+    <svg
+      viewBox="0 0 280 132"
+      className="block h-[92px] w-full sm:h-[112px]"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect width="280" height="132" rx="18" fill={palette.bg} />
+      <circle cx="232" cy="28" r="47" fill={palette.glow} opacity=".18" />
+      <circle cx="35" cy="112" r="54" fill={palette.accent} opacity=".08" />
+      {kind === "mira" && (
+        <>
+          <ellipse
+            cx="140"
+            cy="68"
+            rx="64"
+            ry="24"
+            fill="none"
+            stroke={palette.accent}
+            strokeOpacity=".48"
+            strokeWidth="2"
+            transform="rotate(-18 140 68)"
+          />
+          <ellipse
+            cx="140"
+            cy="68"
+            rx="42"
+            ry="53"
+            fill="none"
+            stroke={palette.accent}
+            strokeOpacity=".28"
+            strokeWidth="2"
+            transform="rotate(28 140 68)"
+          />
+          <circle cx="140" cy="66" r="20" fill={palette.glow} />
+          <path d="m140 39 4 13 13 4-13 4-4 13-4-13-13-4 13-4 4-13Z" fill="#fff" />
+          <circle cx="196" cy="38" r="4" fill="#fff" />
+          <circle cx="82" cy="93" r="3" fill={palette.accent} />
+        </>
+      )}
+      {kind === "nexus" && (
+        <>
+          <path
+            d="M74 42h83a14 14 0 0 1 14 14v25a14 14 0 0 1-14 14h-8l-17 15V95H74a14 14 0 0 1-14-14V56a14 14 0 0 1 14-14Z"
+            fill={palette.accent}
+            opacity=".95"
+          />
+          <path
+            d="M135 27h69a13 13 0 0 1 13 13v18a13 13 0 0 1-13 13h-9v14l-17-14h-43a13 13 0 0 1-13-13V40a13 13 0 0 1 13-13Z"
+            fill="#e0f2fe"
+            opacity=".94"
+          />
+          <circle cx="91" cy="68" r="4" fill="#123047" />
+          <circle cx="110" cy="68" r="4" fill="#123047" />
+          <circle cx="129" cy="68" r="4" fill="#123047" />
+          <path d="M159 49h37" stroke="#0c4a6e" strokeWidth="4" strokeLinecap="round" />
+          <path
+            d="M159 58h25"
+            stroke="#0c4a6e"
+            strokeWidth="4"
+            strokeLinecap="round"
+            opacity=".55"
+          />
+        </>
+      )}
+      {kind === "health" && (
+        <>
+          <circle cx="140" cy="67" r="43" fill={palette.glow} opacity=".32" />
+          <path
+            d="M140 96 101 60a24 24 0 0 1 36-32l3 4 3-4a24 24 0 0 1 36 32l-39 36Z"
+            fill={palette.accent}
+          />
+          <path
+            d="M70 72h31l10-17 16 35 13-25 10 13h60"
+            fill="none"
+            stroke="#123b2e"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="209" cy="39" r="5" fill="#fff" opacity=".85" />
+        </>
+      )}
+      {kind === "settings" && (
+        <>
+          <circle cx="140" cy="66" r="42" fill={palette.glow} opacity=".28" />
+          <path
+            d="M140 34a8 8 0 0 1 8 8v4a23 23 0 0 1 8 4l4-2a8 8 0 0 1 11 3l4 7a8 8 0 0 1-3 11l-4 2a24 24 0 0 1 0 9l4 2a8 8 0 0 1 3 11l-4 7a8 8 0 0 1-11 3l-4-2a23 23 0 0 1-8 4v4a8 8 0 0 1-8 8h-8a8 8 0 0 1-8-8v-4a23 23 0 0 1-8-4l-4 2a8 8 0 0 1-11-3l-4-7a8 8 0 0 1 3-11l4-2a24 24 0 0 1 0-9l-4-2a8 8 0 0 1-3-11l4-7a8 8 0 0 1 11-3l4 2a23 23 0 0 1 8-4v-4a8 8 0 0 1 8-8h8Z"
+            fill={palette.accent}
+            transform="translate(0 -7) scale(.92 1) translate(12 0)"
+          />
+          <circle cx="140" cy="66" r="18" fill={palette.bg} />
+          <circle cx="140" cy="66" r="8" fill={palette.accent} />
+          <path
+            d="M202 43h23M213.5 31.5v23"
+            stroke="#fff"
+            strokeWidth="3"
+            strokeLinecap="round"
+            opacity=".8"
+          />
+        </>
+      )}
+      {kind === "adventure" && (
+        <>
+          <path d="M0 100 70 48l42 32 58-52 110 78v26H0Z" fill={palette.glow} opacity=".42" />
+          <path d="m46 105 53-49 39 31 40-42 58 60Z" fill={palette.accent} opacity=".78" />
+          <circle cx="202" cy="35" r="15" fill={palette.accent} opacity=".88" />
+          <path
+            d="M140 46v27m-13-13.5h26"
+            stroke="#fff"
+            strokeWidth="4"
+            strokeLinecap="round"
+            opacity=".9"
+          />
+        </>
+      )}
+      <path d="M18 18h22" stroke="#fff" strokeOpacity=".22" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function Dashboard() {
   const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
@@ -164,7 +426,6 @@ function Dashboard() {
   }, []);
 
   const lp = useMemo(() => levelProgress(profile?.xp ?? 0), [profile?.xp]);
-  const initials = (profile?.display_name || "?").slice(0, 1).toUpperCase();
   const streak = profile?.current_streak ?? 0;
   const readinessData = useReadiness({ streak });
   const { readiness } = readinessData;
@@ -521,298 +782,313 @@ function Dashboard() {
 
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
-      <GymPartnerPanel />
-      <header className="classic-only dashboard-header flex items-center justify-between">
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-            {dateLabel}
-          </div>
-          <h1 className="mt-0.5 text-xl font-bold tracking-tight">
-            Hallo {profile?.display_name || "Athlet"} 👋
-          </h1>
-        </div>
-        <Link
-          to="/profile"
-          className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold"
-          aria-label="Profil"
-        >
-          {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-          ) : (
-            initials
-          )}
-        </Link>
-      </header>
-
-      <div className="sport-only sport-dashboard-welcome">
-        <div>
-          <div className="sport-eyebrow">
-            <span aria-hidden="true" />
-            {dateLabel}
-          </div>
-          <h1 className="sport-dashboard-title">Heute trainieren</h1>
-          <p className="sport-dashboard-subtitle">
-            Hallo {profile?.display_name || "Athlet"}. Dein Plan und dein Fortschritt auf einen
-            Blick.
-          </p>
-        </div>
-        <Link to="/profile" className="sport-avatar" aria-label="Profil öffnen">
-          {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-          ) : (
-            initials
-          )}
-        </Link>
-      </div>
-      <SportSectionLabel number="01">Dein Plan heute</SportSectionLabel>
-      <section
-        className="sport-only training-hero rounded-3xl border border-border bg-card p-5"
-        aria-labelledby="sport-today-plan-title"
+      <HomeAppHub displayName={profile?.display_name} avatarUrl={profile?.avatar_url} />
+      <details
+        className="group rounded-3xl border border-border bg-card/45 shadow-sm"
+        id="training-overview"
       >
-        <div className="sport-hero-heading">
-          <div className="sport-hero-mark">
-            <Dumbbell aria-hidden="true" />
-            {recommendation.title}
-          </div>
-          <h2 id="sport-today-plan-title">{recommendation.headline}</h2>
-          <p>
-            Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter Fortschritt.
+        <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 rounded-3xl px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-5">
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold">Trainingsübersicht & Gym-Partner</span>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Dein Plan, dein Fortschritt und deine privaten Trainingsverläufe
+            </span>
+          </span>
+          <ChevronDown
+            className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+            aria-hidden="true"
+          />
+        </summary>
+        <div className="border-t border-border px-3 pb-4 pt-4 sm:px-5">
+          <p className="mb-4 text-xs text-muted-foreground">
+            Die bisherigen Trainingsfunktionen bleiben erhalten. Partnerdaten und dein eigener
+            Verlauf bleiben getrennt.
           </p>
-        </div>
-        <div className="training-plan-metrics grid grid-cols-3 gap-2 text-center">
-          <PlanMetric label="Sätze" value={recommendation.sets} />
-          <PlanMetric label="Wdh. je Satz" value={recommendation.reps} />
-          <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
-        </div>
-        <PlanGoalNote
-          sets={recommendation.sets}
-          reps={recommendation.reps}
-          plannedReps={recommendation.plannedReps}
-          goal={goal}
-        />
-        <label className="alo-counting-select">
-          <span>Zählen</span>
-          <select
-            aria-label="Zählmethode auswählen"
-            value={mode}
-            onChange={(e) => setMode(e.target.value as typeof mode)}
+          <GymPartnerPanel />
+          <header className="classic-only dashboard-header flex items-center justify-between">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                {dateLabel}
+              </div>
+              <h1 className="mt-0.5 text-xl font-bold tracking-tight">
+                Hallo {profile?.display_name || "Athlet"} 👋
+              </h1>
+            </div>
+          </header>
+
+          <div className="sport-only sport-dashboard-welcome">
+            <div>
+              <div className="sport-eyebrow">
+                <span aria-hidden="true" />
+                {dateLabel}
+              </div>
+              <h1 className="sport-dashboard-title">Heute trainieren</h1>
+              <p className="sport-dashboard-subtitle">
+                Hallo {profile?.display_name || "Athlet"}. Dein Plan und dein Fortschritt auf einen
+                Blick.
+              </p>
+            </div>
+          </div>
+          <SportSectionLabel number="01">Dein Plan heute</SportSectionLabel>
+          <section
+            className="sport-only training-hero rounded-3xl border border-border bg-card p-5"
+            aria-labelledby="sport-today-plan-title"
           >
-            <option value="nose">Nase</option>
-            <option value="manual">Manuell</option>
-            <option value="camera">Kamera</option>
-          </select>
-        </label>
-        <div className="sport-counting-group" role="group" aria-label="Zählmethode">
-          <ModeChip
-            active={mode === "nose"}
-            onClick={() => setMode("nose")}
-            icon="👃"
-            label="Nase"
-          />
-          <ModeChip
-            active={mode === "manual"}
-            onClick={() => setMode("manual")}
-            icon="✍️"
-            label="Manuell"
-          />
-          <ModeChip
-            active={mode === "camera"}
-            onClick={() => setMode("camera")}
-            icon="📷"
-            label="Kamera"
-          />
-        </div>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell erfasst du
-          selbst.
-        </p>
-        <Link
-          to="/workout/$exerciseId"
-          params={{ exerciseId: "pushup" }}
-          search={{
-            mode,
-            sets: recommendation.sets,
-            reps: recommendation.reps,
-            rest_s: recommendation.rest_s,
-            title: recommendation.title,
-          }}
-          className="flex rounded-2xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground"
-        >
-          <Zap className="h-4 w-4" aria-hidden="true" />
-          {recommendation.recoveryDay ? "Leichte Einheit starten" : "Training starten"}
-          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
-        <p className="text-xs text-muted-foreground">{recommendation.readinessNote}</p>
-        <details className="text-xs text-muted-foreground">
-          <summary className="cursor-pointer">Warum dieser Plan?</summary>
-          <p className="mt-2 leading-relaxed">{recommendation.detail}</p>
-          <p className="alo-mobile-plan-context mt-2">
-            Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter Fortschritt.
-          </p>
-          {weekReps === 0 && todayReps === 0 && (
-            <p className="mt-2">Starte entspannt – saubere Technik geht vor Tempo.</p>
-          )}
-        </details>
-      </section>
-      <SportSectionLabel number="02">Finde deinen Fokus</SportSectionLabel>
-      <nav className="sport-only sport-shortcuts" aria-label="Trainingsbereiche">
-        <Link to="/exercises" className="sport-shortcut">
-          <Dumbbell aria-hidden="true" />
-          <span>
-            Alle Übungen
-            <ArrowUpRight aria-hidden="true" />
-          </span>
-        </Link>
-        <Link to="/programs" className="sport-shortcut">
-          <Target aria-hidden="true" />
-          <span>
-            Programme
-            <ArrowUpRight aria-hidden="true" />
-          </span>
-        </Link>
-        <Link to="/calisthenics" className="sport-shortcut">
-          <Activity aria-hidden="true" />
-          <span>
-            Calisthenics
-            <ArrowUpRight aria-hidden="true" />
-          </span>
-        </Link>
-        <Link to="/health" className="sport-shortcut">
-          <HeartPulse aria-hidden="true" />
-          <span>
-            Gesundheit
-            <ArrowUpRight aria-hidden="true" />
-          </span>
-        </Link>
-      </nav>
-      <section
-        className="classic-only training-hero mt-6 rounded-3xl border border-primary/25 bg-primary/5 p-5"
-        aria-labelledby="today-plan-title"
-      >
-        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
-          Dein Start heute · {recommendation.title}
-        </div>
-        <h2 id="today-plan-title" className="mt-2 text-2xl font-bold">
-          {recommendation.headline}
-        </h2>
-        <div className="training-plan-metrics mt-4 grid grid-cols-3 gap-2 text-center">
-          <PlanMetric label="Sätze" value={recommendation.sets} />
-          <PlanMetric label="Wiederholungen je Satz" value={recommendation.reps} />
-          <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
-        </div>
-        <PlanGoalNote
-          sets={recommendation.sets}
-          reps={recommendation.reps}
-          plannedReps={recommendation.plannedReps}
-          goal={goal}
-        />
-        <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Zählmethode">
-          <ModeChip
-            active={mode === "nose"}
-            onClick={() => setMode("nose")}
-            icon="👃"
-            label="Nase"
-          />
-          <ModeChip
-            active={mode === "manual"}
-            onClick={() => setMode("manual")}
-            icon="✍️"
-            label="Manuell"
-          />
-          <ModeChip
-            active={mode === "camera"}
-            onClick={() => setMode("camera")}
-            icon="📷"
-            label="Kamera"
-          />
-        </div>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell erfasst du
-          selbst.
-        </p>
-        <Link
-          to="/workout/$exerciseId"
-          params={{ exerciseId: "pushup" }}
-          search={{
-            mode,
-            sets: recommendation.sets,
-            reps: recommendation.reps,
-            rest_s: recommendation.rest_s,
-            title: recommendation.title,
-          }}
-          className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground"
-        >
-          {recommendation.recoveryDay
-            ? "Leichte Einheit (optional) →"
-            : "Training nach Plan starten →"}
-        </Link>
-        <p className="mt-3 text-xs text-muted-foreground">{recommendation.readinessNote}</p>
-        <details className="mt-3 text-xs text-muted-foreground">
-          <summary className="cursor-pointer">Warum dieser Plan?</summary>
-          <p className="mt-2 leading-relaxed">{recommendation.detail}</p>
-          {weekReps === 0 && todayReps === 0 && (
-            <p className="mt-2">Starte entspannt – saubere Technik geht vor Tempo.</p>
-          )}
-        </details>
-      </section>
-
-      <section className="alo-home-intro" aria-label="Deine Alo-Bereiche">
-        <button
-          className="alo-text-action"
-          onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "today" }))}
-        >
-          Deinen Tag überblicken →
-        </button>
-        <details className="alo-home-areas">
-          <summary>Mira, Nexus & Training öffnen</summary>
-          <div className="alo-home-portals">
+            <div className="sport-hero-heading">
+              <div className="sport-hero-mark">
+                <Dumbbell aria-hidden="true" />
+                {recommendation.title}
+              </div>
+              <h2 id="sport-today-plan-title">{recommendation.headline}</h2>
+              <p>
+                Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter
+                Fortschritt.
+              </p>
+            </div>
+            <div className="training-plan-metrics grid grid-cols-3 gap-2 text-center">
+              <PlanMetric label="Sätze" value={recommendation.sets} />
+              <PlanMetric label="Wdh. je Satz" value={recommendation.reps} />
+              <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
+            </div>
+            <PlanGoalNote
+              sets={recommendation.sets}
+              reps={recommendation.reps}
+              plannedReps={recommendation.plannedReps}
+              goal={goal}
+            />
+            <label className="alo-counting-select">
+              <span>Zählen</span>
+              <select
+                aria-label="Zählmethode auswählen"
+                value={mode}
+                onChange={(e) => setMode(e.target.value as typeof mode)}
+              >
+                <option value="nose">Nase</option>
+                <option value="manual">Manuell</option>
+                <option value="camera">Kamera</option>
+              </select>
+            </label>
+            <div className="sport-counting-group" role="group" aria-label="Zählmethode">
+              <ModeChip
+                active={mode === "nose"}
+                onClick={() => setMode("nose")}
+                icon="👃"
+                label="Nase"
+              />
+              <ModeChip
+                active={mode === "manual"}
+                onClick={() => setMode("manual")}
+                icon="✍️"
+                label="Manuell"
+              />
+              <ModeChip
+                active={mode === "camera"}
+                onClick={() => setMode("camera")}
+                icon="📷"
+                label="Kamera"
+              />
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell
+              erfasst du selbst.
+            </p>
             <Link
               to="/workout/$exerciseId"
               params={{ exerciseId: "pushup" }}
-              search={{ mode: "nose", sets: 3, reps: 8, rest_s: 60, title: "Liegestütztraining" }}
-              className="rounded-2xl border border-primary/40 bg-primary/10 p-4 transition hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              search={{
+                mode,
+                sets: recommendation.sets,
+                reps: recommendation.reps,
+                rest_s: recommendation.rest_s,
+                title: recommendation.title,
+              }}
+              className="flex rounded-2xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground"
             >
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                01 · Training
-              </span>
-              <h2 className="mt-1 text-lg font-bold">Liegestütztraining</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Liegestütze erfassen: Nase tippt den Zähler, alternativ Kamera oder manuell.
-              </p>
-              <span className="mt-3 inline-block text-sm font-semibold">Training starten →</span>
+              <Zap className="h-4 w-4" aria-hidden="true" />
+              {recommendation.recoveryDay ? "Leichte Einheit starten" : "Training starten"}
+              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
             </Link>
+            <p className="text-xs text-muted-foreground">{recommendation.readinessNote}</p>
+            <details className="text-xs text-muted-foreground">
+              <summary className="cursor-pointer">Warum dieser Plan?</summary>
+              <p className="mt-2 leading-relaxed">{recommendation.detail}</p>
+              <p className="alo-mobile-plan-context mt-2">
+                Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter
+                Fortschritt.
+              </p>
+              {weekReps === 0 && todayReps === 0 && (
+                <p className="mt-2">Starte entspannt – saubere Technik geht vor Tempo.</p>
+              )}
+            </details>
+          </section>
+          <SportSectionLabel number="02">Finde deinen Fokus</SportSectionLabel>
+          <nav className="sport-only sport-shortcuts" aria-label="Trainingsbereiche">
+            <Link to="/exercises" className="sport-shortcut">
+              <Dumbbell aria-hidden="true" />
+              <span>
+                Alle Übungen
+                <ArrowUpRight aria-hidden="true" />
+              </span>
+            </Link>
+            <Link to="/programs" className="sport-shortcut">
+              <Target aria-hidden="true" />
+              <span>
+                Programme
+                <ArrowUpRight aria-hidden="true" />
+              </span>
+            </Link>
+            <Link to="/calisthenics" className="sport-shortcut">
+              <Activity aria-hidden="true" />
+              <span>
+                Calisthenics
+                <ArrowUpRight aria-hidden="true" />
+              </span>
+            </Link>
+            <Link to="/health" className="sport-shortcut">
+              <HeartPulse aria-hidden="true" />
+              <span>
+                Gesundheit
+                <ArrowUpRight aria-hidden="true" />
+              </span>
+            </Link>
+          </nav>
+          <section
+            className="classic-only training-hero mt-6 rounded-3xl border border-primary/25 bg-primary/5 p-5"
+            aria-labelledby="today-plan-title"
+          >
+            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+              Dein Start heute · {recommendation.title}
+            </div>
+            <h2 id="today-plan-title" className="mt-2 text-2xl font-bold">
+              {recommendation.headline}
+            </h2>
+            <div className="training-plan-metrics mt-4 grid grid-cols-3 gap-2 text-center">
+              <PlanMetric label="Sätze" value={recommendation.sets} />
+              <PlanMetric label="Wiederholungen je Satz" value={recommendation.reps} />
+              <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
+            </div>
+            <PlanGoalNote
+              sets={recommendation.sets}
+              reps={recommendation.reps}
+              plannedReps={recommendation.plannedReps}
+              goal={goal}
+            />
+            <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Zählmethode">
+              <ModeChip
+                active={mode === "nose"}
+                onClick={() => setMode("nose")}
+                icon="👃"
+                label="Nase"
+              />
+              <ModeChip
+                active={mode === "manual"}
+                onClick={() => setMode("manual")}
+                icon="✍️"
+                label="Manuell"
+              />
+              <ModeChip
+                active={mode === "camera"}
+                onClick={() => setMode("camera")}
+                icon="📷"
+                label="Kamera"
+              />
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell
+              erfasst du selbst.
+            </p>
             <Link
-              to="/ai"
-              className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              to="/workout/$exerciseId"
+              params={{ exerciseId: "pushup" }}
+              search={{
+                mode,
+                sets: recommendation.sets,
+                reps: recommendation.reps,
+                rest_s: recommendation.rest_s,
+                title: recommendation.title,
+              }}
+              className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground"
             >
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                02 · Allgemeine KI
-              </span>
-              <h2 className="mt-1 text-lg font-bold">Mira</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Wissen, Schreiben, Ideen, Alltag – deine vielseitige KI.
-              </p>
-              <span className="mt-3 inline-block text-sm font-semibold">Mira fragen →</span>
+              {recommendation.recoveryDay
+                ? "Leichte Einheit (optional) →"
+                : "Training nach Plan starten →"}
             </Link>
-            <Link
-              to="/chat"
-              className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            <p className="mt-3 text-xs text-muted-foreground">{recommendation.readinessNote}</p>
+            <details className="mt-3 text-xs text-muted-foreground">
+              <summary className="cursor-pointer">Warum dieser Plan?</summary>
+              <p className="mt-2 leading-relaxed">{recommendation.detail}</p>
+              {weekReps === 0 && todayReps === 0 && (
+                <p className="mt-2">Starte entspannt – saubere Technik geht vor Tempo.</p>
+              )}
+            </details>
+          </section>
+
+          <section className="alo-home-intro" aria-label="Deine Alo-Bereiche">
+            <button
+              className="alo-text-action"
+              onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "today" }))}
             >
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                03 · Gemeinsam
-              </span>
-              <h2 className="mt-1 text-lg font-bold">Nexus Chat</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Deine Gespräche bleiben lokal auf diesem Gerät.
-              </p>
-              <span className="mt-3 inline-block text-sm font-semibold">Nexus öffnen →</span>
-            </Link>
-          </div>
-        </details>
-      </section>
+              Deinen Tag überblicken →
+            </button>
+            <details className="alo-home-areas">
+              <summary>Mira, Nexus & Training öffnen</summary>
+              <div className="alo-home-portals">
+                <Link
+                  to="/workout/$exerciseId"
+                  params={{ exerciseId: "pushup" }}
+                  search={{
+                    mode: "nose",
+                    sets: 3,
+                    reps: 8,
+                    rest_s: 60,
+                    title: "Liegestütztraining",
+                  }}
+                  className="rounded-2xl border border-primary/40 bg-primary/10 p-4 transition hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    01 · Training
+                  </span>
+                  <h2 className="mt-1 text-lg font-bold">Liegestütztraining</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Liegestütze erfassen: Nase tippt den Zähler, alternativ Kamera oder manuell.
+                  </p>
+                  <span className="mt-3 inline-block text-sm font-semibold">
+                    Training starten →
+                  </span>
+                </Link>
+                <Link
+                  to="/ai"
+                  className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    02 · Allgemeine KI
+                  </span>
+                  <h2 className="mt-1 text-lg font-bold">Mira</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Wissen, Schreiben, Ideen, Alltag – deine vielseitige KI.
+                  </p>
+                  <span className="mt-3 inline-block text-sm font-semibold">Mira fragen →</span>
+                </Link>
+                <Link
+                  to="/chat"
+                  className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    03 · Gemeinsam
+                  </span>
+                  <h2 className="mt-1 text-lg font-bold">Nexus Chat</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Deine Gespräche bleiben lokal auf diesem Gerät.
+                  </p>
+                  <span className="mt-3 inline-block text-sm font-semibold">Nexus öffnen →</span>
+                </Link>
+              </div>
+            </details>
+          </section>
 
-      <DashboardGrid renderWidget={renderWidget} />
-
+          <DashboardGrid renderWidget={renderWidget} />
+        </div>
+      </details>
       <BottomNav />
     </main>
   );
