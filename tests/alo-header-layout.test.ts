@@ -75,17 +75,26 @@ test("headerless secondary pages retain a visible title and an in-content way ba
   const calisthenics = read("routes/_authenticated/calisthenics.tsx");
   const run = read("routes/_authenticated/run.tsx");
   const battleLeague = read("routes/_authenticated/battle-league.tsx");
+  const homeLink = read("components/AloHomeLink.tsx");
   assert.match(
     health,
-    /<div className="health-page-intro">[\s\S]*?title="Gesundheit"[\s\S]*?to="\/"/,
+    /<div className="health-page-intro">[\s\S]*?title="Gesundheit"[\s\S]*?<AloHomeLink\b/,
   );
   assert.match(
     calisthenics,
-    /<SportPageIntro[\s\S]*?title="Baue echte Kontrolle auf"[\s\S]*?to="\/"/,
+    /<SportPageIntro[\s\S]*?title="Baue echte Kontrolle auf"[\s\S]*?<AloHomeLink\b/,
   );
-  assert.match(run, /<SportPageIntro[\s\S]*?title="Dein Lauf\. Dein Tempo\."[\s\S]*?to="\/"/);
+  assert.match(
+    run,
+    /<SportPageIntro[\s\S]*?title="Dein Lauf\. Dein Tempo\."[\s\S]*?<AloHomeLink\b/,
+  );
   assert.match(
     battleLeague,
     /<SportPageIntro[\s\S]*?title="Jede Runde zählt\."[\s\S]*?to="\/battle"/,
   );
+  assert.match(
+    battleLeague,
+    /<SportPageIntro[\s\S]*?title="Jede Runde zählt\."[\s\S]*?<AloHomeLink\b/,
+  );
+  assert.match(homeLink, /to="\/"/);
 });

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { ShareCard } from "@/components/ShareCard";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Coins, Medal, ShoppingBag, Trophy } from "lucide-react";
@@ -151,12 +152,7 @@ function SeasonPage() {
           </div>
           <h1 className="mt-0.5 text-xl font-bold tracking-tight">Liga & Belohnungen</h1>
         </div>
-        <Link
-          to="/"
-          className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
-        >
-          Zurück
-        </Link>
+        <AloHomeLink className="px-2 text-xs" />
       </header>
 
       <div className="sport-only mt-6">
@@ -165,6 +161,7 @@ function SeasonPage() {
           title="Saison. Einsatz. Aufstieg."
           description="Sammle Punkte, steige in der Liga auf und löse deine Trainingsmünzen für echte Belohnungen ein."
         >
+          <AloHomeLink />
           <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
             <Coins className="h-4 w-4" /> {coins} Münzen
           </div>

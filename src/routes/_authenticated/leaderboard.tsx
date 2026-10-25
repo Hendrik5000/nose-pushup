@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Medal, Users } from "lucide-react";
 
@@ -84,12 +85,7 @@ function LeaderboardPage() {
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
       <header className="classic-only flex items-center justify-between">
-        <Link
-          to="/"
-          className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
-        >
-          ← Zurück
-        </Link>
+        <AloHomeLink className="px-2 text-[10px]" />
         <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
           Leaderboard
         </span>
@@ -102,6 +98,7 @@ function LeaderboardPage() {
           title="Dein nächster Platz wartet."
           description="Vergleiche Trainingsleistung mit allen Athleten oder filtere auf deinen Freundeskreis."
         >
+          <AloHomeLink />
           <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
             <Users className="h-4 w-4" /> {rows.length} Einträge
           </div>

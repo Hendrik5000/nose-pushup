@@ -19,11 +19,12 @@ import {
   workoutContextToken,
 } from "@/lib/workout-save";
 import { DesignView } from "@/components/DesignView";
-import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
-import { Activity, ArrowLeft, Dumbbell, Pause, Play, RotateCcw, Timer } from "lucide-react";
+import { Activity, Dumbbell, Pause, Play, RotateCcw, Timer } from "lucide-react";
 import { useExerciseEngine, ensureMotionPermission } from "@/hooks/useExerciseEngine";
 import { useCameraDetection, type RepQuality } from "@/hooks/useCameraDetection";
 import { feedbackRep, feedbackSuccess } from "@/lib/feedback";
@@ -1395,9 +1396,7 @@ function WorkoutScreen() {
               title={isPushup ? "Liegestütze" : exercise.name}
               description="Du gibst dein Ergebnis selbst ein. Dein Entwurf und Satzplan bleiben während der Session erhalten."
             >
-              <Link to="/" className="sport-back-link inline-flex items-center gap-2">
-                <ArrowLeft size={16} /> Zurück
-              </Link>
+              <AloHomeLink />
             </SportPageIntro>
             <section className="alo-training-secondary sport-focus-card rounded-3xl border border-border bg-card/60 p-5 sm:p-7">
               <SportSectionLabel number="01">Dein Leistungsstand</SportSectionLabel>
@@ -1628,13 +1627,7 @@ function WorkoutScreen() {
           >
             {focusControls}
             <header className="flex items-center justify-between">
-              <Link
-                to="/"
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
-              >
-                <span aria-hidden>←</span>
-                <span>Zurück</span>
-              </Link>
+              <AloHomeLink className="px-2 text-xs" />
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{exercise.icon}</span>
                 <span className="text-sm font-medium text-foreground">
@@ -1898,9 +1891,7 @@ function WorkoutScreen() {
                   : "Bleib im Rhythmus. Deine Wiederholungen und Bestleistung werden live erfasst."
             }
           >
-            <Link to="/" className="sport-back-link inline-flex items-center gap-2">
-              <ArrowLeft size={16} /> Zurück
-            </Link>
+            <AloHomeLink />
           </SportPageIntro>
           <section className="alo-training-secondary grid gap-3 sm:grid-cols-3">
             <Stat label="Trainingszeit" value={formatTime(elapsed)} />
@@ -2268,13 +2259,7 @@ function WorkoutScreen() {
         >
           {focusControls}
           <header className="flex items-center justify-between">
-            <Link
-              to="/"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
-            >
-              <span aria-hidden>←</span>
-              <span>Zurück</span>
-            </Link>
+            <AloHomeLink className="px-2 text-xs" />
             <div className="flex items-center gap-2">
               <span className="text-2xl">{exercise.icon}</span>
               <span className="text-sm font-medium text-foreground">

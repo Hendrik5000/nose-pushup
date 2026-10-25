@@ -8,7 +8,7 @@ import {
 } from "@/lib/navigation-layout";
 
 const ITEMS = [
-  { to: "/", label: "Training", icon: House },
+  { to: "/", label: "Startseite", icon: House },
   { to: "/ai", label: "Mira", icon: Sparkles },
   { to: "/chat", label: "Nexus Chat", icon: MessageCircle },
   { to: "/exercises", label: "Übungen", icon: Dumbbell },

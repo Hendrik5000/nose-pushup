@@ -4,6 +4,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { ShareCard } from "@/components/ShareCard";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { ArrowUpRight, Check, Clock3, Dumbbell, Flag, Play, RotateCcw } from "lucide-react";
@@ -200,9 +201,7 @@ function ProgramsPage() {
             title="Trainingsprogramme"
             description="Ein klarer Plan, ein Tag nach dem anderen. Starte eine Progression oder setze dein laufendes Programm fort."
           >
-            <Link to="/" className="sport-back-link">
-              ← Start
-            </Link>
+            <AloHomeLink />
           </SportPageIntro>
           {loading && (
             <div className="rounded-3xl border border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
@@ -436,12 +435,7 @@ function ProgramsPage() {
                 Dein Trainingsplan
               </h1>
             </div>
-            <Link
-              to="/"
-              className="shrink-0 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
-            >
-              Zurück
-            </Link>
+            <AloHomeLink className="px-2 text-xs" />
           </header>
 
           {loading && (

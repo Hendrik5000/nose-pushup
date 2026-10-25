@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { createClub, joinClubByCode } from "@/lib/club.functions";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Flag, Users, Trophy, Send, LogOut } from "lucide-react";
 
@@ -206,9 +207,7 @@ function ClubsPage() {
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
       <header className="classic-only flex items-center justify-between">
-        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Zurück
-        </Link>
+        <AloHomeLink className="px-2 text-xs" />
         <span className="text-sm font-medium">🛡️ Clubs</span>
       </header>
 
@@ -223,6 +222,7 @@ function ClubsPage() {
               : "Gründe einen Club oder tritt einem Team bei – echte Mitglieder, gemeinsame Ziele."
           }
         >
+          <AloHomeLink />
           <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
             <Users className="h-4 w-4" /> {club ? `${members.length} Athleten` : "Team-Modus"}
           </div>

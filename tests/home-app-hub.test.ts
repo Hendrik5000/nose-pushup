@@ -101,3 +101,66 @@ test("home hub keeps every former shared-menu destination and workspace action r
   assert.match(hub, /detail: "search"/);
   assert.match(hub, /aria-label="Weitere Alo-Bereiche"/);
 });
+
+test("every authenticated section exposes a clearly named route to the Alo home hub", () => {
+  const homeSources = [
+    ["Mira", "src/components/mira/SuperAiPage.tsx", /mira-chat-home-action|<AloHomeLink/],
+    ["Nexus Chat", "src/components/chat/LocalChatShell.tsx", /aria-label="Zur Alo-Startseite"/],
+    ["Übungen", "src/routes/_authenticated/exercises.tsx", /Startseite/],
+    ["Profil", "src/routes/_authenticated/profile-page-impl.tsx", /Startseite/],
+    ["Smart Coach", "src/routes/_authenticated/coach.tsx", /<AloHomeLink/],
+    ["Health", "src/routes/_authenticated/health.tsx", /<AloHomeLink/],
+    ["Calisthenics", "src/routes/_authenticated/calisthenics.tsx", /<AloHomeLink/],
+    ["Laufen", "src/routes/_authenticated/run.tsx", /<AloHomeLink/],
+    ["Programme", "src/routes/_authenticated/programs.tsx", /<AloHomeLink/],
+    ["Battle-Lobby", "src/routes/_authenticated/battle.index.tsx", /<AloHomeLink/],
+    ["Battle-Liga", "src/routes/_authenticated/battle-league.tsx", /<AloHomeLink/],
+    ["Battle-Warteraum", "src/routes/_authenticated/battle.$id.tsx", /<AloHomeLink/],
+    ["Clubs", "src/routes/_authenticated/clubs.tsx", /<AloHomeLink/],
+    ["Leaderboard", "src/routes/_authenticated/leaderboard.tsx", /<AloHomeLink/],
+    ["Saison", "src/routes/_authenticated/season.tsx", /<AloHomeLink/],
+    ["Cali-Workout", "src/routes/_authenticated/cali-workout.$skillId.tsx", /<AloHomeLink/],
+    ["Workout", "src/routes/_authenticated/workout.$exerciseId.tsx", /<AloHomeLink/],
+  ] as const;
+
+  for (const [section, relativePath, homePattern] of homeSources) {
+    const source = readFileSync(resolve(process.cwd(), relativePath), "utf8");
+    assert.match(source, homePattern, `${section} should expose a clearly named Home action`);
+  }
+
+  const appNavigation = readFileSync(resolve(process.cwd(), "src/components/TopNav.tsx"), "utf8");
+  assert.match(appNavigation, /to: "\/", label: "Startseite", icon: House/);
+  assert.match(
+    appNavigation,
+    /const barVisible = enabled && bottomLayout && scrollVisible && !hideModuleChrome/,
+  );
+  assert.match(appNavigation, /export function BottomNav\(\) \{\s*return null;/);
+});
+
+test("Home actions appear in both visual variants of every secondary section", () => {
+  const bothVariantPages = [
+    "battle.index.tsx",
+    "battle-league.tsx",
+    "battle.$id.tsx",
+    "calisthenics.tsx",
+    "clubs.tsx",
+    "health.tsx",
+    "leaderboard.tsx",
+    "programs.tsx",
+    "run.tsx",
+    "season.tsx",
+    "workout.$exerciseId.tsx",
+    "cali-workout.$skillId.tsx",
+  ];
+  for (const routeFile of bothVariantPages) {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/routes/_authenticated", routeFile),
+      "utf8",
+    );
+    const homeActions = source.match(/<AloHomeLink\b/g) ?? [];
+    assert.ok(
+      homeActions.length >= 2,
+      `${routeFile} should expose a Home action in both visual variants and relevant states`,
+    );
+  }
+});

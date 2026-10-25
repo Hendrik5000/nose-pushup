@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Bot, Crosshair, Swords, Trophy } from "lucide-react";
 import {
@@ -167,12 +168,7 @@ function BattleLobby() {
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
       <header className="classic-only flex items-center justify-between">
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <span aria-hidden>←</span> Zurück
-        </Link>
+        <AloHomeLink className="px-2 text-xs" />
         <span className="text-sm font-medium">⚔️ Battle</span>
         <Link
           to="/battle-league"
@@ -183,9 +179,7 @@ function BattleLobby() {
       </header>
 
       <header className="sport-only mb-5 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span aria-hidden>←</span> Zurück
-        </Link>
+        <AloHomeLink className="px-2 text-xs" />
         <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]">
           <Swords className="h-4 w-4 text-primary" /> Arena
         </span>

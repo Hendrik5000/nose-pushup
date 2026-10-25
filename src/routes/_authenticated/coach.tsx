@@ -1,10 +1,11 @@
 import { SuperAiPage } from "@/components/mira/SuperAiPage";
 import { DesignView } from "@/components/DesignView";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { coachChat } from "@/lib/coach-chat.functions";
 import { BottomNav } from "@/components/BottomNav";
+import { AloHomeLink } from "@/components/AloHomeLink";
 
 export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
@@ -108,12 +109,7 @@ function CoachChatPage() {
       <DesignView variant="classic">
         <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
           <header className="flex items-center justify-between">
-            <Link
-              to="/"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-            >
-              <span aria-hidden>←</span> Zurück
-            </Link>
+            <AloHomeLink className="px-2 text-xs" />
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">🧠 Smart Coach</span>
             </div>

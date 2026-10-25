@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { allSkills } from "@/lib/calisthenics";
 import type { CaliSkill } from "@/lib/calisthenics";
 import { feedbackRep, feedbackSuccess } from "@/lib/feedback";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { ArrowLeft, Check, Timer } from "lucide-react";
 
@@ -198,6 +199,7 @@ function CaliWorkoutScreen() {
               title="Skill nicht gefunden"
               description="Dieser Trainingspfad ist nicht mehr verfügbar. Kehre zum Skill Tree zurück, um eine andere Progression auszuwählen."
             />
+            <AloHomeLink />
             <button
               onClick={() => navigate({ to: "/calisthenics" })}
               className="rounded-2xl bg-primary px-6 py-4 text-sm font-bold text-primary-foreground"
@@ -216,6 +218,7 @@ function CaliWorkoutScreen() {
             >
               Zurück zu Calisthenics
             </button>
+            <AloHomeLink />
           </main>
         </DesignView>
       </>
@@ -231,6 +234,7 @@ function CaliWorkoutScreen() {
             title={skill.name}
             description={skill.tip}
           >
+            <AloHomeLink />
             <Link to="/calisthenics" className="sport-back-link inline-flex items-center gap-2">
               <ArrowLeft size={16} /> Skill-Pfad
             </Link>
@@ -426,7 +430,7 @@ function CaliWorkoutScreen() {
       <DesignView variant="classic">
         <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
           {/* Header */}
-          <header className="flex items-center justify-between">
+          <header className="flex items-center justify-between gap-1">
             <Link
               to="/calisthenics"
               className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
@@ -437,7 +441,7 @@ function CaliWorkoutScreen() {
               <span className="text-2xl">{skill.icon}</span>
               {skill.name}
             </span>
-            <span className="w-12" />
+            <AloHomeLink className="px-2 text-[10px]" />
           </header>
 
           {/* Tip card */}

@@ -1,9 +1,10 @@
 import { ArrowRight, Flame, Footprints, HeartPulse, Moon, Plus, Watch } from "lucide-react";
 import { DesignView } from "@/components/DesignView";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { SmartwatchPanel } from "@/components/SmartwatchPanel";
 import { HealthConnectPanel } from "@/components/HealthConnectPanel";
 import { WeightTrendCard } from "@/components/WeightTrendCard";
@@ -121,9 +122,7 @@ function HealthPage() {
       <DesignView variant="classic">
         <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-8">
           <header className="flex items-center justify-between">
-            <Link to="/" className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-              ← Start
-            </Link>
+            <AloHomeLink className="px-2 text-[10px]" />
             <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
               Health
             </span>
@@ -259,12 +258,7 @@ function HealthPage() {
               title="Gesundheit"
               description="Schritte, Schlaf und Aktivität – als Trainingskontext an einem Ort."
             >
-              <Link
-                to="/"
-                className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
-              >
-                ← Start
-              </Link>
+              <AloHomeLink />
             </SportPageIntro>
           </div>
           <nav className="health-category-nav" aria-label="Gesundheitsbereiche">

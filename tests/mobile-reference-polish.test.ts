@@ -25,6 +25,6 @@ test("community keeps account outside a shrinking scroll region and wraps quick 
 });
 
 test("Mira keeps coach-chat view and exposes Nexus navigation", () => {
-  assert.match(read("components/mira/SuperAiPage.tsx"), /view === "chat" \? "Mira-Chat"/);
+  assert.match(read("components/mira/SuperAiPage.tsx"), /view === "chat"\s*\?\s*"Mira-Chat"/);
   assert.match(read("components/TopNav.tsx"), /label: "Nexus Chat"/);
 });

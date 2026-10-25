@@ -2,6 +2,7 @@ import "@/mira-attachments.css";
 // Conversation UI restored selectively from 34f2313; current routing/security remain in their modules.
 import { MiraAttachmentPicker, MiraAttachmentPreview } from "@/components/mira/MiraAttachments";
 import { MiraSpark } from "@/components/mira/MiraSpark";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import {
   assertMiraAttachmentProvider,
   checkMiraFile,
@@ -34,7 +35,7 @@ import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
-import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { SportPageIntro } from "@/components/SportPageIntro";
 import { AiProviderSettings } from "@/components/AiProviderSettings";
 import { buildAppContext, contextToSystemBlock } from "@/lib/ai-context";
 import { miraDraftId, readMiraDraft, rememberMiraSession } from "@/lib/mira-handoff";
@@ -1067,145 +1068,71 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
         <main
           className={`sport-only sport-ai-page mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8 ${sportAiView === "chat" ? "sport-ai-chat-mode" : ""}`}
         >
-          {sportAiView === "chat" ? (
-            <div className="sport-ai-compact-heading" aria-label="Chat-Steuerung">
-              <div className="sport-ai-model-status" aria-live="polite">
-                <strong>{activeTitle}</strong>
-                <span className="text-[10px] text-muted-foreground">
-                  Vorschau nächste Anfrage: {activeProvider?.label ?? "Kein Anbieter"}
-                </span>
-                <details className="text-[10px] text-muted-foreground">
-                  <summary className="cursor-pointer">Technische Details</summary>
-                  <span>
-                    {activeProvider
-                      ? `${activeProvider.model} · ${providerPreviewReason}`
-                      : "Kein Modell eingerichtet"}
-                  </span>
-                </details>
-              </div>
-              <div className="sport-ai-chat-actions">
-                <Link
-                  to="/"
-                  className="sport-ai-header-action"
-                  aria-label="Zur Alo-Startseite"
-                  title="Startseite"
-                >
-                  <House aria-hidden="true" />
+          {sportAiView !== "chat" && (
+            <>
+              <SportPageIntro
+                eyebrow="DEINE KI"
+                title="Mira"
+                description="Eine vielseitige KI für Alltag, Wissen, Schreiben, Ideen und Fragen. Trainingskontext ist optional."
+              >
+                <Link to="/" className="sport-back-link">
+                  ← Startseite
                 </Link>
-                <button
-                  type="button"
-                  onClick={startNewSession}
-                  className="sport-ai-header-action"
-                  aria-label="Neuer Chat"
-                  title="Neuer Chat"
-                >
-                  <Plus aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSettingsOpen((v) => !v)}
-                  className="sport-ai-header-action"
-                  aria-label={settingsOpen ? "KI-Einstellungen schließen" : "KI-Einstellungen"}
-                  aria-pressed={settingsOpen}
-                  title="KI-Einstellungen"
-                >
-                  <Settings2 aria-hidden="true" />
-                </button>
-                <details className="alo-mira-view-menu">
-                  <summary aria-label="Mira-Ansicht wechseln">
-                    <span aria-hidden="true">•••</span>
-                  </summary>
+              </SportPageIntro>
+              <section className="sport-ai-hub" aria-label="Mira-Navigation">
+                <div className="sport-ai-provider-status">
                   <div>
+                    <span className="sport-ai-status-dot" aria-hidden="true" />
+                    <span className="font-semibold">
+                      Vorschau: {activeProvider?.label ?? "Kein Anbieter"}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {activeProvider ? "für nächste Anfrage" : "Zugang fehlt"}
+                    </span>
+                  </div>
+                  <button type="button" onClick={() => setSettingsOpen((v) => !v)}>
+                    {settingsOpen ? "Einstellungen schließen" : "KI-Einstellungen"}
+                  </button>
+                </div>
+                <nav className="sport-ai-tabs" aria-label="Mira-Bereiche">
+                  {(["coach", "chat", "history"] as const).map((view) => (
                     <button
+                      key={view}
                       type="button"
-                      onClick={(e) => {
-                        setRunwareOpen(true);
-                        e.currentTarget.closest("details")?.removeAttribute("open");
+                      aria-pressed={sportAiView === view}
+                      className={sportAiView === view ? "is-active" : ""}
+                      aria-label={
+                        view === "history" && sessions.length > 0
+                          ? `Verlauf, ${sessions.length} Gespräche`
+                          : view === "chat"
+                            ? "Mira-Chat"
+                            : view === "coach"
+                              ? "Mira"
+                              : "Verlauf"
+                      }
+                      onClick={() => {
+                        setSportAiView(view);
+                        setSessionsOpen(false);
                       }}
                     >
-                      Runware · Text & Medien
-                    </button>
-                    {(["chat", "history", "coach"] as const).map((view) => (
-                      <button
-                        key={view}
-                        type="button"
-                        aria-pressed={sportAiView === view}
-                        onClick={(e) => {
-                          setSportAiView(view);
-                          setSessionsOpen(false);
-                          e.currentTarget.closest("details")?.removeAttribute("open");
-                        }}
-                      >
+                      <span>
                         {view === "chat"
                           ? "Mira-Chat"
                           : view === "history"
-                            ? "Gesprächsverlauf"
-                            : "Aufgaben & Beispiele"}
-                      </button>
-                    ))}
-                  </div>
-                </details>
-              </div>
-            </div>
-          ) : (
-            <SportPageIntro
-              eyebrow="DEINE KI"
-              title="Mira"
-              description="Eine vielseitige KI für Alltag, Wissen, Schreiben, Ideen und Fragen. Trainingskontext ist optional."
-            >
-              <Link to="/" className="sport-back-link">
-                ← Startseite
-              </Link>
-            </SportPageIntro>
+                            ? "Verlauf"
+                            : "Aufgaben"}
+                      </span>
+                      {view === "history" && sessions.length > 0 && (
+                        <span className="sport-ai-tab-count" aria-hidden="true">
+                          {sessions.length}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </nav>
+              </section>
+            </>
           )}
-          <section className="sport-ai-hub" aria-label="Mira-Navigation">
-            <div className="sport-ai-provider-status">
-              <div>
-                <span className="sport-ai-status-dot" aria-hidden="true" />
-                <span className="font-semibold">
-                  Vorschau: {activeProvider?.label ?? "Kein Anbieter"}
-                </span>
-                <span className="text-muted-foreground">
-                  {activeProvider ? "für nächste Anfrage" : "Zugang fehlt"}
-                </span>
-              </div>
-              <button type="button" onClick={() => setSettingsOpen((v) => !v)}>
-                {settingsOpen ? "Einstellungen schließen" : "KI-Einstellungen"}
-              </button>
-            </div>
-            <nav className="sport-ai-tabs" aria-label="Mira-Bereiche">
-              {(["coach", "chat", "history"] as const).map((view) => (
-                <button
-                  key={view}
-                  type="button"
-                  aria-pressed={sportAiView === view}
-                  className={sportAiView === view ? "is-active" : ""}
-                  aria-label={
-                    view === "history" && sessions.length > 0
-                      ? `Verlauf, ${sessions.length} Gespräche`
-                      : view === "chat"
-                        ? "Mira-Chat"
-                        : view === "coach"
-                          ? "Mira"
-                          : "Verlauf"
-                  }
-                  onClick={() => {
-                    setSportAiView(view);
-                    setSessionsOpen(false);
-                  }}
-                >
-                  <span>
-                    {view === "chat" ? "Mira-Chat" : view === "history" ? "Verlauf" : "Aufgaben"}
-                  </span>
-                  {view === "history" && sessions.length > 0 && (
-                    <span className="sport-ai-tab-count" aria-hidden="true">
-                      {sessions.length}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </nav>
-          </section>
           {settingsOpen && (
             <section className="sport-ai-settings-card rounded-[1.5rem] border border-border/70 bg-card/75 p-5">
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -1459,6 +1386,68 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
                 <details className="sport-ai-chat-options">
                   <summary>Gesprächsoptionen & Datenschutz</summary>
+                  <div className="mira-chat-control-panel">
+                    <div className="mira-chat-live-preview" aria-live="polite">
+                      <strong>{activeTitle}</strong>
+                      <span>
+                        Vorschau nächste Anfrage: {activeProvider?.label ?? "Kein Anbieter"}
+                      </span>
+                      <details>
+                        <summary className="cursor-pointer">Technische Details</summary>
+                        <span>
+                          {activeProvider
+                            ? `${activeProvider.model} · ${providerPreviewReason}`
+                            : "Kein Modell eingerichtet"}
+                        </span>
+                      </details>
+                    </div>
+                    <div className="mira-chat-quick-actions" aria-label="Mira-Aktionen">
+                      <AloHomeLink />
+                      <button type="button" onClick={startNewSession} aria-label="Neuer Chat">
+                        <Plus aria-hidden="true" /> Neuer Chat
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSettingsOpen((value) => !value)}
+                        aria-pressed={settingsOpen}
+                      >
+                        <Settings2 aria-hidden="true" />
+                        {settingsOpen ? "Einstellungen schließen" : "KI-Einstellungen"}
+                      </button>
+                      <details className="mira-chat-view-menu">
+                        <summary>Ansichten & Werkzeuge</summary>
+                        <div>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              setRunwareOpen(true);
+                              event.currentTarget.closest("details")?.removeAttribute("open");
+                            }}
+                          >
+                            Runware · Text & Medien
+                          </button>
+                          {(["chat", "history", "coach"] as const).map((view) => (
+                            <button
+                              key={view}
+                              type="button"
+                              aria-pressed={sportAiView === view}
+                              onClick={(event) => {
+                                setSportAiView(view);
+                                setSessionsOpen(false);
+                                event.currentTarget.closest("details")?.removeAttribute("open");
+                              }}
+                            >
+                              {view === "chat"
+                                ? "Mira-Chat"
+                                : view === "history"
+                                  ? "Gesprächsverlauf"
+                                  : "Aufgaben & Beispiele"}
+                            </button>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                  </div>
                   {favs.length > 0 && (
                     <div className="mira-option-favorites" role="group" aria-label="Favoriten">
                       {favs.map((favorite) => (
@@ -1585,7 +1574,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     </SmallAction>
                   </div>
                 </details>
-                <SportSectionLabel number="01">Gesprächsverlauf</SportSectionLabel>
                 <div
                   ref={scrollRef}
                   className="sport-chat-stage flex min-h-[38vh] flex-1 flex-col gap-4 overflow-y-auto rounded-[2rem] border border-border/70 bg-card/55 p-4 shadow-sm sm:p-6"
@@ -1788,6 +1776,21 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       Mira denkt…
                     </div>
                   )}
+                </div>
+                <div className="mira-chat-bottom-row">
+                  <Link
+                    to="/"
+                    className="mira-chat-home-action"
+                    aria-label="Zur Alo-Startseite"
+                    title="Zur Startseite"
+                  >
+                    <House aria-hidden="true" />
+                    <span>Startseite</span>
+                  </Link>
+                  <div className="mira-chat-live-status" aria-live="polite">
+                    <strong>{activeTitle}</strong>
+                    <span>Vorschau: {activeProvider?.label ?? "Kein Anbieter"}</span>
+                  </div>
                 </div>
                 {error && (
                   <div

@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { Bot, Swords, Trophy } from "lucide-react";
 import { createBattle, finishBattle, startBattle } from "@/lib/battle.functions";
 import { feedbackRep, feedbackWin, feedbackLose, feedbackSuccess } from "@/lib/feedback";
@@ -222,8 +223,9 @@ function BattleArena() {
 
   if (!battle) {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center text-sm text-muted-foreground">
-        Lade Battle…
+      <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 text-sm text-muted-foreground">
+        <AloHomeLink />
+        <span>Lade Battle…</span>
       </main>
     );
   }
@@ -242,6 +244,7 @@ function BattleArena() {
             ← Lobby
           </Link>
           <span className="text-sm font-medium">⚔️ Warteraum</span>
+          <AloHomeLink className="px-2 text-[10px]" />
         </header>
         <div className="sport-only mt-7">
           <SportPageIntro
@@ -249,6 +252,7 @@ function BattleArena() {
             title="Bereit zum Start"
             description="Teile den Code mit deinem Gegner und starte das Duell, sobald alle bereit sind."
           >
+            <AloHomeLink />
             <div className="flex items-center gap-2 text-sm font-semibold text-primary">
               <Swords className="h-4 w-4" /> {battle.is_bot ? <Bot className="h-4 w-4" /> : null}{" "}
               {battle.is_bot ? "Bot-Match" : "Live-Battle"}
@@ -396,11 +400,17 @@ function BattleArena() {
                 ? "Ausdauer"
                 : "Battle"}
         </span>
-        <div className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-sm font-semibold tabular-nums text-primary">
-          {seconds}s
+        <div className="flex items-center gap-1">
+          <AloHomeLink className="px-2 text-[10px]" />
+          <div className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-sm font-semibold tabular-nums text-primary">
+            {seconds}s
+          </div>
         </div>
       </header>
 
+      <div className="sport-only mt-4 flex justify-end">
+        <AloHomeLink className="px-2 text-[10px]" />
+      </div>
       <div className="sport-only mt-7">
         <SportSectionLabel number="01">Live-Stand</SportSectionLabel>
       </div>

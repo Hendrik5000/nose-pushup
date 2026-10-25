@@ -1,9 +1,10 @@
 import { DesignView } from "@/components/DesignView";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { saveOrQueue } from "@/lib/offline-queue";
 import { BottomNav } from "@/components/BottomNav";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Activity, Footprints, MapPin, Pause, Play, Square } from "lucide-react";
 
@@ -249,9 +250,7 @@ function RunPage() {
             title="Dein Lauf. Dein Tempo."
             description="GPS-gestütztes Training mit Echtzeitdistanz, Pace und sauberem Laufprotokoll."
           >
-            <Link to="/" className="sport-back-link">
-              ← Start
-            </Link>
+            <AloHomeLink />
             <span
               className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] ${active ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-card/50 text-muted-foreground"}`}
             >
@@ -372,9 +371,7 @@ function RunPage() {
       <DesignView variant="classic">
         <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
           <header className="flex items-center justify-between">
-            <Link to="/" className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-              ← Start
-            </Link>
+            <AloHomeLink className="px-2 text-[10px]" />
             <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
               Laufen
             </span>

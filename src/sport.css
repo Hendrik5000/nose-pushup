@@ -1660,8 +1660,7 @@ html[data-design-style="performance"] .sport-health-page :is([id^="health-"]) {
 /* The chat canvas is the remaining viewport, not a second nested viewport. */
 html[data-design-style="performance"] main.sport-ai-chat-mode {
   height: calc(
-    var(--app-viewport-height, 100dvh) - var(--homebar-top-space) - var(--homebar-bottom-space) -
-      var(--sport-header-height)
+    var(--app-viewport-height, 100dvh) - var(--homebar-top-space) - var(--homebar-bottom-space)
   );
   min-height: 0 !important;
   padding: 0.6rem 1.25rem 0.75rem !important;

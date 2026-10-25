@@ -23,7 +23,8 @@ test("Mira uses a decorative four-point spark with unique gradients, not a provi
 
 test("quiet navy colors stay local to Mira and the authenticated shell has no shared upper header", () => {
   assert.match(css, /main\.sport-ai-page\s*\{[^}]*--background: #080d16;/);
-  assert.match(css, /linear-gradient\(165deg, #0d1625, #070b12 80%\)/);
+  assert.match(css, /radial-gradient\(ellipse at 50% 108%, #173f9b70/);
+  assert.match(css, /linear-gradient\(180deg, #05070c 0%, #070a12 58%, #0a1122 100%\)/);
   const shell = read("routes/_authenticated/route.tsx");
   assert.match(shell, /alo-no-global-header/);
   assert.doesNotMatch(shell, /SportAppHeader/);
@@ -37,8 +38,30 @@ test("three concise starter tasks only prepare an editable draft", () => {
   for (const icon of ["Lightbulb", "PenLine", "BookOpen"]) assert.ok(starters.includes(icon));
   assert.match(starters, /onClick=\{\(\) => setInput\(tool.prompt\)\}/);
   assert.doesNotMatch(starters, /submit\(|send\(|runMiraPowerAction\(/);
-  assert.match(css, /grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(css, /@media \(min-width: 768px\)/);
+});
+
+test("Mira chat stays headerless and Home is an in-flow action before the composer", () => {
+  assert.doesNotMatch(page, /sport-ai-compact-heading|sport-ai-chat-actions/);
+  const stage = page.indexOf('className="sport-chat-stage');
+  const home = page.indexOf('className="mira-chat-home-action"');
+  const composer = page.indexOf('className="sport-chat-composer', home);
+  assert.ok(stage >= 0 && home > stage, "Home should follow the conversation stage");
+  assert.ok(composer > home, "Home should appear before, not over, the composer");
+  assert.match(page.slice(home, page.indexOf("</Link>", home)), /Zur Alo-Startseite/);
+  const homeRow = css.slice(
+    css.indexOf(".mira-chat-bottom-row {"),
+    css.indexOf("}", css.indexOf(".mira-chat-bottom-row {")),
+  );
+  assert.match(homeRow, /flex: 0 0 auto/);
+  assert.doesNotMatch(homeRow, /position:\s*(fixed|sticky|absolute)/);
+});
+
+test("empty welcome does not replace saved conversation messages", () => {
+  assert.match(page, /messages\.length === 0 && \(\s*<div className="ai-welcome/);
+  assert.match(page, /\{messages\.map\(\(m, i\) => \(/);
+  assert.match(page, /loadSessions\(\)\[0\]\?\.messages \?\? \[\]/);
 });
 
 test("conversation metadata, privacy, history and favorites remain reachable", () => {
@@ -52,11 +75,23 @@ test("conversation metadata, privacy, history and favorites remain reachable", (
     assert.ok(page.includes(label));
   const options = page.slice(
     page.indexOf('className="sport-ai-chat-options"'),
-    page.indexOf('<SportSectionLabel number="01">'),
+    page.indexOf('className="sport-chat-stage'),
   );
   assert.match(options, /aria-label="Favoriten"/);
   assert.match(options, /onClick=\{\(\) => setInput\(favorite\)\}/);
   assert.match(options, /<MiraContextControls/);
+  for (const feature of [
+    "mira-chat-control-panel",
+    "Ansichten & Werkzeuge",
+    "Neuer Chat",
+    "KI-Einstellungen",
+    "Gesprächsverlauf",
+    "Runware · Text & Medien",
+    "Vorschau nächste Anfrage",
+    "Technische Details",
+    "<AloHomeLink",
+  ])
+    assert.ok(options.includes(feature), `missing chat control: ${feature}`);
 });
 
 test("attachment preview, explicit submit, microphone and accessible file limits survive", () => {
@@ -83,6 +118,10 @@ test("small-screen chat keeps a non-floating composer, scrollable messages and s
     /\.sport-ai-chat-mode \.sport-chat-stage\s*\{[^}]*flex: 1 1 0;[^}]*overflow-y: auto;/,
   );
   assert.match(css, /env\(safe-area-inset-bottom\)/);
+  assert.match(css, /mira-chat-home-action\s*\{[^}]*min-height: 44px;/s);
+  assert.match(css, /mira-chat-bottom-row\s*\{[^}]*flex: 0 0 auto;/s);
+  assert.match(css, /@media \(max-width: 767px\)/);
+  assert.match(css, /@media \(min-width: 768px\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   const attachments = read("mira-attachments.css");
   assert.match(attachments, /grid-template-columns: 44px minmax\(0, 1fr\) 44px 44px;/);
