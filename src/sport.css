@@ -548,6 +548,9 @@ html[data-design-style="performance"]
   font-size: 1.4rem;
   line-height: 1;
 }
+.settings-section-emoji-prominent {
+  font-size: 1.6rem;
+}
 .settings-section-vector {
   display: none;
 }

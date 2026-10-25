@@ -66,11 +66,32 @@ test("default sport profile groups its long settings page into discoverable sect
   assert.match(settingsSection, /\(open \|\| visited\) && children/);
 });
 
+test("only the four large settings categories use prominent icons", () => {
+  const titles = [
+    "Konto & Fortschritt",
+    "Training & Kontakte",
+    "Profil & Darstellung",
+    "App & Datenschutz",
+  ];
+
+  for (const title of titles) {
+    const titleIndex = profile.indexOf(`title="${title}"`);
+    const openingTagStart = profile.lastIndexOf("<SettingsSection", titleIndex);
+    const openingTagEnd = profile.indexOf(">", titleIndex);
+    assert.ok(openingTagStart >= 0 && openingTagEnd >= 0, `missing section: ${title}`);
+    assert.match(profile.slice(openingTagStart, openingTagEnd + 1), /\bprominentIcon\b/);
+  }
+
+  assert.equal((profile.match(/\bprominentIcon\b/g) ?? []).length, titles.length);
+});
+
 test("settings groups show a clear category graphic in both design variants", () => {
   assert.match(settingsSection, /settings-section-icon-chip/);
   assert.match(settingsSection, /settings-section-emoji/);
-  assert.match(settingsSection, /settings-section-vector h-6 w-6/);
+  assert.match(settingsSection, /settings-section-icon-chip-prominent h-14 w-14/);
+  assert.match(settingsSection, /prominentIcon \? "h-8 w-8" : "h-6 w-6"/);
   assert.match(settingsStyles, /\.settings-section-emoji\s*\{\s*display: inline-flex/);
+  assert.match(settingsStyles, /\.settings-section-emoji-prominent\s*\{\s*font-size: 1\.6rem/);
   assert.match(settingsStyles, /\.settings-section-vector\s*\{\s*display: none/);
   assert.match(
     settingsStyles,

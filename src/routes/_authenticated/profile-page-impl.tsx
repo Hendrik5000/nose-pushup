@@ -652,6 +652,7 @@ export function ProfilePage() {
           <SettingsSection
             icon="👤"
             title="Konto & Fortschritt"
+            prominentIcon
             subtitle={profile?.display_name || "Dein Konto"}
             id="profile-account"
             revealKey={sectionRevealKey}
@@ -806,6 +807,7 @@ export function ProfilePage() {
           <SettingsSection
             icon="💪"
             title="Training & Kontakte"
+            prominentIcon
             subtitle="Coach, Freunde, Abzeichen & öffentliches Profil"
             id="profile-training"
             revealKey={sectionRevealKey}
@@ -860,6 +862,7 @@ export function ProfilePage() {
           <SettingsSection
             icon="🎨"
             title="Profil & Darstellung"
+            prominentIcon
             subtitle="Persönliche Daten, 6 Stile, 13 Farben & Navigation"
             id="appearance"
             revealKey={sectionRevealKey}
@@ -924,6 +927,7 @@ export function ProfilePage() {
           <SettingsSection
             icon="⚙️"
             title="App & Datenschutz"
+            prominentIcon
             subtitle="Bedienung, Benachrichtigungen, Fehlerberichte & Hilfe"
             id="profile-app"
             revealKey={sectionRevealKey}
