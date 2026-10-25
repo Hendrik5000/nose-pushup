@@ -149,12 +149,12 @@ export function SettingsSection({
         aria-controls={contentId}
         className="flex w-full items-center gap-4 px-5 py-4 text-left transition active:scale-[0.99]"
       >
-        <span className="settings-section-icon-chip flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary shadow-sm">
+        <span className="settings-section-icon-chip flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary shadow-sm">
           <span className="settings-section-emoji">{icon}</span>
-          <SportIcon className="settings-section-vector h-8 w-8" aria-hidden="true" />
+          <SportIcon className="settings-section-vector h-12 w-12" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-foreground">{title}</span>
+          <span className="block break-words text-sm font-semibold text-foreground">{title}</span>
           {subtitle && (
             <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
           )}

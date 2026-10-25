@@ -84,11 +84,21 @@ test("all settings groups use the larger icon treatment", () => {
 test("settings groups show a clear category graphic in both design variants", () => {
   assert.match(settingsSection, /settings-section-icon-chip/);
   assert.match(settingsSection, /settings-section-emoji/);
-  assert.match(settingsSection, /settings-section-icon-chip flex h-14 w-14/);
-  assert.match(settingsSection, /settings-section-vector h-8 w-8/);
+  assert.match(settingsSection, /settings-section-icon-chip flex h-20 w-20/);
+  assert.match(settingsSection, /settings-section-vector h-12 w-12/);
+  assert.match(settingsSection, /min-w-0 flex-1/);
+  assert.match(settingsSection, /block break-words text-sm font-semibold/);
   assert.match(settingsStyles, /\.settings-section-emoji\s*\{\s*display: inline-flex/);
-  assert.match(settingsStyles, /\.settings-section-emoji\s*\{[\s\S]*?font-size: 1\.6rem/);
+  assert.match(settingsStyles, /\.settings-section-emoji\s*\{[\s\S]*?font-size: 2\.4rem/);
   assert.match(settingsStyles, /\.settings-section-vector\s*\{\s*display: none/);
+  assert.match(
+    settingsStyles,
+    /@media\s*\(max-width: 360px\)[\s\S]*?\.settings-section > button\s*\{[^}]*gap: 0\.75rem;[^}]*padding-inline: 0\.75rem;[^}]*\}/,
+  );
+  assert.match(
+    settingsStyles,
+    /@media\s*\(max-width: 360px\)[\s\S]*?html\[data-design-style="performance"\] \.settings-section > button\s*\{[^}]*gap: 0\.75rem;[^}]*padding-inline: 0\.75rem;[^}]*\}/,
+  );
   assert.match(
     settingsStyles,
     /html\[data-design-style="performance"\] \.settings-section-emoji\s*\{\s*display: none/,
