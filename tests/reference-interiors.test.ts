@@ -121,10 +121,14 @@ test("community identifies local storage and separates mobile list from conversa
   assert.match(read("sport.css"), /sport-chat-app \.sport-chat-composer\s*\{\s*position: static;/);
 });
 
-test("navigation makes community explicit and offers a direct appearance shortcut", () => {
-  assert.match(read("components/TopNav.tsx"), /label: "Nexus Chat"/);
-  assert.match(read("components/SportAppHeader.tsx"), /hash="appearance"/);
-  assert.doesNotMatch(read("components/SportAppHeader.tsx"), /ArrowUpRight/);
+test("community and appearance remain reachable from the hub without a fixed upper shortcut", () => {
+  const home = read("routes/_authenticated/index.tsx");
+  const nav = read("components/TopNav.tsx");
+  assert.match(home, /to="\/chat"/);
+  assert.match(home, /to="\/profile"/);
+  assert.match(home, /aria-label="Weitere Alo-Bereiche"/);
+  assert.doesNotMatch(nav, /alo-module-switcher/);
+  assert.match(nav, /layout === "bottom" \|\| layout === "floating"/);
   assert.match(read("components/SettingsSection.tsx"), /hashchange/);
   assert.match(
     read("sport.css"),

@@ -249,6 +249,9 @@ function RunPage() {
             title="Dein Lauf. Dein Tempo."
             description="GPS-gestütztes Training mit Echtzeitdistanz, Pace und sauberem Laufprotokoll."
           >
+            <Link to="/" className="sport-back-link">
+              ← Start
+            </Link>
             <span
               className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] ${active ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-card/50 text-muted-foreground"}`}
             >

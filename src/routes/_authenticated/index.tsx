@@ -43,12 +43,25 @@ import {
   Footprints,
   Hand,
   HeartPulse,
+  Search,
   ScanFace,
   Target,
   Trophy,
   Users,
   Zap,
 } from "lucide-react";
+
+const MORE_AREAS = [
+  { to: "/health", label: "Gesundheit" },
+  { to: "/programs", label: "Programme" },
+  { to: "/calisthenics", label: "Calisthenics" },
+  { to: "/run", label: "Laufen" },
+  { to: "/season", label: "Saison" },
+  { to: "/battle", label: "Wettkampf" },
+  { to: "/battle-league", label: "Battle-Liga" },
+  { to: "/leaderboard", label: "Rangliste" },
+  { to: "/clubs", label: "Clubs" },
+] as const;
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -177,6 +190,43 @@ function HomeAppHub({
           </span>
         </div>
       </nav>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          className="alo-btn flex min-h-11 items-center justify-center gap-2"
+          aria-label="Alo-Werkzeuge öffnen"
+          onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "menu" }))}
+        >
+          <Zap className="h-4 w-4" aria-hidden="true" />
+          Alo-Werkzeuge
+        </button>
+        <button
+          type="button"
+          className="alo-btn flex min-h-11 items-center justify-center gap-2"
+          aria-label="Überall suchen"
+          onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" }))}
+        >
+          <Search className="h-4 w-4" aria-hidden="true" />
+          Überall suchen
+        </button>
+      </div>
+      <details className="mt-4 rounded-2xl border border-border bg-card/35 px-3">
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 font-medium">
+          Weitere Bereiche
+          <span className="text-xs text-muted-foreground">{MORE_AREAS.length}</span>
+        </summary>
+        <nav className="grid grid-cols-2 gap-2 pb-3" aria-label="Weitere Alo-Bereiche">
+          {MORE_AREAS.map((area) => (
+            <Link
+              key={area.to}
+              to={area.to}
+              className="flex min-h-11 items-center rounded-xl border border-border/70 bg-background/40 px-3 text-sm font-medium transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              {area.label}
+            </Link>
+          ))}
+        </nav>
+      </details>
     </section>
   );
 }

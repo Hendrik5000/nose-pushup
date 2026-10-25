@@ -11,15 +11,12 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { setAloOwner } from "@/lib/alo-store";
 import { AloWorkspace } from "@/components/alo/AloWorkspace";
 import { WelcomeTour } from "@/components/WelcomeTour";
-import { TopNav } from "@/components/TopNav";
-import { SportAppHeader } from "@/components/SportAppHeader";
+import { AppNavigation } from "@/components/TopNav";
 import { applyNavigationVisibility, getNavigationVisible } from "@/lib/navigation-layout";
 import { installModuleSwipeGesture } from "@/lib/module-swipe-gesture";
 import "@/module-swipe.css";
-import "@/module-menu.css";
 import "@/alo-mobile.css";
 import "@/alo-header-layout.css";
-import "@/mira-immersive.css";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -54,9 +51,8 @@ function AuthenticatedLayout() {
   }, [navigate]);
 
   return (
-    <div className="authenticated-shell alo-header-first min-h-[100dvh]">
-      <SportAppHeader />
-      <TopNav />
+    <div className="authenticated-shell alo-no-global-header min-h-[100dvh]">
+      <AppNavigation />
       <div ref={surface} className="alo-module-surface">
         <Outlet />
       </div>

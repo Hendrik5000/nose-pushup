@@ -124,7 +124,7 @@ test("performance home puts today's workout before status metrics and keeps widg
   assert.match(styles, /@media \(min-width: 720px\)/);
   assert.match(styles, /@media \(min-width: 1200px\)/);
   assert.match(styles, /grid-column: span 3 !important/);
-  assert.match(read("routes/_authenticated/route.tsx"), /<TopNav \/>/);
+  assert.match(read("routes/_authenticated/route.tsx"), /<AppNavigation \/>/);
   const install = read("routes/__root.tsx");
   assert.match(install, /aria-label="App installieren"[\s\S]*border-border/);
   const installHint = install.slice(
@@ -186,8 +186,9 @@ test("sport page components render semantic content and permit real data actions
   assert.match(section, /<h2>Fortschritt<\/h2>/);
 });
 
-test("shared sports menu exposes every existing feature group", () => {
-  const menu = read("components/SportAppHeader.tsx");
+test("home hub exposes every existing feature group formerly listed in the shared menu", () => {
+  const menu = read("routes/_authenticated/index.tsx");
+  const appNavigation = read("components/TopNav.tsx");
   for (const route of [
     "/exercises",
     "/programs",
@@ -203,8 +204,10 @@ test("shared sports menu exposes every existing feature group", () => {
     "/chat",
     "/profile",
   ]) {
-    assert.ok(menu.includes(`"${route}"`), `missing ${route}`);
+    assert.ok(menu.includes(route), `missing ${route}`);
   }
-  assert.match(menu, /aria-expanded/);
-  assert.match(menu, /Escape/);
+  assert.match(menu, /aria-label="Weitere Alo-Bereiche"/);
+  assert.match(menu, /Alo-Werkzeuge öffnen/);
+  assert.match(menu, /Überall suchen/);
+  assert.match(appNavigation, /layout === "bottom" \|\| layout === "floating"/);
 });

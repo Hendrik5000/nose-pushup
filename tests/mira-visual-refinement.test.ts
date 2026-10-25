@@ -21,12 +21,13 @@ test("Mira uses a decorative four-point spark with unique gradients, not a provi
   assert.doesNotMatch(markup, /gemini|google|<script|<image/i);
 });
 
-test("quiet navy colors stay local to Mira and preserve the shared Alo/Mira header", () => {
+test("quiet navy colors stay local to Mira and the authenticated shell has no shared upper header", () => {
   assert.match(css, /main\.sport-ai-page\s*\{[^}]*--background: #080d16;/);
   assert.match(css, /linear-gradient\(165deg, #0d1625, #070b12 80%\)/);
-  const header = read("components/SportAppHeader.tsx");
-  assert.match(header, /<AloHeaderBrand title=\{identity.title\} \/>/);
-  assert.match(read("components/AloHeaderBrand.tsx"), /src="\/alo-wordmark\.png" alt="Alo"/);
+  const shell = read("routes/_authenticated/route.tsx");
+  assert.match(shell, /alo-no-global-header/);
+  assert.doesNotMatch(shell, /SportAppHeader/);
+  assert.match(page, /sport-ai-page/);
 });
 
 test("three concise starter tasks only prepare an editable draft", () => {

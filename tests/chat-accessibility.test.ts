@@ -37,14 +37,16 @@ test("new-room dialog has a labeled heading, Escape close, focus containment, an
   assert.match(chat, /newRoomTriggerRef\.current = event\.currentTarget/);
 });
 
-test("sport navigation menu exposes its controlled panel and Escape returns focus", () => {
-  const header = read("SportAppHeader.tsx");
-  assert.match(header, /aria-expanded=\{open\}[\s\S]*?aria-controls="sport-area-menu"/);
-  assert.match(
-    header,
-    /if \(event\.key === "Escape"\)[\s\S]*?setOpen\(false\)[\s\S]*?trigger\.current\?\.focus\(\)/,
+test("home hub exposes accessible tools, search and area navigation without the removed header menu", () => {
+  const home = readFileSync(
+    new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
+    "utf8",
   );
-  assert.match(header, /<nav id="sport-area-menu"[^>]*aria-label="Alle Bereiche"/);
+  assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(home, /aria-label="Überall suchen"/);
+  assert.match(home, /<nav[^>]*aria-label="Weitere Alo-Bereiche"/);
+  assert.match(home, /min-h-11[^>]*aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(home, /<Link[\s\S]*?to=\{area\.to\}/);
 });
 
 test("message submission only clears an unchanged draft after a successful post", () => {

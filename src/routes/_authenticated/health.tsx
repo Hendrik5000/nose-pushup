@@ -253,7 +253,7 @@ function HealthPage() {
       </DesignView>
       <DesignView variant="sport">
         <main className="sport-only sport-health-page mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-6 px-5 py-6 pb-28 sm:px-8">
-          <div className="health-page-intro sr-only">
+          <div className="health-page-intro">
             <SportPageIntro
               eyebrow="DEIN WOHLBEFINDEN"
               title="Gesundheit"

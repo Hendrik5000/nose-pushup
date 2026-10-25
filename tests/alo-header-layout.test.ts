@@ -17,59 +17,75 @@ function declaration(selectorPart: string, property: string) {
   return values;
 }
 
-test("the shared brand header is first in every authenticated app area", () => {
+test("authenticated areas render no shared Alo header or fixed upper module switcher", () => {
   const layout = read("routes/_authenticated/route.tsx");
-  assert.match(
-    layout,
-    /className="authenticated-shell alo-header-first[^"]*">\s*<SportAppHeader \/>\s*<TopNav \/>/,
-  );
-  assert.ok(
-    layout.indexOf('import "@/alo-header-layout.css"') >
-      layout.indexOf('import "@/alo-mobile.css"'),
-  );
-  assert.equal((layout.match(/<SportAppHeader \/>/g) ?? []).length, 1);
+  const navigation = read("components/TopNav.tsx");
+  assert.match(layout, /className="authenticated-shell alo-no-global-header/);
+  assert.doesNotMatch(layout, /<SportAppHeader\s*\/>|<TopNav\s*\/>/);
+  assert.match(layout, /<AppNavigation\s*\/>/);
+  assert.doesNotMatch(layout, /module-menu\.css|mira-immersive\.css/);
+  assert.doesNotMatch(navigation, /alo-module-switcher|moduleMenu/);
+  assert.match(navigation, /layout === "bottom" \|\| layout === "floating"/);
+  assert.match(navigation, /hidden=\{!barVisible\}[\s\S]*?inert=\{!barVisible\}/);
 });
 
-test("header sticks immediately below the safe area, independent of optional nav height", () => {
-  assert.deepEqual(declaration("> .alo-app-header", "top"), ["env(safe-area-inset-top, 0px)"]);
-  assert.match(css, /html:root \.authenticated-shell\.alo-header-first\s*\{\s*padding-top: 0;/);
-  // The body supplies the inset once; shell must not add it a second time.
-  assert.match(read("styles.css"), /body\s*\{[\s\S]*?padding-top: env\(safe-area-inset-top\)/);
-  assert.doesNotMatch(
-    declaration("> .alo-app-header", "top").join(""),
-    /homebar-top-space|alo-header-space/,
-  );
+test("authenticated content starts below the body safe area without a reserved header row", () => {
+  for (const [property, value] of [
+    ["padding-top", "0"],
+    ["--homebar-top-space", "0px"],
+    ["--alo-header-space", "0px"],
+  ]) {
+    const values = declaration(".authenticated-shell.alo-no-global-header", property);
+    assert.ok(values.length >= 2 && values.every((current) => current === value), property);
+  }
+  assert.match(css, /\.alo-no-global-header > \.alo-module-surface\s*\{\s*padding-top: 0/);
+  assert.match(read("styles.css"), /body\s*\{[\s\S]*?padding-top: env\(safe-area-inset-top/);
+  assert.doesNotMatch(css, /alo-header-first|alo-top-module-offset/);
 });
 
-test("navigation reserve belongs below the header and excludes the already-used safe area", () => {
-  assert.match(
-    declaration("> .alo-module-surface", "padding-top")[0],
-    /var\(--homebar-top-space, 0px\) - env\(safe-area-inset-top, 0px\)/,
-  );
-  assert.match(declaration("> .alo-module-surface", "padding-top")[0], /^max\(/);
-  assert.match(
-    declaration("> .alo-module-switcher", "top")[0],
-    /env\(safe-area-inset-top, 0px\) \+ var\(--alo-header-space, 60px\)/,
-  );
-  assert.match(declaration("> .app-homebar", "top")[0], /var\(--alo-header-space, 60px\)/);
-  assert.match(css, /data-navigation-layout="top"/);
-  assert.match(css, /data-navigation-layout="top-tabs"/);
-  assert.doesNotMatch(css, /data-navigation-layout="bottom"|data-navigation-layout="floating"/);
+test("swipe and bottom-navigation alternatives remain while all former header destinations move into the hub", () => {
+  const layout = read("routes/_authenticated/route.tsx");
+  const hub = read("routes/_authenticated/index.tsx");
+  const swipe = read("lib/module-swipe-gesture.ts");
+  assert.match(layout, /installModuleSwipeGesture/);
+  assert.match(swipe, /getSwipeDestination/);
+  assert.match(hub, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(hub, /detail: "menu"/);
+  assert.match(hub, /aria-label="Überall suchen"/);
+  assert.match(hub, /detail: "search"/);
+  for (const route of [
+    "/health",
+    "/programs",
+    "/calisthenics",
+    "/run",
+    "/season",
+    "/battle",
+    "/battle-league",
+    "/leaderboard",
+    "/clubs",
+  ]) {
+    assert.ok(hub.includes(`to: "${route}"`), `hub should link to ${route}`);
+  }
+  assert.match(read("components/TopNav.tsx"), /\{ to: "\/ai", label: "Mira"/);
+  assert.match(read("components/TopNav.tsx"), /\{ to: "\/chat", label: "Nexus Chat"/);
 });
 
-test("hidden compact menus do not leave a gap between header and expanded navigation", () => {
-  assert.match(css, /data-module-menu-visible="false"[^}]*--alo-top-module-offset: 0px/);
-  assert.match(css, /@media \(max-width: 767px\)[^}]*--alo-top-module-offset: 0px/);
+test("headerless secondary pages retain a visible title and an in-content way back", () => {
+  const health = read("routes/_authenticated/health.tsx");
+  const calisthenics = read("routes/_authenticated/calisthenics.tsx");
+  const run = read("routes/_authenticated/run.tsx");
+  const battleLeague = read("routes/_authenticated/battle-league.tsx");
   assert.match(
-    read("alo-mobile.css"),
-    /data-navigation-visible="true"\]\[data-navigation-expanded="true"\]:is\(/,
+    health,
+    /<div className="health-page-intro">[\s\S]*?title="Gesundheit"[\s\S]*?to="\/"/,
   );
-});
-
-test("moving the reserved area retains reduced-motion and swipe protections", () => {
-  assert.match(css, /html\[data-module-swipe\][^}]*\.alo-module-surface\s*\{\s*transition: none/);
   assert.match(
-    css,
-    /prefers-reduced-motion: reduce[^}]*\.alo-module-surface\s*\{\s*transition: none/,
+    calisthenics,
+    /<SportPageIntro[\s\S]*?title="Baue echte Kontrolle auf"[\s\S]*?to="\/"/,
+  );
+  assert.match(run, /<SportPageIntro[\s\S]*?title="Dein Lauf\. Dein Tempo\."[\s\S]*?to="\/"/);
+  assert.match(
+    battleLeague,
+    /<SportPageIntro[\s\S]*?title="Jede Runde zählt\."[\s\S]*?to="\/battle"/,
   );
 });

@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { AloHeaderBrand } from "../src/components/AloHeaderBrand";
 import {
   aloPageIdentity,
   chatRowSummary,
@@ -22,7 +19,7 @@ const task = (id: string, body: Record<string, unknown>, deleted = false): AloRe
   revision: 0,
   updatedAt: "2026-10-19T12:00:00Z",
 });
-test("one Alo header gives every module, settings and training subpage an explicit identity", () => {
+test("route identity metadata records every module and training subpage parent", () => {
   assert.deepEqual(aloPageIdentity("/ai"), { title: "Mira", module: "Mira", back: "/" });
   assert.equal(aloPageIdentity("/chat").module, "Nexus");
   assert.equal(aloPageIdentity("/profile").title, "Einstellungen");
@@ -125,13 +122,16 @@ test("Nexus keeps quick answers and message tools secondary and never invents a 
   assert.match(ui, /details className="alo-message-actions"/);
   assert.doesNotMatch(ui, /workoutShareTemplate\(todayReps \|\|/);
   assert.match(ui, /disabled=\{todayReps <= 0\}/);
-  assert.match(
-    read("components/SportAppHeader.tsx"),
-    /className="sport-area-link"[\s\S]*?onClick=\{\(\) => setOpen\(false\)\}/,
+  const home = readFileSync(
+    new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
+    "utf8",
   );
+  assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(home, /aria-label="Überall suchen"/);
+  assert.match(home, /aria-label="Weitere Alo-Bereiche"/);
 });
 
-test("Alo uses the supplied wordmark and brand image without replacing the compact header", () => {
+test("Alo retains its supplied brand assets in the document metadata after header removal", () => {
   assert.match(read("components/AloHeaderBrand.tsx"), /src="\/alo-wordmark\.png"/);
   assert.match(read("routes/__root.tsx"), /\/alo-brand\.jpg/);
   assert.match(read("routes/__root.tsx"), /\/alo-apple-touch-icon\.png/);
@@ -167,58 +167,15 @@ test("appearance deep links open idempotently and scroll only the visible design
   );
 });
 
-test("every app area shares the horizontal Alo brand and preserves all header controls", () => {
-  const header = read("components/SportAppHeader.tsx");
-  const brand = read("components/AloHeaderBrand.tsx");
-  assert.match(header, /data-module=\{identity.module\}/);
-  assert.match(header, /<AloHeaderBrand title=\{identity.title\} \/>/);
-  assert.match(header, /className="alo-header-title alo-brand-lockup"/);
-  assert.doesNotMatch(header, /alo-nexus|<small>|identity.module !== "Nexus"/);
-  assert.match(brand, /className="alo-brand-mark"/);
-  assert.match(brand, /src="\/alo-wordmark\.png" alt="Alo"/);
-  assert.match(brand, /title !== "Alo" && <strong>\{title\}<\/strong>/);
-  for (const [path, title] of [
-    ["/", "Training"],
-    ["/ai", "Mira"],
-    ["/chat", "Nexus Chat"],
-    ["/health", "Gesundheit"],
-    ["/programs", "Programme"],
-    ["/exercises", "Übungen"],
-    ["/profile", "Einstellungen"],
-  ]) {
-    assert.equal(aloPageIdentity(path).title, title);
-  }
-  assert.equal(aloPageIdentity("/chat").back, "/");
-  assert.match(header, /<ArrowLeft aria-hidden="true"/);
-  assert.match(header, /aria-label="Alo Zentrale öffnen"/);
-  assert.match(header, /aria-controls="sport-area-menu"/);
-  const css = read("alo-mobile.css");
-  const shared = css.slice(css.indexOf("/* Shared Alo app lockup:"));
-  assert.match(shared, /grid-template-columns: minmax\(0, 1fr\) auto/);
-  assert.match(shared, /\.alo-brand-lockup\s*\{[^}]*flex-direction: row;[^}]*align-items: center/);
-  assert.match(shared, /\.alo-brand-mark\s*\{[^}]*flex: 0 0 34px/);
-  assert.match(
-    shared,
-    /\.alo-header-title\s+strong\s*\{[^}]*overflow: visible;[^}]*white-space: normal;[^}]*overflow-wrap: anywhere/,
-  );
-  assert.doesNotMatch(shared, /data-module|display: none|(?:^|\n)\s*width: 0;/);
-});
-
-test("shared brand renders each area once and never duplicates the Alo umbrella name", () => {
-  for (const title of [
-    "Training",
-    "Mira",
-    "Nexus Chat",
-    "Gesundheit",
-    "Programme",
-    "Übungen",
-    "Einstellungen",
-  ]) {
-    const markup = renderToStaticMarkup(createElement(AloHeaderBrand, { title }));
-    assert.equal((markup.match(/alt="Alo"/g) ?? []).length, 1);
-    assert.ok(markup.includes(`<strong>${title}</strong>`));
-  }
-  const umbrella = renderToStaticMarkup(createElement(AloHeaderBrand, { title: "Alo" }));
-  assert.equal((umbrella.match(/alt="Alo"/g) ?? []).length, 1);
-  assert.doesNotMatch(umbrella, /<strong>/);
+test("the shared upper brand header is gone while app destinations remain in the home hub", () => {
+  const layout = read("routes/_authenticated/route.tsx");
+  const home = read("routes/_authenticated/index.tsx");
+  const navigation = read("components/TopNav.tsx");
+  assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
+  assert.match(layout, /<AppNavigation\s*\/>/);
+  assert.doesNotMatch(navigation, /alo-module-switcher/);
+  for (const route of ["/ai", "/chat", "/exercises", "/profile", "/health", "/programs", "/clubs"])
+    assert.ok(home.includes(`"${route}"`), `home hub should retain ${route}`);
+  assert.match(home, /Alo-Werkzeuge öffnen/);
+  assert.match(home, /Überall suchen/);
 });

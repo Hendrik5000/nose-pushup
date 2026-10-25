@@ -146,6 +146,9 @@ function BattleLeaguePage() {
           title="Jede Runde zählt."
           description="Verfolge deine Platzierung, analysiere direkte Rivalitäten und arbeite dich in der Arena nach oben."
         >
+          <Link to="/battle" className="sport-back-link">
+            ← Battle
+          </Link>
           <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
             <Trophy className="h-4 w-4" /> {me?.battle_rating ?? 1000} Elo
           </div>

@@ -11,13 +11,15 @@ test("reference refinements load after the shared style sheets", () => {
   }
 });
 
-test("reference interiors keep the global menu and appearance controls", () => {
-  const header = read("components/SportAppHeader.tsx");
-  assert.match(header, /alo-app-header/);
-  assert.match(header, /alo-header-title/);
-  assert.match(header, /aloPageIdentity/);
-  assert.match(header, /hash="appearance"/);
-  assert.match(header, /aria-controls="sport-area-menu"/);
+test("reference interiors keep contextual navigation and move global tools into the home hub", () => {
+  const home = read("routes/_authenticated/index.tsx");
+  const layout = read("routes/_authenticated/route.tsx");
+  assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(home, /aria-label="Überall suchen"/);
+  assert.match(home, /to="\/profile"/);
+  assert.match(home, /aria-label="Weitere Alo-Bereiche"/);
+  assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
+  assert.match(layout, /className="authenticated-shell alo-no-global-header/);
 });
 
 test("new-group action opens outside the mobile-hidden conversation", () => {

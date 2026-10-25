@@ -37,12 +37,13 @@ test("Alo home hub points only to existing app routes and uses real profile data
 test("the planned original game stays a visibly non-interactive placeholder", () => {
   const gameStart = hub.indexOf("Spielwelt");
   assert.notEqual(gameStart, -1);
-  const gameAndFooter = hub.slice(gameStart);
+  const gameEnd = hub.indexOf("</nav>", gameStart);
+  const gameAndFooter = hub.slice(gameStart, gameEnd);
   assert.match(gameAndFooter, /Eigenständiges Abenteuer/);
   assert.match(gameAndFooter, /noch nicht spielbar/);
   assert.match(gameAndFooter, /Privat · in Arbeit/);
   assert.doesNotMatch(gameAndFooter, /<Link\b|href=/);
-  assert.doesNotMatch(hub, /\.from\(|fetch\(|\.insert\(|dispatchEvent\(/);
+  assert.doesNotMatch(gameAndFooter, /\.from\(|fetch\(|\.insert\(|dispatchEvent\(/);
 });
 
 test("the home view has original artwork and keeps the existing training dashboard collapsible", () => {
@@ -61,4 +62,26 @@ test("the home view has original artwork and keeps the existing training dashboa
   assert.match(trainingSection, /<GymPartnerPanel \/>/);
   assert.match(trainingSection, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
   assert.doesNotMatch(trainingSection.slice(0, trainingSection.indexOf(">")), /\bopen\b/);
+});
+
+test("home hub keeps every former shared-menu destination and workspace action reachable", () => {
+  for (const [destination, routeFile] of [
+    ["/health", "health.tsx"],
+    ["/programs", "programs.tsx"],
+    ["/calisthenics", "calisthenics.tsx"],
+    ["/run", "run.tsx"],
+    ["/season", "season.tsx"],
+    ["/battle", "battle.index.tsx"],
+    ["/battle-league", "battle-league.tsx"],
+    ["/leaderboard", "leaderboard.tsx"],
+    ["/clubs", "clubs.tsx"],
+  ] as const) {
+    assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated", routeFile)));
+    assert.ok(home.includes(`to: "${destination}"`), `hub should link to ${destination}`);
+  }
+  assert.match(hub, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(hub, /detail: "menu"/);
+  assert.match(hub, /aria-label="Überall suchen"/);
+  assert.match(hub, /detail: "search"/);
+  assert.match(hub, /aria-label="Weitere Alo-Bereiche"/);
 });

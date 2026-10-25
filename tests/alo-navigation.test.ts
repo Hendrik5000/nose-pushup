@@ -47,7 +47,7 @@ test("optional bar hides after intentional downward scroll, returns upward, and 
   assert.equal(state.visible, true, "near the top it is available");
 });
 
-test("new onboarding, compact module controls, hidden-by-default legacy nav, and optional context are explicit", () => {
+test("onboarding, swipe, hidden-by-default bottom navigation, and optional context remain explicit", () => {
   const tour = read("components/WelcomeTour.tsx");
   assert.match(tour, /nose-push:tour-seen:\$\{VERSION\}/);
   assert.match(tour, /Training/);
@@ -57,8 +57,13 @@ test("new onboarding, compact module controls, hidden-by-default legacy nav, and
   assert.match(shell, /installModuleSwipeGesture/);
   assert.match(read("lib/module-swipe-gesture.ts"), /getSwipeDestination/);
   const nav = read("components/TopNav.tsx");
-  assert.match(nav, /aria-label="Alo · Module"/);
+  assert.doesNotMatch(nav, /alo-module-switcher|moduleMenu/);
+  assert.match(nav, /layout === "bottom" \|\| layout === "floating"/);
   assert.match(nav, /hidden=\{!barVisible\}\s+inert=\{!barVisible\}/);
+  const home = read("routes/_authenticated/index.tsx");
+  assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(home, /aria-label="Überall suchen"/);
+  assert.match(home, /aria-label="Weitere Alo-Bereiche"/);
   const ai = read("components/mira/SuperAiPage.tsx");
   assert.match(ai, /MIRA_CONTEXT_KEY/);
   assert.match(ai, /MiraContextControls/);
@@ -66,16 +71,15 @@ test("new onboarding, compact module controls, hidden-by-default legacy nav, and
   assert.match(ai, /untrusted Kontext/);
 });
 
-test("Alo header renders one shared area title without a duplicate module line", () => {
-  assert.match(
-    read("components/SportAppHeader.tsx"),
-    /<AloHeaderBrand title=\{identity\.title\} \/>/,
-  );
-  assert.doesNotMatch(read("components/SportAppHeader.tsx"), /<small>|<strong>/);
-  assert.match(
-    read("components/AloHeaderBrand.tsx"),
-    /title !== "Alo" && <strong>\{title\}<\/strong>/,
-  );
+test("the shared upper Alo header is absent and area navigation lives in the app hub", () => {
+  const layout = read("routes/_authenticated/route.tsx");
+  const hub = read("routes/_authenticated/index.tsx");
+  assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
+  assert.match(layout, /<AppNavigation\s*\/>/);
+  assert.match(hub, /<HubAppCard[\s\S]*?to="\/ai"/);
+  assert.match(hub, /<HubAppCard[\s\S]*?to="\/chat"/);
+  assert.match(hub, /<HubAppCard[\s\S]*?to="\/exercises"/);
+  assert.match(hub, /<HubAppCard[\s\S]*?to="\/profile"/);
 });
 
 // General defaults must not remove the original optional training helpers.

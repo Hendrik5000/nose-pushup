@@ -131,6 +131,9 @@ function CalisthenicsPage() {
             title="Baue echte Kontrolle auf"
             description="Planche, Front Lever und Handstand — trainiere mit täglichem Check-in und intelligenter Belastungssteuerung."
           >
+            <Link to="/" className="sport-back-link">
+              ← Start
+            </Link>
             <div className="flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
               <CheckCircle2 size={17} />
               {
@@ -274,6 +277,12 @@ function CalisthenicsPage() {
                 Cali System
               </div>
               <h1 className="mt-0.5 text-2xl font-bold tracking-tight">Calisthenics 🤸</h1>
+              <Link
+                to="/"
+                className="mt-1 inline-flex min-h-11 items-center text-xs text-muted-foreground"
+              >
+                ← Start
+              </Link>
             </div>
             <div className="rounded-full border border-border bg-secondary/60 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground">
               {

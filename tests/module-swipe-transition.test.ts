@@ -273,22 +273,14 @@ test("direct touch tracking is frame-batched and all native gesture guards remai
     /routeKey === "alo-swipe-screens" \? "alo-swipe-route" : "route-enter"/,
   );
 });
-test("compact menu retains two-second hiding, upward reflow and keyboard focus protection", () => {
-  const hook = read("hooks/useAutoHideModuleMenu.ts");
+test("shared upper chrome is removed while module swipes and lower-navigation fallback remain", () => {
   const nav = read("components/TopNav.tsx");
-  const css = read("module-menu.css");
-  assert.match(hook, /MODULE_MENU_IDLE_MS = 2_000/);
-  assert.match(hook, /moduleMenuVisible = "false"/);
-  assert.match(hook, /\[pathname, reveal\]/);
-  assert.match(hook, /matches\(":focus-visible"\)/);
-  assert.match(hook, /clearTimeout\(timer.current\)/);
-  assert.match(hook, /removeEventListener\("pointermove", pointer\)/);
-  assert.match(hook, /removeEventListener\("touchstart", touch\)/);
-  assert.match(nav, /onFocusCapture=\{moduleMenu.reveal\}/);
-  assert.match(nav, /onBlurCapture=\{moduleMenu.scheduleHide\}/);
-  assert.match(css, /pointer-events: none/);
-  assert.match(css, /--homebar-top-space: env\(safe-area-inset-top, 0px\) !important/);
-  assert.match(css, /data-navigation-expanded="true"/);
-  assert.match(css, /prefers-reduced-motion: reduce/);
-  assert.match(read("components/SportAppHeader.tsx"), /aria-label="Design & Navigation öffnen"/);
+  const shell = read("routes/_authenticated/route.tsx");
+  const layout = read("alo-header-layout.css");
+  assert.doesNotMatch(nav, /alo-module-switcher|moduleMenu/);
+  assert.match(nav, /layout === "bottom" \|\| layout === "floating"/);
+  assert.match(shell, /installModuleSwipeGesture/);
+  assert.doesNotMatch(shell, /SportAppHeader|<TopNav\s*\/>/);
+  assert.match(layout, /--homebar-top-space: 0px !important/);
+  assert.match(layout, /prefers-reduced-motion: reduce/);
 });
