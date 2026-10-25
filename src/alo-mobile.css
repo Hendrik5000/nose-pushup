@@ -1191,6 +1191,319 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
   }
 }
 
+/* Tablet / iPad layouts: adapt the actual app surfaces without adding chrome. */
+@media (min-width: 768px) and (max-width: 1279px) {
+  html[data-design-style] .authenticated-shell {
+    min-width: 0;
+  }
+
+  html[data-design-style]
+    :is(
+      main.alo-tablet-home-page,
+      main.alo-tablet-mira,
+      main.alo-tablet-health,
+      main.alo-tablet-training,
+      main.sport-profile-page
+    ) {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 76rem;
+    min-width: 0;
+    margin-inline: auto;
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+  }
+
+  html[data-design-style] main.sport-ai-page.alo-tablet-mira {
+    max-width: 80rem;
+  }
+
+  html[data-design-style] main.classic-only.alo-tablet-mira {
+    max-width: 56rem;
+  }
+
+  html[data-design-style] main.classic-only.alo-tablet-health {
+    max-width: 64rem;
+  }
+
+  html[data-design-style] main.classic-only.alo-tablet-training {
+    max-width: 70rem;
+  }
+
+  html[data-design-style] main.alo-training-focus {
+    max-width: 56rem;
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+  }
+
+  html[data-design-style] .alo-tablet-home-hub {
+    width: 100%;
+    max-width: 68rem;
+    margin-inline: auto;
+  }
+
+  html[data-design-style] .alo-tablet-home-hub > header {
+    margin-bottom: 2rem;
+  }
+
+  html[data-design-style] .alo-tablet-home-apps {
+    grid-template-columns: repeat(5, minmax(0, 108px));
+    justify-content: start;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 42rem;
+    margin-inline: 0;
+  }
+
+  html[data-design-style] .alo-tablet-home-apps > :is(a, div) {
+    min-width: 0;
+    min-height: 124px;
+    padding: 0.35rem;
+  }
+
+  html[data-design-style] .alo-tablet-home-apps > :is(a, div) > span:first-child {
+    max-width: 92px;
+  }
+
+  html[data-design-style] .alo-tablet-home-apps > a > span:last-child {
+    max-width: 7rem;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  html[data-design-style] .alo-tablet-home-tools {
+    max-width: 42rem;
+  }
+
+  html[data-design-style] .alo-tablet-home-hub details > nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  html[data-design-style] .alo-tablet-home-page #training-overview {
+    width: 100%;
+    max-width: 76rem;
+    margin-inline: auto;
+  }
+
+  html[data-design-style]
+    .alo-tablet-mira
+    :is(.sport-ai-chat-grid, .sport-ai-chat-main, .sport-chat-stage, .sport-chat-composer) {
+    min-width: 0;
+  }
+
+  html[data-design-style="performance"] main.sport-ai-page.alo-tablet-mira.sport-ai-chat-mode {
+    box-sizing: border-box;
+    width: 100%;
+    height: calc(
+      var(--app-viewport-height, 100dvh) - var(--homebar-top-space, 0px) -
+        var(--homebar-bottom-space, 0px)
+    );
+    min-height: 0;
+    overflow: hidden;
+    padding-top: 0.75rem !important;
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px)) !important;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px)) !important;
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px)) !important;
+  }
+
+  html[data-design-style="performance"]
+    main.sport-ai-page.alo-tablet-mira.sport-ai-chat-mode
+    .sport-chat-composer {
+    position: static;
+    flex: 0 0 auto;
+    width: min(100%, 64rem);
+    margin-inline: auto;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  html[data-design-style] .alo-tablet-nexus.app-chat-shell.sport-chat-app {
+    --sport-header-height: 0px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 82rem;
+    height: calc(
+      var(--app-viewport-height, 100dvh) - var(--homebar-top-space, 0px) -
+        var(--homebar-bottom-space, 0px)
+    );
+    min-width: 0;
+    min-height: 0;
+    margin-inline: auto;
+  }
+
+  html[data-design-style] .alo-tablet-nexus > aside {
+    width: clamp(15rem, 26vw, 19rem);
+    flex: 0 0 clamp(15rem, 26vw, 19rem);
+    min-width: 0;
+  }
+
+  html[data-design-style] .alo-tablet-nexus .community-conversation {
+    min-width: 0;
+  }
+
+  html[data-design-style] .alo-tablet-nexus .sport-chat-topbar {
+    padding-top: max(1rem, env(safe-area-inset-top, 0px));
+  }
+
+  html[data-design-style] .alo-tablet-nexus :is(.community-chat-composer, .sport-chat-composer) {
+    position: static;
+    flex: 0 0 auto;
+    min-width: 0;
+    padding-left: clamp(0.75rem, 2vw, 1.5rem);
+    padding-right: clamp(0.75rem, 2vw, 1.5rem);
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  html[data-design-style]
+    .alo-tablet-nexus
+    :is(.community-chat-composer, .sport-chat-composer)
+    button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  html[data-design-style] .alo-tablet-nexus .sport-chat-message-list > div {
+    width: 100%;
+    max-width: min(100%, 48rem);
+    margin-inline: auto;
+    overflow-wrap: anywhere;
+  }
+
+  html[data-design-style="performance"] .alo-tablet-health.sport-health-page {
+    max-width: 76rem;
+  }
+
+  html[data-design-style="performance"] .alo-tablet-health #health-sleep {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+
+  html:not([data-design-style="performance"])
+    main.classic-only.alo-tablet-health
+    section:has(input[type="date"])
+    > div.grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  html[data-design-style] .alo-tablet-health #health-entry button {
+    min-height: 44px;
+  }
+
+  html[data-design-style] main.alo-tablet-training {
+    max-width: 76rem;
+  }
+
+  html[data-design-style] main.alo-tablet-training > section.space-y-4 > .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-design-style="performance"] main.sport-profile-page {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    align-items: start;
+    gap: 1.25rem;
+  }
+
+  html[data-design-style="performance"]
+    main.sport-profile-page
+    > :is(:first-child, button.alo-btn, nav[aria-label="Profilbereiche"], #profile-account) {
+    grid-column: 1 / -1;
+  }
+
+  html[data-design-style="performance"]
+    main.sport-profile-page
+    > .settings-section:has(> button[aria-expanded="true"]) {
+    grid-column: 1 / -1;
+  }
+
+  html:not([data-design-style="performance"])
+    main.classic-only:has(> nav[aria-label="Profilbereiche"])
+    > div.mt-4.space-y-3 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  html:not([data-design-style="performance"])
+    main.classic-only:has(> nav[aria-label="Profilbereiche"])
+    > div.mt-4.space-y-3
+    > * {
+    margin-block: 0 !important;
+    min-width: 0;
+  }
+
+  html:not([data-design-style="performance"])
+    main.classic-only:has(> nav[aria-label="Profilbereiche"])
+    .settings-section:has(> button[aria-expanded="true"]) {
+    grid-column: 1 / -1;
+  }
+
+  html[data-design-style]
+    :is(.sport-profile-page, main.classic-only:has(> nav[aria-label="Profilbereiche"]))
+    nav[aria-label="Profilbereiche"] {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  html[data-design-style]
+    :is(.sport-profile-page, main.classic-only:has(> nav[aria-label="Profilbereiche"]))
+    .settings-section
+    > button {
+    min-height: 96px;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  html[data-design-style="performance"]
+    main.sport-ai-page.alo-tablet-mira.sport-ai-chat-mode
+    .sport-ai-chat-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem);
+    align-items: stretch;
+    gap: 1.25rem;
+  }
+
+  html[data-design-style="performance"]
+    main.sport-ai-page.alo-tablet-mira.sport-ai-chat-mode
+    .sport-ai-chat-main {
+    width: 100%;
+    max-width: none;
+  }
+
+  html[data-design-style="performance"] .alo-tablet-mira .sport-ai-chat-aside {
+    display: flex;
+    min-width: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) and (orientation: landscape) and (max-height: 850px) {
+  html[data-design-style] main.alo-tablet-home-page {
+    padding-top: 1.25rem;
+  }
+
+  html[data-design-style="performance"] main.sport-ai-page.alo-tablet-mira.sport-ai-chat-mode {
+    gap: 0.35rem;
+    padding-top: 0.35rem;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  html[data-design-style="performance"] .alo-tablet-mira .sport-chat-stage {
+    min-height: 0;
+    padding-block: 0.5rem;
+  }
+
+  html[data-design-style="performance"]
+    .alo-tablet-mira.sport-ai-chat-mode
+    .sport-ai-chat-options[open] {
+    max-height: 28dvh;
+    overflow-y: auto;
+  }
+}
 /* Shared Alo app lockup: one brand seal and one area title in every design variant. */
 html[data-design-style]
   .alo-app-header

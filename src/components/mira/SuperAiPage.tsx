@@ -538,7 +538,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
   return (
     <>
       <DesignView variant="classic">
-        <main className="classic-only alo-classic-mira mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pt-5 pb-3">
+        <main className="classic-only alo-classic-mira alo-tablet-mira mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pt-5 pb-3">
           <Link
             to="/"
             aria-label="Zur Alo-Startseite"
@@ -1066,7 +1066,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
       </DesignView>
       <DesignView variant="sport">
         <main
-          className={`sport-only sport-ai-page mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8 ${sportAiView === "chat" ? "sport-ai-chat-mode" : ""}`}
+          className={`sport-only sport-ai-page alo-tablet-mira mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8 ${sportAiView === "chat" ? "sport-ai-chat-mode" : ""}`}
         >
           {sportAiView !== "chat" && (
             <>

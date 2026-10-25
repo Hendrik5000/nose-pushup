@@ -106,7 +106,7 @@ function HomeAppHub({
   const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
 
   return (
-    <section className="mb-8" aria-labelledby="app-hub-title">
+    <section className="alo-tablet-home-hub mb-8" aria-labelledby="app-hub-title">
       <header className="mb-7 flex items-center justify-between gap-3">
         <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
           Alo
@@ -136,7 +136,7 @@ function HomeAppHub({
         </div>
       </header>
       <nav
-        className="grid w-full max-w-[520px] grid-cols-4 gap-x-2 gap-y-5 sm:grid-cols-5"
+        className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-2 gap-y-5 sm:grid-cols-5"
         aria-label="Alo-Apps"
       >
         <HubAppIcon to="/ai" title="Mira" artwork="mira" />
@@ -160,7 +160,7 @@ function HomeAppHub({
           <span className="-mt-1 text-[10px] leading-tight">Gesperrt</span>
         </div>
       </nav>
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="alo-tablet-home-tools mt-4 grid grid-cols-2 gap-2">
         <button
           type="button"
           className="alo-btn flex min-h-11 items-center justify-center gap-2"
@@ -796,7 +796,7 @@ function Dashboard() {
   };
 
   return (
-    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
+    <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
       <HomeAppHub displayName={profile?.display_name} avatarUrl={profile?.avatar_url} />
       <details
         className="group rounded-3xl border border-border bg-card/45 shadow-sm"

@@ -748,7 +748,7 @@ export function LocalChatShell() {
 
   return (
     <div
-      className={`app-chat-shell sport-chat-app flex overflow-hidden bg-background ${mobileListOpen ? "community-show-list" : "community-show-conversation"}`}
+      className={`app-chat-shell sport-chat-app alo-tablet-nexus flex overflow-hidden bg-background ${mobileListOpen ? "community-show-list" : "community-show-conversation"}`}
     >
       <div className="sport-only community-mobile-list">
         {sidebar}

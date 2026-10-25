@@ -76,7 +76,7 @@ function ExercisesPage() {
   return (
     <>
       <DesignView variant="sport">
-        <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-7 px-5 py-6 sm:px-8">
+        <main className="sport-only alo-tablet-training mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-7 px-5 py-6 sm:px-8">
           <SportPageIntro
             eyebrow="TRAININGSBEREICH · 01"
             title="Wähle deinen Fokus"
@@ -227,7 +227,7 @@ function ExercisesPage() {
         </main>
       </DesignView>
       <DesignView variant="classic">
-        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
+        <main className="classic-only alo-tablet-training mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
           <header className="flex items-center justify-between">
             <Link
               to="/"
