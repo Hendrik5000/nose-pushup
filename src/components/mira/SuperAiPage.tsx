@@ -23,6 +23,7 @@ import {
   Plus,
   Settings2,
   ArrowUpRight,
+  House,
 } from "lucide-react";
 import { ALO_EVENT, ALO_REMOTE_EVENT, getMiraGrants, putAlo, removeAlo } from "@/lib/alo-store";
 import { MiraContextControls } from "@/components/alo/MiraContextControls";
@@ -537,6 +538,14 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
     <>
       <DesignView variant="classic">
         <main className="classic-only alo-classic-mira mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pt-5 pb-3">
+          <Link
+            to="/"
+            aria-label="Zur Alo-Startseite"
+            className="mb-2 inline-flex min-h-11 items-center gap-2 self-start rounded-xl px-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <House className="h-4 w-4" aria-hidden="true" />
+            Startseite
+          </Link>
           {/* Header */}
           <details
             className="alo-classic-mira-options"
@@ -547,13 +556,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             <header className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/20 via-card/80 to-background p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <Link
-                    to="/"
-                    className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
-                  >
-                    ← Alo
-                  </Link>
-                  <h1 className="mt-1 text-xl font-bold tracking-tight">Mira</h1>
+                  <h1 className="text-xl font-bold tracking-tight">Mira</h1>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">{activeTitle}</p>
                 </div>
                 <div className="flex flex-wrap justify-end gap-1.5">
@@ -1081,6 +1084,14 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 </details>
               </div>
               <div className="sport-ai-chat-actions">
+                <Link
+                  to="/"
+                  className="sport-ai-header-action"
+                  aria-label="Zur Alo-Startseite"
+                  title="Startseite"
+                >
+                  <House aria-hidden="true" />
+                </Link>
                 <button
                   type="button"
                   onClick={startNewSession}
@@ -1141,7 +1152,11 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               eyebrow="DEINE KI"
               title="Mira"
               description="Eine vielseitige KI für Alltag, Wissen, Schreiben, Ideen und Fragen. Trainingskontext ist optional."
-            />
+            >
+              <Link to="/" className="sport-back-link">
+                ← Startseite
+              </Link>
+            </SportPageIntro>
           )}
           <section className="sport-ai-hub" aria-label="Mira-Navigation">
             <div className="sport-ai-provider-status">

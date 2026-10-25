@@ -76,10 +76,10 @@ test("the shared upper Alo header is absent and area navigation lives in the app
   const hub = read("routes/_authenticated/index.tsx");
   assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
   assert.match(layout, /<AppNavigation\s*\/>/);
-  assert.match(hub, /<HubAppCard[\s\S]*?to="\/ai"/);
-  assert.match(hub, /<HubAppCard[\s\S]*?to="\/chat"/);
-  assert.match(hub, /<HubAppCard[\s\S]*?to="\/exercises"/);
-  assert.match(hub, /<HubAppCard[\s\S]*?to="\/profile"/);
+  assert.match(hub, /<HubAppIcon to="\/ai"/);
+  assert.match(hub, /<HubAppIcon to="\/chat"/);
+  assert.match(hub, /<HubAppIcon to="\/exercises"/);
+  assert.match(hub, /<HubAppIcon to="\/profile"/);
 });
 
 // General defaults must not remove the original optional training helpers.

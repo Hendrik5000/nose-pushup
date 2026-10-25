@@ -6,10 +6,13 @@ import {
   Brain,
   Bug,
   ChevronDown,
+  Dumbbell,
   Globe,
   HeartPulse,
+  History,
   KeyRound,
   Palette,
+  ShieldCheck,
   SlidersHorizontal,
   UserRound,
   Users,
@@ -106,27 +109,31 @@ export function SettingsSection({
     ? Brain
     : title.includes("Freund")
       ? Users
-      : title.includes("Design")
+      : title.includes("Design") || title.includes("Darstellung")
         ? Palette
-        : title.includes("Fehler")
-          ? Bug
-          : title.includes("Badge")
-            ? Award
-            : title.includes("Öffentlich")
-              ? Globe
-              : title.includes("Profil")
-                ? UserRound
+        : title.includes("Verlauf")
+          ? History
+          : title.includes("Fehler")
+            ? Bug
+            : title.includes("Badge")
+              ? Award
+              : title.includes("Öffentlich")
+                ? Globe
                 : title.includes("Benachrichtigung")
                   ? Bell
                   : title.includes("Health") || title.includes("Gesund")
                     ? HeartPulse
-                    : title.includes("API") || title.includes("KI")
-                      ? KeyRound
-                      : title.includes("Feedback") || title.includes("Sound")
-                        ? Volume2
-                        : title.includes("Training")
-                          ? Activity
-                          : SlidersHorizontal;
+                    : title.includes("Datenschutz")
+                      ? ShieldCheck
+                      : title.includes("API") || title.includes("KI")
+                        ? KeyRound
+                        : title.includes("Feedback") || title.includes("Sound")
+                          ? Volume2
+                          : title.includes("Training")
+                            ? Dumbbell
+                            : title.includes("Profil") || title.includes("Konto")
+                              ? UserRound
+                              : SlidersHorizontal;
 
   return (
     <section
@@ -142,9 +149,9 @@ export function SettingsSection({
         aria-controls={contentId}
         className="flex w-full items-center gap-4 px-5 py-4 text-left transition active:scale-[0.99]"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border bg-secondary/60 text-lg">
-          <span className="classic-only">{icon}</span>
-          <SportIcon className="sport-only h-5 w-5 text-primary" aria-hidden="true" />
+        <span className="settings-section-icon-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary shadow-sm">
+          <span className="settings-section-emoji">{icon}</span>
+          <SportIcon className="settings-section-vector h-6 w-6" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-foreground">{title}</span>

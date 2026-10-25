@@ -10,6 +10,7 @@ const settingsSection = readFileSync(
   new URL("../src/components/SettingsSection.tsx", import.meta.url),
   "utf8",
 );
+const settingsStyles = readFileSync(new URL("../src/sport.css", import.meta.url), "utf8");
 
 test("classic profile provides mobile-friendly shortcuts to key settings sections", () => {
   assert.match(profile, /<nav[\s\S]*?aria-label="Profilbereiche"[\s\S]*?overflow-x-auto/);
@@ -63,4 +64,23 @@ test("default sport profile groups its long settings page into discoverable sect
   assert.match(settingsSection, /aria-controls=\{contentId\}/);
   assert.match(settingsSection, /inert=\{!open\}/);
   assert.match(settingsSection, /\(open \|\| visited\) && children/);
+});
+
+test("settings groups show a clear category graphic in both design variants", () => {
+  assert.match(settingsSection, /settings-section-icon-chip/);
+  assert.match(settingsSection, /settings-section-emoji/);
+  assert.match(settingsSection, /settings-section-vector h-6 w-6/);
+  assert.match(settingsStyles, /\.settings-section-emoji\s*\{\s*display: inline-flex/);
+  assert.match(settingsStyles, /\.settings-section-vector\s*\{\s*display: none/);
+  assert.match(
+    settingsStyles,
+    /html\[data-design-style="performance"\] \.settings-section-emoji\s*\{\s*display: none/,
+  );
+  assert.match(
+    settingsStyles,
+    /html\[data-design-style="performance"\] \.settings-section-vector\s*\{\s*display: block/,
+  );
+  assert.match(settingsSection, /title\.includes\("Darstellung"\)[\s\S]*?\? Palette/);
+  assert.match(settingsSection, /title\.includes\("Datenschutz"\)[\s\S]*?\? ShieldCheck/);
+  assert.match(settingsSection, /title\.includes\("Verlauf"\)[\s\S]*?\? History/);
 });

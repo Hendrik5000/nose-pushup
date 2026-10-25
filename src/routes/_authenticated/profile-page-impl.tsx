@@ -307,7 +307,7 @@ export function ProfilePage() {
               to="/"
               className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
             >
-              ← Zurück
+              ← Startseite
             </Link>
             <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
               Einstellungen
@@ -615,7 +615,7 @@ export function ProfilePage() {
               to="/"
               className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
             >
-              ← Zurück
+              ← Startseite
             </Link>
             <button
               onClick={signOut}

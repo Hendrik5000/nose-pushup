@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   ArrowLeft,
+  House,
   MessageCircle,
   MoreVertical,
   Search,
@@ -733,8 +734,12 @@ export function LocalChatShell() {
             <div className="truncate text-sm font-medium">{myName}</div>
             <div className="text-[10px] text-muted-foreground">{modeLabel}</div>
           </div>
-          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">
-            App
+          <Link
+            to="/"
+            aria-label="Zur Alo-Startseite"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            Startseite
           </Link>
         </div>
       </div>
@@ -798,9 +803,10 @@ export function LocalChatShell() {
             </HeadBtn>
             <Link
               to="/"
+              aria-label="Zur Alo-Startseite"
               className="rounded-full border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
             >
-              App
+              Startseite
             </Link>
           </div>
         </header>
@@ -822,6 +828,14 @@ export function LocalChatShell() {
               <h1>{headerTitle}</h1>
               <p>{mode === "local" ? "Lokal auf diesem Gerät" : "Nexus Chat · Cloud"}</p>
             </div>
+            <Link
+              to="/"
+              aria-label="Zur Alo-Startseite"
+              title="Startseite"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/70 text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <House aria-hidden="true" />
+            </Link>
           </div>
           <details className="community-conversation-menu">
             <summary aria-label="Chataktionen">
@@ -849,9 +863,10 @@ export function LocalChatShell() {
               </HeadBtn>
               <Link
                 to="/"
+                aria-label="Zur Alo-Startseite"
                 className="rounded-xl border border-border/70 px-3 py-2 text-xs font-bold"
               >
-                App
+                Startseite
               </Link>
             </div>
           </details>

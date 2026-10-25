@@ -83,7 +83,7 @@ function ExercisesPage() {
             description="Jede Wiederholung zählt. Entscheide dich für einen Skill oder starte eine klassische Session."
           >
             <Link to="/" className="sport-back-link">
-              ← Start
+              ← Startseite
             </Link>
           </SportPageIntro>
           <section className="sport-feature-card rounded-[2rem] border border-border bg-card/70 p-6 sm:p-8">
@@ -233,7 +233,7 @@ function ExercisesPage() {
               to="/"
               className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
             >
-              ← Start
+              ← Startseite
             </Link>
             <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
               Übungen

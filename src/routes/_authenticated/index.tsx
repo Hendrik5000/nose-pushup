@@ -43,6 +43,7 @@ import {
   Footprints,
   Hand,
   HeartPulse,
+  LockKeyhole,
   Search,
   ScanFace,
   Target,
@@ -106,19 +107,11 @@ function HomeAppHub({
 
   return (
     <section className="mb-8" aria-labelledby="app-hub-title">
-      <header className="mb-6 flex items-start justify-between gap-3 sm:items-center">
-        <div className="min-w-0 pt-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">
-            Alo · dein digitaler Raum
-          </p>
-          <h1 id="app-hub-title" className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            Alles an einem Ort.
-          </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Öffne deine Apps und mach dort weiter, wo du möchtest.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2 pt-1">
+      <header className="mb-7 flex items-center justify-between gap-3">
+        <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
+          Alo
+        </h1>
+        <div className="flex shrink-0 items-center gap-2">
           <Link
             to="/profile"
             hash="profile-training"
@@ -142,52 +135,29 @@ function HomeAppHub({
           </Link>
         </div>
       </header>
-
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold tracking-wide">Deine Apps</h2>
-        <span className="text-xs text-muted-foreground">4 Bereiche</span>
-      </div>
-      <nav className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" aria-label="Alo-Apps">
-        <HubAppCard
-          to="/ai"
-          title="Mira"
-          description="Ideen sortieren, schreiben und Neues lernen."
-          artwork="mira"
-          category="Deine KI"
-        />
-        <HubAppCard
-          to="/chat"
-          title="Nexus Chat"
-          description="Gespräche und Räume öffnen."
-          artwork="nexus"
-          category="Gemeinsam"
-        />
-        <HubAppCard
-          to="/exercises"
-          title="Alo Health"
-          description="Nose Pushup, Übungen und Training."
-          artwork="health"
-          category="Bewegung"
-        />
-        <HubAppCard
-          to="/profile"
-          title="Einstellungen"
-          description="Profil, Darstellung und Optionen."
-          artwork="settings"
-          category="Dein Alo"
-        />
-        <div className="flex min-h-[210px] min-w-0 flex-col rounded-3xl border border-dashed border-border bg-card/30 p-3 text-muted-foreground sm:min-h-[250px] sm:p-4">
-          <div className="mb-3 overflow-hidden rounded-2xl opacity-70">
+      <nav
+        className="grid w-full max-w-[520px] grid-cols-4 gap-x-2 gap-y-5 sm:grid-cols-5"
+        aria-label="Alo-Apps"
+      >
+        <HubAppIcon to="/ai" title="Mira" artwork="mira" />
+        <HubAppIcon to="/chat" title="Nexus Chat" artwork="nexus" />
+        <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
+        <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
+        <div
+          role="img"
+          aria-label="Spiel-App, gesperrt und noch nicht verfügbar"
+          className="flex w-full min-w-0 flex-col items-center gap-2 text-center text-muted-foreground"
+        >
+          <span className="relative grid aspect-square w-full max-w-[72px] place-items-center overflow-hidden rounded-[20px] border border-dashed border-border bg-card/30 opacity-60 grayscale">
             <HubArtwork kind="adventure" />
-          </div>
-          <span className="text-[9px] font-semibold uppercase tracking-[0.16em]">Spielwelt</span>
-          <h3 className="mt-1 text-sm font-semibold text-foreground">Eigenständiges Abenteuer</h3>
-          <p className="mt-1 text-xs leading-relaxed">
-            Eine eigene Welt entsteht – noch nicht spielbar.
-          </p>
-          <span className="mt-auto inline-flex min-h-8 items-center self-start pt-2 text-[10px] font-medium">
-            Privat · in Arbeit
+            <span className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow-sm">
+              <LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />
+            </span>
           </span>
+          <span className="max-w-[84px] truncate text-[10px] font-medium leading-tight sm:text-xs">
+            Spiel
+          </span>
+          <span className="-mt-1 text-[10px] leading-tight">Gesperrt</span>
         </div>
       </nav>
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -231,32 +201,27 @@ function HomeAppHub({
   );
 }
 
-function HubAppCard({
+function HubAppIcon({
   to,
   title,
-  description,
   artwork,
-  category,
 }: {
   to: "/ai" | "/chat" | "/exercises" | "/profile";
   title: string;
-  description: string;
   artwork: "mira" | "nexus" | "health" | "settings";
-  category: string;
 }) {
   return (
     <Link
       to={to}
-      className="group flex min-h-[210px] min-w-0 flex-col rounded-3xl border border-border bg-card/65 p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:min-h-[250px] sm:p-4"
+      aria-label={`${title} öffnen`}
+      className="group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
-      <div className="mb-3 overflow-hidden rounded-2xl transition-transform group-hover:scale-[1.015]">
+      <span className="relative grid aspect-square w-full max-w-[72px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg">
         <HubArtwork kind={artwork} />
-      </div>
-      <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-        {category}
       </span>
-      <h3 className="mt-1 text-sm font-semibold text-foreground sm:text-base">{title}</h3>
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">{description}</p>
+      <span className="max-w-[84px] truncate text-[10px] font-medium leading-tight text-foreground sm:text-xs">
+        {title}
+      </span>
     </Link>
   );
 }
@@ -273,8 +238,8 @@ function HubArtwork({ kind }: { kind: "mira" | "nexus" | "health" | "settings" |
 
   return (
     <svg
-      viewBox="0 0 280 132"
-      className="block h-[92px] w-full sm:h-[112px]"
+      viewBox="74 0 132 132"
+      className="block h-full w-full"
       aria-hidden="true"
       focusable="false"
     >

@@ -541,6 +541,22 @@ html[data-design-style="performance"]
   > section {
   height: 100%;
 }
+.settings-section-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.settings-section-vector {
+  display: none;
+}
+html[data-design-style="performance"] .settings-section-emoji {
+  display: none;
+}
+html[data-design-style="performance"] .settings-section-vector {
+  display: block;
+}
 html[data-design-style="performance"] .settings-section {
   padding: 0 !important;
 }
