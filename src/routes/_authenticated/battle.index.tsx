@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AloHomeLink } from "@/components/AloHomeLink";
+import { BattleFriendInvitationPanel } from "@/components/BattleFriendInvitationPanel";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Bot, Crosshair, Swords, Trophy } from "lucide-react";
 import {
@@ -288,6 +289,13 @@ function BattleLobby() {
           )}
         </button>
       </section>
+
+      <BattleFriendInvitationPanel
+        mode={mode}
+        durationS={mode === "timed" ? duration : modeDefaults(mode).duration_s}
+        targetReps={modeDefaults(mode).target_reps}
+        onOpenBattle={(battleId) => navigate({ to: "/battle/$id", params: { id: battleId } })}
+      />
 
       <div className="sport-only mt-7">
         <SportSectionLabel number="02">Direkte Herausforderung</SportSectionLabel>
