@@ -14,8 +14,8 @@ const OTHER_FRIEND = "44000000-0000-4000-8000-000000000004";
 const STRANGER = "33000000-0000-4000-8000-000000000003";
 const INVITATION = "55000000-0000-4000-8000-000000000005";
 const BATTLE = "66000000-0000-4000-8000-000000000006";
-const LATER = "2026-10-27T12:00:00.000Z";
-const CREATED = "2026-10-26T12:00:00.000Z";
+const CREATED = new Date(Date.now() - 60_000).toISOString();
+const LATER = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
 type RpcCall = {
   name: BattleInvitationRpcName;
