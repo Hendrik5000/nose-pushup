@@ -1,3 +1,4 @@
+import { BackendNotReadyError, isBackendMissing } from "@/lib/friends/rpc";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { BATTLE_MODES, type BattleMode } from "@/lib/battle.functions";
@@ -68,7 +69,7 @@ export type BattleInvitationRpcArguments = {
 
 export type BattleInvitationGatewayResult<T> = {
   data: T | null;
-  error: { message: string } | null;
+  error: { message: string; code?: string } | null;
 };
 
 export type BattleInvitationFriendshipRow = {
@@ -177,7 +178,10 @@ function requireRpcRows(value: unknown, message: string): Record<string, unknown
 }
 
 function checkResult<T>(result: BattleInvitationGatewayResult<T>, message: string): T {
-  if (result.error) throw new Error(message);
+  if (result.error) {
+    if (isBackendMissing(result.error)) throw new BackendNotReadyError();
+    throw new Error(message);
+  }
   if (result.data === null) throw new Error(message);
   return result.data;
 }

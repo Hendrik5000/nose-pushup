@@ -11,6 +11,11 @@ export type LocalMessage = {
   created_at: string;
   edited_at: string | null;
   reply_to_id: string | null;
+  /** Cloud mode only: private storage path in the chat-uploads bucket. */
+  attachment_url?: string | null;
+  attachment_type?: string | null;
+  attachment_name?: string | null;
+  attachment_size?: number | null;
 };
 
 export type LocalReaction = {

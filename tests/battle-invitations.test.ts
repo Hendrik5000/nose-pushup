@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { BattleFriendInvitationPanel } from "../src/components/BattleFriendInvitationPanel";
 import {
   BATTLE_INVITATIONS_UI_ENABLED,
   canRespondToBattleInvitation,
@@ -12,8 +9,8 @@ import {
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("friend battle invitations stay disabled until the candidate migration is verified", () => {
-  assert.equal(BATTLE_INVITATIONS_UI_ENABLED, false);
+test("friend battle invitations are enabled in the UI and the gate still blocks unverified or ineligible cases", () => {
+  assert.equal(BATTLE_INVITATIONS_UI_ENABLED, true);
   assert.equal(
     getBattleInvitationGateReason({
       migrationVerified: false,
@@ -66,38 +63,25 @@ test("an invitation can only be answered by its recipient while pending, unexpir
   assert.equal(canRespondToBattleInvitation({ ...base, friendshipStillAccepted: false }), false);
 });
 
-test("the battle lobby keeps friend invites closed until migration evidence and preserves code battles", () => {
-  const markup = renderToStaticMarkup(
-    createElement(BattleFriendInvitationPanel, {
-      mode: "timed",
-      durationS: 60,
-      targetReps: 0,
-      onOpenBattle: () => undefined,
-    }),
-  );
-  assert.match(markup, /Mit Freunden kämpfen/);
-  assert.match(markup, /Freund auswählen/);
-  assert.match(markup, /disabled/);
-  assert.match(markup, /gesperrt, bis Migration/);
-  assert.match(markup, /Battle-Einladungs-Postfach/);
-  assert.match(markup, /Eingehende Einladungen erscheinen hier in der App/);
-  assert.match(markup, /keine Einladungen geladen oder versendet/);
-  assert.match(markup, /Einladung annehmen/);
-  assert.match(markup, /Einladung ablehnen/);
-  assert.match(markup, /Battle-Codes kannst du weiterhin nutzen/);
+test("the battle lobby invites friends with one click, handles a missing backend, and preserves code battles", () => {
   const lobby = read("src/routes/_authenticated/battle.index.tsx");
   assert.match(lobby, /<BattleFriendInvitationPanel[\s\S]*?mode=\{mode\}/);
   assert.match(lobby, /onOpenBattle=\{\(battleId\) => navigate/);
   assert.match(lobby, /Battle beitreten/);
   const panel = read("src/components/BattleFriendInvitationPanel.tsx");
-  assert.match(panel, /migrationVerified: BATTLE_INVITATIONS_UI_ENABLED/);
-  assert.match(
-    panel,
-    /if \(!BATTLE_INVITATIONS_UI_ENABLED\) return <DisabledBattleFriendInvitationPanel \/>/,
-  );
-  assert.match(panel, /dashboard\?\.incoming\.find/);
+  assert.match(panel, /Mit Freunden kämpfen/);
+  assert.match(panel, /zum Battle einladen/);
+  assert.match(panel, /noch nicht eingerichtet/);
+  assert.match(panel, /Battle-Codes/);
   assert.match(panel, /window\.setInterval\(\(\) => void update\(true\), 30_000\)/);
+  assert.doesNotMatch(panel, /DisabledBattleFriendInvitationPanel/);
+  assert.doesNotMatch(panel, /<select/);
   assert.doesNotMatch(panel, /sendPushNotification/);
+  const runtime = read("src/lib/battle-invitations-runtime.ts");
+  assert.match(runtime, /migrationVerified: BATTLE_INVITATIONS_UI_ENABLED/);
+  const popup = read("src/components/postfach/BattleInvitationPopup.tsx");
+  assert.match(popup, /Annehmen/);
+  assert.match(popup, /Ablehnen/);
 });
 
 test("the database candidate exposes only recipient-scoped reads and authenticated RPC mutations", () => {

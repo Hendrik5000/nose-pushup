@@ -1,316 +1,310 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { FriendCodeCard } from "@/components/friends/FriendCodeCard";
+import { useCalls } from "@/components/calls/CallProvider";
+import { usePostfach } from "@/components/postfach/PostfachProvider";
+import { loadFriendEntries, friendsClient, removeFriendship } from "@/lib/friends/supabase-friends";
+import { openCloudDm } from "@/lib/nexus-cloud";
+import type { FriendEntry, SentFriendRequest } from "@/lib/friends/friends-client";
+import { BackendNotReadyError } from "@/lib/friends/rpc";
 
-type PublicProfile = {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  level: number | null;
-  xp: number | null;
-  current_streak: number | null;
-  battle_wins: number | null;
-};
-
-type Friendship = {
-  id: string;
-  requester_id: string;
-  addressee_id: string;
-  status: "pending" | "accepted" | "declined" | "blocked";
-  created_at: string;
-};
-
-type Row = { friendship: Friendship; other: PublicProfile };
-
-type Tab = "friends" | "incoming" | "outgoing" | "find";
+type Tab = "friends" | "code" | "sent";
 
 export function FriendsPanel({ userId }: { userId: string }) {
+  const navigate = useNavigate();
+  const calls = useCalls();
+  const postfach = usePostfach();
   const [tab, setTab] = useState<Tab>("friends");
-  const [rows, setRows] = useState<Row[]>([]);
+  const [friends, setFriends] = useState<FriendEntry[]>([]);
+  const [sent, setSent] = useState<SentFriendRequest[]>([]);
+  const [sentError, setSentError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [results, setResults] = useState<PublicProfile[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data: fs } = await supabase
-      .from("friendships" as never)
-      .select("*")
-      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
-      .order("created_at", { ascending: false });
-    const friendships = (fs ?? []) as unknown as Friendship[];
-    const otherIds = Array.from(
-      new Set(
-        friendships.map((f) => (f.requester_id === userId ? f.addressee_id : f.requester_id)),
-      ),
-    );
-    let profiles: PublicProfile[] = [];
-    if (otherIds.length > 0) {
-      const { data: ps } = await supabase
-        .from("public_profiles" as never)
-        .select("id, display_name, avatar_url, level, xp, current_streak, battle_wins")
-        .in("id", otherIds);
-      profiles = (ps ?? []) as unknown as PublicProfile[];
+    try {
+      setFriends(await loadFriendEntries(userId));
+    } catch {
+      setFriends([]);
     }
-    const byId = new Map(profiles.map((p) => [p.id, p]));
-    setRows(
-      friendships.map((f) => {
-        const otherId = f.requester_id === userId ? f.addressee_id : f.requester_id;
-        return {
-          friendship: f,
-          other: byId.get(otherId) ?? {
-            id: otherId,
-            display_name: null,
-            avatar_url: null,
-            level: 0,
-            xp: 0,
-            current_streak: 0,
-            battle_wins: 0,
-          },
-        };
-      }),
-    );
+    try {
+      setSent(await friendsClient.listSent());
+      setSentError(null);
+    } catch (error) {
+      setSent([]);
+      setSentError(
+        error instanceof BackendNotReadyError
+          ? "Einladungen per Code sind auf dem Server noch nicht eingerichtet."
+          : null,
+      );
+    }
     setLoading(false);
   }, [userId]);
 
+  // A friend request that was just accepted or declined changes both lists.
+  const postfachSignature = postfach.items
+    .map((item) => `${item.id}:${item.resolvedAt ?? ""}`)
+    .join("|");
   useEffect(() => {
-    load();
-  }, [load]);
+    void load();
+  }, [load, postfachSignature]);
 
-  const runSearch = async () => {
-    setMsg(null);
-    const q = search.trim();
-    if (q.length < 2) {
-      setResults([]);
-      return;
+  const withdraw = async (request: SentFriendRequest) => {
+    setBusy(request.friendshipId);
+    try {
+      await friendsClient.withdraw(request.friendshipId);
+    } catch {
+      toast("Die Einladung konnte nicht zurückgezogen werden.");
     }
-    const { data } = await supabase
-      .from("public_profiles" as never)
-      .select("id, display_name, avatar_url, level, xp, current_streak, battle_wins")
-      .ilike("display_name", `%${q}%`)
-      .neq("id", userId)
-      .limit(15);
-    setResults((data ?? []) as unknown as PublicProfile[]);
+    setBusy(null);
+    void load();
   };
 
-  const sendRequest = async (addresseeId: string) => {
-    setBusy(addresseeId);
-    setMsg(null);
-    const { error } = await supabase
-      .from("friendships" as never)
-      .insert({ requester_id: userId, addressee_id: addresseeId, status: "pending" } as never);
+  const remove = async (friend: FriendEntry) => {
+    setBusy(friend.friendshipId);
+    const ok = await removeFriendship(friend.friendshipId);
+    if (!ok) toast("Der Freund konnte nicht entfernt werden.");
+    setConfirmRemove(null);
     setBusy(null);
-    if (error) {
-      setMsg(
-        error.message.includes("unique") ? "Anfrage besteht bereits" : "Anfrage fehlgeschlagen",
+    void load();
+  };
+
+  const message = async (friend: FriendEntry) => {
+    setBusy(friend.friendshipId);
+    try {
+      const id = await openCloudDm(friend.id);
+      await navigate({ to: "/chat", search: { dm: id } });
+    } catch (error) {
+      toast(
+        error instanceof BackendNotReadyError
+          ? "Freunde-Chat ist auf dem Server noch nicht eingerichtet."
+          : "Die Direktnachricht konnte nicht geöffnet werden.",
       );
-    } else {
-      setMsg("Anfrage gesendet");
-      load();
+    } finally {
+      setBusy(null);
     }
   };
-
-  const respond = async (id: string, status: "accepted" | "declined") => {
-    setBusy(id);
-    await supabase
-      .from("friendships" as never)
-      .update({ status } as never)
-      .eq("id", id);
-    setBusy(null);
-    load();
-  };
-
-  const removeFriend = async (id: string) => {
-    setBusy(id);
-    await supabase
-      .from("friendships" as never)
-      .delete()
-      .eq("id", id);
-    setBusy(null);
-    load();
-  };
-
-  const friends = rows.filter((r) => r.friendship.status === "accepted");
-  const incoming = rows.filter(
-    (r) => r.friendship.status === "pending" && r.friendship.addressee_id === userId,
-  );
-  const outgoing = rows.filter(
-    (r) => r.friendship.status === "pending" && r.friendship.requester_id === userId,
-  );
 
   return (
     <div>
-      <div className="flex overflow-x-auto rounded-full border border-border bg-background/60 p-0.5 text-[10px] uppercase tracking-[0.18em]">
+      <div
+        role="tablist"
+        aria-label="Freunde"
+        className="flex overflow-x-auto rounded-full border border-border bg-background/60 p-0.5 text-[10px] uppercase tracking-[0.18em]"
+      >
         <TabBtn active={tab === "friends"} onClick={() => setTab("friends")}>
           Freunde
         </TabBtn>
-        <TabBtn active={tab === "incoming"} onClick={() => setTab("incoming")}>
-          Eingang {incoming.length > 0 && `(${incoming.length})`}
+        <TabBtn active={tab === "code"} onClick={() => setTab("code")}>
+          Code
         </TabBtn>
-        <TabBtn active={tab === "outgoing"} onClick={() => setTab("outgoing")}>
-          Gesendet
-        </TabBtn>
-        <TabBtn active={tab === "find"} onClick={() => setTab("find")}>
-          Suche
+        <TabBtn active={tab === "sent"} onClick={() => setTab("sent")}>
+          Gesendet {sent.length > 0 && `(${sent.length})`}
         </TabBtn>
       </div>
 
-      {msg && <p className="mt-3 text-xs text-muted-foreground">{msg}</p>}
+      {postfach.available && postfach.actionableCount > 0 && (
+        <button
+          type="button"
+          onClick={() => void navigate({ to: "/postfach" })}
+          className="mt-3 w-full rounded-2xl border border-primary/40 bg-primary/10 px-3 py-2.5 text-left text-xs font-semibold text-primary"
+        >
+          {postfach.actionableCount} offene Einladung{postfach.actionableCount === 1 ? "" : "en"} im
+          Postfach
+        </button>
+      )}
 
       <div className="mt-4 space-y-2">
-        {loading && <p className="text-xs text-muted-foreground">Lade…</p>}
+        {tab === "code" && <FriendCodeCard onSent={() => void load()} />}
 
-        {!loading && tab === "friends" && (
-          <>
-            {friends.length === 0 ? (
-              <Empty text="Noch keine Freunde. Suche nach Nutzern und sende eine Anfrage." />
-            ) : (
-              friends.map((r) => (
-                <FriendRow
-                  key={r.friendship.id}
-                  profile={r.other}
-                  right={
-                    <button
-                      disabled={busy === r.friendship.id}
-                      onClick={() => removeFriend(r.friendship.id)}
-                      className="rounded-full border border-border px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition hover:border-destructive hover:text-destructive"
+        {tab !== "code" && loading && <p className="text-xs text-muted-foreground">Lade…</p>}
+
+        {!loading &&
+          tab === "friends" &&
+          (friends.length === 0 ? (
+            <Empty text="Noch keine Freunde. Tausche im Tab Code deinen Freundescode mit einem Freund." />
+          ) : (
+            friends.map((friend) => (
+              <FriendRow
+                key={friend.id}
+                friend={friend}
+                actions={
+                  <div className="flex flex-wrap justify-end gap-1.5">
+                    <RowButton
+                      label={`Nachricht an ${friend.displayName}`}
+                      disabled={busy === friend.friendshipId}
+                      onClick={() => void message(friend)}
                     >
-                      Entfernen
-                    </button>
-                  }
-                />
-              ))
-            )}
-          </>
-        )}
-
-        {!loading && tab === "incoming" && (
-          <>
-            {incoming.length === 0 ? (
-              <Empty text="Keine offenen Anfragen." />
-            ) : (
-              incoming.map((r) => (
-                <FriendRow
-                  key={r.friendship.id}
-                  profile={r.other}
-                  right={
-                    <div className="flex gap-1.5">
-                      <button
-                        disabled={busy === r.friendship.id}
-                        onClick={() => respond(r.friendship.id, "accepted")}
-                        className="rounded-full bg-primary px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-foreground transition active:scale-95"
-                      >
-                        Annehmen
-                      </button>
-                      <button
-                        disabled={busy === r.friendship.id}
-                        onClick={() => respond(r.friendship.id, "declined")}
-                        className="rounded-full border border-border px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition hover:text-destructive"
-                      >
-                        Ablehnen
-                      </button>
-                    </div>
-                  }
-                />
-              ))
-            )}
-          </>
-        )}
-
-        {!loading && tab === "outgoing" && (
-          <>
-            {outgoing.length === 0 ? (
-              <Empty text="Keine gesendeten Anfragen." />
-            ) : (
-              outgoing.map((r) => (
-                <FriendRow
-                  key={r.friendship.id}
-                  profile={r.other}
-                  right={
-                    <button
-                      disabled={busy === r.friendship.id}
-                      onClick={() => removeFriend(r.friendship.id)}
-                      className="rounded-full border border-border px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition hover:text-destructive"
+                      Nachricht
+                    </RowButton>
+                    <RowButton
+                      label={`Battle mit ${friend.displayName}`}
+                      onClick={() => void navigate({ to: "/battle" })}
                     >
-                      Zurückziehen
-                    </button>
-                  }
-                />
-              ))
-            )}
-          </>
-        )}
-
-        {!loading && tab === "find" && (
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && runSearch()}
-                placeholder="Nach Anzeigename suchen…"
-                className="flex-1 rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
-              />
-              <button
-                onClick={runSearch}
-                className="rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground transition active:scale-95"
-              >
-                Suchen
-              </button>
-            </div>
-            {results.length === 0 && search.trim().length >= 2 && <Empty text="Keine Treffer." />}
-            {results.map((p) => {
-              const existing = rows.find((r) => r.other.id === p.id);
-              return (
-                <FriendRow
-                  key={p.id}
-                  profile={p}
-                  right={
-                    existing ? (
-                      <span className="rounded-full border border-border px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                        {existing.friendship.status === "accepted" ? "Freund" : "Ausstehend"}
-                      </span>
+                      Battle
+                    </RowButton>
+                    {calls.supported && (
+                      <>
+                        <RowButton
+                          label={`${friend.displayName} anrufen`}
+                          disabled={calls.inCall}
+                          onClick={() =>
+                            void calls.startCall(
+                              {
+                                id: friend.id,
+                                name: friend.displayName,
+                                avatarUrl: friend.avatarUrl,
+                              },
+                              "audio",
+                            )
+                          }
+                        >
+                          Anruf
+                        </RowButton>
+                        <RowButton
+                          label={`Videoanruf mit ${friend.displayName}`}
+                          disabled={calls.inCall}
+                          onClick={() =>
+                            void calls.startCall(
+                              {
+                                id: friend.id,
+                                name: friend.displayName,
+                                avatarUrl: friend.avatarUrl,
+                              },
+                              "video",
+                            )
+                          }
+                        >
+                          Video
+                        </RowButton>
+                      </>
+                    )}
+                    {confirmRemove === friend.friendshipId ? (
+                      <RowButton
+                        label="Freund wirklich entfernen"
+                        danger
+                        disabled={busy === friend.friendshipId}
+                        onClick={() => void remove(friend)}
+                      >
+                        Sicher?
+                      </RowButton>
                     ) : (
-                      <button
-                        disabled={busy === p.id}
-                        onClick={() => sendRequest(p.id)}
-                        className="rounded-full bg-primary px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary-foreground transition active:scale-95"
+                      <RowButton
+                        label={`${friend.displayName} entfernen`}
+                        danger
+                        onClick={() => setConfirmRemove(friend.friendshipId)}
                       >
-                        + Anfrage
-                      </button>
-                    )
-                  }
-                />
-              );
-            })}
-          </div>
-        )}
+                        Entfernen
+                      </RowButton>
+                    )}
+                  </div>
+                }
+              />
+            ))
+          ))}
+
+        {!loading &&
+          tab === "sent" &&
+          (sentError ? (
+            <Empty text={sentError} />
+          ) : sent.length === 0 ? (
+            <Empty text="Keine offenen Einladungen. Dein Freund muss eine Einladung im Postfach annehmen." />
+          ) : (
+            sent.map((request) => (
+              <FriendRow
+                key={request.friendshipId}
+                friend={{
+                  id: request.toUserId,
+                  friendshipId: request.friendshipId,
+                  displayName: request.toName,
+                  avatarUrl: request.toAvatarUrl,
+                  level: 0,
+                  xp: 0,
+                  streak: 0,
+                  battleWins: 0,
+                }}
+                hideStats
+                actions={
+                  <RowButton
+                    label={`Einladung an ${request.toName} zurückziehen`}
+                    disabled={busy === request.friendshipId}
+                    onClick={() => void withdraw(request)}
+                  >
+                    Zurückziehen
+                  </RowButton>
+                }
+              />
+            ))
+          ))}
       </div>
     </div>
   );
 }
 
-function FriendRow({ profile, right }: { profile: PublicProfile; right: React.ReactNode }) {
-  const initial = (profile.display_name || "?").slice(0, 1).toUpperCase();
+function FriendRow({
+  friend,
+  actions,
+  hideStats,
+}: {
+  friend: FriendEntry;
+  actions: React.ReactNode;
+  hideStats?: boolean;
+}) {
+  const initial = (friend.displayName || "?").slice(0, 1).toUpperCase();
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/40 px-3 py-2.5">
-      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold">
-        {profile.avatar_url ? (
-          <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-        ) : (
-          initial
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold">{profile.display_name || "Ohne Namen"}</div>
-        <div className="truncate text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-          Lv {profile.level ?? 1} · {profile.xp ?? 0} XP · 🔥 {profile.current_streak ?? 0} · ⚔️{" "}
-          {profile.battle_wins ?? 0}
+    <div className="rounded-2xl border border-border bg-card/40 px-3 py-2.5">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold">
+          {friend.avatarUrl ? (
+            <img src={friend.avatarUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            initial
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold">{friend.displayName}</div>
+          {!hideStats && (
+            <div className="truncate text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Lv {friend.level} · {friend.xp} XP · Serie {friend.streak} · Siege {friend.battleWins}
+            </div>
+          )}
         </div>
       </div>
-      {right}
+      <div className="mt-2">{actions}</div>
     </div>
+  );
+}
+
+function RowButton({
+  children,
+  onClick,
+  label,
+  disabled,
+  danger,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  label: string;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className={`min-h-9 rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.2em] transition disabled:opacity-50 ${
+        danger
+          ? "border-border text-muted-foreground hover:border-destructive hover:text-destructive"
+          : "border-primary/40 text-primary hover:bg-primary/10"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -325,6 +319,9 @@ function TabBtn({
 }) {
   return (
     <button
+      type="button"
+      role="tab"
+      aria-selected={active}
       onClick={onClick}
       className={`flex-1 whitespace-nowrap rounded-full px-3 py-1.5 transition ${
         active

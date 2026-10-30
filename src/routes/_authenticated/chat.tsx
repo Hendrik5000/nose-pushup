@@ -12,9 +12,13 @@ export const Route = createFileRoute("/_authenticated/chat")({
       },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { dm?: string } => ({
+    dm: typeof search.dm === "string" && /^[0-9a-f-]{36}$/i.test(search.dm) ? search.dm : undefined,
+  }),
   component: ChatPage,
 });
 
 function ChatPage() {
-  return <LocalChatShell />;
+  const { dm } = Route.useSearch();
+  return <LocalChatShell initialDmId={dm} />;
 }

@@ -16,6 +16,24 @@ import {
   MessageCirclePlus,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { PostfachBell } from "@/components/postfach/PostfachBell";
+import {
+  AttachImageButton,
+  CallButtons,
+  FriendDmPicker,
+  ImageLightbox,
+  MessageImage,
+} from "@/components/chat/NexusFriendFeatures";
+import { BackendNotReadyError } from "@/lib/friends/rpc";
+import {
+  loadCloudDms,
+  loadDisplayNames,
+  prepareChatImage,
+  removeChatImage,
+  signChatImages,
+  uploadChatImage,
+  type UploadedChatImage,
+} from "@/lib/nexus-cloud";
 import { supabase } from "@/integrations/supabase/client";
 import {
   createChatRoom,
@@ -54,7 +72,7 @@ import {
 
 type Target = { kind: "room" | "dm"; id: string };
 
-export function LocalChatShell() {
+export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
   const [userId, setUserId] = useState<string | null>(null);
   const [myName, setMyName] = useState("Du");
   const [mode, setMode] = useState<ChatMode>("local");
@@ -78,6 +96,10 @@ export function LocalChatShell() {
   const [newRoomOpen, setNewRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [dmName, setDmName] = useState("");
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const [lightbox, setLightbox] = useState<{ url: string; name: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [prefs, setPrefs] = useState<ChatPrefs | null>(null);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -103,6 +125,27 @@ export function LocalChatShell() {
     window.setTimeout(() => setToast(null), 2200);
   };
 
+  const resolveCloudExtras = useCallback(async (uid: string, msgs: LocalMessage[]) => {
+    const unknownAuthors = Array.from(
+      new Set(
+        msgs
+          .map((m) => m.user_id)
+          .filter((id) => id !== uid && id !== "system" && /^[0-9a-f-]{36}$/i.test(id)),
+      ),
+    );
+    if (unknownAuthors.length > 0) {
+      const resolved = await loadDisplayNames(unknownAuthors);
+      if (resolved.size > 0)
+        setNames((previous) => ({ ...previous, ...Object.fromEntries(resolved) }));
+    }
+    const paths = msgs.flatMap((m) => (m.attachment_url ? [m.attachment_url] : []));
+    if (paths.length > 0) {
+      const signed = await signChatImages(paths);
+      if (signed.size > 0)
+        setImageUrls((previous) => ({ ...previous, ...Object.fromEntries(signed) }));
+    }
+  }, []);
+
   const refresh = useCallback(
     async (uid: string, target: Target | null) => {
       const roomList = await loadRoomsForUser(uid);
@@ -112,6 +155,12 @@ export function LocalChatShell() {
       if (mode === "local" || (await detectChatMode()) === "local") {
         const store = loadChatStore(uid);
         setDms(store.dms);
+      } else {
+        try {
+          setDms(await loadCloudDms());
+        } catch (error) {
+          if (!(error instanceof BackendNotReadyError)) setDms([]);
+        }
       }
 
       const t = target ?? (roomList[0] ? ({ kind: "room", id: roomList[0].id } as Target) : null);
@@ -130,6 +179,7 @@ export function LocalChatShell() {
       }
       setMessages(msgs);
       setReactions(reacts);
+      void resolveCloudExtras(uid, msgs);
       const viewingConversation =
         document.documentElement.dataset.designStyle !== "performance" ||
         window.matchMedia("(min-width: 768px)").matches ||
@@ -137,7 +187,7 @@ export function LocalChatShell() {
       if (viewingConversation)
         setPrefs(markRead(uid, t.kind, t.id, msgs[msgs.length - 1]?.created_at));
     },
-    [mode],
+    [mode, resolveCloudExtras],
   );
 
   useEffect(() => {
@@ -169,6 +219,16 @@ export function LocalChatShell() {
       await refresh(u.id, null);
     })();
   }, [refresh]);
+
+  const openedInitialDm = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialDmId || !userId || mode !== "supabase") return;
+    if (openedInitialDm.current === initialDmId) return;
+    if (!dms.some((dm) => dm.id === initialDmId)) return;
+    openedInitialDm.current = initialDmId;
+    setActive({ kind: "dm", id: initialDmId });
+    setMobileListOpen(false);
+  }, [initialDmId, userId, mode, dms]);
 
   useEffect(() => {
     if (!userId || !active) return;
@@ -321,6 +381,16 @@ export function LocalChatShell() {
     return dms.find((d) => d.id === active.id)?.other_name ?? "DM";
   }, [active, rooms, dms]);
 
+  const dmPeer = useMemo(() => {
+    if (mode !== "supabase" || active?.kind !== "dm") return null;
+    const dm = dms.find((d) => d.id === active.id);
+    return dm && dm.other_id ? { id: dm.other_id, name: dm.other_name || "Freund" } : null;
+  }, [mode, active, dms]);
+  const callButtons =
+    active?.kind === "dm" && dmPeer ? (
+      <CallButtons peer={dmPeer} conversationId={active.id} compact />
+    ) : null;
+
   const sortedRooms = useMemo(() => {
     if (!prefs) return rooms;
     const fav = prefs.favoriteRoomIds;
@@ -339,10 +409,10 @@ export function LocalChatShell() {
 
   const hits = useMemo(() => searchMessages(messages, search), [messages, search]);
 
-  const onSend = async (text?: string) => {
+  const onSend = async (text?: string, attachment?: UploadedChatImage) => {
     if (!userId || !active || sendingRef.current) return;
     const content = (text ?? draft).trim();
-    if (!content) return;
+    if (!content && !attachment) return;
     const target = active;
     const submittedDraft = draft;
     const submittedReply = replyTo;
@@ -356,12 +426,22 @@ export function LocalChatShell() {
           conversationId: target.kind === "dm" ? target.id : null,
           content,
           replyToId: submittedReply?.id ?? null,
+          attachment: attachment
+            ? {
+                path: attachment.path,
+                type: attachment.type,
+                name: attachment.name,
+                size: attachment.size,
+              }
+            : null,
         });
       } catch {
+        if (attachment) void removeChatImage(attachment.path);
         flash("Nicht gesendet. Entwurf und Antwort bleiben erhalten.");
         return;
       }
       if (!posted) {
+        if (attachment) void removeChatImage(attachment.path);
         flash("Nicht gesendet. Entwurf und Antwort bleiben erhalten.");
         return;
       }
@@ -395,6 +475,28 @@ export function LocalChatShell() {
     }
   };
 
+  const onAttachImage = async (file: File) => {
+    if (!userId || !active || mode !== "supabase" || sendingRef.current || uploading) return;
+    setUploading(true);
+    try {
+      const prepared = await prepareChatImage(file);
+      const uploaded = await uploadChatImage(userId, active, prepared);
+      await onSend(undefined, uploaded);
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Das Bild konnte nicht gesendet werden.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onOpenFriendDm = async (conversationId: string) => {
+    if (!userId) return;
+    setActive({ kind: "dm", id: conversationId });
+    setMobileListOpen(false);
+    setMenuOpen(false);
+    await refresh(userId, { kind: "dm", id: conversationId });
+  };
+
   const onCreateRoom = async () => {
     if (!userId || !newRoomName.trim()) return;
     const room = await createChatRoom(userId, newRoomName);
@@ -408,10 +510,7 @@ export function LocalChatShell() {
   };
 
   const onStartDm = async () => {
-    if (mode !== "local") {
-      flash("Direktnachrichten sind derzeit nur lokal auf diesem Gerät verfügbar.");
-      return;
-    }
+    if (mode !== "local") return;
     if (!userId || !dmName.trim()) return;
     const otherId = `local-${dmName.trim().toLowerCase().replace(/\s+/g, "-")}`;
     const dm = getOrCreateLocalDm(userId, otherId, dmName.trim());
@@ -517,6 +616,11 @@ export function LocalChatShell() {
               {modeLabel}
             </div>
           </div>
+          {mode === "supabase" && (
+            <span className="ml-auto">
+              <PostfachBell className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground" />
+            </span>
+          )}
         </div>
       </div>
 
@@ -655,11 +759,9 @@ export function LocalChatShell() {
         <div className="classic-only">
           {mode === "local" ? (
             dmComposer
-          ) : (
-            <p className="mb-2 px-1 text-xs text-muted-foreground">
-              Direktnachrichten sind derzeit nur lokal auf diesem Gerät verfügbar.
-            </p>
-          )}
+          ) : userId ? (
+            <FriendDmPicker userId={userId} onOpen={(id) => void onOpenFriendDm(id)} />
+          ) : null}
         </div>
         <div className="sport-only">
           {mode === "local" ? (
@@ -667,11 +769,12 @@ export function LocalChatShell() {
               <summary>Direktnachricht starten</summary>
               {dmComposer}
             </details>
-          ) : (
-            <p className="mb-2 px-1 text-xs text-muted-foreground">
-              Direktnachrichten sind derzeit nur lokal auf diesem Gerät verfügbar.
-            </p>
-          )}
+          ) : userId ? (
+            <details className="community-dm-details">
+              <summary>Mit Freund schreiben</summary>
+              <FriendDmPicker userId={userId} onOpen={(id) => void onOpenFriendDm(id)} />
+            </details>
+          ) : null}
         </div>
         <div className="space-y-1">
           {dms.length === 0 && (
@@ -680,9 +783,10 @@ export function LocalChatShell() {
             </p>
           )}
           {visibleDms.map((d) => {
-            const dmMessages = userId
-              ? loadChatStore(userId).messages.filter((m) => m.conversation_id === d.id)
-              : [];
+            const dmMessages =
+              userId && mode === "local"
+                ? loadChatStore(userId).messages.filter((m) => m.conversation_id === d.id)
+                : [];
             const summary = chatRowSummary(dmMessages, userId ?? "", prefs?.lastRead[`dm:${d.id}`]);
             return (
               <button
@@ -782,6 +886,7 @@ export function LocalChatShell() {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {callButtons}
             {active?.kind === "room" && userId && (
               <>
                 <HeadBtn
@@ -828,6 +933,7 @@ export function LocalChatShell() {
               <h1>{headerTitle}</h1>
               <p>{mode === "local" ? "Lokal auf diesem Gerät" : "Nexus Chat · Cloud"}</p>
             </div>
+            {callButtons}
             <Link
               to="/"
               aria-label="Zur Alo-Startseite"
@@ -962,7 +1068,9 @@ export function LocalChatShell() {
                 ? "System"
                 : own
                   ? myName
-                  : dms.find((d) => d.other_id === m.user_id)?.other_name || "Mitglied";
+                  : dms.find((d) => d.other_id === m.user_id)?.other_name ||
+                    names[m.user_id] ||
+                    "Mitglied";
             const reply = m.reply_to_id ? messages.find((x) => x.id === m.reply_to_id) : null;
             const msgReactions = reactions.filter((r) => r.message_id === m.id);
             const grouped = msgReactions.reduce<Record<string, { count: number; mine: boolean }>>(
@@ -1005,7 +1113,14 @@ export function LocalChatShell() {
                       <div className="truncate">{reply.content}</div>
                     </div>
                   )}
-                  <div className="whitespace-pre-wrap break-words">{m.content}</div>
+                  {m.attachment_url && (
+                    <MessageImage
+                      url={imageUrls[m.attachment_url]}
+                      name={m.attachment_name}
+                      onOpen={(url, name) => setLightbox({ url, name })}
+                    />
+                  )}
+                  {m.content && <div className="whitespace-pre-wrap break-words">{m.content}</div>}
                   {m.edited_at && <div className="mt-0.5 text-[10px] opacity-60">(bearbeitet)</div>}
                 </div>
 
@@ -1179,6 +1294,11 @@ export function LocalChatShell() {
           >
             🎤
           </button>
+          <AttachImageButton
+            enabled={mode === "supabase" && !!active}
+            busy={uploading || sending}
+            onPick={(file) => void onAttachImage(file)}
+          />
           <textarea
             value={draft}
             onChange={(e) => {
@@ -1229,6 +1349,12 @@ export function LocalChatShell() {
           >
             <Mic className="h-5 w-5" aria-hidden="true" />
           </button>
+          <AttachImageButton
+            size="lg"
+            enabled={mode === "supabase" && !!active}
+            busy={uploading || sending}
+            onPick={(file) => void onAttachImage(file)}
+          />
           <textarea
             value={draft}
             onChange={(e) => {
@@ -1258,6 +1384,7 @@ export function LocalChatShell() {
             <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
           </button>
         </form>
+        <ImageLightbox image={lightbox} onClose={() => setLightbox(null)} />
         {toast && (
           <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-xs shadow-lg">
             {toast}

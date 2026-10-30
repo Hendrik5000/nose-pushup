@@ -63,14 +63,13 @@ test("message submission only clears an unchanged draft after a successful post"
   assert.match(chat, /if \(!userId \|\| !active \|\| sendingRef\.current\) return/);
 });
 
-test("cloud mode explains that DMs are local-only and prevents cloud DM creation", () => {
+test("cloud mode offers DMs only with accepted friends and keeps the local DM composer local", () => {
   const chat = read("chat/LocalChatShell.tsx");
-  assert.match(
-    chat,
-    /mode !== "local"[\s\S]*?Direktnachrichten sind derzeit nur lokal auf diesem Gerät verfügbar\./,
-  );
-  assert.match(
-    chat,
-    /mode === "local" \? \([\s\S]*?dmComposer[\s\S]*?Direktnachrichten sind derzeit nur lokal auf diesem Gerät verfügbar\./,
-  );
+  assert.match(chat, /mode !== "local"\) return;/);
+  assert.match(chat, /mode === "local" \? \([\s\S]*?dmComposer[\s\S]*?<FriendDmPicker/);
+  assert.doesNotMatch(chat, /Direktnachrichten sind derzeit nur lokal/);
+  const features = read("chat/NexusFriendFeatures.tsx");
+  assert.match(features, /loadFriendEntries/);
+  assert.match(features, /openCloudDm/);
+  assert.match(features, /aria-label="Bild senden"/);
 });

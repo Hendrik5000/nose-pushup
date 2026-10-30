@@ -15,6 +15,7 @@ import { AiCoachCard } from "@/components/AiCoachCard";
 import { WeekPlanCard } from "@/components/WeekPlanCard";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
+import { PostfachBell } from "@/components/postfach/PostfachBell";
 import { WorkoutHistory } from "@/components/WorkoutHistory";
 import { ReadinessSummary } from "@/components/ReadinessCard";
 import { GymPartnerPanel } from "@/components/GymPartnerPanel";
@@ -112,6 +113,7 @@ function HomeAppHub({
           Alo
         </h1>
         <div className="flex shrink-0 items-center gap-2">
+          <PostfachBell />
           <Link
             to="/profile"
             hash="profile-training"

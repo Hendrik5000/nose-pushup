@@ -1,6 +1,7 @@
 /** Hybrid chat: Supabase (Nexus schema) when available, else localStorage. */
 
 import { supabase } from "@/integrations/supabase/client";
+import { removeChatImage } from "@/lib/nexus-cloud";
 import {
   createRoom as localCreateRoom,
   deleteMessage as localDelete,
@@ -16,6 +17,9 @@ import {
   type LocalReaction,
   type LocalRoom,
 } from "@/lib/local-chat";
+
+const MESSAGE_COLUMNS =
+  "id, room_id, conversation_id, user_id, content, created_at, edited_at, reply_to_id, attachment_url, attachment_type, attachment_name, attachment_size" as never;
 
 export type ChatMode = "supabase" | "local";
 
@@ -75,9 +79,7 @@ export async function loadMessages(
 
   let q = supabase
     .from("messages" as never)
-    .select(
-      "id, room_id, conversation_id, user_id, content, created_at, edited_at, reply_to_id" as never,
-    )
+    .select(MESSAGE_COLUMNS)
     .order("created_at" as never, { ascending: false })
     .limit(200);
 
@@ -111,6 +113,7 @@ export async function postMessage(
     conversationId?: string | null;
     content: string;
     replyToId?: string | null;
+    attachment?: { path: string; type: string; name: string; size: number } | null;
   },
 ): Promise<LocalMessage | null> {
   if ((await detectChatMode()) === "local") {
@@ -122,13 +125,19 @@ export async function postMessage(
     reply_to_id: opts.replyToId ?? null,
     room_id: opts.roomId ?? null,
     conversation_id: opts.conversationId ?? null,
+    ...(opts.attachment
+      ? {
+          attachment_url: opts.attachment.path,
+          attachment_type: opts.attachment.type,
+          attachment_name: opts.attachment.name,
+          attachment_size: opts.attachment.size,
+        }
+      : {}),
   };
   const { data, error } = await supabase
     .from("messages" as never)
     .insert(row as never)
-    .select(
-      "id, room_id, conversation_id, user_id, content, created_at, edited_at, reply_to_id" as never,
-    )
+    .select(MESSAGE_COLUMNS)
     .single();
   if (error || !data) return null;
   return data as unknown as LocalMessage;
@@ -198,11 +207,19 @@ export async function deleteChatMessage(userId: string, messageId: string): Prom
     localDelete(userId, messageId);
     return;
   }
-  await supabase
+  const { data: existing } = await supabase
+    .from("messages" as never)
+    .select("attachment_url" as never)
+    .eq("id" as never, messageId as never)
+    .eq("user_id" as never, userId as never)
+    .maybeSingle();
+  const { error } = await supabase
     .from("messages" as never)
     .delete()
     .eq("id" as never, messageId as never)
     .eq("user_id" as never, userId as never);
+  const path = (existing as { attachment_url?: string | null } | null)?.attachment_url;
+  if (!error && path) await removeChatImage(path).catch(() => undefined);
 }
 
 export type { LocalDm, LocalMessage, LocalReaction, LocalRoom };

@@ -11,6 +11,8 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { setAloOwner } from "@/lib/alo-store";
 import { AloWorkspace } from "@/components/alo/AloWorkspace";
 import { WelcomeTour } from "@/components/WelcomeTour";
+import { PostfachProvider } from "@/components/postfach/PostfachProvider";
+import { CallProvider } from "@/components/calls/CallProvider";
 import { AppNavigation } from "@/components/TopNav";
 import { applyNavigationVisibility, getNavigationVisible } from "@/lib/navigation-layout";
 import { installModuleSwipeGesture } from "@/lib/module-swipe-gesture";
@@ -32,6 +34,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   useNotifications();
   const { user } = Route.useRouteContext();
+  const isGuest = user.is_anonymous === true;
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const currentPath = useRef(pathname);
@@ -51,13 +54,17 @@ function AuthenticatedLayout() {
   }, [navigate]);
 
   return (
-    <div className="authenticated-shell alo-no-global-header min-h-[100dvh]">
-      <AppNavigation />
-      <div ref={surface} className="alo-module-surface">
-        <Outlet />
-      </div>
-      <AloWorkspace userId={user.id} />
-      <WelcomeTour userId={user.id} />
-    </div>
+    <PostfachProvider userId={user.id} isGuest={isGuest}>
+      <CallProvider userId={user.id} isGuest={isGuest}>
+        <div className="authenticated-shell alo-no-global-header min-h-[100dvh]">
+          <AppNavigation />
+          <div ref={surface} className="alo-module-surface">
+            <Outlet />
+          </div>
+          <AloWorkspace userId={user.id} />
+          <WelcomeTour userId={user.id} />
+        </div>
+      </CallProvider>
+    </PostfachProvider>
   );
 }

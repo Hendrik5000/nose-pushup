@@ -1,4 +1,5 @@
-export const BATTLE_INVITATIONS_UI_ENABLED = false as const;
+/** Enabled together with the Postfach. If the server migration is missing the UI shows a clear "not set up" message. */
+export const BATTLE_INVITATIONS_UI_ENABLED = true as const;
 
 export type BattleInvitationGateInput = {
   migrationVerified: boolean;

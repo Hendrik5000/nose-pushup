@@ -13,7 +13,7 @@ const CHECK_INTERVAL_MS = 60_000;
 
 /**
  * Erinnert ans Training, wenn das Tagesziel noch offen ist, und meldet
- * neue Freundschaftsanfragen sowie Battle-Einladungen in Echtzeit.
+ * den Start eigener Battles. Einladungen und Anrufe laufen über das Postfach.
  */
 export function useNotifications() {
   useEffect(() => {
@@ -64,25 +64,6 @@ export function useNotifications() {
 
       channel = supabase
         .channel("np-notifications")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "friendships",
-            filter: `addressee_id=eq.${uid}`,
-          },
-          () => {
-            toast("Neue Freundschaftsanfrage", {
-              description: "Schau im Profil unter Freunde vorbei.",
-            });
-            void showNotification(
-              "Neue Freundschaftsanfrage",
-              "Jemand möchte dich als Trainingspartner.",
-              "np-friend",
-            );
-          },
-        )
         .on(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "battles", filter: `host_id=eq.${uid}` },

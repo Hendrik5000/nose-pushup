@@ -2,19 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import type { BattleMode } from "@/lib/battle.functions";
 import { modeDefaults } from "@/lib/battle.functions";
 import {
-  createBattleInvitationClient,
-  createSupabaseBattleInvitationGateway,
   type BattleInvitationDashboard,
   type IncomingBattleInvitation,
   type SentBattleInvitation,
 } from "@/lib/battle-invitation-client";
-import { BATTLE_INVITATIONS_UI_ENABLED } from "@/lib/battle-invitation-gate";
-import { supabase } from "@/integrations/supabase/client";
-
-const battleInvitationClient = createBattleInvitationClient(
-  createSupabaseBattleInvitationGateway(supabase),
-  { migrationVerified: BATTLE_INVITATIONS_UI_ENABLED },
-);
+import { battleInvitationClient } from "@/lib/battle-invitations-runtime";
+import { BackendNotReadyError } from "@/lib/friends/rpc";
+import { Link } from "@tanstack/react-router";
 
 export type BattleFriendInvitationPanelProps = {
   mode: BattleMode;
@@ -29,66 +23,6 @@ const MODE_LABELS: Record<BattleMode, string> = {
   sprint: "Sprint",
   endurance: "Ausdauer",
 };
-
-function DisabledBattleFriendInvitationPanel() {
-  return (
-    <section
-      aria-labelledby="battle-friend-invitations-title"
-      className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur"
-      data-feature-status="disabled"
-    >
-      <h2
-        id="battle-friend-invitations-title"
-        className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground"
-      >
-        Mit Freunden kämpfen
-      </h2>
-      <p id="battle-friend-invitations-status" className="mt-2 text-sm text-muted-foreground">
-        Freund auswählen und die Einladung im Postfach annehmen oder ablehnen. Diese Funktion bleibt
-        gesperrt, bis Migration und Sicherheit am Alo-Ziel geprüft und freigegeben sind.
-        Battle-Codes kannst du weiterhin nutzen.
-      </p>
-      <button
-        type="button"
-        disabled
-        aria-describedby="battle-friend-invitations-status"
-        className="mt-4 w-full rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Freund auswählen
-      </button>
-      <div
-        aria-labelledby="battle-invitation-inbox-title"
-        className="mt-4 rounded-2xl border border-border bg-background/50 p-4"
-      >
-        <h3 id="battle-invitation-inbox-title" className="text-sm font-semibold">
-          Battle-Einladungs-Postfach
-        </h3>
-        <p id="battle-invitation-inbox-status" className="mt-1 text-xs text-muted-foreground">
-          Eingehende Einladungen erscheinen hier in der App mit Annehmen oder Ablehnen. Bis zur
-          Prüfung der Migration werden keine Einladungen geladen oder versendet.
-        </p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            disabled
-            aria-describedby="battle-invitation-inbox-status"
-            className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Einladung annehmen
-          </button>
-          <button
-            type="button"
-            disabled
-            aria-describedby="battle-invitation-inbox-status"
-            className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Einladung ablehnen
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function statusLabel(status: SentBattleInvitation["status"]) {
   switch (status) {
@@ -105,37 +39,33 @@ function statusLabel(status: SentBattleInvitation["status"]) {
   }
 }
 
-function ActiveBattleFriendInvitationPanel({
+export function BattleFriendInvitationPanel({
   mode,
   durationS,
   targetReps,
   onOpenBattle,
 }: BattleFriendInvitationPanelProps) {
   const [dashboard, setDashboard] = useState<BattleInvitationDashboard | null>(null);
-  const [selectedFriendId, setSelectedFriendId] = useState("");
+  const [notReady, setNotReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [dismissedPopupId, setDismissedPopupId] = useState<string | null>(null);
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
       const next = await battleInvitationClient.loadDashboard();
       setDashboard(next);
-      setSelectedFriendId((current) =>
-        next.friends.some((friend) => friend.id === current) ? current : "",
-      );
-      setDismissedPopupId((current) =>
-        current && next.incoming.some((invitation) => invitation.id === current) ? current : null,
-      );
+      setNotReady(false);
       setError(null);
       return next;
-    } catch {
-      setError(
-        "Freunde oder Battle-Einladungen konnten nicht geladen werden. Prüfe die Verbindung und versuche es erneut.",
-      );
+    } catch (caught) {
+      if (caught instanceof BackendNotReadyError) setNotReady(true);
+      else
+        setError(
+          "Freunde oder Battle-Einladungen konnten nicht geladen werden. Prüfe die Verbindung und versuche es erneut.",
+        );
       return null;
     } finally {
       if (!silent) setLoading(false);
@@ -152,18 +82,15 @@ function ActiveBattleFriendInvitationPanel({
         const next = await battleInvitationClient.loadDashboard();
         if (!active) return;
         setDashboard(next);
-        setSelectedFriendId((current) =>
-          next.friends.some((friend) => friend.id === current) ? current : "",
-        );
-        setDismissedPopupId((current) =>
-          current && next.incoming.some((invitation) => invitation.id === current) ? current : null,
-        );
+        setNotReady(false);
         setError(null);
-      } catch {
+      } catch (caught) {
         if (active) {
-          setError(
-            "Freunde oder Battle-Einladungen konnten nicht geladen werden. Prüfe die Verbindung und versuche es erneut.",
-          );
+          if (caught instanceof BackendNotReadyError) setNotReady(true);
+          else
+            setError(
+              "Freunde oder Battle-Einladungen konnten nicht geladen werden. Prüfe die Verbindung und versuche es erneut.",
+            );
         }
       } finally {
         inFlight = false;
@@ -183,32 +110,28 @@ function ActiveBattleFriendInvitationPanel({
     };
   }, []);
 
-  const selectedFriend =
-    dashboard?.friends.find((friend) => friend.id === selectedFriendId) ?? null;
-  const popupInvitation = dashboard?.incoming.find(
-    (invitation) => invitation.id !== dismissedPopupId,
-  );
-
-  const sendInvitation = async () => {
-    if (!selectedFriend || busy) return;
-    setBusy("send");
+  const sendInvitation = async (friend: { id: string; displayName: string | null }) => {
+    if (busy) return;
+    setBusy(`send-${friend.id}`);
     setError(null);
     setNotice(null);
     try {
       await battleInvitationClient.sendInvitation({
-        recipientId: selectedFriend.id,
+        recipientId: friend.id,
         mode,
         durationS: mode === "timed" ? durationS : modeDefaults(mode).duration_s,
         targetReps: mode === "first_to" ? targetReps : modeDefaults(mode).target_reps,
       });
       setNotice(
-        `Die Einladung wurde an ${selectedFriend.displayName?.trim() || "deinen Freund"} gesendet. Sie erscheint dort im Battle-Postfach und läuft nach 24 Stunden ab.`,
+        `Die Einladung wurde an ${friend.displayName?.trim() || "deinen Freund"} gesendet. Bei deinem Freund erscheint sofort ein Pop-up, und sie läuft nach 24 Stunden ab.`,
       );
       await refresh(true);
-    } catch {
-      setError(
-        "Die Einladung konnte nicht gesendet werden. Prüfe, ob die Freundschaft noch bestätigt ist, und versuche es erneut.",
-      );
+    } catch (caught) {
+      if (caught instanceof BackendNotReadyError) setNotReady(true);
+      else
+        setError(
+          "Die Einladung konnte nicht gesendet werden. Prüfe, ob die Freundschaft noch bestätigt ist, und versuche es erneut.",
+        );
     } finally {
       setBusy(null);
     }
@@ -304,55 +227,6 @@ function ActiveBattleFriendInvitationPanel({
       className="relative mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur"
       data-feature-status="enabled"
     >
-      {popupInvitation && (
-        <div
-          role="region"
-          aria-labelledby="battle-invitation-popup-title"
-          aria-live="polite"
-          className="mb-4 rounded-2xl border border-primary/50 bg-primary/10 p-4 shadow-lg"
-        >
-          <h3 id="battle-invitation-popup-title" className="text-sm font-semibold">
-            Battle-Anfrage von {popupInvitation.senderDisplayName?.trim() || "einem Freund"}
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {MODE_LABELS[popupInvitation.mode]} · {popupInvitation.durationS}s · gültig bis{" "}
-            <time dateTime={popupInvitation.expiresAt}>
-              {new Date(popupInvitation.expiresAt).toLocaleString("de-DE", {
-                day: "2-digit",
-                month: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </time>
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              disabled={busy !== null}
-              onClick={() => void answerInvitation(popupInvitation, true)}
-              className="min-h-11 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-            >
-              {busy === popupInvitation.id ? "Prüfe…" : "Annehmen"}
-            </button>
-            <button
-              type="button"
-              disabled={busy !== null}
-              onClick={() => void answerInvitation(popupInvitation, false)}
-              className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50"
-            >
-              Ablehnen
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={() => setDismissedPopupId(popupInvitation.id)}
-            className="mt-2 min-h-11 w-full rounded-xl px-3 py-2 text-xs text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Später im Postfach ansehen
-          </button>
-        </div>
-      )}
-
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2
@@ -394,31 +268,50 @@ function ActiveBattleFriendInvitationPanel({
         </p>
       )}
 
-      <div className="mt-4 flex gap-2">
-        <select
-          aria-label="Bestätigten Freund für das Battle auswählen"
-          value={selectedFriendId}
-          onChange={(event) => setSelectedFriendId(event.currentTarget.value)}
-          disabled={loading || !dashboard || dashboard.friends.length === 0 || busy !== null}
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm disabled:opacity-50"
+      {notReady && (
+        <p
+          role="status"
+          className="mt-3 rounded-xl border border-border bg-background/60 p-3 text-xs text-muted-foreground"
         >
-          <option value="">
-            {dashboard?.friends.length ? "Freund auswählen" : "Keine bestätigten Freunde"}
-          </option>
-          {dashboard?.friends.map((friend) => (
-            <option key={friend.id} value={friend.id}>
-              {friend.displayName?.trim() || "Freund"}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={() => void sendInvitation()}
-          disabled={!selectedFriend || busy !== null || loading}
-          className="min-h-11 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {busy === "send" ? "Sende…" : "Einladen"}
-        </button>
+          Battle-Einladungen sind auf dem Server noch nicht eingerichtet. Battle-Codes funktionieren
+          weiterhin.
+        </p>
+      )}
+
+      <div className="mt-4">
+        <p id="battle-friend-picker-title" className="text-xs font-medium text-muted-foreground">
+          Freund anklicken, um ihn einzuladen
+        </p>
+        {dashboard && dashboard.friends.length > 0 ? (
+          <ul
+            aria-labelledby="battle-friend-picker-title"
+            className="mt-2 grid gap-2 sm:grid-cols-2"
+          >
+            {dashboard.friends.map((friend) => (
+              <li key={friend.id}>
+                <button
+                  type="button"
+                  onClick={() => void sendInvitation(friend)}
+                  disabled={busy !== null || loading}
+                  aria-label={`${friend.displayName?.trim() || "Freund"} zum Battle einladen`}
+                  className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-border bg-background px-3 text-left text-sm font-medium hover:border-primary/50 disabled:opacity-50"
+                >
+                  <span className="truncate">{friend.displayName?.trim() || "Freund"}</span>
+                  <span className="shrink-0 text-xs font-semibold text-primary">
+                    {busy === `send-${friend.id}` ? "Sende…" : "Einladen"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {loading ? "Freunde werden geladen…" : "Noch keine bestätigten Freunde."}{" "}
+            <Link to="/profile" className="underline underline-offset-2">
+              Freunde hinzufügen
+            </Link>
+          </p>
+        )}
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
         Modus: {MODE_LABELS[mode]} ·{" "}
@@ -525,14 +418,9 @@ function ActiveBattleFriendInvitationPanel({
         )}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        Das Postfach wird während der geöffneten Lobby regelmäßig und beim Zurückkehren in die App
-        aktualisiert. Push-Mitteilungen sind nicht aktiviert.
+        Einladungen erscheinen bei deinem Freund als Pop-up, solange die App geöffnet ist, und immer
+        im Postfach. Push-Mitteilungen bei geschlossener App sind nicht aktiviert.
       </p>
     </section>
   );
-}
-
-export function BattleFriendInvitationPanel(props: BattleFriendInvitationPanelProps) {
-  if (!BATTLE_INVITATIONS_UI_ENABLED) return <DisabledBattleFriendInvitationPanel />;
-  return <ActiveBattleFriendInvitationPanel {...props} />;
 }
