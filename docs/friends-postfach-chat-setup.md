@@ -10,8 +10,13 @@ Stand: 2026-10-30. Alle Migrationen sind lokale Kandidaten. Sie wurden auf keine
 - Nexus Chat: Direktnachrichten gibt es nur mit angenommenen Freunden. Bilder (JPEG, PNG, WebP, GIF, bis 5 MB) und Audio-/Videoanrufe nur im Cloud-Modus.
 - Die frühere Namenssuche nach Fremden wurde durch den Code-Ablauf ersetzt.
 
+## Voraussetzung: Nexus-Basisschema
+
+Am 2026-10-30 antwortete die Datenbank `dbnlybjlswuvxrccgqah` (per öffentlichem REST-Endpunkt mit dem Publishable Key geprüft) für `rooms`, `messages` und `friend_codes` mit PGRST205 (Tabelle nicht im Schema-Cache). Deshalb bleibt Nexus Chat im lokalen Modus („Nur auf diesem Gerät gespeichert“), bis mindestens `20261019010000_nexus_chat_schema.sql` angewendet ist. Alle neueren Migrationen (ab `20261019013000`) prüfen, ob sie bereits live vorhanden sind.
+
 ## Migrationsreihenfolge
 
+0. `20261019010000_nexus_chat_schema.sql` (Basis: `rooms`, `messages`, Reaktionen; Voraussetzung für 3 bis 6)
 1. `20261026090000_friendships_unordered_pair_index.sql`
 2. `20261026093000_friend_battle_invitations.sql` (bestehend)
 3. `20261030100000_friend_codes_postfach.sql`
