@@ -43,3 +43,7 @@ Wird die Battle-Migration erst nach der Postfach-Migration angewendet, danach ei
 - Kein Push, wenn die App geschlossen ist. Einladungen und Anrufe erscheinen nur bei geöffneter App (Realtime, 30-Sekunden-Abfrage, Fokus-Aktualisierung).
 - Solange die Migrationen fehlen, zeigt die App Hinweise wie „noch nicht eingerichtet“, statt zu scheitern.
 - Zusätzlich fehlte die RPC `get_friend_public_profiles` (vom Battle-Client genutzt) in allen Migrationen; sie ist in Migration 6 enthalten.
+
+## Einspielen ohne Lovable-Chat
+
+Die Datei `docs/lovable/nexus-freunde-komplett.sql` enthält die Migrationen 20261019010000, 20261020210000 und alle neuen in der richtigen Reihenfolge. Sie läuft im Lovable-SQL-Editor (Mehr, Database, Manage, SQL editor) und braucht keinen Chat. Auf einer lokalen PostgreSQL-17-Kopie ohne die Nexus-Tabellen lief sie einmal fehlerfrei durch. Ein zweiter Lauf scheitert an der bestehenden Battle-Migration (Tabelle existiert schon); sie also nur einmal ausführen. Migrationsdateien, die per Git ins Repo kommen, führt Lovable nicht selbst aus.
