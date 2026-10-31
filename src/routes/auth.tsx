@@ -24,8 +24,14 @@ export const Route = createFileRoute("/auth")({
     ],
   }),
   beforeLoad: async ({ search }) => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) throw redirect({ href: search.next });
+    let user = null;
+    try {
+      const { data } = await supabase.auth.getSession();
+      user = data.session?.user ?? null;
+    } catch {
+      // A transient auth refresh failure must not prevent the sign-in screen.
+    }
+    if (user) throw redirect({ href: search.next });
   },
   component: AuthPage,
 });

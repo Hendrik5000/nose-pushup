@@ -23,17 +23,26 @@ import "@/alo-header-layout.css";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    setAloOwner(data.user.id);
-    return { user: data.user };
+    // This is a client-side UI gate. getUser() performs a network request on
+    // every navigation; the backend still validates the JWT and enforces RLS.
+    let user = null;
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (!error) user = data.session?.user ?? null;
+    } catch {
+      // If refreshing an expired session needs the network, show sign-in
+      // instead of letting a transient fetch failure break route loading.
+    }
+    if (!user) throw redirect({ to: "/auth" });
+    setAloOwner(user.id);
+    return { user };
   },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
-  useNotifications();
   const { user } = Route.useRouteContext();
+  useNotifications(user.id);
   const isGuest = user.is_anonymous === true;
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });

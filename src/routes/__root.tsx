@@ -205,13 +205,22 @@ function RootComponent() {
     applyTheme(getStoredTheme());
     // Theme des Kontos laden, damit es auch ohne Profilbesuch sofort greift.
     (async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
-      if (!uid) return;
-      const { data } = await supabase.from("profiles").select("theme").eq("id", uid).maybeSingle();
-      const t = data?.theme;
-      if (isThemeId(t)) applyTheme(t);
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: sessionData } = await supabase.auth.getSession();
+        const uid = sessionData.session?.user.id;
+        if (!uid) return;
+        const { data } = await supabase
+          .from("profiles")
+          .select("theme")
+          .eq("id", uid)
+          .maybeSingle();
+        const t = data?.theme;
+        if (isThemeId(t)) applyTheme(t);
+      } catch {
+        // Theme loading is optional; a transient network failure must not become
+        // an unhandled rejection while the rest of the app starts.
+      }
     })();
   }, []);
 
