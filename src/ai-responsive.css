@@ -177,6 +177,9 @@ html[data-design-style="performance"] .ai-welcome {
   width: 100% !important;
   max-width: 28rem !important;
   margin-inline: auto;
+  margin-top: 1.5rem !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.25rem !important;
   box-sizing: border-box;
 }
 
@@ -196,13 +199,16 @@ html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-grid,
 html[data-design-style="performance"] .ai-starter-grid {
   display: grid !important;
   grid-template-columns: 1fr !important;
-  gap: 0.7rem !important;
+  gap: 0.8rem !important;
   width: 100% !important;
   max-width: 26rem !important;
   margin-inline: auto !important;
-  margin-top: 1.15rem !important;
+  margin-top: 1.75rem !important;
+  margin-bottom: 0.5rem !important;
   text-align: left;
   box-sizing: border-box;
+  position: relative;
+  z-index: 2;
 }
 
 html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card,
@@ -224,6 +230,8 @@ html[data-design-style="performance"] .ai-starter-card {
   text-align: left !important;
   cursor: pointer;
   box-sizing: border-box !important;
+  position: relative;
+  z-index: 2;
 }
 
 html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card > svg,
@@ -286,11 +294,13 @@ html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-hint,
 html[data-design-style="performance"] .ai-starter-hint {
   display: block !important;
   position: relative !important;
-  margin-top: 0.85rem !important;
+  margin-top: 1.1rem !important;
+  margin-bottom: 0.35rem !important;
   font-size: 0.75rem;
   color: var(--muted-foreground);
   text-align: center;
   z-index: 1;
+  pointer-events: none;
 }
 
 /* Bottom status row */
@@ -336,4 +346,15 @@ html[data-design-style="performance"] .mira-chat-live-status span {
   display: block;
   color: var(--muted-foreground);
   font-weight: 400;
+}
+
+/* Pull starter block lower on tablet/iPad so it clears top chrome */
+@media (min-width: 768px) {
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-stage .ai-welcome {
+    margin-top: 2.25rem !important;
+    padding-top: 0.75rem !important;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-stage .ai-starter-grid {
+    margin-top: 2rem !important;
+  }
 }
