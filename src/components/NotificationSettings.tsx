@@ -5,6 +5,7 @@ import {
   DEFAULT_REMINDER_TIME,
   getReminderTime,
   isNotifyEnabled,
+  isPushVapidKeyConfigured,
   notificationPermission,
   notificationsSupported,
   requestNotificationPermission,
@@ -12,6 +13,8 @@ import {
   setReminderTime,
   showNotification,
   subscribeToPush,
+  validateConfiguredPushVapidKey,
+  VAPID_KEY_CONFIGURATION_ERROR,
 } from "@/lib/notifications";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -29,7 +32,7 @@ export function NotificationSettings() {
     setTime(getReminderTime());
     setDenied(notificationPermission() === "denied");
 
-    if ("serviceWorker" in navigator) {
+    if ("serviceWorker" in navigator && "PushManager" in window) {
       navigator.serviceWorker.ready.then((reg) => {
         reg.pushManager.getSubscription().then((sub) => {
           setPushEnabled(!!sub);
@@ -82,6 +85,7 @@ export function NotificationSettings() {
         setPushEnabled(false);
         toast.info("Push-Benachrichtigungen deaktiviert");
       } else {
+        await validateConfiguredPushVapidKey();
         const perm = await requestNotificationPermission();
         if (perm !== "granted") {
           setDenied(perm === "denied");
@@ -101,8 +105,14 @@ export function NotificationSettings() {
         setPushEnabled(true);
         toast.success("Push-Benachrichtigungen aktiviert!");
       }
-    } catch {
-      toast.error("Fehler bei Push-Aktivierung");
+    } catch (error) {
+      if (error instanceof Error && error.message === VAPID_KEY_CONFIGURATION_ERROR) {
+        toast.error(error.message);
+      } else if (error instanceof Error && error.message === "Permission not granted") {
+        toast.error("Push-Berechtigung fehlt");
+      } else {
+        toast.error("Fehler bei Push-Aktivierung");
+      }
     } finally {
       setLoading(false);
     }
@@ -144,7 +154,9 @@ export function NotificationSettings() {
           <div>
             <p className="text-sm font-medium text-foreground">Cloud Push</p>
             <p className="text-[10px] text-muted-foreground">
-              Nexus-Direktnachrichten &amp; Battle-Hinweise
+              {pushEnabled || isPushVapidKeyConfigured()
+                ? "Nexus-Direktnachrichten & Battle-Hinweise"
+                : "VAPID-Schlüssel fehlt oder ist ungültig"}
             </p>
           </div>
         </div>

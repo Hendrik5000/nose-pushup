@@ -1,20 +1,26 @@
 import webpush from "web-push";
 import { supabaseAdmin as supabase } from "@/integrations/supabase/client.server";
 
-const VAPID_PUBLIC_KEY =
-  process.env.VAPID_PUBLIC_KEY ||
-  "BEl62vp9IHZisv938A96792I37S0H479S4522409579304957930495793049579304957930495793";
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY?.trim() ?? "";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY?.trim() ?? "";
 const GCM_API_KEY = process.env.GCM_API_KEY || "";
 
+let vapidConfigured = false;
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails("mailto:support@nosy-pushup.app", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  try {
+    webpush.setVapidDetails("mailto:support@nosy-pushup.app", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+    vapidConfigured = true;
+  } catch {
+    // Keep Cloud Push disabled when the configured key pair is malformed.
+  }
 }
 
 export async function sendPushNotification(
   userId: string,
   payload: { title: string; body: string; url?: string; tag?: string },
 ) {
+  if (!vapidConfigured) return;
+
   const { data: subscriptions, error } = await supabase
     .from("push_subscriptions")
     .select("*")

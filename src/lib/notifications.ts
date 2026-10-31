@@ -1,6 +1,9 @@
 // Lokale Benachrichtigungen (Web Notifications API). Keine Server-Pushes nötig:
 // solange die App (auch als installierte Web-App) läuft, erinnert sie ans Training.
 
+import { decodeVapidPublicKey, isVapidPublicKeyConfigured, validateVapidPublicKey } from "./vapid";
+export { VAPID_KEY_CONFIGURATION_ERROR } from "./vapid";
+
 const ENABLED_KEY = "np-notify";
 const TIME_KEY = "np-notify-time";
 const LAST_KEY = "np-notify-last";
@@ -48,35 +51,33 @@ export async function requestNotificationPermission(): Promise<
   }
 }
 
-/** Zeigt eine Benachrichtigung – über den Service Worker, falls vorhanden. */
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
+function configuredVapidPublicKey(): string {
+  const env =
+    typeof import.meta === "undefined"
+      ? undefined
+      : (import.meta as { env?: Record<string, string> }).env;
+  return env?.VITE_VAPID_PUBLIC_KEY?.trim() ?? "";
+}
+
+export function isPushVapidKeyConfigured(): boolean {
+  return isVapidPublicKeyConfigured(configuredVapidPublicKey());
+}
+
+export async function validateConfiguredPushVapidKey(): Promise<void> {
+  await validateVapidPublicKey(configuredVapidPublicKey());
 }
 
 export async function subscribeToPush() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-    throw new Error("Push messaging is not supported");
+    throw new Error("Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.");
   }
+
+  const applicationServerKey = await validateVapidPublicKey(configuredVapidPublicKey());
   const registration = await navigator.serviceWorker.ready;
-  const vapidPublicKey =
-    "BEl62vp9IHZisv938A96792I37S0H479S4522409579304957930495793049579304957930495793";
-  try {
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-    });
-    return subscription;
-  } catch (error) {
-    console.error("Failed to subscribe to push notifications:", error);
-    throw error;
-  }
+  return registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey,
+  });
 }
 
 export async function showNotification(title: string, body: string, tag?: string, url?: string) {
