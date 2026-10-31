@@ -87,6 +87,9 @@ export function PublicProfileSettings() {
           Name, Level, Streak und Bestwert teilen
         </span>
         <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
           onClick={() => save(!enabled)}
           disabled={saving}
           className={`h-7 w-12 shrink-0 rounded-full p-0.5 transition ${enabled ? "bg-primary" : "bg-secondary"}`}
