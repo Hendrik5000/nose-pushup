@@ -26,6 +26,7 @@ import { ThemePicker } from "@/components/ThemePicker";
 import { DesignStylePicker } from "@/components/DesignStylePicker";
 import { NavigationLayoutPicker } from "@/components/NavigationLayoutPicker";
 import { ErrorReportsPanel } from "@/components/ErrorReportsPanel";
+import { AloWebAppGuide } from "@/components/AloWebAppGuide";
 import { BottomNav } from "@/components/BottomNav";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { PublicProfileSettings } from "@/components/PublicProfileSettings";
@@ -407,6 +408,9 @@ export function ProfilePage() {
             </div>
           </section>
 
+          <p className="mt-4 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Schnellzugriff
+          </p>
           <nav
             aria-label="Profilbereiche"
             className="mt-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
@@ -427,6 +431,10 @@ export function ProfilePage() {
               </a>
             ))}
           </nav>
+          <p className="mt-1 px-1 text-xs text-muted-foreground">
+            Tippe auf eine Rubrik, um direkt zu springen; die Bereiche darunter lassen sich einzeln
+            öffnen.
+          </p>
 
           <div className="mt-4 space-y-3">
             <SettingsSection
@@ -478,7 +486,7 @@ export function ProfilePage() {
             <SettingsSection
               icon="🐞"
               title="Fehlerberichte"
-              subtitle="Automatisch erfasst — für Auto-Fix an Grok senden"
+              subtitle="Automatisch erfasst · ansehen & manuell kopieren"
             >
               <ErrorReportsPanel />
             </SettingsSection>
@@ -535,7 +543,7 @@ export function ProfilePage() {
             <SettingsSection icon="🔔" title="Benachrichtigungen" subtitle="Erinnerungen">
               <NotificationSettings />
             </SettingsSection>
-            <SettingsSection icon="❓" title="Hilfe" subtitle="Tour neu starten">
+            <SettingsSection icon="❓" title="Hilfe" subtitle="Kurzanleitung & Tour">
               <button
                 type="button"
                 onClick={() => {
@@ -545,6 +553,9 @@ export function ProfilePage() {
               >
                 Willkommenstour starten
               </button>
+              <div className="mt-3">
+                <AloWebAppGuide />
+              </div>
             </SettingsSection>
             <SettingsSection
               icon="📋"
@@ -631,6 +642,9 @@ export function ProfilePage() {
           >
             Daten & Datenschutz · Auf allen Geräten
           </button>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Schnellzugriff
+          </p>
           <nav aria-label="Profilbereiche" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
             {[
               ["Konto", "#profile-account"],
@@ -649,6 +663,9 @@ export function ProfilePage() {
               </a>
             ))}
           </nav>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Rubrik wählen, direkt springen und darunter nur den gewünschten Bereich öffnen.
+          </p>
           <SettingsSection
             icon="👤"
             title="Konto & Fortschritt"
@@ -946,11 +963,11 @@ export function ProfilePage() {
               <SettingsSection
                 icon="🐞"
                 title="Fehlerberichte"
-                subtitle="Automatisch erfasst — für Auto-Fix senden"
+                subtitle="Automatisch erfasst · ansehen & manuell kopieren"
               >
                 <ErrorReportsPanel />
               </SettingsSection>
-              <SettingsSection icon="❓" title="Hilfe" subtitle="Tour neu starten">
+              <SettingsSection icon="❓" title="Hilfe" subtitle="Kurzanleitung & Tour">
                 <button
                   type="button"
                   onClick={() => {
@@ -960,6 +977,9 @@ export function ProfilePage() {
                 >
                   Willkommenstour starten
                 </button>
+                <div className="mt-3">
+                  <AloWebAppGuide />
+                </div>
               </SettingsSection>
             </div>
           </SettingsSection>
