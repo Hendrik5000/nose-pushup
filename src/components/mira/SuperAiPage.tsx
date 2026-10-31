@@ -920,6 +920,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       text={m.content}
                       title={m.plan?.title ?? "Mira-Antwort"}
                       source="Mira"
+                      enableNexusDraft={m.role === "assistant"}
                       extra={m.plan ? { plan: m.plan } : {}}
                     />
                   )}

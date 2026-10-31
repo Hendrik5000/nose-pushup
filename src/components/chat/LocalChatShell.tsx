@@ -75,6 +75,7 @@ import {
   workoutShareTemplate,
   type ChatPrefs,
 } from "@/lib/chat-extras";
+import { validateNexusHandoffTarget } from "@/lib/mira-nexus-draft";
 
 type Target = { kind: "room" | "dm"; id: string };
 
@@ -83,6 +84,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
   const [myName, setMyName] = useState("Du");
   const [mode, setMode] = useState<ChatMode>("local");
   const [rooms, setRooms] = useState<LocalRoom[]>([]);
+  const [roomsReady, setRoomsReady] = useState(false);
   const [dms, setDms] = useState<LocalDm[]>([]);
   const [active, setActive] = useState<Target | null>(null);
   const [messages, setMessages] = useState<LocalMessage[]>([]);
@@ -156,6 +158,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     async (uid: string, target: Target | null) => {
       const roomList = await loadRoomsForUser(uid);
       setRooms(roomList);
+      setRoomsReady(true);
       setPrefs(loadChatPrefs(uid));
 
       if (mode === "local" || (await detectChatMode()) === "local") {
@@ -373,24 +376,32 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
   useEffect(() => {
     const refreshDraft = () => {
       const raw = window.sessionStorage.getItem("alo-open-nexus");
-      if (raw) {
-        try {
-          const target = JSON.parse(raw);
-          if (target.kind === "room" && rooms.some((r) => r.id === target.id)) {
-            setActive({ kind: "room", id: target.id });
-            setMobileListOpen(false);
-            window.sessionStorage.removeItem("alo-open-nexus");
-            if (target.messageId)
-              setTimeout(
-                () =>
-                  document
-                    .getElementById(`msg-${target.messageId}`)
-                    ?.scrollIntoView({ block: "center" }),
-                700,
-              );
-          }
-        } catch {
-          /* Invalid navigation request is ignored. */
+      if (raw && userId && roomsReady) {
+        const validation = validateNexusHandoffTarget(
+          raw,
+          userId,
+          rooms.map((candidate) => candidate.id),
+        );
+        if (validation.status === "valid") {
+          const target = validation.target;
+          setActive(target);
+          setMobileListOpen(false);
+          window.sessionStorage.removeItem("alo-open-nexus");
+          if (target.messageId)
+            setTimeout(
+              () =>
+                document
+                  .getElementById(`msg-${target.messageId}`)
+                  ?.scrollIntoView({ block: "center" }),
+              700,
+            );
+        } else {
+          window.sessionStorage.removeItem("alo-open-nexus");
+          if (validation.status === "account-changed")
+            flash("Konto gewechselt. Der Nexus-Entwurf wurde nicht in dieses Konto übernommen.");
+          else if (validation.status === "stale-target")
+            flash("Der Nexus-Zielraum ist nicht mehr verfügbar. Bitte den Entwurf erneut prüfen.");
+          else flash("Ungültige Nexus-Übergabe wurde verworfen.");
         }
       }
       const t = activeRef.current;
@@ -408,7 +419,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
       window.removeEventListener(ALO_REMOTE_EVENT, refreshDraft);
       window.removeEventListener("alo-sync-state", refreshDraft);
     };
-  }, [userId, rooms]);
+  }, [userId, rooms, roomsReady]);
 
   const headerTitle = useMemo(() => {
     if (!active) return "Chat";
