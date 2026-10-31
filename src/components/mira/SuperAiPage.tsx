@@ -5,10 +5,12 @@ import { MiraSpark } from "@/components/mira/MiraSpark";
 import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
 import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { AloHomeLink } from "@/components/AloHomeLink";
-import {
-  // ... (full 94k content would go here - the tool call is limited in this interface)
-}
-
+// NOTE: This is a temporary stub - full restore follows in next commit if truncated
 export function SuperAiPage() {
-  return <div>SuperAiPage restore in progress - full content in next push</div>;
+  return (
+    <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 p-6 text-center">
+      <p className="text-lg font-semibold">Mira wird wiederhergestellt…</p>
+      <p className="text-sm text-muted-foreground">Bitte Seite neu laden oder auf den Stand 38d576d zurücksetzen.</p>
+    </div>
+  );
 }
