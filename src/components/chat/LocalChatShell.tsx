@@ -17,7 +17,11 @@ import {
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
-import { AloPageSidebarTrigger } from "@/components/alo/AloPageSidebar";
+import {
+  AloPageSidebarTrigger,
+  useAloPageSidebarCommands,
+  type AloPageSidebarCommands,
+} from "@/components/alo/AloPageSidebar";
 import {
   AttachImageButton,
   CallButtons,
@@ -113,6 +117,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [listening, setListening] = useState(false);
+  const [dmPickerOpen, setDmPickerOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
   const [, refreshSyncLabel] = useState(0);
@@ -129,10 +134,10 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
   activeRef.current = active;
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
 
-  const flash = (t: string) => {
+  const flash = useCallback((t: string) => {
     setToast(t);
     window.setTimeout(() => setToast(null), 2200);
-  };
+  }, []);
 
   const resolveCloudExtras = useCallback(async (uid: string, msgs: LocalMessage[]) => {
     const unknownAuthors = Array.from(
@@ -420,7 +425,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
       window.removeEventListener(ALO_REMOTE_EVENT, refreshDraft);
       window.removeEventListener("alo-sync-state", refreshDraft);
     };
-  }, [userId, rooms, roomsReady]);
+  }, [userId, rooms, roomsReady, flash]);
 
   const headerTitle = useMemo(() => {
     if (!active) return "Chat";
@@ -544,6 +549,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     setActive({ kind: "dm", id: conversationId });
     setMobileListOpen(false);
     setMenuOpen(false);
+    setDmPickerOpen(false);
     await refresh(userId, { kind: "dm", id: conversationId });
   };
 
@@ -551,6 +557,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     if (!userId || !newRoomName.trim()) return;
     const room = await createChatRoom(userId, newRoomName);
     setNewRoomName("");
+    setDmPickerOpen(false);
     setNewRoomOpen(false);
     if (room) {
       setActive({ kind: "room", id: room.id });
@@ -565,6 +572,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     const otherId = `local-${dmName.trim().toLowerCase().replace(/\s+/g, "-")}`;
     const dm = getOrCreateLocalDm(userId, otherId, dmName.trim());
     setDmName("");
+    setDmPickerOpen(false);
     setActive({ kind: "dm", id: dm.id });
     setMobileListOpen(false);
     await refresh(userId, { kind: "dm", id: dm.id });
@@ -599,7 +607,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     rec.start();
   };
 
-  const exportActive = async () => {
+  const exportActive = useCallback(async () => {
     if (!active) return;
     const md = exportMessagesMarkdown(headerTitle, messages, (uid) =>
       uid === userId
@@ -614,7 +622,45 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     } catch {
       flash("Kopieren fehlgeschlagen");
     }
-  };
+  }, [active, dms, flash, headerTitle, messages, myName, userId]);
+
+  const sidebarCommands = useMemo<AloPageSidebarCommands>(
+    () => ({
+      "nexus-open-list": () => {
+        setSearchOpen(false);
+        setMobileListOpen(true);
+        setMenuOpen(true);
+      },
+      "nexus-new-room": () => {
+        setSearchOpen(false);
+        newRoomTriggerRef.current = document.querySelector<HTMLButtonElement>(
+          '[data-alo-sidebar-action="nexus-new-room"]',
+        );
+        setNewRoomOpen(true);
+      },
+      "nexus-new-dm": () => {
+        setSearchOpen(false);
+        setDmPickerOpen(true);
+        setMobileListOpen(true);
+        setMenuOpen(true);
+      },
+      "nexus-open-search": () => {
+        setSearchOpen(true);
+        setMobileListOpen(false);
+        setMenuOpen(false);
+      },
+      "nexus-export-current": () => void exportActive(),
+    }),
+    [exportActive],
+  );
+  const activeSidebarItem = newRoomOpen
+    ? "nexus-new-room"
+    : dmPickerOpen
+      ? "nexus-new-dm"
+      : searchOpen
+        ? "nexus-open-search"
+        : "nexus-open-list";
+  useAloPageSidebarCommands(sidebarCommands, activeSidebarItem);
 
   const modeLabel = mode === "supabase" ? "Cloud · Supabase" : "Lokal · Gerät";
 
@@ -757,6 +803,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                 type="button"
                 onClick={() => {
                   setActive({ kind: "room", id: r.id });
+                  setDmPickerOpen(false);
                   setMenuOpen(false);
                   setMobileListOpen(false);
                 }}
@@ -819,12 +866,20 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
         </div>
         <div className="sport-only">
           {mode === "local" ? (
-            <details className="community-dm-details">
+            <details
+              className="community-dm-details"
+              open={dmPickerOpen}
+              onToggle={(event) => setDmPickerOpen(event.currentTarget.open)}
+            >
               <summary>Direktnachricht starten</summary>
               {dmComposer}
             </details>
           ) : userId ? (
-            <details className="community-dm-details">
+            <details
+              className="community-dm-details"
+              open={dmPickerOpen}
+              onToggle={(event) => setDmPickerOpen(event.currentTarget.open)}
+            >
               <summary>Mit Freund schreiben</summary>
               <FriendDmPicker userId={userId} onOpen={(id) => void onOpenFriendDm(id)} />
             </details>
@@ -848,6 +903,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                 type="button"
                 onClick={() => {
                   setActive({ kind: "dm", id: d.id });
+                  setDmPickerOpen(false);
                   setMenuOpen(false);
                   setMobileListOpen(false);
                 }}

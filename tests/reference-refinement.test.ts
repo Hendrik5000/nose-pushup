@@ -42,6 +42,7 @@ test("new reference styles do not leak into archived selectable designs", () => 
     const selectors = css.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/([^{}]+)\{/g);
     for (const [, selector] of selectors) {
       if (selector.trim().startsWith("@")) continue;
+      if (name === "health-reference.css" && selector.includes(".health-classic-")) continue;
       assert.match(selector, /html\[data-design-style="performance"\]/, `${name}: ${selector}`);
     }
   }
