@@ -121,60 +121,163 @@ function HealthPage() {
   return (
     <AloPageSidebar active="health">
       <DesignView variant="classic">
-        <main className="classic-only alo-tablet-health mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-8">
-          <header className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AloPageSidebarTrigger />
-              <AloHomeLink className="px-2 text-[10px]" />
+        <main className="classic-only health-classic-dashboard alo-tablet-health mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-4 pt-5 pb-28 sm:px-8">
+          <header className="health-classic-header">
+            <div className="health-classic-top-row">
+              <div className="flex items-center gap-2">
+                <AloPageSidebarTrigger />
+                <AloHomeLink className="px-2 text-[10px]" />
+              </div>
+              <span className="health-classic-brand-pill">
+                <HeartPulse aria-hidden="true" /> Alo Health
+              </span>
             </div>
-            <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-              Health
-            </span>
-            <span className="w-12" />
+            <p className="health-classic-kicker">DEIN WOHLBEFINDEN</p>
+            <h1>Gesundheit im Blick</h1>
+            <p>Schritte, Schlaf und Aktivität – mit deinen echten Messwerten an einem Ort.</p>
           </header>
-
-          <section className="mt-6 grid grid-cols-2 gap-3">
-            <Card
-              label="Ø Schritte (7T)"
-              value={
-                avgSteps.average === null
-                  ? "—"
-                  : Math.round(avgSteps.average).toLocaleString("de-DE")
-              }
-            />
-            <Card
-              label="Ø Schlaf (7T)"
-              value={avgSleep.average === null ? "—" : `${(avgSleep.average / 60).toFixed(1)} h`}
-            />
+          <nav
+            className="health-category-nav health-classic-category-nav"
+            aria-label="Gesundheitsbereiche"
+          >
+            <a href="#health-today">
+              <HeartPulse aria-hidden="true" />
+              <span>Heute</span>
+            </a>
+            <a href="#health-activity">
+              <Footprints aria-hidden="true" />
+              <span>Aktivität</span>
+            </a>
+            <a href="#health-sleep">
+              <Moon aria-hidden="true" />
+              <span>Schlaf</span>
+            </a>
+            <a href="#health-sources">
+              <Watch aria-hidden="true" />
+              <span>Quellen</span>
+            </a>
+          </nav>
+          <section
+            id="health-today"
+            tabIndex={-1}
+            className="health-classic-hero"
+            aria-labelledby="health-classic-today-title"
+          >
+            <div className="health-classic-hero-copy">
+              <p className="health-classic-kicker">DEIN TAG IM BLICK</p>
+              <h2 id="health-classic-today-title">
+                {hasTodayGlanceData ? "Deine Werte im Blick." : "Wie geht es dir heute?"}
+              </h2>
+              <p>
+                {hasTodayGlanceData
+                  ? glanceSteps !== null
+                    ? `Heute sind ${glanceSteps.toLocaleString("de-DE")} Schritte erfasst. Entdecke deine Aktivität und gib deiner Erholung Raum.`
+                    : "Für heute sind Gesundheitswerte erfasst. Ergänze weitere Angaben, wenn du möchtest."
+                  : todayEntry
+                    ? "Für heute gibt es einen Eintrag, aber noch keine erfassten Werte für Schritte, Schlaf oder aktive Energie."
+                    : "Noch keine Werte für heute. Verbinde deine Uhr oder erfasse Schritte, Schlaf und aktive Energie."}
+              </p>
+              <div className="health-classic-hero-actions">
+                <a href="#health-sources" className="health-classic-action-secondary">
+                  <Watch aria-hidden="true" /> Verbinden
+                </a>
+                <a href="#health-entry" className="health-classic-action-primary">
+                  <Plus aria-hidden="true" /> Werte erfassen <ArrowRight aria-hidden="true" />
+                </a>
+              </div>
+            </div>
+            <dl className="health-classic-today-measurements" aria-label="Erfasste Tageswerte">
+              {[
+                { label: "Schritte", value: glanceSteps?.toLocaleString("de-DE") },
+                { label: "Aktive kcal", value: glanceKcal?.toLocaleString("de-DE") },
+                {
+                  label: "Schlaf",
+                  value:
+                    measuredHealthValue(todayEntry?.sleep_min) !== null
+                      ? `${(todayEntry!.sleep_min / 60).toFixed(1)} h`
+                      : undefined,
+                },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value ?? "—"}</dd>
+                  {!value && <small>Nicht erfasst</small>}
+                </div>
+              ))}
+            </dl>
+          </section>
+          <section
+            id="health-activity"
+            tabIndex={-1}
+            className="health-classic-activity"
+            aria-label="Aktivität und Wochenübersicht"
+          >
+            <div className="health-classic-metrics-grid">
+              <Card
+                label="Ø Schritte (7T)"
+                value={
+                  avgSteps.average === null
+                    ? "—"
+                    : Math.round(avgSteps.average).toLocaleString("de-DE")
+                }
+              />
+              <Card
+                label="Ø Schlaf (7T)"
+                value={avgSleep.average === null ? "—" : `${(avgSleep.average / 60).toFixed(1)} h`}
+              />
+              <Card
+                label="Aktive kcal heute"
+                value={glanceKcal === null ? "—" : glanceKcal.toLocaleString("de-DE")}
+              />
+            </div>
+            <div className="health-classic-widgets-grid">
+              <div className="health-classic-widget-card">
+                <WeeklyStepsGoal todaySteps={glanceSteps} />
+              </div>
+              <div
+                id="health-sleep"
+                tabIndex={-1}
+                className="health-classic-widget-card health-classic-sleep-widget"
+              >
+                <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
+              </div>
+              <div className="health-classic-widget-card">
+                <WeightTrendCard
+                  points={entries
+                    .filter((e) => e.weight_kg != null)
+                    .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
+                />
+              </div>
+            </div>
           </section>
 
-          <WeeklyStepsGoal todaySteps={glanceSteps} />
-          <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
-          <WeightTrendCard
-            points={entries
-              .filter((e) => e.weight_kg != null)
-              .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
-          />
-
-          <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Google Health Connect
-            </h2>
-            <HealthConnectPanel />
+          <section id="health-sources" tabIndex={-1} className="health-classic-sources">
+            <h2 className="health-classic-section-heading">Verbundene Datenquellen</h2>
+            <div className="health-classic-sources-grid">
+              <section className="health-classic-source-card rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+                <h3 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                  Google Health Connect
+                </h3>
+                <HealthConnectPanel />
+              </section>
+              <section className="health-classic-source-card rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+                <h3 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                  Smartwatch
+                </h3>
+                <SmartwatchPanel />
+              </section>
+            </div>
           </section>
 
           <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Smartwatch
-            </h2>
-            <SmartwatchPanel />
-          </section>
-
-          <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-            <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            <h2
+              id="health-entry"
+              tabIndex={-1}
+              className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground"
+            >
               Tag manuell erfassen
             </h2>
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Input label="Datum" type="date" value={day} onChange={setDay} />
               <Input
                 label="Schritte"
@@ -215,7 +318,7 @@ function HealthPage() {
             </button>
           </section>
 
-          <section className="mt-6">
+          <section className="health-classic-history">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Verlauf
             </h2>
@@ -224,11 +327,11 @@ function HealthPage() {
                 Noch keine Gesundheitsdaten.
               </p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="health-classic-history-list">
                 {entries.map((e) => (
                   <li
                     key={e.day}
-                    className="flex items-center justify-between rounded-2xl border border-border bg-card/40 px-4 py-3 text-xs"
+                    className="health-classic-history-row flex items-center justify-between rounded-2xl border border-border bg-card/40 px-4 py-3 text-xs"
                   >
                     <span className="font-semibold">
                       {new Date(e.day).toLocaleDateString("de-DE")}
@@ -286,6 +389,7 @@ function HealthPage() {
           </nav>
           <section
             id="health-today"
+            tabIndex={-1}
             className="health-daily-hero"
             aria-labelledby="health-daily-title"
           >
@@ -336,7 +440,11 @@ function HealthPage() {
               </a>
             </div>
           </section>
-          <section id="health-activity" className="health-bento-grid grid grid-cols-2 gap-3">
+          <section
+            id="health-activity"
+            tabIndex={-1}
+            className="health-bento-grid grid grid-cols-2 gap-3"
+          >
             <div className="health-energy-card">
               <div className="health-card-heading">
                 <Flame aria-hidden="true" />
@@ -406,7 +514,7 @@ function HealthPage() {
               </strong>
             )}
           </section>
-          <div id="health-sleep" className="grid gap-5 lg:grid-cols-2">
+          <div id="health-sleep" tabIndex={-1} className="grid gap-5 lg:grid-cols-2">
             <div className="space-y-5">
               <WeeklyStepsGoal todaySteps={glanceSteps} />
               <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
@@ -418,7 +526,7 @@ function HealthPage() {
             />
           </div>
           <SportSectionLabel number="01">Verbundene Datenquellen</SportSectionLabel>
-          <div id="health-sources" className="grid gap-4 md:grid-cols-2">
+          <div id="health-sources" tabIndex={-1} className="grid gap-4 md:grid-cols-2">
             <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
               <h2 className="mb-4 text-lg font-bold">Google Health Connect</h2>
               <HealthConnectPanel />
@@ -431,6 +539,7 @@ function HealthPage() {
           <SportSectionLabel number="02">Eintrag erfassen</SportSectionLabel>
           <section
             id="health-entry"
+            tabIndex={-1}
             className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6"
           >
             <p className="mb-5 max-w-xl text-sm text-muted-foreground">

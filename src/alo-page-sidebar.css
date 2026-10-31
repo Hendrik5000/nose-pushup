@@ -1,5 +1,4 @@
-/* Shared in-page navigation for Mira, Nexus and Alo Health. It stays inside the
-   existing route surface and leaves each page's own scroll region untouched. */
+/* Shared shell for app-specific navigation; all accents follow the user's theme tokens. */
 .alo-page-sidebar-provider {
   --sidebar-width: clamp(12rem, 16vw, 16rem);
   position: relative;
@@ -22,10 +21,18 @@
 .alo-page-sidebar [data-sidebar="sidebar"] {
   border-color: color-mix(in srgb, var(--foreground) 13%, transparent);
   background:
-    radial-gradient(ellipse at 100% 0%, color-mix(in srgb, #8b5cf6 14%, transparent), transparent 68%),
-    linear-gradient(180deg, color-mix(in srgb, var(--background) 94%, #0b1634), var(--background));
+    radial-gradient(
+      ellipse at 100% 0%,
+      color-mix(in srgb, var(--accent) 18%, transparent),
+      transparent 68%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background) 97%, var(--primary)),
+      var(--background)
+    );
   color: var(--foreground);
-  box-shadow: 0 22px 70px color-mix(in srgb, #030712 34%, transparent);
+  box-shadow: 0 22px 70px color-mix(in srgb, var(--foreground) 14%, transparent);
 }
 
 .alo-page-sidebar-nav {
@@ -34,8 +41,16 @@
   flex: 1 1 auto;
   flex-direction: column;
   background:
-    radial-gradient(ellipse at 82% 7%, color-mix(in srgb, #38bdf8 10%, transparent), transparent 42%),
-    radial-gradient(ellipse at 12% 66%, color-mix(in srgb, #8b5cf6 9%, transparent), transparent 42%);
+    radial-gradient(
+      ellipse at 82% 7%,
+      color-mix(in srgb, var(--primary) 11%, transparent),
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 12% 66%,
+      color-mix(in srgb, var(--accent) 10%, transparent),
+      transparent 42%
+    );
 }
 
 .alo-page-sidebar-header {
@@ -59,7 +74,8 @@
 
 .alo-page-sidebar-brand:focus-visible,
 .alo-page-sidebar-close:focus-visible,
-.alo-page-sidebar-trigger:focus-visible {
+.alo-page-sidebar-trigger:focus-visible,
+.alo-page-sidebar-footer a:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
@@ -70,13 +86,20 @@
   height: 2.7rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid color-mix(in srgb, #38bdf8 42%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 42%, transparent);
   border-radius: 0.95rem;
-  background: linear-gradient(135deg, color-mix(in srgb, #38bdf8 24%, var(--card)), color-mix(in srgb, #8b5cf6 25%, var(--card)));
-  box-shadow: 0 0 24px color-mix(in srgb, #38bdf8 18%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 24%, var(--card)),
+    color-mix(in srgb, var(--accent) 26%, var(--card))
+  );
+  box-shadow: 0 0 24px color-mix(in srgb, var(--primary) 18%, transparent);
   color: var(--foreground);
-  font-size: 1.15rem;
-  font-weight: 800;
+}
+
+.alo-page-sidebar-mark svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .alo-page-sidebar-brand-copy {
@@ -145,31 +168,78 @@
 }
 
 .alo-page-sidebar .alo-page-sidebar-link:hover {
-  border-color: color-mix(in srgb, #38bdf8 20%, transparent);
-  background: color-mix(in srgb, var(--card) 80%, #102342);
+  border-color: color-mix(in srgb, var(--primary) 24%, transparent);
+  background: color-mix(in srgb, var(--card) 84%, var(--primary));
   color: var(--foreground);
 }
 
 .alo-page-sidebar .alo-page-sidebar-link[data-active="true"] {
-  border-color: color-mix(in srgb, #38bdf8 35%, #8b5cf6 18%);
-  background: linear-gradient(110deg, color-mix(in srgb, #38bdf8 20%, var(--card)), color-mix(in srgb, #8b5cf6 18%, var(--card)));
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--accent) 18%);
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--primary) 20%, var(--card)),
+    color-mix(in srgb, var(--accent) 17%, var(--card))
+  );
   color: var(--foreground);
-  box-shadow: inset 0 0 18px color-mix(in srgb, #38bdf8 7%, transparent), 0 0 24px color-mix(in srgb, #8b5cf6 10%, transparent);
+  box-shadow:
+    inset 0 0 18px color-mix(in srgb, var(--primary) 8%, transparent),
+    0 0 24px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .alo-page-sidebar .alo-page-sidebar-link svg {
   width: 1.15rem;
   height: 1.15rem;
-  color: color-mix(in srgb, #67d5ff 75%, var(--foreground));
+  color: color-mix(in srgb, var(--primary) 75%, var(--foreground));
+}
+
+.alo-page-sidebar .alo-page-sidebar-quick-action {
+  min-height: 50px;
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--primary) 14%, var(--card)),
+    color-mix(in srgb, var(--accent) 12%, var(--card))
+  );
+  color: var(--foreground);
+  font-weight: 650;
+}
+
+.alo-page-sidebar .alo-page-sidebar-quick-action:hover {
+  border-color: color-mix(in srgb, var(--primary) 46%, var(--accent));
+  box-shadow: 0 0 22px color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 .alo-page-sidebar-footer {
-  min-height: 52px;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
   border-top: 1px solid color-mix(in srgb, var(--foreground) 11%, transparent);
-  padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom));
+  padding: 0.75rem 0.6rem max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.alo-page-sidebar-footer a {
+  display: flex;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-radius: 0.85rem;
   color: var(--muted-foreground);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
+  text-decoration: none;
+}
+
+.alo-page-sidebar-footer a:hover {
+  background: color-mix(in srgb, var(--card) 82%, var(--primary));
+  color: var(--foreground);
+}
+
+.alo-page-sidebar-footer svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
 }
 
 .alo-page-sidebar-trigger {
@@ -180,14 +250,22 @@
   flex: 0 0 auto;
   border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent) !important;
   border-radius: 0.9rem !important;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--card) 95%, #112344), color-mix(in srgb, var(--background) 88%, #171435)) !important;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--card) 95%, var(--primary)),
+    color-mix(in srgb, var(--background) 90%, var(--accent))
+  ) !important;
   color: var(--foreground) !important;
-  box-shadow: 0 6px 24px color-mix(in srgb, #030712 24%, transparent);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--foreground) 12%, transparent);
 }
 
 .alo-page-sidebar-trigger:hover {
-  border-color: color-mix(in srgb, #38bdf8 42%, #8b5cf6 20%) !important;
-  background: linear-gradient(145deg, color-mix(in srgb, #38bdf8 14%, var(--card)), color-mix(in srgb, #8b5cf6 13%, var(--card))) !important;
+  border-color: color-mix(in srgb, var(--primary) 50%, var(--accent) 22%) !important;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--primary) 14%, var(--card)),
+    color-mix(in srgb, var(--accent) 13%, var(--card))
+  ) !important;
 }
 
 .alo-page-sidebar-trigger svg {

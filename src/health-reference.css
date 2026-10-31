@@ -488,3 +488,485 @@ html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .
   color: #ffffff;
   box-shadow: 0 0 24px rgba(63, 145, 255, 0.2);
 }
+
+/* Classic remains a separate saved design choice, but now shares the Health dashboard hierarchy. */
+html:not([data-design-style="performance"])[data-theme="glacier"]
+  body:has(.health-classic-dashboard) {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(
+      ellipse 76% 32% at 94% 0%,
+      color-mix(in srgb, var(--accent) 18%, transparent),
+      transparent 74%
+    ),
+    radial-gradient(
+      ellipse 76% 28% at 7% 4%,
+      color-mix(in srgb, var(--primary) 15%, transparent),
+      transparent 76%
+    ),
+    linear-gradient(180deg, var(--background), var(--background));
+  background-attachment: fixed;
+}
+
+html:not([data-design-style="performance"]) .health-classic-dashboard {
+  --health-classic-panel: color-mix(in srgb, var(--card) 88%, transparent);
+  --health-classic-line: color-mix(in srgb, var(--foreground) 13%, transparent);
+  color: var(--foreground);
+  gap: clamp(1rem, 2.4vw, 1.5rem);
+  padding-top: clamp(1rem, 3vw, 1.75rem);
+}
+
+html:not([data-design-style="performance"]) .health-classic-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.health-classic-top-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.health-classic-brand-pill {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid
+    var(--health-classic-line, color-mix(in srgb, var(--foreground) 13%, transparent));
+  border-radius: 999px;
+  background: var(--health-classic-panel, color-mix(in srgb, var(--card) 88%, transparent));
+  padding: 0.45rem 0.85rem;
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.health-classic-brand-pill svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary);
+}
+
+.health-classic-kicker {
+  margin: 0;
+  color: var(--primary);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.health-classic-header h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.health-classic-header > p:last-child {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: clamp(0.92rem, 2vw, 1rem);
+  line-height: 1.6;
+}
+
+html:not([data-design-style="performance"]) .health-classic-dashboard .health-classic-category-nav {
+  display: flex;
+  width: 100%;
+  justify-content: stretch;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border: 1px solid
+    var(--health-classic-line, color-mix(in srgb, var(--foreground) 13%, transparent));
+  border-radius: 1.15rem;
+  background: var(--health-classic-panel, color-mix(in srgb, var(--card) 88%, transparent));
+  padding: 0.3rem;
+  scrollbar-width: none;
+}
+
+.health-classic-category-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.health-classic-category-nav a {
+  display: flex;
+  min-width: 4.1rem;
+  min-height: 2.85rem;
+  flex: 1 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 0.9rem;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.health-classic-category-nav a:first-child,
+.health-classic-category-nav a:hover {
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--health-classic-line, var(--border)));
+  background: color-mix(in srgb, var(--primary) 12%, var(--health-classic-panel, var(--card)));
+  color: var(--foreground);
+}
+
+.health-classic-category-nav svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.health-classic-hero {
+  display: grid;
+  min-width: 0;
+  gap: 1.2rem;
+  overflow: hidden;
+  border: 1px solid
+    color-mix(in srgb, var(--primary) 28%, var(--health-classic-line, var(--border)));
+  border-radius: 1.8rem;
+  background:
+    radial-gradient(
+      ellipse 68% 95% at 98% 8%,
+      color-mix(in srgb, var(--accent) 17%, transparent),
+      transparent 72%
+    ),
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--primary) 11%, var(--health-classic-panel, var(--card))),
+      var(--health-classic-panel, var(--card))
+    );
+  padding: clamp(1.2rem, 4vw, 2rem);
+  box-shadow: 0 18px 45px color-mix(in srgb, var(--foreground) 8%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.health-classic-hero-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.health-classic-hero-copy h2 {
+  max-width: 23ch;
+  margin: 0;
+  font-size: clamp(1.45rem, 4vw, 2.15rem);
+  font-weight: 720;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+}
+
+.health-classic-hero-copy > p:not(.health-classic-kicker) {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.health-classic-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+}
+
+.health-classic-action-secondary,
+.health-classic-action-primary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid
+    color-mix(in srgb, var(--primary) 28%, var(--health-classic-line, var(--border)));
+  border-radius: 999px;
+  padding: 0.65rem 0.9rem;
+  color: var(--foreground);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.health-classic-action-secondary {
+  background: color-mix(in srgb, var(--card) 76%, transparent);
+}
+
+.health-classic-action-primary {
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--primary) 25%, var(--card)),
+    color-mix(in srgb, var(--accent) 20%, var(--card))
+  );
+}
+
+.health-classic-action-secondary:hover,
+.health-classic-action-primary:hover {
+  transform: translateY(-1px);
+  background-color: color-mix(in srgb, var(--primary) 20%, var(--card));
+}
+
+.health-classic-action-secondary svg,
+.health-classic-action-primary svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.health-classic-today-measurements {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.health-classic-today-measurements > div {
+  display: flex;
+  min-width: 0;
+  min-height: 6.2rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.28rem;
+  border: 1px solid
+    color-mix(in srgb, var(--primary) 18%, var(--health-classic-line, var(--border)));
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--background) 58%, var(--card));
+  padding: 0.7rem;
+}
+
+.health-classic-today-measurements dt {
+  color: var(--muted-foreground);
+  font-size: clamp(0.55rem, 2.5vw, 0.68rem);
+  font-weight: 650;
+}
+
+.health-classic-today-measurements dd {
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-size: clamp(1rem, 3.8vw, 1.55rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.health-classic-today-measurements small {
+  color: var(--muted-foreground);
+  font-size: 0.58rem;
+}
+
+.health-classic-activity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1rem;
+  scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
+}
+
+.health-classic-metrics-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.health-classic-metrics-grid > div {
+  min-width: 0;
+  border-color: var(--health-classic-line, var(--border));
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--primary) 8%, var(--card)),
+    var(--health-classic-panel, var(--card))
+  );
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 7%, transparent);
+}
+
+.health-classic-widgets-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.health-classic-widget-card {
+  min-width: 0;
+  scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
+}
+
+.health-classic-widget-card > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.health-classic-sources,
+.health-classic-dashboard > section:has(#health-entry) {
+  border-color: var(--health-classic-line, var(--border));
+  background: var(--health-classic-panel, color-mix(in srgb, var(--card) 88%, transparent));
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--foreground) 7%, transparent);
+  scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
+}
+
+.health-classic-sources {
+  min-width: 0;
+  border: 1px solid var(--health-classic-line, var(--border));
+  border-radius: 1.5rem;
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.health-classic-section-heading {
+  margin: 0 0 0.9rem;
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.health-classic-sources-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.health-classic-source-card {
+  min-width: 0;
+  border-color: var(--health-classic-line, var(--border));
+  background: color-mix(in srgb, var(--background) 52%, var(--card));
+}
+
+.health-classic-sources h3 {
+  color: var(--foreground);
+}
+
+.health-classic-dashboard h2#health-entry,
+.health-classic-dashboard .health-classic-history h2 {
+  color: var(--foreground);
+  scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
+}
+
+.health-classic-history {
+  min-width: 0;
+  border: 1px solid var(--health-classic-line, var(--border));
+  border-radius: 1.5rem;
+  background: var(--health-classic-panel, color-mix(in srgb, var(--card) 88%, transparent));
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.health-classic-history-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.health-classic-history-row {
+  min-width: 0;
+  gap: 0.6rem;
+  border-color: var(--health-classic-line, var(--border));
+  background: color-mix(in srgb, var(--background) 60%, var(--card));
+}
+
+.health-classic-history-row > span:last-child {
+  text-align: right;
+}
+
+.health-classic-dashboard #health-today,
+.health-classic-dashboard #health-activity,
+.health-classic-dashboard #health-sleep,
+.health-classic-dashboard #health-sources,
+.health-classic-dashboard #health-entry {
+  scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
+}
+
+html[data-theme="contrast"]:not([data-design-style="performance"])
+  body:has(.health-classic-dashboard) {
+  background: var(--background);
+  background-image: none;
+}
+
+@media (min-width: 740px) {
+  .health-classic-hero {
+    grid-template-columns: minmax(0, 1.2fr) minmax(19rem, 0.9fr);
+    align-items: center;
+  }
+
+  .health-classic-activity {
+    gap: 1.1rem;
+  }
+
+  .health-classic-metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .health-classic-widgets-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .health-classic-sources-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .health-classic-widgets-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .health-classic-dashboard {
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  }
+
+  .health-classic-category-nav a {
+    min-width: 3.9rem;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.62rem;
+  }
+
+  .health-classic-today-measurements > div {
+    min-height: 5.6rem;
+    padding: 0.55rem;
+  }
+
+  .health-classic-history-list {
+    grid-template-columns: 1fr;
+  }
+
+  .health-classic-history-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .health-classic-history-row > span:last-child {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .health-classic-category-nav a,
+  .health-classic-action-secondary,
+  .health-classic-action-primary {
+    transition-duration: 0.01ms;
+  }
+}

@@ -35,10 +35,14 @@ import { ContentActions } from "@/components/alo/ContentActions";
 import { DesignView } from "@/components/DesignView";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { SportPageIntro } from "@/components/SportPageIntro";
-import { AloPageSidebarTrigger } from "@/components/alo/AloPageSidebar";
+import {
+  AloPageSidebarTrigger,
+  useAloPageSidebarCommands,
+  type AloPageSidebarCommands,
+} from "@/components/alo/AloPageSidebar";
 import { AiProviderSettings } from "@/components/AiProviderSettings";
 import { buildAppContext, contextToSystemBlock } from "@/lib/ai-context";
 import { miraDraftId, readMiraDraft, rememberMiraSession } from "@/lib/mira-handoff";
@@ -339,7 +343,7 @@ export function SuperAiPage() {
     setSportAiView("chat");
   };
 
-  const startNewSession = () => {
+  const startNewSession = useCallback(() => {
     generationRef.current += 1;
     setLoading(false);
     const id = newSessionId();
@@ -349,7 +353,43 @@ export function SuperAiPage() {
     setSessionsOpen(false);
     setError(null);
     setSportAiView("chat");
-  };
+  }, []);
+
+  const activeSidebarItem = settingsOpen
+    ? "mira-open-settings"
+    : sessionsOpen || sportAiView === "history"
+      ? "mira-view-history"
+      : sportAiView === "coach"
+        ? "mira-view-tasks"
+        : "mira-view-chat";
+  const sidebarCommands = useMemo<AloPageSidebarCommands>(
+    () => ({
+      "mira-new-chat": () => {
+        setSettingsOpen(false);
+        startNewSession();
+      },
+      "mira-view-chat": () => {
+        setSettingsOpen(false);
+        setSportAiView("chat");
+        setSessionsOpen(false);
+      },
+      "mira-view-history": () => {
+        setSettingsOpen(false);
+        setSportAiView("history");
+        setSessionsOpen(true);
+        setClassicOptionsOpen(true);
+      },
+      "mira-view-tasks": () => {
+        setSettingsOpen(false);
+        setSportAiView("coach");
+        setSessionsOpen(false);
+        setClassicOptionsOpen(true);
+      },
+      "mira-open-settings": () => setSettingsOpen(true),
+    }),
+    [setClassicOptionsOpen, setSessionsOpen, setSettingsOpen, setSportAiView, startNewSession],
+  );
+  useAloPageSidebarCommands(sidebarCommands, activeSidebarItem);
 
   const updateInteraction = (messageIndex: number, interaction: PcConfiguratorInteraction) => {
     setMessages((current) =>
