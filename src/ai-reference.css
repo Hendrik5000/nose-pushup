@@ -1,1 +1,88 @@
-PLACEHOLDER_WILL_FAIL
+/* Mira: quiet navy canvas, compact controls, editable starters.
+   Route-scoped tokens leave Alo branding and other app areas unchanged. */
+html[data-design-style="performance"][data-theme="glacier"] main.sport-ai-page {
+  color-scheme: dark;
+  --background: #070a14;
+  --foreground: #e8edf5;
+  --card: #10172a;
+  --card-foreground: #e8edf5;
+  --secondary: #18223b;
+  --muted: #18223b;
+  --muted-foreground: #aab8d1;
+  --primary: #56c9ff;
+  --primary-foreground: #081629;
+  --accent: #a78bfa;
+  --accent-foreground: #17102c;
+  --border: #91b7f12b;
+  --input: #91b7f145;
+  --ring: #63d8ff;
+  --destructive: #ff9299;
+  color: var(--foreground);
+  background:
+    radial-gradient(ellipse at 88% 0%, #703de64a, transparent 36%),
+    radial-gradient(ellipse at 50% 108%, #173f9b70, #142d6b38 38%, transparent 72%),
+    linear-gradient(180deg, #05070c 0%, #070a12 58%, #0a1122 100%);
+}
+html[data-design-style="performance"] main.sport-ai-page.sport-ai-chat-mode {
+  width: 100%;
+  max-width: 72rem;
+  padding: 0.75rem clamp(0.75rem, 3vw, 2rem) 0.75rem !important;
+  gap: 0.65rem !important;
+}
+/* NOTE: full file restored via local copy — critical responsive block at end */
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-options > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  color: var(--foreground);
+  font-size: 0.8rem;
+  font-weight: 650;
+  opacity: 1;
+  filter: none;
+  -webkit-font-smoothing: antialiased;
+}
+@supports (-webkit-touch-callout: none) {
+  html[data-design-style="performance"] .sport-ai-chat-composer,
+  html[data-design-style="performance"] .sport-chat-composer,
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-options {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (max-width: 767px) {
+  html[data-design-style="performance"] main.sport-ai-page {
+    gap: 0.75rem;
+    padding-inline: max(0.85rem, env(safe-area-inset-left), env(safe-area-inset-right));
+  }
+  html[data-design-style="performance"] .sport-ai-chat-grid {
+    display: flex;
+    flex-direction: column;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (min-width: 768px) and (max-width: 1024px) {
+  html[data-design-style="performance"] .sport-ai-chat-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 17rem);
+    gap: 0.85rem;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-composer {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}
+@media (min-width: 1025px) {
+  html[data-design-style="performance"] main.sport-ai-page {
+    max-width: 72rem;
+    margin-inline: auto;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+    gap: 1.15rem;
+  }
+}
