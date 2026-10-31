@@ -3,6 +3,7 @@ import "@/mira-attachments.css";
 import { MiraAttachmentPicker, MiraAttachmentPreview } from "@/components/mira/MiraAttachments";
 import { MiraSpark } from "@/components/mira/MiraSpark";
 import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
+import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import {
   assertMiraAttachmentProvider,
@@ -47,6 +48,7 @@ import {
   type PlanFeedback,
 } from "@/lib/ai-plan";
 import type { AppContextPack } from "@/lib/ai-context";
+import type { PcConfiguratorInteraction } from "@/lib/mira-interactions";
 import {
   classifyTask,
   describeProviderSelection,
@@ -348,6 +350,14 @@ export function SuperAiPage() {
     setSportAiView("chat");
   };
 
+  const updateInteraction = (messageIndex: number, interaction: PcConfiguratorInteraction) => {
+    setMessages((current) =>
+      current.map((message, index) =>
+        index === messageIndex ? { ...message, interaction } : message,
+      ),
+    );
+  };
+
   const submit = async (textOverride?: string, history = messages) => {
     const text = (textOverride ?? input).trim();
     if ((!text && !attachments.length) || loading || sendingRef.current) return;
@@ -396,7 +406,9 @@ export function SuperAiPage() {
       if (generation !== generationRef.current) return;
       let systemExtra = `Du bist Mira, die vielseitige allgemeine KI von Alo (All in one). Hilf bei Alltag, Wissen, Schreiben, Ideen, Lernen und Planung. Sei verlässlich, klar und passe die Antwort an. Du bist keine reine Sport-App: Sport- und Chat-Themen sind optionale Bereiche. ${PERSONAS.find((p) => p.id === persona)?.system ?? ""}
 
-Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routing bedeutet: die App wählt passend zur Frage ein KI-Modell). Erfinde keine persönlichen Daten oder Trainingsergebnisse. Fehlt für eine sichere oder persönliche Trainingsempfehlung wichtiger Kontext, stelle zuerst eine konkrete Rückfrage. Bei einem konkreten einzelnen Trainingsvorschlag gib zusätzlich ein JSON-Objekt mit reply und einem vollständig ausgefüllten plan (title, exercise_id, sets, reps, rest_s, rationale) aus; wenn Kontext fehlt, lasse plan weg. Normale Antworten bleiben Text.${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
+Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routing bedeutet: die App wählt passend zur Frage ein KI-Modell). Erfinde keine persönlichen Daten oder Trainingsergebnisse. Fehlt für eine sichere oder persönliche Trainingsempfehlung wichtiger Kontext, stelle zuerst eine konkrete Rückfrage. Bei einem konkreten einzelnen Trainingsvorschlag gib zusätzlich ein JSON-Objekt mit reply und einem vollständig ausgefüllten plan (title, exercise_id, sets, reps, rest_s, rationale) aus; wenn Kontext fehlt, lasse plan weg. Normale Antworten bleiben Text.
+
+Interaktive Antwort (optional, nur bei einer ausdrücklichen Gaming-PC-Konfiguratorfrage): Ergänze zum normalen reply-Feld höchstens ein interaction-Objekt exakt in dieser Form: {"type":"pcConfigurator","schemaVersion":1,"budget":900,"resolution":"1080p","priority":"fps"}. Erlaubt sind ausschließlich budget als ganze Zahl von 600 bis 3500 in 100er-Schritten, resolution „1080p“, „1440p“ oder „4k“, priority „fps“ oder „quiet“ sowie die genannten Felder. Keine weiteren Felder. Die feste Alo-Karte leitet daraus lokal ein versioniertes Profil ab. Nenne keine aktuellen Preise, Bestände, Händler, konkreten SKUs oder Kompatibilitätszusagen; dafür gibt es keinen Live-Abgleich. Gib niemals HTML, JavaScript, URLs, Iframes, Einbettungen oder ausführbare Aktionen aus. Bei anderen Fragen kein interaction-Feld.${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
       if (lastFeedback === "passt_nicht") {
         systemExtra +=
           "\nDer letzte Vorschlag passt nicht. Frage gezielt, ob Übung, verfügbare Zeit, Ausrüstung oder ein anderer Grund nicht passt; ändere nicht einfach nur Wiederholungszahlen. Gib erst nach Klärung einen neuen persönlichen Plan aus.";
@@ -445,6 +457,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             parsed.reply ||
             (plan ? "Hier ist dein unverbindlicher Trainingsvorschlag." : res.reply),
           ...(plan ? { plan } : {}),
+          ...(parsed.interaction ? { interaction: parsed.interaction } : {}),
           meta: {
             provider: res.provider,
             model: res.model,
@@ -899,6 +912,12 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     <MiraAnswerText text={m.content} />
                   ) : (
                     <p className="whitespace-pre-wrap">{m.content}</p>
+                  )}
+                  {m.role === "assistant" && m.interaction && (
+                    <MiraInteractiveCard
+                      interaction={m.interaction}
+                      onChange={(next) => updateInteraction(i, next)}
+                    />
                   )}
                   {m.attachments?.length ? (
                     <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
@@ -1643,6 +1662,12 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                         className={`sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/70 bg-background/80"}`}
                       >
                         <p className="whitespace-pre-wrap">{m.content}</p>
+                        {m.role === "assistant" && m.interaction && (
+                          <MiraInteractiveCard
+                            interaction={m.interaction}
+                            onChange={(next) => updateInteraction(i, next)}
+                          />
+                        )}
                         {m.attachments?.length ? (
                           <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
                             {m.attachments.map((item, index) => (

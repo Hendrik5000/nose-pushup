@@ -1,5 +1,7 @@
 /** Strict validation helpers for actionable plans returned by Super-AI. */
 
+import { validateMiraInteraction, type MiraInteraction } from "./mira-interactions";
+
 export type AiWorkoutPlan = {
   title: string;
   exercise_id: "pushup" | "situp" | "squat" | "plank" | "burpee";
@@ -36,8 +38,12 @@ const EXERCISES = new Set<AiWorkoutPlan["exercise_id"]>([
   "burpee",
 ]);
 
-/** Accept only a complete JSON object with a plan; prose is deliberately never mined for numbers. */
-export function parseAiResponse(raw: string): { reply: string; plan: AiWorkoutPlan | null } {
+/** Prose is never mined for numbers; an optional interaction is accepted only by allowlist. */
+export function parseAiResponse(raw: string): {
+  reply: string;
+  plan: AiWorkoutPlan | null;
+  interaction?: MiraInteraction;
+} {
   const text = raw.trim();
   const jsonText = unwrapJsonFence(text);
   if (!jsonText) return { reply: text, plan: null };
@@ -50,10 +56,15 @@ export function parseAiResponse(raw: string): { reply: string; plan: AiWorkoutPl
   }
 
   if (!isRecord(value)) return { reply: text, plan: null };
+  const hasInteraction = Object.prototype.hasOwnProperty.call(value, "interaction");
+  const interaction = validateMiraInteraction(value.interaction);
   const plan = validateAiWorkoutPlan(value.plan);
-  if (!plan) return { reply: text, plan: null };
   const reply = typeof value.reply === "string" ? value.reply.trim() : "";
-  return { reply, plan };
+  if (plan) return { reply, plan, ...(interaction ? { interaction } : {}) };
+  if (hasInteraction && typeof value.reply === "string" && reply) {
+    return { reply, plan: null, ...(interaction ? { interaction } : {}) };
+  }
+  return { reply: text, plan: null };
 }
 
 export function validateAiWorkoutPlan(value: unknown): AiWorkoutPlan | null {
