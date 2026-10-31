@@ -2,6 +2,7 @@ import "@/mira-attachments.css";
 // Conversation UI restored selectively from 34f2313; current routing/security remain in their modules.
 import { MiraAttachmentPicker, MiraAttachmentPreview } from "@/components/mira/MiraAttachments";
 import { MiraSpark } from "@/components/mira/MiraSpark";
+import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import {
   assertMiraAttachmentProvider,
@@ -894,7 +895,11 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       : "max-w-[92%] rounded-2xl rounded-bl-md border border-border/80 bg-background/70 px-3.5 py-2.5 text-sm leading-relaxed shadow-sm"
                   }
                 >
-                  <p className="whitespace-pre-wrap">{m.content}</p>
+                  {m.role === "assistant" ? (
+                    <MiraAnswerText text={m.content} />
+                  ) : (
+                    <p className="whitespace-pre-wrap">{m.content}</p>
+                  )}
                   {m.attachments?.length ? (
                     <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
                       {m.attachments.map((item, index) => (
