@@ -188,7 +188,7 @@ export function DashboardGrid({
                 <div className="absolute -top-2 right-1 z-10 flex items-center gap-0.5 rounded-full border border-border bg-background/95 px-1 py-0.5 shadow-md backdrop-blur">
                   <button
                     type="button"
-                    className="px-1.5 text-[10px] text-muted-foreground"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center px-1.5 text-[10px] text-muted-foreground"
                     onClick={() => move(item.id, -1)}
                     aria-label="Nach oben"
                   >
@@ -196,7 +196,7 @@ export function DashboardGrid({
                   </button>
                   <button
                     type="button"
-                    className="px-1.5 text-[10px] text-muted-foreground"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center px-1.5 text-[10px] text-muted-foreground"
                     onClick={() => move(item.id, 1)}
                     aria-label="Nach unten"
                   >
@@ -204,7 +204,7 @@ export function DashboardGrid({
                   </button>
                   <button
                     type="button"
-                    className="rounded px-1.5 text-[10px] font-bold uppercase text-primary"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1.5 text-[10px] font-bold uppercase text-primary"
                     onClick={() => resize(item.id)}
                     aria-label={`Größe ändern (aktuell ${sizeLabel(item.size)})`}
                   >
@@ -212,7 +212,7 @@ export function DashboardGrid({
                   </button>
                   <button
                     type="button"
-                    className="px-1.5 text-xs text-destructive"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center px-1.5 text-xs text-destructive"
                     onClick={() => remove(item.id)}
                     aria-label="Entfernen"
                   >
