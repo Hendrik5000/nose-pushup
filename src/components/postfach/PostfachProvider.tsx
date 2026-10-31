@@ -12,6 +12,13 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { showNotification } from "@/lib/notifications";
+import { detectChatMode } from "@/lib/chat-backend";
+import { loadChatPrefs } from "@/lib/chat-extras";
+import {
+  createNexusNotificationPayload,
+  shouldAnnounceNexusMessage,
+  type NexusNotificationMessage,
+} from "@/lib/nexus-notifications";
 import { battleInvitationClient } from "@/lib/battle-invitations-runtime";
 import { friendsClient, postfachClient } from "@/lib/friends/supabase-friends";
 import {
@@ -181,6 +188,76 @@ export function PostfachProvider({
       void supabase.removeChannel(channel);
     };
   }, [isGuest, refresh, userId]);
+
+  useEffect(() => {
+    if (isGuest) return;
+    let cancelled = false;
+    let closeChannel: (() => void) | null = null;
+    const seenMessageIds = new Set<string>();
+
+    void detectChatMode().then((mode) => {
+      if (cancelled || mode !== "supabase") return;
+      const channel = supabase
+        .channel(`nexus-message-notifications-${userId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages" },
+          (event) => {
+            const message = event.new as unknown as NexusNotificationMessage;
+            if (!message.id || seenMessageIds.has(message.id)) return;
+            seenMessageIds.add(message.id);
+            if (seenMessageIds.size > 500) {
+              const oldestId = seenMessageIds.values().next().value;
+              if (oldestId) seenMessageIds.delete(oldestId);
+            }
+
+            const visibleInNexus =
+              document.visibilityState === "visible" && window.location.pathname === "/chat";
+            if (
+              !shouldAnnounceNexusMessage({
+                message,
+                userId,
+                mutedRoomIds: loadChatPrefs(userId).mutedRoomIds,
+                isTargetVisible: visibleInNexus,
+              })
+            )
+              return;
+            const notification = createNexusNotificationPayload(message);
+            if (!notification) return;
+
+            if (document.visibilityState === "hidden") {
+              void showNotification(
+                notification.title,
+                notification.body,
+                notification.tag,
+                notification.url,
+              );
+              return;
+            }
+
+            const openTarget = () => {
+              if (message.conversation_id) {
+                void navigate({ to: "/chat", search: { dm: message.conversation_id } });
+              } else {
+                void navigate({ to: "/chat" });
+              }
+            };
+            toast(notification.title, {
+              description: notification.body,
+              duration: 10_000,
+              action: { label: "Öffnen", onClick: openTarget },
+            });
+          },
+        )
+        .subscribe();
+      closeChannel = () => void supabase.removeChannel(channel);
+    });
+
+    return () => {
+      cancelled = true;
+      closeChannel?.();
+    };
+  }, [isGuest, navigate, userId]);
 
   const markRead = useCallback(
     async (ids: string[]) => {

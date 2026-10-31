@@ -5,6 +5,7 @@ self.addEventListener("push", function (event) {
       body: data.body,
       icon: "/alo-icon-192.png",
       badge: "/alo-icon-192.png",
+      tag: data.tag || undefined,
       vibrate: [100, 50, 100],
       data: {
         url: data.url || "/",

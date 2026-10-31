@@ -35,6 +35,12 @@ import {
   type UploadedChatImage,
 } from "@/lib/nexus-cloud";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyNexusMessage } from "@/lib/nexus-notifications.functions";
+import {
+  createNexusNotificationPayload,
+  shouldAnnounceNexusMessage,
+  type NexusNotificationMessage,
+} from "@/lib/nexus-notifications";
 import {
   createChatRoom,
   deleteChatMessage,
@@ -321,7 +327,36 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     if (mode !== "supabase" || !userId) return;
     const channel = supabase
       .channel("nose-chat-stream")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (event) => {
+        const message = event.new as unknown as NexusNotificationMessage;
+        const target = message.room_id
+          ? { kind: "room" as const, id: message.room_id }
+          : message.conversation_id
+            ? { kind: "dm" as const, id: message.conversation_id }
+            : null;
+        const activeTarget = activeRef.current;
+        const isTargetVisible =
+          document.visibilityState === "visible" &&
+          Boolean(
+            activeTarget &&
+            target &&
+            activeTarget.kind === target.kind &&
+            activeTarget.id === target.id,
+          );
+        const notification = createNexusNotificationPayload(message);
+        if (
+          notification &&
+          document.visibilityState === "visible" &&
+          shouldAnnounceNexusMessage({
+            message,
+            userId,
+            mutedRoomIds: loadChatPrefs(userId).mutedRoomIds,
+            isTargetVisible,
+          })
+        ) {
+          setToast(notification.body);
+          window.setTimeout(() => setToast(null), 2200);
+        }
         const t = activeRef.current;
         if (t) void refresh(userId, t);
       })
@@ -444,6 +479,9 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
         if (attachment) void removeChatImage(attachment.path);
         flash("Nicht gesendet. Entwurf und Antwort bleiben erhalten.");
         return;
+      }
+      if (mode === "supabase" && target.kind === "dm") {
+        void notifyNexusMessage({ data: { messageId: posted.id } }).catch(() => undefined);
       }
       if (
         text === undefined &&

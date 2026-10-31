@@ -13,7 +13,7 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 
 export async function sendPushNotification(
   userId: string,
-  payload: { title: string; body: string; url?: string },
+  payload: { title: string; body: string; url?: string; tag?: string },
 ) {
   const { data: subscriptions, error } = await supabase
     .from("push_subscriptions")

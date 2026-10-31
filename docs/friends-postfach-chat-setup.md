@@ -40,7 +40,9 @@ Wird die Battle-Migration erst nach der Postfach-Migration angewendet, danach ei
 
 ## Grenzen
 
-- Kein Push, wenn die App geschlossen ist. Einladungen und Anrufe erscheinen nur bei geöffneter App (Realtime, 30-Sekunden-Abfrage, Fokus-Aktualisierung).
+- **Codepfad für Nexus-Cloud-DMs/Gruppen:** Push geht an aktuelle Gesprächsmitglieder mit aktivem Cloud-Push-Abo. Die Serverfunktion prüft Absender und Mitgliedschaft; die Push-Mitteilung enthält keinen Nachrichtentext.
+- Öffentliche Räume haben keine eigene Mitgliedschafts- oder Abo-Funktion. Dort gibt es Realtime-Toasts/Browserbenachrichtigungen nur solange die App geöffnet ist; bei geschlossener App keinen Raum-Push.
+- Cloud-Push setzt ein aktives Browser-Abo, passende serverseitige VAPID-Schlüssel und ein remote angewendetes Nexus-Schema voraus. Diese Remote-/Geräteabnahme wurde nicht durchgeführt; laut Stand 2026-10-30 fehlen die Nexus-Migrationen remote.
 - Solange die Migrationen fehlen, zeigt die App Hinweise wie „noch nicht eingerichtet“, statt zu scheitern.
 - Zusätzlich fehlte die RPC `get_friend_public_profiles` (vom Battle-Client genutzt) in allen Migrationen; sie ist in Migration 6 enthalten.
 

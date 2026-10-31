@@ -143,6 +143,9 @@ export function NotificationSettings() {
           </div>
           <div>
             <p className="text-sm font-medium text-foreground">Cloud Push</p>
+            <p className="text-[10px] text-muted-foreground">
+              Nexus-Direktnachrichten &amp; Battle-Hinweise
+            </p>
           </div>
         </div>
       </div>
