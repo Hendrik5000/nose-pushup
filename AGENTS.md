@@ -10,14 +10,14 @@ The app records client errors automatically:
 
 ### Protocol on every coding session
 
-1. If the user has not already supplied reports for this task, ask whether new errors appeared, or request a copy from **Profil → Fehlerberichte → Alle kopieren**. Never ask again for reports already supplied.
+1. If the user has not already supplied reports for this task, ask whether new errors appeared, or request a copy from **Profil → Fehlerberichte → Fehlerberichte kopieren**. Never ask again for reports already supplied.
 2. If JSON reports are provided, **fix the root causes before new features**.
 3. Prefer minimal, targeted patches; mark reports fixed after deploy.
 4. Do not ignore repeated stack traces on the same route.
 
 ### How users export
 
-Profil → Abschnitt „Fehlerberichte“ → **Alle kopieren (für Auto-Fix)** → paste into chat.
+Profil → Abschnitt „Fehlerberichte“ → **Fehlerberichte kopieren** → paste into chat. Copying does not send reports automatically; users should check for personal information before sharing.
 
 ## Stack
 
