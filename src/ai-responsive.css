@@ -73,7 +73,7 @@ html[data-design-style="performance"] .sport-chat-composer {
     font-size: clamp(1.35rem, 6vw, 1.75rem);
   }
   html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     gap: 0.55rem;
   }
   html[data-design-style="performance"] .sport-ai-chat-composer,
@@ -112,7 +112,7 @@ html[data-design-style="performance"] .sport-chat-composer {
     align-items: start;
   }
   html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
   html[data-design-style="performance"] .alo-page-sidebar-provider {
     --sidebar-width: clamp(11.5rem, 18vw, 14rem);
@@ -150,7 +150,7 @@ html[data-design-style="performance"] .sport-chat-composer {
     min-height: min(48dvh, 28rem);
   }
   html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 }
 
@@ -167,95 +167,20 @@ html[data-design-style="performance"] .sport-chat-composer {
   }
 }
 
-/* ---- Starter cards + live status (fix smashed text on iPad/web) ---- */
-html[data-design-style="performance"] .ai-starter-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.65rem;
-  width: 100%;
-  max-width: 22rem;
-  margin-inline: auto;
-  margin-top: 1rem;
-  text-align: left;
-}
-
-html[data-design-style="performance"] .ai-starter-card {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  min-height: 3.25rem;
-  padding: 0.7rem 0.9rem;
-  border-radius: 1rem;
-  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
-  background: color-mix(in srgb, var(--card) 92%, var(--background));
-  color: var(--foreground);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-html[data-design-style="performance"] .ai-starter-card:hover,
-html[data-design-style="performance"] .ai-starter-card:focus-visible {
-  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
-  background: color-mix(in srgb, var(--card) 98%, var(--primary) 6%);
-  outline: none;
-}
-
-html[data-design-style="performance"] .ai-starter-card > svg {
-  flex-shrink: 0;
-  width: 1.25rem;
-  height: 1.25rem;
-  color: var(--primary);
-}
-
-html[data-design-style="performance"] .ai-starter-card > span {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-  flex: 1;
-}
-
-html[data-design-style="performance"] .ai-starter-card strong {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 650;
-  line-height: 1.25;
-  color: var(--foreground);
-}
-
-html[data-design-style="performance"] .ai-starter-card small {
-  display: block;
-  font-size: 0.72rem;
-  line-height: 1.3;
-  color: var(--muted-foreground);
-  font-weight: 400;
-}
-
-html[data-design-style="performance"] .ai-starter-card > svg:last-child {
-  margin-left: auto;
-  opacity: 0.55;
-  width: 1rem;
-  height: 1rem;
-  color: var(--muted-foreground);
-}
-
-html[data-design-style="performance"] .ai-starter-hint {
-  display: block;
-  margin-top: 0.65rem;
-  font-size: 0.72rem;
-  color: var(--muted-foreground);
-  text-align: center;
-}
-
+/* ---- Starter cards (middle Mira welcome) — readable on iPad ---- */
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome,
 html[data-design-style="performance"] .ai-welcome {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
   text-align: center;
+  width: 100% !important;
+  max-width: 28rem !important;
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome-mark,
 html[data-design-style="performance"] .ai-welcome-mark {
   display: grid;
   place-items: center;
@@ -264,9 +189,111 @@ html[data-design-style="performance"] .ai-welcome-mark {
   border-radius: 999px;
   background: color-mix(in srgb, var(--primary) 14%, transparent);
   color: var(--primary);
+  flex-shrink: 0;
 }
 
-/* Bottom status row: title + preview must not run together */
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-grid,
+html[data-design-style="performance"] .ai-starter-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.7rem !important;
+  width: 100% !important;
+  max-width: 26rem !important;
+  margin-inline: auto !important;
+  margin-top: 1.15rem !important;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card,
+html[data-design-style="performance"] .ai-starter-card {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.85rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 3.5rem !important;
+  padding: 0.85rem 1rem !important;
+  border-radius: 1rem !important;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  background: color-mix(in srgb, var(--card) 94%, var(--background)) !important;
+  color: var(--foreground);
+  text-align: left !important;
+  cursor: pointer;
+  box-sizing: border-box !important;
+}
+
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card > svg,
+html[data-design-style="performance"] .ai-starter-card > svg {
+  flex: 0 0 auto !important;
+  width: 1.3rem !important;
+  height: 1.3rem !important;
+  color: var(--primary);
+}
+
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card > span,
+html[data-design-style="performance"] .ai-starter-card > span {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 0.12rem !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden;
+}
+
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card strong,
+html[data-design-style="performance"] .ai-starter-card strong {
+  display: block !important;
+  width: 100%;
+  font-size: 0.95rem !important;
+  font-weight: 650 !important;
+  line-height: 1.3 !important;
+  color: var(--foreground) !important;
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card small,
+html[data-design-style="performance"] .ai-starter-card small {
+  display: block !important;
+  width: 100%;
+  font-size: 0.75rem !important;
+  line-height: 1.35 !important;
+  color: var(--muted-foreground) !important;
+  font-weight: 400 !important;
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card > svg:last-child,
+html[data-design-style="performance"] .ai-starter-card > svg:last-child {
+  margin-left: auto !important;
+  flex: 0 0 auto !important;
+  opacity: 0.55;
+  width: 1rem !important;
+  height: 1rem !important;
+  color: var(--muted-foreground);
+}
+
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-hint,
+html[data-design-style="performance"] .ai-starter-hint {
+  display: block !important;
+  position: relative !important;
+  margin-top: 0.85rem !important;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  text-align: center;
+  z-index: 1;
+}
+
+/* Bottom status row */
 html[data-design-style="performance"] .mira-chat-bottom-row {
   display: flex;
   align-items: center;
@@ -309,11 +336,4 @@ html[data-design-style="performance"] .mira-chat-live-status span {
   display: block;
   color: var(--muted-foreground);
   font-weight: 400;
-}
-
-@media (min-width: 768px) {
-  html[data-design-style="performance"] .ai-starter-grid {
-    grid-template-columns: 1fr;
-    max-width: 24rem;
-  }
 }
