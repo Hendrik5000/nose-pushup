@@ -37,7 +37,7 @@ Wird die Battle-Migration erst nach der Postfach-Migration angewendet, danach ei
 
 - `VITE_STUN_URLS` – kommagetrennte STUN-Server (Standard vorhanden).
 - `VITE_TURN_URLS`, `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` – alle drei nötig, damit TURN genutzt wird. Ohne TURN können Anrufe in manchen Mobilfunknetzen scheitern.
-- `VITE_VAPID_PUBLIC_KEY` – gültiger, base64url-kodierter, unkomprimierter P-256-Public-Key für den Browser-Build.
+- `VITE_VAPID_PUBLIC_KEY` – gültiger, base64url-kodierter, unkomprimierter P-256-Public-Key für den Browser-Build. In Lovable sind `VITE_`-Namen im Secret-Speicher nicht erlaubt; der ausschließlich öffentliche Wert liegt deshalb in `.env.production`. Diese Datei darf niemals einen Private-Key enthalten.
 - Serverseitig müssen `VAPID_PUBLIC_KEY` (derselbe Public-Key) und das passende `VAPID_PRIVATE_KEY` gesetzt sein. Der Private-Key bleibt ausschließlich serverseitig und darf nie als `VITE_`-Variable veröffentlicht werden.
 - Fehlt der Public-Key oder ist er kein gültiger P-256-Punkt, stoppt die App vor `PushManager.subscribe()` und zeigt einen Konfigurationshinweis. Cloud-Push wird erst mit einem zusammengehörigen Schlüssel-Paar ausgeliefert.
 
