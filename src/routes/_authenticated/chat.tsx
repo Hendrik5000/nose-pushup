@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LocalChatShell } from "@/components/chat/LocalChatShell";
+import { AloPageSidebar } from "@/components/alo/AloPageSidebar";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({
@@ -20,5 +21,9 @@ export const Route = createFileRoute("/_authenticated/chat")({
 
 function ChatPage() {
   const { dm } = Route.useSearch();
-  return <LocalChatShell initialDmId={dm} />;
+  return (
+    <AloPageSidebar active="nexus">
+      <LocalChatShell initialDmId={dm} />
+    </AloPageSidebar>
+  );
 }

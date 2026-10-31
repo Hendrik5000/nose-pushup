@@ -38,6 +38,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { SportPageIntro } from "@/components/SportPageIntro";
+import { AloPageSidebarTrigger } from "@/components/alo/AloPageSidebar";
 import { AiProviderSettings } from "@/components/AiProviderSettings";
 import { buildAppContext, contextToSystemBlock } from "@/lib/ai-context";
 import { miraDraftId, readMiraDraft, rememberMiraSession } from "@/lib/mira-handoff";
@@ -553,14 +554,17 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
     <>
       <DesignView variant="classic">
         <main className="classic-only alo-classic-mira alo-tablet-mira mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pt-5 pb-3">
-          <Link
-            to="/"
-            aria-label="Zur Alo-Startseite"
-            className="mb-2 inline-flex min-h-11 items-center gap-2 self-start rounded-xl px-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            <House className="h-4 w-4" aria-hidden="true" />
-            Startseite
-          </Link>
+          <div className="mb-2 flex items-center gap-2 self-start">
+            <AloPageSidebarTrigger />
+            <Link
+              to="/"
+              aria-label="Zur Alo-Startseite"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <House className="h-4 w-4" aria-hidden="true" />
+              Startseite
+            </Link>
+          </div>
           {/* Header */}
           <details
             className="alo-classic-mira-options"
@@ -1100,6 +1104,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 title="Mira"
                 description="Eine vielseitige KI für Alltag, Wissen, Schreiben, Ideen und Fragen. Trainingskontext ist optional."
               >
+                <AloPageSidebarTrigger />
                 <Link to="/" className="sport-back-link">
                   ← Startseite
                 </Link>
@@ -1809,6 +1814,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   )}
                 </div>
                 <div className="mira-chat-bottom-row">
+                  <AloPageSidebarTrigger />
                   <Link
                     to="/"
                     className="mira-chat-home-action"

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
+import { AloPageSidebarTrigger } from "@/components/alo/AloPageSidebar";
 import {
   AttachImageButton,
   CallButtons,
@@ -653,6 +654,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     <div className="sport-chat-sidebar flex h-full flex-col bg-card/40">
       <div className="community-list-heading border-b border-border bg-gradient-to-br from-primary/15 to-transparent px-4 py-4">
         <div className="flex items-center gap-2">
+          <AloPageSidebarTrigger className="community-roomlist-toggle md:hidden" />
           <span className="classic-only flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20 text-xl">
             💬
           </span>
@@ -674,15 +676,18 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
       </div>
 
       <div className="sport-only community-list-controls">
-        <label className="community-search">
-          <Search aria-hidden="true" />
-          <input
-            value={roomQuery}
-            onChange={(event) => setRoomQuery(event.target.value)}
-            placeholder="Chats durchsuchen"
-            aria-label="Nexus Chats durchsuchen"
-          />
-        </label>
+        <div className="community-search-row">
+          <AloPageSidebarTrigger className="community-roomlist-toggle md:hidden" />
+          <label className="community-search">
+            <Search aria-hidden="true" />
+            <input
+              value={roomQuery}
+              onChange={(event) => setRoomQuery(event.target.value)}
+              placeholder="Chats durchsuchen"
+              aria-label="Nexus Chats durchsuchen"
+            />
+          </label>
+        </div>
         <div className="community-filter-chips" role="group" aria-label="Nexus Chats filtern">
           {(
             [
@@ -903,7 +908,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     <div
       className={`app-chat-shell sport-chat-app alo-tablet-nexus flex overflow-hidden bg-background ${mobileListOpen ? "community-show-list" : "community-show-conversation"}`}
     >
-      <div className="sport-only community-mobile-list">
+      <div id="nexus-mobile-chat-list" className="sport-only community-mobile-list">
         {sidebar}
         <button
           type="button"
@@ -923,11 +928,14 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
         <header className="classic-only flex items-center gap-2 border-b border-border bg-card/50 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
           <button
             type="button"
-            className="rounded-xl border border-border px-2 py-1.5 text-sm md:hidden"
+            className="community-roomlist-switch flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-sm md:hidden"
             onClick={() => setMenuOpen(true)}
+            aria-label="Chatliste öffnen"
+            aria-expanded={menuOpen}
           >
             ☰
           </button>
+          <AloPageSidebarTrigger />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">{headerTitle}</div>
             <div className="text-[10px] text-muted-foreground">
@@ -972,6 +980,8 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
               className="community-back"
               onClick={() => setMobileListOpen(true)}
               aria-label="Zur Chatliste"
+              aria-controls="nexus-mobile-chat-list"
+              aria-expanded={mobileListOpen}
             >
               <ArrowLeft aria-hidden="true" />
             </button>
@@ -983,6 +993,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
               <p>{mode === "local" ? "Lokal auf diesem Gerät" : "Nexus Chat · Cloud"}</p>
             </div>
             {callButtons}
+            <AloPageSidebarTrigger />
             <Link
               to="/"
               aria-label="Zur Alo-Startseite"

@@ -9,26 +9,23 @@ html[data-design-style="performance"] .sport-health-page {
   color: var(--health-ink);
 }
 
-html[data-design-style="performance"]:not([data-theme="daylight"]):not([data-theme="sand"]):not(
-    [data-theme="rose"]
-  ):not([data-theme="contrast"])
-  body:has(.sport-health-page) {
-  background-color: #07140f;
-  background-image: radial-gradient(
-    ellipse 84% 25% at 50% 0%,
-    rgba(171, 130, 61, 0.13),
-    transparent 75%
-  );
+html[data-design-style="performance"][data-theme="glacier"] body:has(.sport-health-page) {
+  background-color: #070b16;
+  background-image:
+    radial-gradient(ellipse 76% 31% at 94% 0%, rgba(124, 58, 237, 0.17), transparent 74%),
+    radial-gradient(ellipse 76% 28% at 7% 4%, rgba(34, 211, 238, 0.13), transparent 76%),
+    linear-gradient(180deg, #070b16 0%, #0a1020 54%, #080d19 100%);
   background-attachment: fixed;
 }
-html[data-design-style="performance"]:not([data-theme="daylight"]):not([data-theme="sand"]):not(
-    [data-theme="rose"]
-  ):not([data-theme="contrast"])
-  .sport-health-page {
-  --health-ink: #f2f5f2;
-  --health-muted: #aab5ae;
-  --health-panel: rgba(255, 255, 255, 0.055);
-  --health-line: rgba(255, 255, 255, 0.11);
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page {
+  --health-ink: #f0f4ff;
+  --health-muted: #a8b7d2;
+  --health-panel: rgba(17, 27, 49, 0.82);
+  --health-line: rgba(129, 164, 228, 0.22);
+  --health-blue: #52caff;
+  --health-blue-ink: #071629;
+  --health-violet: #a78bfa;
+  --health-gold: #f8c766;
 }
 
 html[data-design-style="performance"][data-theme="daylight"] .sport-health-page,
@@ -454,4 +451,40 @@ html[data-design-style="performance"] .health-hero-actions .health-hero-action {
 }
 html[data-design-style="performance"] .health-hero-actions .health-source-action {
   font-size: 0.78rem;
+}
+
+/* Glacier presentation: prominent glass panels with cool cyan/violet highlights. */
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-daily-hero {
+  border: 1px solid rgba(113, 167, 255, 0.25);
+  border-radius: 1.7rem;
+  background:
+    radial-gradient(ellipse at 88% 0%, rgba(126, 80, 239, 0.2), transparent 48%),
+    linear-gradient(135deg, rgba(18, 34, 62, 0.96), rgba(12, 19, 39, 0.95) 62%, rgba(12, 25, 45, 0.92));
+  box-shadow: 0 20px 56px rgba(2, 7, 22, 0.34), 0 0 34px rgba(74, 156, 255, 0.06);
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-bento-grid > .health-energy-card {
+  border-color: rgba(89, 207, 255, 0.34);
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(125, 84, 240, 0.24), transparent 52%),
+    linear-gradient(145deg, rgba(18, 47, 74, 0.94), rgba(17, 25, 49, 0.96));
+  box-shadow: inset 0 0 32px rgba(50, 185, 255, 0.06), 0 16px 42px rgba(2, 8, 25, 0.26);
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-bento-grid > .health-activity-card,
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-bento-grid > .health-sleep-card {
+  border-color: rgba(143, 162, 220, 0.2);
+  border-radius: 1.5rem;
+  background: linear-gradient(145deg, rgba(17, 28, 50, 0.92), rgba(13, 19, 37, 0.96));
+  box-shadow: 0 14px 38px rgba(2, 8, 25, 0.24);
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-today-measurements {
+  border: 1px solid rgba(140, 170, 227, 0.17);
+  border-radius: 1.2rem;
+  background: rgba(5, 12, 28, 0.28);
+  padding: 0.85rem;
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-hero-actions .health-hero-action {
+  border-color: transparent;
+  background: linear-gradient(115deg, #18c5f4, #477bff 58%, #965cf4);
+  color: #ffffff;
+  box-shadow: 0 0 24px rgba(63, 145, 255, 0.2);
 }
