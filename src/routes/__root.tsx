@@ -18,6 +18,7 @@ import sportCss from "../sport.css?url";
 import communityReferenceCss from "../community-reference.css?url";
 import healthReferenceCss from "../health-reference.css?url";
 import aiReferenceCss from "../ai-reference.css?url";
+import aiResponsiveCss from "../ai-responsive.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
@@ -132,6 +133,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: communityReferenceCss },
       { rel: "stylesheet", href: healthReferenceCss },
       { rel: "stylesheet", href: aiReferenceCss },
+      { rel: "stylesheet", href: aiResponsiveCss },
 
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -167,7 +169,6 @@ function RootComponent() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [installable, setInstallable] = useState(false);
   const [standalone, setStandalone] = useState(false);
-  // Keep the shared shell mounted between modules so a swipe can finish.
   const routeKey = swipeScreenFromPath(pathname) ? "alo-swipe-screens" : pathname;
   const [fullscreenRequested, setFullscreenRequested] = useState(false);
 
@@ -203,7 +204,6 @@ function RootComponent() {
     applyDesignStyle(getStoredDesignStyle());
     applyNavigationLayout(getStoredNavigationLayout());
     applyTheme(getStoredTheme());
-    // Theme des Kontos laden, damit es auch ohne Profilbesuch sofort greift.
     (async () => {
       try {
         const { supabase } = await import("@/integrations/supabase/client");
@@ -218,8 +218,7 @@ function RootComponent() {
         const t = data?.theme;
         if (isThemeId(t)) applyTheme(t);
       } catch {
-        // Theme loading is optional; a transient network failure must not become
-        // an unhandled rejection while the rest of the app starts.
+        // Theme loading is optional
       }
     })();
   }, []);
@@ -241,7 +240,7 @@ function RootComponent() {
       try {
         if (sessionStorage.getItem("alo-install-hint-dismissed") === "1") return;
       } catch {
-        // The hint remains usable when browser storage is unavailable.
+        // ok
       }
       setInstallable(true);
     };
@@ -252,18 +251,16 @@ function RootComponent() {
 
     const tryAutoFullscreen = async () => {
       if (fullscreenRequested || document.fullscreenElement) return;
-
       const inStandalone =
         window.matchMedia("(display-mode: standalone)").matches ||
         (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
       const inFullscreenMode = window.matchMedia("(display-mode: fullscreen)").matches;
       if (!inStandalone && !inFullscreenMode) return;
-
       setFullscreenRequested(true);
       try {
         await document.documentElement.requestFullscreen();
       } catch {
-        // Browsers block autoplay/fullscreen without a user interaction. We fall back to the first tap.
+        // blocked without gesture
       }
     };
 
@@ -322,7 +319,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <div
         key={routeKey}
         className={routeKey === "alo-swipe-screens" ? "alo-swipe-route" : "route-enter"}
@@ -350,7 +346,7 @@ function RootComponent() {
                 try {
                   sessionStorage.setItem("alo-install-hint-dismissed", "1");
                 } catch {
-                  // Closing still works for this visit without browser storage.
+                  // ok
                 }
               }}
               aria-label="Installationshinweis schließen"
