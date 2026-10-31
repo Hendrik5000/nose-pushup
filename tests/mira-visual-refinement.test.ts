@@ -22,7 +22,11 @@ test("Mira uses a decorative four-point spark with unique gradients, not a provi
 });
 
 test("quiet navy colors stay local to Mira and the authenticated shell has no shared upper header", () => {
-  assert.match(css, /main\.sport-ai-page\s*\{[^}]*--background: #080d16;/);
+  assert.match(
+    css,
+    /html\[data-design-style="performance"\]\[data-theme="glacier"\] main\.sport-ai-page\s*\{[^}]*--background: #070a14;[^}]*--primary: #56c9ff;[^}]*--accent: #a78bfa;/,
+  );
+  assert.doesNotMatch(css, /html\[data-design-style="performance"\] main\.sport-ai-page\s*\{/);
   assert.match(css, /radial-gradient\(ellipse at 50% 108%, #173f9b70/);
   assert.match(css, /linear-gradient\(180deg, #05070c 0%, #070a12 58%, #0a1122 100%\)/);
   const shell = read("routes/_authenticated/route.tsx");

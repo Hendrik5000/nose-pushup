@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SuperAiPage } from "@/components/mira/SuperAiPage";
+import { AloPageSidebar } from "@/components/alo/AloPageSidebar";
 
 export const Route = createFileRoute("/_authenticated/ai")({
   head: () => ({
@@ -12,5 +13,13 @@ export const Route = createFileRoute("/_authenticated/ai")({
       },
     ],
   }),
-  component: SuperAiPage,
+  component: MiraPage,
 });
+
+function MiraPage() {
+  return (
+    <AloPageSidebar active="mira">
+      <SuperAiPage />
+    </AloPageSidebar>
+  );
+}

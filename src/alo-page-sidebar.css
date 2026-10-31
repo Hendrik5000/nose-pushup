@@ -1,0 +1,267 @@
+/* Shared in-page navigation for Mira, Nexus and Alo Health. It stays inside the
+   existing route surface and leaves each page's own scroll region untouched. */
+.alo-page-sidebar-provider {
+  --sidebar-width: clamp(12rem, 16vw, 16rem);
+  position: relative;
+  min-width: 0;
+  color: var(--foreground);
+}
+
+.alo-page-sidebar-content {
+  display: flex;
+  min-width: 0;
+  min-height: 100svh;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+
+.alo-page-sidebar-content > * {
+  min-width: 0;
+}
+
+.alo-page-sidebar [data-sidebar="sidebar"] {
+  border-color: color-mix(in srgb, var(--foreground) 13%, transparent);
+  background:
+    radial-gradient(ellipse at 100% 0%, color-mix(in srgb, #8b5cf6 14%, transparent), transparent 68%),
+    linear-gradient(180deg, color-mix(in srgb, var(--background) 94%, #0b1634), var(--background));
+  color: var(--foreground);
+  box-shadow: 0 22px 70px color-mix(in srgb, #030712 34%, transparent);
+}
+
+.alo-page-sidebar-nav {
+  display: flex;
+  min-height: 100%;
+  flex: 1 1 auto;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse at 82% 7%, color-mix(in srgb, #38bdf8 10%, transparent), transparent 42%),
+    radial-gradient(ellipse at 12% 66%, color-mix(in srgb, #8b5cf6 9%, transparent), transparent 42%);
+}
+
+.alo-page-sidebar-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 1rem 0.8rem;
+}
+
+.alo-page-sidebar-brand {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 0.9rem;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.alo-page-sidebar-brand:focus-visible,
+.alo-page-sidebar-close:focus-visible,
+.alo-page-sidebar-trigger:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.alo-page-sidebar-mark {
+  display: grid;
+  width: 2.7rem;
+  height: 2.7rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, #38bdf8 42%, transparent);
+  border-radius: 0.95rem;
+  background: linear-gradient(135deg, color-mix(in srgb, #38bdf8 24%, var(--card)), color-mix(in srgb, #8b5cf6 25%, var(--card)));
+  box-shadow: 0 0 24px color-mix(in srgb, #38bdf8 18%, transparent);
+  color: var(--foreground);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.alo-page-sidebar-brand-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.alo-page-sidebar-brand-copy strong {
+  font-size: 1rem;
+  letter-spacing: -0.03em;
+}
+
+.alo-page-sidebar-brand-copy small {
+  margin-top: 0.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.alo-page-sidebar-close {
+  display: none;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.alo-page-sidebar-close svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.alo-page-sidebar-scroll {
+  padding: 0 0.55rem 0.75rem;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.alo-page-sidebar [data-sidebar="group-label"] {
+  padding-inline: 0.7rem;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.alo-page-sidebar .alo-page-sidebar-link {
+  min-height: 48px;
+  border: 1px solid transparent;
+  border-radius: 0.95rem;
+  padding-inline: 0.8rem;
+  color: color-mix(in srgb, var(--foreground) 78%, var(--muted-foreground));
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.alo-page-sidebar .alo-page-sidebar-link:hover {
+  border-color: color-mix(in srgb, #38bdf8 20%, transparent);
+  background: color-mix(in srgb, var(--card) 80%, #102342);
+  color: var(--foreground);
+}
+
+.alo-page-sidebar .alo-page-sidebar-link[data-active="true"] {
+  border-color: color-mix(in srgb, #38bdf8 35%, #8b5cf6 18%);
+  background: linear-gradient(110deg, color-mix(in srgb, #38bdf8 20%, var(--card)), color-mix(in srgb, #8b5cf6 18%, var(--card)));
+  color: var(--foreground);
+  box-shadow: inset 0 0 18px color-mix(in srgb, #38bdf8 7%, transparent), 0 0 24px color-mix(in srgb, #8b5cf6 10%, transparent);
+}
+
+.alo-page-sidebar .alo-page-sidebar-link svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: color-mix(in srgb, #67d5ff 75%, var(--foreground));
+}
+
+.alo-page-sidebar-footer {
+  min-height: 52px;
+  justify-content: center;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 11%, transparent);
+  padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom));
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.alo-page-sidebar-trigger {
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent) !important;
+  border-radius: 0.9rem !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--card) 95%, #112344), color-mix(in srgb, var(--background) 88%, #171435)) !important;
+  color: var(--foreground) !important;
+  box-shadow: 0 6px 24px color-mix(in srgb, #030712 24%, transparent);
+}
+
+.alo-page-sidebar-trigger:hover {
+  border-color: color-mix(in srgb, #38bdf8 42%, #8b5cf6 20%) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, #38bdf8 14%, var(--card)), color-mix(in srgb, #8b5cf6 13%, var(--card))) !important;
+}
+
+.alo-page-sidebar-trigger svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+html[data-design-style="performance"] .sport-ai-tabs button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+html[data-design-style="performance"] .sport-chat-app .community-back,
+html[data-design-style="performance"] .sport-chat-app .community-roomlist-toggle {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 767px) {
+  .alo-page-sidebar-close {
+    display: grid;
+  }
+
+  .alo-page-sidebar [data-sidebar="sidebar"] {
+    width: min(18rem, 90vw);
+  }
+
+  .alo-page-sidebar-footer {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1000px) {
+  html[data-design-style="performance"] .alo-page-sidebar-provider {
+    --sidebar-width: clamp(12rem, 20vw, 14rem);
+  }
+
+  html[data-design-style="performance"] .alo-page-sidebar-provider .sport-chat-app > aside {
+    width: clamp(15rem, 25vw, 17rem);
+    flex-basis: clamp(15rem, 25vw, 17rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alo-page-sidebar .alo-page-sidebar-link,
+  .alo-page-sidebar-trigger {
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+  }
+}
+
+@media (min-width: 768px) {
+  .alo-page-sidebar-provider .alo-page-sidebar {
+    top: var(--homebar-top-space, 0px);
+    bottom: var(--homebar-bottom-space, 0px);
+    height: auto;
+  }
+}
+
+.alo-page-sidebar-provider {
+  min-height: max(
+    0px,
+    calc(
+      var(--app-viewport-height, 100dvh) - var(--homebar-top-space, 0px) -
+        var(--homebar-bottom-space, 0px)
+    )
+  ) !important;
+}
+
+.alo-page-sidebar-content {
+  min-height: 0;
+}

@@ -21,21 +21,32 @@ html[data-design-style="performance"] .reference-interior-header .sport-menu-tri
 html[data-design-style="performance"] .reference-interior-header .sport-design-shortcut {
   background: transparent;
 }
-/* The default dark palette gets the reference's ink-and-green community canvas.
+/* The default dark palette gets the reference's ink-and-cyan/violet community canvas.
    Explicitly selected alternative palettes keep their own color tokens. */
 html[data-design-style="performance"][data-theme="glacier"]:has(.sport-chat-app) {
-  --background: #0b1217;
-  --foreground: #edf1f4;
-  --card: #151e24;
-  --secondary: #24292e;
-  --muted-foreground: #929a9f;
-  --primary: #21c063;
-  --primary-foreground: #062d17;
-  --border: #273239;
-  --ring: #21c063;
+  --background: #070b16;
+  --foreground: #edf4ff;
+  --card: #101a2e;
+  --card-foreground: #edf4ff;
+  --secondary: #1a2440;
+  --muted: #18223b;
+  --muted-foreground: #a9b8d2;
+  --primary: #50c8ff;
+  --primary-foreground: #071629;
+  --accent: #a78bfa;
+  --accent-foreground: #18132c;
+  --border: #30415f;
+  --ring: #63d8ff;
 }
 html[data-design-style="performance"]:has(.sport-chat-app) body {
   background: var(--background);
+}
+html[data-design-style="performance"][data-theme="glacier"]:has(.sport-chat-app) body {
+  background:
+    radial-gradient(ellipse at 92% 0%, rgba(139, 92, 246, 0.15), transparent 34%),
+    radial-gradient(ellipse at 8% 38%, rgba(34, 211, 238, 0.1), transparent 44%),
+    linear-gradient(180deg, #050812 0%, var(--background) 72%);
+  background-attachment: fixed;
 }
 html[data-design-style="performance"] .sport-chat-sidebar {
   position: relative;
@@ -274,5 +285,60 @@ html[data-design-style="performance"] .community-quick-replies button {
     .homebar-items
     > li:has(a[href="/chat"]) {
     flex-grow: 1.25;
+  }
+}
+
+/* Navy glass panels and restrained blue/violet edge light for the reference look. */
+html[data-design-style="performance"][data-theme="glacier"] .sport-chat-app {
+  border-color: color-mix(in srgb, #8ab8ff 18%, transparent);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(ellipse at 84% 0%, rgba(124, 58, 237, 0.1), transparent 36%),
+    linear-gradient(160deg, #0b1222 0%, #080d1a 68%, #071020 100%);
+  box-shadow: 0 24px 72px rgba(1, 5, 18, 0.38);
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-chat-app > aside {
+  border-color: rgba(126, 161, 219, 0.2);
+  background: linear-gradient(180deg, rgba(16, 26, 46, 0.92), rgba(8, 14, 28, 0.96));
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-chat-topbar {
+  border-color: rgba(126, 161, 219, 0.2);
+  background: linear-gradient(110deg, rgba(17, 28, 52, 0.9), rgba(17, 21, 43, 0.82));
+}
+html[data-design-style="performance"][data-theme="glacier"] .community-conversation {
+  background: linear-gradient(180deg, rgba(8, 14, 28, 0.5), rgba(6, 10, 22, 0.78));
+}
+html[data-design-style="performance"][data-theme="glacier"] .community-list-scroll button.bg-primary {
+  border: 1px solid color-mix(in srgb, var(--primary) 42%, var(--accent));
+  background: linear-gradient(110deg, color-mix(in srgb, var(--primary) 22%, var(--card)), color-mix(in srgb, var(--accent) 18%, var(--card))) !important;
+  color: var(--foreground) !important;
+  box-shadow: inset 0 0 18px rgba(58, 153, 255, 0.08), 0 0 22px rgba(117, 87, 245, 0.08);
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-chat-app .sport-chat-composer {
+  border-color: rgba(104, 161, 255, 0.25);
+  background: linear-gradient(130deg, rgba(18, 31, 56, 0.94), rgba(18, 21, 43, 0.92));
+  box-shadow: 0 12px 34px rgba(2, 7, 22, 0.38), 0 0 26px rgba(86, 201, 255, 0.06);
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-chat-app .sport-chat-composer button[type="submit"] {
+  border-color: transparent;
+  background: linear-gradient(115deg, #13bff2, #4578ff 58%, #955af2);
+  color: #ffffff;
+  box-shadow: 0 0 22px rgba(65, 153, 255, 0.25);
+}
+
+html[data-design-style="performance"] .community-search-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+html[data-design-style="performance"] .community-search-row .community-search {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+@media (max-width: 767px) {
+  html[data-design-style="performance"] .community-search-row .community-roomlist-toggle {
+    display: inline-flex;
   }
 }
