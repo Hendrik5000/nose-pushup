@@ -9,6 +9,7 @@ import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
 import { setAloOwner } from "@/lib/alo-store";
+import { AlarmMonitor } from "@/components/AlarmMonitor";
 import { AloWorkspace } from "@/components/alo/AloWorkspace";
 import { WelcomeTour } from "@/components/WelcomeTour";
 import { PostfachProvider } from "@/components/postfach/PostfachProvider";
@@ -72,6 +73,7 @@ function AuthenticatedLayout() {
           </div>
           <AloWorkspace userId={user.id} />
           <WelcomeTour userId={user.id} />
+          <AlarmMonitor userId={user.id} />
         </div>
       </CallProvider>
     </PostfachProvider>
