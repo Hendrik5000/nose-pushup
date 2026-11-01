@@ -79,8 +79,10 @@ function createGithubMock(options: { refStatus?: number; tokenExpiryMs?: number 
       return Response.json({
         truncated: false,
         tree: [
+          { path: "src", type: "tree", mode: "040000", sha: "9".repeat(40) },
           { path: "src/a.ts", type: "blob", mode: "100644", sha: BLOB, size: 4 },
           { path: "src/link", type: "blob", mode: "120000", sha: "f".repeat(40), size: 9 },
+          { path: "vendor/submodule", type: "commit", mode: "160000", sha: "8".repeat(40) },
           { path: ".env/key.ts", type: "blob", mode: "100644", sha: "1".repeat(40), size: 10 },
           {
             path: "docs/AI-HANDOFF.md",
@@ -96,6 +98,8 @@ function createGithubMock(options: { refStatus?: number; tokenExpiryMs?: number 
         content: Buffer.from("old\n").toString("base64"),
         encoding: "base64",
       });
+    if (method === "GET" && path === `/git/blobs/${"7".repeat(40)}`)
+      return Response.json({ content: "", encoding: "base64" });
     if (method === "GET" && path.startsWith("/git/ref/heads/mira/")) {
       if (options.refStatus && options.refStatus !== 404)
         return Response.json({ message: "mock failure" }, { status: options.refStatus });
@@ -274,6 +278,108 @@ test("mocked GitHub flow mints least-permission tokens and creates only a mira/*
     );
     assert.equal(JSON.stringify(result).includes("mock-write-write"), false);
   }));
+test("new file with empty before creates a mira UUID branch and pull request", () =>
+  withTestConfig(async () => {
+    const mock = createGithubMock();
+    setGithubFetchForTests(mock.fetcher);
+    const result = await createPullRequest(
+      proposal([{ path: "src/new-file.ts", before: "", after: "export const added = true;\n" }]),
+      owner,
+    );
+    assert.equal(result.url, "https://github.com/Hendrik5000/nose-pushup/pull/321");
+    assert.equal(result.replay, false);
+    const branch = mock.calls.find((call) => call.path === "/git/refs" && call.method === "POST");
+    assert.match(String(branch?.body?.ref), /^refs\/heads\/mira\/[0-9a-f-]{36}$/);
+    const pr = mock.calls.find((call) => call.path === "/pulls" && call.method === "POST");
+    assert.match(String(pr?.body?.head), /^mira\/[0-9a-f-]{36}$/);
+    assert.equal(pr?.body?.base, "main");
+  }));
+test("a genuinely empty existing file can be read and replaced", () =>
+  withTestConfig(async () => {
+    const mock = createGithubMock();
+    const original = mock.fetcher;
+    setGithubFetchForTests(async (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : String(input));
+      if (url.pathname.endsWith(`/git/trees/${ROOT_TREE}`)) {
+        const response = await original(input, init);
+        const data = (await response.json()) as { tree: Array<Record<string, unknown>> };
+        data.tree.push({
+          path: "src/empty.ts",
+          type: "blob",
+          mode: "100644",
+          sha: "7".repeat(40),
+          size: 0,
+        });
+        return Response.json(data);
+      }
+      return original(input, init);
+    });
+    const result = await createPullRequest(
+      proposal([{ path: "src/empty.ts", before: "", after: "export {};\n" }]),
+      owner,
+    );
+    assert.equal(result.replay, false);
+    assert.ok(mock.calls.some((call) => call.path === "/git/refs" && call.method === "POST"));
+  }));
+test("exact directory casing supports new and changed files while wrong casing fails before writes", () =>
+  withTestConfig(async () => {
+    for (const [path, before, accepted] of [
+      ["src/MixedCase/new.ts", "", true],
+      ["src/MixedCase/existing.ts", "old\n", true],
+      ["src/mixedcase/new.ts", "", false],
+    ] as const) {
+      const mock = createGithubMock();
+      const original = mock.fetcher;
+      setGithubFetchForTests(async (input, init) => {
+        const url = new URL(input instanceof Request ? input.url : String(input));
+        if (url.pathname.endsWith(`/git/trees/${ROOT_TREE}`)) {
+          const response = await original(input, init);
+          const data = (await response.json()) as { tree: Array<Record<string, unknown>> };
+          data.tree.push(
+            { path: "src/MixedCase", type: "tree", mode: "040000", sha: "6".repeat(40) },
+            { path: "src/MixedCase/existing.ts", type: "blob", mode: "100644", sha: BLOB, size: 4 },
+          );
+          return Response.json(data);
+        }
+        return original(input, init);
+      });
+      const run = createPullRequest(proposal([{ path, before, after: "new\n" }]), owner);
+      if (accepted) {
+        assert.equal((await run).replay, false);
+        assert.ok(mock.calls.some((call) => call.path === "/git/refs" && call.method === "POST"));
+      } else {
+        await assert.rejects(run, /conflicts with an existing file/);
+        assert.equal(
+          mock.calls.some(
+            (call) =>
+              ["/git/trees", "/git/commits", "/git/refs", "/pulls"].includes(call.path) &&
+              call.method === "POST",
+          ),
+          false,
+        );
+      }
+    }
+  }));
+test("new file with nonempty before is rejected before any repository write", () =>
+  withTestConfig(async () => {
+    const mock = createGithubMock();
+    setGithubFetchForTests(mock.fetcher);
+    await assert.rejects(
+      createPullRequest(
+        proposal([{ path: "src/new.ts", before: "unexpected", after: "new" }]),
+        owner,
+      ),
+      /Preview no longer matches base/,
+    );
+    assert.equal(
+      mock.calls.some(
+        (call) =>
+          ["/git/trees", "/git/commits", "/git/refs", "/pulls"].includes(call.path) &&
+          call.method === "POST",
+      ),
+      false,
+    );
+  }));
 test("mocked PR replay is idempotent and does not create a second branch or PR", () =>
   withTestConfig(async () => {
     const mock = createGithubMock();
@@ -321,6 +427,34 @@ test("a proposal cannot create a child beneath an existing symlink", () =>
       mock.calls.some((call) => ["/git/trees", "/git/refs", "/pulls"].includes(call.path)),
       false,
     );
+  }));
+test("unsafe exact targets, file ancestors, case collisions and submodule paths are rejected before writes", () =>
+  withTestConfig(async () => {
+    for (const path of [
+      "src/link",
+      "src/a.ts/child.ts",
+      "SRC/a.ts",
+      "vendor/submodule",
+      "vendor/submodule/child.ts",
+      "src",
+    ]) {
+      const mock = createGithubMock();
+      setGithubFetchForTests(mock.fetcher);
+      await assert.rejects(
+        createPullRequest(proposal([{ path, before: "", after: "new" }]), owner),
+        /conflicts with an existing file/,
+        path,
+      );
+      assert.equal(
+        mock.calls.some(
+          (call) =>
+            ["/git/trees", "/git/commits", "/git/refs", "/pulls"].includes(call.path) &&
+            call.method === "POST",
+        ),
+        false,
+        path,
+      );
+    }
   }));
 test("invalid, expired or cross-owner signed proposals make no GitHub request", () =>
   withTestConfig(async () => {

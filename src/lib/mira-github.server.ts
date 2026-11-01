@@ -65,6 +65,7 @@ export type RepoTree = {
   baseSha: string;
   files: Array<{ path: string; size: number; sha: string }>;
   leafPaths: string[];
+  entries: Array<{ path: string; type: string; mode: string }>;
 };
 export function assertOwner(userId: string, env = process.env) {
   const allow = env.MIRA_GITHUB_ALLOWED_USER_ID;
@@ -267,6 +268,11 @@ export async function repoTree() {
     tree: Array<{ path: string; type: string; mode: string; sha: string; size?: number }>;
   };
   if (t.truncated || !Array.isArray(t.tree)) throw new Error("Repository tree unavailable");
+  const entries = t.tree.flatMap((item) =>
+    typeof item.path === "string" && typeof item.type === "string" && typeof item.mode === "string"
+      ? [{ path: item.path, type: item.type, mode: item.mode }]
+      : [],
+  );
   const leafPaths = t.tree.flatMap((item) =>
     item.type === "blob" && typeof item.path === "string" ? [item.path] : [],
   );
@@ -282,12 +288,12 @@ export async function repoTree() {
       }
     });
   const seen = new Set<string>();
-  for (const f of files) {
-    const k = f.path.toLowerCase();
+  for (const entry of entries) {
+    const k = entry.path.toLowerCase();
     if (seen.has(k)) throw new Error("Repository paths ambiguous");
     seen.add(k);
   }
-  return { baseSha: ref.object.sha, files: files.slice(0, 4000), leafPaths } as RepoTree;
+  return { baseSha: ref.object.sha, files: files.slice(0, 4000), leafPaths, entries } as RepoTree;
 }
 export async function readFile(path: string, baseSha?: string) {
   const safe = canonicalPath(path),
@@ -296,7 +302,7 @@ export async function readFile(path: string, baseSha?: string) {
   const item = tree.files.find((x) => x.path === safe);
   if (!item || (item.size ?? 0) > maxFile) throw new Error("File unavailable");
   const b = (await gh(`/git/blobs/${item.sha}`)) as { content?: string; encoding?: string };
-  if (b.encoding !== "base64" || !b.content) throw new Error("File unavailable");
+  if (b.encoding !== "base64" || typeof b.content !== "string") throw new Error("File unavailable");
   const bytes = Buffer.from(b.content.replace(/\n/g, ""), "base64");
   if (bytes.length > maxFile || bytes.includes(0)) throw new Error("File unavailable");
   const content = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
@@ -393,13 +399,23 @@ export async function createPullRequest(token: string, userId: string) {
     tree = await repoTree();
   if (tree.baseSha !== p.baseSha) throw new Error("Base changed");
   const branch = `mira/${p.id}`;
-  const leafPaths = new Set(tree.leafPaths.map((path) => path.toLowerCase()));
+  const entries = tree.entries;
   for (const file of p.files) {
-    const segments = file.path.toLowerCase().split("/");
+    const segments = file.path.split("/");
     for (let i = 1; i < segments.length; i++) {
-      if (leafPaths.has(segments.slice(0, i).join("/")))
+      const ancestor = segments.slice(0, i).join("/"),
+        item = entries.find((entry) => entry.path.toLowerCase() === ancestor.toLowerCase());
+      if (item && (item.path !== ancestor || item.type !== "tree"))
         throw new Error("Proposal path conflicts with an existing file");
     }
+    const targetLower = file.path.toLowerCase(),
+      matches = entries.filter((entry) => entry.path.toLowerCase() === targetLower),
+      existing = matches[0];
+    if (matches.length > 1 || (existing && existing.path !== file.path))
+      throw new Error("Proposal path conflicts with an existing file");
+    if (existing && (existing.type !== "blob" || !["100644", "100755"].includes(existing.mode)))
+      throw new Error("Proposal path conflicts with an existing file");
+    if (!existing && file.before !== "") throw new Error("Preview no longer matches base");
   }
   // All reads are exact 404 only; any auth/network/server error aborts.
   let existingRef: { object: { sha: string } } | null = null;
@@ -410,8 +426,11 @@ export async function createPullRequest(token: string, userId: string) {
   }
   const parent = (await gh(`/git/commits/${p.baseSha}`)) as { tree: { sha: string } };
   for (const f of p.files) {
-    const old = await readFile(f.path, p.baseSha);
-    if (old.content !== f.before) throw new Error("Preview no longer matches base");
+    const existing = entries.find((entry) => entry.path === f.path);
+    if (existing) {
+      const old = await readFile(f.path, p.baseSha);
+      if (old.content !== f.before) throw new Error("Preview no longer matches base");
+    }
   }
   const treeResult = (await gh("/git/trees", "write", "POST", {
     base_tree: parent.tree.sha,
