@@ -50,7 +50,13 @@ test("server client uses only the explicitly approved service-role variable", ()
 
 test("server public config gives VITE values precedence over runtime values", () => {
   for (const source of serverPublicConfigFiles) {
-    assert.match(source, /import\.meta\.env\.VITE_SUPABASE_URL\s*\|\|\s*process\.env\.SUPABASE_URL/);
-    assert.match(source, /import\.meta\.env\.VITE_SUPABASE_PUBLISHABLE_KEY\s*\|\|\s*process\.env\.SUPABASE_PUBLISHABLE_KEY/);
+    assert.match(
+      source,
+      /import\.meta\.env\.VITE_SUPABASE_URL\s*\|\|\s*process\.env\.SUPABASE_URL/,
+    );
+    assert.match(
+      source,
+      /import\.meta\.env\.VITE_SUPABASE_PUBLISHABLE_KEY\s*\|\|\s*process\.env\.SUPABASE_PUBLISHABLE_KEY/,
+    );
   }
 });
