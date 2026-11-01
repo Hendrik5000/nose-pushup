@@ -16,6 +16,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRouteImport } from './routes/[.well-known]/assetlinks[.]json'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedBattleLeagueRouteImport } from './routes/_authenticated/battle-league'
 import { Route as AuthenticatedCalisthenicsRouteImport } from './routes/_authenticated/calisthenics'
@@ -73,6 +74,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/assetlinks.json': typeof Char91DotwellKnownChar93AssetlinksChar91DotChar93jsonRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/_authenticated/calisthenics': typeof AuthenticatedCalisthenicsRoute
@@ -286,6 +295,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
+    | '/admin'
     | '/ai'
     | '/battle-league'
     | '/calisthenics'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
+    | '/admin'
     | '/ai'
     | '/battle-league'
     | '/calisthenics'
@@ -344,6 +355,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/assetlinks.json'
     | '/.well-known/oauth-protected-resource'
+    | '/_authenticated/admin'
     | '/_authenticated/ai'
     | '/_authenticated/battle-league'
     | '/_authenticated/calisthenics'
@@ -429,6 +441,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ai': {
@@ -582,6 +601,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedBattleLeagueRoute: typeof AuthenticatedBattleLeagueRoute
   AuthenticatedCalisthenicsRoute: typeof AuthenticatedCalisthenicsRoute
@@ -604,6 +624,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedBattleLeagueRoute: AuthenticatedBattleLeagueRoute,
   AuthenticatedCalisthenicsRoute: AuthenticatedCalisthenicsRoute,
