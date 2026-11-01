@@ -3,7 +3,7 @@ import { ProfilePage } from "./profile-page-impl";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
-    meta: [{ title: "Einstellungen — Nose Push" }],
+    meta: [{ title: "Einstellungen — Alo" }],
   }),
   component: ProfilePage,
 });

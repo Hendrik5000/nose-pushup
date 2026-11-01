@@ -101,6 +101,8 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
     (async () => {
       try {
         setStatus("KI-Modell wird geladen…");
+        // External WASM/model files are fetched only after the user has chosen camera mode
+        // and pressed Start; camera frames remain local to this device.
         const vision = await import("@mediapipe/tasks-vision");
         const fileset = await vision.FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm",
@@ -129,7 +131,10 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
             numPoses: 1,
           });
         }
-        if (cancelled) { landmarker.close(); return; }
+        if (cancelled) {
+          landmarker.close();
+          return;
+        }
         landmarkerRef.current = landmarker;
 
         setStatus("Kamera wird geöffnet…");
@@ -137,7 +142,10 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
           video: { facingMode: "user", width: 640, height: 480 },
           audio: false,
         });
-        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
         streamRef.current = stream;
 
         let attempts = 0;
@@ -168,11 +176,16 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
             // 11=L-shoulder 12=R-shoulder 13=L-elbow 14=R-elbow
             // 15=L-wrist   16=R-wrist   23=L-hip   24=R-hip
             // 25=L-knee    26=R-knee
-            const ls = lm[11], rs = lm[12];
-            const le = lm[13], re = lm[14];
-            const lw = lm[15], rw = lm[16];
-            const lh = lm[23], rh = lm[24];
-            const lk = lm[25], rk = lm[26];
+            const ls = lm[11],
+              rs = lm[12];
+            const le = lm[13],
+              re = lm[14];
+            const lw = lm[15],
+              rw = lm[16];
+            const lh = lm[23],
+              rh = lm[24];
+            const lk = lm[25],
+              rk = lm[26];
 
             const leftVis =
               (ls?.visibility ?? 0) > 0.5 &&
@@ -186,20 +199,30 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
             // Hüftlinie: Schulter–Hüfte–Knie sollte ~180° sein.
             let hipAngle: number | null = null;
             {
-              let sum = 0, cnt = 0;
+              let sum = 0,
+                cnt = 0;
               if (ls && lh && lk && (lh.visibility ?? 0) > 0.5 && (lk.visibility ?? 0) > 0.5) {
-                sum += calcAngle(ls, lh, lk); cnt++;
+                sum += calcAngle(ls, lh, lk);
+                cnt++;
               }
               if (rs && rh && rk && (rh.visibility ?? 0) > 0.5 && (rk.visibility ?? 0) > 0.5) {
-                sum += calcAngle(rs, rh, rk); cnt++;
+                sum += calcAngle(rs, rh, rk);
+                cnt++;
               }
               if (cnt > 0) hipAngle = sum / cnt;
             }
 
             if (leftVis || rightVis) {
-              let sum = 0, cnt = 0;
-              if (leftVis && ls && le && lw) { sum += calcAngle(ls, le, lw); cnt++; }
-              if (rightVis && rs && re && rw) { sum += calcAngle(rs, re, rw); cnt++; }
+              let sum = 0,
+                cnt = 0;
+              if (leftVis && ls && le && lw) {
+                sum += calcAngle(ls, le, lw);
+                cnt++;
+              }
+              if (rightVis && rs && re && rw) {
+                sum += calcAngle(rs, re, rw);
+                cnt++;
+              }
               const angle = cnt > 0 ? sum / cnt : 180;
 
               setElbowAngle(Math.round(angle));
@@ -240,7 +263,11 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
                 const phase = phaseRef.current === "up" ? "Strecken…" : "Runter…";
                 setStatus(`${phase} ${Math.round(angle)}°`);
                 // Live-Hinweise während der Bewegung
-                if (phaseRef.current === "down" && hipAngle !== null && Math.abs(180 - hipAngle) > 22) {
+                if (
+                  phaseRef.current === "down" &&
+                  hipAngle !== null &&
+                  Math.abs(180 - hipAngle) > 22
+                ) {
                   setLiveCue(hipAngle < 180 ? "Hüfte hoch" : "Po runter");
                 } else if (phaseRef.current === "down" && angle > DEPTH_PARTIAL - 5) {
                   setLiveCue("Tiefer");
@@ -249,9 +276,7 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
             } else {
               // Fallback: shoulder-Y (works for front-facing camera)
               const bothShoulders =
-                ls && rs &&
-                (ls.visibility ?? 0) > 0.5 &&
-                (rs.visibility ?? 0) > 0.5;
+                ls && rs && (ls.visibility ?? 0) > 0.5 && (rs.visibility ?? 0) > 0.5;
 
               if (bothShoulders && ls && rs) {
                 const y = (ls.y + rs.y) / 2;
@@ -302,7 +327,16 @@ export function useCameraDetection({ active, onRep, minIntervalMs = 600 }: Args)
         rafRef.current = requestAnimationFrame(sample);
       } catch (e) {
         console.error("[camera-detection]", e);
-        setError(e instanceof Error ? e.message : "Kamera oder KI nicht verfügbar");
+        const name = e instanceof DOMException ? e.name : "";
+        setError(
+          name === "NotAllowedError" || name === "SecurityError"
+            ? "Kamerazugriff wurde nicht erlaubt. Du kannst sofort manuell fortfahren oder die Berechtigung in den Browser-Einstellungen ändern."
+            : name === "NotFoundError" || name === "DevicesNotFoundError"
+              ? "Keine Kamera gefunden. Du kannst sofort manuell fortfahren."
+              : name === "NotReadableError" || name === "TrackStartError"
+                ? "Die Kamera ist gerade nicht verfügbar. Du kannst sofort manuell fortfahren."
+                : "Kamera oder Erkennungsmodell nicht verfügbar. Du kannst sofort manuell fortfahren.",
+        );
       }
     })();
 

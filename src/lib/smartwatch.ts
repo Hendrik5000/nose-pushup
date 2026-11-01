@@ -1,12 +1,8 @@
 /** Smartwatch / wearable integration helpers (web + Health Connect bridge). */
 
-export type WatchBrand =
-  | "galaxy"
-  | "apple"
-  | "pixel"
-  | "fitbit"
-  | "garmin"
-  | "other";
+import { localDateKey } from "@/lib/training-dates";
+
+export type WatchBrand = "galaxy" | "apple" | "pixel" | "fitbit" | "garmin" | "other";
 
 export type WatchDevice = {
   id: string;
@@ -131,14 +127,17 @@ export function saveWatchSnapshot(snap: WatchSnapshot) {
   localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
 }
 
-/** Parse simple step CSV: date,steps or steps only for today. */
-export function parseStepsCsv(text: string): Array<{ day: string; steps: number }> {
+/** Parse simple step CSV: date,steps or steps only for the local calendar day. */
+export function parseStepsCsv(
+  text: string,
+  now = new Date(),
+): Array<{ day: string; steps: number }> {
   const lines = text
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
   const out: Array<{ day: string; steps: number }> = [];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateKey(now);
 
   for (const line of lines) {
     if (/date|tag|steps|schritte/i.test(line) && /[,;\t]/.test(line)) continue;
@@ -163,13 +162,13 @@ export function parseStepsCsv(text: string): Array<{ day: string; steps: number 
   return out;
 }
 
-export function parseHealthJson(text: string): Partial<WatchSnapshot> | null {
+export function parseHealthJson(text: string, now = new Date()): Partial<WatchSnapshot> | null {
   try {
     const data = JSON.parse(text) as Record<string, unknown>;
     const steps = Number(data.steps ?? data.stepCount ?? data.Steps ?? 0);
     const activeKcal = Number(data.active_kcal ?? data.calories ?? data.activeCalories ?? 0);
     const sleepMin = Number(
-      data.sleep_min ?? (data.sleepHours != null ? Number(data.sleepHours) * 60 : 0) ?? 0,
+      data.sleep_min ?? (data.sleepHours != null ? Number(data.sleepHours) * 60 : 0),
     );
     const restingHr =
       data.restingHr != null
@@ -182,7 +181,7 @@ export function parseHealthJson(text: string): Partial<WatchSnapshot> | null {
         ? data.day.slice(0, 10)
         : typeof data.date === "string"
           ? data.date.slice(0, 10)
-          : new Date().toISOString().slice(0, 10);
+          : localDateKey(now);
     if (!steps && !activeKcal && !sleepMin) return null;
     return {
       day,

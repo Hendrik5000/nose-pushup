@@ -1,9 +1,8 @@
-export function WeightTrendCard({
-  points,
-}: {
-  points: Array<{ day: string; weight_kg: number }>;
-}) {
-  const data = points.filter((p) => p.weight_kg > 0).slice(0, 14).reverse();
+export function WeightTrendCard({ points }: { points: Array<{ day: string; weight_kg: number }> }) {
+  const data = points
+    .filter((p) => p.weight_kg > 0)
+    .slice(0, 14)
+    .reverse();
   if (data.length < 2) {
     return (
       <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4 text-sm text-muted-foreground">
@@ -22,10 +21,13 @@ export function WeightTrendCard({
     <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Gewichtstrend</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Gewichtstrend
+          </div>
           <div className="mt-1 text-xl font-semibold tabular-nums">{last.toFixed(1)} kg</div>
           <p className="text-xs text-muted-foreground">
-            {delta === 0 ? "±0" : delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)} kg im Zeitraum
+            {delta === 0 ? "±0" : delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)} kg im
+            Zeitraum
           </p>
         </div>
         <span className="text-3xl">⚖️</span>

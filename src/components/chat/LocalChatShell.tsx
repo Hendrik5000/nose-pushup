@@ -1,12 +1,58 @@
+import { chatRowSummary } from "@/lib/alo-ui";
+import { RoomTools } from "@/components/alo/RoomTools";
+import { ContentActions } from "@/components/alo/ContentActions";
+import { ALO_REMOTE_EVENT, cloudEnabled } from "@/lib/alo-store";
+import { getSyncState } from "@/lib/alo-sync";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowUpRight,
+  ArrowLeft,
+  House,
+  MessageCircle,
+  MoreVertical,
+  Search,
+  Users,
+  Mic,
+  MessageCirclePlus,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { PostfachBell } from "@/components/postfach/PostfachBell";
+import {
+  AloPageSidebarTrigger,
+  useAloPageSidebarCommands,
+  type AloPageSidebarCommands,
+} from "@/components/alo/AloPageSidebar";
+import {
+  AttachImageButton,
+  CallButtons,
+  FriendDmPicker,
+  ImageLightbox,
+  MessageImage,
+} from "@/components/chat/NexusFriendFeatures";
+import { BackendNotReadyError } from "@/lib/friends/rpc";
+import {
+  loadCloudDms,
+  loadDisplayNames,
+  prepareChatImage,
+  removeChatImage,
+  signChatImages,
+  uploadChatImage,
+  type UploadedChatImage,
+} from "@/lib/nexus-cloud";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyNexusMessage } from "@/lib/nexus-notifications.functions";
+import {
+  createNexusNotificationPayload,
+  shouldAnnounceNexusMessage,
+  type NexusNotificationMessage,
+} from "@/lib/nexus-notifications";
 import {
   createChatRoom,
   deleteChatMessage,
   detectChatMode,
   editChatMessage,
   loadMessages,
+  loadRoomPreview,
   loadRoomsForUser,
   postMessage,
   reactToMessage,
@@ -34,68 +80,129 @@ import {
   workoutShareTemplate,
   type ChatPrefs,
 } from "@/lib/chat-extras";
+import { validateNexusHandoffTarget } from "@/lib/mira-nexus-draft";
 
 type Target = { kind: "room" | "dm"; id: string };
 
-export function LocalChatShell() {
+export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
   const [userId, setUserId] = useState<string | null>(null);
   const [myName, setMyName] = useState("Du");
   const [mode, setMode] = useState<ChatMode>("local");
   const [rooms, setRooms] = useState<LocalRoom[]>([]);
+  const [roomsReady, setRoomsReady] = useState(false);
   const [dms, setDms] = useState<LocalDm[]>([]);
   const [active, setActive] = useState<Target | null>(null);
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [reactions, setReactions] = useState<LocalReaction[]>([]);
   const [replyTo, setReplyTo] = useState<LocalMessage | null>(null);
   const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileListOpen, setMobileListOpen] = useState(true);
+  const [previews, setPreviews] = useState<
+    Record<string, Awaited<ReturnType<typeof loadRoomPreview>>>
+  >({});
+  const mobileListOpenRef = useRef(mobileListOpen);
+  mobileListOpenRef.current = mobileListOpen;
+  const [roomQuery, setRoomQuery] = useState("");
+  const [roomFilter, setRoomFilter] = useState<"all" | "favorites" | "dms">("all");
   const [newRoomOpen, setNewRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [dmName, setDmName] = useState("");
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const [lightbox, setLightbox] = useState<{ url: string; name: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [prefs, setPrefs] = useState<ChatPrefs | null>(null);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [listening, setListening] = useState(false);
+  const [dmPickerOpen, setDmPickerOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [headerVisible, setHeaderVisible] = useState(true);
   const [todayReps, setTodayReps] = useState(0);
-  const headerTimerRef = useRef<number | null>(null);
+  const [, refreshSyncLabel] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const sendingRef = useRef(false);
+  const replyToRef = useRef(replyTo);
+  replyToRef.current = replyTo;
+  const newRoomDialogRef = useRef<HTMLDivElement>(null);
+  const newRoomInputRef = useRef<HTMLInputElement>(null);
+  const newRoomTriggerRef = useRef<HTMLButtonElement>(null);
   const activeRef = useRef<Target | null>(null);
   activeRef.current = active;
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
 
-  const flash = (t: string) => {
+  const flash = useCallback((t: string) => {
     setToast(t);
     window.setTimeout(() => setToast(null), 2200);
-  };
+  }, []);
+
+  const resolveCloudExtras = useCallback(async (uid: string, msgs: LocalMessage[]) => {
+    const unknownAuthors = Array.from(
+      new Set(
+        msgs
+          .map((m) => m.user_id)
+          .filter((id) => id !== uid && id !== "system" && /^[0-9a-f-]{36}$/i.test(id)),
+      ),
+    );
+    if (unknownAuthors.length > 0) {
+      const resolved = await loadDisplayNames(unknownAuthors);
+      if (resolved.size > 0)
+        setNames((previous) => ({ ...previous, ...Object.fromEntries(resolved) }));
+    }
+    const paths = msgs.flatMap((m) => (m.attachment_url ? [m.attachment_url] : []));
+    if (paths.length > 0) {
+      const signed = await signChatImages(paths);
+      if (signed.size > 0)
+        setImageUrls((previous) => ({ ...previous, ...Object.fromEntries(signed) }));
+    }
+  }, []);
 
   const refresh = useCallback(
     async (uid: string, target: Target | null) => {
       const roomList = await loadRoomsForUser(uid);
       setRooms(roomList);
+      setRoomsReady(true);
       setPrefs(loadChatPrefs(uid));
 
       if (mode === "local" || (await detectChatMode()) === "local") {
         const store = loadChatStore(uid);
         setDms(store.dms);
+      } else {
+        try {
+          setDms(await loadCloudDms());
+        } catch (error) {
+          if (!(error instanceof BackendNotReadyError)) setDms([]);
+        }
       }
 
-      const t =
-        target ??
-        (roomList[0] ? ({ kind: "room", id: roomList[0].id } as Target) : null);
+      const t = target ?? (roomList[0] ? ({ kind: "room", id: roomList[0].id } as Target) : null);
       if (!target && t) setActive(t);
       if (!t) {
         setMessages([]);
         setReactions([]);
         return;
       }
-      const { messages: msgs, reactions: reacts } = await loadMessages(uid, t);
+      const { messages: msgs, reactions: reacts, available } = await loadMessages(uid, t);
+      if (!available) {
+        setMessages([]);
+        setReactions([]);
+        setToast("Nachrichten nicht verfügbar. Der Ungelesen-Status bleibt unverändert.");
+        return;
+      }
       setMessages(msgs);
       setReactions(reacts);
-      setPrefs(markRead(uid, t.kind, t.id, msgs[msgs.length - 1]?.created_at));
+      void resolveCloudExtras(uid, msgs);
+      const viewingConversation =
+        document.documentElement.dataset.designStyle !== "performance" ||
+        window.matchMedia("(min-width: 768px)").matches ||
+        !mobileListOpenRef.current;
+      if (viewingConversation)
+        setPrefs(markRead(uid, t.kind, t.id, msgs[msgs.length - 1]?.created_at));
     },
-    [mode],
+    [mode, resolveCloudExtras],
   );
 
   useEffect(() => {
@@ -128,69 +235,213 @@ export function LocalChatShell() {
     })();
   }, [refresh]);
 
+  const openedInitialDm = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialDmId || !userId || mode !== "supabase") return;
+    if (openedInitialDm.current === initialDmId) return;
+    if (!dms.some((dm) => dm.id === initialDmId)) return;
+    openedInitialDm.current = initialDmId;
+    setActive({ kind: "dm", id: initialDmId });
+    setMobileListOpen(false);
+  }, [initialDmId, userId, mode, dms]);
+
   useEffect(() => {
     if (!userId || !active) return;
     void refresh(userId, active);
     setReplyTo(null);
-    setDraft(getDraft(userId, active.kind, active.id));
+    const savedDraft = getDraft(userId, active.kind, active.id);
+    draftRef.current = savedDraft;
+    setDraft(savedDraft);
     setSearch("");
     setSearchOpen(false);
   }, [userId, active?.kind, active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const wakeHeader = useCallback(() => {
-    setHeaderVisible(true);
-    if (headerTimerRef.current) window.clearTimeout(headerTimerRef.current);
-    headerTimerRef.current = window.setTimeout(() => setHeaderVisible(false), 4500);
-  }, []);
+  useEffect(() => {
+    if (!mobileListOpen && userId && activeRef.current) void refresh(userId, activeRef.current);
+  }, [mobileListOpen, userId, refresh]);
 
   useEffect(() => {
-    wakeHeader();
-    const onPointerMove = (event: PointerEvent) => {
-      if (event.clientY < 88) wakeHeader();
+    if (!userId || mode !== "supabase") {
+      setPreviews({});
+      return;
+    }
+    let cancelled = false;
+    let index = 0;
+    const loadNext = async () => {
+      while (!cancelled && index < rooms.length) {
+        const room = rooms[index++];
+        try {
+          const preview = await loadRoomPreview(
+            userId,
+            room.id,
+            prefs?.lastRead[`room:${room.id}`],
+          );
+          if (!cancelled) setPreviews((previous) => ({ ...previous, [room.id]: preview }));
+        } catch {
+          if (!cancelled)
+            setPreviews((previous) => ({
+              ...previous,
+              [room.id]: { latest: null, unread: null, error: true },
+            }));
+        }
+      }
     };
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    void Promise.all(Array.from({ length: Math.min(4, rooms.length) }, loadNext));
     return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      if (headerTimerRef.current) window.clearTimeout(headerTimerRef.current);
+      cancelled = true;
     };
-  }, [wakeHeader]);
+  }, [userId, mode, rooms, prefs?.lastRead]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, active?.id]);
 
   useEffect(() => {
+    if (!newRoomOpen) return;
+    newRoomInputRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setNewRoomOpen(false);
+        newRoomTriggerRef.current?.focus();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const dialog = newRoomDialogRef.current;
+      const focusable = dialog?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (
+        event.shiftKey &&
+        (document.activeElement === first || !dialog?.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        last.focus();
+      } else if (
+        !event.shiftKey &&
+        (document.activeElement === last || !dialog?.contains(document.activeElement))
+      ) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [newRoomOpen]);
+
+  useEffect(() => {
     if (mode !== "supabase" || !userId) return;
     const channel = supabase
       .channel("nose-chat-stream")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        () => {
-          const t = activeRef.current;
-          if (t) void refresh(userId, t);
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "message_reactions" },
-        () => {
-          const t = activeRef.current;
-          if (t) void refresh(userId, t);
-        },
-      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (event) => {
+        const message = event.new as unknown as NexusNotificationMessage;
+        const target = message.room_id
+          ? { kind: "room" as const, id: message.room_id }
+          : message.conversation_id
+            ? { kind: "dm" as const, id: message.conversation_id }
+            : null;
+        const activeTarget = activeRef.current;
+        const isTargetVisible =
+          document.visibilityState === "visible" &&
+          Boolean(
+            activeTarget &&
+            target &&
+            activeTarget.kind === target.kind &&
+            activeTarget.id === target.id,
+          );
+        const notification = createNexusNotificationPayload(message);
+        if (
+          notification &&
+          document.visibilityState === "visible" &&
+          shouldAnnounceNexusMessage({
+            message,
+            userId,
+            mutedRoomIds: loadChatPrefs(userId).mutedRoomIds,
+            isTargetVisible,
+          })
+        ) {
+          setToast(notification.body);
+          window.setTimeout(() => setToast(null), 2200);
+        }
+        const t = activeRef.current;
+        if (t) void refresh(userId, t);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, () => {
+        const t = activeRef.current;
+        if (t) void refresh(userId, t);
+      })
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [mode, userId, refresh]);
 
+  useEffect(() => {
+    const refreshDraft = () => {
+      const raw = window.sessionStorage.getItem("alo-open-nexus");
+      if (raw && userId && roomsReady) {
+        const validation = validateNexusHandoffTarget(
+          raw,
+          userId,
+          rooms.map((candidate) => candidate.id),
+        );
+        if (validation.status === "valid") {
+          const target = validation.target;
+          setActive(target);
+          setMobileListOpen(false);
+          window.sessionStorage.removeItem("alo-open-nexus");
+          if (target.messageId)
+            setTimeout(
+              () =>
+                document
+                  .getElementById(`msg-${target.messageId}`)
+                  ?.scrollIntoView({ block: "center" }),
+              700,
+            );
+        } else {
+          window.sessionStorage.removeItem("alo-open-nexus");
+          if (validation.status === "account-changed")
+            flash("Konto gewechselt. Der Nexus-Entwurf wurde nicht in dieses Konto übernommen.");
+          else if (validation.status === "stale-target")
+            flash("Der Nexus-Zielraum ist nicht mehr verfügbar. Bitte den Entwurf erneut prüfen.");
+          else flash("Ungültige Nexus-Übergabe wurde verworfen.");
+        }
+      }
+      const t = activeRef.current;
+      if (userId && t) {
+        const text = getDraft(userId, t.kind, t.id);
+        draftRef.current = text;
+        setDraft(text);
+      }
+      refreshSyncLabel((n) => n + 1);
+    };
+    refreshDraft();
+    window.addEventListener(ALO_REMOTE_EVENT, refreshDraft);
+    window.addEventListener("alo-sync-state", refreshDraft);
+    return () => {
+      window.removeEventListener(ALO_REMOTE_EVENT, refreshDraft);
+      window.removeEventListener("alo-sync-state", refreshDraft);
+    };
+  }, [userId, rooms, roomsReady, flash]);
+
   const headerTitle = useMemo(() => {
     if (!active) return "Chat";
-    if (active.kind === "room")
-      return rooms.find((r) => r.id === active.id)?.name ?? "Raum";
+    if (active.kind === "room") return rooms.find((r) => r.id === active.id)?.name ?? "Raum";
     return dms.find((d) => d.id === active.id)?.other_name ?? "DM";
   }, [active, rooms, dms]);
+
+  const dmPeer = useMemo(() => {
+    if (mode !== "supabase" || active?.kind !== "dm") return null;
+    const dm = dms.find((d) => d.id === active.id);
+    return dm && dm.other_id ? { id: dm.other_id, name: dm.other_name || "Freund" } : null;
+  }, [mode, active, dms]);
+  const callButtons =
+    active?.kind === "dm" && dmPeer ? (
+      <CallButtons peer={dmPeer} conversationId={active.id} compact />
+    ) : null;
 
   const sortedRooms = useMemo(() => {
     if (!prefs) return rooms;
@@ -210,39 +461,120 @@ export function LocalChatShell() {
 
   const hits = useMemo(() => searchMessages(messages, search), [messages, search]);
 
-  const onSend = async (text?: string) => {
-    if (!userId || !active) return;
+  const onSend = async (text?: string, attachment?: UploadedChatImage) => {
+    if (!userId || !active || sendingRef.current) return;
     const content = (text ?? draft).trim();
-    if (!content) return;
-    setDraft("");
-    saveDraft(userId, active.kind, active.id, "");
-    await postMessage(userId, {
-      roomId: active.kind === "room" ? active.id : null,
-      conversationId: active.kind === "dm" ? active.id : null,
-      content,
-      replyToId: replyTo?.id ?? null,
-    });
-    setReplyTo(null);
-    await refresh(userId, active);
+    if (!content && !attachment) return;
+    const target = active;
+    const submittedDraft = draft;
+    const submittedReply = replyTo;
+    sendingRef.current = true;
+    setSending(true);
+    try {
+      let posted: LocalMessage | null;
+      try {
+        posted = await postMessage(userId, {
+          roomId: target.kind === "room" ? target.id : null,
+          conversationId: target.kind === "dm" ? target.id : null,
+          content,
+          replyToId: submittedReply?.id ?? null,
+          attachment: attachment
+            ? {
+                path: attachment.path,
+                type: attachment.type,
+                name: attachment.name,
+                size: attachment.size,
+              }
+            : null,
+        });
+      } catch {
+        if (attachment) void removeChatImage(attachment.path);
+        flash("Nicht gesendet. Entwurf und Antwort bleiben erhalten.");
+        return;
+      }
+      if (!posted) {
+        if (attachment) void removeChatImage(attachment.path);
+        flash("Nicht gesendet. Entwurf und Antwort bleiben erhalten.");
+        return;
+      }
+      if (mode === "supabase" && target.kind === "dm") {
+        void notifyNexusMessage({ data: { messageId: posted.id } }).catch(() => undefined);
+      }
+      if (
+        text === undefined &&
+        activeRef.current?.kind === target.kind &&
+        activeRef.current.id === target.id &&
+        draftRef.current === submittedDraft
+      ) {
+        draftRef.current = "";
+        setDraft("");
+        saveDraft(userId, target.kind, target.id, "");
+      }
+      if (
+        activeRef.current?.kind === target.kind &&
+        activeRef.current.id === target.id &&
+        replyToRef.current?.id === submittedReply?.id
+      ) {
+        setReplyTo(null);
+      }
+      if (activeRef.current?.kind === target.kind && activeRef.current.id === target.id) {
+        try {
+          await refresh(userId, target);
+        } catch {
+          flash("Nachricht gesendet, aber der Chat konnte nicht aktualisiert werden.");
+        }
+      }
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
+  };
+
+  const onAttachImage = async (file: File) => {
+    if (!userId || !active || mode !== "supabase" || sendingRef.current || uploading) return;
+    setUploading(true);
+    try {
+      const prepared = await prepareChatImage(file);
+      const uploaded = await uploadChatImage(userId, active, prepared);
+      await onSend(undefined, uploaded);
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Das Bild konnte nicht gesendet werden.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onOpenFriendDm = async (conversationId: string) => {
+    if (!userId) return;
+    setActive({ kind: "dm", id: conversationId });
+    setMobileListOpen(false);
+    setMenuOpen(false);
+    setDmPickerOpen(false);
+    await refresh(userId, { kind: "dm", id: conversationId });
   };
 
   const onCreateRoom = async () => {
     if (!userId || !newRoomName.trim()) return;
     const room = await createChatRoom(userId, newRoomName);
     setNewRoomName("");
+    setDmPickerOpen(false);
     setNewRoomOpen(false);
     if (room) {
       setActive({ kind: "room", id: room.id });
+      setMobileListOpen(false);
       await refresh(userId, { kind: "room", id: room.id });
     }
   };
 
   const onStartDm = async () => {
+    if (mode !== "local") return;
     if (!userId || !dmName.trim()) return;
     const otherId = `local-${dmName.trim().toLowerCase().replace(/\s+/g, "-")}`;
     const dm = getOrCreateLocalDm(userId, otherId, dmName.trim());
     setDmName("");
+    setDmPickerOpen(false);
     setActive({ kind: "dm", id: dm.id });
+    setMobileListOpen(false);
     await refresh(userId, { kind: "dm", id: dm.id });
   };
 
@@ -275,7 +607,7 @@ export function LocalChatShell() {
     rec.start();
   };
 
-  const exportActive = async () => {
+  const exportActive = useCallback(async () => {
     if (!active) return;
     const md = exportMessagesMarkdown(headerTitle, messages, (uid) =>
       uid === userId
@@ -290,56 +622,190 @@ export function LocalChatShell() {
     } catch {
       flash("Kopieren fehlgeschlagen");
     }
-  };
+  }, [active, dms, flash, headerTitle, messages, myName, userId]);
+
+  const sidebarCommands = useMemo<AloPageSidebarCommands>(
+    () => ({
+      "nexus-open-list": () => {
+        setSearchOpen(false);
+        setMobileListOpen(true);
+        setMenuOpen(true);
+      },
+      "nexus-new-room": () => {
+        setSearchOpen(false);
+        newRoomTriggerRef.current = document.querySelector<HTMLButtonElement>(
+          '[data-alo-sidebar-action="nexus-new-room"]',
+        );
+        setNewRoomOpen(true);
+      },
+      "nexus-new-dm": () => {
+        setSearchOpen(false);
+        setDmPickerOpen(true);
+        setMobileListOpen(true);
+        setMenuOpen(true);
+      },
+      "nexus-open-search": () => {
+        setSearchOpen(true);
+        setMobileListOpen(false);
+        setMenuOpen(false);
+      },
+      "nexus-export-current": () => void exportActive(),
+    }),
+    [exportActive],
+  );
+  const activeSidebarItem = newRoomOpen
+    ? "nexus-new-room"
+    : dmPickerOpen
+      ? "nexus-new-dm"
+      : searchOpen
+        ? "nexus-open-search"
+        : "nexus-open-list";
+  useAloPageSidebarCommands(sidebarCommands, activeSidebarItem);
 
   const modeLabel = mode === "supabase" ? "Cloud · Supabase" : "Lokal · Gerät";
 
+  const visibleRooms = sortedRooms.filter(
+    (room) =>
+      roomFilter !== "dms" &&
+      (roomFilter !== "favorites" || prefs?.favoriteRoomIds.includes(room.id)) &&
+      room.name.toLocaleLowerCase("de-DE").includes(roomQuery.toLocaleLowerCase("de-DE")),
+  );
+  const visibleDms = dms.filter(
+    (dm) =>
+      roomFilter !== "favorites" &&
+      dm.other_name.toLocaleLowerCase("de-DE").includes(roomQuery.toLocaleLowerCase("de-DE")),
+  );
+
+  const dmComposer = (
+    <div className="community-dm-create mb-2 flex gap-1">
+      <input
+        value={dmName}
+        onChange={(e) => setDmName(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && void onStartDm()}
+        placeholder="Name…"
+        aria-label="Name für Direktnachricht"
+        className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-2 py-1.5 text-xs outline-none focus:border-primary"
+      />
+      <button
+        type="button"
+        onClick={() => void onStartDm()}
+        className="rounded-xl bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground"
+      >
+        DM
+      </button>
+    </div>
+  );
+
   const sidebar = (
-    <div className="flex h-full min-h-0 flex-col bg-card/40">
-      <div className="border-b border-border bg-gradient-to-br from-primary/15 to-transparent px-4 py-4">
+    <div className="sport-chat-sidebar flex h-full flex-col bg-card/40">
+      <div className="community-list-heading border-b border-border bg-gradient-to-br from-primary/15 to-transparent px-4 py-4">
         <div className="flex items-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20 text-xl">
+          <AloPageSidebarTrigger className="community-roomlist-toggle md:hidden" />
+          <span className="classic-only flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20 text-xl">
             💬
           </span>
           <div>
-            <div className="text-sm font-bold">Nexus Chat</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="text-sm font-bold">
+              <span className="classic-only">Nexus Chat</span>
+              <span className="sport-only">{mode === "local" ? "Lokale Chats" : "Chats"}</span>
+            </div>
+            <div className="classic-only text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               {modeLabel}
             </div>
           </div>
+          {mode === "supabase" && (
+            <span className="ml-auto">
+              <PostfachBell className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground" />
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-width:thin]">
+      <div className="sport-only community-list-controls">
+        <div className="community-search-row">
+          <AloPageSidebarTrigger className="community-roomlist-toggle md:hidden" />
+          <label className="community-search">
+            <Search aria-hidden="true" />
+            <input
+              value={roomQuery}
+              onChange={(event) => setRoomQuery(event.target.value)}
+              placeholder="Chats durchsuchen"
+              aria-label="Nexus Chats durchsuchen"
+            />
+          </label>
+        </div>
+        <div className="community-filter-chips" role="group" aria-label="Nexus Chats filtern">
+          {(
+            [
+              ["all", "Alle"],
+              ["favorites", "Favoriten"],
+              ["dms", "Direkt"],
+            ] as const
+          ).map(([filter, label]) => (
+            <button
+              key={filter}
+              type="button"
+              aria-pressed={roomFilter === filter}
+              onClick={() => setRoomFilter(filter)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p>
+          {mode === "local"
+            ? "Nur auf diesem Gerät gespeichert. Kein Versand an andere Geräte."
+            : "Mit Nexus Chat verbunden."}
+        </p>
+      </div>
+      <div className="community-list-scroll flex-1 overflow-y-auto px-3 py-3">
         <div className="mb-1 flex items-center justify-between px-1">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Räume</span>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            {mode === "local" ? "Lokale Räume" : "Räume"}
+          </span>
           <button
             type="button"
-            onClick={() => setNewRoomOpen(true)}
+            aria-label="Neuen Raum erstellen"
+            onClick={(event) => {
+              newRoomTriggerRef.current = event.currentTarget;
+              setNewRoomOpen(true);
+            }}
             className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary"
           >
             +
           </button>
         </div>
         <div className="space-y-1 pb-4">
-          {sortedRooms.map((r) => {
+          {visibleRooms.map((r) => {
             const muted = prefs?.mutedRoomIds.includes(r.id);
             const fav = prefs?.favoriteRoomIds.includes(r.id);
             const storeMsgs =
               userId && mode === "local"
                 ? loadChatStore(userId).messages.filter((m) => m.room_id === r.id)
                 : [];
-            const unread =
-              userId && prefs
-                ? countUnread(prefs, "room", r.id, storeMsgs, userId)
-                : 0;
+            const summary =
+              mode === "local"
+                ? chatRowSummary(storeMsgs, userId ?? "", prefs?.lastRead[`room:${r.id}`])
+                : previews[r.id];
+            const unread = summary?.unread;
+            const unknownUnread = mode === "supabase" && (!summary || summary.unread === null);
+            const latest = summary?.latest;
+            const previewText =
+              latest?.content ??
+              (mode === "supabase" && (!summary || ("error" in summary && summary.error))
+                ? !summary
+                  ? "Vorschau wird geladen"
+                  : "Vorschau nicht verfügbar"
+                : "Noch keine Nachrichten · Raum öffnen");
             return (
               <button
                 key={r.id}
                 type="button"
                 onClick={() => {
                   setActive({ kind: "room", id: r.id });
+                  setDmPickerOpen(false);
                   setMenuOpen(false);
+                  setMobileListOpen(false);
                 }}
                 className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${
                   active?.kind === "room" && active.id === r.id
@@ -347,16 +813,42 @@ export function LocalChatShell() {
                     : "hover:bg-secondary/60"
                 }`}
               >
-                <span className="opacity-70">{fav ? "★" : "#"}</span>
-                <span className="min-w-0 flex-1 truncate font-medium">
-                  {r.name}
-                  {muted ? " 🔇" : ""}
+                <span className="community-room-avatar">
+                  <span className="classic-only">{fav ? "★" : "#"}</span>
+                  <Users className="sport-only" aria-hidden="true" />
                 </span>
-                {unread > 0 && active?.id !== r.id && (
-                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
-                    {unread > 9 ? "9+" : unread}
+                <span className="community-room-copy min-w-0 flex-1 truncate font-medium">
+                  <strong className="truncate">
+                    {r.name}
+                    {muted ? " 🔇" : ""}
+                  </strong>
+                  <small>{previewText}</small>
+                </span>
+                {latest && (
+                  <time className="community-room-time" dateTime={latest.created_at}>
+                    {formatTime(latest.created_at)}
+                  </time>
+                )}
+                {unknownUnread && (
+                  <span
+                    className="community-room-time"
+                    aria-label={
+                      summary ? "Ungelesen-Status nicht verfügbar" : "Ungelesen-Status wird geladen"
+                    }
+                  >
+                    ?
                   </span>
                 )}
+                {typeof unread === "number" &&
+                  unread > 0 &&
+                  (mobileListOpen || active?.id !== r.id) && (
+                    <span
+                      aria-label={`${unread} ungelesene Nachrichten`}
+                      className="community-unread rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
+                    >
+                      {unread > 9 ? "9+" : unread}
+                    </span>
+                  )}
               </button>
             );
           })}
@@ -365,50 +857,89 @@ export function LocalChatShell() {
         <div className="mb-1 px-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
           Direktnachrichten
         </div>
-        <div className="mb-2 flex gap-1">
-          <input
-            value={dmName}
-            onChange={(e) => setDmName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void onStartDm()}
-            placeholder="Name…"
-            className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-2 py-1.5 text-xs outline-none focus:border-primary"
-          />
-          <button
-            type="button"
-            onClick={() => void onStartDm()}
-            className="rounded-xl bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground"
-          >
-            DM
-          </button>
+        <div className="classic-only">
+          {mode === "local" ? (
+            dmComposer
+          ) : userId ? (
+            <FriendDmPicker userId={userId} onOpen={(id) => void onOpenFriendDm(id)} />
+          ) : null}
+        </div>
+        <div className="sport-only">
+          {mode === "local" ? (
+            <details
+              className="community-dm-details"
+              open={dmPickerOpen}
+              onToggle={(event) => setDmPickerOpen(event.currentTarget.open)}
+            >
+              <summary>Direktnachricht starten</summary>
+              {dmComposer}
+            </details>
+          ) : userId ? (
+            <details
+              className="community-dm-details"
+              open={dmPickerOpen}
+              onToggle={(event) => setDmPickerOpen(event.currentTarget.open)}
+            >
+              <summary>Mit Freund schreiben</summary>
+              <FriendDmPicker userId={userId} onOpen={(id) => void onOpenFriendDm(id)} />
+            </details>
+          ) : null}
         </div>
         <div className="space-y-1">
           {dms.length === 0 && (
-            <p className="px-2 py-2 text-xs text-muted-foreground">Noch keine DMs.</p>
+            <p className="px-2 py-2 text-xs text-muted-foreground">
+              Noch keine Direktnachrichten. Starte oben ein Gespräch.
+            </p>
           )}
-          {dms.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => {
-                setActive({ kind: "dm", id: d.id });
-                setMenuOpen(false);
-              }}
-              className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${
-                active?.kind === "dm" && active.id === d.id
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-secondary/60"
-              }`}
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold">
-                {initials(d.other_name)}
-              </span>
-              <span className="truncate font-medium">{d.other_name}</span>
-            </button>
-          ))}
+          {visibleDms.map((d) => {
+            const dmMessages =
+              userId && mode === "local"
+                ? loadChatStore(userId).messages.filter((m) => m.conversation_id === d.id)
+                : [];
+            const summary = chatRowSummary(dmMessages, userId ?? "", prefs?.lastRead[`dm:${d.id}`]);
+            return (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => {
+                  setActive({ kind: "dm", id: d.id });
+                  setDmPickerOpen(false);
+                  setMenuOpen(false);
+                  setMobileListOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                  active?.kind === "dm" && active.id === d.id
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-secondary/60"
+                }`}
+              >
+                <span className="community-room-avatar flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold">
+                  {initials(d.other_name)}
+                </span>
+                <span className="community-room-copy truncate font-medium">
+                  <strong className="truncate">{d.other_name}</strong>
+                  <small>{summary.latest?.content ?? "Noch keine Nachrichten"}</small>
+                </span>
+                {summary.latest && (
+                  <time className="community-room-time" dateTime={summary.latest.created_at}>
+                    {formatTime(summary.latest.created_at)}
+                  </time>
+                )}
+                {summary.unread > 0 && (
+                  <span
+                    className="community-unread"
+                    aria-label={`${summary.unread} ungelesene Nachrichten`}
+                  >
+                    {summary.unread > 9 ? "9+" : summary.unread}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="border-t border-border px-4 py-3">
+      <div className="community-account border-t border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
             {initials(myName)}
@@ -417,8 +948,12 @@ export function LocalChatShell() {
             <div className="truncate text-sm font-medium">{myName}</div>
             <div className="text-[10px] text-muted-foreground">{modeLabel}</div>
           </div>
-          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">
-            App
+          <Link
+            to="/"
+            aria-label="Zur Alo-Startseite"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            Startseite
           </Link>
         </div>
       </div>
@@ -426,25 +961,37 @@ export function LocalChatShell() {
   );
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-gradient-to-br from-background via-background to-primary/[0.03]">
-      <aside className="hidden w-80 shrink-0 border-r border-border/70 bg-card/20 md:block">{sidebar}</aside>
-
-      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <header
-          onPointerDown={wakeHeader}
-          className={`grid shrink-0 overflow-hidden border-b border-border bg-card/70 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] shadow-sm backdrop-blur transition-[grid-template-rows,padding,opacity] duration-500 ${
-            headerVisible ? "grid-rows-[1fr] pb-3 opacity-100" : "grid-rows-[0fr] pb-0 opacity-0"
-          }`}
-          aria-hidden={!headerVisible}
+    <div
+      className={`app-chat-shell sport-chat-app alo-tablet-nexus flex overflow-hidden bg-background ${mobileListOpen ? "community-show-list" : "community-show-conversation"}`}
+    >
+      <div id="nexus-mobile-chat-list" className="sport-only community-mobile-list">
+        {sidebar}
+        <button
+          type="button"
+          className="community-new-chat"
+          aria-label="Neuen Gruppenraum erstellen"
+          onClick={(event) => {
+            newRoomTriggerRef.current = event.currentTarget;
+            setNewRoomOpen(true);
+          }}
         >
-          <div className="min-h-0 flex items-center gap-2">
+          <MessageCirclePlus aria-hidden="true" />
+        </button>
+      </div>
+      <aside className="hidden w-72 shrink-0 border-r border-border md:block">{sidebar}</aside>
+
+      <section className="community-conversation flex min-w-0 flex-1 flex-col">
+        <header className="classic-only flex items-center gap-2 border-b border-border bg-card/50 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
           <button
             type="button"
-            className="rounded-xl border border-border px-2 py-1.5 text-sm md:hidden"
+            className="community-roomlist-switch flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-sm md:hidden"
             onClick={() => setMenuOpen(true)}
+            aria-label="Chatliste öffnen"
+            aria-expanded={menuOpen}
           >
             ☰
           </button>
+          <AloPageSidebarTrigger />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">{headerTitle}</div>
             <div className="text-[10px] text-muted-foreground">
@@ -452,6 +999,7 @@ export function LocalChatShell() {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {callButtons}
             {active?.kind === "room" && userId && (
               <>
                 <HeadBtn
@@ -473,14 +1021,91 @@ export function LocalChatShell() {
             </HeadBtn>
             <Link
               to="/"
+              aria-label="Zur Alo-Startseite"
               className="rounded-full border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
             >
-              App
+              Startseite
             </Link>
           </div>
-        </div>
         </header>
 
+        <div className="sport-only sport-chat-topbar border-b border-border/70 bg-card/70 px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur sm:px-6">
+          <div className="community-conversation-heading">
+            <button
+              type="button"
+              className="community-back"
+              onClick={() => setMobileListOpen(true)}
+              aria-label="Zur Chatliste"
+              aria-controls="nexus-mobile-chat-list"
+              aria-expanded={mobileListOpen}
+            >
+              <ArrowLeft aria-hidden="true" />
+            </button>
+            <span className="community-room-avatar">
+              <MessageCircle aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h1>{headerTitle}</h1>
+              <p>{mode === "local" ? "Lokal auf diesem Gerät" : "Nexus Chat · Cloud"}</p>
+            </div>
+            {callButtons}
+            <AloPageSidebarTrigger />
+            <Link
+              to="/"
+              aria-label="Zur Alo-Startseite"
+              title="Startseite"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/70 text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <House aria-hidden="true" />
+            </Link>
+          </div>
+          <details className="community-conversation-menu">
+            <summary aria-label="Chataktionen">
+              <MoreVertical aria-hidden="true" />
+            </summary>
+            <div className="community-conversation-actions">
+              {active?.kind === "room" && userId && (
+                <>
+                  <HeadBtn
+                    label="Favorit"
+                    onClick={() => setPrefs(toggleFavoriteRoom(userId, active.id))}
+                  >
+                    {prefs?.favoriteRoomIds.includes(active.id) ? "★" : "☆"}
+                  </HeadBtn>
+                  <HeadBtn label="Stumm" onClick={() => setPrefs(toggleMute(userId, active.id))}>
+                    {prefs?.mutedRoomIds.includes(active.id) ? "🔇" : "🔔"}
+                  </HeadBtn>
+                </>
+              )}
+              <HeadBtn label="Suche" onClick={() => setSearchOpen((v) => !v)}>
+                🔍
+              </HeadBtn>
+              <HeadBtn label="Export" onClick={() => void exportActive()}>
+                ⬇
+              </HeadBtn>
+              <Link
+                to="/"
+                aria-label="Zur Alo-Startseite"
+                className="rounded-xl border border-border/70 px-3 py-2 text-xs font-bold"
+              >
+                Startseite
+              </Link>
+            </div>
+          </details>
+        </div>
+        {active?.kind === "room" && userId && (
+          <RoomTools
+            key={active.id}
+            userId={userId}
+            roomId={active.id}
+            roomName={headerTitle}
+            mode={mode}
+          />
+        )}
+        <p className="border-b border-border px-4 py-1 text-[10px] text-muted-foreground">
+          Nachrichten: {mode === "supabase" ? "Cloud · Nexus" : "nur auf diesem Gerät"} · Entwurf:{" "}
+          {cloudEnabled(userId) ? getSyncState().message : "nur auf diesem Gerät"}
+        </p>
         {searchOpen && (
           <div className="border-b border-border bg-card/40 px-3 py-2">
             <input
@@ -488,6 +1113,7 @@ export function LocalChatShell() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Nachrichten durchsuchen…"
+              aria-label="Nachrichten durchsuchen"
               className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
             {search.trim() && (
@@ -548,39 +1174,7 @@ export function LocalChatShell() {
           </div>
         )}
 
-        {newRoomOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-4">
-              <div className="text-sm font-semibold">Neuer Raum</div>
-              <input
-                autoFocus
-                value={newRoomName}
-                onChange={(e) => setNewRoomName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && void onCreateRoom()}
-                placeholder="Name"
-                className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-              />
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setNewRoomOpen(false)}
-                  className="flex-1 rounded-xl border border-border py-2 text-sm"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void onCreateRoom()}
-                  className="flex-1 rounded-xl bg-primary py-2 text-sm font-semibold text-primary-foreground"
-                >
-                  Erstellen
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-4 pb-5 [scrollbar-width:thin]">
+        <div className="sport-chat-message-list flex-1 space-y-3 overflow-y-auto px-4 py-5 sm:px-6">
           {messages.map((m, i) => {
             const own = m.user_id === userId;
             const prev = messages[i - 1];
@@ -590,20 +1184,21 @@ export function LocalChatShell() {
                 ? "System"
                 : own
                   ? myName
-                  : dms.find((d) => d.other_id === m.user_id)?.other_name || "Mitglied";
-            const reply = m.reply_to_id
-              ? messages.find((x) => x.id === m.reply_to_id)
-              : null;
+                  : dms.find((d) => d.other_id === m.user_id)?.other_name ||
+                    names[m.user_id] ||
+                    "Mitglied";
+            const reply = m.reply_to_id ? messages.find((x) => x.id === m.reply_to_id) : null;
             const msgReactions = reactions.filter((r) => r.message_id === m.id);
-            const grouped = msgReactions.reduce<
-              Record<string, { count: number; mine: boolean }>
-            >((acc, r) => {
-              const e = acc[r.emoji] ?? { count: 0, mine: false };
-              e.count += 1;
-              if (r.user_id === userId) e.mine = true;
-              acc[r.emoji] = e;
-              return acc;
-            }, {});
+            const grouped = msgReactions.reduce<Record<string, { count: number; mine: boolean }>>(
+              (acc, r) => {
+                const e = acc[r.emoji] ?? { count: 0, mine: false };
+                e.count += 1;
+                if (r.user_id === userId) e.mine = true;
+                acc[r.emoji] = e;
+                return acc;
+              },
+              {},
+            );
             const isPinned = prefs?.pinnedMessageIds.includes(m.id);
 
             return (
@@ -620,7 +1215,7 @@ export function LocalChatShell() {
                   </div>
                 )}
                 <div
-                  className={`max-w-[85%] rounded-3xl px-4 py-3 text-sm shadow-md shadow-black/5 transition ${
+                  className={`sport-chat-bubble max-w-[85%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
                     own
                       ? "rounded-br-sm bg-primary text-primary-foreground"
                       : m.user_id === "system"
@@ -634,10 +1229,15 @@ export function LocalChatShell() {
                       <div className="truncate">{reply.content}</div>
                     </div>
                   )}
-                  <div className="whitespace-pre-wrap break-words">{m.content}</div>
-                  {m.edited_at && (
-                    <div className="mt-0.5 text-[10px] opacity-60">(bearbeitet)</div>
+                  {m.attachment_url && (
+                    <MessageImage
+                      url={imageUrls[m.attachment_url]}
+                      name={m.attachment_name}
+                      onOpen={(url, name) => setLightbox({ url, name })}
+                    />
                   )}
+                  {m.content && <div className="whitespace-pre-wrap break-words">{m.content}</div>}
+                  {m.edited_at && <div className="mt-0.5 text-[10px] opacity-60">(bearbeitet)</div>}
                 </div>
 
                 {Object.keys(grouped).length > 0 && (
@@ -652,10 +1252,8 @@ export function LocalChatShell() {
                             refresh(userId, active),
                           );
                         }}
-                        className={`rounded-full border px-2 py-0.5 text-xs ${
-                          info.mine
-                            ? "border-primary bg-primary/15"
-                            : "border-border bg-card/50"
+                        className={`community-reaction-button rounded-full border px-2 py-0.5 text-xs ${
+                          info.mine ? "border-primary bg-primary/15" : "border-border bg-card/50"
                         }`}
                       >
                         {emoji} {info.count}
@@ -664,69 +1262,84 @@ export function LocalChatShell() {
                   </div>
                 )}
 
-                <div className={`flex flex-wrap gap-1 px-1 ${own ? "justify-end" : ""}`}>
-                  {QUICK_EMOJIS.slice(0, 4).map((e) => (
-                    <button
-                      key={e}
-                      type="button"
-                      className="text-xs opacity-40 transition hover:opacity-100"
-                      onClick={() => {
-                        if (!userId || !active) return;
-                        void reactToMessage(userId, m.id, e).then(() =>
-                          refresh(userId, active),
-                        );
-                      }}
-                    >
-                      {e}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    className="text-[10px] text-muted-foreground"
-                    onClick={() => setReplyTo(m)}
-                  >
-                    Antwort
-                  </button>
-                  {userId && (
+                <details className="alo-message-actions">
+                  <summary>Nachrichtenaktionen</summary>
+                  <div className={`flex flex-wrap gap-1 px-1 ${own ? "justify-end" : ""}`}>
+                    {QUICK_EMOJIS.slice(0, 4).map((e) => (
+                      <button
+                        key={e}
+                        type="button"
+                        className="text-xs opacity-40 transition hover:opacity-100"
+                        onClick={() => {
+                          if (!userId || !active) return;
+                          void reactToMessage(userId, m.id, e).then(() => refresh(userId, active));
+                        }}
+                      >
+                        {e}
+                      </button>
+                    ))}
                     <button
                       type="button"
                       className="text-[10px] text-muted-foreground"
-                      onClick={() => setPrefs(togglePinMessage(userId, m.id))}
+                      onClick={() => setReplyTo(m)}
                     >
-                      {isPinned ? "Lösen" : "Pin"}
+                      Antwort
                     </button>
-                  )}
-                  {own && m.user_id !== "system" && (
-                    <>
+                    {userId && (
                       <button
                         type="button"
                         className="text-[10px] text-muted-foreground"
-                        onClick={() => {
-                          const next = window.prompt("Bearbeiten", m.content);
-                          if (next && userId && active) {
-                            void editChatMessage(userId, m.id, next).then(() =>
+                        onClick={() => setPrefs(togglePinMessage(userId, m.id))}
+                      >
+                        {isPinned ? "Lösen" : "Pin"}
+                      </button>
+                    )}
+                    {userId && (
+                      <ContentActions
+                        userId={userId}
+                        text={m.content}
+                        title={`Nachricht aus ${headerTitle}`}
+                        source="Nexus"
+                      />
+                    )}
+                    {own && m.user_id !== "system" && (
+                      <>
+                        <button
+                          type="button"
+                          className="text-[10px] text-muted-foreground"
+                          onClick={() => {
+                            const next = window.prompt("Bearbeiten", m.content);
+                            if (next && userId && active) {
+                              void editChatMessage(userId, m.id, next).then(() =>
+                                refresh(userId, active),
+                              );
+                            }
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="text-[10px] text-destructive"
+                          onClick={() => {
+                            if (!userId || !active) return;
+                            if (
+                              !window.confirm(
+                                `Diese Nachricht ${mode === "supabase" ? "in der Cloud für alle Raumteilnehmer" : "auf diesem Gerät"} löschen? Gespeicherte Kopien in Sammlungen bleiben erhalten.`,
+                              )
+                            )
+                              return;
+                            void deleteChatMessage(userId, m.id).then(() =>
                               refresh(userId, active),
                             );
-                          }
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="text-[10px] text-destructive"
-                        onClick={() => {
-                          if (!userId || !active) return;
-                          void deleteChatMessage(userId, m.id).then(() =>
-                            refresh(userId, active),
-                          );
-                        }}
-                      >
-                        Löschen
-                      </button>
-                    </>
-                  )}
-                </div>
+                          }}
+                        >
+                          Löschen
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </details>
               </div>
             );
           })}
@@ -738,44 +1351,57 @@ export function LocalChatShell() {
             <span className="min-w-0 flex-1 truncate">
               Antwort auf: <strong>{replyTo.content}</strong>
             </span>
-            <button type="button" onClick={() => setReplyTo(null)} className="text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => setReplyTo(null)}
+              className="text-muted-foreground"
+            >
               ×
             </button>
           </div>
         )}
 
         {/* Quick replies + workout share */}
-        <div className="flex gap-2 overflow-x-auto border-t border-border/70 bg-card/50 px-3 py-2.5 backdrop-blur">
-          {QUICK_REPLIES.map((q) => (
+        <details className="alo-chat-quick-options">
+          <summary>Schnellantworten & Training teilen</summary>
+          <div className="community-quick-replies flex flex-wrap gap-2">
+            {QUICK_REPLIES.map((q) => (
+              <button
+                key={q.id}
+                type="button"
+                onClick={() => void onSend(q.text)}
+                className="shrink-0 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[10px] font-medium"
+              >
+                {q.label}
+              </button>
+            ))}
             <button
-              key={q.id}
               type="button"
-              onClick={() => void onSend(q.text)}
-              className="min-h-10 shrink-0 rounded-full border border-border bg-background/60 px-3 py-2 text-xs font-medium transition active:scale-95"
+              disabled={todayReps <= 0}
+              title={
+                todayReps > 0
+                  ? "Erfasste Wiederholungen teilen"
+                  : "Noch keine Wiederholungen erfasst"
+              }
+              onClick={() => void onSend(workoutShareTemplate(todayReps))}
+              className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary"
             >
-              {q.label}
+              🏋️ Workout teilen
             </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => void onSend(workoutShareTemplate(todayReps || 20))}
-            className="min-h-10 shrink-0 rounded-full border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary transition active:scale-95"
-          >
-            🏋️ Workout teilen
-          </button>
-        </div>
+          </div>
+        </details>
 
         <form
           onSubmit={(e) => {
             e.preventDefault();
             void onSend();
           }}
-          className="flex shrink-0 items-end gap-2 border-t border-border/70 bg-card/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_30px_-18px_hsl(var(--foreground))] backdrop-blur"
+          className="classic-only community-chat-composer flex items-end gap-2 border-t border-border bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         >
           <button
             type="button"
             onClick={toggleVoice}
-            className={`flex size-11 shrink-0 items-center justify-center rounded-xl border text-sm transition active:scale-95 ${
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm ${
               listening
                 ? "border-primary bg-primary/20 text-primary"
                 : "border-border bg-secondary/40"
@@ -784,9 +1410,71 @@ export function LocalChatShell() {
           >
             🎤
           </button>
+          <AttachImageButton
+            enabled={mode === "supabase" && !!active}
+            busy={uploading || sending}
+            onPick={(file) => void onAttachImage(file)}
+          />
           <textarea
             value={draft}
             onChange={(e) => {
+              draftRef.current = e.target.value;
+              setDraft(e.target.value);
+              if (userId && active) {
+                try {
+                  saveDraft(userId, active.kind, active.id, e.target.value);
+                } catch {
+                  flash("Entwurf nicht gespeichert. Gerätespeicher prüfen.");
+                }
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void onSend();
+              }
+            }}
+            placeholder={active ? "Nachricht…" : "Raum wählen…"}
+            aria-label="Nachricht in Nexus Chat"
+            rows={1}
+            disabled={!active}
+            className="min-w-0 flex-1 resize-none rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-50"
+            style={{ maxHeight: 120 }}
+          />
+          <button
+            type="submit"
+            disabled={!active || !draft.trim() || sending}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-40"
+          >
+            ↑
+          </button>
+        </form>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onSend();
+          }}
+          className="sport-only sport-chat-composer flex items-end gap-3 border-t border-border/70 bg-card/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
+        >
+          <button
+            type="button"
+            onClick={toggleVoice}
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
+            aria-label="Spracheingabe"
+          >
+            <Mic className="h-5 w-5" aria-hidden="true" />
+          </button>
+          <AttachImageButton
+            size="lg"
+            enabled={mode === "supabase" && !!active}
+            busy={uploading || sending}
+            onPick={(file) => void onAttachImage(file)}
+          />
+          <textarea
+            value={draft}
+            onChange={(e) => {
+              draftRef.current = e.target.value;
               setDraft(e.target.value);
               if (userId && active) saveDraft(userId, active.kind, active.id, e.target.value);
             }}
@@ -796,27 +1484,73 @@ export function LocalChatShell() {
                 void onSend();
               }
             }}
-            placeholder={active ? "Nachricht…" : "Raum wählen…"}
+            placeholder={replyTo ? "Antwort…" : "Nachricht…"}
+            aria-label="Nachricht in Nexus Chat"
             rows={1}
             disabled={!active}
-            className="min-w-0 flex-1 resize-none rounded-2xl border border-border/70 bg-background/65 px-4 py-3 text-base outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+            className="min-h-12 min-w-0 flex-1 resize-none rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
             style={{ maxHeight: 120 }}
           />
           <button
             type="submit"
-            disabled={!active || !draft.trim()}
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-sm transition active:scale-95 disabled:opacity-40"
+            disabled={!active || !draft.trim() || sending}
+            className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
           >
-            ↑
+            <span className="sr-only">Nachricht senden</span>
+            <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
           </button>
         </form>
-
+        <ImageLightbox image={lightbox} onClose={() => setLightbox(null)} />
         {toast && (
           <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-xs shadow-lg">
             {toast}
           </div>
         )}
       </section>
+      {newRoomOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-room-title"
+            ref={newRoomDialogRef}
+            className="w-full max-w-sm rounded-2xl border border-border bg-card p-4"
+          >
+            <h2 id="new-room-title" className="text-sm font-semibold">
+              Neuer Raum
+            </h2>
+            <input
+              autoFocus
+              ref={newRoomInputRef}
+              value={newRoomName}
+              onChange={(e) => setNewRoomName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && void onCreateRoom()}
+              placeholder="Name"
+              aria-label="Name des neuen Raums"
+              className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setNewRoomOpen(false);
+                  newRoomTriggerRef.current?.focus();
+                }}
+                className="flex-1 rounded-xl border border-border py-2 text-sm"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={() => void onCreateRoom()}
+                className="flex-1 rounded-xl bg-primary py-2 text-sm font-semibold text-primary-foreground"
+              >
+                Erstellen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -826,7 +1560,8 @@ type SpeechRec = {
   interimResults: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((ev: { results?: { [i: number]: { [j: number]: { transcript?: string } } } }) => void) | null;
+  onresult:
+    ((ev: { results?: { [i: number]: { [j: number]: { transcript?: string } } } }) => void) | null;
   onerror: (() => void) | null;
   onend: (() => void) | null;
 };
@@ -845,7 +1580,7 @@ function HeadBtn({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex size-10 items-center justify-center rounded-xl border border-border bg-background/40 text-sm transition active:scale-95"
+      className="flex h-8 w-8 items-center justify-center rounded-xl border border-border text-sm"
     >
       {children}
     </button>

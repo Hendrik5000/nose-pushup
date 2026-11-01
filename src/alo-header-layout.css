@@ -1,0 +1,23 @@
+/* The body owns the safe-area inset; authenticated pages reserve no Alo header row. */
+html:root .authenticated-shell.alo-no-global-header {
+  padding-top: 0 !important;
+  --homebar-top-space: 0px !important;
+  --alo-header-space: 0px !important;
+}
+html:root[data-design-style][data-navigation-layout][data-navigation-visible]
+  .authenticated-shell.alo-no-global-header {
+  padding-top: 0 !important;
+  --homebar-top-space: 0px !important;
+  --alo-header-space: 0px !important;
+}
+html:root .authenticated-shell.alo-no-global-header > .alo-module-surface {
+  padding-top: 0;
+}
+html[data-module-swipe] .authenticated-shell.alo-no-global-header > .alo-module-surface {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:root .authenticated-shell.alo-no-global-header > .alo-module-surface {
+    transition: none;
+  }
+}

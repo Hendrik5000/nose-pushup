@@ -1,21 +1,31 @@
 /** Build a compact context pack from Nose-Pushup + Nexus Chat for Super-AI. */
 
 import { supabase } from "@/integrations/supabase/client";
-import { loadChatStore } from "@/lib/local-chat";
+import { loadMessages, loadRoomsForUser } from "@/lib/chat-backend";
+import { getMiraGrants, type MiraGrants } from "@/lib/alo-store";
+import { getTrainingWeekBounds, sumTrainingWeekReps } from "@/lib/training-dates";
 
 export type AppContextPack = {
   profile: Record<string, unknown> | null;
-  weekReps: number;
+  weekReps: number | null;
+  weeklyWorkoutCount: number | null;
+  dailyStatsDays: number;
   recentWorkouts: Array<{ exercise_id: string | null; count: number; created_at: string }>;
-  health: Array<{ day: string; steps: number; sleep_min: number; active_kcal: number }>;
+  health: Array<{
+    day: string;
+    steps: number | null;
+    sleep_min: number | null;
+    active_kcal: number | null;
+  }>;
   chatRooms: Array<{ name: string; description?: string | null }>;
   recentChat: Array<{ room?: string; content: string; created_at: string }>;
 };
 
-export async function buildAppContext(userId: string): Promise<AppContextPack> {
+async function buildTrainingContext(userId: string): Promise<AppContextPack> {
   const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
 
-  const [{ data: profile }, { data: stats }, { data: workouts }, { data: health }, roomsRes] =
+  const week = getTrainingWeekBounds();
+  const [profileResult, statsResult, workoutsResult, healthResult, weeklyWorkouts] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -26,9 +36,13 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
         .maybeSingle(),
       supabase
         .from("daily_stats")
-        .select("day, total_reps")
+        // Aggregates can drift when legacy database triggers execute twice.
+        // Use this table only for entry coverage, never as a second rep total.
+        .select("day")
         .eq("user_id", userId)
-        .gte("day", cutoff),
+        .gte("day", cutoff)
+        .order("day", { ascending: false })
+        .limit(14),
       supabase
         .from("workouts")
         .select("exercise_id, count, created_at")
@@ -42,88 +56,124 @@ export async function buildAppContext(userId: string): Promise<AppContextPack> {
         .gte("day", cutoff)
         .order("day", { ascending: false })
         .limit(7),
-      supabase.from("rooms" as never).select("name, description" as never).limit(10),
+      supabase
+        .from("workouts")
+        .select("count, created_at")
+        .eq("user_id", userId)
+        .eq("exercise_id", "pushup")
+        .gte("created_at", week.startInclusive)
+        .lt("created_at", week.endExclusive),
     ]);
 
-  const days = (stats ?? []) as Array<{ day: string; total_reps: number }>;
-  const weekReps = days
-    .filter((d) => +new Date(d.day) >= Date.now() - 7 * 86400000)
-    .reduce((s, d) => s + (d.total_reps ?? 0), 0);
-
-  let chatRooms: AppContextPack["chatRooms"] = [];
-  if (!roomsRes.error && roomsRes.data) {
-    chatRooms = roomsRes.data as unknown as AppContextPack["chatRooms"];
-  } else {
-    const local = loadChatStore(userId);
-    chatRooms = local.rooms.map((r) => ({ name: r.name, description: r.description }));
+  if (
+    [profileResult, statsResult, workoutsResult, healthResult, weeklyWorkouts].some(
+      (result) => result.error,
+    )
+  ) {
+    throw new Error(
+      "Freigegebene Trainings-/Gesundheitsdaten konnten nicht vollständig geladen werden. Es wurden keine App-Daten an Mira gesendet. Bitte erneut versuchen oder Freigabe widerrufen.",
+    );
   }
-
-  let recentChat: AppContextPack["recentChat"] = [];
-  try {
-    const { data: msgs } = await supabase
-      .from("messages" as never)
-      .select("content, created_at, room_id" as never)
-      .eq("user_id" as never, userId as never)
-      .order("created_at" as never, { ascending: false })
-      .limit(15);
-    if (msgs) {
-      recentChat = (msgs as unknown as Array<{ content: string; created_at: string }>).map(
-        (m) => ({
-          content: String(m.content).slice(0, 200),
-          created_at: m.created_at,
-        }),
-      );
-    }
-  } catch {
-    /* tables may not exist yet */
-  }
-  if (recentChat.length === 0) {
-    const local = loadChatStore(userId);
-    recentChat = local.messages
-      .slice(-15)
-      .reverse()
-      .map((m) => ({
-        content: m.content.slice(0, 200),
-        created_at: m.created_at,
-      }));
-  }
+  const profile = profileResult.data;
+  const stats = statsResult.data;
+  const workouts = workoutsResult.data;
+  const health = healthResult.data;
+  const days = (stats ?? []) as Array<{ day: string }>;
+  const weekReps = weeklyWorkouts.error ? null : sumTrainingWeekReps(weeklyWorkouts.data ?? []);
 
   return {
     profile: (profile as Record<string, unknown> | null) ?? null,
     weekReps,
+    weeklyWorkoutCount: weeklyWorkouts.error ? null : (weeklyWorkouts.data?.length ?? 0),
+    dailyStatsDays: days.length,
     recentWorkouts: (workouts ?? []) as AppContextPack["recentWorkouts"],
     health: (health ?? []) as AppContextPack["health"],
-    chatRooms,
-    recentChat,
+    chatRooms: [],
+    recentChat: [],
   };
+}
+
+/** No training or chat reads occur without the corresponding explicit grant. */
+export async function buildAppContext(
+  userId: string,
+  grants: MiraGrants = getMiraGrants(userId),
+): Promise<AppContextPack> {
+  const context: AppContextPack = grants.training
+    ? await buildTrainingContext(userId)
+    : {
+        profile: null,
+        weekReps: null,
+        weeklyWorkoutCount: null,
+        dailyStatsDays: 0,
+        recentWorkouts: [],
+        health: [],
+        chatRooms: [],
+        recentChat: [],
+      };
+  if (grants.rooms.length) {
+    const visible = (await loadRoomsForUser(userId)).filter((room) =>
+      grants.rooms.includes(room.id),
+    );
+    context.chatRooms = visible.map((room) => ({ name: room.name, description: room.description }));
+    for (const room of visible) {
+      const { messages } = await loadMessages(
+        userId,
+        { kind: "room", id: room.id },
+        { strict: true },
+      );
+      context.recentChat.push(
+        ...messages
+          .filter((m) => m.user_id !== "system")
+          .slice(-20)
+          .map((m) => ({
+            room: room.name,
+            content: m.content.slice(0, 1000),
+            created_at: m.created_at,
+          })),
+      );
+    }
+    context.recentChat = context.recentChat
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, 40);
+  }
+  return context;
 }
 
 export function contextToSystemBlock(ctx: AppContextPack): string {
   const p = ctx.profile ?? {};
-  const name = (p.display_name as string) || "Athlet";
+  const name = (p.display_name as string) || "nicht angegeben";
   const by = p.birth_year as number | undefined;
   const age = by ? new Date().getFullYear() - by : null;
-  return `Du bist Super-AI in der Nose-Pushup / Nexus-Chat Super-App. Antworte auf Deutsch, knapp und hilfreich.
+  return `Du bist Mira, die allgemeine KI in Alo (All in one). Nose-Pushup und Nexus Chat sind optionale verbundene Bereiche, nicht deine Hauptaufgabe. Nutze diese freigegebenen Daten nur, wenn sie für die Frage relevant sind. Antworte auf Deutsch, klar und hilfreich.
+
+DATENREGELN:
+- Verwende ausschließlich die Fakten in diesem Kontext und den Nachrichten des Nutzers. Erfinde keine Workouts, Health-Werte, Vorlieben, Verletzungen oder Vorgeschichte.
+- „keine Einträge“ bedeutet, dass im geladenen Zeitraum keine Datensätze vorliegen; es bedeutet nicht, dass der Wert null war. Fehlende Werte sind unbekannt.
+- Fehlt für eine sichere oder persönliche Trainingsempfehlung wichtiger Kontext (z. B. Schmerzen/Verletzungen, verfügbares Equipment, Erfahrungsstand oder Zeit), stelle zuerst eine gezielte Rückfrage statt ihn anzunehmen.
+- Bei einem einzelnen konkreten Trainingsvorschlag gib zusätzlich eine strukturierte Planvorschau zurück. Antworte dafür als JSON: {"reply":"kurze Erklärung","plan":{"title":"...","exercise_id":"pushup|situp|squat|plank|burpee","sets":3,"reps":8,"rest_s":60,"rationale":"kurze Begründung"}}. Alle Planwerte müssen explizit und realistisch sein. Wenn der nötige Kontext fehlt, frage nach und lasse plan weg. Bei anderen Anliegen antworte normal als Text.
 
 NUTZER:
 - Name: ${name}
-- Level/XP: ${p.level ?? 1} / ${p.xp ?? 0}
-- Streak: ${p.current_streak ?? 0} (max ${p.longest_streak ?? 0})
-- Best Push-Ups: ${p.best_count ?? 0}
-- Tagesziel: ${p.daily_goal ?? 50}
+- Level/XP: ${p.level ?? "nicht hinterlegt"} / ${p.xp ?? "nicht hinterlegt"}
+- Streak: ${p.current_streak ?? "nicht hinterlegt"} (max ${p.longest_streak ?? "nicht hinterlegt"})
+- Best Push-Ups: ${p.best_count ?? "nicht hinterlegt"}
+- Tagesziel: ${p.daily_goal ?? "nicht hinterlegt"}
 - Körper: Alter ${age ?? "?"}, ${p.height_cm ?? "?"} cm, ${p.weight_kg ?? "?"} kg, ${p.sex ?? "?"}
-- Reps 7 Tage: ${ctx.weekReps}
-- Letztes Training: ${p.last_workout_date ?? "nie"}
+- Liegestütze diese Kalenderwoche (lokal ab Montag): ${ctx.weekReps == null ? "nicht verfügbar" : ctx.weeklyWorkoutCount === 0 ? "noch keine gespeicherten Workouts" : ctx.weekReps}
+- Letztes Training: ${p.last_workout_date ?? "nicht hinterlegt"}
+
+DATENABDECKUNG:
+${ctx.dailyStatsDays} Tage mit Statistik-Einträgen im geladenen Zeitraum. Diese Anzahl ist kein Trainingsumfang. Wiederholungen ausschließlich aus den gespeicherten Trainings und ihrer Wochensumme ableiten; keine weiteren aggregierten Tageszahlen annehmen.
 
 LETZTE WORKOUTS:
-${ctx.recentWorkouts.map((w) => `- ${w.created_at?.slice(0, 10)} ${w.exercise_id ?? "?"} × ${w.count}`).join("\n") || "(keine)"}
+${ctx.recentWorkouts.map((w) => `- ${w.created_at?.slice(0, 10)} ${w.exercise_id ?? "unbekannt"} × ${w.count}`).join("\n") || "(keine Einträge im geladenen Zeitraum)"}
 
 HEALTH (7d):
-${ctx.health.map((h) => `- ${h.day}: ${h.steps} steps, ${(h.sleep_min / 60).toFixed(1)}h sleep`).join("\n") || "(keine)"}
+${ctx.health.map((h) => `- ${h.day}: ${h.steps ?? "unbekannt"} Schritte, ${h.sleep_min == null ? "unbekannt" : `${(h.sleep_min / 60).toFixed(1)} h`} Schlaf, ${h.active_kcal ?? "unbekannt"} aktive kcal`).join("\n") || "(keine Einträge im geladenen Zeitraum)"}
 
 CHAT-RÄUME: ${ctx.chatRooms.map((r) => r.name).join(", ") || "(keine)"}
-LETZTE EIGENE CHAT-NACHRICHTEN:
-${ctx.recentChat.map((m) => `- ${m.content}`).join("\n") || "(keine)"}
+NACHRICHTEN AUS AUSGEWÄHLTEN NEXUS-RÄUMEN:
+${ctx.recentChat.map((m) => `- [${m.room ?? "Raum"}] ${m.content}`).join("\n") || "(keine)"}
 
 Du darfst Trainingspläne, Form-Tipps, Recovery und Chat-Zusammenfassungen geben. Keine medizinischen Diagnosen.`;
 }

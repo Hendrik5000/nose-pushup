@@ -4,17 +4,24 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { createClub, joinClubByCode } from "@/lib/club.functions";
+import { AloHomeLink } from "@/components/AloHomeLink";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { Flag, Users, Trophy, Send, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/clubs")({
   head: () => ({
     meta: [
-      { title: "Clubs — Nosy Push-Ups" },
+      { title: "Gemeinschaft — Alo" },
       {
         name: "description",
-        content: "Gründe einen Club, erreicht gemeinsam das Wochenziel und klettert in der Club-Liga nach oben.",
+        content:
+          "Gründe einen Club, erreicht gemeinsam das Wochenziel und klettert in der Club-Liga nach oben.",
       },
-      { property: "og:title", content: "Clubs — Nosy Push-Ups" },
-      { property: "og:description", content: "Gemeinsames Wochenziel, Club-Feed und Liga-Rangliste." },
+      { property: "og:title", content: "Gemeinschaft — Alo" },
+      {
+        property: "og:description",
+        content: "Gemeinsames Wochenziel, Club-Feed und Liga-Rangliste.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -112,7 +119,11 @@ function ClubsPage() {
     }
 
     const [{ data: c }, { data: stats }, { data: feed }] = await Promise.all([
-      supabase.from("clubs" as never).select("*").eq("id", clubId).maybeSingle(),
+      supabase
+        .from("clubs" as never)
+        .select("*")
+        .eq("id", clubId)
+        .maybeSingle(),
       supabase.rpc("club_week_stats" as never, { _club_id: clubId } as never),
       supabase
         .from("club_posts" as never)
@@ -178,40 +189,72 @@ function ClubsPage() {
   const handleLeave = async () => {
     if (!club || !userId) return;
     setBusy("leave");
-    await supabase.from("club_members" as never).delete().eq("club_id", club.id).eq("user_id", userId);
+    await supabase
+      .from("club_members" as never)
+      .delete()
+      .eq("club_id", club.id)
+      .eq("user_id", userId);
     await load();
     setBusy(null);
   };
 
   const totalReps = members.reduce((sum, m) => sum + (m.reps ?? 0), 0);
-  const goalPct = club ? Math.min(100, Math.round((totalReps / Math.max(1, club.weekly_goal)) * 100)) : 0;
+  const goalPct = club
+    ? Math.min(100, Math.round((totalReps / Math.max(1, club.weekly_goal)) * 100))
+    : 0;
   const tier = tierFor(totalReps);
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
-      <header className="flex items-center justify-between">
-        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Zurück
-        </Link>
+      <header className="classic-only flex items-center justify-between">
+        <AloHomeLink className="px-2 text-xs" />
         <span className="text-sm font-medium">🛡️ Clubs</span>
       </header>
 
+      <div className="sport-only mt-6">
+        <SportPageIntro
+          eyebrow="Teamtraining · Clubs"
+          title={club?.name ?? "Stärker zusammen."}
+          description={
+            club
+              ? club.motto ||
+                "Trainiert gemeinsam, erreicht euer Wochenziel und haltet den Teamfortschritt im Blick."
+              : "Gründe einen Club oder tritt einem Team bei – echte Mitglieder, gemeinsame Ziele."
+          }
+        >
+          <AloHomeLink />
+          <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+            <Users className="h-4 w-4" /> {club ? `${members.length} Athleten` : "Team-Modus"}
+          </div>
+        </SportPageIntro>
+      </div>
       {loading ? (
         <p className="mt-10 text-center text-sm text-muted-foreground">Lade Clubs…</p>
       ) : club ? (
         <>
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="01">Wochenziel & Teamstatus</SportSectionLabel>
+          </div>
           <section
             className="mt-6 rounded-3xl border p-5 backdrop-blur"
-            style={{ borderColor: `${club.color}66`, background: `linear-gradient(140deg, ${club.color}22, transparent)` }}
+            style={{
+              borderColor: `${club.color}66`,
+              background: `linear-gradient(140deg, ${club.color}22, transparent)`,
+            }}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">{club.name}</h1>
-                {club.motto && <p className="mt-1 text-sm text-muted-foreground">{club.motto}</p>}
+                <h1 className="classic-only text-2xl font-bold tracking-tight">{club.name}</h1>
+                {club.motto && (
+                  <p className="classic-only mt-1 text-sm text-muted-foreground">{club.motto}</p>
+                )}
               </div>
               <div className="text-right">
-                <div className="text-2xl">{tier.icon}</div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{tier.label}</div>
+                <div className="classic-only text-2xl">{tier.icon}</div>
+                <Flag className="sport-only ml-auto h-6 w-6 text-primary" />
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  {tier.label}
+                </div>
               </div>
             </div>
 
@@ -229,16 +272,46 @@ function ClubsPage() {
                 />
               </div>
               {goalPct >= 100 && (
-                <p className="mt-2 text-xs font-semibold text-primary">🎉 Wochenziel erreicht!</p>
+                <p className="mt-2 text-xs font-semibold text-primary">
+                  <span className="classic-only">🎉 </span>Wochenziel erreicht!
+                </p>
               )}
             </div>
 
             <div className="mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
               <span>Einladungscode</span>
-              <span className="font-mono text-sm tracking-[0.3em] text-foreground">{club.code}</span>
+              <span className="font-mono text-sm tracking-[0.3em] text-foreground">
+                {club.code}
+              </span>
             </div>
           </section>
 
+          {members.length > 0 && (
+            <section className="sport-only mt-7">
+              <SportSectionLabel number="02">Team-Podium · Wochenleistung</SportSectionLabel>
+              <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {members.slice(0, 3).map((m, i) => (
+                  <li key={m.user_id} className="rounded-2xl border border-border bg-card p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                        Platz {i + 1}
+                      </span>
+                      <Trophy className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="mt-4 truncate text-base font-bold">
+                      {m.display_name ?? "Athlet"}
+                    </div>
+                    <div className="mt-1 text-sm font-semibold tabular-nums text-primary">
+                      {m.reps} Wiederholungen
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="03">Team-Rangliste</SportSectionLabel>
+          </div>
           <section className="mt-6">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Mitglieder diese Woche
@@ -249,7 +322,9 @@ function ClubsPage() {
                   key={m.user_id}
                   className="flex items-center gap-3 rounded-2xl border border-border bg-card/50 px-4 py-3"
                 >
-                  <span className="w-5 text-sm font-semibold tabular-nums text-muted-foreground">{i + 1}</span>
+                  <span className="w-5 text-sm font-semibold tabular-nums text-muted-foreground">
+                    {i + 1}
+                  </span>
                   <div className="flex-1">
                     <div className="text-sm font-medium">{m.display_name ?? "Athlet"}</div>
                     <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -262,6 +337,9 @@ function ClubsPage() {
             </ul>
           </section>
 
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="03">Club-Feed</SportSectionLabel>
+          </div>
           <section className="mt-6">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Club-Feed
@@ -279,7 +357,12 @@ function ClubsPage() {
                 disabled={busy !== null || !message.trim()}
                 className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
-                Senden
+                <>
+                  <span className="classic-only">Senden</span>
+                  <span className="sport-only flex items-center gap-1">
+                    Senden <Send className="h-3.5 w-3.5" />
+                  </span>
+                </>
               </button>
             </div>
             <ul className="mt-3 space-y-2">
@@ -287,7 +370,10 @@ function ClubsPage() {
                 <li key={p.id} className="rounded-2xl border border-border bg-card/50 px-4 py-3">
                   <div className="text-sm">{p.body}</div>
                   <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    {new Date(p.created_at).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}
+                    {new Date(p.created_at).toLocaleString("de-DE", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
                   </div>
                 </li>
               ))}
@@ -304,11 +390,19 @@ function ClubsPage() {
             disabled={busy !== null}
             className="mt-6 w-full rounded-2xl border border-border bg-secondary/60 px-4 py-3 text-sm font-medium text-muted-foreground disabled:opacity-50"
           >
-            Club verlassen
+            <>
+              <span className="classic-only">Club verlassen</span>
+              <span className="sport-only inline-flex items-center gap-2">
+                Club verlassen <LogOut className="h-4 w-4" />
+              </span>
+            </>
           </button>
         </>
       ) : (
         <>
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="01">Club aufstellen</SportSectionLabel>
+          </div>
           <section className="mt-6 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 to-card/60 p-5 backdrop-blur">
             <h1 className="text-2xl font-bold tracking-tight">Club gründen</h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -352,17 +446,20 @@ function ClubsPage() {
             </button>
           </section>
 
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="02">Mit Einladung beitreten</SportSectionLabel>
+          </div>
           <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
             <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Club beitreten
             </h2>
-            <div className="mt-3 flex gap-2">
+            <div className="club-join-row mt-3 flex min-w-0 gap-2">
               <input
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="CODE"
                 maxLength={8}
-                className="flex-1 rounded-xl border border-border bg-background/60 px-4 py-3 text-center font-mono text-lg uppercase tracking-[0.4em] focus:border-primary focus:outline-none"
+                className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-4 py-3 text-center font-mono text-lg uppercase tracking-[0.4em] focus:border-primary focus:outline-none"
               />
               <button
                 onClick={handleJoin}
@@ -391,10 +488,14 @@ function ClubsPage() {
             <li
               key={row.club_id}
               className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${
-                club?.id === row.club_id ? "border-primary/50 bg-primary/10" : "border-border bg-card/50"
+                club?.id === row.club_id
+                  ? "border-primary/50 bg-primary/10"
+                  : "border-border bg-card/50"
               }`}
             >
-              <span className="w-5 text-sm font-semibold tabular-nums text-muted-foreground">{i + 1}</span>
+              <span className="w-5 text-sm font-semibold tabular-nums text-muted-foreground">
+                {i + 1}
+              </span>
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: row.color }} />
               <div className="flex-1">
                 <div className="text-sm font-medium">{row.name}</div>
@@ -402,7 +503,9 @@ function ClubsPage() {
                   {row.members} Mitglieder · {tierFor(row.week_reps).label}
                 </div>
               </div>
-              <span className="text-lg font-semibold tabular-nums text-primary">{row.week_reps}</span>
+              <span className="text-lg font-semibold tabular-nums text-primary">
+                {row.week_reps}
+              </span>
             </li>
           ))}
           {league.length === 0 && (

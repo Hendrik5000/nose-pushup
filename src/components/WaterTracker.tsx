@@ -21,7 +21,10 @@ export function WaterTracker() {
         </span>
       </div>
       <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
-        <div className="h-full rounded-full bg-sky-400 transition-all" style={{ width: `${pct * 100}%` }} />
+        <div
+          className="h-full rounded-full bg-sky-400 transition-all"
+          style={{ width: `${pct * 100}%` }}
+        />
       </div>
       <div className="mt-3 flex gap-2">
         {[250, 500, 750].map((a) => (

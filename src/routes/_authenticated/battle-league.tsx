@@ -2,11 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { AloHomeLink } from "@/components/AloHomeLink";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { Swords, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/battle-league")({
   head: () => ({
     meta: [
-      { title: "Battle-Liga — Nosy Push-Ups" },
+      { title: "Wettkampfliga — Alo" },
       { name: "description", content: "Elo-Rangliste, Rivalen und deine Battle-Bilanz." },
     ],
   }),
@@ -44,7 +47,9 @@ function BattleLeaguePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [leaders, setLeaders] = useState<RatedProfile[]>([]);
   const [battles, setBattles] = useState<BattleRow[]>([]);
-  const [names, setNames] = useState<Map<string, { name: string; avatar: string | null }>>(new Map());
+  const [names, setNames] = useState<Map<string, { name: string; avatar: string | null }>>(
+    new Map(),
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,9 +79,7 @@ function BattleLeaguePage() {
 
       // Gegner-Namen laden
       const opponentIds = [
-        ...new Set(
-          myBattles.map((b) => (b.host_id === u.user.id ? b.guest_id! : b.host_id)),
-        ),
+        ...new Set(myBattles.map((b) => (b.host_id === u.user.id ? b.guest_id! : b.host_id))),
       ];
       if (opponentIds.length) {
         const { data: ps } = await supabase
@@ -84,7 +87,11 @@ function BattleLeaguePage() {
           .select("id, display_name, avatar_url")
           .in("id", opponentIds);
         const map = new Map<string, { name: string; avatar: string | null }>();
-        for (const p of (ps ?? []) as unknown as Array<{ id: string; display_name: string | null; avatar_url: string | null }>) {
+        for (const p of (ps ?? []) as unknown as Array<{
+          id: string;
+          display_name: string | null;
+          avatar_url: string | null;
+        }>) {
           map.set(p.id, { name: p.display_name ?? "Unbekannt", avatar: p.avatar_url });
         }
         setNames(map);
@@ -121,47 +128,104 @@ function BattleLeaguePage() {
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
-      <header className="flex items-center justify-between">
-        <Link
-          to="/battle"
-          className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
-        >
-          ← Battle
-        </Link>
+      <header className="classic-only flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Link
+            to="/battle"
+            className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
+          >
+            ← Battle
+          </Link>
+          <AloHomeLink className="px-2 text-[10px]" />
+        </div>
         <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
           Battle-Liga
         </span>
         <span className="w-10" />
       </header>
 
+      <div className="sport-only mt-6">
+        <SportPageIntro
+          eyebrow="Battle-Liga · Elo-Wertung"
+          title="Jede Runde zählt."
+          description="Verfolge deine Platzierung, analysiere direkte Rivalitäten und arbeite dich in der Arena nach oben."
+        >
+          <Link to="/battle" className="sport-back-link">
+            ← Battle
+          </Link>
+          <AloHomeLink />
+          <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+            <Trophy className="h-4 w-4" /> {me?.battle_rating ?? 1000} Elo
+          </div>
+        </SportPageIntro>
+      </div>
+      <div className="sport-only mt-7">
+        <SportSectionLabel number="01">Dein Ranking</SportSectionLabel>
+      </div>
       {/* Eigene Platzierung */}
       <section className="mt-6 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card/70 to-card/60 p-5 backdrop-blur">
-        <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Deine Platzierung</div>
+        <div className="text-[10px] uppercase tracking-[0.25em] text-primary">
+          Deine Platzierung
+        </div>
         <div className="mt-2 flex items-end justify-between">
           <div>
-            <div className="text-4xl font-bold tabular-nums">
-              {myRank > 0 ? `#${myRank}` : "—"}
-            </div>
+            <div className="text-4xl font-bold tabular-nums">{myRank > 0 ? `#${myRank}` : "—"}</div>
             <div className="mt-1 text-xs text-muted-foreground">
-              {me ? `${me.battle_wins ?? 0} Siege · ${me.battle_losses ?? 0} Niederlagen` : "Noch keine Battles"}
+              {me
+                ? `${me.battle_wins ?? 0} Siege · ${me.battle_losses ?? 0} Niederlagen`
+                : "Noch keine Battles"}
             </div>
           </div>
           <div className="text-right">
             <div className="text-2xl font-semibold tabular-nums text-primary">
               {me?.battle_rating ?? 1000}
             </div>
-            <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Wertung</div>
+            <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+              Wertung
+            </div>
           </div>
         </div>
       </section>
 
+      {leaders.length > 0 && (
+        <section className="sport-only mt-7">
+          <SportSectionLabel number="02">Podium · Battle-Rating</SportSectionLabel>
+          <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {leaders.slice(0, 3).map((p, i) => (
+              <li
+                key={p.id}
+                className={`rounded-2xl border p-4 ${p.id === userId ? "border-primary/50 bg-primary/10" : "border-border bg-card/60"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    Platz {i + 1}
+                  </span>
+                  <Trophy className="h-5 w-5 text-primary" />
+                </div>
+                <div className="mt-4 truncate text-base font-bold">
+                  {p.display_name || "Ohne Namen"}
+                  {p.id === userId ? " · Du" : ""}
+                </div>
+                <div className="mt-1 text-sm tabular-nums text-muted-foreground">
+                  {p.battle_rating ?? 1000} Elo
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+      <div className="sport-only mt-7">
+        <SportSectionLabel number="03">Volle Rangliste</SportSectionLabel>
+      </div>
       {/* Elo-Rangliste */}
       <section className="mt-6">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Rangliste
         </h2>
         {loading ? (
-          <p className="rounded-2xl border border-border bg-card/40 p-4 text-center text-sm text-muted-foreground">Lade…</p>
+          <p className="rounded-2xl border border-border bg-card/40 p-4 text-center text-sm text-muted-foreground">
+            Lade…
+          </p>
         ) : (
           <ul className="space-y-2">
             {leaders.slice(0, 20).map((p, i) => {
@@ -174,7 +238,12 @@ function BattleLeaguePage() {
                     isMe ? "border-primary/50 bg-primary/10" : "border-border bg-card/40"
                   }`}
                 >
-                  <div className="w-8 text-center text-sm font-semibold tabular-nums">{medal}</div>
+                  <div className="w-8 text-center text-sm font-semibold tabular-nums">
+                    <span className="classic-only">{medal}</span>
+                    <span className="sport-only">
+                      {i < 3 ? <Trophy className="mx-auto h-4 w-4 text-primary" /> : i + 1}
+                    </span>
+                  </div>
                   <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-xs font-semibold">
                     {p.avatar_url ? (
                       <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -183,14 +252,17 @@ function BattleLeaguePage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold">
-                      {p.display_name || "Ohne Namen"} {isMe && <span className="text-[10px] text-primary">· Du</span>}
+                    <div className="break-words text-sm font-semibold">
+                      {p.display_name || "Ohne Namen"}{" "}
+                      {isMe && <span className="text-[10px] text-primary">· Du</span>}
                     </div>
                     <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
                       {p.battle_wins ?? 0}W / {p.battle_losses ?? 0}L
                     </div>
                   </div>
-                  <div className="text-base font-semibold tabular-nums">{p.battle_rating ?? 1000}</div>
+                  <div className="text-base font-semibold tabular-nums">
+                    {p.battle_rating ?? 1000}
+                  </div>
                 </li>
               );
             })}
@@ -198,6 +270,11 @@ function BattleLeaguePage() {
         )}
       </section>
 
+      {rivals.length > 0 && (
+        <div className="sport-only mt-7">
+          <SportSectionLabel number="04">Direkte Rivalen</SportSectionLabel>
+        </div>
+      )}
       {/* Rivalen */}
       {rivals.length > 0 && (
         <section className="mt-6">
@@ -231,7 +308,12 @@ function BattleLeaguePage() {
                     to="/battle"
                     className="rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary transition active:scale-[0.98]"
                   >
-                    Revanche ⚔️
+                    <>
+                      <span className="classic-only">Revanche ⚔️</span>
+                      <span className="sport-only flex items-center gap-1">
+                        Revanche <Swords className="h-3.5 w-3.5" />
+                      </span>
+                    </>
                   </Link>
                 </li>
               );
@@ -240,6 +322,11 @@ function BattleLeaguePage() {
         </section>
       )}
 
+      {last10.length > 0 && (
+        <div className="sport-only mt-7">
+          <SportSectionLabel number="05">Formkurve</SportSectionLabel>
+        </div>
+      )}
       {/* Verlauf letzte 10 Kämpfe */}
       {last10.length > 0 && (
         <section className="mt-6">

@@ -1,0 +1,972 @@
+/* Health performance presentation. Keep every rule isolated from the classic route and other pages. */
+html[data-design-style="performance"] .sport-health-page {
+  --health-ink: var(--foreground);
+  --health-muted: var(--muted-foreground);
+  --health-panel: color-mix(in srgb, var(--card) 88%, transparent);
+  --health-line: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --health-blue: var(--primary);
+  --health-blue-ink: var(--primary-foreground);
+  color: var(--health-ink);
+}
+
+html[data-design-style="performance"][data-theme="glacier"] body:has(.sport-health-page) {
+  background-color: #070b16;
+  background-image:
+    radial-gradient(ellipse 76% 31% at 94% 0%, rgba(124, 58, 237, 0.17), transparent 74%),
+    radial-gradient(ellipse 76% 28% at 7% 4%, rgba(34, 211, 238, 0.13), transparent 76%),
+    linear-gradient(180deg, #070b16 0%, #0a1020 54%, #080d19 100%);
+  background-attachment: fixed;
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page {
+  --health-ink: #f0f4ff;
+  --health-muted: #a8b7d2;
+  --health-panel: rgba(17, 27, 49, 0.82);
+  --health-line: rgba(129, 164, 228, 0.22);
+  --health-blue: #52caff;
+  --health-blue-ink: #071629;
+  --health-violet: #a78bfa;
+  --health-gold: #f8c766;
+}
+
+html[data-design-style="performance"][data-theme="daylight"] .sport-health-page,
+html[data-design-style="performance"][data-theme="sand"] .sport-health-page,
+html[data-design-style="performance"][data-theme="rose"] .sport-health-page {
+  --health-panel: color-mix(in srgb, var(--card) 94%, var(--background));
+  --health-line: color-mix(in srgb, var(--foreground) 12%, var(--card));
+}
+html[data-design-style="performance"][data-theme="contrast"] .sport-health-page {
+  --health-panel: var(--card);
+  --health-line: var(--border);
+  --health-blue: #ffeb00;
+  --health-blue-ink: #000000;
+}
+html[data-design-style="performance"][data-theme="contrast"]
+  .sport-health-page
+  .health-bento-grid
+  > .health-energy-card {
+  border: 2px solid var(--foreground);
+  background: var(--health-blue);
+  box-shadow: none;
+}
+html[data-design-style="performance"][data-theme="contrast"] body:has(.sport-health-page) {
+  background: var(--background);
+}
+
+html[data-design-style="performance"] .health-page-intro {
+  margin: 0;
+}
+html[data-design-style="performance"] .sport-health-page {
+  gap: clamp(1rem, 2.4vw, 1.5rem);
+  padding-top: clamp(1.25rem, 3vw, 2rem);
+}
+html[data-design-style="performance"] .sport-health-page .health-category-nav {
+  display: flex;
+  width: 100%;
+  justify-content: stretch;
+  gap: 0.15rem;
+  padding: 0.3rem;
+  overflow: visible;
+  border: 1px solid var(--health-line);
+  border-radius: 999px;
+  background: var(--health-panel);
+}
+html[data-design-style="performance"] .sport-health-page .health-category-nav a {
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 3.05rem;
+  padding: 0.36rem 0.12rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--health-muted);
+  font-size: 0.63rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+html[data-design-style="performance"] .sport-health-page .health-category-nav a:first-child {
+  border-color: color-mix(in srgb, var(--primary) 38%, var(--health-line));
+  background: color-mix(in srgb, var(--primary) 12%, var(--health-panel));
+  color: var(--health-ink);
+}
+html[data-design-style="performance"] .sport-health-page .health-category-nav a:hover {
+  border-color: var(--primary);
+  color: var(--health-ink);
+}
+html[data-design-style="performance"] .sport-health-page .health-category-nav svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  stroke-width: 1.7;
+}
+html[data-design-style="performance"] .sport-health-page .health-daily-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 17.5rem;
+  padding: clamp(1.35rem, 4.4vw, 2rem);
+  border: 1px solid var(--health-line);
+  border-radius: 1.8rem;
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--health-panel) 82%, var(--primary) 5%),
+    var(--health-panel)
+  );
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(18px);
+}
+html[data-design-style="performance"] .sport-health-page .health-hero-icon {
+  display: none;
+}
+html[data-design-style="performance"] .sport-health-page .health-daily-hero .sport-kicker {
+  margin: 0;
+  color: var(--health-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+html[data-design-style="performance"] .sport-health-page .health-daily-hero h2 {
+  max-width: 25ch;
+  margin: 0.9rem 0 0;
+  color: var(--health-ink);
+  font-size: clamp(1.35rem, 3.3vw, 1.75rem);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.26;
+}
+html[data-design-style="performance"] .sport-health-page .health-daily-hero > p:not(.sport-kicker) {
+  max-width: 52ch;
+  margin-top: 0.75rem;
+  color: var(--health-muted);
+  font-size: clamp(0.93rem, 2vw, 1rem);
+  line-height: 1.65;
+}
+html[data-design-style="performance"] .sport-health-page .health-hero-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 2.85rem;
+  margin: auto 0 0 auto;
+  padding: 0.75rem 1.05rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 27%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 16%, var(--health-panel));
+  color: var(--health-ink);
+  font-size: 0.82rem;
+  font-weight: 650;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+html[data-design-style="performance"] .sport-health-page .health-hero-action:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--primary) 23%, var(--health-panel));
+}
+html[data-design-style="performance"] .sport-health-page .health-hero-action svg {
+  width: 1rem;
+  height: 1rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-bento-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-bento-grid > .health-energy-card,
+html[data-design-style="performance"]
+  .sport-health-page
+  .health-bento-grid
+  > .health-activity-card {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 12.4rem;
+  flex-direction: column;
+  overflow: hidden;
+  padding: clamp(0.95rem, 4vw, 1.35rem);
+  border: 1px solid var(--health-line);
+  border-radius: 1.55rem;
+  color: var(--health-ink);
+}
+html[data-design-style="performance"] .sport-health-page .health-bento-grid > .health-energy-card {
+  border-color: transparent;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--primary) 88%, var(--primary-foreground)),
+    var(--health-blue)
+  );
+  color: var(--health-blue-ink);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--health-blue) 22%, transparent);
+}
+html[data-design-style="performance"]
+  .sport-health-page
+  .health-bento-grid
+  > .health-activity-card {
+  align-items: stretch;
+  background: var(--health-panel);
+}
+html[data-design-style="performance"] .sport-health-page .health-card-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.48rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+html[data-design-style="performance"] .sport-health-page .health-card-heading svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+}
+html[data-design-style="performance"] .sport-health-page .health-energy-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-top: auto;
+}
+html[data-design-style="performance"] .sport-health-page .health-energy-values > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-energy-values strong {
+  overflow-wrap: anywhere;
+  font-size: clamp(1.12rem, 4.4vw, 1.6rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1.1;
+}
+html[data-design-style="performance"] .sport-health-page .health-energy-values span,
+html[data-design-style="performance"] .sport-health-page .health-energy-card > p {
+  color: color-mix(in srgb, var(--health-blue-ink) 82%, transparent);
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+html[data-design-style="performance"] .sport-health-page .health-energy-card > p {
+  margin-top: 0.6rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-week-value {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 0.8rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-week-value strong {
+  color: var(--health-ink);
+  font-size: clamp(1.55rem, 5vw, 2.15rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+}
+html[data-design-style="performance"] .sport-health-page .health-week-value span,
+html[data-design-style="performance"] .sport-health-page .health-week-value p,
+html[data-design-style="performance"] .sport-health-page .health-week-empty p {
+  color: var(--health-muted);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+html[data-design-style="performance"] .sport-health-page .health-week-value span {
+  margin-top: 0.3rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-week-value p {
+  margin-top: 0.7rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-week-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-week-empty a,
+html[data-design-style="performance"] .sport-health-page .health-sleep-action {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--health-ink);
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary) 60%, transparent);
+  text-underline-offset: 0.2rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-week-empty a svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-sleep-card {
+  display: flex;
+  min-height: 6.7rem;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--health-line);
+  border-radius: 1.45rem;
+  background: var(--health-panel);
+}
+html[data-design-style="performance"] .sport-health-page .health-sleep-icon {
+  display: grid;
+  width: 2.7rem;
+  height: 2.7rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, #a78bfa 18%, var(--health-panel));
+  color: #a78bfa;
+}
+html[data-design-style="performance"] .sport-health-page .health-sleep-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+html[data-design-style="performance"] .sport-health-page .health-sleep-label {
+  color: var(--health-muted);
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+html[data-design-style="performance"] .sport-health-page .health-sleep-card h2 {
+  margin-top: 0.1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+html[data-design-style="performance"] .sport-health-page .health-sleep-card {
+  border-color: color-mix(in srgb, #a78bfa 22%, var(--health-line));
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, #8b5cf6 12%, var(--health-panel)),
+    var(--health-panel) 64%
+  );
+}
+html[data-design-style="performance"] .sport-health-page .health-sleep-action {
+  margin-left: auto;
+  white-space: nowrap;
+}
+html[data-design-style="performance"] .sport-health-page .health-sleep-detail {
+  margin-top: 0.15rem;
+  color: var(--health-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+html[data-design-style="performance"] .sport-health-page .health-sleep-card > strong {
+  margin-left: auto;
+  color: var(--health-ink);
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+html[data-design-style="performance"] .sport-health-page .health-sleep-card > strong span {
+  color: var(--health-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+html[data-design-style="performance"]
+  .sport-health-page
+  :is(
+    .health-category-nav,
+    .health-daily-hero,
+    .health-energy-card,
+    .health-activity-card,
+    .health-sleep-card
+  ) {
+  scroll-margin-top: calc(var(--homebar-top-space) + 1rem);
+}
+
+@media (max-width: 420px) {
+  html[data-design-style="performance"] .sport-health-page {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+  html[data-design-style="performance"] .sport-health-page .health-bento-grid > .health-energy-card,
+  html[data-design-style="performance"]
+    .sport-health-page
+    .health-bento-grid
+    > .health-activity-card {
+    min-height: 11.75rem;
+    padding: 0.9rem;
+  }
+}
+html[data-design-style="performance"] .health-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 1rem;
+}
+html[data-design-style="performance"] .health-source-action {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  color: var(--health-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+html[data-design-style="performance"] .health-source-action svg {
+  width: 1rem;
+  height: 1rem;
+}
+html[data-design-style="performance"] .health-hero-actions .health-hero-action {
+  margin: 0;
+}
+html[data-design-style="performance"] .health-today-measurements {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+html[data-design-style="performance"] .health-today-measurements dt,
+html[data-design-style="performance"] .health-today-measurements small {
+  color: var(--health-muted);
+  font-size: 0.7rem;
+}
+html[data-design-style="performance"] .health-today-measurements dd {
+  font-size: clamp(1.2rem, 4.5vw, 1.8rem);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+html[data-design-style="performance"] .health-hero-actions .health-hero-action {
+  padding-inline: 0.8rem;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+}
+html[data-design-style="performance"] .health-hero-actions .health-source-action {
+  font-size: 0.78rem;
+}
+
+/* Glacier presentation: prominent glass panels with cool cyan/violet highlights. */
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-daily-hero {
+  border: 1px solid rgba(113, 167, 255, 0.25);
+  border-radius: 1.7rem;
+  background:
+    radial-gradient(ellipse at 88% 0%, rgba(126, 80, 239, 0.2), transparent 48%),
+    linear-gradient(135deg, rgba(18, 34, 62, 0.96), rgba(12, 19, 39, 0.95) 62%, rgba(12, 25, 45, 0.92));
+  box-shadow: 0 20px 56px rgba(2, 7, 22, 0.34), 0 0 34px rgba(74, 156, 255, 0.06);
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-bento-grid > .health-energy-card {
+  border-color: rgba(89, 207, 255, 0.34);
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(125, 84, 240, 0.24), transparent 52%),
+    linear-gradient(145deg, rgba(18, 47, 74, 0.94), rgba(17, 25, 49, 0.96));
+  box-shadow: inset 0 0 32px rgba(50, 185, 255, 0.06), 0 16px 42px rgba(2, 8, 25, 0.26);
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-bento-grid > .health-activity-card,
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-bento-grid > .health-sleep-card {
+  border-color: rgba(143, 162, 220, 0.2);
+  border-radius: 1.5rem;
+  background: linear-gradient(145deg, rgba(17, 28, 50, 0.92), rgba(13, 19, 37, 0.96));
+  box-shadow: 0 14px 38px rgba(2, 8, 25, 0.24);
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-today-measurements {
+  border: 1px solid rgba(140, 170, 227, 0.17);
+  border-radius: 1.2rem;
+  background: rgba(5, 12, 28, 0.28);
+  padding: 0.85rem;
+}
+html[data-design-style="performance"][data-theme="glacier"] .sport-health-page .health-hero-actions .health-hero-action {
+  border-color: transparent;
+  background: linear-gradient(115deg, #18c5f4, #477bff 58%, #965cf4);
+  color: #ffffff;
+  box-shadow: 0 0 24px rgba(63, 145, 255, 0.2);
+}
+
+/* Classic remains a separate saved design choice, but now shares the Health dashboard hierarchy. */
+html:not([data-design-style="performance"])[data-theme="glacier"]
+  body:has(.health-classic-dashboard) {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(
+      ellipse 76% 32% at 94% 0%,
+      color-mix(in srgb, var(--accent) 18%, transparent),
+      transparent 74%
+    ),
+    radial-gradient(
+      ellipse 76% 28% at 7% 4%,
+      color-mix(in srgb, var(--primary) 15%, transparent),
+      transparent 76%
+    ),
+    linear-gradient(180deg, var(--background), var(--background));
+  background-attachment: fixed;
+}
+
+html:not([data-design-style="performance"]) .health-classic-dashboard {
+  --health-classic-panel: color-mix(in srgb, var(--card) 88%, transparent);
+  --health-classic-line: color-mix(in srgb, var(--foreground) 13%, transparent);
+  color: var(--foreground);
+  gap: clamp(1rem, 2.4vw, 1.5rem);
+  padding-top: clamp(1rem, 3vw, 1.75rem);
+}
+
+html:not([data-design-style="performance"]) .health-classic-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.health-classic-top-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.health-classic-brand-pill {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid
+    var(--health-classic-line, color-mix(in srgb, var(--foreground) 13%, transparent));
+  border-radius: 999px;
+  background: var(--health-classic-panel, color-mix(in srgb, var(--card) 88%, transparent));
+  padding: 0.45rem 0.85rem;
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.health-classic-brand-pill svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary);
+}
+
+.health-classic-kicker {
+  margin: 0;
+  color: var(--primary);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.health-classic-header h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.health-classic-header > p:last-child {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: clamp(0.92rem, 2vw, 1rem);
+  line-height: 1.6;
+}
+
+html:not([data-design-style="performance"]) .health-classic-dashboard .health-classic-category-nav {
+  display: flex;
+  width: 100%;
+  justify-content: stretch;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border: 1px solid
+    var(--health-classic-line, color-mix(in srgb, var(--foreground) 13%, transparent));
+  border-radius: 1.15rem;
+  background: var(--health-classic-panel, color-mix(in srgb, var(--card) 88%, transparent));
+  padding: 0.3rem;
+  scrollbar-width: none;
+}
+
+.health-classic-category-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.health-classic-category-nav a {
+  display: flex;
+  min-width: 4.1rem;
+  min-height: 2.85rem;
+  flex: 1 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 0.9rem;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.health-classic-category-nav a:first-child,
+.health-classic-category-nav a:hover {
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--health-classic-line, var(--border)));
+  background: color-mix(in srgb, var(--primary) 12%, var(--health-classic-panel, var(--card)));
+  color: var(--foreground);
+}
+
+.health-classic-category-nav svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.health-classic-hero {
+  display: grid;
+  min-width: 0;
+  gap: 1.2rem;
+  overflow: hidden;
+  border: 1px solid
+    color-mix(in srgb, var(--primary) 28%, var(--health-classic-line, var(--border)));
+  border-radius: 1.8rem;
+  background:
+    radial-gradient(
+      ellipse 68% 95% at 98% 8%,
+      color-mix(in srgb, var(--accent) 17%, transparent),
+      transparent 72%
+    ),
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--primary) 11%, var(--health-classic-panel, var(--card))),
+      var(--health-classic-panel, var(--card))
+    );
+  padding: clamp(1.2rem, 4vw, 2rem);
+  box-shadow: 0 18px 45px color-mix(in srgb, var(--foreground) 8%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.health-classic-hero-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.health-classic-hero-copy h2 {
+  max-width: 23ch;
+  margin: 0;
+  font-size: clamp(1.45rem, 4vw, 2.15rem);
+  font-weight: 720;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+}
+
+.health-classic-hero-copy > p:not(.health-classic-kicker) {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.health-classic-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+}
+
+.health-classic-action-secondary,
+.health-classic-action-primary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid
+    color-mix(in srgb, var(--primary) 28%, var(--health-classic-line, var(--border)));
+  border-radius: 999px;
+  padding: 0.65rem 0.9rem;
+  color: var(--foreground);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.health-classic-action-secondary {
+  background: color-mix(in srgb, var(--card) 76%, transparent);
+}
+
+.health-classic-action-primary {
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--primary) 25%, var(--card)),
+    color-mix(in srgb, var(--accent) 20%, var(--card))
+  );
+}
+
+.health-classic-action-secondary:hover,
+.health-classic-action-primary:hover {
+  transform: translateY(-1px);
+  background-color: color-mix(in srgb, var(--primary) 20%, var(--card));
+}
+
+.health-classic-action-secondary svg,
+.health-classic-action-primary svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.health-classic-today-measurements {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.health-classic-today-measurements > div {
+  display: flex;
+  min-width: 0;
+  min-height: 6.2rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.28rem;
+  border: 1px solid
+    color-mix(in srgb, var(--primary) 18%, var(--health-classic-line, var(--border)));
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--background) 58%, var(--card));
+  padding: 0.7rem;
+}
+
+.health-classic-today-measurements dt {
+  color: var(--muted-foreground);
+  font-size: clamp(0.55rem, 2.5vw, 0.68rem);
+  font-weight: 650;
+}
+
+.health-classic-today-measurements dd {
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  font-size: clamp(1rem, 3.8vw, 1.55rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.health-classic-today-measurements small {
+  color: var(--muted-foreground);
+  font-size: 0.58rem;
+}
+
+.health-classic-activity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1rem;
+  scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
+}
+
+.health-classic-metrics-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.health-classic-metrics-grid > div {
+  min-width: 0;
+  border-color: var(--health-classic-line, var(--border));
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--primary) 8%, var(--card)),
+    var(--health-classic-panel, var(--card))
+  );
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 7%, transparent);
+}
+
+.health-classic-widgets-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.health-classic-widget-card {
+  min-width: 0;
+  scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
+}
+
+.health-classic-widget-card > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.health-classic-sources,
+.health-classic-dashboard > section:has(#health-entry) {
+  border-color: var(--health-classic-line, var(--border));
+  background: var(--health-classic-panel, color-mix(in srgb, var(--card) 88%, transparent));
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--foreground) 7%, transparent);
+  scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
+}
+
+.health-classic-sources {
+  min-width: 0;
+  border: 1px solid var(--health-classic-line, var(--border));
+  border-radius: 1.5rem;
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.health-classic-section-heading {
+  margin: 0 0 0.9rem;
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.health-classic-sources-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.health-classic-source-card {
+  min-width: 0;
+  border-color: var(--health-classic-line, var(--border));
+  background: color-mix(in srgb, var(--background) 52%, var(--card));
+}
+
+.health-classic-sources h3 {
+  color: var(--foreground);
+}
+
+.health-classic-dashboard h2#health-entry,
+.health-classic-dashboard .health-classic-history h2 {
+  color: var(--foreground);
+  scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
+}
+
+.health-classic-history {
+  min-width: 0;
+  border: 1px solid var(--health-classic-line, var(--border));
+  border-radius: 1.5rem;
+  background: var(--health-classic-panel, color-mix(in srgb, var(--card) 88%, transparent));
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.health-classic-history-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.health-classic-history-row {
+  min-width: 0;
+  gap: 0.6rem;
+  border-color: var(--health-classic-line, var(--border));
+  background: color-mix(in srgb, var(--background) 60%, var(--card));
+}
+
+.health-classic-history-row > span:last-child {
+  text-align: right;
+}
+
+.health-classic-dashboard #health-today,
+.health-classic-dashboard #health-activity,
+.health-classic-dashboard #health-sleep,
+.health-classic-dashboard #health-sources,
+.health-classic-dashboard #health-entry {
+  scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
+}
+
+html[data-theme="contrast"]:not([data-design-style="performance"])
+  body:has(.health-classic-dashboard) {
+  background: var(--background);
+  background-image: none;
+}
+
+@media (min-width: 740px) {
+  .health-classic-hero {
+    grid-template-columns: minmax(0, 1.2fr) minmax(19rem, 0.9fr);
+    align-items: center;
+  }
+
+  .health-classic-activity {
+    gap: 1.1rem;
+  }
+
+  .health-classic-metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .health-classic-widgets-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .health-classic-sources-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .health-classic-widgets-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .health-classic-dashboard {
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  }
+
+  .health-classic-category-nav a {
+    min-width: 3.9rem;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.62rem;
+  }
+
+  .health-classic-today-measurements > div {
+    min-height: 5.6rem;
+    padding: 0.55rem;
+  }
+
+  .health-classic-history-list {
+    grid-template-columns: 1fr;
+  }
+
+  .health-classic-history-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .health-classic-history-row > span:last-child {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .health-classic-category-nav a,
+  .health-classic-action-secondary,
+  .health-classic-action-primary {
+    transition-duration: 0.01ms;
+  }
+}

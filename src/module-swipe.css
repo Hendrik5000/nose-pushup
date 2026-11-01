@@ -1,0 +1,19 @@
+/* Only deliberate swipes move the outlet; navigation remains stationary. */
+.alo-swipe-route {
+  overflow-x: clip;
+}
+.alo-module-surface {
+  min-width: 0;
+}
+/* Promote only during a gesture/transition, not every long page permanently. */
+html[data-module-swipe] .alo-module-surface {
+  will-change: transform;
+}
+html[data-module-swipe] .route-enter {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-module-swipe] .alo-module-surface {
+    will-change: auto;
+  }
+}

@@ -11,6 +11,11 @@ export type LocalMessage = {
   created_at: string;
   edited_at: string | null;
   reply_to_id: string | null;
+  /** Cloud mode only: private storage path in the chat-uploads bucket. */
+  attachment_url?: string | null;
+  attachment_type?: string | null;
+  attachment_name?: string | null;
+  attachment_size?: number | null;
 };
 
 export type LocalReaction = {
@@ -34,6 +39,11 @@ type Store = {
   dms: LocalDm[];
 };
 
+const LEGACY_SYSTEM_WELCOME =
+  "Willkommen im lokalen Chat von Nosy Push-Ups! Nachrichten bleiben auf diesem Gerät (localStorage).";
+const CURRENT_SYSTEM_WELCOME =
+  "Willkommen im lokalen Chat von Alo! Nachrichten bleiben auf diesem Gerät (localStorage).";
+
 function key(userId: string) {
   return `nose-pushup-local-chat:${userId}`;
 }
@@ -47,7 +57,7 @@ function defaultStore(): Store {
   const tipsId = uid();
   return {
     rooms: [
-      { id: generalId, name: "Allgemein", description: "Community-Chat" },
+      { id: generalId, name: "Allgemein", description: "Nexus Chat" },
       { id: tipsId, name: "Trainings-Tipps", description: "Form, Sets, Recovery" },
     ],
     messages: [
@@ -56,8 +66,7 @@ function defaultStore(): Store {
         room_id: generalId,
         conversation_id: null,
         user_id: "system",
-        content:
-          "Willkommen im lokalen Chat von Nosy Push-Ups! Nachrichten bleiben auf diesem Gerät (localStorage).",
+        content: CURRENT_SYSTEM_WELCOME,
         created_at: new Date().toISOString(),
         edited_at: null,
         reply_to_id: null,
@@ -77,7 +86,22 @@ export function loadChatStore(userId: string): Store {
       saveChatStore(userId, s);
       return s;
     }
-    return JSON.parse(raw) as Store;
+    const store = JSON.parse(raw) as Store;
+    let normalized = false;
+    for (const message of store.messages) {
+      if (message.user_id === "system" && message.content === LEGACY_SYSTEM_WELCOME) {
+        message.content = CURRENT_SYSTEM_WELCOME;
+        normalized = true;
+      }
+    }
+    if (normalized) {
+      try {
+        saveChatStore(userId, store);
+      } catch {
+        // Keep the normalized in-memory store usable if localStorage is read-only.
+      }
+    }
+    return store;
   } catch {
     return defaultStore();
   }
@@ -96,11 +120,7 @@ export function createRoom(userId: string, name: string): LocalRoom {
   return room;
 }
 
-export function getOrCreateDm(
-  userId: string,
-  otherId: string,
-  otherName: string,
-): LocalDm {
+export function getOrCreateDm(userId: string, otherId: string, otherName: string): LocalDm {
   const store = loadChatStore(userId);
   const existing = store.dms.find((d) => d.other_id === otherId);
   if (existing) return existing;
@@ -160,11 +180,7 @@ export function deleteMessage(userId: string, messageId: string) {
   saveChatStore(userId, store);
 }
 
-export function toggleReaction(
-  userId: string,
-  messageId: string,
-  emoji: string,
-): LocalReaction[] {
+export function toggleReaction(userId: string, messageId: string, emoji: string): LocalReaction[] {
   const store = loadChatStore(userId);
   const existing = store.reactions.find(
     (r) => r.message_id === messageId && r.user_id === userId && r.emoji === emoji,
@@ -189,9 +205,7 @@ export function messagesFor(
 ): LocalMessage[] {
   return store.messages
     .filter((m) =>
-      target.kind === "room"
-        ? m.room_id === target.id
-        : m.conversation_id === target.id,
+      target.kind === "room" ? m.room_id === target.id : m.conversation_id === target.id,
     )
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }

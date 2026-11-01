@@ -44,7 +44,8 @@ export function CoachPanel({ profile, workouts }: Props) {
   const workedOutToday = profile.last_workout_date === today;
 
   // Suggested target for today: push best_count by ~10%, min +2, capped for sanity.
-  const targetToday = Math.max(10, Math.round((profile.best_count || 10) * 1.1) + 2);
+  const repsPerSet = Math.max(3, Math.min(20, Math.round((profile.best_count || 9) / 3)));
+  const targetToday = 3 * repsPerSet;
 
   // Detect dominant recent exercise.
   const recent = workouts.slice(0, 8);
@@ -53,12 +54,11 @@ export function CoachPanel({ profile, workouts }: Props) {
     acc[k] = (acc[k] ?? 0) + 1;
     return acc;
   }, {});
-  const dominant =
-    Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "pushup";
+  const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "pushup";
   const suggestNext = dominant === "pushup" ? "situp" : "pushup";
 
   // 7-day rolling reps.
-  const weekReps = useMemo(() => {
+  const weekWiederholungen = useMemo(() => {
     const cutoff = Date.now() - 7 * 86400000;
     return workouts
       .filter((w) => +new Date(w.created_at) >= cutoff)
@@ -91,9 +91,38 @@ export function CoachPanel({ profile, workouts }: Props) {
     return {
       tone: "reset" as const,
       title: "Zurück auf die Matte",
-      text: `${gap} Tage Pause – ein kurzes Set reicht, um neu zu starten.`,
+      text: `${gap} Tage Pause – ein kurzer Satz reicht, um neu zu starten.`,
     };
   }, [profile.last_workout_date, workedOutToday, streakActive, streak, lp, today]);
+
+  if (workouts.length === 0) {
+    return (
+      <div className="mt-3 space-y-4">
+        <div className="rounded-2xl border border-border bg-background/50 p-4">
+          <h3 className="text-sm font-semibold">Noch keine Trainingsgrundlage</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Ohne erfasste Einheiten kann Alo keine persönliche Empfehlung aus deinem Verlauf
+            ableiten.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
+          <h3 className="text-sm font-semibold">Unverbindlicher Startvorschlag</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Wenn du dich fit fühlst: Probiere einen lockeren Satz mit bis zu 3 Liegestützen. Passe
+            die Anzahl an dich an und höre bei Schmerzen auf. Das ist keine persönliche Auswertung.
+          </p>
+          <Link
+            to="/workout/$exerciseId"
+            params={{ exerciseId: "pushup" }}
+            search={{ mode: "manual" }}
+            className="mt-4 flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+          >
+            Manuelle Erfassung öffnen
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const toneClass =
     status.tone === "good"
@@ -105,32 +134,31 @@ export function CoachPanel({ profile, workouts }: Props) {
           : "border-primary/30 bg-primary/5 text-primary";
 
   const reps = [
-    { label: `Set 1 · ${Math.max(5, Math.round(targetToday * 0.35))}` },
-    { label: `Set 2 · ${Math.max(5, Math.round(targetToday * 0.35))}` },
-    { label: `Set 3 · ${Math.max(5, Math.round(targetToday * 0.3))}` },
+    { label: `Satz 1 · ${repsPerSet}` },
+    { label: `Satz 2 · ${repsPerSet}` },
+    { label: `Satz 3 · ${repsPerSet}` },
   ];
 
   return (
     <div>
-
       <div className={`mt-3 rounded-2xl border px-4 py-3 ${toneClass}`}>
         <div className="text-sm font-semibold">{status.title}</div>
         <div className="mt-0.5 text-xs opacity-90">{status.text}</div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+      <div className="mt-4 grid grid-cols-1 gap-2 text-center sm:grid-cols-3">
         <MiniStat label="Streak" value={`${streak}${streakActive ? "🔥" : ""}`} />
-        <MiniStat label="7 Tage" value={String(weekReps)} />
-        <MiniStat label="Freezes" value={String(profile.streak_freezes ?? 0)} />
+        <MiniStat label="7 Tage" value={String(weekWiederholungen)} />
+        <MiniStat label="Serien-Schutz" value={String(profile.streak_freezes ?? 0)} />
       </div>
 
       <div className="mt-5">
-        <div className="mb-2 flex items-baseline justify-between">
+        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Nächstes Training
           </span>
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Ziel {targetToday} Reps · +{targetToday * XP_PER_REP} XP
+            Ziel {targetToday} Wiederholungen · +{targetToday * XP_PER_REP} XP
           </span>
         </div>
         <div className="rounded-2xl border border-border bg-background/50 p-4">
@@ -140,7 +168,7 @@ export function CoachPanel({ profile, workouts }: Props) {
               · Wechsel zu {EX_LABEL[suggestNext]} für Balance
             </span>
           </div>
-          <ul className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+          <ul className="mt-3 grid grid-cols-1 gap-2 text-center sm:grid-cols-3 text-xs">
             {reps.map((s, i) => (
               <li
                 key={i}
@@ -153,6 +181,7 @@ export function CoachPanel({ profile, workouts }: Props) {
           <Link
             to="/workout/$exerciseId"
             params={{ exerciseId: suggestNext }}
+            search={{ sets: 3, reps: repsPerSet, rest_s: 90, title: "Techniktraining" }}
             className="mt-4 flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98]"
           >
             Jetzt starten →
@@ -161,7 +190,7 @@ export function CoachPanel({ profile, workouts }: Props) {
       </div>
 
       <ul className="mt-4 space-y-1 text-xs text-muted-foreground">
-        <li>• Kurze Pausen (60–90s) zwischen den Sets.</li>
+        <li>• Kurze Pausen (60–90s) zwischen den Sätzen.</li>
         <li>• Saubere Form zählt mehr als Tempo.</li>
         {!workedOutToday && streakActive && (
           <li className="text-destructive">• Heute noch trainieren, um die Streak zu retten.</li>

@@ -2,18 +2,21 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { ShareCard } from "@/components/ShareCard";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { Coins, Medal, ShoppingBag, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/season")({
   head: () => ({
     meta: [
-      { title: "Saison & Belohnungen — Nosy Push-Ups" },
+      { title: "Saison & Belohnungen — Alo" },
       {
         name: "description",
         content:
-          "Sammle Saisonpunkte, steige von Bronze bis Elite auf und tausche Münzen gegen Themes, Rahmen und Streak-Freezes.",
+          "Sammle Saisonpunkte, steige von Bronze bis Elite auf und tausche Münzen gegen Themes, Rahmen und Serien-Schutz.",
       },
-      { property: "og:title", content: "Saison & Belohnungen — Nosy Push-Ups" },
+      { property: "og:title", content: "Saison & Belohnungen — Alo" },
       {
         property: "og:description",
         content: "Liga-Aufstieg von Bronze bis Elite und Belohnungen im Münz-Shop.",
@@ -94,7 +97,10 @@ function SeasonPage() {
         const { data: profs } = await supabase
           .from("profiles")
           .select("id, display_name")
-          .in("id", rows.map((r) => r.user_id));
+          .in(
+            "id",
+            rows.map((r) => r.user_id),
+          );
         const map: Record<string, string> = {};
         for (const p of profs ?? []) map[p.id as string] = (p.display_name as string) ?? "Athlet";
         setNames(map);
@@ -134,29 +140,33 @@ function SeasonPage() {
   const nextLeague = LEAGUES[myLeagueIdx + 1];
   const myRank = scores.findIndex((s) => s.user_id === userId) + 1;
   const daysLeft = season
-    ? Math.max(
-        0,
-        Math.ceil((new Date(season.ends_on).getTime() - Date.now()) / 86400000),
-      )
+    ? Math.max(0, Math.ceil((new Date(season.ends_on).getTime() - Date.now()) / 86400000))
     : 0;
 
   return (
     <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
-      <header className="flex items-center justify-between">
+      <header className="classic-only flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
             {season?.name ?? "Saison"}
           </div>
           <h1 className="mt-0.5 text-xl font-bold tracking-tight">Liga & Belohnungen</h1>
         </div>
-        <Link
-          to="/"
-          className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground"
-        >
-          Zurück
-        </Link>
+        <AloHomeLink className="px-2 text-xs" />
       </header>
 
+      <div className="sport-only mt-6">
+        <SportPageIntro
+          eyebrow={season?.name ?? "Saison"}
+          title="Saison. Einsatz. Aufstieg."
+          description="Sammle Punkte, steige in der Liga auf und löse deine Trainingsmünzen für echte Belohnungen ein."
+        >
+          <AloHomeLink />
+          <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+            <Coins className="h-4 w-4" /> {coins} Münzen
+          </div>
+        </SportPageIntro>
+      </div>
       {loading && (
         <div className="mt-6 rounded-2xl border border-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
           Lade…
@@ -171,10 +181,14 @@ function SeasonPage() {
 
       {!loading && season && (
         <>
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="01">Dein Saison-Fortschritt</SportSectionLabel>
+          </div>
           {/* Eigener Stand */}
           <section className="mt-5 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
             <div className="flex items-center gap-4">
-              <span className="text-5xl">{LEAGUES[myLeagueIdx]?.icon}</span>
+              <span className="classic-only text-5xl">{LEAGUES[myLeagueIdx]?.icon}</span>
+              <Medal className="sport-only h-10 w-10 text-primary" />
               <div className="min-w-0 flex-1">
                 <div className="text-lg font-bold">{LEAGUES[myLeagueIdx]?.label}-Liga</div>
                 <div className="text-xs text-muted-foreground">
@@ -182,7 +196,11 @@ function SeasonPage() {
                 </div>
               </div>
               <div className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                🪙 {coins}
+                <>
+                  <span className="classic-only">🪙 </span>
+                  <Coins className="sport-only mr-1 inline h-3.5 w-3.5" />
+                  {coins}
+                </>
               </div>
             </div>
 
@@ -219,6 +237,36 @@ function SeasonPage() {
             </div>
           </section>
 
+          {scores.length > 0 && (
+            <section className="sport-only mt-7">
+              <SportSectionLabel number="02">Saison-Podium</SportSectionLabel>
+              <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {scores.slice(0, 3).map((s, i) => (
+                  <li
+                    key={s.user_id}
+                    className={`rounded-2xl border p-4 ${s.user_id === userId ? "border-primary/50 bg-primary/10" : "border-border bg-card/60"}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                        Platz {i + 1}
+                      </span>
+                      <Trophy className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="mt-4 truncate text-base font-bold">
+                      {names[s.user_id] ?? "Athlet"}
+                      {s.user_id === userId ? " · Du" : ""}
+                    </div>
+                    <div className="mt-1 text-sm font-semibold tabular-nums text-primary">
+                      {s.points} Punkte
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="03">Volle Liga-Rangliste</SportSectionLabel>
+          </div>
           {/* Rangliste */}
           <section className="mt-5">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -242,9 +290,10 @@ function SeasonPage() {
                   <span className="w-6 text-sm font-bold tabular-nums text-muted-foreground">
                     {i + 1}
                   </span>
-                  <span className="text-lg">
+                  <span className="classic-only text-lg">
                     {LEAGUES.find((l) => l.id === s.league)?.icon ?? "🥉"}
                   </span>
+                  <Medal className="sport-only h-4 w-4 text-primary" />
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">
                     {names[s.user_id] ?? "Athlet"}
                   </span>
@@ -254,14 +303,15 @@ function SeasonPage() {
             </div>
           </section>
 
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="03">Belohnungen freischalten</SportSectionLabel>
+          </div>
           {/* Shop */}
           <section className="mt-6">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Belohnungs-Shop
             </h2>
-            {hint && (
-              <p className="mb-2 text-center text-xs text-muted-foreground">{hint}</p>
-            )}
+            {hint && <p className="mb-2 text-center text-xs text-muted-foreground">{hint}</p>}
             <div className="space-y-2">
               {items.map((item) => {
                 const has = owned.includes(item.id) && item.kind !== "streak_freeze";
@@ -270,10 +320,11 @@ function SeasonPage() {
                     key={item.id}
                     className="flex items-center gap-3 rounded-2xl border border-border bg-card/50 p-3"
                   >
-                    <span className="text-2xl">{item.icon}</span>
+                    <span className="classic-only text-2xl">{item.icon}</span>
+                    <ShoppingBag className="sport-only h-6 w-6 text-primary" />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold">{item.name}</div>
-                      <div className="truncate text-[11px] text-muted-foreground">
+                      <div className="break-words text-[11px] leading-relaxed text-muted-foreground">
                         {item.description}
                       </div>
                     </div>
@@ -282,7 +333,17 @@ function SeasonPage() {
                       disabled={has || busy === item.id || coins < item.cost}
                       className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-40"
                     >
-                      {has ? "Aktiv" : busy === item.id ? "…" : `🪙 ${item.cost}`}
+                      {has ? (
+                        "Aktiv"
+                      ) : busy === item.id ? (
+                        "…"
+                      ) : (
+                        <>
+                          <span className="classic-only">🪙 </span>
+                          <Coins className="sport-only mr-1 inline h-3.5 w-3.5" />
+                          {item.cost}
+                        </>
+                      )}
                     </button>
                   </div>
                 );

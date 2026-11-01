@@ -126,18 +126,12 @@ export function MicroChallengeCard({
         : "Schwer";
 
   const unitLabel =
-    challenge.unit === "reps"
-      ? "Reps"
-      : challenge.unit === "seconds"
-        ? "Sek."
-        : "Workout";
+    challenge.unit === "reps" ? "Reps" : challenge.unit === "seconds" ? "Sek." : "Workout";
 
   return (
     <section
       className={`mt-4 overflow-hidden rounded-3xl border p-4 backdrop-blur transition ${
-        done
-          ? "border-primary/40 bg-primary/10"
-          : "border-border bg-card/60"
+        done ? "border-primary/40 bg-primary/10" : "border-border bg-card/60"
       }`}
     >
       <div className="flex items-start justify-between gap-3">

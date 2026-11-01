@@ -1,0 +1,286 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFileSync } from "node:fs";
+import { startModuleSwipeTransition } from "../src/lib/module-swipe-transition";
+import {
+  ALO_MODULES,
+  ALO_SWIPE_SCREENS,
+  getSwipeDestination,
+  moduleFromPath,
+  swipeScreenFromPath,
+} from "../src/lib/module-navigation";
+
+function environment(reducedMotion = false) {
+  const dataset: Record<string, string> = {};
+  const originals = ["window", "document"].map(
+    (key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
+  );
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { innerWidth: 400, matchMedia: () => ({ matches: reducedMotion }) },
+  });
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: {
+      documentElement: { dataset },
+      startViewTransition() {
+        throw Error("Expensive snapshots must never be used");
+      },
+    },
+  });
+  return {
+    dataset,
+    restore() {
+      for (const [key, descriptor] of originals) {
+        if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+        else Reflect.deleteProperty(globalThis, key);
+      }
+    },
+  };
+}
+function surface(animate?: (...args: unknown[]) => unknown) {
+  return {
+    isConnected: true,
+    style: { transform: "", willChange: "" },
+    animate,
+  } as unknown as HTMLElement;
+}
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+for (const direction of ["left", "right"] as const) {
+  test(`${direction}: settling starts from the finger before navigation and stays compositor-only`, async () => {
+    const env = environment();
+    try {
+      let navigations = 0;
+      const calls: { frames: Keyframe[]; options: KeyframeAnimationOptions }[] = [];
+      const element = surface((frames, options) => {
+        calls.push({ frames: frames as Keyframe[], options: options as KeyframeAnimationOptions });
+        assert.equal(navigations, calls.length === 1 ? 0 : 1);
+        return { finished: Promise.resolve(), cancel() {} };
+      });
+      await startModuleSwipeTransition(
+        element,
+        direction,
+        async () => {
+          navigations++;
+        },
+        direction === "left" ? -80 : 80,
+      ).finished;
+      assert.equal(navigations, 1);
+      assert.equal(calls.length, 1);
+      assert.equal(
+        calls[0].frames[0].transform,
+        `translate3d(${direction === "left" ? -80 : 80}px, 0, 0)`,
+      );
+      assert.equal(calls[0].frames[1].transform, "translate3d(0, 0, 0)");
+      assert.equal(calls[0].options.duration, 160);
+      assert.ok(
+        calls.every((call) =>
+          call.frames.every((frame) => Object.keys(frame).every((key) => key === "transform")),
+        ),
+      );
+      assert.equal(element.style.transform, "");
+      assert.equal(element.style.willChange, "");
+      assert.equal(env.dataset.moduleSwipe, undefined);
+    } finally {
+      env.restore();
+    }
+  });
+}
+test("routing and settling run in parallel; route readiness unlocks reversal before animation ends", async () => {
+  const env = environment();
+  try {
+    const navigation = deferred();
+    const animation = deferred();
+    let animations = 0;
+    const element = surface(() => {
+      animations++;
+      return {
+        finished: animation.promise,
+        cancel() {
+          animation.resolve();
+        },
+      };
+    });
+    const transition = startModuleSwipeTransition(element, "left", () => navigation.promise, -96);
+    assert.equal(animations, 1);
+    assert.equal(transition.navigating, true);
+    navigation.resolve();
+    await Promise.resolve();
+    assert.equal(transition.navigating, false, "a running animation must not block a new gesture");
+    transition.cancel();
+    element.style.transform = "translate3d(24px, 0, 0)";
+    env.dataset.moduleSwipe = "right";
+    await transition.finished;
+    assert.equal(
+      element.style.transform,
+      "translate3d(24px, 0, 0)",
+      "late cleanup cannot wipe a newer drag",
+    );
+    assert.equal(env.dataset.moduleSwipe, "right");
+    assert.equal(animations, 1, "no second full-screen entrance after routing");
+  } finally {
+    env.restore();
+  }
+});
+test("reduced motion, missing surfaces and missing WAAPI navigate once without animation", async () => {
+  for (const mode of ["reduced", "missing", "unsupported"] as const) {
+    const env = environment(mode === "reduced");
+    try {
+      let navigations = 0;
+      const element =
+        mode === "missing"
+          ? null
+          : surface(
+              mode === "reduced"
+                ? () => {
+                    throw Error("must not animate");
+                  }
+                : undefined,
+            );
+      await startModuleSwipeTransition(element, "left", async () => {
+        navigations++;
+      }).finished;
+      assert.equal(navigations, 1);
+      assert.equal(env.dataset.moduleSwipe, undefined);
+    } finally {
+      env.restore();
+    }
+  }
+});
+test("animation API failures cannot suppress or duplicate navigation", async () => {
+  const env = environment();
+  try {
+    let navigations = 0;
+    await startModuleSwipeTransition(
+      surface(() => {
+        throw Error("animation unavailable");
+      }),
+      "left",
+      async () => {
+        navigations++;
+      },
+    ).finished;
+    assert.equal(navigations, 1);
+    assert.equal(env.dataset.moduleSwipe, undefined);
+  } finally {
+    env.restore();
+  }
+});
+test("route errors propagate and release all gesture state", async () => {
+  const env = environment();
+  try {
+    const element = surface(() => ({ finished: Promise.resolve(), cancel() {} }));
+    await assert.rejects(
+      startModuleSwipeTransition(element, "right", async () => {
+        throw Error("route failed");
+      }).finished,
+      /route failed/,
+    );
+    assert.equal(element.style.transform, "");
+    assert.equal(element.style.willChange, "");
+    assert.equal(env.dataset.moduleSwipe, undefined);
+  } finally {
+    env.restore();
+  }
+});
+test("unmount cancellation releases the layer and suppresses a late entrance", async () => {
+  const env = environment();
+  try {
+    const navigation = deferred();
+    let animations = 0;
+    let cancelled = 0;
+    const element = surface(() => {
+      animations++;
+      return {
+        finished: Promise.resolve(),
+        cancel() {
+          cancelled++;
+        },
+      };
+    });
+    const transition = startModuleSwipeTransition(element, "left", () => navigation.promise);
+    transition.cancel();
+    assert.equal(element.style.willChange, "");
+    navigation.resolve();
+    await transition.finished;
+    assert.equal(animations, 1);
+    assert.ok(cancelled >= 1);
+    assert.equal(env.dataset.moduleSwipe, undefined);
+  } finally {
+    env.restore();
+  }
+});
+test("a disconnected destination is not animated", async () => {
+  const env = environment();
+  try {
+    let animations = 0;
+    const element = surface(() => {
+      animations++;
+      return { finished: Promise.resolve(), cancel() {} };
+    });
+    await startModuleSwipeTransition(element, "left", async () => {
+      Object.defineProperty(element, "isConnected", { value: false });
+    }).finished;
+    assert.equal(animations, 1);
+  } finally {
+    env.restore();
+  }
+});
+
+test("swipe boundaries, aliases, exact threshold and protected routes remain unchanged", () => {
+  assert.equal(getSwipeDestination("/", 100, 0), null);
+  assert.equal(getSwipeDestination("/chat", -100, 0), "/profile");
+  assert.equal(getSwipeDestination("/profile", 100, 0), "/chat");
+  assert.equal(getSwipeDestination("/profile", -100, 0), null);
+  assert.equal(getSwipeDestination("/profile", 100, 0, true), null);
+  assert.equal(moduleFromPath("/profile"), null);
+  assert.equal(swipeScreenFromPath("/profile"), "/profile");
+  assert.equal(ALO_MODULES.length, 3);
+  assert.equal(ALO_SWIPE_SCREENS.length, 4);
+  assert.equal(getSwipeDestination("/coach", -72, 0), "/chat");
+  assert.equal(getSwipeDestination("/coach", 72, 0), "/");
+  assert.equal(getSwipeDestination("/", -71.9, 0), null);
+  assert.equal(getSwipeDestination("/", -72, 0), "/ai");
+  for (const path of ["/profile", "/settings", "/workout/one", "/cali-workout/one"])
+    assert.equal(getSwipeDestination(path, -120, 0), null);
+  assert.equal(getSwipeDestination("/ai", -120, 0, true), null);
+  assert.equal(getSwipeDestination("/ai", -120, 120), null);
+});
+const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
+test("direct touch tracking is frame-batched and all native gesture guards remain", () => {
+  const layout = read("routes/_authenticated/route.tsx");
+  const gesture = read("lib/module-swipe-gesture.ts");
+  assert.match(layout, /installModuleSwipeGesture/);
+  assert.match(layout, /getPathname: \(\) => currentPath.current/);
+  assert.match(layout, /className="alo-module-surface">\s*<Outlet \/>/);
+  assert.doesNotMatch(gesture, /useState|setState/);
+  assert.match(gesture, /requestAnimationFrame/);
+  assert.match(gesture, /cancelAnimationFrame/);
+  assert.match(gesture, /passive: true/);
+  assert.doesNotMatch(gesture, /preventDefault\(/);
+  assert.doesNotMatch(read("lib/module-swipe-transition.ts"), /startViewTransition/);
+  assert.match(read("module-swipe.css"), /prefers-reduced-motion: reduce/);
+  assert.doesNotMatch(read("module-swipe.css"), /view-transition/);
+  assert.doesNotMatch(read("module-swipe.css"), /\.authenticated-shell/);
+  assert.match(
+    read("routes/__root.tsx"),
+    /routeKey === "alo-swipe-screens" \? "alo-swipe-route" : "route-enter"/,
+  );
+});
+test("shared upper chrome is removed while module swipes and lower-navigation fallback remain", () => {
+  const nav = read("components/TopNav.tsx");
+  const shell = read("routes/_authenticated/route.tsx");
+  const layout = read("alo-header-layout.css");
+  assert.doesNotMatch(nav, /alo-module-switcher|moduleMenu/);
+  assert.match(nav, /layout === "bottom" \|\| layout === "floating"/);
+  assert.match(shell, /installModuleSwipeGesture/);
+  assert.doesNotMatch(shell, /SportAppHeader|<TopNav\s*\/>/);
+  assert.match(layout, /--homebar-top-space: 0px !important/);
+  assert.match(layout, /prefers-reduced-motion: reduce/);
+});

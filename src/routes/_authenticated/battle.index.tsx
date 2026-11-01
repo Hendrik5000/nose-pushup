@@ -2,12 +2,23 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { createBattle, joinBattle, findMatch, leaveQueue, modeDefaults, type BattleMode } from "@/lib/battle.functions";
+import { AloHomeLink } from "@/components/AloHomeLink";
+import { BattleFriendInvitationPanel } from "@/components/BattleFriendInvitationPanel";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { Bot, Crosshair, Swords, Trophy } from "lucide-react";
+import {
+  createBattle,
+  joinBattle,
+  findMatch,
+  leaveQueue,
+  modeDefaults,
+  type BattleMode,
+} from "@/lib/battle.functions";
 
 export const Route = createFileRoute("/_authenticated/battle/")({
   head: () => ({
     meta: [
-      { title: "Battle — Nosy Push-Ups" },
+      { title: "Wettkampf — Alo" },
       { name: "description", content: "1v1 Push-Up Duell in Echtzeit — fordere Freunde heraus." },
     ],
   }),
@@ -51,7 +62,9 @@ function BattleLobby() {
       const [{ data: rows }, { data: p }] = await Promise.all([
         supabase
           .from("battles")
-          .select("id, code, status, host_count, guest_count, is_bot, duration_s, winner_id, created_at")
+          .select(
+            "id, code, status, host_count, guest_count, is_bot, duration_s, winner_id, created_at",
+          )
           .or(`host_id.eq.${u.user.id},guest_id.eq.${u.user.id}`)
           .in("status", ["finished", "active"])
           .order("created_at", { ascending: false })
@@ -98,7 +111,9 @@ function BattleLobby() {
     const tick = async () => {
       if (stop) return;
       try {
-        const res = await match({ data: { mode, duration_s: mode === "timed" ? duration : modeDefaults(mode).duration_s } });
+        const res = await match({
+          data: { mode, duration_s: mode === "timed" ? duration : modeDefaults(mode).duration_s },
+        });
         if (res.matched && res.id) {
           setSearching(false);
           navigate({ to: "/battle/$id", params: { id: res.id } });
@@ -153,10 +168,8 @@ function BattleLobby() {
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
-      <header className="flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <span aria-hidden>←</span> Zurück
-        </Link>
+      <header className="classic-only flex items-center justify-between">
+        <AloHomeLink className="px-2 text-xs" />
         <span className="text-sm font-medium">⚔️ Battle</span>
         <Link
           to="/battle-league"
@@ -166,51 +179,78 @@ function BattleLobby() {
         </Link>
       </header>
 
+      <header className="sport-only mb-5 flex items-center justify-between">
+        <AloHomeLink className="px-2 text-xs" />
+        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]">
+          <Swords className="h-4 w-4 text-primary" /> Arena
+        </span>
+        <Link
+          to="/battle-league"
+          className="flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
+        >
+          <Trophy className="h-3.5 w-3.5" /> Liga
+        </Link>
+      </header>
+      <SportPageIntro
+        eyebrow="Wettkampf · 1 gegen 1"
+        title="Push-Up Duell"
+        description="Wähle dein Format, fordere einen Gegner heraus oder trainiere gegen einen Bot."
+      >
+        <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+          <Swords className="h-4 w-4" /> Battle-Rating {rating}
+        </div>
+      </SportPageIntro>
+
+      <div className="sport-only mt-7">
+        <SportSectionLabel number="01">Wettkampfmodus</SportSectionLabel>
+      </div>
       <section className="mt-6 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card/70 to-card/60 p-5 backdrop-blur">
         <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Live 1v1</div>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight">Push-Up Duell</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="classic-only mt-1 text-3xl font-bold tracking-tight">Push-Up Duell</h1>
+        <p className="classic-only mt-1 text-sm text-muted-foreground">
           Erstelle ein Battle und teile den Code — oder trete gegen einen Bot an.
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-2">
-          {([
-            { id: "timed", label: "Zeitduell", hint: "Meiste Reps" },
-            { id: "first_to", label: "Erster auf 30", hint: "Tempo zählt" },
-            { id: "sprint", label: "60s Sprint", hint: "Vollgas" },
-            { id: "endurance", label: "Ausdauer 5 Min", hint: "Durchhalten" },
-          ] as Array<{ id: BattleMode; label: string; hint: string }>).map((m) => (
+          {(
+            [
+              { id: "timed", label: "Zeitduell", hint: "Meiste Reps" },
+              { id: "first_to", label: "Erster auf 30", hint: "Tempo zählt" },
+              { id: "sprint", label: "60s Sprint", hint: "Vollgas" },
+              { id: "endurance", label: "Ausdauer 5 Min", hint: "Durchhalten" },
+            ] as Array<{ id: BattleMode; label: string; hint: string }>
+          ).map((m) => (
             <button
               key={m.id}
               onClick={() => setMode(m.id)}
               className={`rounded-2xl border px-3 py-3 text-left transition ${
-                mode === m.id
-                  ? "border-primary bg-primary/20"
-                  : "border-border bg-secondary/60"
+                mode === m.id ? "border-primary bg-primary/20" : "border-border bg-secondary/60"
               }`}
             >
               <div className="text-sm font-semibold">{m.label}</div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{m.hint}</div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                {m.hint}
+              </div>
             </button>
           ))}
         </div>
 
         {mode === "timed" && (
-        <div className="mt-4 flex gap-2">
-          {[30, 60, 120].map((d) => (
-            <button
-              key={d}
-              onClick={() => setDuration(d)}
-              className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
-                duration === d
-                  ? "border-primary bg-primary/20 text-foreground"
-                  : "border-border bg-secondary/60 text-muted-foreground"
-              }`}
-            >
-              {d}s
-            </button>
-          ))}
-        </div>
+          <div className="mt-4 flex gap-2">
+            {[30, 60, 120].map((d) => (
+              <button
+                key={d}
+                onClick={() => setDuration(d)}
+                className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                  duration === d
+                    ? "border-primary bg-primary/20 text-foreground"
+                    : "border-border bg-secondary/60 text-muted-foreground"
+                }`}
+              >
+                {d}s
+              </button>
+            ))}
+          </div>
         )}
 
         <button
@@ -218,7 +258,14 @@ function BattleLobby() {
           disabled={busy !== null}
           className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
         >
-          {searching ? "Suche Gegner… (abbrechen)" : "🎯 Gegner suchen"}
+          {searching ? (
+            "Suche Gegner… (abbrechen)"
+          ) : (
+            <>
+              <span className="classic-only">🎯 </span>
+              <Crosshair className="sport-only mr-2 inline h-4 w-4" /> Gegner suchen
+            </>
+          )}
         </button>
         <button
           onClick={() => handleCreate(false)}
@@ -232,21 +279,38 @@ function BattleLobby() {
           disabled={busy !== null}
           className="mt-2 flex w-full items-center justify-center rounded-2xl border border-border bg-secondary/60 px-4 py-3 text-sm font-semibold text-foreground transition active:scale-[0.98] disabled:opacity-50"
         >
-          {busy === "bot" ? "…" : "🤖 Gegen Bot antreten"}
+          {busy === "bot" ? (
+            "…"
+          ) : (
+            <>
+              <span className="classic-only">🤖 </span>
+              <Bot className="sport-only mr-2 inline h-4 w-4" /> Gegen Bot antreten
+            </>
+          )}
         </button>
       </section>
 
+      <BattleFriendInvitationPanel
+        mode={mode}
+        durationS={mode === "timed" ? duration : modeDefaults(mode).duration_s}
+        targetReps={modeDefaults(mode).target_reps}
+        onOpenBattle={(battleId) => navigate({ to: "/battle/$id", params: { id: battleId } })}
+      />
+
+      <div className="sport-only mt-7">
+        <SportSectionLabel number="02">Direkte Herausforderung</SportSectionLabel>
+      </div>
       <section className="mt-6 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
         <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Battle beitreten
         </h2>
-        <div className="mt-3 flex gap-2">
+        <div className="battle-join-row mt-3 flex min-w-0 gap-2">
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="CODE"
             maxLength={8}
-            className="flex-1 rounded-xl border border-border bg-background/60 px-4 py-3 text-center font-mono text-lg tracking-[0.4em] uppercase text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none"
+            className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-4 py-3 text-center font-mono text-lg tracking-[0.4em] uppercase text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none"
           />
           <button
             onClick={handleJoin}
@@ -263,6 +327,9 @@ function BattleLobby() {
         )}
       </section>
 
+      <div className="sport-only mt-7">
+        <SportSectionLabel number="03">Deine Bilanz</SportSectionLabel>
+      </div>
       <section className="mt-6 grid grid-cols-3 gap-3">
         <div className="rounded-2xl border border-border bg-card/50 px-4 py-3 backdrop-blur">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Wins</div>
@@ -270,40 +337,55 @@ function BattleLobby() {
         </div>
         <div className="rounded-2xl border border-border bg-card/50 px-4 py-3 backdrop-blur">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Losses</div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums text-muted-foreground">{losses}</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums text-muted-foreground">
+            {losses}
+          </div>
         </div>
         <div className="rounded-2xl border border-border bg-card/50 px-4 py-3 backdrop-blur">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Wertung</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Wertung
+          </div>
           <div className="mt-1 text-2xl font-semibold tabular-nums">{rating}</div>
         </div>
       </section>
 
       {history.length > 0 && (
-        <section className="mt-6">
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Letzte Battles
-          </h2>
-          <ul className="space-y-2">
-            {history.map((b) => (
-              <li
-                key={b.id}
-                className="flex items-center justify-between rounded-2xl border border-border bg-card/50 px-4 py-3"
-              >
-                <div>
-                  <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                    {b.code} {b.is_bot && "· 🤖"}
+        <>
+          <div className="sport-only mt-7">
+            <SportSectionLabel number="04">Zuletzt im Ring</SportSectionLabel>
+          </div>
+          <section className="mt-6">
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Letzte Battles
+            </h2>
+            <ul className="space-y-2">
+              {history.map((b) => (
+                <li
+                  key={b.id}
+                  className="flex items-center justify-between rounded-2xl border border-border bg-card/50 px-4 py-3"
+                >
+                  <div>
+                    <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                      {b.code}{" "}
+                      {b.is_bot && (
+                        <>
+                          <span className="classic-only">· 🤖</span>
+                          <span className="sport-only">· BOT</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="text-sm font-semibold tabular-nums">
+                      {b.host_count} : {b.guest_count}
+                    </div>
                   </div>
-                  <div className="text-sm font-semibold tabular-nums">
-                    {b.host_count} : {b.guest_count}
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    {b.status === "finished" ? "Beendet" : "Läuft"}
                   </div>
-                </div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                  {b.status === "finished" ? "Beendet" : "Läuft"}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
       )}
     </main>
   );

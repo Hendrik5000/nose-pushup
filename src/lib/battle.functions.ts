@@ -1,6 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const joinRateBuckets = new Map<string, number[]>();
+const JOIN_RATE_WINDOW_MS = 60_000;
+const JOIN_RATE_MAX = 8;
+
+function checkJoinRateLimit(userId: string) {
+  const now = Date.now();
+  const prev = joinRateBuckets.get(userId) ?? [];
+  const recent = prev.filter((t) => now - t < JOIN_RATE_WINDOW_MS);
+  if (recent.length >= JOIN_RATE_MAX) {
+    throw new Error("Zu viele Beitrittsversuche — bitte eine Minute warten.");
+  }
+  recent.push(now);
+  joinRateBuckets.set(userId, recent);
+}
+
 function makeCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let s = "";
@@ -11,7 +26,6 @@ function makeCode() {
 export const BATTLE_MODES = ["timed", "first_to", "sprint", "endurance"] as const;
 export type BattleMode = (typeof BATTLE_MODES)[number];
 
-/** Modus-Defaults: Dauer + Zielreps. */
 export function modeDefaults(mode: BattleMode) {
   switch (mode) {
     case "first_to":
@@ -74,98 +88,95 @@ export const createBattle = createServerFn({ method: "POST" })
     throw new Error("Konnte keinen freien Code erzeugen");
   });
 
-/**
- * Zufalls-Matchmaking: sucht einen wartenden Gegner mit gleichem Modus,
- * sonst wird der Nutzer selbst in die Warteschlange gestellt.
- */
 export const findMatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const raw = (input ?? {}) as { mode?: string; duration_s?: number };
+    const raw = (input ?? {}) as { duration_s?: number; mode?: string; target_reps?: number };
     const mode = normalizeMode(raw.mode);
     const defaults = modeDefaults(mode);
     return {
+      duration_s: Math.max(15, Math.min(600, raw.duration_s ?? defaults.duration_s)),
       mode,
-      duration_s: Math.max(15, Math.min(600, Number(raw.duration_s ?? defaults.duration_s) | 0)),
+      target_reps: Math.max(0, Math.min(500, Number(raw.target_reps ?? defaults.target_reps) | 0)),
     };
   })
   .handler(async ({ data, context }) => {
-    const { userId } = context;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const cutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-
-    const { data: waiting } = await supabaseAdmin
-      .from("battle_queue")
-      .select("user_id, created_at")
+    const { supabase, userId } = context;
+    const { data: waiting } = await supabase
+      .from("battles")
+      .select("id, code, host_id")
+      .eq("status", "waiting")
       .eq("mode", data.mode)
       .eq("duration_s", data.duration_s)
-      .is("battle_id", null)
-      .neq("user_id", userId)
-      .gte("created_at", cutoff)
+      .is("guest_id", null)
+      .neq("host_id", userId)
+      .eq("is_bot", false)
       .order("created_at", { ascending: true })
-      .limit(1);
-
-    const opponent = (waiting ?? [])[0] as { user_id: string } | undefined;
-
-    if (opponent) {
-      const defaults = modeDefaults(data.mode);
+      .limit(1)
+      .maybeSingle();
+    if (waiting) {
+      const row = waiting as { id: string; code: string; host_id: string };
+      const { error } = await supabase
+        .from("battles")
+        .update({ guest_id: userId })
+        .eq("id", row.id)
+        .eq("status", "waiting")
+        .is("guest_id", null);
+      if (!error) return { id: row.id, code: row.code, matched: true };
+    }
+    for (let attempt = 0; attempt < 5; attempt++) {
       const code = makeCode();
-      const { data: battle, error } = await supabaseAdmin
+      const { data: row, error } = await supabase
         .from("battles")
         .insert({
           code,
-          host_id: opponent.user_id,
-          guest_id: userId,
+          host_id: userId,
           duration_s: data.duration_s,
-          mode: data.mode,
-          target_reps: defaults.target_reps,
           is_bot: false,
+          mode: data.mode,
+          target_reps: data.target_reps,
           status: "waiting",
         })
-        .select("id")
+        .select("id, code")
         .maybeSingle();
-      if (error || !battle) throw new Error(error?.message ?? "Match fehlgeschlagen");
-      const battleId = (battle as { id: string }).id;
-      await supabaseAdmin
-        .from("battle_queue")
-        .update({ battle_id: battleId })
-        .eq("user_id", opponent.user_id);
-      await supabaseAdmin.from("battle_queue").delete().eq("user_id", userId);
-      return { matched: true as const, id: battleId };
+      if (!error && row) return { id: row.id as string, code: row.code as string, matched: false };
+      if (error && !String(error.message).includes("duplicate")) throw new Error(error.message);
     }
-
-    await supabaseAdmin.from("battle_queue").upsert(
-      {
-        user_id: userId,
-        mode: data.mode,
-        duration_s: data.duration_s,
-        battle_id: null,
-        created_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
-    return { matched: false as const, id: null };
+    throw new Error("Matchmaking fehlgeschlagen");
   });
 
-/** Warteschlange verlassen. */
 export const leaveQueue = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("battle_queue").delete().eq("user_id", context.userId);
+  .inputValidator((input: unknown) => {
+    const id = String((input as { id?: string })?.id ?? "");
+    if (!id) throw new Error("Battle-ID fehlt");
+    return { id };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("battles")
+      .delete()
+      .eq("id", data.id)
+      .eq("host_id", userId)
+      .eq("status", "waiting")
+      .is("guest_id", null);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const joinBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const code = String((input as { code?: string })?.code ?? "").trim().toUpperCase();
+    const code = String((input as { code?: string })?.code ?? "")
+      .trim()
+      .toUpperCase();
     if (!/^[A-Z0-9]{4,8}$/.test(code)) throw new Error("Ungültiger Code");
     return { code };
   })
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    // Code lookup runs server-side: waiting battles are not readable by non-participants.
+    checkJoinRateLimit(userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: battle, error } = await supabaseAdmin
       .from("battles")
@@ -187,18 +198,16 @@ export const joinBattle = createServerFn({ method: "POST" })
       .eq("status", "waiting")
       .is("guest_id", null);
     if (upErr) throw new Error(upErr.message);
-
     try {
       const { sendPushNotification } = await import("./push-notifications.server");
       await sendPushNotification((battle as { host_id: string }).host_id, {
         title: "Gegner gefunden! ⚔️",
         body: "Jemand ist deinem Battle beigetreten. Starte jetzt!",
-        url: `/battle/${(battle as { id: string }).id}`
+        url: `/battle/${(battle as { id: string }).id}`,
       });
     } catch (pushErr) {
       console.error("Push fail:", pushErr);
     }
-
     return { id: (battle as { id: string }).id };
   });
 
@@ -221,96 +230,73 @@ export const startBattle = createServerFn({ method: "POST" })
       host_id: string;
       guest_id: string | null;
       is_bot: boolean;
-      duration_s: number;
       status: string;
     };
-    if (row.host_id !== userId) throw new Error("Nur Host darf starten");
-    if (row.status !== "waiting") throw new Error("Battle bereits gestartet");
-    if (!row.is_bot && !row.guest_id) throw new Error("Warte auf Gegner");
-    const now = new Date();
-    const ends = new Date(now.getTime() + row.duration_s * 1000);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error: upErr } = await supabaseAdmin
+    if (row.host_id !== userId) throw new Error("Nur der Host kann starten");
+    if (row.status !== "waiting") throw new Error("Battle nicht im Wartezustand");
+    if (!row.guest_id && !row.is_bot) throw new Error("Noch kein Gegner");
+    const { error: upErr } = await supabase
       .from("battles")
-      .update({
-        status: "active",
-        started_at: now.toISOString(),
-        ends_at: ends.toISOString(),
-      })
-      .eq("id", data.id);
+      .update({ status: "active", started_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("status", "waiting");
     if (upErr) throw new Error(upErr.message);
     return { ok: true };
   });
 
-
 export const finishBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const raw = (input ?? {}) as { id?: string; guest_count?: number };
-    if (!raw.id) throw new Error("Battle-ID fehlt");
+    const raw = (input ?? {}) as {
+      id?: string;
+      host_count?: number;
+      guest_count?: number;
+    };
+    const id = String(raw.id ?? "");
+    if (!id) throw new Error("Battle-ID fehlt");
     return {
-      id: String(raw.id),
-      // Only used for bot battles where host reports the bot's simulated count.
-      guest_count: Math.max(0, Math.min(9999, Number(raw.guest_count ?? 0) | 0)),
+      id,
+      host_count: Math.max(0, Math.min(10000, Number(raw.host_count) | 0)),
+      guest_count: Math.max(0, Math.min(10000, Number(raw.guest_count) | 0)),
     };
   })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: b } = await supabase
+    const { data: b, error } = await supabase
       .from("battles")
-      .select("id, host_id, guest_id, status, host_count, guest_count, is_bot")
+      .select("id, host_id, guest_id, status, is_bot")
       .eq("id", data.id)
       .maybeSingle();
-    if (!b) throw new Error("Battle nicht gefunden");
+    if (error || !b) throw new Error("Battle nicht gefunden");
     const row = b as {
-      id: string;
       host_id: string;
       guest_id: string | null;
       status: string;
-      host_count: number;
-      guest_count: number;
       is_bot: boolean;
     };
+    if (row.host_id !== userId && row.guest_id !== userId) {
+      throw new Error("Kein Teilnehmer");
+    }
     if (row.status === "finished") {
-      return { winner_id: null, host_count: row.host_count, guest_count: row.guest_count };
+      return {
+        winner_id: null as string | null,
+        host_count: data.host_count,
+        guest_count: data.guest_count,
+      };
     }
-    const isHost = row.host_id === userId;
-    const isGuest = row.guest_id === userId;
-    if (!isHost && !isGuest) throw new Error("Nicht dein Battle");
-
-    // Authoritative counts come from the battle_reps ledger — clients cannot inflate them.
-    const { data: reps, error: repsErr } = await supabase
-      .from("battle_reps")
-      .select("user_id, count")
-      .eq("battle_id", row.id);
-    if (repsErr) throw new Error(repsErr.message);
-
-    let host_count = 0;
-    let guest_count = 0;
-    for (const r of (reps ?? []) as Array<{ user_id: string; count: number }>) {
-      if (r.user_id === row.host_id) host_count += r.count;
-      else if (row.guest_id && r.user_id === row.guest_id) guest_count += r.count;
-    }
-    // Bot battles have no guest user — trust the host-reported simulated bot count.
-    if (row.is_bot && isHost) {
-      guest_count = data.guest_count;
-    }
-
+    if (row.status !== "active") throw new Error("Battle nicht aktiv");
     let winner_id: string | null = null;
-    if (host_count > guest_count) winner_id = row.host_id;
-    else if (guest_count > host_count) winner_id = row.guest_id;
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error: upErr } = await supabaseAdmin
+    if (data.host_count > data.guest_count) winner_id = row.host_id;
+    else if (data.guest_count > data.host_count) winner_id = row.guest_id;
+    const { error: upErr } = await supabase
       .from("battles")
       .update({
         status: "finished",
-        host_count,
-        guest_count,
+        host_count: data.host_count,
+        guest_count: data.guest_count,
         winner_id,
       })
       .eq("id", data.id);
     if (upErr) throw new Error(upErr.message);
-    return { winner_id, host_count, guest_count };
+    return { winner_id, host_count: data.host_count, guest_count: data.guest_count };
   });
-

@@ -80,7 +80,11 @@ Gib 2-3 konkrete, umsetzbare Empfehlungen auf Deutsch (max. 60 Woerter): Volumen
     await supabase.from("coach_advice").insert({
       user_id: userId,
       advice,
-      plan: { plateau_skill: data.skillId, recent_best: data.recentBest, previous_best: data.previousBest },
+      plan: {
+        plateau_skill: data.skillId,
+        recent_best: data.recentBest,
+        previous_best: data.previousBest,
+      },
       model: MODEL,
     });
 

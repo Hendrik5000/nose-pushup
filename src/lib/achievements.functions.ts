@@ -8,10 +8,12 @@ export const backfillAchievements = createServerFn({ method: "POST" })
     const { data, error } = await supabase.rpc("check_achievements", { _user_id: userId });
     if (error) throw new Error(error.message);
     return {
-      unlocked: ((data ?? []) as Array<{ _achievement_id: string; _xp_reward: number }>).map((r) => ({
-        achievement_id: r._achievement_id,
-        xp_reward: r._xp_reward,
-      })),
+      unlocked: ((data ?? []) as Array<{ _achievement_id: string; _xp_reward: number }>).map(
+        (r) => ({
+          achievement_id: r._achievement_id,
+          xp_reward: r._xp_reward,
+        }),
+      ),
     };
   });
 
@@ -21,7 +23,10 @@ export const listAchievements = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const [{ data: all }, { data: unlocked }] = await Promise.all([
       supabase.from("achievements").select("*").order("sort_order", { ascending: true }),
-      supabase.from("user_achievements").select("achievement_id, unlocked_at, seen").eq("user_id", userId),
+      supabase
+        .from("user_achievements")
+        .select("achievement_id, unlocked_at, seen")
+        .eq("user_id", userId),
     ]);
     return {
       achievements: (all ?? []) as Array<{
@@ -35,7 +40,11 @@ export const listAchievements = createServerFn({ method: "GET" })
         xp_reward: number;
         hidden: boolean;
       }>,
-      unlocked: (unlocked ?? []) as Array<{ achievement_id: string; unlocked_at: string; seen: boolean }>,
+      unlocked: (unlocked ?? []) as Array<{
+        achievement_id: string;
+        unlocked_at: string;
+        seen: boolean;
+      }>,
     };
   });
 

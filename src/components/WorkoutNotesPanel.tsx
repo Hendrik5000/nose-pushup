@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { addWorkoutNote, deleteWorkoutNote, getWorkoutNotes } from "@/lib/extra-features";
 
 export function WorkoutNotesPanel() {
   const [notes, setNotes] = useState(() => getWorkoutNotes());
   const [text, setText] = useState("");
+  useEffect(() => {
+    const refresh = () => setNotes(getWorkoutNotes());
+    window.addEventListener("alo-data-changed", refresh);
+    window.addEventListener("alo-remote-applied", refresh);
+    return () => {
+      window.removeEventListener("alo-data-changed", refresh);
+      window.removeEventListener("alo-remote-applied", refresh);
+    };
+  }, []);
 
   const save = () => {
     if (!text.trim()) return;
@@ -14,7 +23,9 @@ export function WorkoutNotesPanel() {
 
   return (
     <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
-      <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Trainingsnotizen</div>
+      <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        Trainingsnotizen
+      </div>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -34,9 +45,29 @@ export function WorkoutNotesPanel() {
           <li key={n.id} className="rounded-xl border border-border px-3 py-2 text-xs">
             <div className="flex justify-between gap-2">
               <span className="text-muted-foreground">
-                {new Date(n.ts).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                {new Date(n.ts).toLocaleString("de-DE", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </span>
-              <button type="button" className="text-muted-foreground" onClick={() => { deleteWorkoutNote(n.id); setNotes(getWorkoutNotes()); }}>×</button>
+              <button
+                type="button"
+                className="text-muted-foreground"
+                onClick={() => {
+                  if (
+                    !window.confirm(
+                      "Trainingsnotiz löschen? Bei aktivierter Synchronisierung wird auch die Cloudkopie gelöscht.",
+                    )
+                  )
+                    return;
+                  deleteWorkoutNote(n.id);
+                  setNotes(getWorkoutNotes());
+                }}
+              >
+                ×
+              </button>
             </div>
             <p className="mt-1 text-foreground">{n.text}</p>
           </li>

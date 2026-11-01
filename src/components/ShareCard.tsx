@@ -11,7 +11,13 @@ export type ShareStats = {
  * Erzeugt aus Trainingswerten eine teilbare Bildkarte (Canvas) und nutzt
  * das native Teilen-Menü, sonst Download.
  */
-export function ShareCard({ stats, label = "Ergebnis teilen" }: { stats: ShareStats; label?: string }) {
+export function ShareCard({
+  stats,
+  label = "Ergebnis teilen",
+}: {
+  stats: ShareStats;
+  label?: string;
+}) {
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
 
@@ -66,12 +72,12 @@ export function ShareCard({ stats, label = "Ergebnis teilen" }: { stats: ShareSt
 
       ctx.fillStyle = "rgba(255,255,255,0.5)";
       ctx.font = "500 34px system-ui, sans-serif";
-      ctx.fillText("Nosy Push-Ups", 90, h - 90);
+      ctx.fillText("Alo", 90, h - 90);
 
       const blob: Blob = await new Promise((resolve, reject) =>
         canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("blob"))), "image/png"),
       );
-      const file = new File([blob], "nosy-pushups.png", { type: "image/png" });
+      const file = new File([blob], "alo-trainingskarte.png", { type: "image/png" });
 
       const nav = navigator as Navigator & {
         canShare?: (d: ShareData) => boolean;
@@ -83,7 +89,7 @@ export function ShareCard({ stats, label = "Ergebnis teilen" }: { stats: ShareSt
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "nosy-pushups.png";
+        a.download = "alo-trainingskarte.png";
         a.click();
         URL.revokeObjectURL(url);
         setHint("Bild gespeichert");

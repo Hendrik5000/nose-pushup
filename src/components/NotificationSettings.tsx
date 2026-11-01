@@ -5,6 +5,7 @@ import {
   DEFAULT_REMINDER_TIME,
   getReminderTime,
   isNotifyEnabled,
+  isPushVapidKeyConfigured,
   notificationPermission,
   notificationsSupported,
   requestNotificationPermission,
@@ -12,6 +13,8 @@ import {
   setReminderTime,
   showNotification,
   subscribeToPush,
+  validateConfiguredPushVapidKey,
+  VAPID_KEY_CONFIGURATION_ERROR,
 } from "@/lib/notifications";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -29,9 +32,9 @@ export function NotificationSettings() {
     setTime(getReminderTime());
     setDenied(notificationPermission() === "denied");
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(reg => {
-        reg.pushManager.getSubscription().then(sub => {
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.pushManager.getSubscription().then((sub) => {
           setPushEnabled(!!sub);
         });
       });
@@ -55,7 +58,11 @@ export function NotificationSettings() {
     setEnabled(true);
     setNotifyEnabled(true);
     toast.success("Erinnerungen aktiv!");
-    void showNotification("Erinnerungen aktiv 🔔", `Wir melden uns täglich um ${getReminderTime()} Uhr.`, "np-test");
+    void showNotification(
+      "Erinnerungen aktiv 🔔",
+      `Wir melden uns täglich um ${getReminderTime()} Uhr.`,
+      "np-test",
+    );
   };
 
   const togglePush = async () => {
@@ -68,12 +75,17 @@ export function NotificationSettings() {
           await sub.unsubscribe();
           const { data: userData } = await supabase.auth.getUser();
           if (userData.user) {
-            await supabase.from('push_subscriptions').delete().eq('user_id', userData.user.id).eq('endpoint', sub.endpoint);
+            await supabase
+              .from("push_subscriptions")
+              .delete()
+              .eq("user_id", userData.user.id)
+              .eq("endpoint", sub.endpoint);
           }
         }
         setPushEnabled(false);
         toast.info("Push-Benachrichtigungen deaktiviert");
       } else {
+        await validateConfiguredPushVapidKey();
         const perm = await requestNotificationPermission();
         if (perm !== "granted") {
           setDenied(perm === "denied");
@@ -83,7 +95,7 @@ export function NotificationSettings() {
         const { data: userData } = await supabase.auth.getUser();
         if (!userData.user) throw new Error("Nicht eingeloggt");
         const subJSON = sub.toJSON();
-        const { error } = await supabase.from('push_subscriptions').upsert({
+        const { error } = await supabase.from("push_subscriptions").upsert({
           user_id: userData.user.id,
           endpoint: subJSON.endpoint ?? "",
           p256dh: subJSON.keys?.p256dh ?? "",
@@ -93,8 +105,14 @@ export function NotificationSettings() {
         setPushEnabled(true);
         toast.success("Push-Benachrichtigungen aktiviert!");
       }
-    } catch {
-      toast.error("Fehler bei Push-Aktivierung");
+    } catch (error) {
+      if (error instanceof Error && error.message === VAPID_KEY_CONFIGURATION_ERROR) {
+        toast.error(error.message);
+      } else if (error instanceof Error && error.message === "Permission not granted") {
+        toast.error("Push-Berechtigung fehlt");
+      } else {
+        toast.error("Fehler bei Push-Aktivierung");
+      }
     } finally {
       setLoading(false);
     }
@@ -109,7 +127,9 @@ export function NotificationSettings() {
         }`}
       >
         <div className="flex items-center gap-4">
-          <div className={`rounded-xl p-2.5 ${enabled ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"}`}>
+          <div
+            className={`rounded-xl p-2.5 ${enabled ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"}`}
+          >
             {enabled ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
           </div>
           <div>
@@ -126,11 +146,18 @@ export function NotificationSettings() {
         }`}
       >
         <div className="flex items-center gap-4">
-          <div className={`rounded-xl p-2.5 ${pushEnabled ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"}`}>
+          <div
+            className={`rounded-xl p-2.5 ${pushEnabled ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"}`}
+          >
             <Smartphone className="h-5 w-5" />
           </div>
           <div>
             <p className="text-sm font-medium text-foreground">Cloud Push</p>
+            <p className="text-[10px] text-muted-foreground">
+              {pushEnabled || isPushVapidKeyConfigured()
+                ? "Nexus-Direktnachrichten & Battle-Hinweise"
+                : "VAPID-Schlüssel fehlt oder ist ungültig"}
+            </p>
           </div>
         </div>
       </div>

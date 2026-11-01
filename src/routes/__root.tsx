@@ -14,25 +14,33 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import appCss from "../styles.css?url";
+import sportCss from "../sport.css?url";
+import communityReferenceCss from "../community-reference.css?url";
+import healthReferenceCss from "../health-reference.css?url";
+import aiReferenceCss from "../ai-reference.css?url";
+import aiResponsiveCss from "../ai-responsive.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
-
+import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
+import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
+import { swipeScreenFromPath } from "@/lib/module-navigation";
+import { clearSensitiveClientStorage } from "@/lib/sensitive-storage";
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Seite nicht gefunden</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          Diese Seite gibt es nicht oder sie wurde verschoben.
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            Zur Startseite
           </Link>
         </div>
       </div>
@@ -51,10 +59,10 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          Diese Seite konnte nicht geladen werden
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Es ist ein Fehler aufgetreten. Lade die Seite neu oder gehe zurück zur Startseite.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -64,13 +72,13 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            Erneut versuchen
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            Zur Startseite
           </a>
         </div>
       </div>
@@ -83,29 +91,49 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Nosy Push-Up" },
-      { name: "description", content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone." },
+      { title: "Alo — All in one" },
+      {
+        name: "description",
+        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+      },
       { name: "theme-color", content: "#0b0b0f" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "Nosy" },
+      { name: "apple-mobile-web-app-title", content: "Alo" },
       { name: "author", content: "Lovable" },
 
-      { property: "og:title", content: "Nosy Push-Up" },
-      { property: "og:description", content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone." },
+      { property: "og:title", content: "Alo — All in one" },
+      {
+        property: "og:description",
+        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Nosy Push-Up" },
-      { name: "twitter:description", content: "Nosey Push Ups tracks your push-ups by detecting nose presses on your phone." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e5c2365e-a81c-4835-81d6-f8d5014655b9/id-preview-f69d2ccc--40995ef3-9b15-4ba7-9ebb-89713e15105b.lovable.app-1783159358811.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e5c2365e-a81c-4835-81d6-f8d5014655b9/id-preview-f69d2ccc--40995ef3-9b15-4ba7-9ebb-89713e15105b.lovable.app-1783159358811.png" },
+      { name: "twitter:title", content: "Alo — All in one" },
+      {
+        name: "twitter:description",
+        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+      },
+      {
+        property: "og:image",
+        content: "/alo-brand.jpg",
+      },
+      {
+        name: "twitter:image",
+        content: "/alo-brand.jpg",
+      },
     ],
     links: [
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-      { rel: "apple-touch-icon", href: "/favicon.png" },
+      { rel: "icon", type: "image/png", href: "/alo-icon-192.png" },
+      { rel: "apple-touch-icon", href: "/alo-apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: sportCss },
+      { rel: "stylesheet", href: communityReferenceCss },
+      { rel: "stylesheet", href: healthReferenceCss },
+      { rel: "stylesheet", href: aiReferenceCss },
+      { rel: "stylesheet", href: aiResponsiveCss },
 
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -123,7 +151,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="de">
       <head>
         <HeadContent />
       </head>
@@ -141,7 +169,7 @@ function RootComponent() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [installable, setInstallable] = useState(false);
   const [standalone, setStandalone] = useState(false);
-  const [routeKey, setRouteKey] = useState(pathname);
+  const routeKey = swipeScreenFromPath(pathname) ? "alo-swipe-screens" : pathname;
   const [fullscreenRequested, setFullscreenRequested] = useState(false);
 
   const updateViewportHeight = () => {
@@ -151,6 +179,12 @@ function RootComponent() {
 
   useEffect(() => {
     installGlobalErrorReporting();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "np-theme" && event.newValue && isThemeId(event.newValue))
+        applyTheme(event.newValue);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   useEffect(() => {
@@ -159,33 +193,57 @@ function RootComponent() {
     window.addEventListener("orientationchange", updateViewportHeight);
     window.visualViewport?.addEventListener("resize", updateViewportHeight);
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW reg fail:', err));
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .catch((err) => console.error("SW reg fail:", err));
       });
     }
 
+    applyDesignStyle(getStoredDesignStyle());
+    applyNavigationLayout(getStoredNavigationLayout());
     applyTheme(getStoredTheme());
-    // Theme des Kontos laden, damit es auch ohne Profilbesuch sofort greift.
     (async () => {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
-      if (!uid) return;
-      const { data } = await supabase.from("profiles").select("theme").eq("id", uid).maybeSingle();
-      const t = data?.theme;
-      if (isThemeId(t)) applyTheme(t);
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: sessionData } = await supabase.auth.getSession();
+        const uid = sessionData.session?.user.id;
+        if (!uid) return;
+        const { data } = await supabase
+          .from("profiles")
+          .select("theme")
+          .eq("id", uid)
+          .maybeSingle();
+        const t = data?.theme;
+        if (isThemeId(t)) applyTheme(t);
+      } catch {
+        // Theme loading is optional
+      }
     })();
   }, []);
 
   useEffect(() => {
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
     setStandalone(isStandalone);
 
-    const handleDisplayMode = () => setStandalone(window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+    const handleDisplayMode = () =>
+      setStandalone(
+        window.matchMedia("(display-mode: standalone)").matches ||
+          (window.navigator as Navigator & { standalone?: boolean }).standalone === true,
+      );
     window.matchMedia("(display-mode: standalone)").addEventListener("change", handleDisplayMode);
 
-    const onBeforeInstallPrompt = () => setInstallable(true);
+    const onBeforeInstallPrompt = () => {
+      try {
+        if (sessionStorage.getItem("alo-install-hint-dismissed") === "1") return;
+      } catch {
+        // ok
+      }
+      setInstallable(true);
+    };
     const onAppInstalled = () => {
       setInstallable(false);
       setStandalone(true);
@@ -193,16 +251,16 @@ function RootComponent() {
 
     const tryAutoFullscreen = async () => {
       if (fullscreenRequested || document.fullscreenElement) return;
-
-      const inStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+      const inStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
       const inFullscreenMode = window.matchMedia("(display-mode: fullscreen)").matches;
       if (!inStandalone && !inFullscreenMode) return;
-
       setFullscreenRequested(true);
       try {
         await document.documentElement.requestFullscreen();
       } catch {
-        // Browsers block autoplay/fullscreen without a user interaction. We fall back to the first tap.
+        // blocked without gesture
       }
     };
 
@@ -231,7 +289,9 @@ function RootComponent() {
     return () => {
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
       window.removeEventListener("appinstalled", onAppInstalled);
-      window.matchMedia("(display-mode: standalone)").removeEventListener("change", handleDisplayMode);
+      window
+        .matchMedia("(display-mode: standalone)")
+        .removeEventListener("change", handleDisplayMode);
       window.removeEventListener("resize", updateViewportHeight);
       window.removeEventListener("orientationchange", updateViewportHeight);
       window.visualViewport?.removeEventListener("resize", updateViewportHeight);
@@ -243,16 +303,12 @@ function RootComponent() {
   }, [fullscreenRequested]);
 
   useEffect(() => {
-    setRouteKey(pathname);
-  }, [pathname]);
-
-  useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     let unsub: { unsubscribe: () => void } | undefined;
     (async () => {
       const { supabase } = await import("@/integrations/supabase/client");
       const { data } = supabase.auth.onAuthStateChange((event) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+        if (event === "SIGNED_OUT") clearSensitiveClientStorage();
         router.invalidate();
         if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
       });
@@ -263,28 +319,44 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <div
+        key={routeKey}
+        className={routeKey === "alo-swipe-screens" ? "alo-swipe-route" : "route-enter"}
+      >
+        <Outlet />
+      </div>
       {installable && !standalone && (
-        <div className="fixed inset-x-3 top-3 z-50 rounded-2xl border border-primary/30 bg-background/95 px-3 py-3 shadow-lg backdrop-blur">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Installieren</div>
-              <div className="mt-1 text-sm font-semibold text-foreground">Als App auf dem Startbildschirm nutzen</div>
-              <div className="mt-1 text-xs text-muted-foreground">Öffne das Browser-Menü und wähle „Als App installieren“.</div>
-            </div>
+        <aside
+          aria-label="App installieren"
+          className="mx-auto mb-24 w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-border bg-card/60 px-3 py-2"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <details className="min-w-0 flex-1 text-xs text-muted-foreground">
+              <summary className="flex min-h-11 cursor-pointer items-center font-medium text-foreground">
+                Alo als App installieren
+              </summary>
+              <p className="pb-2 leading-relaxed">
+                Im Browser-Menü „App installieren“ oder „Zum Startbildschirm“ wählen.
+              </p>
+            </details>
             <button
               type="button"
-              onClick={() => setInstallable(false)}
-              className="rounded-full border border-border px-2 py-1 text-[11px] text-muted-foreground"
+              onClick={() => {
+                setInstallable(false);
+                try {
+                  sessionStorage.setItem("alo-install-hint-dismissed", "1");
+                } catch {
+                  // ok
+                }
+              }}
+              aria-label="Installationshinweis schließen"
+              className="min-h-11 shrink-0 rounded-full px-2 text-[11px] text-muted-foreground transition hover:text-foreground"
             >
               Schließen
             </button>
           </div>
-        </div>
+        </aside>
       )}
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <div key={routeKey} className="route-enter">
-        <Outlet />
-      </div>
       <OfflineBanner />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>

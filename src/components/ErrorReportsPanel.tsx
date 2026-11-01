@@ -17,9 +17,9 @@ export function ErrorReportsPanel() {
   const copyAll = async () => {
     try {
       await navigator.clipboard.writeText(exportErrorReportsJson());
-      alert("Fehlerberichte in die Zwischenablage kopiert — an Grok senden zum Auto-Fix.");
+      alert("Fehlerberichte kopiert. Prüfe den Inhalt, bevor du ihn teilst.");
     } catch {
-      alert("Kopieren fehlgeschlagen. Bitte manuell aus der Konsole lesen.");
+      alert("Kopieren nicht möglich. Erlaube die Zwischenablage und versuche es erneut.");
     }
   };
 
@@ -37,12 +37,16 @@ export function ErrorReportsPanel() {
         <span className="text-xs text-muted-foreground">
           {open.length} offen · {reports.length} gesamt
         </span>
+        <p role="note" className="w-full text-xs leading-relaxed text-muted-foreground">
+          Kopieren sendet nichts automatisch. Prüfe persönliche Inhalte, bevor du Berichte manuell
+          teilst.
+        </p>
         <button
           type="button"
           onClick={copyAll}
-          className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+          className="min-h-11 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
         >
-          Alle kopieren (für Auto-Fix)
+          Fehlerberichte kopieren
         </button>
         <button
           type="button"
@@ -50,7 +54,7 @@ export function ErrorReportsPanel() {
             clearFixedReports();
             refresh();
           }}
-          className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground"
+          className="min-h-11 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground"
         >
           Behobene löschen
         </button>

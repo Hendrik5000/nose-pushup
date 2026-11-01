@@ -1,7 +1,7 @@
 {
-  "name": "Nosy Push-Up",
-  "short_name": "Nosy",
-  "description": "Push-Ups mit der Nase zählen, Streaks halten, Freunde herausfordern.",
+  "name": "Alo — All in one",
+  "short_name": "Alo",
+  "description": "Nose-Pushup-Training, Mira für Alltag und Wissen sowie Nexus Chat – drei gleichwertige Module in einer App.",
   "lang": "de",
   "dir": "ltr",
   "start_url": "/",
@@ -12,40 +12,55 @@
   "orientation": "portrait",
   "background_color": "#0b1017",
   "theme_color": "#0b1017",
-  "categories": ["health", "fitness", "sports"],
+  "categories": ["productivity", "social", "health", "fitness"],
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/favicon.png",
+      "src": "/alo-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon.png",
+      "src": "/alo-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/favicon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
     {
-      "name": "Workout starten",
-      "short_name": "Workout",
-      "url": "/run",
-      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+      "name": "Nose-Pushup starten",
+      "short_name": "Training",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/alo-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
-      "name": "AI Coach",
-      "short_name": "Coach",
-      "url": "/coach",
-      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+      "name": "Mira fragen",
+      "short_name": "Mira",
+      "url": "/ai",
+      "icons": [
+        {
+          "src": "/alo-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Nexus Chat",
+      "short_name": "Nexus",
+      "url": "/chat",
+      "icons": [
+        {
+          "src": "/alo-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

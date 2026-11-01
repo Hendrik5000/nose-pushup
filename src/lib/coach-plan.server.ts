@@ -83,7 +83,9 @@ export function sanitizeDays(raw: unknown, weekStart: string): PlanDay[] | null 
       day: addDays(weekStart, i),
       focus,
       exercise_id:
-        ex && ["pushup", "situp", "squat", "plank", "burpee"].includes(ex) ? ex : FOCUS_EXERCISE[focus] ?? null,
+        ex && ["pushup", "situp", "squat", "plank", "burpee"].includes(ex)
+          ? ex
+          : (FOCUS_EXERCISE[focus] ?? null),
       sets: clamp(Number(o["sets"] ?? 3), 0, 12),
       reps: clamp(Number(o["reps"] ?? 10), 0, 300),
       rest_s: clamp(Number(o["rest_s"] ?? 60), 0, 600),

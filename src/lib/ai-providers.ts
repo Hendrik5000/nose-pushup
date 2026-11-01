@@ -1,5 +1,7 @@
 /** Client-side BYOK multi-provider config for Super-AI. */
 
+import { providersStorageKey } from "@/lib/sensitive-storage";
+
 export type ProviderId = "openai" | "anthropic" | "google" | "lovable" | "custom";
 
 export type AiTask =
@@ -10,18 +12,19 @@ export type AiTask =
   | "stats_analysis"
   | "chat_summary"
   | "quick_log"
-  | "motivation";
+  | "motivation"
+  | "science"
+  | "creative"
+  | "coding"
+  | "vision";
 
 export type ProviderConfig = {
   id: ProviderId;
   label: string;
   enabled: boolean;
   apiKey: string;
-  /** OpenAI-compatible base URL (custom only) */
   baseUrl?: string;
-  /** Default model id for this provider */
   model: string;
-  /** Preferred for these tasks */
   tasks: AiTask[];
 };
 
@@ -34,7 +37,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     enabled: false,
     apiKey: "",
     model: "gpt-4o-mini",
-    tasks: ["general", "stats_analysis", "training_plan"],
+    tasks: ["general", "stats_analysis", "training_plan", "coding", "science"],
   },
   {
     id: "anthropic",
@@ -42,7 +45,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     enabled: false,
     apiKey: "",
     model: "claude-3-5-haiku-latest",
-    tasks: ["form_technique", "recovery", "training_plan"],
+    tasks: ["form_technique", "recovery", "training_plan", "creative", "science"],
   },
   {
     id: "google",
@@ -50,7 +53,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     enabled: false,
     apiKey: "",
     model: "gemini-2.0-flash",
-    tasks: ["quick_log", "motivation", "general"],
+    tasks: ["quick_log", "motivation", "general", "vision", "creative"],
   },
   {
     id: "lovable",
@@ -58,7 +61,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     enabled: true,
     apiKey: "",
     model: "google/gemini-3-flash-preview",
-    tasks: ["general", "quick_log", "motivation"],
+    tasks: ["general", "quick_log", "motivation", "vision", "creative"],
   },
   {
     id: "custom",
@@ -71,13 +74,20 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
 ];
 
-export function loadProviders(): ProviderConfig[] {
+export function loadProviders(userId?: string | null): ProviderConfig[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const key = providersStorageKey(userId);
+    let raw = localStorage.getItem(key);
+    if (!raw && userId) {
+      raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        localStorage.setItem(key, raw);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
     if (!raw) return structuredClone(DEFAULT_PROVIDERS);
     const parsed = JSON.parse(raw) as ProviderConfig[];
     if (!Array.isArray(parsed) || parsed.length === 0) return structuredClone(DEFAULT_PROVIDERS);
-    // Merge with defaults so new fields appear after updates
     return DEFAULT_PROVIDERS.map((d) => {
       const found = parsed.find((p) => p.id === d.id);
       return found ? { ...d, ...found, id: d.id, label: d.label } : d;
@@ -87,17 +97,29 @@ export function loadProviders(): ProviderConfig[] {
   }
 }
 
-export function saveProviders(list: ProviderConfig[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+export function saveProviders(list: ProviderConfig[], userId?: string | null) {
+  const sanitized = list.map((p) => ({
+    ...p,
+    apiKey: typeof p.apiKey === "string" ? p.apiKey : "",
+  }));
+  localStorage.setItem(providersStorageKey(userId), JSON.stringify(sanitized));
 }
 
 /** Classify user message into a task for model routing. */
-export function classifyTask(text: string): AiTask {
+export function classifyTask(text: string, opts?: { hasImage?: boolean }): AiTask {
+  if (opts?.hasImage) return "vision";
   const t = text.toLowerCase();
   if (/(hab|habe|gemacht|geschafft|absolviert|logg|logge)/.test(t) && /\d+/.test(t))
     return "quick_log";
   if (/(plan|programm|split|wochenplan|trainingsplan)/.test(t)) return "training_plan";
-  if (/(form|technik|haltung|nacken|rücken|schulter|winkel)/.test(t)) return "form_technique";
+  // Specialized domains before broad training "form" keywords (avoid "Formel" → form_technique)
+  if (/(bild|foto|skizze|screenshot|siehst du|was ist auf)/.test(t)) return "vision";
+  if (/(physik|chemie|biologie|mathe|theorem|wissenschaft|paper|studie|\bformel\b)/.test(t))
+    return "science";
+  if (/(gedicht|geschichte|roman|kreativ|erzähl|metapher|songtext|skript)/.test(t))
+    return "creative";
+  if (/(code|typescript|python|bug|funktion|api|sql|regex|compili)/.test(t)) return "coding";
+  if (/(?:\bform\b|technik|haltung|nacken|rücken|schulter|winkel)/.test(t)) return "form_technique";
   if (/(regen|recovery|schmerz|pause|müde|schlaf|überlast)/.test(t)) return "recovery";
   if (/(statistik|fortschritt|woche|trend|analyse|wie war)/.test(t)) return "stats_analysis";
   if (/(chat|nachricht|raum|dm|zusammenfassung|freund)/.test(t)) return "chat_summary";
@@ -105,22 +127,55 @@ export function classifyTask(text: string): AiTask {
   return "general";
 }
 
-/** Pick best enabled provider for a task (first with key or lovable). */
-export function pickProvider(providers: ProviderConfig[], task: AiTask): ProviderConfig | null {
-  const enabled = providers.filter((p) => p.enabled && (p.id === "lovable" || p.apiKey.trim()));
-  if (enabled.length === 0) return null;
-  const preferred = enabled.find((p) => p.tasks.includes(task));
-  return preferred ?? enabled[0];
-}
-
-export type ClientProviderPayload = {
-  id: ProviderId;
-  apiKey: string;
-  baseUrl?: string;
-  model: string;
+export type ProviderSelection = {
+  provider: ProviderConfig | null;
+  reason: "task_preference" | "first_enabled_fallback" | "no_provider";
 };
 
-export function toPayload(p: ProviderConfig): ClientProviderPayload {
+const TASK_LABELS: Record<AiTask, string> = {
+  general: "allgemeine Anfrage",
+  training_plan: "Trainingsplan",
+  form_technique: "Form und Technik",
+  recovery: "Erholung",
+  stats_analysis: "Statistikanalyse",
+  chat_summary: "Chat-Zusammenfassung",
+  quick_log: "schnelles Trainingsprotokoll",
+  motivation: "Motivation",
+  science: "wissenschaftliche Frage",
+  creative: "kreatives Schreiben",
+  coding: "Programmieren / Technik",
+  vision: "Bild verstehen",
+};
+
+export function selectProvider(providers: ProviderConfig[], task: AiTask): ProviderSelection {
+  const enabled = providers.filter((p) => p.enabled && (p.id === "lovable" || p.apiKey.trim()));
+  if (enabled.length === 0) return { provider: null, reason: "no_provider" };
+  const preferred = enabled.find((p) => p.tasks.includes(task));
+  return preferred
+    ? { provider: preferred, reason: "task_preference" }
+    : { provider: enabled[0], reason: "first_enabled_fallback" };
+}
+
+export function describeProviderSelection(selection: ProviderSelection, task: AiTask): string {
+  if (!selection.provider) return "Kein aktivierter Anbieter mit den nötigen Zugangsdaten.";
+  const taskLabel = TASK_LABELS[task];
+  if (selection.reason === "task_preference") {
+    return `„${taskLabel}“ ist bei ${selection.provider.label} als Aufgabenbereich eingetragen; gewählt wird der erste aktivierte passende Anbieter.`;
+  }
+  return `Kein aktivierter Anbieter ist für „${taskLabel}“ eingetragen; deshalb wird der erste aktivierte Anbieter in der Liste (${selection.provider.label}) gewählt.`;
+}
+
+export function providerLabel(id: ProviderId | string): string {
+  return DEFAULT_PROVIDERS.find((provider) => provider.id === id)?.label ?? id;
+}
+
+export function enabledProviderSummary(providers: ProviderConfig[]): string {
+  const on = providers.filter((p) => p.enabled && (p.id === "lovable" || p.apiKey.trim()));
+  if (on.length === 0) return "Keine Anbieter aktiv";
+  return on.map((p) => p.label).join(", ");
+}
+
+export function toPayload(p: ProviderConfig) {
   return {
     id: p.id,
     apiKey: p.apiKey,

@@ -1,3 +1,4 @@
+import { RefreshCw, WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { flushQueue, onQueueChange, pendingCount } from "@/lib/offline-queue";
 
@@ -37,8 +38,14 @@ export function OfflineBanner() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-[calc(0.5rem+env(safe-area-inset-top))] z-50 flex justify-center px-4">
-      <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-border/60 bg-card/80 px-4 py-2 text-xs font-medium shadow-lg backdrop-blur-xl">
-        <span>{online ? "🔄" : "📴"}</span>
+      <div
+        role="status"
+        className="offline-status pointer-events-auto flex items-center gap-2 rounded-full border border-border/60 bg-card/80 px-4 py-2 text-xs font-medium shadow-lg backdrop-blur-xl"
+      >
+        <span className="classic-only">{online ? "🔄" : "📴"}</span>
+        <span className="sport-only text-primary" aria-hidden="true">
+          {online ? <RefreshCw className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+        </span>
         <span>
           {!online
             ? "Offline — Einträge werden gespeichert"

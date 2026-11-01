@@ -84,7 +84,9 @@ export function WeeklyReview({ userId, streak }: { userId: string | null; streak
       const start = mondayOf(w);
       const end = addDays(start, 7);
       const days = stats.filter((d) => d.day >= start && d.day < end);
-      const wos = workouts.filter((x) => x.created_at.slice(0, 10) >= start && x.created_at.slice(0, 10) < end);
+      const wos = workouts.filter(
+        (x) => x.created_at.slice(0, 10) >= start && x.created_at.slice(0, 10) < end,
+      );
       const reps = days.reduce((s, d) => s + d.total_reps, 0);
       const sessions = days.reduce((s, d) => s + d.sessions, 0);
       const activeDays = days.filter((d) => d.total_reps > 0).length;
@@ -135,7 +137,10 @@ export function WeeklyReview({ userId, streak }: { userId: string | null; streak
       </div>
       <div className="mt-2 grid grid-cols-3 gap-2 text-center">
         <ReviewStat label="Bester Satz" value={`${current.bestSet}`} />
-        <ReviewStat label="Technik" value={current.avgForm != null ? `${current.avgForm}/5` : "—"} />
+        <ReviewStat
+          label="Technik"
+          value={current.avgForm != null ? `${current.avgForm}/5` : "—"}
+        />
         <ReviewStat label="Streak" value={`${streak} 🔥`} />
       </div>
 
@@ -148,7 +153,10 @@ export function WeeklyReview({ userId, streak }: { userId: string | null; streak
             subline: `${current.sessions} Sessions · ${current.activeDays} aktive Tage · ${deltaLabel}`,
             rows: [
               { label: "Bester Satz", value: `${current.bestSet}` },
-              { label: "Technik-Schnitt", value: current.avgForm != null ? `${current.avgForm} / 5` : "—" },
+              {
+                label: "Technik-Schnitt",
+                value: current.avgForm != null ? `${current.avgForm} / 5` : "—",
+              },
               { label: "Streak", value: `${streak} Tage` },
             ],
           }}
@@ -175,7 +183,11 @@ export function WeeklyReview({ userId, streak }: { userId: string | null; streak
                     className="flex items-center justify-between rounded-xl border border-border bg-background/40 px-3 py-2 text-xs"
                   >
                     <span className="text-muted-foreground">
-                      KW ab {new Date(w.weekStart + "T00:00:00Z").toLocaleDateString("de-DE", { day: "numeric", month: "short" })}
+                      KW ab{" "}
+                      {new Date(w.weekStart + "T00:00:00Z").toLocaleDateString("de-DE", {
+                        day: "numeric",
+                        month: "short",
+                      })}
                     </span>
                     <span className="font-semibold tabular-nums text-foreground">
                       {w.reps.toLocaleString("de-DE")} Reps

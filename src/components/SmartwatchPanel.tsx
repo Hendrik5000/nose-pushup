@@ -1,5 +1,12 @@
 import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { localDateKey } from "@/lib/training-dates";
+import {
+  formatWatchImportResult,
+  importWatchRows,
+  syncWatchDay,
+  type WatchSyncGateway,
+} from "@/lib/smartwatch-sync";
 import {
   formatRelativeSync,
   getWatchDevices,
@@ -14,6 +21,30 @@ import {
   type WatchBrand,
   type WatchDevice,
 } from "@/lib/smartwatch";
+
+const watchSyncGateway: WatchSyncGateway = {
+  getUserId: async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) throw error;
+    return data.user?.id ?? null;
+  },
+  getEntry: async (userId, day) => {
+    const { data, error } = await supabase
+      .from("health_entries")
+      .select("steps, active_kcal, sleep_min, weight_kg")
+      .eq("user_id", userId)
+      .eq("day", day)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  upsert: async (payload) => {
+    const { error } = await supabase
+      .from("health_entries")
+      .upsert(payload, { onConflict: "user_id,day" });
+    if (error) throw error;
+  },
+};
 
 export function SmartwatchPanel() {
   const [devices, setDevices] = useState<WatchDevice[]>(() => getWatchDevices());
@@ -34,22 +65,10 @@ export function SmartwatchPanel() {
     refresh();
   };
 
-  const syncToCloud = async (day: string, steps: number, activeKcal: number, sleepMin: number) => {
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
-    await supabase.from("health_entries").upsert(
-      {
-        user_id: u.user.id,
-        day,
-        steps,
-        active_kcal: activeKcal,
-        sleep_min: sleepMin,
-        weight_kg: null,
-        source: "watch",
-      },
-      { onConflict: "user_id,day" },
-    );
-  };
+  const syncToCloud = (
+    day: string,
+    fields: { steps?: number; activeKcal?: number; sleepMin?: number },
+  ) => syncWatchDay(day, fields, watchSyncGateway);
 
   const onQuickSync = async () => {
     if (!devices[0]) {
@@ -58,21 +77,24 @@ export function SmartwatchPanel() {
     }
     setBusy(true);
     setMsg(null);
-    // Quick sync: reuse last snapshot or prompt values via existing health form —
-    // here we mark sync and keep snapshot if present
-    const day = new Date().toISOString().slice(0, 10);
-    const steps = snapshot?.steps ?? 0;
-    const activeKcal = snapshot?.activeKcal ?? 0;
-    const sleepMin = snapshot?.sleepMin ?? 0;
-    if (steps || activeKcal || sleepMin) {
-      await syncToCloud(day, steps, activeKcal, sleepMin);
-      markWatchSynced(devices[0].id);
-      setMsg("Mit Cloud synchronisiert ✓");
-    } else {
-      setMsg("Keine Watch-Daten — Datei importieren oder manuell eintragen");
+    try {
+      const day = snapshot?.day || localDateKey(new Date());
+      const steps = snapshot?.steps ?? 0;
+      const activeKcal = snapshot?.activeKcal ?? 0;
+      const sleepMin = snapshot?.sleepMin ?? 0;
+      if (steps || activeKcal || sleepMin) {
+        await syncToCloud(day, { steps, activeKcal, sleepMin });
+        markWatchSynced(devices[0].id);
+        setMsg("Mit Cloud synchronisiert ✓");
+      } else {
+        setMsg("Keine Watch-Daten — Datei importieren oder manuell eintragen");
+      }
+    } catch {
+      setMsg("Sync fehlgeschlagen. Verbindung prüfen und erneut versuchen.");
+    } finally {
+      setBusy(false);
+      refresh();
     }
-    setBusy(false);
-    refresh();
   };
 
   const onFile = async (file: File) => {
@@ -80,12 +102,12 @@ export function SmartwatchPanel() {
     setMsg(null);
     try {
       const text = await file.text();
-      let imported = 0;
+      let importMessage: string;
 
       if (file.name.endsWith(".json") || text.trim().startsWith("{")) {
         const parsed = parseHealthJson(text);
         if (parsed && (parsed.steps || parsed.activeKcal || parsed.sleepMin)) {
-          const day = parsed.day ?? new Date().toISOString().slice(0, 10);
+          const day = parsed.day ?? localDateKey(new Date());
           const snap = {
             day,
             steps: parsed.steps ?? 0,
@@ -95,21 +117,27 @@ export function SmartwatchPanel() {
             source: "watch-import",
             deviceId: devices[0]?.id ?? null,
           };
+          await syncToCloud(snap.day, {
+            steps: snap.steps,
+            activeKcal: snap.activeKcal,
+            sleepMin: snap.sleepMin,
+          });
           saveWatchSnapshot(snap);
-          await syncToCloud(snap.day, snap.steps, snap.activeKcal, snap.sleepMin);
           if (devices[0]) markWatchSynced(devices[0].id);
-          imported = 1;
+          importMessage = formatWatchImportResult({ imported: [{ day }], failed: [] });
+        } else {
+          importMessage = formatWatchImportResult({ imported: [], failed: [] });
         }
       } else {
         const rows = parseStepsCsv(text);
-        for (const row of rows.slice(0, 31)) {
-          await syncToCloud(row.day, row.steps, 0, 0);
-          imported += 1;
-        }
-        if (rows[0]) {
+        const result = await importWatchRows(rows.slice(0, 31), (row) =>
+          syncToCloud(row.day, { steps: row.steps }),
+        );
+        const firstImported = result.imported[0];
+        if (firstImported) {
           saveWatchSnapshot({
-            day: rows[0].day,
-            steps: rows[0].steps,
+            day: firstImported.day,
+            steps: firstImported.steps,
             activeKcal: 0,
             sleepMin: 0,
             restingHr: null,
@@ -118,12 +146,15 @@ export function SmartwatchPanel() {
           });
           if (devices[0]) markWatchSynced(devices[0].id);
         }
+        importMessage = formatWatchImportResult(result);
       }
 
-      setMsg(imported ? `${imported} Tag(e) importiert ✓` : "Keine erkennbaren Daten in der Datei");
+      setMsg(importMessage);
       refresh();
     } catch {
-      setMsg("Import fehlgeschlagen");
+      setMsg(
+        "Import konnte nicht bestätigt werden. Verbindung prüfen und Datei erneut importieren.",
+      );
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -135,11 +166,12 @@ export function SmartwatchPanel() {
 
   return (
     <div className="space-y-4">
-      {/* Status */}
       <div className="rounded-2xl border border-border bg-secondary/30 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Smartwatch</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Smartwatch
+            </div>
             <div className="mt-1 text-base font-semibold text-foreground">
               {primary ? primary.name : "Keine Uhr gekoppelt"}
             </div>
@@ -167,9 +199,10 @@ export function SmartwatchPanel() {
         )}
       </div>
 
-      {/* Pair */}
       <div>
-        <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Gerät koppeln</div>
+        <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          Gerät koppeln
+        </div>
         <div className="grid grid-cols-3 gap-2">
           {WATCH_BRANDS.map((b) => (
             <button
@@ -195,7 +228,6 @@ export function SmartwatchPanel() {
         </button>
       </div>
 
-      {/* Actions */}
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
@@ -245,7 +277,16 @@ export function SmartwatchPanel() {
         Google Health → Health Connect freigeben, dann hier importieren.
       </p>
 
-      {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
+      {msg && (
+        <p
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="text-xs text-muted-foreground"
+        >
+          {msg}
+        </p>
+      )}
     </div>
   );
 }

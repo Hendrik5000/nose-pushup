@@ -1,9 +1,11 @@
-import { useState, type DragEvent, type ReactNode } from "react";
+import { SportSectionLabel } from "@/components/SportPageIntro";
+import { useEffect, useState, type DragEvent, type ReactNode } from "react";
 import {
   loadLayout,
   nextSize,
   resetLayout,
   saveLayout,
+  sizeLabel,
   sizeClass,
   widgetMeta,
   WIDGET_CATALOG,
@@ -17,10 +19,16 @@ export function DashboardGrid({
 }: {
   renderWidget: (id: WidgetId, size: WidgetSize) => ReactNode;
 }) {
-  const [layout, setLayout] = useState<LayoutItem[]>(() => loadLayout());
+  const [loadedLayout, setLayout] = useState<LayoutItem[] | null>(null);
+  const layout = loadedLayout ?? [];
   const [editing, setEditing] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [dragId, setDragId] = useState<WidgetId | null>(null);
+
+  // Server and first client render match. Never persist defaults during hydration.
+  useEffect(() => {
+    setLayout(loadLayout());
+  }, []);
 
   const commit = (next: LayoutItem[]) => {
     setLayout(next);
@@ -74,16 +82,26 @@ export function DashboardGrid({
 
   const missing = WIDGET_CATALOG.filter((w) => !layout.some((l) => l.id === w.id));
 
+  if (loadedLayout === null) {
+    return (
+      <p className="mt-4 text-xs text-muted-foreground" role="status">
+        Übersicht wird geladen…
+      </p>
+    );
+  }
+
   return (
     <div className="mt-3">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div className="dashboard-customize-bar mb-3 flex flex-wrap items-center gap-2">
+        <SportSectionLabel number="04">Dein Cockpit</SportSectionLabel>
         <button
           type="button"
+          aria-pressed={editing}
           onClick={() => {
             setEditing((e) => !e);
             setAddOpen(false);
           }}
-          className={`min-h-11 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+          className={`min-h-11 rounded-full px-4 py-2 text-xs font-semibold transition ${
             editing
               ? "bg-primary text-primary-foreground"
               : "border border-border bg-secondary/50 text-muted-foreground"
@@ -96,14 +114,17 @@ export function DashboardGrid({
             <button
               type="button"
               onClick={() => setAddOpen((v) => !v)}
-              className="min-h-11 rounded-full border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary"
+              className="min-h-11 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary"
             >
               + Widget
             </button>
             <button
               type="button"
-              onClick={() => commit(resetLayout())}
-              className="min-h-11 rounded-full border border-border px-4 py-2.5 text-sm text-muted-foreground"
+              onClick={() => {
+                setLayout(resetLayout());
+                setAddOpen(false);
+              }}
+              className="min-h-11 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground"
             >
               Standard
             </button>
@@ -117,7 +138,9 @@ export function DashboardGrid({
             Hinzufügen
           </div>
           {missing.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Alle Widgets sind bereits auf der Übersicht.</p>
+            <p className="text-xs text-muted-foreground">
+              Alle Widgets sind bereits auf der Übersicht.
+            </p>
           ) : (
             <ul className="grid grid-cols-2 gap-2">
               {missing.map((w) => (
@@ -125,10 +148,12 @@ export function DashboardGrid({
                   <button
                     type="button"
                     onClick={() => add(w.id)}
-                    className="w-full rounded-xl border border-border bg-secondary/40 px-2 py-2 text-left text-xs transition active:scale-[0.98]"
+                    className="min-h-11 w-full rounded-xl border border-border bg-secondary/40 px-3 py-2 text-left text-xs transition active:scale-[0.98]"
                   >
                     <span className="font-semibold text-foreground">{w.label}</span>
-                    <span className="mt-0.5 block text-[10px] text-muted-foreground">{w.description}</span>
+                    <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                      {w.description}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -139,11 +164,11 @@ export function DashboardGrid({
 
       {editing && (
         <p className="mb-2 text-[11px] text-muted-foreground">
-          Ziehen zum Sortieren · Größe ändern · Widget entfernen
+          Ziehen zum Sortieren · Größe tippen (Klein/Mittel/Groß) · × zum Entfernen
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="dashboard-widget-grid grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
         {layout.map((item) => {
           const body = renderWidget(item.id, item.size);
           // Hide empty slots (e.g. challenges before login id is ready) unless editing
@@ -151,6 +176,8 @@ export function DashboardGrid({
           return (
             <div
               key={item.id}
+              data-widget-id={item.id}
+              data-widget-size={item.size}
               draggable={editing}
               onDragStart={() => onDragStart(item.id)}
               onDragOver={(e) => onDragOver(e, item.id)}
@@ -158,10 +185,10 @@ export function DashboardGrid({
               className={`${sizeClass(item.size)} relative ${editing ? "rounded-2xl ring-1 ring-primary/30" : ""}`}
             >
               {editing && (
-                <div className="absolute -top-3 right-1 z-10 flex min-h-12 items-center gap-1 rounded-2xl border border-border bg-background/95 px-2 py-1 shadow-md backdrop-blur">
+                <div className="absolute -top-2 right-1 z-10 flex items-center gap-0.5 rounded-full border border-border bg-background/95 px-1 py-0.5 shadow-md backdrop-blur">
                   <button
                     type="button"
-                    className="flex min-h-10 min-w-10 items-center justify-center rounded-xl px-2 text-sm font-semibold text-muted-foreground active:bg-secondary"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center px-1.5 text-[10px] text-muted-foreground"
                     onClick={() => move(item.id, -1)}
                     aria-label="Nach oben"
                   >
@@ -169,7 +196,7 @@ export function DashboardGrid({
                   </button>
                   <button
                     type="button"
-                    className="flex min-h-10 min-w-10 items-center justify-center rounded-xl px-2 text-sm font-semibold text-muted-foreground active:bg-secondary"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center px-1.5 text-[10px] text-muted-foreground"
                     onClick={() => move(item.id, 1)}
                     aria-label="Nach unten"
                   >
@@ -177,21 +204,24 @@ export function DashboardGrid({
                   </button>
                   <button
                     type="button"
-                    className="flex min-h-10 min-w-14 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 px-2 text-sm font-bold uppercase text-primary active:bg-primary/20"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1.5 text-[10px] font-bold uppercase text-primary"
                     onClick={() => resize(item.id)}
-                    aria-label="Größe ändern"
+                    aria-label={`Größe ändern (aktuell ${sizeLabel(item.size)})`}
                   >
-                    {item.size === "sm" ? "Klein" : item.size === "md" ? "Mittel" : "Groß"}
+                    {sizeLabel(item.size)}
                   </button>
                   <button
                     type="button"
-                    className="flex min-h-10 min-w-10 items-center justify-center rounded-xl px-2 text-lg font-semibold text-destructive active:bg-destructive/10"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center px-1.5 text-xs text-destructive"
                     onClick={() => remove(item.id)}
                     aria-label="Entfernen"
                   >
                     ×
                   </button>
-                  <span className="cursor-grab px-2 text-sm text-muted-foreground" title="Widget ziehen zum Sortieren" aria-hidden="true">
+                  <span
+                    className="cursor-grab px-1 text-[10px] text-muted-foreground"
+                    title="Ziehen"
+                  >
                     ⋮⋮
                   </span>
                 </div>

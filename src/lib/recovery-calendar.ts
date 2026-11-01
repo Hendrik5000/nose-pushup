@@ -2,7 +2,8 @@
 // 7-day overview of load on wrist, shoulder, elbow, core from recent workouts
 // (via calisthenics stress tags) + daily check-in soreness.
 
-import { allSkills, loadRecentCheckins, type CaliSkill } from "./calisthenics";
+import { allSkills, type CaliSkill } from "./calisthenics";
+import { localDateKey } from "./training-dates";
 
 export type Joint = "wrist" | "shoulder" | "elbow" | "core";
 
@@ -39,7 +40,8 @@ function stressForExercise(exerciseId: string): Joint[] {
   const skill = skillById.get(exerciseId) as CaliSkill | undefined;
   if (skill) return skill.stress;
   // Heuristics for base exercises
-  if (exerciseId === "pushup" || exerciseId === "burpee") return ["wrist", "shoulder", "elbow", "core"];
+  if (exerciseId === "pushup" || exerciseId === "burpee")
+    return ["wrist", "shoulder", "elbow", "core"];
   if (exerciseId === "plank") return ["wrist", "core", "shoulder"];
   if (exerciseId === "squat") return ["core"];
   if (exerciseId === "situp") return ["core"];
@@ -55,13 +57,14 @@ export type WorkoutRow = {
 /** Build last 7 days of joint load from workouts + check-ins. */
 export function buildRecoveryWeek(workouts: WorkoutRow[]): DayLoad[] {
   const days: DayLoad[] = [];
-  const checkins = loadRecentCheckins(7);
-  const checkinByDay = new Map(checkins.map((c) => [c.date, c.soreness]));
+  // Device-global check-ins are not account-bound and must not affect this estimate.
 
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const d = localDateKey(date);
     const loads: Record<Joint, number> = { wrist: 0, shoulder: 0, elbow: 0, core: 0 };
-    const dayWorkouts = workouts.filter((w) => w.created_at.slice(0, 10) === d);
+    const dayWorkouts = workouts.filter((w) => localDateKey(new Date(w.created_at)) === d);
     for (const w of dayWorkouts) {
       const joints = stressForExercise(w.exercise_id);
       // Intensity proxy from count
@@ -73,7 +76,7 @@ export function buildRecoveryWeek(workouts: WorkoutRow[]): DayLoad[] {
     days.push({
       day: d,
       loads,
-      soreness: checkinByDay.get(d) ?? null,
+      soreness: null,
     });
   }
   return days;
@@ -103,7 +106,7 @@ export function summarizeJoints(week: DayLoad[]): JointSummary[] {
         ? "Stark belastet"
         : level === "yellow"
           ? "Leicht belastet"
-          : "Erholt";
+          : "Wenig erfasste Last";
     return { joint, score, level, label };
   });
 }

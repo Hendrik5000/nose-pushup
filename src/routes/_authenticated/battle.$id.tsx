@@ -2,13 +2,15 @@ import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-r
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
+import { AloHomeLink } from "@/components/AloHomeLink";
+import { Bot, Swords, Trophy } from "lucide-react";
 import { createBattle, finishBattle, startBattle } from "@/lib/battle.functions";
 import { feedbackRep, feedbackWin, feedbackLose, feedbackSuccess } from "@/lib/feedback";
 
-
 export const Route = createFileRoute("/_authenticated/battle/$id")({
   head: () => ({
-    meta: [{ title: "Battle Arena — Nosy Push-Ups" }],
+    meta: [{ title: "Wettkampf — Alo" }],
   }),
   component: BattleArena,
 });
@@ -148,9 +150,11 @@ function BattleArena() {
     };
   }, [battle?.is_bot, battle?.status, iAmHost, countdown, battle]);
 
-  const remaining = battle?.ends_at ? Math.max(0, +new Date(battle.ends_at) - now) : battle?.duration_s
-    ? battle.duration_s * 1000
-    : 0;
+  const remaining = battle?.ends_at
+    ? Math.max(0, +new Date(battle.ends_at) - now)
+    : battle?.duration_s
+      ? battle.duration_s * 1000
+      : 0;
 
   // Modus "Erster auf X": beenden, sobald jemand das Ziel erreicht.
   useEffect(() => {
@@ -208,8 +212,6 @@ function BattleArena() {
     else feedbackSuccess();
   }, [battle, userId]);
 
-
-
   const doStart = async () => {
     setError(null);
     try {
@@ -221,8 +223,9 @@ function BattleArena() {
 
   if (!battle) {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center text-sm text-muted-foreground">
-        Lade Battle…
+      <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 text-sm text-muted-foreground">
+        <AloHomeLink />
+        <span>Lade Battle…</span>
       </main>
     );
   }
@@ -236,10 +239,26 @@ function BattleArena() {
     const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/battle` : "";
     return (
       <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
-        <header className="flex items-center justify-between">
-          <Link to="/battle" className="text-sm text-muted-foreground">← Lobby</Link>
+        <header className="classic-only flex items-center justify-between">
+          <Link to="/battle" className="text-sm text-muted-foreground">
+            ← Lobby
+          </Link>
           <span className="text-sm font-medium">⚔️ Warteraum</span>
+          <AloHomeLink className="px-2 text-[10px]" />
         </header>
+        <div className="sport-only mt-7">
+          <SportPageIntro
+            eyebrow="Wettkampf · Warteraum"
+            title="Bereit zum Start"
+            description="Teile den Code mit deinem Gegner und starte das Duell, sobald alle bereit sind."
+          >
+            <AloHomeLink />
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+              <Swords className="h-4 w-4" /> {battle.is_bot ? <Bot className="h-4 w-4" /> : null}{" "}
+              {battle.is_bot ? "Bot-Match" : "Live-Battle"}
+            </div>
+          </SportPageIntro>
+        </div>
         <section className="mt-8 rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/15 to-card/60 p-6 text-center backdrop-blur">
           <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Battle Code</div>
           <div className="mt-3 flex justify-center">
@@ -248,11 +267,18 @@ function BattleArena() {
             </span>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            {battle.is_bot
-              ? "Bot bereit. Du kannst jederzeit starten."
-              : opponentReady
-                ? "Gegner ist da! 🎯"
-                : "Teile den Code mit einem Freund oder öffne die Lobby auf einem zweiten Gerät."}
+            {battle.is_bot ? (
+              "Bot bereit. Du kannst jederzeit starten."
+            ) : opponentReady ? (
+              <>
+                <span className="classic-only">Gegner ist da! 🎯</span>
+                <span className="sport-only inline-flex items-center gap-2">
+                  Gegner ist da <Trophy className="h-4 w-4" />
+                </span>
+              </>
+            ) : (
+              "Teile den Code mit einem Freund oder öffne die Lobby auf einem zweiten Gerät."
+            )}
           </p>
           <div className="mt-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             {shareUrl}
@@ -267,9 +293,7 @@ function BattleArena() {
               {opponentReady ? "Battle starten" : "Warte auf Gegner…"}
             </button>
           )}
-          {!iAmHost && (
-            <div className="mt-6 text-sm text-muted-foreground">Warten auf Host…</div>
-          )}
+          {!iAmHost && <div className="mt-6 text-sm text-muted-foreground">Warten auf Host…</div>}
           {error && (
             <div className="mt-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
               {error}
@@ -288,8 +312,18 @@ function BattleArena() {
     const oppFinal = iAmHost ? battle.guest_count : battle.host_count;
     return (
       <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col items-center px-5 pt-8 pb-10">
-        <div className="text-6xl">{draw ? "🤝" : iWon ? "🏆" : "💀"}</div>
-        <h1 className="mt-4 text-3xl font-bold">
+        <div className="classic-only text-6xl">{draw ? "🤝" : iWon ? "🏆" : "💀"}</div>
+        <div className="sport-only mt-5 rounded-full border border-primary/30 bg-primary/10 p-4 text-primary">
+          <Trophy className="h-10 w-10" />
+        </div>
+        <div className="sport-only mt-4 w-full">
+          <SportPageIntro
+            eyebrow="Wettkampf · Ergebnis"
+            title={draw ? "Unentschieden" : iWon ? "Sieg errungen" : "Starker Einsatz"}
+            description="Das Duell ist ausgewertet. Vergleiche deine Wiederholungen und starte bei Bedarf eine Revanche."
+          />
+        </div>
+        <h1 className="classic-only mt-4 text-3xl font-bold">
           {draw ? "Unentschieden!" : iWon ? "Sieg!" : "Niederlage"}
         </h1>
         <div className="mt-8 grid w-full grid-cols-2 gap-3">
@@ -323,7 +357,10 @@ function BattleArena() {
           }}
           className="mt-8 w-full rounded-2xl bg-primary px-4 py-4 text-center text-base font-semibold text-primary-foreground"
         >
-          🔁 Revanche
+          <>
+            <span className="classic-only">🔁 </span>
+            <span className="sport-only">Revanche</span>
+          </>
         </button>
         <Link
           to="/battle"
@@ -343,7 +380,7 @@ function BattleArena() {
 
   // ACTIVE screen
   const meLabel = iAmHost ? "Du (Host)" : "Du (Gast)";
-  const oppLabel = battle.is_bot ? "🤖 Bot" : iAmHost ? "Gast" : "Host";
+  const oppLabel = battle.is_bot ? "Bot" : iAmHost ? "Gast" : "Host";
   const total = Math.max(myCount + oppCount, 1);
   const myPct = (myCount / total) * 100;
 
@@ -352,9 +389,10 @@ function BattleArena() {
       className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4"
       onPointerDown={tap}
     >
-      <header className="flex items-center justify-between">
+      <header className="classic-only flex items-center justify-between">
         <span className="text-sm font-medium">
-          ⚔️ {battle.mode === "first_to"
+          ⚔️{" "}
+          {battle.mode === "first_to"
             ? `Erster auf ${battle.target_reps ?? 30}`
             : battle.mode === "sprint"
               ? "60s Sprint"
@@ -362,22 +400,45 @@ function BattleArena() {
                 ? "Ausdauer"
                 : "Battle"}
         </span>
-        <div className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-sm font-semibold tabular-nums text-primary">
-          {seconds}s
+        <div className="flex items-center gap-1">
+          <AloHomeLink className="px-2 text-[10px]" />
+          <div className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-sm font-semibold tabular-nums text-primary">
+            {seconds}s
+          </div>
         </div>
       </header>
 
+      <div className="sport-only mt-4 flex justify-end">
+        <AloHomeLink className="px-2 text-[10px]" />
+      </div>
+      <div className="sport-only mt-7">
+        <SportSectionLabel number="01">Live-Stand</SportSectionLabel>
+      </div>
       <section className="mt-6 grid grid-cols-2 gap-3">
         <div className="rounded-2xl border border-primary/40 bg-primary/10 p-4 text-center">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{meLabel}</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            {meLabel}
+          </div>
           <div className="mt-1 text-5xl font-bold tabular-nums text-primary">{myCount}</div>
         </div>
         <div className="rounded-2xl border border-border bg-card/60 p-4 text-center">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{oppLabel}</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            <span className="classic-only">
+              {battle.is_bot ? "🤖 " : ""}
+              {oppLabel}
+            </span>
+            <span className="sport-only inline-flex items-center gap-1">
+              {battle.is_bot && <Bot className="h-3 w-3" />}
+              {oppLabel}
+            </span>
+          </div>
           <div className="mt-1 text-5xl font-bold tabular-nums">{oppCount}</div>
         </div>
       </section>
 
+      <div className="sport-only mt-5">
+        <SportSectionLabel number="02">Tempo & Wiederholungen</SportSectionLabel>
+      </div>
       <div className="mt-3 h-3 w-full overflow-hidden rounded-full border border-border bg-secondary">
         <div className="h-full bg-primary transition-all" style={{ width: `${myPct}%` }} />
       </div>
@@ -385,14 +446,18 @@ function BattleArena() {
       <div className="mt-6 flex flex-1 select-none items-center justify-center rounded-[2rem] border border-border bg-card/50 backdrop-blur">
         {countdown !== null ? (
           <div className="text-center">
-            <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Los in</div>
+            <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+              Los in
+            </div>
             <div className="mt-2 text-8xl font-bold tabular-nums text-primary">
               {countdown === 0 ? "GO!" : countdown}
             </div>
           </div>
         ) : (
           <div className="text-center">
-            <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Tippe mit der Nase</div>
+            <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+              Tippe mit der Nase
+            </div>
             <div className="mt-2 font-display text-[8rem] leading-none font-bold tabular-nums">
               {myCount}
             </div>

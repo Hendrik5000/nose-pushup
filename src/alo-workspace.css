@@ -1,0 +1,197 @@
+.alo-launcher {
+  position: fixed;
+  z-index: 35;
+  right: 14px;
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 4px 20px #0002;
+  font-size: 13px;
+  font-weight: 700;
+}
+.alo-dialog {
+  max-height: min(90dvh, 900px);
+  width: min(94vw, 720px);
+  max-width: 720px;
+  overflow-y: auto;
+  border-radius: 24px;
+  color: var(--foreground);
+  background: var(--background);
+  padding: 24px;
+}
+.alo-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+.alo-workspace-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 2px 8px;
+  min-height: 0;
+}
+.alo-workspace header {
+  padding-right: 24px;
+}
+.alo-dialog label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.alo-dialog label:has(input[type="checkbox"]) {
+  display: flex;
+}
+.alo-dialog input:not([type="checkbox"]),
+.alo-dialog select,
+.alo-dialog textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+.alo-dialog input[type="checkbox"] {
+  accent-color: var(--primary);
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+}
+.alo-dialog input:focus-visible,
+.alo-dialog select:focus-visible,
+.alo-dialog textarea:focus-visible,
+.alo-dialog button:focus-visible,
+.alo-dialog a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.alo-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex: none;
+  padding: 0 0 8px;
+}
+.alo-tabs button {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.alo-tabs button.is-active {
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.alo-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  padding: 14px;
+  overflow-wrap: anywhere;
+}
+.alo-btn,
+.alo-btn-primary {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 40px;
+}
+.alo-btn {
+  background: var(--secondary);
+}
+.alo-btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+.alo-dialog button {
+  cursor: pointer;
+}
+.alo-dialog button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+.alo-room-tools {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+  font-size: 12px;
+}
+.alo-room-tools[open] {
+  max-height: 50dvh;
+  overflow-y: auto;
+}
+.alo-room-tools summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.alo-room-tools input,
+.alo-room-tools textarea,
+.alo-room-tools select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--foreground);
+  padding: 8px;
+}
+@media (max-width: 480px) {
+  .alo-dialog {
+    width: 96vw;
+    padding: 20px 16px;
+    max-height: 92dvh;
+    border-radius: 20px;
+  }
+  .alo-launcher {
+    right: 10px;
+    padding: 9px 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alo-dialog {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.alo-tabs {
+  scrollbar-width: none;
+}
+.alo-tabs::-webkit-scrollbar {
+  display: none;
+}
+@media (max-width: 480px) {
+  .alo-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    overflow: visible;
+  }
+  .alo-tabs button {
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: 8px 5px;
+    font-size: 10px;
+    gap: 4px;
+  }
+}

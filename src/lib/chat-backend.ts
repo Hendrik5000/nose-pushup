@@ -1,6 +1,7 @@
 /** Hybrid chat: Supabase (Nexus schema) when available, else localStorage. */
 
 import { supabase } from "@/integrations/supabase/client";
+import { removeChatImage } from "@/lib/nexus-cloud";
 import {
   createRoom as localCreateRoom,
   deleteMessage as localDelete,
@@ -17,6 +18,9 @@ import {
   type LocalRoom,
 } from "@/lib/local-chat";
 
+const MESSAGE_COLUMNS =
+  "id, room_id, conversation_id, user_id, content, created_at, edited_at, reply_to_id, attachment_url, attachment_type, attachment_name, attachment_size" as never;
+
 export type ChatMode = "supabase" | "local";
 
 let cachedMode: ChatMode | null = null;
@@ -24,7 +28,10 @@ let cachedMode: ChatMode | null = null;
 export async function detectChatMode(): Promise<ChatMode> {
   if (cachedMode) return cachedMode;
   try {
-    const { error } = await supabase.from("rooms" as never).select("id").limit(1);
+    const { error } = await supabase
+      .from("rooms" as never)
+      .select("id")
+      .limit(1);
     cachedMode = error ? "local" : "supabase";
   } catch {
     cachedMode = "local";
@@ -44,7 +51,10 @@ export async function loadRooms(): Promise<LocalRoom[]> {
   return data as unknown as LocalRoom[];
 }
 
-export async function loadRoomsForUser(userId: string): Promise<LocalRoom[]> {
+export async function loadRoomsForUser(
+  userId: string,
+  options: { strict?: boolean } = {},
+): Promise<LocalRoom[]> {
   if ((await detectChatMode()) === "local") {
     return loadChatStore(userId).rooms;
   }
@@ -54,12 +64,14 @@ export async function loadRoomsForUser(userId: string): Promise<LocalRoom[]> {
 export async function loadMessages(
   userId: string,
   target: { kind: "room" | "dm"; id: string },
-): Promise<{ messages: LocalMessage[]; reactions: LocalReaction[] }> {
+  options: { strict?: boolean } = {},
+): Promise<{ messages: LocalMessage[]; reactions: LocalReaction[]; available: boolean }> {
   if ((await detectChatMode()) === "local") {
     const store = loadChatStore(userId);
     const messages = messagesFor(store, target);
     const ids = new Set(messages.map((m) => m.id));
     return {
+      available: true,
       messages,
       reactions: store.reactions.filter((r) => ids.has(r.message_id)),
     };
@@ -67,10 +79,8 @@ export async function loadMessages(
 
   let q = supabase
     .from("messages" as never)
-    .select(
-      "id, room_id, conversation_id, user_id, content, created_at, edited_at, reply_to_id" as never,
-    )
-    .order("created_at" as never)
+    .select(MESSAGE_COLUMNS)
+    .order("created_at" as never, { ascending: false })
     .limit(200);
 
   q =
@@ -78,8 +88,12 @@ export async function loadMessages(
       ? q.eq("room_id" as never, target.id as never)
       : q.eq("conversation_id" as never, target.id as never);
 
-  const { data } = await q;
-  const messages = (data ?? []) as unknown as LocalMessage[];
+  const { data, error } = await q;
+  if (error && options.strict)
+    throw new Error(
+      "Freigegebene Nexus-Nachrichten konnten nicht geladen werden. Es wurden keine App-Daten an Mira gesendet.",
+    );
+  const messages = [...((data ?? []) as unknown as LocalMessage[])].reverse();
   const ids = messages.map((m) => m.id);
   let reactions: LocalReaction[] = [];
   if (ids.length) {
@@ -89,7 +103,7 @@ export async function loadMessages(
       .in("message_id" as never, ids as never);
     reactions = (reacts ?? []) as unknown as LocalReaction[];
   }
-  return { messages, reactions };
+  return { messages, reactions, available: !error };
 }
 
 export async function postMessage(
@@ -99,6 +113,7 @@ export async function postMessage(
     conversationId?: string | null;
     content: string;
     replyToId?: string | null;
+    attachment?: { path: string; type: string; name: string; size: number } | null;
   },
 ): Promise<LocalMessage | null> {
   if ((await detectChatMode()) === "local") {
@@ -110,22 +125,25 @@ export async function postMessage(
     reply_to_id: opts.replyToId ?? null,
     room_id: opts.roomId ?? null,
     conversation_id: opts.conversationId ?? null,
+    ...(opts.attachment
+      ? {
+          attachment_url: opts.attachment.path,
+          attachment_type: opts.attachment.type,
+          attachment_name: opts.attachment.name,
+          attachment_size: opts.attachment.size,
+        }
+      : {}),
   };
   const { data, error } = await supabase
     .from("messages" as never)
     .insert(row as never)
-    .select(
-      "id, room_id, conversation_id, user_id, content, created_at, edited_at, reply_to_id" as never,
-    )
+    .select(MESSAGE_COLUMNS)
     .single();
   if (error || !data) return null;
   return data as unknown as LocalMessage;
 }
 
-export async function createChatRoom(
-  userId: string,
-  name: string,
-): Promise<LocalRoom | null> {
+export async function createChatRoom(userId: string, name: string): Promise<LocalRoom | null> {
   if ((await detectChatMode()) === "local") {
     return localCreateRoom(userId, name);
   }
@@ -189,12 +207,49 @@ export async function deleteChatMessage(userId: string, messageId: string): Prom
     localDelete(userId, messageId);
     return;
   }
-  await supabase
+  const { data: existing } = await supabase
+    .from("messages" as never)
+    .select("attachment_url" as never)
+    .eq("id" as never, messageId as never)
+    .eq("user_id" as never, userId as never)
+    .maybeSingle();
+  const { error } = await supabase
     .from("messages" as never)
     .delete()
     .eq("id" as never, messageId as never)
     .eq("user_id" as never, userId as never);
+  const path = (existing as { attachment_url?: string | null } | null)?.attachment_url;
+  if (!error && path) await removeChatImage(path).catch(() => undefined);
 }
 
 export type { LocalDm, LocalMessage, LocalReaction, LocalRoom };
 export { loadChatStore, saveChatStore, localGetDm as getOrCreateLocalDm };
+
+/** One latest message and an exact unread count; RLS remains authoritative. */
+export async function loadRoomPreview(userId: string, roomId: string, since?: string) {
+  const latestQuery = supabase
+    .from("messages" as never)
+    .select("content,created_at,user_id" as never)
+    .eq("room_id" as never, roomId as never)
+    .order("created_at" as never, { ascending: false })
+    .limit(1);
+  let unreadQuery = supabase
+    .from("messages" as never)
+    .select("id" as never, { count: "exact", head: true })
+    .eq("room_id" as never, roomId as never)
+    .neq("user_id" as never, userId as never);
+  if (since && Number.isFinite(Date.parse(since)))
+    unreadQuery = unreadQuery.gt("created_at" as never, since as never);
+  const [latest, unread] = await Promise.all([latestQuery, unreadQuery]);
+  return {
+    latest: latest.error
+      ? null
+      : ((latest.data?.[0] ?? null) as {
+          content: string;
+          created_at: string;
+          user_id: string;
+        } | null),
+    unread: unread.error ? null : (unread.count ?? 0),
+    error: Boolean(latest.error || unread.error),
+  };
+}
