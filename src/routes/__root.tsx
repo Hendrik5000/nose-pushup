@@ -26,6 +26,7 @@ import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
 import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
 import { swipeScreenFromPath } from "@/lib/module-navigation";
 import { clearSensitiveClientStorage } from "@/lib/sensitive-storage";
+import { isDynamicImportFetchError } from "@/lib/module-load-error";
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -51,6 +52,7 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
+  const moduleLoadError = isDynamicImportFetchError(error);
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -59,20 +61,28 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Diese Seite konnte nicht geladen werden
+          {moduleLoadError
+            ? "App-Dateien konnten nicht geladen werden"
+            : "Diese Seite konnte nicht geladen werden"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Es ist ein Fehler aufgetreten. Lade die Seite neu oder gehe zurück zur Startseite.
+          {moduleLoadError
+            ? "Möglicherweise ist eine ältere App-Version geöffnet oder die Verbindung wurde unterbrochen. Prüfe deine Verbindung und aktualisiere die App."
+            : "Es ist ein Fehler aufgetreten. Lade die Seite neu oder gehe zurück zur Startseite."}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
+              if (moduleLoadError) {
+                window.location.reload();
+                return;
+              }
               router.invalidate();
               reset();
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Erneut versuchen
+            {moduleLoadError ? "App aktualisieren" : "Erneut versuchen"}
           </button>
           <a
             href="/"
