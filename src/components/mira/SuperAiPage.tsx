@@ -5,6 +5,8 @@ import { MiraSpark } from "@/components/mira/MiraSpark";
 import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
 import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
+import { MiraVoiceConversationDialog } from "@/components/mira/MiraVoiceConversationDialog";
+import "@/mira-voice.css";
 import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
 import { AloHomeLink } from "@/components/AloHomeLink";
@@ -166,6 +168,8 @@ export function SuperAiPage() {
   const [contextLoading, setContextLoading] = useState(false);
   const [listening, setListening] = useState(false);
   const [voiceChatOpen, setVoiceChatOpen] = useState(false);
+  const [voiceConversationOpen, setVoiceConversationOpen] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState("");
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [speakingMessage, setSpeakingMessage] = useState<number | null>(null);
   const [lastTask, setLastTask] = useState<AiTask | null>(null);
@@ -179,6 +183,18 @@ export function SuperAiPage() {
   const providerPreview = selectProvider(loadProviders(userId), previewTask);
   const activeProvider = providerPreview.provider;
   const providerPreviewReason = describeProviderSelection(providerPreview, previewTask);
+  const voicePreviewText = voiceTranscript.trim() || input.trim();
+  const voicePreviewTask = voicePreviewText
+    ? classifyTask(voicePreviewText)
+    : (lastTask ?? "general");
+  const voiceProviderPreview = selectProvider(loadProviders(userId), voicePreviewTask);
+  const voiceContextNotice = !contextAllowed
+    ? "App-Kontext ist aus. Mira erhält deine Eingabe und den Verlauf dieses Chats."
+    : contextLoading
+      ? "Dein freigegebener App-Kontext wird vor dem Senden geladen."
+      : appContext
+        ? `Freigegebener App-Kontext: ${appContext.recentWorkouts.length} Trainings, ${appContext.health.length} Tage Gesundheitsdaten und ${appContext.chatRooms.length} Chat-Räume.`
+        : "Eine App-Kontextfreigabe ist aktiv; verfügbare freigegebene Daten werden vor dem Senden geladen.";
   const profileName =
     typeof appContext?.profile?.display_name === "string"
       ? appContext.profile.display_name.trim()
@@ -187,6 +203,12 @@ export function SuperAiPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const generationRef = useRef(0);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const recognitionTokenRef = useRef(0);
+  const voiceTranscriptRef = useRef("");
+  const voiceTurnPendingRef = useRef(false);
+  const voiceConversationOpenRef = useRef(false);
+  const voiceConversationSessionRef = useRef(0);
+  const voiceSpeakIndexRef = useRef<number | null>(null);
   const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const stopMiraSpeech = useCallback(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window)
@@ -197,7 +219,13 @@ export function SuperAiPage() {
   useEffect(
     () => () => {
       generationRef.current += 1;
-      recognitionRef.current?.stop();
+      sendingRef.current = false;
+      setLoading(false);
+      recognitionTokenRef.current += 1;
+      voiceTurnPendingRef.current = false;
+      const activeRecognition = recognitionRef.current;
+      recognitionRef.current = null;
+      activeRecognition?.stop();
       if (typeof window !== "undefined" && "speechSynthesis" in window)
         window.speechSynthesis.cancel();
       speechUtteranceRef.current = null;
@@ -353,10 +381,21 @@ export function SuperAiPage() {
 
   const switchSession = (id: string) => {
     generationRef.current += 1;
+    sendingRef.current = false;
     stopMiraSpeech();
-    recognitionRef.current?.stop();
+    voiceConversationOpenRef.current = false;
+    voiceConversationSessionRef.current += 1;
+    voiceTurnPendingRef.current = false;
+    voiceSpeakIndexRef.current = null;
+    voiceTranscriptRef.current = "";
+    setVoiceTranscript("");
+    recognitionTokenRef.current += 1;
+    const activeRecognition = recognitionRef.current;
+    recognitionRef.current = null;
+    activeRecognition?.stop();
     setListening(false);
     setVoiceChatOpen(false);
+    setVoiceConversationOpen(false);
     setLoading(false);
     const s = sessions.find((x) => x.id === id);
     setActiveId(id);
@@ -369,10 +408,21 @@ export function SuperAiPage() {
 
   const startNewSession = useCallback(() => {
     generationRef.current += 1;
+    sendingRef.current = false;
     stopMiraSpeech();
-    recognitionRef.current?.stop();
+    voiceConversationOpenRef.current = false;
+    voiceConversationSessionRef.current += 1;
+    voiceTurnPendingRef.current = false;
+    voiceSpeakIndexRef.current = null;
+    voiceTranscriptRef.current = "";
+    setVoiceTranscript("");
+    recognitionTokenRef.current += 1;
+    const activeRecognition = recognitionRef.current;
+    recognitionRef.current = null;
+    activeRecognition?.stop();
     setListening(false);
     setVoiceChatOpen(false);
+    setVoiceConversationOpen(false);
     setLoading(false);
     const id = newSessionId();
     setActiveId(id);
@@ -427,19 +477,36 @@ export function SuperAiPage() {
     );
   };
 
-  const submit = async (textOverride?: string, history = messages) => {
+  const submit = async (
+    textOverride?: string,
+    history = messages,
+    options: {
+      includeAttachments?: boolean;
+      clearDraft?: boolean;
+      autoSpeak?: boolean;
+      voiceTurn?: boolean;
+    } = {},
+  ) => {
+    const outgoingAttachments = options.includeAttachments === false ? [] : attachments;
+    const voiceSessionAtStart = options.autoSpeak ? voiceConversationSessionRef.current : null;
     const text = (textOverride ?? input).trim();
-    if ((!text && !attachments.length) || loading || sendingRef.current) return;
+    if ((!text && !outgoingAttachments.length) || loading || sendingRef.current) return;
     setError(null);
+    if (voiceConversationOpenRef.current) setVoiceError(null);
     const task: AiTask = classifyTask(text, {
-      hasImage: attachments.some((item) => checkMiraFile(item.file).startsWith("image/")),
+      hasImage: outgoingAttachments.some((item) => checkMiraFile(item.file).startsWith("image/")),
     });
     setLastTask(task);
     const selection = selectProvider(loadProviders(userId), task);
     const provider = selection.provider;
     if (!provider) {
-      setError("Kein aktiver KI-Anbieter. Öffne Zugangsdaten und hinterlege einen API-Schlüssel.");
-      setSettingsOpen(true);
+      const message =
+        "Kein aktiver KI-Anbieter. Öffne die Zugangsdaten und hinterlege einen API-Schlüssel.";
+      if (voiceConversationOpenRef.current) setVoiceError(message);
+      else {
+        setError(message);
+        setSettingsOpen(true);
+      }
       return;
     }
     setSportAiView("chat");
@@ -450,9 +517,9 @@ export function SuperAiPage() {
       {
         role: "user",
         content: userContent,
-        ...(attachments.length
+        ...(outgoingAttachments.length
           ? {
-              attachments: attachments.map(({ file }) => ({
+              attachments: outgoingAttachments.map(({ file }) => ({
                 name: file.name,
                 mime: checkMiraFile(file),
                 size: file.size,
@@ -461,7 +528,13 @@ export function SuperAiPage() {
           : {}),
       },
     ];
-    recognitionRef.current?.stop();
+    if (recognitionRef.current) {
+      recognitionTokenRef.current += 1;
+      voiceTurnPendingRef.current = false;
+      const activeRecognition = recognitionRef.current;
+      recognitionRef.current = null;
+      activeRecognition.stop();
+    }
     setListening(false);
     sendingRef.current = true;
     const generation = ++generationRef.current;
@@ -469,9 +542,11 @@ export function SuperAiPage() {
     try {
       assertMiraAttachmentProvider(
         provider.id,
-        attachments.map(({ file }) => ({ mime: checkMiraFile(file) })),
+        outgoingAttachments.map(({ file }) => ({ mime: checkMiraFile(file) })),
       );
-      const preparedAttachments = await readMiraAttachments(attachments.map((item) => item.file));
+      const preparedAttachments = await readMiraAttachments(
+        outgoingAttachments.map((item) => item.file),
+      );
       if (generation !== generationRef.current) return;
       let systemExtra = `Du bist Mira, die vielseitige allgemeine KI von Alo (All in one). Hilf bei Alltag, Wissen, Schreiben, Ideen, Lernen und Planung. Sei verlässlich, klar und passe die Antwort an. Du bist keine reine Sport-App: Sport- und Chat-Themen sind optionale Bereiche. ${PERSONAS.find((p) => p.id === persona)?.system ?? ""}
 
@@ -515,11 +590,22 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
         },
       });
       if (generation !== generationRef.current) return;
-      setInput("");
-      setAttachments([]);
+      if (options.clearDraft !== false) setInput("");
+      if (options.includeAttachments !== false) setAttachments([]);
+      if (options.voiceTurn) {
+        voiceTranscriptRef.current = "";
+        setVoiceTranscript("");
+      }
       setMessages(nextMsgs);
       const parsed = parseAiResponse(res.reply);
       const plan = parsed.plan ? applyPlanFeedback(parsed.plan, lastFeedback) : undefined;
+      if (
+        options.autoSpeak &&
+        voiceConversationOpenRef.current &&
+        voiceSessionAtStart === voiceConversationSessionRef.current
+      ) {
+        voiceSpeakIndexRef.current = nextMsgs.length;
+      }
       setMessages((m) => [
         ...m,
         {
@@ -542,6 +628,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
       if (generation !== generationRef.current) return;
       const msg = e instanceof Error ? e.message : "Fehler";
       setError(msg);
+      if (voiceConversationOpenRef.current) setVoiceError(msg);
       // Keep the draft and local attachments; errors are never added to AI history.
     } finally {
       if (generation === generationRef.current) {
@@ -585,14 +672,47 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
       setVoiceError(null);
       setError(null);
       stopMiraSpeech();
-    } else if (listening) {
-      recognitionRef.current?.stop();
+    } else {
+      recognitionTokenRef.current += 1;
+      voiceTurnPendingRef.current = false;
+      const activeRecognition = recognitionRef.current;
       recognitionRef.current = null;
+      activeRecognition?.stop();
       setListening(false);
     }
   };
 
-  const toggleVoice = () => {
+  const handleVoiceConversationOpenChange = (open: boolean) => {
+    if (open) {
+      if (voiceChatOpen) handleVoiceChatOpenChange(false);
+      recognitionTokenRef.current += 1;
+      voiceConversationOpenRef.current = true;
+      voiceConversationSessionRef.current += 1;
+      voiceTurnPendingRef.current = false;
+      voiceSpeakIndexRef.current = null;
+      setVoiceConversationOpen(true);
+      setVoiceError(null);
+      setError(null);
+      setSportAiView("chat");
+      setSessionsOpen(false);
+      stopMiraSpeech();
+      return;
+    }
+
+    voiceConversationOpenRef.current = false;
+    voiceConversationSessionRef.current += 1;
+    recognitionTokenRef.current += 1;
+    voiceTurnPendingRef.current = false;
+    voiceSpeakIndexRef.current = null;
+    const activeRecognition = recognitionRef.current;
+    recognitionRef.current = null;
+    activeRecognition?.stop();
+    setListening(false);
+    setVoiceConversationOpen(false);
+    stopMiraSpeech();
+  };
+
+  const toggleVoice = (mode: "dictation" | "conversation" = "dictation") => {
     const SR =
       typeof window !== "undefined"
         ? (
@@ -607,29 +727,68 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
 
     if (!SR) {
       const message = "Spracherkennung wird in diesem Browser nicht unterstützt.";
-      if (voiceChatOpen) setVoiceError(message);
+      if (mode === "conversation" || voiceChatOpen) setVoiceError(message);
       else setError(message);
       return;
     }
     if (listening && recognitionRef.current) {
       recognitionRef.current.stop();
-      recognitionRef.current = null;
       setListening(false);
       return;
     }
     setVoiceError(null);
+    if (recognitionRef.current) {
+      recognitionTokenRef.current += 1;
+      voiceTurnPendingRef.current = false;
+      const staleRecognition = recognitionRef.current;
+      recognitionRef.current = null;
+      staleRecognition.stop();
+    }
+    if (mode === "conversation") {
+      if (!voiceConversationOpenRef.current) return;
+      stopMiraSpeech();
+      voiceTranscriptRef.current = "";
+      voiceTurnPendingRef.current = true;
+      setVoiceTranscript("");
+    }
     const rec = new SR();
+    const recognitionToken = ++recognitionTokenRef.current;
+    const conversationSession = voiceConversationSessionRef.current;
     rec.lang = "de-DE";
     rec.interimResults = false;
-    rec.onresult = (ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => {
+    rec.onresult = (ev) => {
+      if (
+        recognitionRef.current !== rec ||
+        recognitionTokenRef.current !== recognitionToken ||
+        (mode === "conversation" && conversationSession !== voiceConversationSessionRef.current)
+      ) {
+        return;
+      }
       if (sendingRef.current) return;
-      const t = ev.results[0]?.[0]?.transcript ?? "";
+      const t = Array.from(
+        { length: ev.results.length },
+        (_, index) => ev.results[index]?.[0]?.transcript?.trim() ?? "",
+      )
+        .filter(Boolean)
+        .join(" ");
       if (t) {
-        setInput((prev) => (prev ? `${prev} ${t}` : t));
+        if (mode === "conversation") {
+          voiceTranscriptRef.current = t;
+          setVoiceTranscript(t);
+        } else {
+          setInput((prev) => (prev ? `${prev} ${t}` : t));
+        }
         setVoiceError(null);
       }
     };
     rec.onerror = (event) => {
+      if (
+        recognitionRef.current !== rec ||
+        recognitionTokenRef.current !== recognitionToken ||
+        (mode === "conversation" && conversationSession !== voiceConversationSessionRef.current)
+      ) {
+        return;
+      }
       const message =
         event?.error === "not-allowed" || event?.error === "service-not-allowed"
           ? "Mikrofonzugriff wurde nicht erlaubt. Prüfe die Browser-Berechtigung und tippe erneut."
@@ -638,72 +797,122 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             : event?.error === "no-speech"
               ? "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut."
               : "Spracherkennung fehlgeschlagen. Versuche es erneut oder nutze den Textchat.";
-      if (voiceChatOpen) setVoiceError(message);
+      if (mode === "conversation" || voiceChatOpen) setVoiceError(message);
       else setError(message);
+      if (mode === "conversation") voiceTurnPendingRef.current = false;
       setListening(false);
     };
     rec.onend = () => {
+      if (
+        recognitionRef.current !== rec ||
+        recognitionTokenRef.current !== recognitionToken ||
+        (mode === "conversation" && conversationSession !== voiceConversationSessionRef.current)
+      ) {
+        return;
+      }
       recognitionRef.current = null;
       setListening(false);
+      if (mode !== "conversation" || !voiceTurnPendingRef.current) return;
+      voiceTurnPendingRef.current = false;
+      const transcript = voiceTranscriptRef.current.trim();
+      if (!voiceConversationOpenRef.current) return;
+      if (!transcript) {
+        setVoiceError(
+          "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut.",
+        );
+        return;
+      }
+      setVoiceError(null);
+      void submit(transcript, messages, {
+        includeAttachments: false,
+        clearDraft: false,
+        autoSpeak: true,
+        voiceTurn: true,
+      });
     };
     recognitionRef.current = rec;
     setListening(true);
     try {
       rec.start();
     } catch {
+      recognitionTokenRef.current += 1;
       recognitionRef.current = null;
       setListening(false);
+      if (mode === "conversation") voiceTurnPendingRef.current = false;
       const message =
         "Das Mikrofon konnte nicht gestartet werden. Prüfe die Berechtigung und versuche es erneut.";
-      if (voiceChatOpen) setVoiceError(message);
+      if (mode === "conversation" || voiceChatOpen) setVoiceError(message);
       else setError(message);
     }
   };
 
-  const speakMiraMessage = (index: number, text: string) => {
-    if (speakingMessage === index) {
-      stopMiraSpeech();
-      return;
-    }
-    if (
-      typeof window === "undefined" ||
-      !("speechSynthesis" in window) ||
-      typeof SpeechSynthesisUtterance === "undefined"
-    ) {
-      setError("Vorlesen wird von diesem Browser nicht unterstützt.");
-      return;
-    }
-    const speechText = prepareMiraSpeechText(text);
-    if (!speechText) {
-      setError("Diese Antwort enthält keinen Text zum Vorlesen.");
-      return;
-    }
-
-    stopMiraSpeech();
-    const utterance = new SpeechSynthesisUtterance(speechText);
-    const settings = getMiraSpeechSettings(window.speechSynthesis.getVoices());
-    utterance.lang = settings.lang;
-    utterance.rate = settings.rate;
-    utterance.pitch = settings.pitch;
-    utterance.volume = settings.volume;
-    utterance.voice = settings.voice as SpeechSynthesisVoice | null;
-    const finish = () => {
-      if (speechUtteranceRef.current === utterance) {
-        speechUtteranceRef.current = null;
-        setSpeakingMessage(null);
+  const speakMiraMessage = useCallback(
+    (index: number, text: string) => {
+      if (speakingMessage === index) {
+        stopMiraSpeech();
+        return;
       }
-    };
-    utterance.onend = finish;
-    utterance.onerror = finish;
-    speechUtteranceRef.current = utterance;
-    setSpeakingMessage(index);
-    try {
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      finish();
-      setError("Die Antwort konnte nicht vorgelesen werden. Nutze bitte den Textchat.");
+      if (
+        typeof window === "undefined" ||
+        !("speechSynthesis" in window) ||
+        typeof SpeechSynthesisUtterance === "undefined"
+      ) {
+        const message =
+          "Vorlesen wird von diesem Browser nicht unterstützt. Mira-Antworten bleiben als Text verfügbar.";
+        if (voiceConversationOpenRef.current) setVoiceError(message);
+        else setError(message);
+        return;
+      }
+      const speechText = prepareMiraSpeechText(text);
+      if (!speechText) {
+        const message = "Diese Antwort enthält keinen Text zum Vorlesen.";
+        if (voiceConversationOpenRef.current) setVoiceError(message);
+        else setError(message);
+        return;
+      }
+
+      stopMiraSpeech();
+      const utterance = new SpeechSynthesisUtterance(speechText);
+      const settings = getMiraSpeechSettings(window.speechSynthesis.getVoices());
+      utterance.lang = settings.lang;
+      utterance.rate = settings.rate;
+      utterance.pitch = settings.pitch;
+      utterance.volume = settings.volume;
+      utterance.voice = settings.voice as SpeechSynthesisVoice | null;
+      const finish = () => {
+        if (speechUtteranceRef.current === utterance) {
+          speechUtteranceRef.current = null;
+          setSpeakingMessage(null);
+        }
+      };
+      utterance.onend = finish;
+      utterance.onerror = finish;
+      speechUtteranceRef.current = utterance;
+      setSpeakingMessage(index);
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch {
+        finish();
+        const message =
+          "Die Antwort konnte nicht vorgelesen werden. Sie bleibt als Text verfügbar.";
+        if (voiceConversationOpenRef.current) setVoiceError(message);
+        else setError(message);
+      }
+    },
+    [speakingMessage, stopMiraSpeech],
+  );
+
+  useEffect(() => {
+    const index = voiceSpeakIndexRef.current;
+    if (index === null || loading) return;
+    if (!voiceConversationOpenRef.current) {
+      voiceSpeakIndexRef.current = null;
+      return;
     }
-  };
+    const message = messages[index];
+    voiceSpeakIndexRef.current = null;
+    if (message?.role === "assistant") speakMiraMessage(index, message.content);
+  }, [loading, messages, speakMiraMessage]);
 
   const onPersona = (p: AiPersona) => {
     setPersona(p);
@@ -726,12 +935,12 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             </Link>
             <button
               type="button"
-              onClick={() => handleVoiceChatOpenChange(true)}
-              aria-label="Sprachchat mit Mira öffnen"
+              onClick={() => handleVoiceConversationOpenChange(true)}
+              aria-label="Sprachgespräch mit Mira öffnen"
               className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Mic className="h-4 w-4" aria-hidden="true" />
-              Sprechen
+              Sprachgespräch
             </button>
           </div>
           <MiraGithubRepository />
@@ -2044,12 +2253,12 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   </Link>
                   <button
                     type="button"
-                    onClick={() => handleVoiceChatOpenChange(true)}
-                    aria-label="Sprachchat mit Mira öffnen"
+                    onClick={() => handleVoiceConversationOpenChange(true)}
+                    aria-label="Sprachgespräch mit Mira öffnen"
                     className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 text-sm font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <Mic className="h-4 w-4" aria-hidden="true" />
-                    Sprechen
+                    Sprachgespräch
                   </button>
                   <div className="mira-chat-live-status" aria-live="polite">
                     <strong>{activeTitle}</strong>
@@ -2223,6 +2432,39 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
         onStopListening={toggleVoice}
         error={voiceError}
       />
+      <MiraVoiceConversationDialog
+        open={voiceConversationOpen}
+        onOpenChange={handleVoiceConversationOpenChange}
+        messages={messages}
+        draft={input}
+        onDraftChange={setInput}
+        transcript={voiceTranscript}
+        loading={loading}
+        listening={listening && voiceConversationOpen}
+        speaking={speakingMessage !== null}
+        error={voiceError ?? error}
+        provider={voiceProviderPreview.provider?.label ?? "Kein Anbieter konfiguriert"}
+        routing={describeProviderSelection(voiceProviderPreview, voicePreviewTask)}
+        contextNotice={voiceContextNotice}
+        attachmentsPending={attachments.length > 0}
+        onStartListening={() => toggleVoice("conversation")}
+        onStopListening={() => toggleVoice("conversation")}
+        onStopSpeaking={stopMiraSpeech}
+        onSend={() => void submit(input, messages, { includeAttachments: false, autoSpeak: true })}
+        onRetryTranscript={() =>
+          void submit(voiceTranscript, messages, {
+            includeAttachments: false,
+            clearDraft: false,
+            autoSpeak: true,
+            voiceTurn: true,
+          })
+        }
+        onOpenSettings={() => {
+          handleVoiceConversationOpenChange(false);
+          setSettingsOpen(true);
+          setClassicOptionsOpen(true);
+        }}
+      />
       <MiraRunwareTools
         open={runwareOpen}
         onOpenChange={setRunwareOpen}
@@ -2251,7 +2493,10 @@ type SpeechRecognitionLike = {
   start: () => void;
   stop: () => void;
   onresult:
-    ((ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null;
+    | ((ev: {
+        results: { length: number; [i: number]: { [j: number]: { transcript: string } } };
+      }) => void)
+    | null;
   onerror: ((event?: { error?: string }) => void) | null;
   onend: (() => void) | null;
 };
