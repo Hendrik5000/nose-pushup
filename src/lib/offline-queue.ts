@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_BACKEND_SCOPE } from "@/integrations/supabase/backendScope";
 
 /** Offline entries keep their original save timestamp and stable row ID. */
 export type QueueTable = "workouts" | "runs" | "health_entries";
@@ -7,13 +8,16 @@ export type QueueItem = {
   table: QueueTable;
   row: Record<string, unknown>;
   created_at: number;
+  backend_scope?: string;
 };
-const DB_NAME = "nosy-offline";
+// The original `nosy-offline` database is legacy data of unknown origin. Never open,
+// migrate, clear or flush it automatically. New queues live in a per-project database.
+const DB_NAME = SUPABASE_BACKEND_SCOPE ? `nosy-offline-v2:${SUPABASE_BACKEND_SCOPE}` : null;
 const STORE = "queue";
 const EVENT = "offline-queue-change";
 
 function openDb(): Promise<IDBDatabase | null> {
-  if (typeof indexedDB === "undefined") return Promise.resolve(null);
+  if (!DB_NAME || typeof indexedDB === "undefined") return Promise.resolve(null);
   return new Promise((resolve) => {
     try {
       const req = indexedDB.open(DB_NAME, 1);
@@ -68,13 +72,24 @@ export function onQueueChange(cb: () => void) {
   return () => window.removeEventListener(EVENT, cb);
 }
 export async function enqueue(table: QueueTable, row: Record<string, unknown>): Promise<boolean> {
-  const id = await tx("readwrite", (store) => store.add({ table, row, created_at: Date.now() }));
+  if (!SUPABASE_BACKEND_SCOPE) return false;
+  const id = await tx("readwrite", (store) =>
+    store.add({
+      table,
+      row,
+      created_at: Date.now(),
+      backend_scope: SUPABASE_BACKEND_SCOPE,
+    }),
+  );
   if (id === null) return false;
   notify();
   return true;
 }
 export async function pendingItems(): Promise<QueueItem[]> {
-  return (await tx<QueueItem[]>("readonly", (store) => store.getAll())) ?? [];
+  if (!SUPABASE_BACKEND_SCOPE) return [];
+  const items = (await tx<QueueItem[]>("readonly", (store) => store.getAll())) ?? [];
+  // Unknown/mismatched entries remain stored in place and are not shown as sendable.
+  return items.filter((item) => item.backend_scope === SUPABASE_BACKEND_SCOPE);
 }
 export async function pendingCount(): Promise<number> {
   return (await pendingItems()).length;
@@ -91,13 +106,14 @@ export function flushQueue(): Promise<number> {
   return flushing;
 }
 async function flush(): Promise<number> {
-  if (typeof navigator !== "undefined" && !navigator.onLine) return 0;
+  if (!SUPABASE_BACKEND_SCOPE || (typeof navigator !== "undefined" && !navigator.onLine)) return 0;
   const { data } = await supabase.auth.getUser();
   if (!data.user) return 0;
   let sent = 0;
   for (const item of await pendingItems()) {
     // Never send another account's locally buffered data under the current login.
-    if (item.row.user_id !== data.user.id) continue;
+    if (item.backend_scope !== SUPABASE_BACKEND_SCOPE || item.row.user_id !== data.user.id)
+      continue;
     try {
       const { error } = await supabase.from(item.table as never).insert(item.row as never);
       if (!error || (error.code === "23505" && typeof item.row.id === "string")) {
