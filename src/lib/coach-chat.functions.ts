@@ -146,14 +146,16 @@ export const coachChat = createServerFn({ method: "POST" })
       : null;
     const h = (profile as { height_cm?: number } | null)?.height_cm;
     const w = (profile as { weight_kg?: number } | null)?.weight_kg;
-    const bmi = h && w ? (Number(w) / ((Number(h) / 100) ** 2)).toFixed(1) : null;
+    const bmi = h && w ? (Number(w) / (Number(h) / 100) ** 2).toFixed(1) : null;
     const weekReps = (recentStats ?? []).reduce(
       (n: number, r: { total_reps?: number }) => n + (r.total_reps ?? 0),
       0,
     );
     const runSummary = (runs ?? []).length
       ? (runs as { distance_m: number; duration_s: number }[])
-          .map((r) => `${(r.distance_m / 1000).toFixed(1)} km in ${Math.round(r.duration_s / 60)} min`)
+          .map(
+            (r) => `${(r.distance_m / 1000).toFixed(1)} km in ${Math.round(r.duration_s / 60)} min`,
+          )
           .join("; ")
       : "keine Läufe";
     const healthSummary = (health ?? []).length

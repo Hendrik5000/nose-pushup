@@ -278,7 +278,11 @@ export const finishBattle = createServerFn({ method: "POST" })
       throw new Error("Kein Teilnehmer");
     }
     if (row.status === "finished") {
-      return { winner_id: null as string | null, host_count: data.host_count, guest_count: data.guest_count };
+      return {
+        winner_id: null as string | null,
+        host_count: data.host_count,
+        guest_count: data.guest_count,
+      };
     }
     if (row.status !== "active") throw new Error("Battle nicht aktiv");
     let winner_id: string | null = null;
