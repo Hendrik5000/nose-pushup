@@ -152,12 +152,12 @@ function HealthPage() {
         </button>
       </section>
 
-      <section className="mt-6">
+      <section className="mt-8">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Verlauf
         </h2>
         {entries.length === 0 ? (
-          <p className="rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground">
+          <p className="rounded-3xl border border-border/70 bg-gradient-to-br from-card/70 to-card/30 p-5 text-sm text-muted-foreground shadow-sm backdrop-blur">
             Noch keine Gesundheitsdaten.
           </p>
         ) : (
@@ -165,7 +165,7 @@ function HealthPage() {
             {entries.map((e) => (
               <li
                 key={e.day}
-                className="flex items-center justify-between rounded-2xl border border-border bg-card/40 px-4 py-3 text-xs"
+                className="flex items-center justify-between rounded-3xl border border-border/70 bg-card/50 px-4 py-3.5 text-xs shadow-sm backdrop-blur transition hover:bg-card/70"
               >
                 <span className="font-semibold">
                   {new Date(e.day).toLocaleDateString("de-DE")}
@@ -191,7 +191,7 @@ function HealthPage() {
 
 function Card({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-card/50 px-4 py-4 backdrop-blur">
+    <div className="rounded-3xl border border-border/70 bg-gradient-to-br from-card/70 to-card/30 px-4 py-4 shadow-sm backdrop-blur transition hover:-translate-y-0.5">
       <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
       <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
     </div>
@@ -220,7 +220,7 @@ function Input({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+        className="min-h-12 w-full rounded-2xl border border-border/70 bg-background/60 px-4 py-3 text-base outline-none transition focus:border-primary focus:bg-background/80 focus:ring-2 focus:ring-primary/20"
       />
     </label>
   );

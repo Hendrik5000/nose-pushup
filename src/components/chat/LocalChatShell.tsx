@@ -426,8 +426,8 @@ export function LocalChatShell() {
   );
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-background">
-      <aside className="hidden w-72 shrink-0 border-r border-border md:block">{sidebar}</aside>
+    <div className="flex h-[100dvh] overflow-hidden bg-gradient-to-br from-background via-background to-primary/[0.03]">
+      <aside className="hidden w-80 shrink-0 border-r border-border/70 bg-card/20 md:block">{sidebar}</aside>
 
       <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <header
@@ -620,7 +620,7 @@ export function LocalChatShell() {
                   </div>
                 )}
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
+                  className={`max-w-[85%] rounded-3xl px-4 py-3 text-sm shadow-md shadow-black/5 transition ${
                     own
                       ? "rounded-br-sm bg-primary text-primary-foreground"
                       : m.user_id === "system"
@@ -745,7 +745,7 @@ export function LocalChatShell() {
         )}
 
         {/* Quick replies + workout share */}
-        <div className="flex gap-1.5 overflow-x-auto border-t border-border bg-card/40 px-3 py-2">
+        <div className="flex gap-2 overflow-x-auto border-t border-border/70 bg-card/50 px-3 py-2.5 backdrop-blur">
           {QUICK_REPLIES.map((q) => (
             <button
               key={q.id}
@@ -770,7 +770,7 @@ export function LocalChatShell() {
             e.preventDefault();
             void onSend();
           }}
-          className="flex shrink-0 items-end gap-2 border-t border-border bg-card/80 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-20px_hsl(var(--foreground))] backdrop-blur"
+          className="flex shrink-0 items-end gap-2 border-t border-border/70 bg-card/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_30px_-18px_hsl(var(--foreground))] backdrop-blur"
         >
           <button
             type="button"
@@ -799,7 +799,7 @@ export function LocalChatShell() {
             placeholder={active ? "Nachricht…" : "Raum wählen…"}
             rows={1}
             disabled={!active}
-            className="min-w-0 flex-1 resize-none rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-50"
+            className="min-w-0 flex-1 resize-none rounded-2xl border border-border/70 bg-background/65 px-4 py-3 text-base outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
             style={{ maxHeight: 120 }}
           />
           <button

@@ -331,7 +331,7 @@ function SuperAiPage() {
 
       {/* Sessions drawer */}
       {sessionsOpen && (
-        <section className="mt-3 rounded-2xl border border-border bg-card/80 p-3">
+        <section className="mt-3 rounded-3xl border border-border/70 bg-card/80 p-4 shadow-sm backdrop-blur">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Sessions</span>
             <button type="button" onClick={startNewSession} className="text-xs font-semibold text-primary">
@@ -368,7 +368,7 @@ function SuperAiPage() {
       )}
 
       {settingsOpen && (
-        <section className="mt-3 rounded-2xl border border-border bg-card/80 p-4">
+        <section className="mt-3 rounded-3xl border border-border/70 bg-card/80 p-4 shadow-sm backdrop-blur">
           <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             API-Provider
           </div>
@@ -429,7 +429,7 @@ function SuperAiPage() {
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain rounded-3xl border border-border bg-card/30 p-3 pb-5 backdrop-blur [scrollbar-width:thin]"
+        className="mt-3 min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain rounded-[1.75rem] border border-border/70 bg-gradient-to-b from-card/50 to-card/20 p-4 pb-6 shadow-inner backdrop-blur [scrollbar-width:thin]"
       >
         {messages.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-8 text-center">
@@ -448,8 +448,8 @@ function SuperAiPage() {
             <div
               className={
                 m.role === "user"
-                  ? "max-w-[88%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-sm text-primary-foreground shadow-sm"
-                  : "max-w-[92%] rounded-2xl rounded-bl-md border border-border/80 bg-background/70 px-3.5 py-2.5 text-sm leading-relaxed shadow-sm"
+                  ? "max-w-[88%] rounded-3xl rounded-br-md bg-primary px-4 py-3 text-sm text-primary-foreground shadow-md shadow-primary/10"
+                  : "max-w-[92%] rounded-3xl rounded-bl-md border border-border/80 bg-background/75 px-4 py-3 text-sm leading-relaxed shadow-md shadow-black/5"
               }
             >
               <p className="whitespace-pre-wrap">{m.content}</p>
@@ -499,7 +499,7 @@ function SuperAiPage() {
       )}
 
       {/* Composer */}
-      <div className="mt-2 shrink-0 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur">
+      <div className="mt-2 shrink-0 rounded-3xl border border-border/70 bg-card/85 p-2.5 shadow-lg shadow-black/10 backdrop-blur">
         <div className="mb-1.5 flex gap-1">
           <SmallAction onClick={regenerate} disabled={loading || messages.length === 0}>
             Neu generieren
@@ -546,7 +546,7 @@ function SuperAiPage() {
             }}
             placeholder="Frag Super-AI…"
             rows={1}
-            className="min-h-11 min-w-0 flex-1 resize-none rounded-xl bg-background/40 px-3 py-2.5 text-base outline-none ring-0 placeholder:text-muted-foreground/70 focus:bg-background/70"
+            className="min-h-12 min-w-0 flex-1 resize-none rounded-2xl border border-border/60 bg-background/55 px-4 py-3 text-base outline-none ring-0 placeholder:text-muted-foreground/70 transition focus:border-primary/60 focus:bg-background/80 focus:ring-2 focus:ring-primary/20"
             style={{ maxHeight: 140 }}
             disabled={loading}
           />
