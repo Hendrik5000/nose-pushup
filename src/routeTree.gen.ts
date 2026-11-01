@@ -18,6 +18,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
+import { Route as AuthenticatedAlarmRouteImport } from './routes/_authenticated/alarm'
 import { Route as AuthenticatedBattleLeagueRouteImport } from './routes/_authenticated/battle-league'
 import { Route as AuthenticatedCalisthenicsRouteImport } from './routes/_authenticated/calisthenics'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
@@ -84,6 +85,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
 const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
   id: '/ai',
   path: '/ai',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAlarmRoute = AuthenticatedAlarmRouteImport.update({
+  id: '/alarm',
+  path: '/alarm',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedBattleLeagueRoute =
@@ -203,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
+  '/alarm': typeof AuthenticatedAlarmRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/chat': typeof AuthenticatedChatRoute
@@ -232,6 +239,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
+  '/alarm': typeof AuthenticatedAlarmRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/chat': typeof AuthenticatedChatRoute
@@ -264,6 +272,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
+  '/_authenticated/alarm': typeof AuthenticatedAlarmRoute
   '/_authenticated/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/_authenticated/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
@@ -297,6 +306,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/ai'
+    | '/alarm'
     | '/battle-league'
     | '/calisthenics'
     | '/chat'
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/ai'
+    | '/alarm'
     | '/battle-league'
     | '/calisthenics'
     | '/chat'
@@ -357,6 +368,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
     | '/_authenticated/ai'
+    | '/_authenticated/alarm'
     | '/_authenticated/battle-league'
     | '/_authenticated/calisthenics'
     | '/_authenticated/chat'
@@ -455,6 +467,13 @@ declare module '@tanstack/react-router' {
       path: '/ai'
       fullPath: '/ai'
       preLoaderRoute: typeof AuthenticatedAiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/alarm': {
+      id: '/_authenticated/alarm'
+      path: '/alarm'
+      fullPath: '/alarm'
+      preLoaderRoute: typeof AuthenticatedAlarmRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/battle-league': {
@@ -603,6 +622,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
+  AuthenticatedAlarmRoute: typeof AuthenticatedAlarmRoute
   AuthenticatedBattleLeagueRoute: typeof AuthenticatedBattleLeagueRoute
   AuthenticatedCalisthenicsRoute: typeof AuthenticatedCalisthenicsRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
@@ -626,6 +646,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
+  AuthenticatedAlarmRoute: AuthenticatedAlarmRoute,
   AuthenticatedBattleLeagueRoute: AuthenticatedBattleLeagueRoute,
   AuthenticatedCalisthenicsRoute: AuthenticatedCalisthenicsRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,

@@ -64,6 +64,7 @@ const MORE_AREAS = [
   { to: "/battle-league", label: "Battle-Liga" },
   { to: "/leaderboard", label: "Rangliste" },
   { to: "/clubs", label: "Clubs" },
+  { to: "/alarm", label: "Wecker" },
 ] as const;
 
 export const Route = createFileRoute("/_authenticated/")({
