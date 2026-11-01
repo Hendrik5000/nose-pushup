@@ -5,6 +5,7 @@ import { MiraSpark } from "@/components/mira/MiraSpark";
 import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
 import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
+import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import {
@@ -733,6 +734,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               Sprechen
             </button>
           </div>
+          <MiraGithubRepository />
           {/* Header */}
           <details
             className="alo-classic-mira-options"
