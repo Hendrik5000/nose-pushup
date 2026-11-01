@@ -105,7 +105,8 @@ test("attachment preview, explicit submit, microphone and accessible file limits
   assert.match(chat, /<MiraAttachmentPicker/);
   assert.match(chat, /void submit\(\)/);
   assert.match(chat, /aria-label="Deine Frage an Mira"/);
-  assert.match(chat, /aria-label="Spracheingabe"/);
+  assert.match(chat, /aria-label="Sprachdialog mit Mikrofon öffnen"/);
+  assert.match(chat, /onClick=\{\(\) => handleVoiceChatOpenChange\(true\)\}/);
   assert.match(chat, /disabled=\{loading \|\| \(!input.trim\(\) && !attachments.length\)\}/);
   assert.match(chat, /<details className="mira-file-help/);
   for (const limit of ["4 Anhänge", "3 MB", "1 MB", "128 KB", "6000", "PDF: Google"])
