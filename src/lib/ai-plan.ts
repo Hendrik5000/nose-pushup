@@ -1,6 +1,7 @@
 /** Strict validation helpers for actionable plans returned by Super-AI. */
 
 import { validateMiraInteraction, type MiraInteraction } from "./mira-interactions";
+import { validateMiraVisualAnswer, type MiraVisualAnswer } from "./mira-visual-answer";
 
 export type AiWorkoutPlan = {
   title: string;
@@ -43,6 +44,7 @@ export function parseAiResponse(raw: string): {
   reply: string;
   plan: AiWorkoutPlan | null;
   interaction?: MiraInteraction;
+  visual?: MiraVisualAnswer;
 } {
   const text = raw.trim();
   const jsonText = unwrapJsonFence(text);
@@ -57,12 +59,25 @@ export function parseAiResponse(raw: string): {
 
   if (!isRecord(value)) return { reply: text, plan: null };
   const hasInteraction = Object.prototype.hasOwnProperty.call(value, "interaction");
+  const hasVisual = Object.prototype.hasOwnProperty.call(value, "visual");
   const interaction = validateMiraInteraction(value.interaction);
+  const visual = validateMiraVisualAnswer(value.visual);
   const plan = validateAiWorkoutPlan(value.plan);
   const reply = typeof value.reply === "string" ? value.reply.trim() : "";
-  if (plan) return { reply, plan, ...(interaction ? { interaction } : {}) };
-  if (hasInteraction && typeof value.reply === "string" && reply) {
-    return { reply, plan: null, ...(interaction ? { interaction } : {}) };
+  if (plan)
+    return {
+      reply,
+      plan,
+      ...(interaction ? { interaction } : {}),
+      ...(visual ? { visual } : {}),
+    };
+  if ((hasInteraction || hasVisual) && typeof value.reply === "string" && reply) {
+    return {
+      reply,
+      plan: null,
+      ...(interaction ? { interaction } : {}),
+      ...(visual ? { visual } : {}),
+    };
   }
   return { reply: text, plan: null };
 }

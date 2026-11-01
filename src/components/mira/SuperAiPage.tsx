@@ -4,6 +4,7 @@ import { MiraAttachmentPicker, MiraAttachmentPreview } from "@/components/mira/M
 import { MiraSpark } from "@/components/mira/MiraSpark";
 import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
 import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
+import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import {
   assertMiraAttachmentProvider,
@@ -449,7 +450,9 @@ export function SuperAiPage() {
 
 Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routing bedeutet: die App wählt passend zur Frage ein KI-Modell). Erfinde keine persönlichen Daten oder Trainingsergebnisse. Fehlt für eine sichere oder persönliche Trainingsempfehlung wichtiger Kontext, stelle zuerst eine konkrete Rückfrage. Bei einem konkreten einzelnen Trainingsvorschlag gib zusätzlich ein JSON-Objekt mit reply und einem vollständig ausgefüllten plan (title, exercise_id, sets, reps, rest_s, rationale) aus; wenn Kontext fehlt, lasse plan weg. Normale Antworten bleiben Text.
 
-Interaktive Antwort (optional, nur bei einer ausdrücklichen Gaming-PC-Konfiguratorfrage): Ergänze zum normalen reply-Feld höchstens ein interaction-Objekt exakt in dieser Form: {"type":"pcConfigurator","schemaVersion":1,"budget":900,"resolution":"1080p","priority":"fps"}. Erlaubt sind ausschließlich budget als ganze Zahl von 600 bis 3500 in 100er-Schritten, resolution „1080p“, „1440p“ oder „4k“, priority „fps“ oder „quiet“ sowie die genannten Felder. Keine weiteren Felder. Die feste Alo-Karte leitet daraus lokal ein versioniertes Profil ab. Nenne keine aktuellen Preise, Bestände, Händler, konkreten SKUs oder Kompatibilitätszusagen; dafür gibt es keinen Live-Abgleich. Gib niemals HTML, JavaScript, URLs, Iframes, Einbettungen oder ausführbare Aktionen aus. Bei anderen Fragen kein interaction-Feld.${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
+Interaktive Antwort (optional, nur bei einer ausdrücklichen Gaming-PC-Konfiguratorfrage): Ergänze zum normalen reply-Feld höchstens ein interaction-Objekt exakt in dieser Form: {"type":"pcConfigurator","schemaVersion":1,"budget":900,"resolution":"1080p","priority":"fps"}. Erlaubt sind ausschließlich budget als ganze Zahl von 600 bis 3500 in 100er-Schritten, resolution „1080p“, „1440p“ oder „4k“, priority „fps“ oder „quiet“ sowie die genannten Felder. Keine weiteren Felder. Die feste Alo-Karte leitet daraus lokal ein versioniertes Profil ab. Nenne keine aktuellen Preise, Bestände, Händler, konkreten SKUs oder Kompatibilitätszusagen; dafür gibt es keinen Live-Abgleich. Bei anderen Fragen kein interaction-Feld.
+
+Visualisierung (optional, nur wenn sie die Antwort tatsächlich klarer macht): Wenn du visualisierst, antworte als JSON-Objekt mit dem vollständigen normalen reply und genau einem visual-Objekt. Erlaubte Formen: {"reply":"...","visual":{"type":"metricGrid","schemaVersion":1,"title":"...","items":[{"label":"...","value":"..."},{"label":"...","value":"..."}]}} oder {"reply":"...","visual":{"type":"barChart","schemaVersion":1,"title":"...","unit":"km","items":[{"label":"...","value":2.5},{"label":"...","value":5}]}}. metricGrid hat 2–6 items mit nur label, value und optional detail (Text); barChart hat 2–6 items mit nur label und value, optional unit ausschließlich aus %, €, km, m, cm, kg, g, kcal, h, min, s, W, °C, Punkte. Keine weiteren Felder. Zahlen im barChart müssen aus der Nutzereingabe oder ausdrücklich freigegebenem Kontext stammen; einfache Rechnungen daraus sind nur erlaubt, wenn du sie im reply nachvollziehbar erklärst. Erfinde keine Messwerte, persönlichen Daten, Vergleiche oder Live-Daten. Fehlen belegte Zahlen oder hilft ein Bild nicht, antworte im normalen Textformat und lasse visual weg. Keine URLs, HTML, JavaScript, Iframes, Einbettungen oder ausführbaren Inhalte; die Visuals werden ausschließlich als feste Alo-Karten gerendert.${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
       if (lastFeedback === "passt_nicht") {
         systemExtra +=
           "\nDer letzte Vorschlag passt nicht. Frage gezielt, ob Übung, verfügbare Zeit, Ausrüstung oder ein anderer Grund nicht passt; ändere nicht einfach nur Wiederholungszahlen. Gib erst nach Klärung einen neuen persönlichen Plan aus.";
@@ -499,6 +502,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             (plan ? "Hier ist dein unverbindlicher Trainingsvorschlag." : res.reply),
           ...(plan ? { plan } : {}),
           ...(parsed.interaction ? { interaction: parsed.interaction } : {}),
+          ...(parsed.visual ? { visual: parsed.visual } : {}),
           meta: {
             provider: res.provider,
             model: res.model,
@@ -963,6 +967,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       onChange={(next) => updateInteraction(i, next)}
                     />
                   )}
+                  {m.role === "assistant" && m.visual && <MiraVisualAnswerCard visual={m.visual} />}
                   {m.attachments?.length ? (
                     <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
                       {m.attachments.map((item, index) => (
@@ -1712,6 +1717,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                             interaction={m.interaction}
                             onChange={(next) => updateInteraction(i, next)}
                           />
+                        )}
+                        {m.role === "assistant" && m.visual && (
+                          <MiraVisualAnswerCard visual={m.visual} />
                         )}
                         {m.attachments?.length ? (
                           <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
