@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
+import { ALARM_SETTINGS_EVENT, readSavedAlarmSettings, type AlarmSettings } from "@/lib/alarm";
 import { levelProgress } from "@/lib/level";
 import {
   getQuickStartPlan,
@@ -106,7 +107,19 @@ function HomeAppHub({
   displayName: string | null | undefined;
   avatarUrl: string | null | undefined;
 }) {
+  const { user } = Route.useRouteContext();
+  const [savedAlarm, setSavedAlarm] = useState<AlarmSettings | null>(null);
   const [canSeeAdmin, setCanSeeAdmin] = useState(false);
+  useEffect(() => {
+    const loadAlarm = () => setSavedAlarm(readSavedAlarmSettings(user.id));
+    loadAlarm();
+    window.addEventListener(ALARM_SETTINGS_EVENT, loadAlarm);
+    window.addEventListener("storage", loadAlarm);
+    return () => {
+      window.removeEventListener(ALARM_SETTINGS_EVENT, loadAlarm);
+      window.removeEventListener("storage", loadAlarm);
+    };
+  }, [user.id]);
   useEffect(() => {
     let active = true;
     void getAdminAreaAccess()
@@ -209,7 +222,16 @@ function HomeAppHub({
               to={area.to}
               className="flex min-h-11 items-center rounded-xl border border-border/70 bg-background/40 px-3 text-sm font-medium transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
-              {area.label}
+              {area.to === "/alarm" && savedAlarm ? (
+                <span className="flex min-w-0 flex-col py-2">
+                  <span>{area.label}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Täglich {savedAlarm.time} · {savedAlarm.enabled ? "Ein" : "Aus"}
+                  </span>
+                </span>
+              ) : (
+                area.label
+              )}
             </Link>
           ))}
         </nav>

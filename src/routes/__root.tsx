@@ -13,6 +13,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { GlobalAlarmMonitor } from "@/components/AlarmMonitor";
 import appCss from "../styles.css?url";
 import sportCss from "../sport.css?url";
 import communityReferenceCss from "../community-reference.css?url";
@@ -335,6 +336,7 @@ function RootComponent() {
       >
         <Outlet />
       </div>
+      <GlobalAlarmMonitor />
       {installable && !standalone && (
         <aside
           aria-label="App installieren"

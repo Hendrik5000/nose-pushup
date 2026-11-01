@@ -24,16 +24,16 @@ function storageKey(userId: string) {
   return scopedStorageKey("alo-alarm", userId);
 }
 
-export function readAlarmSettings(userId: string): AlarmSettings {
-  if (typeof window === "undefined") return { ...DEFAULT_ALARM_SETTINGS };
+export function readSavedAlarmSettings(userId: string): AlarmSettings | null {
+  if (typeof window === "undefined") return null;
   try {
     const value: unknown = JSON.parse(window.localStorage.getItem(storageKey(userId)) ?? "null");
-    if (!value || typeof value !== "object" || Array.isArray(value))
-      return { ...DEFAULT_ALARM_SETTINGS };
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
     const settings = value as Partial<AlarmSettings>;
+    if (!isValidAlarmTime(settings.time)) return null;
     return {
       enabled: settings.enabled === true,
-      time: isValidAlarmTime(settings.time) ? settings.time : DEFAULT_ALARM_TIME,
+      time: settings.time,
       ...(typeof settings.lastTriggeredFor === "string"
         ? { lastTriggeredFor: settings.lastTriggeredFor }
         : {}),
@@ -43,8 +43,12 @@ export function readAlarmSettings(userId: string): AlarmSettings {
         : {}),
     };
   } catch {
-    return { ...DEFAULT_ALARM_SETTINGS };
+    return null;
   }
+}
+
+export function readAlarmSettings(userId: string): AlarmSettings {
+  return readSavedAlarmSettings(userId) ?? { ...DEFAULT_ALARM_SETTINGS };
 }
 
 export function saveAlarmSettings(userId: string, settings: AlarmSettings) {

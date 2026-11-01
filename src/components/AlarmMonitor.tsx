@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlarmClock, Bell, Moon } from "lucide-react";
+import { useRouterState } from "@tanstack/react-router";
 import {
   ALARM_SETTINGS_EVENT,
   getDueAlarm,
@@ -8,6 +9,18 @@ import {
 } from "@/lib/alarm";
 import { startAlarmSound, stopAlarmSound } from "@/lib/alarm-sound";
 import { showNotification } from "@/lib/notifications";
+
+/** Beside the keyed outlet, child-route navigation cannot silence a ringing alarm. */
+export function GlobalAlarmMonitor() {
+  const userId = useRouterState({
+    select: (state) => {
+      const authMatch = state.matches.find((match) => match.routeId === "/_authenticated");
+      const context = authMatch?.context as { user?: { id: string } } | undefined;
+      return context?.user?.id ?? null;
+    },
+  });
+  return userId ? <AlarmMonitor key={userId} userId={userId} /> : null;
+}
 
 export function AlarmMonitor({ userId }: { userId: string }) {
   const [ringing, setRinging] = useState(false);

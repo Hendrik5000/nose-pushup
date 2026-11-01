@@ -3,14 +3,15 @@ import { AlarmClock, Check, Clock3, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import {
+  ALARM_SETTINGS_EVENT,
   DEFAULT_ALARM_SETTINGS,
   getNextAlarmDate,
   readAlarmSettings,
+  readSavedAlarmSettings,
   saveAlarmSettings,
   type AlarmSettings,
 } from "@/lib/alarm";
 import { previewAlarmSound, primeAlarmAudio } from "@/lib/alarm-sound";
-import { getAloOwner } from "@/lib/alo-store";
 
 export const Route = createFileRoute("/_authenticated/alarm")({
   head: () => ({
@@ -26,8 +27,10 @@ export const Route = createFileRoute("/_authenticated/alarm")({
 });
 
 function AlarmPage() {
-  const userId = getAloOwner() ?? "";
+  const { user } = Route.useRouteContext();
+  const userId = user.id;
   const [settings, setSettings] = useState<AlarmSettings>({ ...DEFAULT_ALARM_SETTINGS });
+  const [hasSavedAlarm, setHasSavedAlarm] = useState(false);
   const [time, setTime] = useState(DEFAULT_ALARM_SETTINGS.time);
   const [enabled, setEnabled] = useState(false);
   const [message, setMessage] = useState("");
@@ -38,16 +41,18 @@ function AlarmPage() {
   useEffect(() => {
     if (!userId) return;
     const load = () => {
-      const saved = readAlarmSettings(userId);
+      const stored = readSavedAlarmSettings(userId);
+      const saved = stored ?? { ...DEFAULT_ALARM_SETTINGS };
+      setHasSavedAlarm(stored !== null);
       setSettings(saved);
       setTime(saved.time);
       setEnabled(saved.enabled);
     };
     load();
-    window.addEventListener("alo-alarm-settings-changed", load);
+    window.addEventListener(ALARM_SETTINGS_EVENT, load);
     window.addEventListener("storage", load);
     return () => {
-      window.removeEventListener("alo-alarm-settings-changed", load);
+      window.removeEventListener(ALARM_SETTINGS_EVENT, load);
       window.removeEventListener("storage", load);
     };
   }, [userId]);
@@ -68,7 +73,7 @@ function AlarmPage() {
       return;
     }
     const next: AlarmSettings = {
-      ...settings,
+      ...readAlarmSettings(userId),
       time,
       enabled,
       snoozeUntil: undefined,
@@ -76,7 +81,8 @@ function AlarmPage() {
     if (enabled) void primeAlarmAudio();
     try {
       saveAlarmSettings(userId, next);
-      setSettings(next);
+      setSettings(readAlarmSettings(userId));
+      setHasSavedAlarm(true);
       setMessage(
         enabled ? "Wecker gespeichert und eingeschaltet." : "Wecker gespeichert und ausgeschaltet.",
       );
@@ -147,8 +153,8 @@ function AlarmPage() {
             Dein sanfter Wecker
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-            Stell deine tägliche Weckzeit ein. Ein heller, sanft ansteigender Ton wird nach und nach
-            präsenter, damit du angenehm und zuverlässig wach wirst.
+            Stell deine tägliche Weckzeit ein. Der deutlich hörbare Weckton beginnt ruhig und wird
+            innerhalb von 45 Sekunden sanft lauter. Du kannst ihn jederzeit stoppen.
           </p>
         </div>
       </header>
@@ -216,6 +222,23 @@ function AlarmPage() {
               {previewing ? "Tonprobe stoppen" : "Ton testen (9 Sek.)"}
             </button>
           </div>
+          <div
+            aria-label="Gespeicherter Wecker"
+            className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm"
+          >
+            <p className="font-semibold">
+              {hasSavedAlarm
+                ? `Gespeichert: täglich ${settings.time} Uhr · ${settings.enabled ? "Ein" : "Aus"}`
+                : "Noch kein Wecker gespeichert."}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {time !== settings.time || enabled !== settings.enabled
+                ? "Deine Änderungen sind noch nicht gespeichert. Tippe auf „Wecker speichern“."
+                : hasSavedAlarm
+                  ? "Bleibt auf diesem Gerät gespeichert – auch auf der Startseite und nach dem Neuladen."
+                  : "Wähle die Uhrzeit und tippe auf „Wecker speichern“."}
+            </p>
+          </div>
           <p aria-live="polite" className="min-h-5 text-sm text-muted-foreground">
             {message}
           </p>
@@ -228,8 +251,9 @@ function AlarmPage() {
           Der Alarm läuft, solange Alo geöffnet und vom Browser nicht angehalten ist. Ein Browser
           kann nicht zuverlässig klingeln, wenn die App geschlossen, im Hintergrund ausgesetzt oder
           das Gerät im Ruhemodus ist; Ton und Vibration hängen außerdem von Browser, Gerät und
-          Lautstärke ab. Teste den Ton vor dem ersten Einsatz bei entsperrtem Gerät. Die Weckzeit
-          wird nur auf diesem Gerät und für dein Alo-Konto gespeichert.
+          Medienlautstärke ab. Teste den Ton vor dem ersten Einsatz bei entsperrtem Gerät; die
+          Tonprobe zeigt den Lautstärkeanstieg verkürzt. Die Weckzeit wird nur auf diesem Gerät und
+          für dein Alo-Konto gespeichert.
         </p>
       </aside>
     </main>
