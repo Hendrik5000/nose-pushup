@@ -102,7 +102,7 @@ test("Nexus menu actions invoke existing handlers and keep the room-list switche
   );
   assert.match(
     chat,
-    /className="community-back"[\s\S]*?onClick=\{\(\) => setMobileListOpen\(true\)\}/,
+    /className="community-back[^"]*"[\s\S]*?onClick=\{\(\) => setMobileListOpen\(true\)\}/,
   );
   assert.match(chat, /aria-controls="nexus-mobile-chat-list"/);
   assert.match(chat, /id="nexus-mobile-chat-list"/);
