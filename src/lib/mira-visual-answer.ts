@@ -104,7 +104,7 @@ function validateBarItems(value: unknown): MiraVisualBarChart["items"] | null {
       !Number.isFinite(candidate.value) ||
       candidate.value < 0 ||
       candidate.value > MIRA_VISUAL_MAX_VALUE ||
-      Math.round(candidate.value * 100) !== candidate.value * 100
+      Math.round(candidate.value * 100) / 100 !== candidate.value
     )
       return null;
     items.push({ label, value: candidate.value });

@@ -125,6 +125,49 @@ test("bar chart rejects unsafe units, non-finite, negative, oversized and over-p
   );
 });
 
+test("bar chart accepts decimal hundredths affected by binary floating-point precision", () => {
+  for (const value of [1.15, 2.55, 0.29]) {
+    const validated = validateMiraVisualAnswer({
+      ...barChart,
+      items: [
+        { label: "Testwert", value },
+        { label: "Vergleich", value: 3 },
+      ],
+    });
+    assert.ok(validated, `${value} should be accepted with two decimal places`);
+    assert.equal(validated.type, "barChart");
+    if (validated.type === "barChart") assert.equal(validated.items[0]?.value, value);
+  }
+});
+
+test("bar chart accepts integer, tenths and hundredths but rejects a third decimal", () => {
+  for (const value of [1, 1.2, 1.23]) {
+    assert.ok(
+      validateMiraVisualAnswer({
+        ...barChart,
+        items: [
+          { label: "Testwert", value },
+          { label: "Vergleich", value: 3 },
+        ],
+      }),
+      `${value} should be accepted`,
+    );
+  }
+  for (const value of [1.001, 1.234, 2.555]) {
+    assert.equal(
+      validateMiraVisualAnswer({
+        ...barChart,
+        items: [
+          { label: "Testwert", value },
+          { label: "Vergleich", value: 3 },
+        ],
+      }),
+      null,
+      `${value} should be rejected because it has more than two decimal places`,
+    );
+  }
+});
+
 test("Mira keeps reply text when visuals are missing, unknown or invalid", () => {
   const plain = "Die Antwort bleibt als normaler Text erhalten.";
   assert.deepEqual(parseAiResponse(plain), { reply: plain, plan: null });
