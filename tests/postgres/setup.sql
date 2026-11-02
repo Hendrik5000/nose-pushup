@@ -1,0 +1,72 @@
+\set ON_ERROR_STOP on
+
+CREATE ROLE anon NOLOGIN;
+CREATE ROLE authenticated NOLOGIN;
+CREATE ROLE service_role NOLOGIN BYPASSRLS;
+
+CREATE SCHEMA auth;
+CREATE TABLE auth.users (
+  id UUID PRIMARY KEY
+);
+CREATE FUNCTION auth.uid()
+RETURNS UUID
+LANGUAGE SQL
+STABLE
+AS $$
+  SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::UUID
+$$;
+GRANT USAGE ON SCHEMA auth TO authenticated;
+GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated;
+
+CREATE TABLE public.battles (
+  id UUID PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  host_id UUID NOT NULL REFERENCES auth.users(id),
+  guest_id UUID REFERENCES auth.users(id),
+  status TEXT NOT NULL,
+  is_bot BOOLEAN NOT NULL DEFAULT false,
+  mode TEXT NOT NULL DEFAULT 'timed',
+  duration_s INTEGER NOT NULL DEFAULT 60,
+  target_reps INTEGER NOT NULL DEFAULT 0,
+  rematch_of UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  started_at TIMESTAMPTZ,
+  host_count INTEGER NOT NULL DEFAULT 0,
+  guest_count INTEGER NOT NULL DEFAULT 0,
+  winner_id UUID REFERENCES auth.users(id)
+);
+
+CREATE TABLE public.battle_reps (
+  id BIGSERIAL PRIMARY KEY,
+  battle_id UUID NOT NULL REFERENCES public.battles(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  count INTEGER NOT NULL CHECK (count = 1),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.clubs (
+  id UUID PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  owner_id UUID NOT NULL REFERENCES auth.users(id)
+);
+
+CREATE TABLE public.club_members (
+  club_id UUID NOT NULL REFERENCES public.clubs(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL,
+  PRIMARY KEY (club_id, user_id)
+);
+
+GRANT USAGE ON SCHEMA public TO authenticated;
+
+INSERT INTO auth.users (id) VALUES
+  ('00000000-0000-0000-0000-000000000001'),
+  ('00000000-0000-0000-0000-000000000002'),
+  ('00000000-0000-0000-0000-000000000003'),
+  ('00000000-0000-0000-0000-000000000004'),
+  ('00000000-0000-0000-0000-000000000005'),
+  ('00000000-0000-0000-0000-000000000006'),
+  ('00000000-0000-0000-0000-000000000007'),
+  ('00000000-0000-0000-0000-000000000008'),
+  ('00000000-0000-0000-0000-000000000009'),
+  ('00000000-0000-0000-0000-000000000010');

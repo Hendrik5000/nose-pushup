@@ -132,6 +132,7 @@ export type Database = {
           host_id: string
           id: string
           is_bot: boolean
+          is_public: boolean
           mode: string
           rematch_of: string | null
           started_at: string | null
@@ -151,6 +152,7 @@ export type Database = {
           host_id: string
           id?: string
           is_bot?: boolean
+          is_public?: boolean
           mode?: string
           rematch_of?: string | null
           started_at?: string | null
@@ -170,6 +172,7 @@ export type Database = {
           host_id?: string
           id?: string
           is_bot?: boolean
+          is_public?: boolean
           mode?: string
           rematch_of?: string | null
           started_at?: string | null
@@ -1917,7 +1920,23 @@ export type Database = {
         Returns: boolean
       }
       is_registered_user: { Args: never; Returns: boolean }
-      join_club_by_code: { Args: { _code: string }; Returns: string }
+      claim_public_battle: {
+        Args: { _duration_s: number; _mode: string }
+        Returns: { code: string; id: string }[]
+      }
+      finish_battle: {
+        Args: { _battle_id: string; _guest_count: number }
+        Returns: { guest_count: number; host_count: number; winner_id: string | null }[]
+      }
+      join_battle_by_code: {
+        Args: { _code: string }
+        Returns: { error_code: string | null; joined_id: string | null; success: boolean }[]
+      }
+      join_club_by_code: {
+        Args: { _code: string }
+        Returns: { club_id: string | null; error_code: string | null; success: boolean }[]
+      }
+      start_battle: { Args: { _battle_id: string }; Returns: undefined }
       postfach_install_battle_bridge: { Args: never; Returns: string }
       postfach_push: {
         Args: {

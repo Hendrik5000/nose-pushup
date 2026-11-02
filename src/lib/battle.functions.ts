@@ -16,11 +16,9 @@ function checkJoinRateLimit(userId: string) {
   joinRateBuckets.set(userId, recent);
 }
 
-function makeCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
+async function makeCode() {
+  const { generateInvitationCode } = await import("./invitation-codes.server");
+  return generateInvitationCode();
 }
 
 export const BATTLE_MODES = ["timed", "first_to", "sprint", "endurance"] as const;
@@ -67,12 +65,13 @@ export const createBattle = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     for (let attempt = 0; attempt < 5; attempt++) {
-      const code = makeCode();
+      const code = await makeCode();
       const { data: row, error } = await supabase
         .from("battles")
         .insert({
           code,
           host_id: userId,
+          is_public: false,
           duration_s: data.duration_s,
           is_bot: data.is_bot,
           mode: data.mode,
@@ -102,35 +101,23 @@ export const findMatch = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: waiting } = await supabase
-      .from("battles")
-      .select("id, code, host_id")
-      .eq("status", "waiting")
-      .eq("mode", data.mode)
-      .eq("duration_s", data.duration_s)
-      .is("guest_id", null)
-      .neq("host_id", userId)
-      .eq("is_bot", false)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    const { data: matches, error: matchError } = await supabase.rpc("claim_public_battle", {
+      _mode: data.mode,
+      _duration_s: data.duration_s,
+    });
+    if (matchError) throw new Error(matchError.message);
+    const waiting = (matches as unknown as Array<{ id: string; code: string }> | null)?.[0];
     if (waiting) {
-      const row = waiting as { id: string; code: string; host_id: string };
-      const { error } = await supabase
-        .from("battles")
-        .update({ guest_id: userId })
-        .eq("id", row.id)
-        .eq("status", "waiting")
-        .is("guest_id", null);
-      if (!error) return { id: row.id, code: row.code, matched: true };
+      return { id: waiting.id, code: waiting.code, matched: true };
     }
     for (let attempt = 0; attempt < 5; attempt++) {
-      const code = makeCode();
+      const code = await makeCode();
       const { data: row, error } = await supabase
         .from("battles")
         .insert({
           code,
           host_id: userId,
+          is_public: true,
           duration_s: data.duration_s,
           is_bot: false,
           mode: data.mode,
@@ -171,44 +158,45 @@ export const joinBattle = createServerFn({ method: "POST" })
     const code = String((input as { code?: string })?.code ?? "")
       .trim()
       .toUpperCase();
-    if (!/^[A-Z0-9]{4,8}$/.test(code)) throw new Error("Ungültiger Code");
+    if (!/^[A-Z0-9]{4,16}$/.test(code)) throw new Error("Ungültiger Code");
     return { code };
   })
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase, userId } = context;
     checkJoinRateLimit(userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: battle, error } = await supabaseAdmin
-      .from("battles")
-      .select("id, host_id, guest_id, status")
-      .eq("code", data.code)
-      .maybeSingle();
+    const { data: rows, error } = await supabase.rpc("join_battle_by_code", {
+      _code: data.code,
+    });
     if (error) throw new Error(error.message);
-    if (!battle) throw new Error("Battle nicht gefunden");
-    if ((battle as { host_id: string }).host_id === userId) {
-      return { id: (battle as { id: string }).id };
+    const result = rows?.[0];
+    if (!result?.success || !result.joined_id) {
+      const message =
+        result?.error_code === "not_found"
+          ? "Battle nicht gefunden"
+          : result?.error_code === "unavailable"
+            ? "Battle nicht mehr verfügbar"
+            : "Ungültiger Code";
+      throw new Error(message);
     }
-    if ((battle as { status: string }).status !== "waiting") {
-      throw new Error("Battle nicht mehr verfügbar");
-    }
-    const { error: upErr } = await supabaseAdmin
+    const id = result.joined_id;
+    const { data: battle } = await supabase
       .from("battles")
-      .update({ guest_id: userId })
-      .eq("id", (battle as { id: string }).id)
-      .eq("status", "waiting")
-      .is("guest_id", null);
-    if (upErr) throw new Error(upErr.message);
-    try {
-      const { sendPushNotification } = await import("./push-notifications.server");
-      await sendPushNotification((battle as { host_id: string }).host_id, {
-        title: "Gegner gefunden! ⚔️",
-        body: "Jemand ist deinem Battle beigetreten. Starte jetzt!",
-        url: `/battle/${(battle as { id: string }).id}`,
-      });
-    } catch (pushErr) {
-      console.error("Push fail:", pushErr);
+      .select("host_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (battle && battle.host_id !== userId) {
+      try {
+        const { sendPushNotification } = await import("./push-notifications.server");
+        await sendPushNotification(battle.host_id, {
+          title: "Gegner gefunden! ⚔️",
+          body: "Jemand ist deinem Battle beigetreten. Starte jetzt!",
+          url: `/battle/${id}`,
+        });
+      } catch (pushErr) {
+        console.error("Push fail:", pushErr);
+      }
     }
-    return { id: (battle as { id: string }).id };
+    return { id };
   });
 
 export const startBattle = createServerFn({ method: "POST" })
@@ -219,84 +207,37 @@ export const startBattle = createServerFn({ method: "POST" })
     return { id };
   })
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: b, error } = await supabase
-      .from("battles")
-      .select("id, host_id, guest_id, is_bot, duration_s, status")
-      .eq("id", data.id)
-      .maybeSingle();
-    if (error || !b) throw new Error("Battle nicht gefunden");
-    const row = b as {
-      host_id: string;
-      guest_id: string | null;
-      is_bot: boolean;
-      status: string;
-    };
-    if (row.host_id !== userId) throw new Error("Nur der Host kann starten");
-    if (row.status !== "waiting") throw new Error("Battle nicht im Wartezustand");
-    if (!row.guest_id && !row.is_bot) throw new Error("Noch kein Gegner");
-    const { error: upErr } = await supabase
-      .from("battles")
-      .update({ status: "active", started_at: new Date().toISOString() })
-      .eq("id", data.id)
-      .eq("status", "waiting");
-    if (upErr) throw new Error(upErr.message);
+    const { supabase } = context;
+    const { error } = await supabase.rpc("start_battle", { _battle_id: data.id });
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const finishBattle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const raw = (input ?? {}) as {
-      id?: string;
-      host_count?: number;
-      guest_count?: number;
-    };
+    const raw = (input ?? {}) as { id?: string; guest_count?: number };
     const id = String(raw.id ?? "");
     if (!id) throw new Error("Battle-ID fehlt");
     return {
       id,
-      host_count: Math.max(0, Math.min(10000, Number(raw.host_count) | 0)),
       guest_count: Math.max(0, Math.min(10000, Number(raw.guest_count) | 0)),
     };
   })
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: b, error } = await supabase
-      .from("battles")
-      .select("id, host_id, guest_id, status, is_bot")
-      .eq("id", data.id)
-      .maybeSingle();
-    if (error || !b) throw new Error("Battle nicht gefunden");
-    const row = b as {
-      host_id: string;
-      guest_id: string | null;
-      status: string;
-      is_bot: boolean;
+    const { supabase } = context;
+    const { data: rows, error } = await supabase.rpc("finish_battle", {
+      _battle_id: data.id,
+      _guest_count: data.guest_count,
+    });
+    if (error) throw new Error(error.message);
+    const result = rows?.[0];
+    if (!result) throw new Error("Battle nicht gefunden");
+    return {
+      winner_id: result.winner_id,
+      host_count: result.host_count,
+      guest_count: result.guest_count,
     };
-    if (row.host_id !== userId && row.guest_id !== userId) {
-      throw new Error("Kein Teilnehmer");
-    }
-    if (row.status === "finished") {
-      return {
-        winner_id: null as string | null,
-        host_count: data.host_count,
-        guest_count: data.guest_count,
-      };
-    }
-    if (row.status !== "active") throw new Error("Battle nicht aktiv");
-    let winner_id: string | null = null;
-    if (data.host_count > data.guest_count) winner_id = row.host_id;
-    else if (data.guest_count > data.host_count) winner_id = row.guest_id;
-    const { error: upErr } = await supabase
-      .from("battles")
-      .update({
-        status: "finished",
-        host_count: data.host_count,
-        guest_count: data.guest_count,
-        winner_id,
-      })
-      .eq("id", data.id);
-    if (upErr) throw new Error(upErr.message);
-    return { winner_id, host_count: data.host_count, guest_count: data.guest_count };
   });
+
+// Battle state transitions are enforced by authenticated database RPCs.

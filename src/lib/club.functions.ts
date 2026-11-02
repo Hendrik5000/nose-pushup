@@ -17,11 +17,9 @@ function checkJoinRateLimit(userId: string) {
   joinRateBuckets.set(userId, recent);
 }
 
-function makeCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
+async function makeCode() {
+  const { generateInvitationCode } = await import("./invitation-codes.server");
+  return generateInvitationCode();
 }
 
 /** Club gründen: erzeugt Code, Club und Owner-Mitgliedschaft in einem Schritt. */
@@ -48,7 +46,7 @@ export const createClub = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     for (let attempt = 0; attempt < 5; attempt++) {
-      const code = makeCode();
+      const code = await makeCode();
       const { data: club, error } = await supabase
         .from("clubs")
         .insert({ ...data, code, owner_id: userId })
@@ -76,18 +74,28 @@ export const joinClubByCode = createServerFn({ method: "POST" })
     const code = String((input as { code?: string })?.code ?? "")
       .trim()
       .toUpperCase();
-    if (!/^[A-Z0-9]{4,8}$/.test(code)) throw new Error("Ungültiger Code");
+    if (!/^[A-Z0-9]{4,16}$/.test(code)) throw new Error("Ungültiger Code");
     return { code };
   })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     checkJoinRateLimit(userId);
-    const { data: id, error } = await supabase.rpc(
-      "join_club_by_code" as never,
-      {
-        _code: data.code,
-      } as never,
-    );
+    const { data: rows, error } = await supabase.rpc("join_club_by_code", {
+      _code: data.code,
+    });
     if (error) throw new Error(error.message);
+    const result = rows?.[0];
+    if (!result?.success || !result.club_id) {
+      const message =
+        result?.error_code === "not_found"
+          ? "Club nicht gefunden"
+          : result?.error_code === "full"
+            ? "Club ist voll"
+            : "Ungültiger Code";
+      throw new Error(message);
+    }
+    const id = result.club_id;
     return { id: id as unknown as string };
   });
+
+// Join RPCs return typed outcomes so failed guesses can be committed and counted.
