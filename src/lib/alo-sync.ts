@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_BACKEND_SCOPE } from "../integrations/supabase/backendScope";
 import {
   cloudEnabled,
   getAloOwner,
@@ -46,7 +47,7 @@ async function pull(id: string) {
   return rows;
 }
 export async function syncAlo(id: string): Promise<void> {
-  if (!cloudEnabled(id) || id !== getAloOwner()) {
+  if (!SUPABASE_BACKEND_SCOPE || !cloudEnabled(id) || id !== getAloOwner()) {
     resetSyncState();
     return;
   }

@@ -13,6 +13,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { GlobalAlarmMonitor } from "@/components/AlarmMonitor";
 import appCss from "../styles.css?url";
 import sportCss from "../sport.css?url";
 import communityReferenceCss from "../community-reference.css?url";
@@ -22,6 +23,7 @@ import aiResponsiveCss from "../ai-responsive.css?url";
 import appInteriorsCss from "../app-interiors.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
+import { isDynamicImportFetchError } from "@/lib/module-load-error";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
 import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
 import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
@@ -52,6 +54,7 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
+  const moduleLoadError = isDynamicImportFetchError(error);
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -68,12 +71,16 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
+              if (moduleLoadError) {
+                window.location.reload();
+                return;
+              }
               router.invalidate();
               reset();
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Erneut versuchen
+            {moduleLoadError ? "App aktualisieren" : "Erneut versuchen"}
           </button>
           <a
             href="/"
@@ -109,7 +116,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/alo-brand.jpg" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:image", content: "/alo-brand.jpg" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Alo — All in one" },
       {
@@ -319,6 +328,7 @@ function RootComponent() {
       >
         <Outlet />
       </div>
+      <GlobalAlarmMonitor />
       {installable && !standalone && (
         <aside
           aria-label="App installieren"
