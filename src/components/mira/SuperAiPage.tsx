@@ -62,6 +62,7 @@ import type { AppContextPack } from "@/lib/ai-context";
 import type { PcConfiguratorInteraction } from "@/lib/mira-interactions";
 import {
   getMiraSpeechSettings,
+  isLikelyMiraSpeechEcho,
   prepareMiraSpeechText,
   primeMiraSpeechForUserGesture,
 } from "@/lib/mira-voice";
@@ -220,6 +221,7 @@ export function SuperAiPage() {
   const voiceConversationSessionRef = useRef(0);
   const voiceRestartTimerRef = useRef<number | null>(null);
   const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const speechTextRef = useRef("");
   const speechStartTimeoutRef = useRef<number | null>(null);
   const clearSpeechStartTimeout = useCallback(() => {
     if (speechStartTimeoutRef.current !== null) {
@@ -261,6 +263,7 @@ export function SuperAiPage() {
   const stopMiraSpeech = useCallback(() => {
     clearSpeechStartTimeout();
     speechUtteranceRef.current = null;
+    speechTextRef.current = "";
     if (typeof window !== "undefined" && "speechSynthesis" in window)
       window.speechSynthesis.cancel();
     setSpeakingMessage(null);
@@ -740,6 +743,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       if (speechUtteranceRef.current !== utterance) return false;
       clearSpeechStartTimeout();
       speechUtteranceRef.current = null;
+      speechTextRef.current = "";
       setSpeakingMessage(null);
       return true;
     };
@@ -752,6 +756,9 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
         voiceConversationSessionRef.current === session
       ) {
         setSpeakingMessage(index);
+        if (!recognitionRef.current) {
+          startVoiceRecognition("conversation", session, true);
+        }
       }
     };
     utterance.onend = () => {
@@ -762,7 +769,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
         voiceConversationActiveRef.current &&
         voiceConversationSessionRef.current === session
       ) {
-        scheduleVoiceRecognition(session);
+        if (!recognitionRef.current) scheduleVoiceRecognition(session);
       }
     };
     utterance.onerror = () => {
@@ -780,6 +787,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       }
     };
     speechUtteranceRef.current = utterance;
+    speechTextRef.current = speechText;
     try {
       speechStartTimeoutRef.current = window.setTimeout(() => {
         if (speechUtteranceRef.current !== utterance) return;
@@ -925,6 +933,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
   const startVoiceRecognition = (
     mode: "dictation" | "conversation",
     conversationSession = voiceConversationSessionRef.current,
+    listenDuringSpeech = false,
   ): boolean => {
     const SpeechRecognition = getSpeechRecognitionConstructor();
     if (!SpeechRecognition) {
@@ -960,7 +969,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
     const recognition = new SpeechRecognition();
     recognition.lang = "de-DE";
     recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.interimResults = mode === "conversation" && listenDuringSpeech;
     const recognitionToken = ++recognitionTokenRef.current;
     if (mode === "conversation") {
       voiceTurnPendingRef.current = true;
@@ -978,19 +987,33 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       }
       if (sendingRef.current) return;
       const resultStart = Math.max(0, Math.min(event.resultIndex ?? 0, event.results.length));
-      const transcript = Array.from(
+      const firstResult = mode === "conversation" ? resultStart : 0;
+      const recognizedResults = Array.from(
         {
-          length:
-            mode === "conversation" ? event.results.length - resultStart : event.results.length,
+          length: event.results.length - firstResult,
         },
         (_, offset) => {
-          const result = event.results[mode === "conversation" ? resultStart + offset : offset];
+          const result = event.results[firstResult + offset];
           const speech = result?.[0];
-          if (!speech || (mode === "conversation" && speech.isFinal === false)) return "";
-          return speech.transcript.trim();
+          return {
+            transcript: speech?.transcript.trim() ?? "",
+            isFinal: speech?.isFinal !== false,
+          };
         },
-      )
-        .filter(Boolean)
+      ).filter((result) => result.transcript);
+      const observedTranscript = recognizedResults.map((result) => result.transcript).join(" ");
+      if (mode === "conversation" && speechUtteranceRef.current && observedTranscript) {
+        if (isLikelyMiraSpeechEcho(observedTranscript, speechTextRef.current)) return;
+        const finalTranscript = recognizedResults
+          .filter((result) => result.isFinal)
+          .map((result) => result.transcript)
+          .join(" ");
+        const hasMeaningfulInterim = observedTranscript.split(/\s+/).filter(Boolean).length >= 2;
+        if (finalTranscript || hasMeaningfulInterim) stopMiraSpeech();
+      }
+      const transcript = recognizedResults
+        .filter((result) => result.isFinal || mode === "dictation")
+        .map((result) => result.transcript)
         .join(" ");
       if (!transcript) return;
       if (mode === "conversation") {
@@ -1052,6 +1075,13 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
           voiceTurn: true,
         });
       } else if (
+        speechUtteranceRef.current &&
+        voiceConversationOpenRef.current &&
+        voiceConversationActiveRef.current &&
+        conversationSession === voiceConversationSessionRef.current
+      ) {
+        scheduleVoiceRecognition(conversationSession, true);
+      } else if (
         voiceConversationOpenRef.current &&
         voiceConversationActiveRef.current &&
         conversationSession === voiceConversationSessionRef.current
@@ -1100,7 +1130,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
     startVoiceRecognition("dictation");
   };
 
-  const scheduleVoiceRecognition = (conversationSession: number) => {
+  const scheduleVoiceRecognition = (conversationSession: number, listenDuringSpeech = false) => {
     if (typeof window === "undefined") return;
     if (voiceRestartTimerRef.current !== null) {
       window.clearTimeout(voiceRestartTimerRef.current);
@@ -1115,11 +1145,15 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       ) {
         return;
       }
-      if (sendingRef.current || speechUtteranceRef.current) {
-        scheduleVoiceRecognition(conversationSession);
+      if (sendingRef.current || (speechUtteranceRef.current && !listenDuringSpeech)) {
+        scheduleVoiceRecognition(conversationSession, listenDuringSpeech);
         return;
       }
-      startVoiceRecognition("conversation", conversationSession);
+      startVoiceRecognition(
+        "conversation",
+        conversationSession,
+        listenDuringSpeech || Boolean(speechUtteranceRef.current),
+      );
     }, 350);
   };
 
@@ -1164,7 +1198,9 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       ? voiceConversationSessionRef.current
       : null;
     stopMiraSpeech();
-    if (conversationSession !== null) scheduleVoiceRecognition(conversationSession);
+    if (conversationSession !== null && !recognitionRef.current) {
+      scheduleVoiceRecognition(conversationSession);
+    }
   };
 
   const onPersona = (p: AiPersona) => {

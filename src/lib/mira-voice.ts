@@ -1,4 +1,5 @@
-export type MiraVoiceOption = Pick<SpeechSynthesisVoice, "lang">;
+export type MiraVoiceOption = Pick<SpeechSynthesisVoice, "lang" | "default"> &
+  Partial<Pick<SpeechSynthesisVoice, "name">>;
 
 export type MiraSpeechSettings = {
   lang: string;
@@ -26,15 +27,20 @@ export function primeMiraSpeechForUserGesture(
   engine.resume?.();
 }
 
-/** Remove common Markdown decoration so the device voice reads the answer naturally. */
+function addPause(line: string): string {
+  const trimmed = line.trim();
+  return /[.!?…:]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+/** Remove common Markdown decoration and preserve natural pauses for the device voice. */
 export function prepareMiraSpeechText(text: string): string {
   return text
     .replace(/```[\s\S]*?```/g, "")
     .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
-    .replace(/^\s*[-*+]\s+/gm, "")
-    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/^\s{0,3}#{1,6}\s+(.+)$/gm, (_match, line: string) => addPause(line))
+    .replace(/^\s*[-*+]\s+(.+)$/gm, (_match, line: string) => addPause(line))
+    .replace(/^\s*\d+\.\s+(.+)$/gm, (_match, line: string) => addPause(line))
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/__(.*?)__/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
@@ -45,11 +51,36 @@ export function prepareMiraSpeechText(text: string): string {
     .trim();
 }
 
-/** Prefer a German system voice and speak a little more slowly; the actual voice is device-dependent. */
+/** Prefer the user's default German system voice and avoid an overly slow, flat delivery. */
 export function getMiraSpeechSettings(voices: readonly MiraVoiceOption[]): MiraSpeechSettings {
+  const germanVoices = voices.filter((candidate) => candidate.lang.toLowerCase().startsWith("de-"));
   const voice =
-    voices.find((candidate) => candidate.lang.toLowerCase() === "de-de") ??
-    voices.find((candidate) => candidate.lang.toLowerCase().startsWith("de-")) ??
+    germanVoices.find((candidate) => candidate.default) ??
+    germanVoices.find((candidate) => candidate.lang.toLowerCase() === "de-de") ??
+    germanVoices[0] ??
     null;
-  return { lang: "de-DE", rate: 0.9, pitch: 0.98, volume: 0.92, voice };
+  return { lang: "de-DE", rate: 0.97, pitch: 1, volume: 0.96, voice };
+}
+
+/** Identify a likely acoustic loopback before it can interrupt the device's own speech. */
+export function isLikelyMiraSpeechEcho(transcript: string, spokenText: string): boolean {
+  const normalize = (value: string) =>
+    value
+      .toLocaleLowerCase("de-DE")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim()
+      .replace(/\s+/g, " ");
+  const heardWords = normalize(transcript).split(" ").filter(Boolean);
+  const spokenWords = normalize(spokenText).split(" ").filter(Boolean);
+  if (heardWords.length === 1 && ["halt", "stop", "stopp", "warte"].includes(heardWords[0])) {
+    return false;
+  }
+  if (!heardWords.length || spokenWords.length < heardWords.length) return false;
+
+  for (let start = 0; start <= spokenWords.length - heardWords.length; start += 1) {
+    if (spokenWords.slice(start, start + heardWords.length).join(" ") === heardWords.join(" ")) {
+      return true;
+    }
+  }
+  return false;
 }

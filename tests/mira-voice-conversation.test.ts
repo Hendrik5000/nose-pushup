@@ -39,9 +39,9 @@ test("Öffnen startet kein Mikrofon; die Sitzung startet ausdrücklich und erkl�
   assert.match(dialog, /disabled=\{!sessionActive && \(!canStart \|\| loading\)\}/);
   assert.match(
     dialog,
-    /Je nach Browser kann\s+die Spracherkennung Audio zur Verarbeitung an einen Browserdienst senden/,
+    /Je nach Browser kann\s+die\s+Spracherkennung Audio zur Verarbeitung an einen Browserdienst senden/,
   );
-  assert.match(dialog, /nicht immer lokal/);
+  assert.match(dialog, /nicht\s+immer lokal/);
   assert.match(dialog, /Mira erhält den erkannten Text, nicht die rohe Aufnahme/);
   assert.match(page, /sessionActive=\{voiceConversationActive\}/);
   assert.match(page, /onStartConversation=\{startVoiceConversation\}/);
@@ -90,7 +90,10 @@ test("Aufeinanderfolgende Sprachbeiträge gehen ohne Senden-Tipp an denselben Mi
     recognitionHandler,
     /void submit\(transcript, messages, \{\s*includeAttachments: false,\s*clearDraft: false,\s*autoSpeak: true,\s*voiceTurn: true,/,
   );
-  assert.match(page, /const scheduleVoiceRecognition = \(conversationSession: number\) =>/);
+  assert.match(
+    page,
+    /const scheduleVoiceRecognition = \(conversationSession: number, listenDuringSpeech = false\) =>/,
+  );
   assert.match(page, /startVoiceRecognition\("conversation", conversationSession\)/);
   assert.match(page, /utterance\.onend = \(\) => \{[\s\S]*?scheduleVoiceRecognition\(session\)/);
   assert.match(
@@ -103,18 +106,25 @@ test("Aufeinanderfolgende Sprachbeiträge gehen ohne Senden-Tipp an denselben Mi
   );
 });
 
-test("Mikrofon ist während Anfrage und Sprachausgabe aus und TTS kann nicht zurückgehört werden", () => {
+test("Mira bleibt während ihrer Sprachausgabe unterbrechbar und ihr akustisches Echo wird gefiltert", () => {
   assert.match(
     page,
     /if \(voiceRestartTimerRef\.current !== null\)[\s\S]*?if \(recognitionRef\.current\) \{[\s\S]*?activeRecognition\.stop\(\)/,
   );
   assert.match(page, /window\.speechSynthesis\.speak\(utterance\)/);
+  assert.match(page, /startVoiceRecognition\("conversation", session, true\)/);
+  assert.match(page, /recognition\.interimResults = mode === "conversation" && listenDuringSpeech/);
+  assert.match(page, /isLikelyMiraSpeechEcho\(observedTranscript, speechTextRef\.current\)/);
+  assert.match(page, /if \(finalTranscript \|\| hasMeaningfulInterim\) stopMiraSpeech\(\)/);
+  assert.match(page, /scheduleVoiceRecognition\(conversationSession, true\)/);
   assert.match(
     page,
-    /voiceConversationActiveRef\.current &&[\s\S]*?scheduleVoiceRecognition\(session\)/,
+    /voiceConversationActiveRef\.current &&[\s\S]*?if \(!recognitionRef\.current\) scheduleVoiceRecognition\(session\)/,
   );
   assert.match(recognitionHandler, /recognitionRef\.current !== recognition/);
   assert.match(recognitionHandler, /conversationSession !== voiceConversationSessionRef\.current/);
+  assert.match(dialog, /sprich einfach hinein, um sie zu unterbrechen/);
+  assert.match(dialog, /Miras gerade gelesene[\s\S]*?als Echo ausgefiltert/);
 });
 
 test("Stopp bleibt während Denken und Sprechen verfügbar und beendet Erkennung, TTS sowie Antwortannahme", () => {
