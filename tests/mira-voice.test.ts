@@ -93,6 +93,26 @@ test("iPhone-Safari-TTS wird im ausdrücklichen Start-Tipp lautlos aktiviert", (
   assert.equal(spokenWithoutResume, true);
 });
 
+test("Stumm verworfene Antworten können im Sprachdialog direkt erneut vorgelesen werden", () => {
+  const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
+  const dialog = readFileSync("src/components/mira/MiraVoiceConversationDialog.tsx", "utf8");
+  const manualPlaybackStart = page.indexOf("const speakMiraMessage =");
+  const manualPlaybackEnd = page.indexOf("const replayLatestVoiceAnswer =", manualPlaybackStart);
+  const manualPlayback = page.slice(manualPlaybackStart, manualPlaybackEnd);
+
+  assert.notEqual(manualPlaybackStart, -1);
+  assert.notEqual(manualPlaybackEnd, -1);
+  assert.match(manualPlayback, /utterance\.onstart = \(\) =>/);
+  assert.match(manualPlayback, /speechStartTimeoutRef\.current = window\.setTimeout/);
+  assert.match(manualPlayback, /speechSynthesis\.cancel\(\)/);
+  assert.match(manualPlayback, /setSpeechPlaybackFailedSessionId\(activeId\)/);
+  assert.match(manualPlayback, /Sprachausgabe nicht gestartet/);
+  assert.match(dialog, /speechPlaybackFailed && latestAssistant/);
+  assert.match(dialog, /onClick=\{onReplayLatestAnswer\}/);
+  assert.match(dialog, /Antwort direkt vorlesen/);
+  assert.match(page, /speechPlaybackFailed=\{speechPlaybackFailedSessionId === activeId\}/);
+});
+
 test("Sprachdialog hält den Text editierbar und sendet ihn nicht selbst", () => {
   const dialog = readFileSync("src/components/mira/MiraVoiceChatDialog.tsx", "utf8");
   const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");

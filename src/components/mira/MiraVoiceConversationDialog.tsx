@@ -1,7 +1,16 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
 import { MiraSpark } from "@/components/mira/MiraSpark";
-import { ArrowLeft, ArrowUp, LoaderCircle, Mic, Settings2, Square, VolumeX } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUp,
+  LoaderCircle,
+  Mic,
+  Settings2,
+  Square,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 
 type VoiceMessage = {
   role: "user" | "assistant";
@@ -21,6 +30,7 @@ type MiraVoiceConversationDialogProps = {
   canStart: boolean;
   supportMessage: string | null;
   speaking: boolean;
+  speechPlaybackFailed: boolean;
   error: string | null;
   provider: string;
   routing: string;
@@ -32,6 +42,7 @@ type MiraVoiceConversationDialogProps = {
   onSend: () => void;
   onRetryTranscript: () => void;
   onOpenSettings: () => void;
+  onReplayLatestAnswer: () => void;
 };
 
 export function MiraVoiceConversationDialog({
@@ -47,6 +58,7 @@ export function MiraVoiceConversationDialog({
   canStart,
   supportMessage,
   speaking,
+  speechPlaybackFailed,
   error,
   provider,
   routing,
@@ -58,6 +70,7 @@ export function MiraVoiceConversationDialog({
   onSend,
   onRetryTranscript,
   onOpenSettings,
+  onReplayLatestAnswer,
 }: MiraVoiceConversationDialogProps) {
   const latestAssistant = [...messages].reverse().find((message) => message.role === "assistant");
   const latestUser = [...messages].reverse().find((message) => message.role === "user");
@@ -232,6 +245,18 @@ export function MiraVoiceConversationDialog({
             >
               {error}
             </p>
+          )}
+
+          {speechPlaybackFailed && latestAssistant && (
+            <button
+              type="button"
+              onClick={onReplayLatestAnswer}
+              aria-label="Miras letzte Antwort direkt vorlesen"
+              className="mx-auto mb-2 flex min-h-11 max-w-3xl items-center justify-center gap-2 rounded-full border border-cyan-100/25 bg-cyan-100/10 px-4 text-xs font-semibold text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200"
+            >
+              <Volume2 className="h-4 w-4" aria-hidden="true" />
+              Antwort direkt vorlesen
+            </button>
           )}
 
           <div className="mx-auto mb-2 max-w-3xl">

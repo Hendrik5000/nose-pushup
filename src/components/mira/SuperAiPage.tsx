@@ -181,6 +181,9 @@ export function SuperAiPage() {
   );
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [speechPlaybackFailedSessionId, setSpeechPlaybackFailedSessionId] = useState<string | null>(
+    null,
+  );
   const [speakingMessage, setSpeakingMessage] = useState<number | null>(null);
   const [lastTask, setLastTask] = useState<AiTask | null>(null);
   const [sportAiView, setSportAiView] = useState<SportAiView>("chat");
@@ -756,6 +759,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
     utterance.onstart = () => {
       if (speechUtteranceRef.current !== utterance) return;
       clearSpeechStartTimeout();
+      setSpeechPlaybackFailedSessionId(null);
       if (
         voiceConversationOpenRef.current &&
         voiceConversationActiveRef.current &&
@@ -786,6 +790,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
         voiceConversationActiveRef.current &&
         voiceConversationSessionRef.current === session
       ) {
+        setSpeechPlaybackFailedSessionId(activeId);
         stopVoiceConversation();
         setVoiceError(
           "Miras Sprachausgabe ist fehlgeschlagen. Du kannst die Antwort im Text lesen.",
@@ -800,15 +805,17 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
         speechStartTimeoutRef.current = null;
         speechUtteranceRef.current = null;
         setSpeakingMessage(null);
+        setSpeechPlaybackFailedSessionId(activeId);
         stopVoiceConversation();
         setVoiceError(
-          "Der Browser hat Miras Sprachausgabe nicht gestartet. Prüfe die Medienlautstärke und starte das Gespräch erneut; die Antwort bleibt lesbar.",
+          "Der Browser hat Miras Sprachausgabe nicht gestartet. Du kannst die Antwort direkt vorlesen lassen; prüfe außerdem Medienlautstärke oder Stummmodus.",
         );
       }, 6000);
       if (typeof window.speechSynthesis.resume === "function") window.speechSynthesis.resume();
       window.speechSynthesis.speak(utterance);
     } catch {
       finish();
+      setSpeechPlaybackFailedSessionId(activeId);
       stopVoiceConversation();
       setVoiceError("Miras Antwort konnte nicht vorgelesen werden; du kannst sie im Text lesen.");
     }
@@ -853,23 +860,68 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
     utterance.pitch = settings.pitch;
     utterance.volume = settings.volume;
     utterance.voice = settings.voice as SpeechSynthesisVoice | null;
-    const finish = () => {
-      if (speechUtteranceRef.current === utterance) {
-        speechUtteranceRef.current = null;
-        setSpeakingMessage(null);
-      }
+    const reportSpeechError = (message: string) => {
+      if (voiceConversationOpenRef.current) setVoiceError(message);
+      else setError(message);
     };
-    utterance.onend = finish;
-    utterance.onerror = finish;
+    const finish = () => {
+      if (speechUtteranceRef.current !== utterance) return false;
+      clearSpeechStartTimeout();
+      speechUtteranceRef.current = null;
+      speechTextRef.current = "";
+      setSpeakingMessage(null);
+      return true;
+    };
+    utterance.onstart = () => {
+      if (speechUtteranceRef.current !== utterance) return;
+      clearSpeechStartTimeout();
+      setSpeechPlaybackFailedSessionId(null);
+    };
+    utterance.onend = () => {
+      finish();
+    };
+    utterance.onerror = () => {
+      if (!finish()) return;
+      setSpeechPlaybackFailedSessionId(activeId);
+      reportSpeechError(
+        "Miras Sprachausgabe ist fehlgeschlagen. Die Antwort bleibt im Text lesbar.",
+      );
+    };
     speechUtteranceRef.current = utterance;
     setSpeakingMessage(index);
     try {
+      speechStartTimeoutRef.current = window.setTimeout(() => {
+        if (speechUtteranceRef.current !== utterance) return;
+        speechStartTimeoutRef.current = null;
+        speechUtteranceRef.current = null;
+        speechTextRef.current = "";
+        window.speechSynthesis.cancel();
+        setSpeakingMessage(null);
+        setSpeechPlaybackFailedSessionId(activeId);
+        reportSpeechError(
+          "Der Browser hat Miras Sprachausgabe nicht gestartet. Tippe erneut auf „Vorlesen“ und prüfe Medienlautstärke oder Stummmodus; die Antwort bleibt lesbar.",
+        );
+      }, 6000);
       if (typeof window.speechSynthesis.resume === "function") window.speechSynthesis.resume();
       window.speechSynthesis.speak(utterance);
     } catch {
       finish();
-      setError("Die Antwort konnte nicht vorgelesen werden. Nutze bitte den Textchat.");
+      setSpeechPlaybackFailedSessionId(activeId);
+      reportSpeechError("Die Antwort konnte nicht vorgelesen werden. Nutze bitte den Textchat.");
     }
+  };
+
+  const replayLatestVoiceAnswer = () => {
+    const latestAssistantIndex = messages.reduce(
+      (latestIndex, message, index) => (message.role === "assistant" ? index : latestIndex),
+      -1,
+    );
+    if (latestAssistantIndex < 0) return;
+    const latestAssistant = messages[latestAssistantIndex];
+    if (!latestAssistant) return;
+    setSpeechPlaybackFailedSessionId(null);
+    setVoiceError(null);
+    speakMiraMessage(latestAssistantIndex, latestAssistant.content);
   };
 
   const copyText = async (text: string) => {
@@ -1215,6 +1267,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
     setVoiceTranscript("");
     voiceTurnPendingRef.current = false;
     setVoiceError(null);
+    setSpeechPlaybackFailedSessionId(null);
     setError(null);
     startVoiceRecognition("conversation", conversationSession);
   };
@@ -2740,6 +2793,8 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
         listening={listening && voiceConversationOpen}
         speaking={speakingMessage !== null}
         error={voiceError ?? error}
+        speechPlaybackFailed={speechPlaybackFailedSessionId === activeId}
+        onReplayLatestAnswer={replayLatestVoiceAnswer}
         provider={voiceProviderPreview.provider?.label ?? "Kein Anbieter konfiguriert"}
         routing={describeProviderSelection(voiceProviderPreview, voicePreviewTask)}
         contextNotice={voiceContextNotice}
