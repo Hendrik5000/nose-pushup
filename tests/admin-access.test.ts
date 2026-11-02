@@ -10,6 +10,7 @@ import {
 
 const root = process.cwd();
 const home = readFileSync(resolve(root, "src/routes/_authenticated/index.tsx"), "utf8");
+const accessHook = readFileSync(resolve(root, "src/lib/use-private-game-access.ts"), "utf8");
 const route = readFileSync(resolve(root, "src/routes/_authenticated/admin.tsx"), "utf8");
 const functions = readFileSync(resolve(root, "src/lib/admin.functions.ts"), "utf8");
 const migrations = readdirSync(resolve(root, "supabase/migrations"));
@@ -33,7 +34,9 @@ test("only the server-verified owner identity may manage global roles", () => {
 });
 
 test("Admin tile is rendered only after the server-side access function returns true", () => {
-  assert.match(home, /getAdminAreaAccess\(\)/);
+  assert.match(home, /usePrivateGameAccess\(userId, 5_000\)/);
+  assert.match(accessHook, /onAuthStateChange/);
+  assert.match(accessHook, /catch \{\s*allowed = false;/);
   assert.match(home, /canSeeAdmin\s*&&\s*<HubAppIcon to="\/admin" title="Admin" artwork="admin"/);
   assert.match(
     home,
