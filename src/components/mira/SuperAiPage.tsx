@@ -60,7 +60,11 @@ import {
 } from "@/lib/ai-plan";
 import type { AppContextPack } from "@/lib/ai-context";
 import type { PcConfiguratorInteraction } from "@/lib/mira-interactions";
-import { getMiraSpeechSettings, prepareMiraSpeechText } from "@/lib/mira-voice";
+import {
+  getMiraSpeechSettings,
+  prepareMiraSpeechText,
+  primeMiraSpeechForUserGesture,
+} from "@/lib/mira-voice";
 import {
   classifyTask,
   describeProviderSelection,
@@ -216,6 +220,13 @@ export function SuperAiPage() {
   const voiceConversationSessionRef = useRef(0);
   const voiceRestartTimerRef = useRef<number | null>(null);
   const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const speechStartTimeoutRef = useRef<number | null>(null);
+  const clearSpeechStartTimeout = useCallback(() => {
+    if (speechStartTimeoutRef.current !== null) {
+      if (typeof window !== "undefined") window.clearTimeout(speechStartTimeoutRef.current);
+      speechStartTimeoutRef.current = null;
+    }
+  }, []);
   useEffect(() => {
     setVoiceSupportMessage(getVoiceSupportMessage());
   }, []);
@@ -233,6 +244,7 @@ export function SuperAiPage() {
         window.clearTimeout(voiceRestartTimerRef.current);
         voiceRestartTimerRef.current = null;
       }
+      clearSpeechStartTimeout();
       const recognition = recognitionRef.current;
       recognitionRef.current = null;
       try {
@@ -244,14 +256,15 @@ export function SuperAiPage() {
         window.speechSynthesis.cancel();
       speechUtteranceRef.current = null;
     },
-    [],
+    [clearSpeechStartTimeout],
   );
   const stopMiraSpeech = useCallback(() => {
+    clearSpeechStartTimeout();
     speechUtteranceRef.current = null;
     if (typeof window !== "undefined" && "speechSynthesis" in window)
       window.speechSynthesis.cancel();
     setSpeakingMessage(null);
-  }, []);
+  }, [clearSpeechStartTimeout]);
   const stopVoiceConversation = useCallback(() => {
     const wasActive = voiceConversationActiveRef.current;
     voiceConversationActiveRef.current = false;
@@ -725,13 +738,15 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
     utterance.voice = settings.voice as SpeechSynthesisVoice | null;
     const finish = () => {
       if (speechUtteranceRef.current !== utterance) return false;
+      clearSpeechStartTimeout();
       speechUtteranceRef.current = null;
       setSpeakingMessage(null);
       return true;
     };
     utterance.onstart = () => {
+      if (speechUtteranceRef.current !== utterance) return;
+      clearSpeechStartTimeout();
       if (
-        speechUtteranceRef.current === utterance &&
         voiceConversationOpenRef.current &&
         voiceConversationActiveRef.current &&
         voiceConversationSessionRef.current === session
@@ -765,8 +780,18 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       }
     };
     speechUtteranceRef.current = utterance;
-    setSpeakingMessage(index);
     try {
+      speechStartTimeoutRef.current = window.setTimeout(() => {
+        if (speechUtteranceRef.current !== utterance) return;
+        speechStartTimeoutRef.current = null;
+        speechUtteranceRef.current = null;
+        setSpeakingMessage(null);
+        stopVoiceConversation();
+        setVoiceError(
+          "Der Browser hat Miras Sprachausgabe nicht gestartet. Prüfe die Medienlautstärke und starte das Gespräch erneut; die Antwort bleibt lesbar.",
+        );
+      }, 6000);
+      if (typeof window.speechSynthesis.resume === "function") window.speechSynthesis.resume();
       window.speechSynthesis.speak(utterance);
     } catch {
       finish();
@@ -825,6 +850,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
     speechUtteranceRef.current = utterance;
     setSpeakingMessage(index);
     try {
+      if (typeof window.speechSynthesis.resume === "function") window.speechSynthesis.resume();
       window.speechSynthesis.speak(utterance);
     } catch {
       finish();
@@ -1106,6 +1132,21 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       return;
     }
     stopMiraSpeech();
+    try {
+      primeMiraSpeechForUserGesture(
+        {
+          speak: (utterance) => window.speechSynthesis.speak(utterance as SpeechSynthesisUtterance),
+          resume: () => {
+            if (typeof window.speechSynthesis.resume === "function") {
+              window.speechSynthesis.resume();
+            }
+          },
+        },
+        (text) => new SpeechSynthesisUtterance(text),
+      );
+    } catch {
+      // Keep the session usable; the response-start watchdog will expose silent browser rejection.
+    }
     voiceConversationSessionRef.current += 1;
     const conversationSession = voiceConversationSessionRef.current;
     voiceConversationActiveRef.current = true;

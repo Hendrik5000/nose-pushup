@@ -8,6 +8,24 @@ export type MiraSpeechSettings = {
   voice: MiraVoiceOption | null;
 };
 
+export type MiraSpeechPrimerUtterance = Pick<SpeechSynthesisUtterance, "volume" | "rate">;
+export type MiraSpeechPrimerEngine = {
+  speak: (utterance: MiraSpeechPrimerUtterance) => void;
+  resume?: () => void;
+};
+
+/** Prime iOS Safari's speech output inside the user's explicit start gesture without audible text. */
+export function primeMiraSpeechForUserGesture(
+  engine: MiraSpeechPrimerEngine,
+  createUtterance: (text: string) => MiraSpeechPrimerUtterance,
+): void {
+  const silentUtterance = createUtterance(" ");
+  silentUtterance.volume = 0;
+  silentUtterance.rate = 10;
+  engine.speak(silentUtterance);
+  engine.resume?.();
+}
+
 /** Remove common Markdown decoration so the device voice reads the answer naturally. */
 export function prepareMiraSpeechText(text: string): string {
   return text
