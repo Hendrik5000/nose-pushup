@@ -19,6 +19,7 @@ import communityReferenceCss from "../community-reference.css?url";
 import healthReferenceCss from "../health-reference.css?url";
 import aiReferenceCss from "../ai-reference.css?url";
 import aiResponsiveCss from "../ai-responsive.css?url";
+import appInteriorsCss from "../app-interiors.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
@@ -115,14 +116,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "twitter:description",
         content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
       },
-      {
-        property: "og:image",
-        content: "/alo-brand.jpg",
-      },
-      {
-        name: "twitter:image",
-        content: "/alo-brand.jpg",
-      },
     ],
     links: [
       { rel: "icon", type: "image/png", href: "/alo-icon-192.png" },
@@ -134,6 +127,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: healthReferenceCss },
       { rel: "stylesheet", href: aiReferenceCss },
       { rel: "stylesheet", href: aiResponsiveCss },
+      { rel: "stylesheet", href: appInteriorsCss },
 
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },

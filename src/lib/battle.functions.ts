@@ -291,7 +291,6 @@ export const finishBattle = createServerFn({ method: "POST" })
         host_count: data.host_count,
         guest_count: data.guest_count,
         winner_id,
-        finished_at: new Date().toISOString(),
       })
       .eq("id", data.id);
     if (upErr) throw new Error(upErr.message);

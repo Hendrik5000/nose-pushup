@@ -43,3 +43,7 @@ Maintain the single detailed Alo roadmap in [`docs/AI-ROADMAP.md`](docs/AI-ROADM
 ## Migrations
 
 Append-only under `supabase/migrations/`. Never rewrite applied files.
+
+## App presentation
+
+- Load `src/app-interiors.css` last in the root stylesheet links for shared app-interior polish; keep its rules scoped to existing app selectors so themes, design variants and workflows remain intact.

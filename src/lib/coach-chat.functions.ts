@@ -128,12 +128,12 @@ export const coachChat = createServerFn({ method: "POST" })
           .limit(14),
         supabase
           .from("runs")
-          .select("distance_m, duration_s, created_at")
+          .select("distance_m, duration_ms, created_at")
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
           .limit(5),
         supabase
-          .from("health_daily")
+          .from("health_entries")
           .select("day, steps, sleep_min, active_kcal")
           .eq("user_id", userId)
           .order("day", { ascending: false })
@@ -152,12 +152,12 @@ export const coachChat = createServerFn({ method: "POST" })
       0,
     );
     const runSummary = (runs ?? []).length
-      ? (runs as { distance_m: number; duration_s: number }[])
-          .map((r) => `${(r.distance_m / 1000).toFixed(1)} km in ${Math.round(r.duration_s / 60)} min`)
+      ? runs
+          .map((r) => `${(r.distance_m / 1000).toFixed(1)} km in ${Math.round(r.duration_ms / 60000)} min`)
           .join("; ")
       : "keine Läufe";
     const healthSummary = (health ?? []).length
-      ? (health as { day: string; steps?: number; sleep_min?: number; active_kcal?: number }[])
+      ? health
           .map(
             (e) =>
               `${e.day}: ${e.steps ?? "?"} Schritte, ${e.sleep_min != null ? (e.sleep_min / 60).toFixed(1) : "?"} h Schlaf, ${e.active_kcal ?? "?"} kcal`,
