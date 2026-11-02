@@ -159,22 +159,8 @@ function HomeAppHub({
         <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
         <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
         {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
-        <div
-          role="img"
-          aria-label="Spiel-App, gesperrt und noch nicht verfügbar"
-          className="flex w-full min-w-0 flex-col items-center gap-2 text-center text-muted-foreground"
-        >
-          <span className="relative grid aspect-square w-full max-w-[72px] place-items-center overflow-hidden rounded-[20px] border border-dashed border-border bg-card/30 opacity-60 grayscale">
-            <HubArtwork kind="adventure" />
-            <span className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow-sm">
-              <LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />
-            </span>
-          </span>
-          <span className="max-w-[84px] truncate text-[10px] font-medium leading-tight sm:text-xs">
-            Spiel
-          </span>
-          <span className="-mt-1 text-[10px] leading-tight">Gesperrt</span>
-        </div>
+        <PrivateGameTile game="grid-defense" title="Grid Defense" icon={Target} />
+        <PrivateGameTile game="kupferkern" title="Kupferkern" icon={Activity} />
       </nav>
       <div className="alo-tablet-home-tools mt-4 grid grid-cols-2 gap-2">
         <button
@@ -214,6 +200,36 @@ function HomeAppHub({
         </nav>
       </details>
     </section>
+  );
+}
+
+function PrivateGameTile({
+  game,
+  title,
+  icon: Icon,
+}: {
+  game: "grid-defense" | "kupferkern";
+  title: string;
+  icon: typeof Target;
+}) {
+  return (
+    <Link
+      to="/games"
+      search={{ game }}
+      aria-label={`${title}, private Spielevorschau öffnen`}
+      className="group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >
+      <span className="relative grid aspect-square w-full max-w-[72px] place-items-center overflow-hidden rounded-[20px] border border-dashed border-border bg-gradient-to-br from-slate-800/80 to-slate-950/90 text-sky-100 opacity-75 shadow-sm grayscale transition group-hover:scale-105">
+        <Icon className="h-8 w-8" aria-hidden="true" />
+        <span className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow-sm">
+          <LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />
+        </span>
+      </span>
+      <span className="max-w-[84px] truncate text-[10px] font-medium leading-tight sm:text-xs">
+        {title}
+      </span>
+      <span className="-mt-1 text-[10px] leading-tight">Private Vorschau</span>
+    </Link>
   );
 }
 
