@@ -981,118 +981,6 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
       <aside className="hidden w-72 shrink-0 border-r border-border md:block">{sidebar}</aside>
 
       <section className="community-conversation flex min-w-0 flex-1 flex-col">
-        <header className="classic-only flex items-center gap-2 border-b border-border bg-card/50 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
-          <button
-            type="button"
-            className="community-roomlist-switch flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-sm md:hidden"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Chatliste öffnen"
-            aria-expanded={menuOpen}
-          >
-            ☰
-          </button>
-          <AloPageSidebarTrigger />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold">{headerTitle}</div>
-            <div className="text-[10px] text-muted-foreground">
-              {active?.kind === "room" ? "Raum" : "DM"} · {mode === "supabase" ? "Cloud" : "lokal"}
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            {callButtons}
-            {active?.kind === "room" && userId && (
-              <>
-                <HeadBtn
-                  label="Favorit"
-                  onClick={() => setPrefs(toggleFavoriteRoom(userId, active.id))}
-                >
-                  {prefs?.favoriteRoomIds.includes(active.id) ? "★" : "☆"}
-                </HeadBtn>
-                <HeadBtn label="Stumm" onClick={() => setPrefs(toggleMute(userId, active.id))}>
-                  {prefs?.mutedRoomIds.includes(active.id) ? "🔇" : "🔔"}
-                </HeadBtn>
-              </>
-            )}
-            <HeadBtn label="Suche" onClick={() => setSearchOpen((v) => !v)}>
-              🔍
-            </HeadBtn>
-            <HeadBtn label="Export" onClick={() => void exportActive()}>
-              ⬇
-            </HeadBtn>
-            <Link
-              to="/"
-              aria-label="Zur Alo-Startseite"
-              className="rounded-full border border-border px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-muted-foreground"
-            >
-              Startseite
-            </Link>
-          </div>
-        </header>
-
-        <div className="sport-only sport-chat-topbar border-b border-border/70 bg-card/70 px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur sm:px-6">
-          <div className="community-conversation-heading">
-            <button
-              type="button"
-              className="community-back"
-              onClick={() => setMobileListOpen(true)}
-              aria-label="Zur Chatliste"
-              aria-controls="nexus-mobile-chat-list"
-              aria-expanded={mobileListOpen}
-            >
-              <ArrowLeft aria-hidden="true" />
-            </button>
-            <span className="community-room-avatar">
-              <MessageCircle aria-hidden="true" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h1>{headerTitle}</h1>
-              <p>{mode === "local" ? "Lokal auf diesem Gerät" : "Nexus Chat · Cloud"}</p>
-            </div>
-            {callButtons}
-            <AloPageSidebarTrigger />
-            <Link
-              to="/"
-              aria-label="Zur Alo-Startseite"
-              title="Startseite"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/70 text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              <House aria-hidden="true" />
-            </Link>
-          </div>
-          <details className="community-conversation-menu">
-            <summary aria-label="Chataktionen">
-              <MoreVertical aria-hidden="true" />
-            </summary>
-            <div className="community-conversation-actions">
-              {active?.kind === "room" && userId && (
-                <>
-                  <HeadBtn
-                    label="Favorit"
-                    onClick={() => setPrefs(toggleFavoriteRoom(userId, active.id))}
-                  >
-                    {prefs?.favoriteRoomIds.includes(active.id) ? "★" : "☆"}
-                  </HeadBtn>
-                  <HeadBtn label="Stumm" onClick={() => setPrefs(toggleMute(userId, active.id))}>
-                    {prefs?.mutedRoomIds.includes(active.id) ? "🔇" : "🔔"}
-                  </HeadBtn>
-                </>
-              )}
-              <HeadBtn label="Suche" onClick={() => setSearchOpen((v) => !v)}>
-                🔍
-              </HeadBtn>
-              <HeadBtn label="Export" onClick={() => void exportActive()}>
-                ⬇
-              </HeadBtn>
-              <Link
-                to="/"
-                aria-label="Zur Alo-Startseite"
-                className="rounded-xl border border-border/70 px-3 py-2 text-xs font-bold"
-              >
-                Startseite
-              </Link>
-            </div>
-          </details>
-        </div>
         {active?.kind === "room" && userId && (
           <RoomTools
             key={active.id}
@@ -1175,6 +1063,80 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
         )}
 
         <div className="sport-chat-message-list flex-1 space-y-3 overflow-y-auto px-4 py-5 sm:px-6">
+          <div className="community-conversation-content-heading">
+            <div className="community-conversation-heading flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                className="community-roomlist-switch classic-only inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-sm md:hidden"
+                onClick={() => setMenuOpen(true)}
+                aria-label="Chatliste öffnen"
+                aria-expanded={menuOpen}
+                aria-controls="nexus-mobile-chat-list"
+              >
+                ☰
+              </button>
+              <button
+                type="button"
+                className="community-back sport-only inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-border/70"
+                onClick={() => setMobileListOpen(true)}
+                aria-label="Zur Chatliste"
+                aria-controls="nexus-mobile-chat-list"
+                aria-expanded={mobileListOpen}
+              >
+                <ArrowLeft aria-hidden="true" />
+              </button>
+              <span className="community-room-avatar flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary">
+                <MessageCircle aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-sm font-semibold sm:text-base">{headerTitle}</h1>
+                <p className="text-[10px] text-muted-foreground">
+                  {mode === "local" ? "Lokal auf diesem Gerät" : "Nexus Chat · Cloud"}
+                </p>
+              </div>
+            </div>
+            <details className="community-conversation-menu mt-2">
+              <summary
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-border/70 px-3"
+                aria-label="Chataktionen"
+                title="Chataktionen"
+              >
+                <MoreVertical aria-hidden="true" />
+                <span className="sr-only">Chataktionen</span>
+              </summary>
+              <div className="community-conversation-actions flex flex-wrap items-center gap-1">
+                {callButtons}
+                {active?.kind === "room" && userId && (
+                  <>
+                    <HeadBtn
+                      label="Favorit"
+                      onClick={() => setPrefs(toggleFavoriteRoom(userId, active.id))}
+                    >
+                      {prefs?.favoriteRoomIds.includes(active.id) ? "★" : "☆"}
+                    </HeadBtn>
+                    <HeadBtn label="Stumm" onClick={() => setPrefs(toggleMute(userId, active.id))}>
+                      {prefs?.mutedRoomIds.includes(active.id) ? "🔇" : "🔔"}
+                    </HeadBtn>
+                  </>
+                )}
+                <HeadBtn label="Suche" onClick={() => setSearchOpen((v) => !v)}>
+                  🔍
+                </HeadBtn>
+                <HeadBtn label="Export" onClick={() => void exportActive()}>
+                  ⬇
+                </HeadBtn>
+                <AloPageSidebarTrigger />
+                <Link
+                  to="/"
+                  aria-label="Zur Alo-Startseite"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border/70 px-3 py-2 text-xs font-bold"
+                >
+                  <House aria-hidden="true" />
+                  Startseite
+                </Link>
+              </div>
+            </details>
+          </div>
           {messages.map((m, i) => {
             const own = m.user_id === userId;
             const prev = messages[i - 1];

@@ -22,6 +22,14 @@ test("narrow optional homebars preserve the full labels instead of clipping them
   );
 });
 
+test("dashboard editing and add controls retain 44px mobile tap targets", () => {
+  const source = read("components/dashboard/DashboardGrid.tsx");
+  assert.match(source, /className={`min-h-11 rounded-full px-4 py-2/);
+  assert.match(source, /className="min-h-11 rounded-full border border-primary\/40/);
+  assert.match(source, /className="min-h-11 rounded-full border border-border px-4 py-2/);
+  assert.match(source, /className="min-h-11 w-full rounded-xl/);
+});
+
 test("dashboard editing actions meet 44px touch targets and center their controls", () => {
   const source = read("components/dashboard/DashboardGrid.tsx");
   const actions = [...source.matchAll(/<button\b[\s\S]*?<\/button>/g)]
