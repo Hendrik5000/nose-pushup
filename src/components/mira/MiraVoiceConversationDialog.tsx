@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
 import { MiraSpark } from "@/components/mira/MiraSpark";
-import { ArrowLeft, ArrowUp, LoaderCircle, Mic, MicOff, Settings2, VolumeX } from "lucide-react";
+import { ArrowLeft, ArrowUp, LoaderCircle, Mic, Settings2, Square, VolumeX } from "lucide-react";
 
 type VoiceMessage = {
   role: "user" | "assistant";
@@ -17,14 +17,17 @@ type MiraVoiceConversationDialogProps = {
   transcript: string;
   loading: boolean;
   listening: boolean;
+  sessionActive: boolean;
+  canStart: boolean;
+  supportMessage: string | null;
   speaking: boolean;
   error: string | null;
   provider: string;
   routing: string;
   contextNotice: string;
   attachmentsPending: boolean;
-  onStartListening: () => void;
-  onStopListening: () => void;
+  onStartConversation: () => void;
+  onStopConversation: () => void;
   onStopSpeaking: () => void;
   onSend: () => void;
   onRetryTranscript: () => void;
@@ -40,14 +43,17 @@ export function MiraVoiceConversationDialog({
   transcript,
   loading,
   listening,
+  sessionActive,
+  canStart,
+  supportMessage,
   speaking,
   error,
   provider,
   routing,
   contextNotice,
   attachmentsPending,
-  onStartListening,
-  onStopListening,
+  onStartConversation,
+  onStopConversation,
   onStopSpeaking,
   onSend,
   onRetryTranscript,
@@ -61,7 +67,9 @@ export function MiraVoiceConversationDialog({
       ? "Ich höre dir zu …"
       : speaking
         ? "Mira spricht gerade"
-        : "Tippe auf das Mikrofon, wenn du bereit bist.";
+        : sessionActive
+          ? "Das Gespräch läuft; ich bereite das Zuhören vor …"
+          : "Tippe auf „Gespräch starten“, wenn du bereit bist.";
   const orbState = listening
     ? "is-listening"
     : loading
@@ -123,10 +131,17 @@ export function MiraVoiceConversationDialog({
                 {status}
               </p>
               <p className="mx-auto mt-2 max-w-lg text-xs leading-relaxed text-white/60">
-                Das Mikrofon startet erst nach deinem Tipp und endet nach deiner gesprochenen Pause.
-                Erkannter Text wird in diesem Sprachmodus automatisch an den angezeigten Anbieter
-                gesendet; Mira-Antworten liest dein Gerät mit einer sanften Stimme vor.
+                Außerhalb einer gestarteten Sitzung bleibt das Mikrofon aus. Während des Gesprächs
+                wird erkannter Text automatisch an den angezeigten Mira-Anbieter gesendet und Miras
+                Antwort mit einer sanften deutschen Gerätestimme vorgelesen. Je nach Browser kann
+                die Spracherkennung Audio zur Verarbeitung an einen Browserdienst senden; sie ist
+                nicht immer lokal. Mira erhält den erkannten Text, nicht die rohe Aufnahme.
               </p>
+              {supportMessage && (
+                <p role="status" className="mx-auto mt-3 max-w-lg text-xs text-amber-100/90">
+                  {supportMessage}
+                </p>
+              )}
             </div>
 
             {transcript && (
@@ -215,6 +230,40 @@ export function MiraVoiceConversationDialog({
             </p>
           )}
 
+          <div className="mx-auto mb-2 max-w-3xl">
+            <button
+              type="button"
+              onClick={sessionActive ? onStopConversation : onStartConversation}
+              aria-label={sessionActive ? "Gespräch unterbrechen und stoppen" : "Gespräch starten"}
+              aria-pressed={sessionActive}
+              disabled={!sessionActive && (!canStart || loading)}
+              className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 disabled:cursor-not-allowed disabled:opacity-45 ${
+                sessionActive
+                  ? "border border-red-200/45 bg-red-500/20 text-red-50 hover:bg-red-500/30"
+                  : "bg-cyan-100 text-slate-950 hover:bg-white"
+              }`}
+            >
+              {sessionActive ? (
+                <>
+                  <Square className="h-4 w-4" aria-hidden="true" />
+                  Unterbrechen / Gespräch beenden
+                </>
+              ) : (
+                <>
+                  <Mic className="h-4 w-4" aria-hidden="true" />
+                  Gespräch starten
+                </>
+              )}
+            </button>
+          </div>
+
+          {loading && (
+            <p className="mx-auto mb-2 max-w-3xl text-center text-[10px] text-white/50">
+              Beim Stoppen oder Schließen wird das Mikrofon ausgeschaltet und eine spätere Antwort
+              verworfen; eine bereits gesendete Anfrage kann serverseitig noch fertiglaufen.
+            </p>
+          )}
+
           <form
             className="mx-auto flex max-w-3xl items-end gap-2"
             onSubmit={(event) => {
@@ -252,34 +301,12 @@ export function MiraVoiceConversationDialog({
                 <VolumeX className="h-5 w-5" aria-hidden="true" />
               </button>
             )}
-
-            <button
-              type="button"
-              onClick={listening ? onStopListening : onStartListening}
-              aria-label={
-                listening ? "Aufnahme beenden und Beitrag senden" : "Sprachbeitrag starten"
-              }
-              aria-pressed={listening}
-              disabled={loading}
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 disabled:opacity-50 ${
-                listening
-                  ? "border-red-200/50 bg-red-500/20 text-red-100"
-                  : "border-cyan-100/30 bg-cyan-100/10 text-cyan-50 hover:bg-cyan-100/20"
-              }`}
-            >
-              {loading ? (
-                <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
-              ) : listening ? (
-                <MicOff className="h-5 w-5" aria-hidden="true" />
-              ) : (
-                <Mic className="h-5 w-5" aria-hidden="true" />
-              )}
-            </button>
           </form>
 
           <p className="mx-auto mt-2 max-w-3xl text-center text-[10px] leading-relaxed text-white/45">
-            Mikrofon aus, bis du tippst. Für den nächsten Sprachbeitrag startest du die Aufnahme
-            erneut.
+            {sessionActive
+              ? "Mira hört nach jeder Antwort automatisch wieder zu, bis du das Gespräch beendest."
+              : "Das Mikrofon bleibt aus, bis du ausdrücklich „Gespräch starten“ antippst."}
           </p>
         </footer>
       </DialogContent>

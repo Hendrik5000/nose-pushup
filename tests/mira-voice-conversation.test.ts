@@ -6,7 +6,18 @@ const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
 const dialog = readFileSync("src/components/mira/MiraVoiceConversationDialog.tsx", "utf8");
 const styles = readFileSync("src/mira-voice.css", "utf8");
 
-test("Mira-Sprachgespräch nutzt Miras Marke, bleibt mehrteilig und hält Textchat verfügbar", () => {
+const openHandlerStart = page.indexOf(
+  "const handleVoiceConversationOpenChange = (open: boolean) => {",
+);
+const recognitionStart = page.indexOf("const startVoiceRecognition = (", openHandlerStart);
+const openHandler = page.slice(openHandlerStart, recognitionStart);
+const recognitionEnd = page.indexOf("const toggleVoice =", recognitionStart);
+const recognitionHandler = page.slice(recognitionStart, recognitionEnd);
+const stopHandlerStart = page.indexOf("const stopVoiceConversation = useCallback(() => {");
+const stopHandlerEnd = page.indexOf("const resetVoiceConversation =", stopHandlerStart);
+const stopHandler = page.slice(stopHandlerStart, stopHandlerEnd);
+
+test("Sprachgespräch bleibt im selben Mira-Chat und lässt Text und Anbieteranzeige verfügbar", () => {
   assert.match(dialog, /DialogTitle className="sr-only">Sprachgespräch mit Mira/);
   assert.match(dialog, /<MiraSpark \/>/);
   assert.match(dialog, /role="img"/);
@@ -15,48 +26,105 @@ test("Mira-Sprachgespräch nutzt Miras Marke, bleibt mehrteilig und hält Textch
   assert.match(dialog, /latestAssistant\.content/);
   assert.match(page, /onClick=\{\(\) => handleVoiceConversationOpenChange\(true\)\}/);
   assert.match(page, /messages=\{messages\}/);
-});
-
-test("Sprachaufnahme startet nur per Tipp; Anbieter, Routing, Browser-Audio und Kontext werden offengelegt", () => {
-  assert.match(dialog, /onClick=\{listening \? onStopListening : onStartListening\}/);
-  assert.match(dialog, /Das Mikrofon startet erst nach deinem Tipp/);
   assert.match(dialog, /Anbieter: \{provider\}/);
   assert.match(dialog, /Daten & Routing/);
-  assert.match(dialog, /Spracherkennung läuft über den Browser/);
-  assert.match(dialog, /\{routing\}/);
-  assert.match(dialog, /\{contextNotice\}/);
-  assert.match(dialog, /automatisch an den angezeigten Anbieter\s+gesendet/);
-  assert.match(page, /onStartListening=\{\(\) => toggleVoice\("conversation"\)\}/);
-  assert.match(page, /onStopListening=\{\(\) => toggleVoice\("conversation"\)\}/);
 });
 
-test("Sprachbeiträge senden nur erkannten Text, bewahren den Chat-Entwurf und lassen Anhänge im Textchat", () => {
-  const start = page.indexOf('const toggleVoice = (mode: "dictation" | "conversation"');
-  const end = page.indexOf("const speakMiraMessage", start);
-  const recognitionHandler = page.slice(start, end);
+test("Öffnen startet kein Mikrofon; die Sitzung startet ausdrücklich und erklärt Browser-Audio vorher", () => {
+  assert.match(openHandler, /voiceConversationOpenRef\.current = true/);
+  assert.match(openHandler, /setVoiceConversationActive\(false\)/);
+  assert.doesNotMatch(openHandler, /recognition\.start\(\)|startVoiceRecognition\(/);
+  assert.match(dialog, /onClick=\{sessionActive \? onStopConversation : onStartConversation\}/);
+  assert.match(dialog, /sessionActive \? "Gespräch unterbrechen und stoppen" : "Gespräch starten"/);
+  assert.match(dialog, /disabled=\{!sessionActive && \(!canStart \|\| loading\)\}/);
+  assert.match(
+    dialog,
+    /Je nach Browser kann\s+die Spracherkennung Audio zur Verarbeitung an einen Browserdienst senden/,
+  );
+  assert.match(dialog, /nicht immer lokal/);
+  assert.match(dialog, /Mira erhält den erkannten Text, nicht die rohe Aufnahme/);
+  assert.match(page, /sessionActive=\{voiceConversationActive\}/);
+  assert.match(page, /onStartConversation=\{startVoiceConversation\}/);
+  assert.match(
+    page,
+    /voiceConversationOpenRef\.current \|\| voiceConversationActiveRef\.current\) return/,
+  );
+});
 
+test("Aufeinanderfolgende Sprachbeiträge gehen ohne Senden-Tipp an denselben Mira-Anbieter", () => {
+  assert.match(recognitionHandler, /recognition\.continuous = false/);
+  assert.match(recognitionHandler, /recognition\.lang = "de-DE"/);
   assert.match(
     recognitionHandler,
     /void submit\(transcript, messages, \{\s*includeAttachments: false,\s*clearDraft: false,\s*autoSpeak: true,\s*voiceTurn: true,/,
   );
+  assert.match(page, /const scheduleVoiceRecognition = \(conversationSession: number\) =>/);
+  assert.match(page, /startVoiceRecognition\("conversation", conversationSession\)/);
+  assert.match(page, /utterance\.onend = \(\) => \{[\s\S]*?scheduleVoiceRecognition\(session\)/);
   assert.match(
     page,
     /const outgoingAttachments = options\.includeAttachments === false \? \[\] : attachments/,
   );
-  assert.match(page, /if \(options\.clearDraft !== false\) setInput\(""\)/);
-  assert.match(dialog, /Vorhandene Anhänge bleiben im Textchat/);
-  assert.match(dialog, /onRetryTranscript/);
-  assert.match(dialog, /Erkannten Beitrag senden/);
-  assert.match(page, /includeAttachments: false, autoSpeak: true/);
+  assert.match(
+    dialog,
+    /Vorhandene Anhänge bleiben im Textchat und werden mit Sprachbeiträgen nicht gesendet/,
+  );
 });
 
-test("Verspätete Mikrofon-Callbacks überschreiten keine Sitzung und blockieren den nächsten Chat nicht", () => {
-  assert.match(page, /const recognitionTokenRef = useRef\(0\)/);
-  assert.match(page, /recognitionTokenRef\.current !== recognitionToken/);
-  assert.match(page, /conversationSession !== voiceConversationSessionRef\.current/);
-  assert.match(page, /recognitionRef\.current !== rec/);
-  assert.match(page, /sendingRef\.current = false/);
-  assert.match(page, /generationRef\.current \+= 1;\s*sendingRef\.current = false;/);
+test("Mikrofon ist während Anfrage und Sprachausgabe aus und TTS kann nicht zurückgehört werden", () => {
+  assert.match(
+    page,
+    /if \(voiceRestartTimerRef\.current !== null\)[\s\S]*?if \(recognitionRef\.current\) \{[\s\S]*?activeRecognition\.stop\(\)/,
+  );
+  assert.match(page, /window\.speechSynthesis\.speak\(utterance\)/);
+  assert.match(
+    page,
+    /voiceConversationActiveRef\.current &&[\s\S]*?scheduleVoiceRecognition\(session\)/,
+  );
+  assert.match(recognitionHandler, /recognitionRef\.current !== recognition/);
+  assert.match(recognitionHandler, /conversationSession !== voiceConversationSessionRef\.current/);
+});
+
+test("Stopp bleibt während Denken und Sprechen verfügbar und beendet Erkennung, TTS sowie Antwortannahme", () => {
+  assert.match(dialog, /Unterbrechen \/ Gespräch beenden/);
+  assert.match(dialog, /disabled=\{!sessionActive && \(!canStart \|\| loading\)\}/);
+  assert.match(stopHandler, /voiceConversationActiveRef\.current = false/);
+  assert.match(stopHandler, /voiceConversationSessionRef\.current \+= 1/);
+  assert.match(stopHandler, /recognitionTokenRef\.current \+= 1/);
+  assert.match(stopHandler, /generationRef\.current \+= 1/);
+  assert.match(stopHandler, /stopMiraSpeech\(\)/);
+  assert.match(
+    openHandler,
+    /stopVoiceConversation\(\);\s*voiceConversationOpenRef\.current = false/,
+  );
+  assert.match(
+    page,
+    /voiceConversationActiveRef\.current = false;[\s\S]*?window\.speechSynthesis\.cancel\(\)/,
+  );
+});
+
+test("Schließen verwirft getippte Voice-Dialog-Anfragen, ohne unabhängige Textchat-Anfragen zu stoppen", () => {
+  assert.match(page, /voiceDialogRequestGenerationRef = useRef<number \| null>\(null\)/);
+  assert.match(page, /options\.voiceDialogRequest && voiceConversationOpenRef\.current/);
+  assert.match(page, /voiceDialogRequest: true/);
+  assert.match(stopHandler, /sendingRef\.current && \(wasActive \|\| cancelVoiceDialogRequest\)/);
+  assert.match(stopHandler, /voiceDialogRequestGenerationRef\.current === generationRef\.current/);
+  assert.match(
+    openHandler,
+    /stopVoiceConversation\(\);\s*voiceConversationOpenRef\.current = false/,
+  );
+  assert.match(dialog, /Beim Stoppen oder Schließen wird das Mikrofon ausgeschaltet/);
+});
+
+test("Nicht unterstützte APIs und Erkennungs-/TTS-Fehler stoppen sicher und lassen Textchat verfügbar", () => {
+  assert.match(page, /Dieser Browser unterstützt keine Spracherkennung/);
+  assert.match(page, /Dieser Browser unterstützt keine Gerätestimme/);
+  assert.match(page, /event\?\.error === "not-allowed"/);
+  assert.match(recognitionHandler, /stopVoiceConversation\(\);\s*setVoiceError\(message\)/);
+  assert.match(page, /utterance\.onerror = \(\) => \{[\s\S]*?stopVoiceConversation\(\)/);
+  assert.match(page, /Nutze stattdessen den Textchat/);
+  assert.match(dialog, /supportMessage &&/);
+  assert.match(dialog, /Nachricht an Mira senden/);
 });
 
 test("Mira-Orb berücksichtigt Smartphone-Sicherheitsabstände und reduzierte Bewegung", () => {
