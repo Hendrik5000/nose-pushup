@@ -170,7 +170,7 @@ async function callLovable(model: string, system: string, messages: InMsg[]): Pr
       })),
     ],
   };
-  const res = await fetchAiProvider("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json", "Lovable-API-Key": key },
     body: JSON.stringify(body),

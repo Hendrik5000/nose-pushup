@@ -17,6 +17,7 @@ function checkJoinRateLimit(userId: string) {
   joinRateBuckets.set(userId, recent);
 }
 
+
 function makeCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let s = "";

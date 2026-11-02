@@ -1,9 +1,1 @@
 project_id = "dbnlybjlswuvxrccgqah"
-
-# Automatic database deployment is paused by explicit owner approval.
-# Do not re-enable migrations or seeding before separate approval and history reconciliation.
-[db.migrations]
-enabled = false
-
-[db.seed]
-enabled = false

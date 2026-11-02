@@ -1,10 +1,8 @@
 import { progressState } from "@/lib/alo-ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { getAdminAreaAccess } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
-import { ALARM_SETTINGS_EVENT, readSavedAlarmSettings, type AlarmSettings } from "@/lib/alarm";
 import { levelProgress } from "@/lib/level";
 import {
   getQuickStartPlan,
@@ -65,7 +63,6 @@ const MORE_AREAS = [
   { to: "/battle-league", label: "Battle-Liga" },
   { to: "/leaderboard", label: "Rangliste" },
   { to: "/clubs", label: "Clubs" },
-  { to: "/alarm", label: "Wecker" },
 ] as const;
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -107,30 +104,6 @@ function HomeAppHub({
   displayName: string | null | undefined;
   avatarUrl: string | null | undefined;
 }) {
-  const { user } = Route.useRouteContext();
-  const [savedAlarm, setSavedAlarm] = useState<AlarmSettings | null>(null);
-  const [canSeeAdmin, setCanSeeAdmin] = useState(false);
-  useEffect(() => {
-    const loadAlarm = () => setSavedAlarm(readSavedAlarmSettings(user.id));
-    loadAlarm();
-    window.addEventListener(ALARM_SETTINGS_EVENT, loadAlarm);
-    window.addEventListener("storage", loadAlarm);
-    return () => {
-      window.removeEventListener(ALARM_SETTINGS_EVENT, loadAlarm);
-      window.removeEventListener("storage", loadAlarm);
-    };
-  }, [user.id]);
-  useEffect(() => {
-    let active = true;
-    void getAdminAreaAccess()
-      .then((allowed) => {
-        if (active && allowed === true) setCanSeeAdmin(true);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
   const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
 
   return (
@@ -172,7 +145,6 @@ function HomeAppHub({
         <HubAppIcon to="/chat" title="Nexus Chat" artwork="nexus" />
         <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
         <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
-        {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
         <div
           role="img"
           aria-label="Spiel-App, gesperrt und noch nicht verfügbar"
@@ -222,16 +194,7 @@ function HomeAppHub({
               to={area.to}
               className="flex min-h-11 items-center rounded-xl border border-border/70 bg-background/40 px-3 text-sm font-medium transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
-              {area.to === "/alarm" && savedAlarm ? (
-                <span className="flex min-w-0 flex-col py-2">
-                  <span>{area.label}</span>
-                  <span className="text-xs text-muted-foreground">
-                    Täglich {savedAlarm.time} · {savedAlarm.enabled ? "Ein" : "Aus"}
-                  </span>
-                </span>
-              ) : (
-                area.label
-              )}
+              {area.label}
             </Link>
           ))}
         </nav>
@@ -245,9 +208,9 @@ function HubAppIcon({
   title,
   artwork,
 }: {
-  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin";
+  to: "/ai" | "/chat" | "/exercises" | "/profile";
   title: string;
-  artwork: "mira" | "nexus" | "health" | "settings" | "admin";
+  artwork: "mira" | "nexus" | "health" | "settings";
 }) {
   return (
     <Link
@@ -265,17 +228,12 @@ function HubAppIcon({
   );
 }
 
-function HubArtwork({
-  kind,
-}: {
-  kind: "mira" | "nexus" | "health" | "settings" | "admin" | "adventure";
-}) {
+function HubArtwork({ kind }: { kind: "mira" | "nexus" | "health" | "settings" | "adventure" }) {
   const palettes = {
     mira: { bg: "#211c37", accent: "#c4b5fd", glow: "#8b5cf6" },
     nexus: { bg: "#122d3a", accent: "#67e8f9", glow: "#0ea5e9" },
     health: { bg: "#15352e", accent: "#86efac", glow: "#10b981" },
     settings: { bg: "#3a2e1e", accent: "#fcd34d", glow: "#f59e0b" },
-    admin: { bg: "#182b3b", accent: "#a5d8ff", glow: "#38bdf8" },
     adventure: { bg: "#30233d", accent: "#f0abfc", glow: "#c026d3" },
   } as const;
   const palette = palettes[kind];
@@ -379,23 +337,6 @@ function HubArtwork({
             strokeWidth="3"
             strokeLinecap="round"
             opacity=".8"
-          />
-        </>
-      )}
-      {kind === "admin" && (
-        <>
-          <path
-            d="M140 28 185 45v28c0 26-18 44-45 58-27-14-45-32-45-58V45l45-17Z"
-            fill={palette.accent}
-            opacity=".92"
-          />
-          <path
-            d="m120 70 14 14 28-30"
-            fill="none"
-            stroke={palette.bg}
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
           />
         </>
       )}

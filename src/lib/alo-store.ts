@@ -1,5 +1,3 @@
-import { scopedStorageKey, SUPABASE_BACKEND_SCOPE } from "../integrations/supabase/backendScope";
-
 /** Account-scoped local-first Alo data. No keys, auth tokens or provider settings enter sync. */
 export type AloKind = "capture" | "task" | "collection" | "shortcut" | "mira" | "draft" | "note";
 export type AloBody = Record<string, unknown>;
@@ -23,11 +21,9 @@ export function setAloOwner(id: string | null) {
 export function getAloOwner() {
   return owner;
 }
-// Version 2 is intentionally a new namespace. Historical v1 entries have no verified
-// backend provenance, so they remain untouched and are never offered to cloud sync.
-export const aloKey = (id: string) => scopedStorageKey("alo-workspace", id);
-const grantsKey = (id: string) => scopedStorageKey("alo-mira-grants", id);
-export const cloudKey = (id: string) => scopedStorageKey("alo-cloud-enabled", id);
+export const aloKey = (id: string) => `alo-workspace-v1:${id}`;
+const grantsKey = (id: string) => `alo-mira-grants-v1:${id}`;
+export const cloudKey = (id: string) => `alo-cloud-enabled-v1:${id}`;
 export function signalAlo(remote = false) {
   if (typeof window !== "undefined")
     window.dispatchEvent(new Event(remote ? ALO_REMOTE_EVENT : ALO_EVENT));
@@ -132,14 +128,11 @@ export function saveMiraGrants(grants: MiraGrants, id = owner) {
 }
 export function cloudEnabled(id = owner) {
   return (
-    !!id &&
-    !!SUPABASE_BACKEND_SCOPE &&
-    typeof window !== "undefined" &&
-    window.localStorage.getItem(cloudKey(id)) === "true"
+    !!id && typeof window !== "undefined" && window.localStorage.getItem(cloudKey(id)) === "true"
   );
 }
 export function setCloudEnabled(enabled: boolean, id = owner) {
-  if (!id || !SUPABASE_BACKEND_SCOPE) return;
+  if (!id) return;
   window.localStorage.setItem(cloudKey(id), String(enabled));
   signalAlo();
 }

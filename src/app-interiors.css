@@ -1,0 +1,326 @@
+/* Final presentation layer: existing controls, workflows and user themes remain authoritative. */
+:root {
+  --interior-canvas: var(--background);
+  --interior-surface: color-mix(in srgb, var(--card) 94%, var(--background));
+  --interior-line: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --interior-selected: color-mix(in srgb, var(--primary) 12%, var(--card));
+  --interior-focus: 0 0 0 3px color-mix(in srgb, var(--ring) 25%, transparent);
+}
+
+/* Less chrome: navigation is a quiet rail, not another decorated panel. */
+.alo-page-sidebar-provider .alo-page-sidebar [data-sidebar="sidebar"],
+.alo-page-sidebar-provider .alo-page-sidebar-nav {
+  background: var(--interior-surface);
+  box-shadow: none;
+}
+.alo-page-sidebar-provider .alo-page-sidebar-header { padding: 1.5rem 1rem; }
+.alo-page-sidebar-provider .alo-page-sidebar-mark {
+  background: var(--interior-selected);
+  color: var(--primary);
+  box-shadow: none;
+  border: 0;
+  border-radius: 8px;
+}
+.alo-page-sidebar-provider .alo-page-sidebar-brand-copy strong,
+.alo-page-sidebar-provider [data-sidebar="group-label"] { letter-spacing: 0; }
+.alo-page-sidebar-provider .alo-page-sidebar-brand-copy small { line-height: 1.5; }
+.alo-page-sidebar-provider .alo-page-sidebar-link {
+  border-radius: 8px;
+  min-height: 46px;
+  font-size: 0.875rem;
+}
+.alo-page-sidebar-provider .alo-page-sidebar-link[data-active="true"],
+.alo-page-sidebar-provider .alo-page-sidebar-quick-action {
+  background: var(--interior-selected);
+  border-color: transparent;
+  box-shadow: none;
+}
+.alo-page-sidebar-provider .alo-page-sidebar-footer a { border-radius: 8px; }
+
+/* Mira: one open conversation canvas, with a precise reading measure. */
+html[data-design-style="performance"] main.sport-ai-page.sport-ai-chat-mode {
+  background: var(--interior-canvas);
+  padding: 1.5rem 2rem 1rem !important;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-grid {
+  display: block;
+  width: min(100%, 52rem);
+  margin-inline: auto;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-main { gap: 1rem; }
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-stage {
+  min-height: 28rem;
+  padding: 2rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome {
+  max-width: 42rem !important;
+  margin-block: 3rem 2rem !important;
+  padding: 0 !important;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome h3 {
+  margin-top: 1.5rem;
+  font-size: 2rem;
+  font-weight: 550;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome > p {
+  margin-top: 0.75rem;
+  color: var(--muted-foreground);
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  max-width: 42rem !important;
+  gap: 0.75rem !important;
+  margin-top: 2rem !important;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  min-height: 9rem !important;
+  padding: 1.2rem !important;
+  border-radius: 8px !important;
+  background: var(--interior-surface) !important;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card:hover {
+  border-color: var(--primary);
+  background: var(--interior-selected) !important;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card :is(strong, small) {
+  white-space: normal !important;
+  overflow: visible;
+  text-overflow: clip;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card > svg:last-child {
+  position: absolute;
+  top: 1.2rem;
+  right: 1rem;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-bubble {
+  max-width: 90%;
+  line-height: 1.8;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-bubble.bg-primary {
+  background: var(--interior-selected);
+  color: var(--foreground);
+  border: 1px solid var(--interior-line);
+  border-radius: 18px 18px 4px 18px;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-bubble:not(.bg-primary) {
+  padding-inline: 0;
+  border: 0;
+  background: transparent;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer {
+  border: 1px solid var(--interior-line);
+  border-radius: 20px;
+  background: var(--interior-surface);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-composer:focus-within {
+  border-color: var(--ring);
+  box-shadow: var(--interior-focus);
+}
+html[data-design-style="performance"] .mira-chat-bottom-row { padding: 0.25rem 0; }
+html[data-design-style="performance"] .mira-chat-home-action { min-height: 44px; }
+
+/* Nexus: dense inbox, generous conversation, visually distinct own messages. */
+html[data-design-style="performance"] .sport-chat-app { background: var(--interior-canvas); }
+html[data-design-style="performance"] .sport-chat-app > aside {
+  width: 18rem;
+  flex-basis: 18rem;
+  background: var(--interior-surface);
+}
+html[data-design-style="performance"] .sport-chat-sidebar { background: transparent; }
+html[data-design-style="performance"] .sport-chat-sidebar button.w-full {
+  min-height: 72px;
+  padding: 0.8rem;
+  border-radius: 8px;
+}
+html[data-design-style="performance"] .community-list-heading .text-sm {
+  font-size: 1.5rem !important;
+  letter-spacing: 0;
+}
+html[data-design-style="performance"] .community-room-copy strong { letter-spacing: 0; }
+html[data-design-style="performance"] .community-room-copy small { font-size: 0.8rem; }
+html[data-design-style="performance"] .community-filter-chips button {
+  min-height: 44px;
+  font-size: 0.8rem;
+}
+html[data-design-style="performance"] .sport-chat-topbar {
+  background: var(--interior-canvas);
+  backdrop-filter: none;
+  padding-block: 1rem;
+}
+html[data-design-style="performance"] .sport-chat-message-list {
+  padding: 2rem max(1.5rem, calc((100% - 44rem) / 2));
+  scrollbar-width: thin;
+}
+html[data-design-style="performance"] .sport-chat-bubble {
+  padding: 0.8rem 1rem;
+  line-height: 1.65;
+  box-shadow: none;
+}
+html[data-design-style="performance"] .sport-chat-app .sport-chat-composer {
+  margin: 0.5rem 1.25rem 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--interior-line);
+  border-radius: 18px;
+  background: var(--interior-surface);
+  backdrop-filter: none;
+}
+html[data-design-style="performance"] .sport-chat-app .sport-chat-composer textarea {
+  border: 0;
+  background: transparent;
+}
+
+/* Training and health: open sections rather than cards enclosing other cards. */
+html[data-design-style="performance"] main.alo-tablet-training {
+  max-width: 68rem;
+  gap: 2.5rem;
+  padding-top: 2.5rem;
+}
+html[data-design-style="performance"] .alo-tablet-training > .sport-feature-card {
+  padding: 1.5rem 0;
+  border: 0;
+  border-block: 1px solid var(--interior-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+html[data-design-style="performance"] .alo-tablet-training > .sport-feature-card > a {
+  padding: 1rem 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+html[data-design-style="performance"] .alo-tablet-training a[href^="/workout/"] {
+  min-height: 10rem;
+  border-radius: 8px;
+  background: var(--interior-surface);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+html[data-design-style="performance"] .alo-tablet-training a[href^="/workout/"]:hover {
+  background: var(--interior-selected);
+  border-color: var(--primary);
+}
+.health-classic-dashboard .health-classic-hero,
+html[data-design-style="performance"] .sport-health-page .health-daily-hero {
+  border: 0;
+  border-block: 1px solid var(--interior-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+html[data-design-style="performance"] .health-daily-hero h2 { font-size: 1.75rem; letter-spacing: 0; }
+.health-classic-dashboard .health-classic-widget-card,
+.health-classic-dashboard .health-classic-source-card,
+html[data-design-style="performance"] .sport-health-page .health-bento-grid > div {
+  border-radius: 8px;
+  box-shadow: none;
+}
+html[data-design-style="performance"] .health-category-nav a { min-height: 48px; }
+
+/* Settings retains all groups and pictograms, but removes visual clutter. */
+html[data-design-style="performance"] .sport-profile-page { max-width: 54rem; gap: 1rem; }
+.sport-profile-page .settings-section,
+.classic-only .settings-section {
+  border-radius: 8px;
+  border-color: var(--interior-line);
+  background: var(--interior-surface);
+  backdrop-filter: none;
+}
+.settings-section > button { min-height: 88px; }
+.settings-section > button:hover { background: var(--interior-selected); }
+.settings-section > button[aria-expanded="true"] { background: var(--interior-selected); }
+.settings-section > button > span:nth-child(2) > span:first-child {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.settings-section > button > span:nth-child(2) > span:nth-child(2) {
+  margin-top: 0.25rem;
+  white-space: normal;
+  line-height: 1.5;
+}
+.settings-section .settings-section-content .settings-section {
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+}
+html[data-design-style="performance"] .sport-identity-card {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 1rem 0;
+  box-shadow: none;
+}
+html[data-design-style="performance"] .sport-identity-card > .absolute { display: none; }
+html[data-design-style="performance"] .sport-profile-page h1 { font-size: 2rem; letter-spacing: 0; }
+
+@media (max-width: 767px) {
+  html[data-design-style="performance"] main.sport-ai-page.sport-ai-chat-mode {
+    padding: 1rem max(1rem, env(safe-area-inset-left)) 1rem !important;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-stage {
+    min-height: 20rem;
+    padding: 1rem 0;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome {
+    margin-block: 1.5rem !important;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome h3 { font-size: 1.5rem; }
+  html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-grid {
+    grid-template-columns: 1fr !important;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card {
+    flex-direction: row !important;
+    align-items: center !important;
+    min-height: 5rem !important;
+    padding: 1rem !important;
+  }
+  html[data-design-style="performance"] .sport-ai-chat-mode .ai-starter-card > svg:last-child {
+    position: static;
+  }
+  html[data-design-style="performance"] .sport-chat-message-list { padding: 1rem; }
+  html[data-design-style="performance"] .sport-chat-app .sport-chat-composer {
+    margin-inline: 0.75rem;
+    margin-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    gap: 0.25rem;
+  }
+  html[data-design-style="performance"] .sport-chat-app .sport-chat-composer button {
+    width: 44px;
+    min-width: 44px;
+    padding-inline: 0;
+  }
+  html[data-design-style="performance"] .sport-chat-app .sport-chat-composer textarea {
+    padding-inline: 0.5rem;
+    font-size: 1rem;
+  }
+  html[data-design-style="performance"] main.alo-tablet-training { gap: 1.5rem; padding-top: 1.5rem; }
+  .sport-profile-page .settings-section > button,
+  .classic-only .settings-section > button { gap: 0.75rem; padding: 1rem; }
+  html[data-design-style="performance"] .sport-profile-page h1 { font-size: 1.75rem; }
+  .health-classic-category-nav { overflow-x: auto; }
+}
+@media (min-width: 768px) and (max-width: 1100px) {
+  html[data-design-style="performance"] .alo-page-sidebar-provider .sport-chat-app > aside {
+    width: 15rem;
+    flex-basis: 15rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-starter-card,
+  .settings-section > button,
+  .alo-tablet-training a { transition: none !important; }
+}

@@ -13,13 +13,13 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/OfflineBanner";
-import { GlobalAlarmMonitor } from "@/components/AlarmMonitor";
 import appCss from "../styles.css?url";
 import sportCss from "../sport.css?url";
 import communityReferenceCss from "../community-reference.css?url";
 import healthReferenceCss from "../health-reference.css?url";
 import aiReferenceCss from "../ai-reference.css?url";
 import aiResponsiveCss from "../ai-responsive.css?url";
+import appInteriorsCss from "../app-interiors.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
@@ -27,7 +27,6 @@ import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
 import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
 import { swipeScreenFromPath } from "@/lib/module-navigation";
 import { clearSensitiveClientStorage } from "@/lib/sensitive-storage";
-import { isDynamicImportFetchError } from "@/lib/module-load-error";
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -53,7 +52,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
-  const moduleLoadError = isDynamicImportFetchError(error);
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -62,28 +60,20 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          {moduleLoadError
-            ? "App-Dateien konnten nicht geladen werden"
-            : "Diese Seite konnte nicht geladen werden"}
+          Diese Seite konnte nicht geladen werden
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {moduleLoadError
-            ? "Möglicherweise ist eine ältere App-Version geöffnet oder die Verbindung wurde unterbrochen. Prüfe deine Verbindung und aktualisiere die App."
-            : "Es ist ein Fehler aufgetreten. Lade die Seite neu oder gehe zurück zur Startseite."}
+          Es ist ein Fehler aufgetreten. Lade die Seite neu oder gehe zurück zur Startseite.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
-              if (moduleLoadError) {
-                window.location.reload();
-                return;
-              }
               router.invalidate();
               reset();
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            {moduleLoadError ? "App aktualisieren" : "Erneut versuchen"}
+            Erneut versuchen
           </button>
           <a
             href="/"
@@ -126,14 +116,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "twitter:description",
         content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
       },
-      {
-        property: "og:image",
-        content: "/alo-brand.jpg",
-      },
-      {
-        name: "twitter:image",
-        content: "/alo-brand.jpg",
-      },
     ],
     links: [
       { rel: "icon", type: "image/png", href: "/alo-icon-192.png" },
@@ -145,6 +127,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: healthReferenceCss },
       { rel: "stylesheet", href: aiReferenceCss },
       { rel: "stylesheet", href: aiResponsiveCss },
+      { rel: "stylesheet", href: appInteriorsCss },
 
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -336,7 +319,6 @@ function RootComponent() {
       >
         <Outlet />
       </div>
-      <GlobalAlarmMonitor />
       {installable && !standalone && (
         <aside
           aria-label="App installieren"

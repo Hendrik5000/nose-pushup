@@ -4,9 +4,6 @@ import { MiraAttachmentPicker, MiraAttachmentPreview } from "@/components/mira/M
 import { MiraSpark } from "@/components/mira/MiraSpark";
 import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
 import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
-import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
-import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
-import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import {
   assertMiraAttachmentProvider,
@@ -30,8 +27,6 @@ import {
   Settings2,
   ArrowUpRight,
   House,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 import { ALO_EVENT, ALO_REMOTE_EVENT, getMiraGrants, putAlo, removeAlo } from "@/lib/alo-store";
 import { MiraContextControls } from "@/components/alo/MiraContextControls";
@@ -57,7 +52,6 @@ import {
   parseAiResponse,
   type PlanFeedback,
 } from "@/lib/ai-plan";
-import { getMiraSpeechSettings, prepareMiraSpeechText } from "@/lib/mira-voice";
 import type { AppContextPack } from "@/lib/ai-context";
 import type { PcConfiguratorInteraction } from "@/lib/mira-interactions";
 import {
@@ -165,9 +159,6 @@ export function SuperAiPage() {
   const [appContext, setAppContext] = useState<AppContextPack | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
   const [listening, setListening] = useState(false);
-  const [voiceChatOpen, setVoiceChatOpen] = useState(false);
-  const [voiceError, setVoiceError] = useState<string | null>(null);
-  const [speakingMessage, setSpeakingMessage] = useState<number | null>(null);
   const [lastTask, setLastTask] = useState<AiTask | null>(null);
   const [sportAiView, setSportAiView] = useState<SportAiView>("chat");
   const [, refreshProviderStatus] = useState(0);
@@ -186,25 +177,14 @@ export function SuperAiPage() {
   const lastFeedback = getMostRecentPlanFeedback(messages);
   const scrollRef = useRef<HTMLDivElement>(null);
   const generationRef = useRef(0);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const stopMiraSpeech = useCallback(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window)
-      window.speechSynthesis.cancel();
-    speechUtteranceRef.current = null;
-    setSpeakingMessage(null);
-  }, []);
   useEffect(
     () => () => {
       generationRef.current += 1;
       recognitionRef.current?.stop();
-      if (typeof window !== "undefined" && "speechSynthesis" in window)
-        window.speechSynthesis.cancel();
-      speechUtteranceRef.current = null;
-      setSpeakingMessage(null);
     },
-    [sportAiView],
+    [],
   );
+  const recognitionRef = useRef<{ stop: () => void } | null>(null);
 
   const activeTitle = useMemo(() => {
     const s = sessions.find((x) => x.id === activeId);
@@ -353,10 +333,6 @@ export function SuperAiPage() {
 
   const switchSession = (id: string) => {
     generationRef.current += 1;
-    stopMiraSpeech();
-    recognitionRef.current?.stop();
-    setListening(false);
-    setVoiceChatOpen(false);
     setLoading(false);
     const s = sessions.find((x) => x.id === id);
     setActiveId(id);
@@ -369,10 +345,6 @@ export function SuperAiPage() {
 
   const startNewSession = useCallback(() => {
     generationRef.current += 1;
-    stopMiraSpeech();
-    recognitionRef.current?.stop();
-    setListening(false);
-    setVoiceChatOpen(false);
     setLoading(false);
     const id = newSessionId();
     setActiveId(id);
@@ -381,7 +353,7 @@ export function SuperAiPage() {
     setSessionsOpen(false);
     setError(null);
     setSportAiView("chat");
-  }, [stopMiraSpeech]);
+  }, []);
 
   const activeSidebarItem = settingsOpen
     ? "mira-open-settings"
@@ -477,9 +449,7 @@ export function SuperAiPage() {
 
 Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routing bedeutet: die App wählt passend zur Frage ein KI-Modell). Erfinde keine persönlichen Daten oder Trainingsergebnisse. Fehlt für eine sichere oder persönliche Trainingsempfehlung wichtiger Kontext, stelle zuerst eine konkrete Rückfrage. Bei einem konkreten einzelnen Trainingsvorschlag gib zusätzlich ein JSON-Objekt mit reply und einem vollständig ausgefüllten plan (title, exercise_id, sets, reps, rest_s, rationale) aus; wenn Kontext fehlt, lasse plan weg. Normale Antworten bleiben Text.
 
-Interaktive Antwort (optional, nur bei einer ausdrücklichen Gaming-PC-Konfiguratorfrage): Ergänze zum normalen reply-Feld höchstens ein interaction-Objekt exakt in dieser Form: {"type":"pcConfigurator","schemaVersion":1,"budget":900,"resolution":"1080p","priority":"fps"}. Erlaubt sind ausschließlich budget als ganze Zahl von 600 bis 3500 in 100er-Schritten, resolution „1080p“, „1440p“ oder „4k“, priority „fps“ oder „quiet“ sowie die genannten Felder. Keine weiteren Felder. Die feste Alo-Karte leitet daraus lokal ein versioniertes Profil ab. Nenne keine aktuellen Preise, Bestände, Händler, konkreten SKUs oder Kompatibilitätszusagen; dafür gibt es keinen Live-Abgleich. Bei anderen Fragen kein interaction-Feld.
-
-Visualisierung (optional, nur wenn sie die Antwort tatsächlich klarer macht): Wenn du visualisierst, antworte als JSON-Objekt mit dem vollständigen normalen reply und genau einem visual-Objekt. Erlaubte Formen: {"reply":"...","visual":{"type":"metricGrid","schemaVersion":1,"title":"...","items":[{"label":"...","value":"..."},{"label":"...","value":"..."}]}} oder {"reply":"...","visual":{"type":"barChart","schemaVersion":1,"title":"...","unit":"km","items":[{"label":"...","value":2.5},{"label":"...","value":5}]}}. metricGrid hat 2–6 items mit nur label, value und optional detail (Text); barChart hat 2–6 items mit nur label und value, optional unit ausschließlich aus %, €, km, m, cm, kg, g, kcal, h, min, s, W, °C, Punkte. Keine weiteren Felder. Zahlen im barChart müssen aus der Nutzereingabe oder ausdrücklich freigegebenem Kontext stammen; einfache Rechnungen daraus sind nur erlaubt, wenn du sie im reply nachvollziehbar erklärst. Erfinde keine Messwerte, persönlichen Daten, Vergleiche oder Live-Daten. Fehlen belegte Zahlen oder hilft ein Bild nicht, antworte im normalen Textformat und lasse visual weg. Keine URLs, HTML, JavaScript, Iframes, Einbettungen oder ausführbaren Inhalte; die Visuals werden ausschließlich als feste Alo-Karten gerendert.${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
+Interaktive Antwort (optional, nur bei einer ausdrücklichen Gaming-PC-Konfiguratorfrage): Ergänze zum normalen reply-Feld höchstens ein interaction-Objekt exakt in dieser Form: {"type":"pcConfigurator","schemaVersion":1,"budget":900,"resolution":"1080p","priority":"fps"}. Erlaubt sind ausschließlich budget als ganze Zahl von 600 bis 3500 in 100er-Schritten, resolution „1080p“, „1440p“ oder „4k“, priority „fps“ oder „quiet“ sowie die genannten Felder. Keine weiteren Felder. Die feste Alo-Karte leitet daraus lokal ein versioniertes Profil ab. Nenne keine aktuellen Preise, Bestände, Händler, konkreten SKUs oder Kompatibilitätszusagen; dafür gibt es keinen Live-Abgleich. Gib niemals HTML, JavaScript, URLs, Iframes, Einbettungen oder ausführbare Aktionen aus. Bei anderen Fragen kein interaction-Feld.${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
       if (lastFeedback === "passt_nicht") {
         systemExtra +=
           "\nDer letzte Vorschlag passt nicht. Frage gezielt, ob Übung, verfügbare Zeit, Ausrüstung oder ein anderer Grund nicht passt; ändere nicht einfach nur Wiederholungszahlen. Gib erst nach Klärung einen neuen persönlichen Plan aus.";
@@ -529,7 +499,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             (plan ? "Hier ist dein unverbindlicher Trainingsvorschlag." : res.reply),
           ...(plan ? { plan } : {}),
           ...(parsed.interaction ? { interaction: parsed.interaction } : {}),
-          ...(parsed.visual ? { visual: parsed.visual } : {}),
           meta: {
             provider: res.provider,
             model: res.model,
@@ -579,19 +548,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
     setContextHint("Chat als Markdown in die Zwischenablage kopiert.");
   };
 
-  const handleVoiceChatOpenChange = (open: boolean) => {
-    setVoiceChatOpen(open);
-    if (open) {
-      setVoiceError(null);
-      setError(null);
-      stopMiraSpeech();
-    } else if (listening) {
-      recognitionRef.current?.stop();
-      recognitionRef.current = null;
-      setListening(false);
-    }
-  };
-
   const toggleVoice = () => {
     const SR =
       typeof window !== "undefined"
@@ -606,103 +562,27 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
         : undefined;
 
     if (!SR) {
-      const message = "Spracherkennung wird in diesem Browser nicht unterstützt.";
-      if (voiceChatOpen) setVoiceError(message);
-      else setError(message);
+      setError("Spracheingabe wird in diesem Browser nicht unterstützt.");
       return;
     }
     if (listening && recognitionRef.current) {
       recognitionRef.current.stop();
-      recognitionRef.current = null;
       setListening(false);
       return;
     }
-    setVoiceError(null);
     const rec = new SR();
     rec.lang = "de-DE";
     rec.interimResults = false;
     rec.onresult = (ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => {
       if (sendingRef.current) return;
       const t = ev.results[0]?.[0]?.transcript ?? "";
-      if (t) {
-        setInput((prev) => (prev ? `${prev} ${t}` : t));
-        setVoiceError(null);
-      }
+      if (t) setInput((prev) => (prev ? `${prev} ${t}` : t));
     };
-    rec.onerror = (event) => {
-      const message =
-        event?.error === "not-allowed" || event?.error === "service-not-allowed"
-          ? "Mikrofonzugriff wurde nicht erlaubt. Prüfe die Browser-Berechtigung und tippe erneut."
-          : event?.error === "audio-capture"
-            ? "Kein verwendbares Mikrofon gefunden. Prüfe dein Gerät und versuche es erneut."
-            : event?.error === "no-speech"
-              ? "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut."
-              : "Spracherkennung fehlgeschlagen. Versuche es erneut oder nutze den Textchat.";
-      if (voiceChatOpen) setVoiceError(message);
-      else setError(message);
-      setListening(false);
-    };
-    rec.onend = () => {
-      recognitionRef.current = null;
-      setListening(false);
-    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
     recognitionRef.current = rec;
     setListening(true);
-    try {
-      rec.start();
-    } catch {
-      recognitionRef.current = null;
-      setListening(false);
-      const message =
-        "Das Mikrofon konnte nicht gestartet werden. Prüfe die Berechtigung und versuche es erneut.";
-      if (voiceChatOpen) setVoiceError(message);
-      else setError(message);
-    }
-  };
-
-  const speakMiraMessage = (index: number, text: string) => {
-    if (speakingMessage === index) {
-      stopMiraSpeech();
-      return;
-    }
-    if (
-      typeof window === "undefined" ||
-      !("speechSynthesis" in window) ||
-      typeof SpeechSynthesisUtterance === "undefined"
-    ) {
-      setError("Vorlesen wird von diesem Browser nicht unterstützt.");
-      return;
-    }
-    const speechText = prepareMiraSpeechText(text);
-    if (!speechText) {
-      setError("Diese Antwort enthält keinen Text zum Vorlesen.");
-      return;
-    }
-
-    stopMiraSpeech();
-    const utterance = new SpeechSynthesisUtterance(speechText);
-    const settings = getMiraSpeechSettings(window.speechSynthesis.getVoices());
-    utterance.lang = settings.lang;
-    utterance.rate = settings.rate;
-    utterance.pitch = settings.pitch;
-    utterance.volume = settings.volume;
-    utterance.voice = settings.voice as SpeechSynthesisVoice | null;
-    const finish = () => {
-      if (speechUtteranceRef.current === utterance) {
-        speechUtteranceRef.current = null;
-        setSpeakingMessage(null);
-      }
-    };
-    utterance.onend = finish;
-    utterance.onerror = finish;
-    speechUtteranceRef.current = utterance;
-    setSpeakingMessage(index);
-    try {
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      finish();
-      setError("Die Antwort konnte nicht vorgelesen werden. Nutze bitte den Textchat.");
-    }
+    rec.start();
   };
 
   const onPersona = (p: AiPersona) => {
@@ -724,17 +604,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               <House className="h-4 w-4" aria-hidden="true" />
               Startseite
             </Link>
-            <button
-              type="button"
-              onClick={() => handleVoiceChatOpenChange(true)}
-              aria-label="Sprachchat mit Mira öffnen"
-              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <Mic className="h-4 w-4" aria-hidden="true" />
-              Sprechen
-            </button>
           </div>
-          <MiraGithubRepository />
           {/* Header */}
           <details
             className="alo-classic-mira-options"
@@ -869,13 +739,13 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               />
               <button
                 type="button"
-                onClick={() => handleVoiceChatOpenChange(true)}
+                onClick={toggleVoice}
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm ${
                   listening
                     ? "border-primary bg-primary/20 text-primary"
                     : "border-border bg-secondary/40 text-muted-foreground"
                 }`}
-                aria-label="Sprachdialog mit Mikrofon öffnen"
+                aria-label="Spracheingabe"
               >
                 🎤
               </button>
@@ -1093,7 +963,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       onChange={(next) => updateInteraction(i, next)}
                     />
                   )}
-                  {m.role === "assistant" && m.visual && <MiraVisualAnswerCard visual={m.visual} />}
                   {m.attachments?.length ? (
                     <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
                       {m.attachments.map((item, index) => (
@@ -1223,27 +1092,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                           </details>
                         </>
                       )}
-                      <button
-                        type="button"
-                        className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                        aria-pressed={speakingMessage === i}
-                        aria-label={
-                          speakingMessage === i ? "Miras Antwort stoppen" : "Miras Antwort vorlesen"
-                        }
-                        onClick={() => speakMiraMessage(i, m.content)}
-                      >
-                        {speakingMessage === i ? (
-                          <span className="inline-flex items-center gap-1">
-                            <VolumeX className="h-3.5 w-3.5" aria-hidden="true" />
-                            Stopp
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1">
-                            <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
-                            Vorlesen
-                          </span>
-                        )}
-                      </button>
                       <button
                         type="button"
                         className="text-[10px] font-medium text-primary"
@@ -1865,9 +1713,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                             onChange={(next) => updateInteraction(i, next)}
                           />
                         )}
-                        {m.role === "assistant" && m.visual && (
-                          <MiraVisualAnswerCard visual={m.visual} />
-                        )}
                         {m.attachments?.length ? (
                           <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
                             {m.attachments.map((item, index) => (
@@ -1985,29 +1830,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                             )}
                             <button
                               type="button"
-                              aria-pressed={speakingMessage === i}
-                              aria-label={
-                                speakingMessage === i
-                                  ? "Miras Antwort stoppen"
-                                  : "Miras Antwort vorlesen"
-                              }
-                              className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2.5 font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                              onClick={() => speakMiraMessage(i, m.content)}
-                            >
-                              {speakingMessage === i ? (
-                                <>
-                                  <VolumeX className="h-4 w-4" aria-hidden="true" />
-                                  Stopp
-                                </>
-                              ) : (
-                                <>
-                                  <Volume2 className="h-4 w-4" aria-hidden="true" />
-                                  Vorlesen
-                                </>
-                              )}
-                            </button>
-                            <button
-                              type="button"
                               className="font-semibold text-primary"
                               onClick={() => void copyText(m.content)}
                             >
@@ -2042,15 +1864,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     <House aria-hidden="true" />
                     <span>Startseite</span>
                   </Link>
-                  <button
-                    type="button"
-                    onClick={() => handleVoiceChatOpenChange(true)}
-                    aria-label="Sprachchat mit Mira öffnen"
-                    className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 text-sm font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <Mic className="h-4 w-4" aria-hidden="true" />
-                    Sprechen
-                  </button>
                   <div className="mira-chat-live-status" aria-live="polite">
                     <strong>{activeTitle}</strong>
                     <span>Vorschau: {activeProvider?.label ?? "Kein Anbieter"}</span>
@@ -2095,9 +1908,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   />
                   <button
                     type="button"
-                    onClick={() => handleVoiceChatOpenChange(true)}
+                    onClick={toggleVoice}
                     className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
-                    aria-label="Sprachdialog mit Mikrofon öffnen"
+                    aria-label="Spracheingabe"
                     aria-pressed={listening}
                   >
                     <Mic className="h-5 w-5" aria-hidden="true" />
@@ -2213,16 +2026,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           <BottomNav />
         </main>
       </DesignView>
-      <MiraVoiceChatDialog
-        open={voiceChatOpen}
-        onOpenChange={handleVoiceChatOpenChange}
-        transcript={input}
-        onTranscriptChange={setInput}
-        listening={listening}
-        onStartListening={toggleVoice}
-        onStopListening={toggleVoice}
-        error={voiceError}
-      />
       <MiraRunwareTools
         open={runwareOpen}
         onOpenChange={setRunwareOpen}
@@ -2252,7 +2055,7 @@ type SpeechRecognitionLike = {
   stop: () => void;
   onresult:
     ((ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null;
-  onerror: ((event?: { error?: string }) => void) | null;
+  onerror: (() => void) | null;
   onend: (() => void) | null;
 };
 
