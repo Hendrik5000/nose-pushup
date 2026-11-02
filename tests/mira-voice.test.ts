@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { getMiraSpeechSettings, prepareMiraSpeechText } from "../src/lib/mira-voice";
+import {
+  getMiraSpeechSettings,
+  prepareMiraSpeechText,
+  primeMiraSpeechForUserGesture,
+} from "../src/lib/mira-voice";
 
 test("Mira-Antworten werden für das Vorlesen von Markdown und URLs bereinigt", () => {
   assert.equal(
@@ -26,6 +30,38 @@ test("Vorlesestimme bevorzugt Deutsch und nutzt ein sanft langsameres Tempo", ()
     ),
     { lang: "de-DE", rate: 0.9, pitch: 0.98, volume: 0.92 },
   );
+});
+
+test("iPhone-Safari-TTS wird im ausdrücklichen Start-Tipp lautlos aktiviert", () => {
+  const events: string[] = [];
+  let generatedText = "";
+  const silentUtterance = { volume: 1, rate: 1 };
+
+  primeMiraSpeechForUserGesture(
+    {
+      speak: (utterance) => {
+        events.push("speak");
+        assert.equal(utterance, silentUtterance);
+      },
+      resume: () => events.push("resume"),
+    },
+    (text) => {
+      generatedText = text;
+      return silentUtterance;
+    },
+  );
+
+  assert.equal(generatedText, " ");
+  assert.equal(silentUtterance.volume, 0);
+  assert.equal(silentUtterance.rate, 10);
+  assert.deepEqual(events, ["speak", "resume"]);
+
+  let spokenWithoutResume = false;
+  primeMiraSpeechForUserGesture({ speak: () => (spokenWithoutResume = true) }, () => ({
+    volume: 1,
+    rate: 1,
+  }));
+  assert.equal(spokenWithoutResume, true);
 });
 
 test("Sprachdialog hält den Text editierbar und sendet ihn nicht selbst", () => {

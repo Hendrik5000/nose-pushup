@@ -51,6 +51,38 @@ test("Öffnen startet kein Mikrofon; die Sitzung startet ausdrücklich und erkl�
   );
 });
 
+test("iPhone-Safari-TTS wird im Start-Tipp aktiviert und still verworfene Sprache gemeldet", () => {
+  const startHandlerStart = page.indexOf("const startVoiceConversation = () => {");
+  const startHandlerEnd = page.indexOf("const stopMiraSpeechAndResume =", startHandlerStart);
+  const startHandler = page.slice(startHandlerStart, startHandlerEnd);
+  const speechStart = page.indexOf("const speakMiraResponse =");
+  const speechEnd = page.indexOf("const regenerate =", speechStart);
+  const automaticSpeech = page.slice(speechStart, speechEnd);
+
+  assert.match(startHandler, /primeMiraSpeechForUserGesture/);
+  assert.ok(
+    startHandler.indexOf("primeMiraSpeechForUserGesture") <
+      startHandler.indexOf('startVoiceRecognition("conversation"'),
+  );
+  assert.doesNotMatch(startHandler, /await\s/);
+  assert.match(
+    automaticSpeech,
+    /window\.speechSynthesis\.resume\(\);\s*window\.speechSynthesis\.speak\(utterance\)/,
+  );
+  assert.match(
+    automaticSpeech,
+    /typeof window\.speechSynthesis\.resume === "function"\) window\.speechSynthesis\.resume\(\)/,
+  );
+  assert.match(
+    startHandler,
+    /resume: \(\) => \{\s*if \(typeof window\.speechSynthesis\.resume === "function"\)/,
+  );
+  assert.match(automaticSpeech, /speechStartTimeoutRef\.current = window\.setTimeout/);
+  assert.match(automaticSpeech, /Der Browser hat Miras Sprachausgabe nicht gestartet/);
+  assert.match(page, /const clearSpeechStartTimeout = useCallback/);
+  assert.match(page, /clearSpeechStartTimeout\(\);\s*speechUtteranceRef\.current = null/);
+});
+
 test("Aufeinanderfolgende Sprachbeiträge gehen ohne Senden-Tipp an denselben Mira-Anbieter", () => {
   assert.match(recognitionHandler, /recognition\.continuous = false/);
   assert.match(recognitionHandler, /recognition\.lang = "de-DE"/);
