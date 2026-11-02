@@ -12,9 +12,9 @@ test("empty performance coach offers editable starter tasks without sending imme
   assert.doesNotMatch(cards, /void submit/);
 });
 test("prompt grid overrides the old welcome icon container and keeps intrinsic height", () => {
-  const css = read("ai-reference.css");
+  const css = read("ai-responsive.css");
   assert.match(css, /\.ai-welcome > \.ai-starter-grid\s*\{[^}]*height: auto;[^}]*flex-shrink: 0;/);
-  assert.match(css, /padding-bottom: max\(1rem, calc\(env\(safe-area-inset-bottom\)/);
+  assert.match(css, /padding-bottom: max\(0\.75rem, env\(safe-area-inset-bottom\)\)/);
 });
 test("community keeps account outside a shrinking scroll region and wraps quick actions", () => {
   const css = read("community-reference.css");

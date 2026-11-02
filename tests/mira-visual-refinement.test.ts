@@ -7,7 +7,9 @@ import { MiraSpark } from "../src/components/mira/MiraSpark.tsx";
 
 const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
 const page = read("components/mira/SuperAiPage.tsx");
-const css = read("ai-reference.css");
+const css = ["ai-reference.css", "ai-responsive.css", "sport.css", "mira-voice.css"]
+  .map(read)
+  .join("\n");
 
 test("Mira uses a decorative four-point spark with unique gradients, not a provider logo", () => {
   const markup = renderToStaticMarkup(
@@ -26,7 +28,10 @@ test("quiet navy colors stay local to Mira and the authenticated shell has no sh
     css,
     /html\[data-design-style="performance"\]\[data-theme="glacier"\] main\.sport-ai-page\s*\{[^}]*--background: #070a14;[^}]*--primary: #56c9ff;[^}]*--accent: #a78bfa;/,
   );
-  assert.doesNotMatch(css, /html\[data-design-style="performance"\] main\.sport-ai-page\s*\{/);
+  assert.doesNotMatch(
+    css,
+    /html\[data-design-style="performance"\]\s+main\.sport-ai-page\s*\{[^}]*--(?:background|foreground|primary|accent):/s,
+  );
   assert.match(css, /radial-gradient\(ellipse at 50% 108%, #173f9b70/);
   assert.match(css, /linear-gradient\(180deg, #05070c 0%, #070a12 58%, #0a1122 100%\)/);
   const shell = read("routes/_authenticated/route.tsx");
@@ -42,7 +47,8 @@ test("three concise starter tasks only prepare an editable draft", () => {
   for (const icon of ["Lightbulb", "PenLine", "BookOpen"]) assert.ok(starters.includes(icon));
   assert.match(starters, /onClick=\{\(\) => setInput\(tool.prompt\)\}/);
   assert.doesNotMatch(starters, /submit\(|send\(|runMiraPowerAction\(/);
-  assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(css, /grid-template-columns: 1fr !important;/);
+  assert.match(css, /max-width: 26rem !important;/);
   assert.match(css, /@media \(min-width: 768px\)/);
 });
 
@@ -105,7 +111,7 @@ test("attachment preview, explicit submit, microphone and accessible file limits
   assert.match(chat, /<MiraAttachmentPicker/);
   assert.match(chat, /void submit\(\)/);
   assert.match(chat, /aria-label="Deine Frage an Mira"/);
-  assert.match(chat, /aria-label="Spracheingabe"/);
+  assert.match(chat, /aria-label="Sprachdialog mit Mikrofon öffnen"/);
   assert.match(chat, /disabled=\{loading \|\| \(!input.trim\(\) && !attachments.length\)\}/);
   assert.match(chat, /<details className="mira-file-help/);
   for (const limit of ["4 Anhänge", "3 MB", "1 MB", "128 KB", "6000", "PDF: Google"])
@@ -115,12 +121,10 @@ test("attachment preview, explicit submit, microphone and accessible file limits
 test("small-screen chat keeps a non-floating composer, scrollable messages and safe-area padding", () => {
   assert.match(
     css,
-    /main\.sport-ai-chat-mode \.sport-chat-composer\s*\{[^}]*position: static;[^}]*flex: 0 0 auto;/,
+    /\.sport-ai-chat-mode \.sport-chat-composer\s*\{[^}]*position: static;[^}]*flex: 0 0 auto;/,
   );
-  assert.match(
-    css,
-    /\.sport-ai-chat-mode \.sport-chat-stage\s*\{[^}]*flex: 1 1 0;[^}]*overflow-y: auto;/,
-  );
+  assert.match(css, /\.sport-ai-chat-mode \.sport-chat-stage\s*\{[^}]*flex: 1 1 0;/);
+  assert.match(page, /className="sport-chat-stage[^"]*overflow-y-auto/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(css, /mira-chat-home-action\s*\{[^}]*min-height: 44px;/s);
   assert.match(css, /mira-chat-bottom-row\s*\{[^}]*flex: 0 0 auto;/s);

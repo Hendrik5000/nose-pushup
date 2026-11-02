@@ -3,6 +3,7 @@
 import { getAloOwner, listAlo, putAlo, removeAlo } from "@/lib/alo-store";
 import type { AiWorkoutPlan, PlanFeedback } from "@/lib/ai-plan";
 import type { MiraInteraction } from "./mira-interactions";
+import type { MiraVisualAnswer } from "./mira-visual-answer";
 
 export type AiPersona = "general" | "writer" | "coach" | "analyst" | "motivator";
 
@@ -171,6 +172,7 @@ export type AiSession = {
     attachments?: Array<{ name: string; mime: string; size: number }>;
     plan?: AiWorkoutPlan;
     interaction?: MiraInteraction;
+    visual?: MiraVisualAnswer;
     media?: import("./runware").RunwareResult;
     feedback?: PlanFeedback;
     meta?: { provider?: string; model?: string; task?: string };

@@ -1,0 +1,140 @@
+.mira-voice-dialog {
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(22, 64, 83, 0.2), transparent 48%),
+    linear-gradient(180deg, #080d14 0%, #05080d 52%, #070a0f 100%);
+}
+
+.mira-voice-dialog > header,
+.mira-voice-dialog > main,
+.mira-voice-dialog > footer {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+.mira-voice-dialog > button:last-child {
+  display: none;
+}
+
+.mira-voice-orb {
+  position: relative;
+  display: grid;
+  width: clamp(11.5rem, 45vw, 17rem);
+  aspect-ratio: 1;
+  place-items: center;
+  isolation: isolate;
+  border: 1px solid rgba(216, 249, 245, 0.56);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse at 36% 27%,
+      rgba(236, 255, 248, 0.98) 0%,
+      rgba(164, 229, 221, 0.85) 10%,
+      transparent 34%
+    ),
+    radial-gradient(
+      ellipse at 74% 30%,
+      rgba(137, 194, 219, 0.96) 0%,
+      rgba(92, 153, 188, 0.82) 27%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 42% 74%,
+      rgba(83, 155, 175, 0.98) 0%,
+      rgba(55, 103, 139, 0.95) 36%,
+      rgba(30, 59, 91, 0.98) 70%
+    );
+  box-shadow:
+    inset -1rem -1.25rem 2.4rem rgba(9, 18, 39, 0.55),
+    inset 0.8rem 0.6rem 1.8rem rgba(240, 255, 252, 0.3),
+    0 0 3rem rgba(68, 161, 190, 0.18);
+  transition:
+    transform 300ms ease,
+    box-shadow 300ms ease;
+}
+
+.mira-voice-orb::before,
+.mira-voice-orb::after {
+  position: absolute;
+  z-index: -1;
+  inset: -0.8rem;
+  border: 1px solid rgba(162, 236, 230, 0.2);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.mira-voice-orb::before {
+  inset: 0.55rem;
+  border-color: rgba(232, 255, 252, 0.18);
+  box-shadow: inset 0 0 2rem rgba(224, 255, 250, 0.15);
+}
+
+.mira-voice-orb__mark {
+  display: grid;
+  width: 38%;
+  aspect-ratio: 1;
+  place-items: center;
+  filter: drop-shadow(0 3px 15px rgba(7, 23, 40, 0.4));
+}
+
+.mira-voice-orb__mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.mira-voice-orb.is-listening {
+  box-shadow:
+    inset -1rem -1.25rem 2.4rem rgba(9, 18, 39, 0.48),
+    inset 0.8rem 0.6rem 1.8rem rgba(240, 255, 252, 0.35),
+    0 0 4rem rgba(101, 222, 217, 0.32);
+  transform: scale(1.025);
+}
+
+.mira-voice-orb.is-listening::after {
+  animation: mira-voice-ripple 1.9s ease-out infinite;
+}
+
+.mira-voice-orb.is-thinking,
+.mira-voice-orb.is-speaking {
+  animation: mira-voice-breathe 2.4s ease-in-out infinite;
+}
+
+.mira-voice-orb.is-speaking::after {
+  border-color: rgba(226, 247, 177, 0.45);
+  animation: mira-voice-ripple 2.6s ease-out infinite;
+}
+
+@keyframes mira-voice-ripple {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes mira-voice-breathe {
+  0%,
+  100% {
+    transform: scale(0.99);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+@media (max-width: 360px) {
+  .mira-voice-orb {
+    width: clamp(9rem, 42vw, 12rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mira-voice-orb,
+  .mira-voice-orb::after {
+    animation: none !important;
+    transition: none;
+  }
+}

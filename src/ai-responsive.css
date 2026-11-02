@@ -67,7 +67,9 @@ html[data-design-style="performance"] .sport-chat-composer {
     flex-direction: column;
     gap: 0.75rem;
   }
-  html[data-design-style="performance"] .sport-ai-chat-aside { order: 2; }
+  html[data-design-style="performance"] .sport-ai-chat-aside {
+    order: 2;
+  }
   html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome h3,
   html[data-design-style="performance"] .sport-ai-chat-mode .ai-welcome h1 {
     font-size: clamp(1.35rem, 6vw, 1.75rem);
@@ -94,7 +96,9 @@ html[data-design-style="performance"] .sport-chat-composer {
     display: none;
   }
   html[data-design-style="performance"] .alo-workspace-panel,
-  html[data-design-style="performance"] .alo-page-sidebar-provider[data-sidebar="open"] .alo-workspace-panel {
+  html[data-design-style="performance"]
+    .alo-page-sidebar-provider[data-sidebar="open"]
+    .alo-workspace-panel {
     display: none;
   }
 }
@@ -306,6 +310,8 @@ html[data-design-style="performance"] .ai-starter-hint {
 /* Bottom status row */
 html[data-design-style="performance"] .mira-chat-bottom-row {
   display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -314,6 +320,7 @@ html[data-design-style="performance"] .mira-chat-bottom-row {
 
 html[data-design-style="performance"] .mira-chat-home-action {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
   gap: 0.35rem;
   padding: 0.35rem 0.55rem;
@@ -357,4 +364,37 @@ html[data-design-style="performance"] .mira-chat-live-status span {
   html[data-design-style="performance"] .sport-ai-chat-mode .sport-chat-stage .ai-starter-grid {
     margin-top: 2rem !important;
   }
+}
+
+@layer base {
+  html[data-design-style="performance"]
+    .sport-ai-chat-mode
+    .sport-chat-composer
+    textarea:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    background: color-mix(in srgb, var(--foreground) 8%, var(--card)) !important;
+    border-radius: 0.5rem;
+    box-shadow: none !important;
+  }
+}
+
+html[data-design-style="performance"] .sport-chat-composer :is(button, textarea):focus-visible {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: 2px;
+}
+
+html[data-design-style="performance"] .mira-chat-bottom-row {
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+html[data-design-style="performance"] .mira-chat-home-action {
+  min-height: 44px;
+}
+
+html[data-design-style="performance"] .ai-welcome > .ai-starter-grid {
+  height: auto;
+  flex-shrink: 0;
+  flex: 0 0 auto;
 }
