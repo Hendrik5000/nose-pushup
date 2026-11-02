@@ -4,7 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b1220" />
-    <title>Grid Defense — Private lokale Spielvorschau</title>
+    <meta name="referrer" content="no-referrer" />
+    <meta name="private-game-payload" content="grid-defense-server-only-v1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; font-src 'none'; form-action 'none'; frame-src 'none'; img-src 'none'; media-src 'none'; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'" />
+    <title>Grid Defense — Admin-Spiel</title>
     <style>
       :root { color-scheme: dark; --bg:#0b1220; --surface:#111c2c; --line:#293b51; --text:#edf5ff; --muted:#9db0c6; --cyan:#58d8cb; --blue:#84aaff; --orange:#ffad73; --ice:#a9e9ff; --danger:#ff7c87; }
       * { box-sizing: border-box; }
@@ -68,8 +71,8 @@
   <body>
     <main class="shell">
       <header class="topbar">
-        <div class="identity"><div class="mark" aria-hidden="true">GD</div><div><p class="eyebrow">Taktische Simulation · lokal</p><h1>Grid Defense</h1></div></div>
-        <span class="private-badge">Private Vorschau · nur lokal</span>
+        <div class="identity"><div class="mark" aria-hidden="true">GD</div><div><p class="eyebrow">Taktische Simulation</p><h1>Grid Defense</h1></div></div>
+        <span class="private-badge">Admin-Spiel · nur für Admins</span>
       </header>
       <section class="hud" aria-label="Spielstand">
         <div class="metric"><span class="metric-label">Welle</span><strong class="metric-value" id="waveValue">0</strong></div>
@@ -118,7 +121,7 @@
           </section>
         </aside>
       </div>
-      <p class="footer">Private lokale Vorschau · keine externen Grafiken, Audiodateien oder Netzverbindungen · Spielstand nur für diese Sitzung</p>
+      <p class="footer">Geschützte Admin-Auslieferung · keine externen Grafiken, Audiodateien oder Netzverbindungen · Spielstand nur für diese Sitzung</p>
     </main>
     <script>
       (() => {

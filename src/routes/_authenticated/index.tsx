@@ -1,7 +1,7 @@
 import { progressState } from "@/lib/alo-ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { getAdminAreaAccess } from "@/lib/admin.functions";
+import { usePrivateGameAccess } from "@/lib/use-private-game-access";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { levelProgress } from "@/lib/level";
@@ -45,7 +45,6 @@ import {
   Footprints,
   Hand,
   HeartPulse,
-  LockKeyhole,
   Search,
   ScanFace,
   Target,
@@ -101,22 +100,13 @@ const PROFILE_COLS =
 function HomeAppHub({
   displayName,
   avatarUrl,
+  userId,
 }: {
   displayName: string | null | undefined;
   avatarUrl: string | null | undefined;
+  userId: string | null;
 }) {
-  const [canSeeAdmin, setCanSeeAdmin] = useState(false);
-  useEffect(() => {
-    let active = true;
-    void getAdminAreaAccess()
-      .then((allowed) => {
-        if (active && allowed === true) setCanSeeAdmin(true);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { hasAccess: canSeeAdmin } = usePrivateGameAccess(userId, 5_000);
   const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
 
   return (
@@ -159,8 +149,8 @@ function HomeAppHub({
         <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
         <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
         {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
-        <PrivateGameTile game="grid-defense" title="Grid Defense" icon={Target} />
-        <PrivateGameTile game="kupferkern" title="Kupferkern" icon={Activity} />
+        {canSeeAdmin && <AdminGameTile game="grid-defense" title="Grid Defense" icon={Target} />}
+        {canSeeAdmin && <AdminGameTile game="kupferkern" title="Kupferkern" icon={Activity} />}
       </nav>
       <div className="alo-tablet-home-tools mt-4 grid grid-cols-2 gap-2">
         <button
@@ -203,7 +193,7 @@ function HomeAppHub({
   );
 }
 
-function PrivateGameTile({
+function AdminGameTile({
   game,
   title,
   icon: Icon,
@@ -216,19 +206,16 @@ function PrivateGameTile({
     <Link
       to="/games"
       search={{ game }}
-      aria-label={`${title}, private Spielevorschau öffnen`}
+      aria-label={`${title}, Admin-Spiel öffnen`}
       className="group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
-      <span className="relative grid aspect-square w-full max-w-[72px] place-items-center overflow-hidden rounded-[20px] border border-dashed border-border bg-gradient-to-br from-slate-800/80 to-slate-950/90 text-sky-100 opacity-75 shadow-sm grayscale transition group-hover:scale-105">
+      <span className="grid aspect-square w-full max-w-[72px] place-items-center overflow-hidden rounded-[20px] border border-border bg-gradient-to-br from-slate-800/80 to-slate-950/90 text-sky-100 shadow-sm transition group-hover:scale-105">
         <Icon className="h-8 w-8" aria-hidden="true" />
-        <span className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow-sm">
-          <LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />
-        </span>
       </span>
       <span className="max-w-[84px] truncate text-[10px] font-medium leading-tight sm:text-xs">
         {title}
       </span>
-      <span className="-mt-1 text-[10px] leading-tight">Private Vorschau</span>
+      <span className="-mt-1 text-[10px] leading-tight">Admin-Spiel</span>
     </Link>
   );
 }
@@ -412,9 +399,10 @@ function HubArtwork({
 }
 
 function Dashboard() {
+  const { user } = Route.useRouteContext();
+  const userId = user.id;
   const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
   const [todaySteps, setTodaySteps] = useState(0);
   const [hasTodayData, setHasTodayData] = useState(false);
@@ -429,7 +417,6 @@ function Dashboard() {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
-      setUserId(u.user.id);
       const now = new Date();
       const today = localDateKey(now);
       const week = getTrainingWeekBounds(now);
@@ -851,7 +838,11 @@ function Dashboard() {
 
   return (
     <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
-      <HomeAppHub displayName={profile?.display_name} avatarUrl={profile?.avatar_url} />
+      <HomeAppHub
+        displayName={profile?.display_name}
+        avatarUrl={profile?.avatar_url}
+        userId={user.id}
+      />
       <details
         className="group rounded-3xl border border-border bg-card/45 shadow-sm"
         id="training-overview"

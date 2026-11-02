@@ -1,17 +1,21 @@
-# Private Spielvorschauen lokal starten
+# Admin-only-Spiele — lokaler Änderungsvorschlag
 
-Der authentifizierte Alo-Spielebereich enthält zwei getrennte, standardmäßig gesperrte Vorschauen: **Grid Defense**, ein neu geschriebener klassischer Tower-Defense-Prototyp mit Rasterkarte, automatisch feuernden Türmen und Wellen, sowie **Kupferkern**, ein eigenständiges Energiepfad-Puzzle. Beide sind nur während der lokalen Entwicklung und nach ausdrücklichem Öffnen verfügbar.
+Dieser Branch enthält einen **nicht veröffentlichten lokalen Vorschlag** für Grid Defense und Kupferkern. Die Spiele sind ausschließlich für Konten mit `has_global_role('admin')` gedacht.
 
-## Starten
+## Schutzmodell
 
-Starte Alo mit `npm run dev`. In einem zweiten Terminal startest du `npm run dev:private-game`. Der Spielserver bindet fest an `127.0.0.1` und Port `8787`, liefert ausschließlich die lokale HTML-Seite aus und setzt eine Content-Security-Policy, die externe Netzwerk-, Medien- und Frame-Zugriffe blockiert. Öffne Alo lokal, melde dich an und wähle auf Home die gewünschte private Spielkachel. Auf der Sperrseite musst du anschließend ausdrücklich **Lokale Vorschau öffnen** wählen.
+Die Startseitenkacheln erscheinen nur nach `getAdminAreaAccess()`. Die direkte `/games`-Route wiederholt die serverseitige Prüfung. Unabhängig davon verlangt die POST-Serverfunktion für jedes Spiel ein durch `requireSupabaseAuth` geprüftes JWT, lehnt anonyme Nutzer ab und fragt `has_global_role('admin')` in genau diesem authentifizierten Supabase-Kontext ab. Bei fehlender Rolle, RPC-Fehlern oder Netzwerkfehlern wird kein Spielinhalt geladen.
 
-Falls Alo über `127.0.0.1` statt `localhost` läuft, bleibt der Standard korrekt. Für einen anderen lokalen Port setzt du `ALO_PRIVATE_GAME_PORT` beim Start des Spielservers und passt `VITE_PRIVATE_GAME_PREVIEW_URL` vor dem Start von Vite auf dieselbe lokale URL an. Die Spiel-Origin muss eine Loopback-Adresse und von der Alo-Origin verschieden sein; ein gleich-originiges oder nicht-lokales Ziel wird nicht eingebettet.
+Die HTML-Dateien liegen in `private-game-preview/` außerhalb von `public/`. Nur die serverseitige Funktion importiert sie als Raw-Text; nach erfolgreicher Rollenprüfung liefert sie den Inhalt in ein `sandbox="allow-scripts"`-`srcDoc`-Iframe. Beide Dokumente besitzen eine restriktive CSP-Meta-Policy und nutzen keine externen Ressourcen oder Netzwerkverbindungen. Der bisherige ungeschützte Loopback-Server und sein Startskript sind aus diesem Vorschlag entfernt.
 
-## Grenzen und Freigabe
+## Lokale Prüfungen
 
-`private-game-preview/grid-defense.html` ist eine eigenständige, selbst enthaltene HTML-/Canvas-Implementierung. Sie lädt keine externen Grafiken, Fonts, Sounds oder Skripte, spricht kein Netzwerk an und speichert keinen Spielstand. Die Datei liegt außerhalb von `public/` und `src/` und wird nicht in den Alo-Produktionsbuild importiert. Der Zusatzserver startet nicht beim normalen Alo-Start und lauscht nicht auf einer LAN- oder öffentlichen Schnittstelle. Das Spiel läuft mit Sandbox-Attributen in einem Iframe auf einer getrennten lokalen Origin.
+`npm test` prüft Admin-, Nicht-Admin- und anonymen Zugriff, den direkten Route- und Serverfunktionsschutz sowie das Fehlen der Dokumente im öffentlichen Ordner. Nach `npm run build` durchsucht `tests/private-games-build.test.ts` zusätzlich `.output/public` nach eindeutigen Markern beider Spiel-Payloads; derselbe Test ist Teil von `npm test`.
 
-Die zweite Kachel öffnet nur das lokale Kupferkern-Puzzle. `?preview=local` reicht in einem Produktionsbuild nicht zum Freischalten. Dies ist ausschließlich eine lokale Entwicklungsvorschau, keine öffentliche Bereitstellung.
+## Vor jeder Live-Freigabe
 
-Die Neufassung und ihre Gestaltung stellen **keine rechtliche Freigabe** dar. Rechte-, Marken-, Text- und Gestaltungsprüfungen bleiben vor jeder Weitergabe oder Veröffentlichung offen. Nicht veröffentlichen, deployen, mergen oder pushen.
+Die read-only Prüfung des exakten Lovable-Projekts `40995ef3-9b15-4ba7-9ebb-89713e15105b` bestätigte die zugehörige Datenbank `dbnlybjlswuvxrccgqah`, `public.global_role_assignments`, `public.has_global_role(text)` und mindestens eine Admin-Zuweisung. Dieser Vorschlag ändert keine Datenbank, Rolle oder Zuweisung.
+
+Bei Logout oder erkanntem Kontowechsel wird die Spielansicht fail-closed geleert. Die Home-Admin-Kacheln und die geöffnete Spielseite prüfen die Rolle alle fünf Sekunden; auf der Spielseite wird zusätzlich bei Rückkehr in den Vordergrund neu geprüft. Ein negatives oder fehlerhaftes Ergebnis entfernt das iframe sofort. Die aktuelle Architektur liefert kein Push-Ereignis für eine Datenbank-Rollenentziehung: bis zur nächsten erfolgreichen Prüfung kann deshalb ein bereits angezeigtes Spiel noch sichtbar sein. Bereits an einen berechtigten Browser ausgelieferter Inhalt kann außerdem nicht nachträglich aus dessen Speicher zurückgerufen werden.
+
+Vor einer Veröffentlichung muss der konkrete Commit samt Payload geprüft werden. Rechte-, Marken-, Text- und Gestaltungsprüfungen bleiben offen. Es wurde nichts gepusht, gemergt, veröffentlicht oder live aktiviert.

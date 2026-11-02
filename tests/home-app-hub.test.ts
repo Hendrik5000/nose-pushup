@@ -5,6 +5,10 @@ import { test } from "node:test";
 
 const homePath = resolve(process.cwd(), "src/routes/_authenticated/index.tsx");
 const home = readFileSync(homePath, "utf8");
+const accessHook = readFileSync(
+  resolve(process.cwd(), "src/lib/use-private-game-access.ts"),
+  "utf8",
+);
 const hubStart = home.indexOf("function HomeAppHub");
 const artworkStart = home.indexOf("function HubArtwork");
 const dashboardStart = home.indexOf("function Dashboard", artworkStart);
@@ -35,17 +39,25 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.match(hub, /avatarUrl\s*\?/);
 });
 
-test("Home has two distinct private game tiles with direct local-preview selections", () => {
+test("Home has two distinct Admin game tiles gated by the server-side role check", () => {
+  assert.match(hub, /usePrivateGameAccess\(userId, 5_000\)/);
+  assert.match(home, /const \{ user \} = Route\.useRouteContext\(\)/);
+  assert.match(home, /userId=\{user\.id\}/);
+  assert.match(accessHook, /onAuthStateChange/);
+  assert.match(accessHook, /authUserIdRef\.current !== userId/);
   assert.match(
     hub,
-    /<PrivateGameTile game="grid-defense" title="Grid Defense" icon=\{Target\} \/>/,
+    /canSeeAdmin\s*&&\s*<AdminGameTile game="grid-defense" title="Grid Defense" icon=\{Target\} \/>/,
   );
-  assert.match(hub, /<PrivateGameTile game="kupferkern" title="Kupferkern" icon=\{Activity\} \/>/);
+  assert.match(
+    hub,
+    /canSeeAdmin\s*&&\s*<AdminGameTile game="kupferkern" title="Kupferkern" icon=\{Activity\} \/>/,
+  );
   assert.match(hub, /search=\{\{ game \}\}/);
-  assert.match(hub, /Private Vorschau/);
-  assert.match(hub, /<LockKeyhole/);
+  assert.match(hub, /Admin-Spiel/);
+  assert.doesNotMatch(hub, /PrivateGameTile|LockKeyhole/);
   assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated/games.tsx")));
-  const gameTile = hub.slice(hub.indexOf("function PrivateGameTile"));
+  const gameTile = hub.slice(hub.indexOf("function AdminGameTile"));
   assert.doesNotMatch(gameTile, /\.from\(|fetch\(|\.insert\(|dispatchEvent\(/);
 });
 
