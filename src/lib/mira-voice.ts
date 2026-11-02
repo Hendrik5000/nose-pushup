@@ -84,3 +84,29 @@ export function isLikelyMiraSpeechEcho(transcript: string, spokenText: string): 
   }
   return false;
 }
+
+/** Let clear user speech interrupt playback, including a short spoken stop command. */
+export function isMiraVoiceInterruption(transcript: string): boolean {
+  const words = transcript
+    .toLocaleLowerCase("de-DE")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .split(/\s+/u)
+    .filter(Boolean);
+  return (
+    words.length >= 2 ||
+    (words.length === 1 && ["halt", "stop", "stopp", "warte"].includes(words[0]))
+  );
+}
+
+/** Prefer final recognition; use a meaningful interim result if the browser omits final output. */
+export function resolveMiraVoiceTurnTranscript(
+  finalTranscript: string,
+  interimTranscript: string,
+): string {
+  const finalized = finalTranscript.trim();
+  if (finalized) return finalized;
+
+  const interim = interimTranscript.trim();
+  return isMiraVoiceInterruption(interim) ? interim : "";
+}

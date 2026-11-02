@@ -3,9 +3,11 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   getMiraSpeechSettings,
+  isMiraVoiceInterruption,
   isLikelyMiraSpeechEcho,
   prepareMiraSpeechText,
   primeMiraSpeechForUserGesture,
+  resolveMiraVoiceTurnTranscript,
 } from "../src/lib/mira-voice";
 
 test("Mira-Antworten werden für das Vorlesen von Markdown und URLs bereinigt", () => {
@@ -41,6 +43,22 @@ test("Erkennt Miras akustisches Echo, lässt klare Stoppwörter aber als Unterbr
   assert.equal(isLikelyMiraSpeechEcho("Welche Frage?", answer), true);
   assert.equal(isLikelyMiraSpeechEcho("stopp", "Sag bitte stopp, wenn du etwas brauchst."), false);
   assert.equal(isLikelyMiraSpeechEcho("Ich möchte etwas fragen", answer), false);
+});
+
+test("Unterbrechungen stoppen auch mit einem klaren Einzelwort und Zwischenresultate bleiben sendbar", () => {
+  assert.equal(isMiraVoiceInterruption("Stopp!"), true);
+  assert.equal(isMiraVoiceInterruption("Ich habe eine Frage"), true);
+  assert.equal(isMiraVoiceInterruption("Vielleicht"), false);
+  assert.equal(
+    resolveMiraVoiceTurnTranscript("  Finale Erkennung  ", "Zwischenresultat"),
+    "Finale Erkennung",
+  );
+  assert.equal(
+    resolveMiraVoiceTurnTranscript("", "Ich möchte etwas fragen"),
+    "Ich möchte etwas fragen",
+  );
+  assert.equal(resolveMiraVoiceTurnTranscript("", "Vielleicht"), "");
+  assert.equal(resolveMiraVoiceTurnTranscript("", "warte"), "warte");
 });
 
 test("iPhone-Safari-TTS wird im ausdrücklichen Start-Tipp lautlos aktiviert", () => {

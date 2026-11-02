@@ -62,9 +62,11 @@ import type { AppContextPack } from "@/lib/ai-context";
 import type { PcConfiguratorInteraction } from "@/lib/mira-interactions";
 import {
   getMiraSpeechSettings,
+  isMiraVoiceInterruption,
   isLikelyMiraSpeechEcho,
   prepareMiraSpeechText,
   primeMiraSpeechForUserGesture,
+  resolveMiraVoiceTurnTranscript,
 } from "@/lib/mira-voice";
 import {
   classifyTask,
@@ -215,6 +217,7 @@ export function SuperAiPage() {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const recognitionTokenRef = useRef(0);
   const voiceTranscriptRef = useRef("");
+  const voiceInterimTranscriptRef = useRef("");
   const voiceTurnPendingRef = useRef(false);
   const voiceConversationOpenRef = useRef(false);
   const voiceConversationActiveRef = useRef(false);
@@ -242,6 +245,7 @@ export function SuperAiPage() {
       voiceConversationActiveRef.current = false;
       voiceConversationSessionRef.current += 1;
       voiceTurnPendingRef.current = false;
+      voiceInterimTranscriptRef.current = "";
       if (voiceRestartTimerRef.current !== null) {
         window.clearTimeout(voiceRestartTimerRef.current);
         voiceRestartTimerRef.current = null;
@@ -274,6 +278,7 @@ export function SuperAiPage() {
     voiceConversationSessionRef.current += 1;
     recognitionTokenRef.current += 1;
     voiceTurnPendingRef.current = false;
+    voiceInterimTranscriptRef.current = "";
     if (voiceRestartTimerRef.current !== null) {
       window.clearTimeout(voiceRestartTimerRef.current);
       voiceRestartTimerRef.current = null;
@@ -679,6 +684,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       ]);
       if (options.voiceTurn) {
         voiceTranscriptRef.current = "";
+        voiceInterimTranscriptRef.current = "";
         setVoiceTranscript("");
       }
       if (
@@ -911,6 +917,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       voiceConversationOpenRef.current = true;
       voiceTurnPendingRef.current = false;
       voiceTranscriptRef.current = "";
+      voiceInterimTranscriptRef.current = "";
       setVoiceTranscript("");
       setVoiceConversationActive(false);
       setVoiceConversationOpen(true);
@@ -1002,14 +1009,20 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
         },
       ).filter((result) => result.transcript);
       const observedTranscript = recognizedResults.map((result) => result.transcript).join(" ");
+      const finalTranscript = recognizedResults
+        .filter((result) => result.isFinal)
+        .map((result) => result.transcript)
+        .join(" ");
+      const interimTranscript = recognizedResults
+        .filter((result) => !result.isFinal)
+        .map((result) => result.transcript)
+        .join(" ");
       if (mode === "conversation" && speechUtteranceRef.current && observedTranscript) {
         if (isLikelyMiraSpeechEcho(observedTranscript, speechTextRef.current)) return;
-        const finalTranscript = recognizedResults
-          .filter((result) => result.isFinal)
-          .map((result) => result.transcript)
-          .join(" ");
-        const hasMeaningfulInterim = observedTranscript.split(/\s+/).filter(Boolean).length >= 2;
-        if (finalTranscript || hasMeaningfulInterim) stopMiraSpeech();
+        if (finalTranscript || isMiraVoiceInterruption(observedTranscript)) stopMiraSpeech();
+      }
+      if (mode === "conversation" && interimTranscript) {
+        voiceInterimTranscriptRef.current = interimTranscript;
       }
       const transcript = recognizedResults
         .filter((result) => result.isFinal || mode === "dictation")
@@ -1020,6 +1033,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
         voiceTranscriptRef.current = [voiceTranscriptRef.current, transcript]
           .filter(Boolean)
           .join(" ");
+        voiceInterimTranscriptRef.current = "";
         voiceTurnPendingRef.current = true;
         setVoiceTranscript(voiceTranscriptRef.current);
       } else {
@@ -1035,6 +1049,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       setListening(false);
       if (mode === "conversation" && event?.error === "no-speech") {
         voiceTurnPendingRef.current = false;
+        voiceInterimTranscriptRef.current = "";
         setVoiceError("Keine Sprache erkannt – ich höre weiter zu.");
         return;
       }
@@ -1064,10 +1079,20 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       setListening(false);
       if (mode !== "conversation") return;
 
-      const transcript = voiceTranscriptRef.current.trim();
+      const finalizedTranscript = voiceTranscriptRef.current.trim();
+      const transcript = resolveMiraVoiceTurnTranscript(
+        finalizedTranscript,
+        voiceInterimTranscriptRef.current,
+      );
+      const usedInterimTranscript = !finalizedTranscript && Boolean(transcript);
       const shouldSend = voiceTurnPendingRef.current && Boolean(transcript);
       voiceTurnPendingRef.current = false;
+      voiceInterimTranscriptRef.current = "";
       if (shouldSend) {
+        if (usedInterimTranscript) {
+          voiceTranscriptRef.current = transcript;
+          setVoiceTranscript(transcript);
+        }
         void submit(transcript, messages, {
           includeAttachments: false,
           clearDraft: false,
@@ -1186,6 +1211,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
     voiceConversationActiveRef.current = true;
     setVoiceConversationActive(true);
     voiceTranscriptRef.current = "";
+    voiceInterimTranscriptRef.current = "";
     setVoiceTranscript("");
     voiceTurnPendingRef.current = false;
     setVoiceError(null);
