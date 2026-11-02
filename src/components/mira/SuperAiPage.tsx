@@ -168,6 +168,10 @@ export function SuperAiPage() {
   const [listening, setListening] = useState(false);
   const [voiceChatOpen, setVoiceChatOpen] = useState(false);
   const [voiceConversationOpen, setVoiceConversationOpen] = useState(false);
+  const [voiceConversationActive, setVoiceConversationActive] = useState(false);
+  const [voiceSupportMessage, setVoiceSupportMessage] = useState<string | null>(
+    "Sprachfunktionen dieses Browsers werden geprüft.",
+  );
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [speakingMessage, setSpeakingMessage] = useState<number | null>(null);
@@ -202,21 +206,40 @@ export function SuperAiPage() {
   const lastFeedback = getMostRecentPlanFeedback(messages);
   const scrollRef = useRef<HTMLDivElement>(null);
   const generationRef = useRef(0);
+  const voiceDialogRequestGenerationRef = useRef<number | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const recognitionTokenRef = useRef(0);
   const voiceTranscriptRef = useRef("");
   const voiceTurnPendingRef = useRef(false);
   const voiceConversationOpenRef = useRef(false);
+  const voiceConversationActiveRef = useRef(false);
   const voiceConversationSessionRef = useRef(0);
+  const voiceRestartTimerRef = useRef<number | null>(null);
   const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  useEffect(() => {
+    setVoiceSupportMessage(getVoiceSupportMessage());
+  }, []);
   useEffect(
     () => () => {
       generationRef.current += 1;
+      voiceDialogRequestGenerationRef.current = null;
+      sendingRef.current = false;
       recognitionTokenRef.current += 1;
       voiceConversationOpenRef.current = false;
+      voiceConversationActiveRef.current = false;
       voiceConversationSessionRef.current += 1;
       voiceTurnPendingRef.current = false;
-      recognitionRef.current?.stop();
+      if (voiceRestartTimerRef.current !== null) {
+        window.clearTimeout(voiceRestartTimerRef.current);
+        voiceRestartTimerRef.current = null;
+      }
+      const recognition = recognitionRef.current;
+      recognitionRef.current = null;
+      try {
+        recognition?.stop();
+      } catch {
+        // The browser may already have ended recognition during unmount.
+      }
       if (typeof window !== "undefined" && "speechSynthesis" in window)
         window.speechSynthesis.cancel();
       speechUtteranceRef.current = null;
@@ -224,26 +247,48 @@ export function SuperAiPage() {
     [],
   );
   const stopMiraSpeech = useCallback(() => {
+    speechUtteranceRef.current = null;
     if (typeof window !== "undefined" && "speechSynthesis" in window)
       window.speechSynthesis.cancel();
-    speechUtteranceRef.current = null;
     setSpeakingMessage(null);
   }, []);
-  const resetVoiceConversation = useCallback(() => {
-    voiceConversationOpenRef.current = false;
+  const stopVoiceConversation = useCallback(() => {
+    const wasActive = voiceConversationActiveRef.current;
+    voiceConversationActiveRef.current = false;
     voiceConversationSessionRef.current += 1;
     recognitionTokenRef.current += 1;
     voiceTurnPendingRef.current = false;
-    voiceTranscriptRef.current = "";
-    setVoiceTranscript("");
+    if (voiceRestartTimerRef.current !== null) {
+      window.clearTimeout(voiceRestartTimerRef.current);
+      voiceRestartTimerRef.current = null;
+    }
     const recognition = recognitionRef.current;
     recognitionRef.current = null;
-    recognition?.stop();
+    try {
+      recognition?.stop();
+    } catch {
+      // Recognition can already be ending after a result or browser error.
+    }
     setListening(false);
-    setVoiceConversationOpen(false);
-    setVoiceError(null);
+    setVoiceConversationActive(false);
+    const cancelVoiceDialogRequest =
+      voiceDialogRequestGenerationRef.current === generationRef.current;
+    if (sendingRef.current && (wasActive || cancelVoiceDialogRequest)) {
+      generationRef.current += 1;
+      voiceDialogRequestGenerationRef.current = null;
+      sendingRef.current = false;
+      setLoading(false);
+    }
     stopMiraSpeech();
   }, [stopMiraSpeech]);
+  const resetVoiceConversation = useCallback(() => {
+    voiceConversationOpenRef.current = false;
+    stopVoiceConversation();
+    voiceTranscriptRef.current = "";
+    setVoiceTranscript("");
+    setVoiceConversationOpen(false);
+    setVoiceError(null);
+  }, [stopVoiceConversation]);
 
   const activeTitle = useMemo(() => {
     const s = sessions.find((x) => x.id === activeId);
@@ -470,10 +515,14 @@ export function SuperAiPage() {
       clearDraft?: boolean;
       autoSpeak?: boolean;
       voiceTurn?: boolean;
+      voiceDialogRequest?: boolean;
     } = {},
   ) => {
     const outgoingAttachments = options.includeAttachments === false ? [] : attachments;
-    const voiceSessionAtStart = options.autoSpeak ? voiceConversationSessionRef.current : null;
+    const voiceSessionAtStart =
+      options.autoSpeak && voiceConversationOpenRef.current && voiceConversationActiveRef.current
+        ? voiceConversationSessionRef.current
+        : null;
     const text = (textOverride ?? input).trim();
     if ((!text && !outgoingAttachments.length) || loading || sendingRef.current) return;
     setError(null);
@@ -487,6 +536,7 @@ export function SuperAiPage() {
     if (!provider) {
       const message =
         "Kein aktiver KI-Anbieter. Öffne Zugangsdaten und hinterlege einen API-Schlüssel.";
+      if (voiceSessionAtStart !== null) stopVoiceConversation();
       if (voiceConversationOpenRef.current) setVoiceError(message);
       else {
         setError(message);
@@ -513,16 +563,27 @@ export function SuperAiPage() {
           : {}),
       },
     ];
+    if (voiceRestartTimerRef.current !== null) {
+      window.clearTimeout(voiceRestartTimerRef.current);
+      voiceRestartTimerRef.current = null;
+    }
     if (recognitionRef.current) {
       recognitionTokenRef.current += 1;
       voiceTurnPendingRef.current = false;
       const activeRecognition = recognitionRef.current;
       recognitionRef.current = null;
-      activeRecognition.stop();
+      try {
+        activeRecognition.stop();
+      } catch {
+        // The speech service may already have ended after delivering its final result.
+      }
     }
     setListening(false);
     sendingRef.current = true;
     const generation = ++generationRef.current;
+    if (options.voiceDialogRequest && voiceConversationOpenRef.current) {
+      voiceDialogRequestGenerationRef.current = generation;
+    }
     setLoading(true);
     try {
       assertMiraAttachmentProvider(
@@ -608,6 +669,7 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
         options.autoSpeak &&
         voiceSessionAtStart !== null &&
         voiceConversationOpenRef.current &&
+        voiceConversationActiveRef.current &&
         voiceConversationSessionRef.current === voiceSessionAtStart
       ) {
         speakMiraResponse(assistantIndex, assistantContent, voiceSessionAtStart);
@@ -615,10 +677,20 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
     } catch (e) {
       if (generation !== generationRef.current) return;
       const msg = e instanceof Error ? e.message : "Fehler";
+      if (
+        voiceSessionAtStart !== null &&
+        voiceConversationActiveRef.current &&
+        voiceConversationSessionRef.current === voiceSessionAtStart
+      ) {
+        stopVoiceConversation();
+      }
       if (voiceConversationOpenRef.current) setVoiceError(msg);
       else setError(msg);
       // Keep the draft and local attachments; errors are never added to AI history.
     } finally {
+      if (voiceDialogRequestGenerationRef.current === generation) {
+        voiceDialogRequestGenerationRef.current = null;
+      }
       if (generation === generationRef.current) {
         sendingRef.current = false;
         setLoading(false);
@@ -632,13 +704,17 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       !("speechSynthesis" in window) ||
       typeof SpeechSynthesisUtterance === "undefined"
     ) {
+      stopVoiceConversation();
       setVoiceError(
         "Vorlesen wird von diesem Browser nicht unterstützt; die Antwort bleibt im Textchat sichtbar.",
       );
       return;
     }
     const speechText = prepareMiraSpeechText(text);
-    if (!speechText) return;
+    if (!speechText) {
+      scheduleVoiceRecognition(session);
+      return;
+    }
     stopMiraSpeech();
     const utterance = new SpeechSynthesisUtterance(speechText);
     const settings = getMiraSpeechSettings(window.speechSynthesis.getVoices());
@@ -648,28 +724,53 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
     utterance.volume = settings.volume;
     utterance.voice = settings.voice as SpeechSynthesisVoice | null;
     const finish = () => {
-      if (speechUtteranceRef.current === utterance) {
-        speechUtteranceRef.current = null;
-        setSpeakingMessage(null);
-      }
+      if (speechUtteranceRef.current !== utterance) return false;
+      speechUtteranceRef.current = null;
+      setSpeakingMessage(null);
+      return true;
     };
     utterance.onstart = () => {
       if (
         speechUtteranceRef.current === utterance &&
         voiceConversationOpenRef.current &&
+        voiceConversationActiveRef.current &&
         voiceConversationSessionRef.current === session
       ) {
         setSpeakingMessage(index);
       }
     };
-    utterance.onend = finish;
-    utterance.onerror = finish;
+    utterance.onend = () => {
+      const wasCurrent = finish();
+      if (
+        wasCurrent &&
+        voiceConversationOpenRef.current &&
+        voiceConversationActiveRef.current &&
+        voiceConversationSessionRef.current === session
+      ) {
+        scheduleVoiceRecognition(session);
+      }
+    };
+    utterance.onerror = () => {
+      const wasCurrent = finish();
+      if (
+        wasCurrent &&
+        voiceConversationOpenRef.current &&
+        voiceConversationActiveRef.current &&
+        voiceConversationSessionRef.current === session
+      ) {
+        stopVoiceConversation();
+        setVoiceError(
+          "Miras Sprachausgabe ist fehlgeschlagen. Du kannst die Antwort im Text lesen.",
+        );
+      }
+    };
     speechUtteranceRef.current = utterance;
     setSpeakingMessage(index);
     try {
       window.speechSynthesis.speak(utterance);
     } catch {
       finish();
+      stopVoiceConversation();
       setVoiceError("Miras Antwort konnte nicht vorgelesen werden; du kannst sie im Text lesen.");
     }
   };
@@ -747,12 +848,21 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
   };
 
   const handleVoiceChatOpenChange = (open: boolean) => {
-    if (!open && recognitionRef.current) {
+    if (open && voiceConversationActiveRef.current) {
+      stopVoiceConversation();
+      voiceConversationOpenRef.current = false;
+      setVoiceConversationOpen(false);
+    }
+    if (!open && recognitionRef.current && !voiceConversationActiveRef.current) {
       recognitionTokenRef.current += 1;
       voiceTurnPendingRef.current = false;
       const activeRecognition = recognitionRef.current;
       recognitionRef.current = null;
-      activeRecognition.stop();
+      try {
+        activeRecognition.stop();
+      } catch {
+        // The dictation recognizer may already have ended.
+      }
       setListening(false);
     }
     if (open) setError(null);
@@ -761,125 +871,141 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
 
   const handleVoiceConversationOpenChange = (open: boolean) => {
     if (open) {
-      if (recognitionRef.current) {
-        recognitionTokenRef.current += 1;
-        voiceTurnPendingRef.current = false;
-        const activeRecognition = recognitionRef.current;
-        recognitionRef.current = null;
-        activeRecognition.stop();
-        setListening(false);
-      }
+      if (voiceConversationOpenRef.current) return;
+      stopVoiceConversation();
       voiceConversationSessionRef.current += 1;
       voiceConversationOpenRef.current = true;
       voiceTurnPendingRef.current = false;
+      voiceTranscriptRef.current = "";
+      setVoiceTranscript("");
+      setVoiceConversationActive(false);
       setVoiceConversationOpen(true);
       setVoiceChatOpen(false);
       setVoiceError(null);
       setError(null);
       setSportAiView("chat");
       setSessionsOpen(false);
-      stopMiraSpeech();
       return;
     }
 
+    stopVoiceConversation();
     voiceConversationOpenRef.current = false;
-    voiceConversationSessionRef.current += 1;
-    recognitionTokenRef.current += 1;
-    voiceTurnPendingRef.current = false;
-    const activeRecognition = recognitionRef.current;
-    recognitionRef.current = null;
-    activeRecognition?.stop();
-    setListening(false);
+    voiceTranscriptRef.current = "";
+    setVoiceTranscript("");
     setVoiceConversationOpen(false);
-    stopMiraSpeech();
+    setVoiceError(null);
   };
 
-  const toggleVoice = (mode: "dictation" | "conversation" = "dictation") => {
-    const SR =
-      typeof window !== "undefined"
-        ? (
-            window as unknown as {
-              SpeechRecognition?: new () => SpeechRecognitionLike;
-              webkitSpeechRecognition?: new () => SpeechRecognitionLike;
-            }
-          ).SpeechRecognition ||
-          (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike })
-            .webkitSpeechRecognition
-        : undefined;
-
-    if (!SR) {
+  const startVoiceRecognition = (
+    mode: "dictation" | "conversation",
+    conversationSession = voiceConversationSessionRef.current,
+  ): boolean => {
+    const SpeechRecognition = getSpeechRecognitionConstructor();
+    if (!SpeechRecognition) {
       const message = "Spracherkennung wird in diesem Browser nicht unterstützt.";
-      if (mode === "conversation") setVoiceError(message);
-      else setError(message);
-      return;
+      if (mode === "conversation") {
+        stopVoiceConversation();
+        setVoiceError(message);
+      } else {
+        setError(message);
+      }
+      return false;
     }
-    if (listening && recognitionRef.current) {
-      recognitionRef.current.stop();
-      setListening(false);
-      return;
+    if (
+      mode === "conversation" &&
+      (!voiceConversationOpenRef.current ||
+        !voiceConversationActiveRef.current ||
+        conversationSession !== voiceConversationSessionRef.current)
+    ) {
+      return false;
     }
     if (recognitionRef.current) {
       recognitionTokenRef.current += 1;
       voiceTurnPendingRef.current = false;
       const staleRecognition = recognitionRef.current;
       recognitionRef.current = null;
-      staleRecognition.stop();
+      try {
+        staleRecognition.stop();
+      } catch {
+        // Ignore a recognizer that has already ended.
+      }
     }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "de-DE";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    const recognitionToken = ++recognitionTokenRef.current;
     if (mode === "conversation") {
-      if (!voiceConversationOpenRef.current) return;
-      stopMiraSpeech();
-      voiceTranscriptRef.current = "";
-      setVoiceTranscript("");
       voiceTurnPendingRef.current = true;
       setVoiceError(null);
     }
-    const rec = new SR();
-    const recognitionToken = ++recognitionTokenRef.current;
-    const conversationSession = voiceConversationSessionRef.current;
-    rec.lang = "de-DE";
-    rec.interimResults = false;
-    rec.onresult = (ev) => {
+    recognition.onresult = (event) => {
       if (
-        recognitionRef.current !== rec ||
+        recognitionRef.current !== recognition ||
         recognitionTokenRef.current !== recognitionToken ||
-        (mode === "conversation" && conversationSession !== voiceConversationSessionRef.current)
+        (mode === "conversation" &&
+          (conversationSession !== voiceConversationSessionRef.current ||
+            !voiceConversationActiveRef.current))
       ) {
         return;
       }
       if (sendingRef.current) return;
+      const resultStart = Math.max(0, Math.min(event.resultIndex ?? 0, event.results.length));
       const transcript = Array.from(
-        { length: ev.results.length },
-        (_, index) => ev.results[index]?.[0]?.transcript?.trim() ?? "",
+        {
+          length:
+            mode === "conversation" ? event.results.length - resultStart : event.results.length,
+        },
+        (_, offset) => {
+          const result = event.results[mode === "conversation" ? resultStart + offset : offset];
+          const speech = result?.[0];
+          if (!speech || (mode === "conversation" && speech.isFinal === false)) return "";
+          return speech.transcript.trim();
+        },
       )
         .filter(Boolean)
         .join(" ");
       if (!transcript) return;
       if (mode === "conversation") {
-        voiceTranscriptRef.current = transcript;
-        setVoiceTranscript(transcript);
+        voiceTranscriptRef.current = [voiceTranscriptRef.current, transcript]
+          .filter(Boolean)
+          .join(" ");
+        voiceTurnPendingRef.current = true;
+        setVoiceTranscript(voiceTranscriptRef.current);
       } else {
-        setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+        setInput((previous) => (previous ? `${previous} ${transcript}` : transcript));
       }
     };
-    rec.onerror = (event) => {
-      if (recognitionRef.current !== rec || recognitionTokenRef.current !== recognitionToken)
+    recognition.onerror = (event) => {
+      if (
+        recognitionRef.current !== recognition ||
+        recognitionTokenRef.current !== recognitionToken
+      )
         return;
-      voiceTurnPendingRef.current = false;
       setListening(false);
+      if (mode === "conversation" && event?.error === "no-speech") {
+        voiceTurnPendingRef.current = false;
+        setVoiceError("Keine Sprache erkannt – ich höre weiter zu.");
+        return;
+      }
       const message =
         event?.error === "not-allowed" || event?.error === "service-not-allowed"
           ? "Mikrofonzugriff wurde nicht erlaubt. Prüfe die Browser-Berechtigung."
           : event?.error === "audio-capture"
             ? "Kein verwendbares Mikrofon gefunden. Prüfe dein Gerät."
-            : event?.error === "no-speech"
-              ? "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut."
-              : "Spracherkennung fehlgeschlagen. Du kannst Mira weiterhin schreiben.";
-      if (mode === "conversation") setVoiceError(message);
-      else setError(message);
+            : "Spracherkennung fehlgeschlagen. Du kannst Mira weiterhin schreiben.";
+      if (mode === "conversation") {
+        stopVoiceConversation();
+        setVoiceError(message);
+      } else {
+        voiceTurnPendingRef.current = false;
+        setError(message);
+      }
     };
-    rec.onend = () => {
+    recognition.onend = () => {
       if (
-        recognitionRef.current !== rec ||
+        recognitionRef.current !== recognition ||
         recognitionTokenRef.current !== recognitionToken ||
         (mode === "conversation" && conversationSession !== voiceConversationSessionRef.current)
       ) {
@@ -887,37 +1013,117 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
       }
       recognitionRef.current = null;
       setListening(false);
-      if (mode === "conversation" && voiceTurnPendingRef.current) {
-        voiceTurnPendingRef.current = false;
-        const transcript = voiceTranscriptRef.current.trim();
-        if (transcript) {
-          void submit(transcript, messages, {
-            includeAttachments: false,
-            clearDraft: false,
-            autoSpeak: true,
-            voiceTurn: true,
-          });
-        } else {
-          setVoiceError(
-            "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut.",
-          );
-        }
+      if (mode !== "conversation") return;
+
+      const transcript = voiceTranscriptRef.current.trim();
+      const shouldSend = voiceTurnPendingRef.current && Boolean(transcript);
+      voiceTurnPendingRef.current = false;
+      if (shouldSend) {
+        void submit(transcript, messages, {
+          includeAttachments: false,
+          clearDraft: false,
+          autoSpeak: true,
+          voiceTurn: true,
+        });
+      } else if (
+        voiceConversationOpenRef.current &&
+        voiceConversationActiveRef.current &&
+        conversationSession === voiceConversationSessionRef.current
+      ) {
+        scheduleVoiceRecognition(conversationSession);
       }
     };
-    recognitionRef.current = rec;
+    recognitionRef.current = recognition;
     setListening(true);
     try {
-      rec.start();
+      recognition.start();
+      return true;
     } catch {
-      if (recognitionRef.current === rec) recognitionRef.current = null;
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
       recognitionTokenRef.current += 1;
       voiceTurnPendingRef.current = false;
       setListening(false);
       const message =
         "Das Mikrofon konnte nicht gestartet werden. Prüfe die Berechtigung und versuche es erneut.";
-      if (mode === "conversation") setVoiceError(message);
-      else setError(message);
+      if (mode === "conversation") {
+        stopVoiceConversation();
+        setVoiceError(message);
+      } else {
+        setError(message);
+      }
+      return false;
     }
+  };
+
+  const toggleVoice = (mode: "dictation" | "conversation" = "dictation") => {
+    if (mode === "conversation") {
+      if (voiceConversationActiveRef.current && !recognitionRef.current) {
+        startVoiceRecognition("conversation", voiceConversationSessionRef.current);
+      }
+      return;
+    }
+    if (listening && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        setListening(false);
+      }
+      setListening(false);
+      return;
+    }
+    startVoiceRecognition("dictation");
+  };
+
+  const scheduleVoiceRecognition = (conversationSession: number) => {
+    if (typeof window === "undefined") return;
+    if (voiceRestartTimerRef.current !== null) {
+      window.clearTimeout(voiceRestartTimerRef.current);
+      voiceRestartTimerRef.current = null;
+    }
+    voiceRestartTimerRef.current = window.setTimeout(() => {
+      voiceRestartTimerRef.current = null;
+      if (
+        !voiceConversationOpenRef.current ||
+        !voiceConversationActiveRef.current ||
+        conversationSession !== voiceConversationSessionRef.current
+      ) {
+        return;
+      }
+      if (sendingRef.current || speechUtteranceRef.current) {
+        scheduleVoiceRecognition(conversationSession);
+        return;
+      }
+      startVoiceRecognition("conversation", conversationSession);
+    }, 350);
+  };
+
+  const startVoiceConversation = () => {
+    if (!voiceConversationOpenRef.current || voiceConversationActiveRef.current) return;
+    const supportMessage = getVoiceSupportMessage();
+    setVoiceSupportMessage(supportMessage);
+    if (supportMessage) {
+      setVoiceError(supportMessage);
+      return;
+    }
+    stopMiraSpeech();
+    voiceConversationSessionRef.current += 1;
+    const conversationSession = voiceConversationSessionRef.current;
+    voiceConversationActiveRef.current = true;
+    setVoiceConversationActive(true);
+    voiceTranscriptRef.current = "";
+    setVoiceTranscript("");
+    voiceTurnPendingRef.current = false;
+    setVoiceError(null);
+    setError(null);
+    startVoiceRecognition("conversation", conversationSession);
+  };
+
+  const stopMiraSpeechAndResume = () => {
+    const conversationSession = voiceConversationActiveRef.current
+      ? voiceConversationSessionRef.current
+      : null;
+    stopMiraSpeech();
+    if (conversationSession !== null) scheduleVoiceRecognition(conversationSession);
   };
 
   const onPersona = (p: AiPersona) => {
@@ -2435,16 +2641,26 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
         routing={describeProviderSelection(voiceProviderPreview, voicePreviewTask)}
         contextNotice={voiceContextNotice}
         attachmentsPending={attachments.length > 0}
-        onStartListening={() => toggleVoice("conversation")}
-        onStopListening={() => toggleVoice("conversation")}
-        onStopSpeaking={stopMiraSpeech}
-        onSend={() => void submit(input, messages, { includeAttachments: false, autoSpeak: true })}
+        sessionActive={voiceConversationActive}
+        canStart={voiceSupportMessage === null}
+        supportMessage={voiceSupportMessage}
+        onStartConversation={startVoiceConversation}
+        onStopConversation={stopVoiceConversation}
+        onStopSpeaking={stopMiraSpeechAndResume}
+        onSend={() =>
+          void submit(input, messages, {
+            includeAttachments: false,
+            autoSpeak: true,
+            voiceDialogRequest: true,
+          })
+        }
         onRetryTranscript={() =>
           void submit(voiceTranscript, messages, {
             includeAttachments: false,
             clearDraft: false,
             autoSpeak: true,
             voiceTurn: true,
+            voiceDialogRequest: true,
           })
         }
         onOpenSettings={() => {
@@ -2488,12 +2704,40 @@ Visualisierung ist optional und nur sinnvoll, wenn sie die Antwort klarer macht.
 type SpeechRecognitionLike = {
   lang: string;
   interimResults: boolean;
+  continuous: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((ev: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onresult:
+    | ((ev: {
+        results: ArrayLike<ArrayLike<{ transcript: string; isFinal?: boolean }>>;
+        resultIndex?: number;
+      }) => void)
+    | null;
   onerror: ((event?: { error?: string }) => void) | null;
   onend: (() => void) | null;
 };
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
+  if (typeof window === "undefined") return null;
+  const browser = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  };
+  return browser.SpeechRecognition ?? browser.webkitSpeechRecognition ?? null;
+}
+
+function getVoiceSupportMessage(): string | null {
+  if (typeof window === "undefined") return "Sprachsteuerung ist nur im Browser verfügbar.";
+  if (!getSpeechRecognitionConstructor()) {
+    return "Dieser Browser unterstützt keine Spracherkennung. Nutze stattdessen den Textchat.";
+  }
+  if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
+    return "Dieser Browser unterstützt keine Gerätestimme. Nutze stattdessen den Textchat.";
+  }
+  return null;
+}
 
 function IconBtn({
   children,
