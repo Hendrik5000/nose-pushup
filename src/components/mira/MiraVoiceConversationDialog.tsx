@@ -63,19 +63,21 @@ export function MiraVoiceConversationDialog({
   const latestUser = [...messages].reverse().find((message) => message.role === "user");
   const status = loading
     ? "Mira formuliert eine Antwort …"
-    : listening
-      ? "Ich höre dir zu …"
-      : speaking
-        ? "Mira spricht gerade"
-        : sessionActive
-          ? "Das Gespräch läuft; ich bereite das Zuhören vor …"
-          : "Tippe auf „Gespräch starten“, wenn du bereit bist.";
-  const orbState = listening
-    ? "is-listening"
-    : loading
-      ? "is-thinking"
-      : speaking
-        ? "is-speaking"
+    : speaking && listening
+      ? "Mira spricht – sprich einfach hinein, um sie zu unterbrechen."
+      : listening
+        ? "Ich höre dir zu …"
+        : speaking
+          ? "Mira spricht gerade"
+          : sessionActive
+            ? "Das Gespräch läuft; ich bereite das Zuhören vor …"
+            : "Tippe auf „Gespräch starten“, wenn du bereit bist.";
+  const orbState = loading
+    ? "is-thinking"
+    : speaking
+      ? "is-speaking"
+      : listening
+        ? "is-listening"
         : "";
 
   return (
@@ -133,9 +135,11 @@ export function MiraVoiceConversationDialog({
               <p className="mx-auto mt-2 max-w-lg text-xs leading-relaxed text-white/60">
                 Außerhalb einer gestarteten Sitzung bleibt das Mikrofon aus. Während des Gesprächs
                 wird erkannter Text automatisch an den angezeigten Mira-Anbieter gesendet und Miras
-                Antwort mit einer sanften deutschen Gerätestimme vorgelesen. Je nach Browser kann
-                die Spracherkennung Audio zur Verarbeitung an einen Browserdienst senden; sie ist
-                nicht immer lokal. Mira erhält den erkannten Text, nicht die rohe Aufnahme.
+                Antwort mit der bevorzugten deutschen Gerätestimme vorgelesen. Auch währenddessen
+                hört die Browser-Erkennung zu, damit du hineinsprechen kannst; Miras gerade gelesene
+                Wörter werden soweit möglich als Echo ausgefiltert. Je nach Browser kann die
+                Spracherkennung Audio zur Verarbeitung an einen Browserdienst senden; sie ist nicht
+                immer lokal. Mira erhält den erkannten Text, nicht die rohe Aufnahme.
               </p>
               {supportMessage && (
                 <p role="status" className="mx-auto mt-3 max-w-lg text-xs text-amber-100/90">
@@ -295,7 +299,7 @@ export function MiraVoiceConversationDialog({
               <button
                 type="button"
                 onClick={onStopSpeaking}
-                aria-label="Miras Sprachausgabe stoppen"
+                aria-label="Mira unterbrechen und selbst sprechen"
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200"
               >
                 <VolumeX className="h-5 w-5" aria-hidden="true" />
@@ -305,7 +309,7 @@ export function MiraVoiceConversationDialog({
 
           <p className="mx-auto mt-2 max-w-3xl text-center text-[10px] leading-relaxed text-white/45">
             {sessionActive
-              ? "Mira hört nach jeder Antwort automatisch wieder zu, bis du das Gespräch beendest."
+              ? "Mira hört während ihrer Antwort weiter zu. Sprich einfach hinein oder tippe auf Stopp; das Gespräch endet erst, wenn du es beendest."
               : "Das Mikrofon bleibt aus, bis du ausdrücklich „Gespräch starten“ antippst."}
           </p>
         </footer>

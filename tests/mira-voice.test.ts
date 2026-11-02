@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   getMiraSpeechSettings,
+  isLikelyMiraSpeechEcho,
   prepareMiraSpeechText,
   primeMiraSpeechForUserGesture,
 } from "../src/lib/mira-voice";
@@ -12,24 +13,34 @@ test("Mira-Antworten werden für das Vorlesen von Markdown und URLs bereinigt", 
     prepareMiraSpeechText(
       "## Hallo\n\n**Ruhig** sprechen und [hier](https://example.com) nachsehen.\n\n```js\nalert(1)\n```",
     ),
-    "Hallo\n\nRuhig sprechen und hier nachsehen.",
+    "Hallo.\n\nRuhig sprechen und hier nachsehen.",
   );
 });
 
-test("Vorlesestimme bevorzugt Deutsch und nutzt ein sanft langsameres Tempo", () => {
+test("Vorlesestimme bevorzugt die deutsche Standardstimme mit natürlicherem Tempo", () => {
   const german = { lang: "de-DE" } as SpeechSynthesisVoice;
   const otherGerman = { lang: "de-AT" } as SpeechSynthesisVoice;
   const english = { lang: "en-US" } as SpeechSynthesisVoice;
+  const defaultGerman = { lang: "de-AT", default: true } as SpeechSynthesisVoice;
 
   assert.equal(getMiraSpeechSettings([english, otherGerman, german]).voice, german);
   assert.equal(getMiraSpeechSettings([english, otherGerman]).voice, otherGerman);
+  assert.equal(getMiraSpeechSettings([german, defaultGerman]).voice, defaultGerman);
   assert.equal(getMiraSpeechSettings([english]).voice, null);
   assert.deepEqual(
     (({ lang, rate, pitch, volume }) => ({ lang, rate, pitch, volume }))(
       getMiraSpeechSettings([german]),
     ),
-    { lang: "de-DE", rate: 0.9, pitch: 0.98, volume: 0.92 },
+    { lang: "de-DE", rate: 0.97, pitch: 1, volume: 0.96 },
   );
+});
+
+test("Erkennt Miras akustisches Echo, lässt klare Stoppwörter aber als Unterbrechung durch", () => {
+  const answer = "Gern helfe ich dir dabei. Welche Frage möchtest du zuerst klären?";
+  assert.equal(isLikelyMiraSpeechEcho("Gern helfe ich", answer), true);
+  assert.equal(isLikelyMiraSpeechEcho("Welche Frage?", answer), true);
+  assert.equal(isLikelyMiraSpeechEcho("stopp", "Sag bitte stopp, wenn du etwas brauchst."), false);
+  assert.equal(isLikelyMiraSpeechEcho("Ich möchte etwas fragen", answer), false);
 });
 
 test("iPhone-Safari-TTS wird im ausdrücklichen Start-Tipp lautlos aktiviert", () => {
