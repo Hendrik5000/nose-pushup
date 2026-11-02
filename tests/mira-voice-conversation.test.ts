@@ -115,7 +115,10 @@ test("Mira bleibt während ihrer Sprachausgabe unterbrechbar und ihr akustisches
   assert.match(page, /startVoiceRecognition\("conversation", session, true\)/);
   assert.match(page, /recognition\.interimResults = mode === "conversation" && listenDuringSpeech/);
   assert.match(page, /isLikelyMiraSpeechEcho\(observedTranscript, speechTextRef\.current\)/);
-  assert.match(page, /if \(finalTranscript \|\| hasMeaningfulInterim\) stopMiraSpeech\(\)/);
+  assert.match(
+    page,
+    /if \(finalTranscript \|\| isMiraVoiceInterruption\(observedTranscript\)\) stopMiraSpeech\(\)/,
+  );
   assert.match(page, /scheduleVoiceRecognition\(conversationSession, true\)/);
   assert.match(
     page,
@@ -167,6 +170,20 @@ test("Nicht unterstützte APIs und Erkennungs-/TTS-Fehler stoppen sicher und las
   assert.match(page, /Nutze stattdessen den Textchat/);
   assert.match(dialog, /supportMessage &&/);
   assert.match(dialog, /Nachricht an Mira senden/);
+});
+
+test("Aussagekräftige Zwischenresultate gehen bei Abbruch der Browsererkennung nicht verloren", () => {
+  assert.match(recognitionHandler, /const interimTranscript = recognizedResults/);
+  assert.match(recognitionHandler, /isMiraVoiceInterruption\(observedTranscript\)/);
+  assert.match(recognitionHandler, /voiceInterimTranscriptRef\.current = interimTranscript/);
+  assert.match(
+    recognitionHandler,
+    /resolveMiraVoiceTurnTranscript\(\s*finalizedTranscript,\s*voiceInterimTranscriptRef\.current/,
+  );
+  assert.match(
+    recognitionHandler,
+    /if \(usedInterimTranscript\) \{\s*voiceTranscriptRef\.current = transcript;\s*setVoiceTranscript\(transcript\);/,
+  );
 });
 
 test("Mira-Orb berücksichtigt Smartphone-Sicherheitsabstände und reduzierte Bewegung", () => {
