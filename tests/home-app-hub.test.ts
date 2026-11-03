@@ -35,12 +35,19 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.match(hub, /avatarUrl\s*\?/);
 });
 
-test("the Home game tile requires a server-confirmed Admin check and links to the protected route", () => {
+test("the Home exposes two separate game icons only after a server-confirmed Admin check", () => {
   assert.match(home, /getAdminAreaAccess\(\)/);
+  const gatedGameIcons = home.match(/\{canSeeAdmin\s*&&\s*\([\s\S]*?\)\}/)?.[0] ?? "";
   assert.match(
-    home,
-    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/games" title="Admin-Spiele" artwork="adventure" \/>/,
+    gatedGameIcons,
+    /<HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" \/>/,
   );
+  assert.match(
+    gatedGameIcons,
+    /<HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" \/>/,
+  );
+  assert.match(home, /function HubGameAppIcon[\s\S]*?to="\/games"[\s\S]*?search=\{\{ game \}\}/);
+  assert.doesNotMatch(home, /title="Admin-Spiele"/);
   assert.match(home, /setCanSeeAdmin\(false\)/);
   assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated/games.tsx")));
   assert.doesNotMatch(hub, /Spiel-App, gesperrt|LockKeyhole|Gesperrt/);
@@ -55,6 +62,9 @@ test("the icon artwork is square and original, and the training dashboard stays 
   assert.match(artwork, /kind === "nexus"/);
   assert.match(artwork, /kind === "health"/);
   assert.match(artwork, /kind === "settings"/);
+  assert.match(artwork, /kind === "gridDefense"/);
+  assert.match(artwork, /kind === "kupferkern"/);
+  assert.doesNotMatch(artwork, /kind === "adventure"/);
 
   const trainingSection = home.slice(home.indexOf('id="training-overview"'));
   assert.match(trainingSection, /<summary[\s\S]*?Trainingsübersicht & Gym-Partner/);
