@@ -35,16 +35,16 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.match(hub, /avatarUrl\s*\?/);
 });
 
-test("the planned original game remains visible but locked and non-interactive", () => {
-  const gameStart = hub.indexOf('aria-label="Spiel-App, gesperrt und noch nicht verfügbar"');
-  assert.notEqual(gameStart, -1);
-  const gameEnd = hub.indexOf("</nav>", gameStart);
-  const game = hub.slice(gameStart, gameEnd);
-  assert.match(game, /Spiel/);
-  assert.match(game, /Gesperrt/);
-  assert.match(game, /<LockKeyhole/);
-  assert.doesNotMatch(game, /<Link\b|href=|onClick=/);
-  assert.doesNotMatch(game, /\.from\(|fetch\(|\.insert\(|dispatchEvent\(/);
+test("the Home game tile requires a server-confirmed Admin check and links to the protected route", () => {
+  assert.match(home, /getAdminAreaAccess\(\)/);
+  assert.match(
+    home,
+    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/games" title="Admin-Spiele" artwork="adventure" \/>/,
+  );
+  assert.match(home, /setCanSeeAdmin\(false\)/);
+  assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated/games.tsx")));
+  assert.doesNotMatch(hub, /Spiel-App, gesperrt|LockKeyhole|Gesperrt/);
+  assert.doesNotMatch(hub, /grid-defense\.html|kupferkern\.html|srcDoc=/);
 });
 
 test("the icon artwork is square and original, and the training dashboard stays collapsible", () => {
