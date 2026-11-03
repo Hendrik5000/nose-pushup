@@ -71,7 +71,7 @@ html[data-design-style] .alo-mira-sketch-header {
   display: grid;
   width: 100%;
   min-height: 3.25rem;
-  grid-template-columns: 2.75rem 2.75rem minmax(0, 1fr) repeat(2, 2.75rem);
+  grid-template-columns: 2.75rem minmax(0, 1fr) repeat(2, 2.75rem);
   align-items: center;
   gap: 0.4rem;
   flex: 0 0 auto;
