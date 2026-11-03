@@ -19,6 +19,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAlarmRouteImport } from './routes/_authenticated/alarm'
+import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
 import { Route as AuthenticatedBattleLeagueRouteImport } from './routes/_authenticated/battle-league'
 import { Route as AuthenticatedCalisthenicsRouteImport } from './routes/_authenticated/calisthenics'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
@@ -33,6 +34,7 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedProgramsRouteImport } from './routes/_authenticated/programs'
 import { Route as AuthenticatedRunRouteImport } from './routes/_authenticated/run'
 import { Route as AuthenticatedSeasonRouteImport } from './routes/_authenticated/season'
+import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated/tools'
 import { Route as USlugRouteImport } from './routes/u.$slug'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -91,6 +93,11 @@ const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
 const AuthenticatedAlarmRoute = AuthenticatedAlarmRouteImport.update({
   id: '/alarm',
   path: '/alarm',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAreasRoute = AuthenticatedAreasRouteImport.update({
+  id: '/areas',
+  path: '/areas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedBattleLeagueRoute =
@@ -166,6 +173,11 @@ const AuthenticatedSeasonRoute = AuthenticatedSeasonRouteImport.update({
   path: '/season',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedToolsRoute = AuthenticatedToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const USlugRoute = USlugRouteImport.update({
   id: '/u/$slug',
   path: '/u/$slug',
@@ -216,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/alarm': typeof AuthenticatedAlarmRoute
+  '/areas': typeof AuthenticatedAreasRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/chat': typeof AuthenticatedChatRoute
@@ -230,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/programs': typeof AuthenticatedProgramsRoute
   '/run': typeof AuthenticatedRunRoute
   '/season': typeof AuthenticatedSeasonRoute
+  '/tools': typeof AuthenticatedToolsRoute
   '/u/$slug': typeof USlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -247,6 +261,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/alarm': typeof AuthenticatedAlarmRoute
+  '/areas': typeof AuthenticatedAreasRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/chat': typeof AuthenticatedChatRoute
@@ -261,6 +276,7 @@ export interface FileRoutesByTo {
   '/programs': typeof AuthenticatedProgramsRoute
   '/run': typeof AuthenticatedRunRoute
   '/season': typeof AuthenticatedSeasonRoute
+  '/tools': typeof AuthenticatedToolsRoute
   '/u/$slug': typeof USlugRoute
   '/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -281,6 +297,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/alarm': typeof AuthenticatedAlarmRoute
+  '/_authenticated/areas': typeof AuthenticatedAreasRoute
   '/_authenticated/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/_authenticated/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
@@ -295,6 +312,7 @@ export interface FileRoutesById {
   '/_authenticated/programs': typeof AuthenticatedProgramsRoute
   '/_authenticated/run': typeof AuthenticatedRunRoute
   '/_authenticated/season': typeof AuthenticatedSeasonRoute
+  '/_authenticated/tools': typeof AuthenticatedToolsRoute
   '/u/$slug': typeof USlugRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -316,6 +334,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ai'
     | '/alarm'
+    | '/areas'
     | '/battle-league'
     | '/calisthenics'
     | '/chat'
@@ -330,6 +349,7 @@ export interface FileRouteTypes {
     | '/programs'
     | '/run'
     | '/season'
+    | '/tools'
     | '/u/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -347,6 +367,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ai'
     | '/alarm'
+    | '/areas'
     | '/battle-league'
     | '/calisthenics'
     | '/chat'
@@ -361,6 +382,7 @@ export interface FileRouteTypes {
     | '/programs'
     | '/run'
     | '/season'
+    | '/tools'
     | '/u/$slug'
     | '/'
     | '/.lovable/oauth/consent'
@@ -380,6 +402,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/ai'
     | '/_authenticated/alarm'
+    | '/_authenticated/areas'
     | '/_authenticated/battle-league'
     | '/_authenticated/calisthenics'
     | '/_authenticated/chat'
@@ -394,6 +417,7 @@ export interface FileRouteTypes {
     | '/_authenticated/programs'
     | '/_authenticated/run'
     | '/_authenticated/season'
+    | '/_authenticated/tools'
     | '/u/$slug'
     | '/_authenticated/'
     | '/.lovable/oauth/consent'
@@ -486,6 +510,13 @@ declare module '@tanstack/react-router' {
       path: '/alarm'
       fullPath: '/alarm'
       preLoaderRoute: typeof AuthenticatedAlarmRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/areas': {
+      id: '/_authenticated/areas'
+      path: '/areas'
+      fullPath: '/areas'
+      preLoaderRoute: typeof AuthenticatedAreasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/battle-league': {
@@ -586,6 +617,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSeasonRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tools': {
+      id: '/_authenticated/tools'
+      path: '/tools'
+      fullPath: '/tools'
+      preLoaderRoute: typeof AuthenticatedToolsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/u/$slug': {
       id: '/u/$slug'
       path: '/u/$slug'
@@ -642,6 +680,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedAlarmRoute: typeof AuthenticatedAlarmRoute
+  AuthenticatedAreasRoute: typeof AuthenticatedAreasRoute
   AuthenticatedBattleLeagueRoute: typeof AuthenticatedBattleLeagueRoute
   AuthenticatedCalisthenicsRoute: typeof AuthenticatedCalisthenicsRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
@@ -656,6 +695,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProgramsRoute: typeof AuthenticatedProgramsRoute
   AuthenticatedRunRoute: typeof AuthenticatedRunRoute
   AuthenticatedSeasonRoute: typeof AuthenticatedSeasonRoute
+  AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
   AuthenticatedCaliWorkoutSkillIdRoute: typeof AuthenticatedCaliWorkoutSkillIdRoute
@@ -667,6 +707,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedAlarmRoute: AuthenticatedAlarmRoute,
+  AuthenticatedAreasRoute: AuthenticatedAreasRoute,
   AuthenticatedBattleLeagueRoute: AuthenticatedBattleLeagueRoute,
   AuthenticatedCalisthenicsRoute: AuthenticatedCalisthenicsRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
@@ -681,6 +722,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProgramsRoute: AuthenticatedProgramsRoute,
   AuthenticatedRunRoute: AuthenticatedRunRoute,
   AuthenticatedSeasonRoute: AuthenticatedSeasonRoute,
+  AuthenticatedToolsRoute: AuthenticatedToolsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
   AuthenticatedCaliWorkoutSkillIdRoute: AuthenticatedCaliWorkoutSkillIdRoute,

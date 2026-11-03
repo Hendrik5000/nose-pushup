@@ -1283,12 +1283,6 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
     white-space: normal;
   }
 
-  html[data-design-style] .alo-tablet-home-tools {
-    width: 100%;
-    max-width: 32rem;
-    margin-inline: auto;
-  }
-
   html[data-design-style] .alo-tablet-home-more > nav {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
