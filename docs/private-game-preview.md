@@ -1,21 +1,19 @@
-# Admin-only-Spiele: Grid Defense und Kupferkern
+# Grid Defense und Kupferkern: öffentlicher Spielezugang
 
 ## Zugriff und Auslieferung
 
-Die Startseiten-Kachel erscheint erst nach einer erfolgreichen, serverseitigen Adminprüfung. Das ist nur die Navigation, nicht die Sicherheitsgrenze: Die `/games`-Route prüft die Rolle erneut, und der Inhalt jedes Spiels wird ausschließlich über eine authentifizierte Serverfunktion angefordert.
+Die Route `/games` liegt außerhalb des angemeldeten Layouts und ist direkt ohne Alo-Konto erreichbar. Im angemeldeten Home erscheinen beide Spielkacheln für alle Nutzer; der separate Admin-Einstieg bleibt weiterhin von der vorhandenen serverbestätigten Adminprüfung abhängig.
 
-Die Serverfunktion akzeptiert nur die festgelegten Spiel-IDs, verlangt `requireSupabaseAuth`, lehnt fehlende oder anonyme Identitäten ab und prüft `has_global_role('admin')` im authentifizierten Supabase-Kontext. Bei fehlender Rolle, RPC-Fehlern oder einem sonstigen Fehler wird kein Spielinhalt geliefert. Antworten sind `private, no-store`.
+Die öffentliche Serverfunktion akzeptiert ausschließlich die beiden festgelegten IDs `grid-defense` und `kupferkern`. Der strikte Validator verwirft unbekannte Werte; es gibt keine dynamische Dateipfadauswahl. Diese bewusst öffentliche Auslieferung enthält keine Nutzer-, Rollen- oder Kontodaten und ruft weder Supabase Auth noch eine Datenbank oder Rollen-RPC auf. Antworten werden nicht gespeichert und erhalten `X-Content-Type-Options: nosniff`.
 
-Die eigenständigen HTML-Dateien liegen in `private-game-preview/`, nicht in `public/`. Sie werden nur serverseitig importiert und nach erfolgreicher Rollenprüfung als `srcDoc` in einem `sandbox="allow-scripts"`-Iframe ohne `allow-same-origin` angezeigt. Die Dokumente enthalten ihre eigene restriktive Content-Security-Policy und benötigen keine öffentlichen Asset-URLs.
+Die eigenständigen HTML-Quellen liegen weiter in `private-game-preview/`, nicht in `public/`. Der Build soll sie nicht als statische Website-Assets ausliefern; nur die öffentliche, allowlistgebundene Serverfunktion liefert die Spiele an Besucher aus. Das ist beabsichtigte öffentliche Spielauslieferung, kein Schutz vor Kopieren oder Herunterladen.
 
-## Revalidierung und Grenze bereits gelieferter Inhalte
+Beide Dokumente laufen als `srcDoc` in einem `sandbox="allow-scripts"`-Iframe ohne `allow-same-origin`. Ihre Content-Security-Policy blockiert Netzwerkverbindungen und externe Assets. Datenbank, Auth-Provider-Konfiguration, Rollen, RLS und die vorhandene Admin-Serverfunktion wurden nicht geändert; diese bleibt für ihre eigenen Aufrufer fail-closed.
 
-Beim Identitätswechsel sowie beim Zurückkehren in den Vordergrund wird die vorhandene Spielansicht sofort geschlossen und die Rolle erneut geprüft. Ein fehlerhafter oder negativer Check bleibt gesperrt. Es gibt bewusst kein periodisches Polling während eines laufenden Spiels, damit die Spielfläche nicht ständig neu geladen wird. Jede erneute Route oder Inhalt-Anforderung wird weiterhin serverseitig autorisiert.
+## Grenzen und Veröffentlichung
 
-Ein bereits an einen Admin-Browser ausgeliefertes HTML-Dokument kann technisch nicht nachträglich aus dessen Speicher zurückgerufen werden. Ohne ein serverseitiges Push-/Widerrufssystem kann eine Rollenentziehung in einem dauerhaft geöffneten Tab erst bei der nächsten Revalidierung erkannt werden. Die Autorisierung der Auslieferung selbst bleibt serverseitig und fail-closed.
+Die zwei Spiele laufen im Browser und verwenden für die Darstellung keine Anmeldung. Weil der Spielcode an öffentliche Besucher ausgeliefert wird, kann ein bereits geladener Spielinhalt nicht zurückgerufen werden. Die öffentliche Zusage gilt ausschließlich für Grid Defense und Kupferkern, nicht für andere Admin-Apps oder Bereiche.
 
-## Spielinhalt und Veröffentlichung
+Vor Merge oder Lovable-Veröffentlichung müssen die bestehenden ungeklärten Sicherheitsbefunde und die unerwartete „Veröffentlicht“-Anzeige separat geklärt werden. Dieser Feature-Branch wird nicht nach `main` gemergt und nicht veröffentlicht.
 
-Enthalten sind zwei eigenständige, lokal ausgeführte Spiele: **Grid Defense**, ein Tower-Defense-Spiel, und **Kupferkern**, ein Energiepfad-Puzzle. Es werden keine Datenbank-, Auth-, Rollen- oder Vercel-Einstellungen geändert. Fehlt die bestehende serverseitige Admin-Rollenbasis oder schlägt die Prüfung fehl, bleiben beide Spiele gesperrt; es wird dafür keine Datenbankänderung nachgeschoben.
-
-Vor einer Lovable-Veröffentlichung müssen das Lovable-Projekt `40995ef3-9b15-4ba7-9ebb-89713e15105b`, das Repository `Hendrik5000/nose-pushup`, der Branch `main` und der exakte veröffentlichte Commit eindeutig übereinstimmen. Ein Lovable-Sicherheitsblocker wird nicht umgangen.
+Diese Neufassungen sind keine rechtliche Freigabe. Vor einer Weitergabe oder Veröffentlichung sind eigenständige Rechte-, Marken-, Text- und Gestaltungsprüfungen erforderlich.
