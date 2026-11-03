@@ -35,21 +35,30 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.match(hub, /avatarUrl\s*\?/);
 });
 
-test("the Home exposes two separate game icons only after a server-confirmed Admin check", () => {
+test("the Home exposes both game icons independently of the separate Admin check", () => {
   assert.match(home, /getAdminAreaAccess\(\)/);
-  const gatedGameIcons = home.match(/\{canSeeAdmin\s*&&\s*\([\s\S]*?\)\}/)?.[0] ?? "";
+  const adminTile =
+    home.match(/\{canSeeAdmin\s*&&\s*<HubAppIcon to="\/admin"[\s\S]*?\/>\}/)?.[0] ?? "";
+  assert.match(adminTile, /title="Admin"/);
+  assert.doesNotMatch(adminTile, /HubGameAppIcon/);
+  const gamesStart = home.indexOf('<HubGameAppIcon game="grid-defense"');
+  const gamesEnd = home.indexOf("</nav>", gamesStart);
+  const publicGameIcons = home.slice(gamesStart, gamesEnd);
+  assert.notEqual(gamesStart, -1);
   assert.match(
-    gatedGameIcons,
+    publicGameIcons,
     /<HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" \/>/,
   );
   assert.match(
-    gatedGameIcons,
+    publicGameIcons,
     /<HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" \/>/,
   );
+  assert.doesNotMatch(publicGameIcons, /canSeeAdmin/);
   assert.match(home, /function HubGameAppIcon[\s\S]*?to="\/games"[\s\S]*?search=\{\{ game \}\}/);
   assert.doesNotMatch(home, /title="Admin-Spiele"/);
   assert.match(home, /setCanSeeAdmin\(false\)/);
-  assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated/games.tsx")));
+  assert.ok(existsSync(resolve(process.cwd(), "src/routes/games.tsx")));
+  assert.equal(existsSync(resolve(process.cwd(), "src/routes/_authenticated/games.tsx")), false);
   assert.doesNotMatch(hub, /Spiel-App, gesperrt|LockKeyhole|Gesperrt/);
   assert.doesNotMatch(hub, /grid-defense\.html|kupferkern\.html|srcDoc=/);
 });

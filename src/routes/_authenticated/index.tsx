@@ -174,12 +174,8 @@ function HomeAppHub({
         <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
         <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
         {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
-        {canSeeAdmin && (
-          <>
-            <HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" />
-            <HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" />
-          </>
-        )}
+        <HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" />
+        <HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" />
       </nav>
       <div className="alo-tablet-home-tools mt-4 grid grid-cols-2 gap-2">
         <button
