@@ -5,6 +5,7 @@ import { test } from "node:test";
 
 const homePath = resolve(process.cwd(), "src/routes/_authenticated/index.tsx");
 const home = readFileSync(homePath, "utf8");
+const homeStyles = readFileSync(resolve(process.cwd(), "src/alo-mobile.css"), "utf8");
 const hubStart = home.indexOf("function HomeAppHub");
 const artworkStart = home.indexOf("function HubArtwork");
 const dashboardStart = home.indexOf("function Dashboard", artworkStart);
@@ -27,12 +28,94 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
     );
   }
 
-  assert.match(hub, /grid-cols-4[\s\S]*?sm:grid-cols-5/);
-  assert.match(hub, /aspect-square w-full max-w-\[72px\]/);
+  assert.match(hub, /alo-tablet-home-apps grid[^"]*grid-cols-4/);
+  assert.doesNotMatch(hub, /sm:grid-cols-5/);
+  assert.match(hub, /aspect-square w-full max-w-\[96px\]/);
   assert.match(hub, /aria-label="Freunde öffnen"/);
   assert.match(hub, /to="\/profile"\s+hash="profile-training"/);
   assert.match(hub, /aria-label="Profil und Einstellungen öffnen"/);
   assert.match(hub, /avatarUrl\s*\?/);
+});
+
+test("search is a labeled icon action in the header while Alo tools remain a full-width action", () => {
+  const header = hub.slice(hub.indexOf("<header"), hub.indexOf("</header>"));
+  const tools = hub.slice(
+    hub.indexOf("alo-tablet-home-tools"),
+    hub.indexOf('id="more-areas-panel"'),
+  );
+  assert.match(header, /aria-label="Überall suchen"/);
+  assert.match(header, /<Search className/);
+  assert.match(header, /detail: "search"/);
+  assert.doesNotMatch(header, />\s*Überall suchen\s*</);
+  assert.match(tools, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(tools, /w-full/);
+  assert.doesNotMatch(tools, /Überall suchen|detail: "search"/);
+});
+
+test("the other-areas app tile opens a labeled panel with all existing destinations", () => {
+  const panelStart = hub.indexOf('id="more-areas-panel"');
+  const moreAreas = hub.slice(panelStart);
+  assert.match(hub, /aria-expanded=\{moreAreasOpen\}/);
+  assert.match(hub, /aria-controls="more-areas-panel"/);
+  assert.match(hub, /title="Weitere Bereiche" artwork="more"/);
+  assert.match(hub, /Weitere Bereiche öffnen \(\$\{MORE_AREAS\.length\}\)/);
+  assert.match(moreAreas, /alo-tablet-home-more/);
+  assert.match(moreAreas, /hidden=\{!moreAreasOpen\}/);
+  assert.match(moreAreas, /<h2[^>]*>\s*Weitere Bereiche/);
+  assert.match(moreAreas, /MORE_AREAS\.length/);
+  assert.match(moreAreas, /aria-label="Weitere Alo-Bereiche"/);
+  assert.match(moreAreas, /MORE_AREAS\.map/);
+});
+
+test("the Training & Gym app tile opens the existing training and partner overview", () => {
+  assert.match(hub, /aria-label="Trainingsübersicht & Gym öffnen"/);
+  assert.match(hub, /title="Trainingsübersicht & Gym" artwork="training"/);
+  assert.match(home, /onOpenTrainingOverview=\{openTrainingOverview\}/);
+  assert.match(home, /overview\.open = true/);
+  assert.match(home, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
+  const trainingSection = home.slice(home.indexOf('id="training-overview"'));
+  assert.match(trainingSection, /<GymPartnerPanel \/>/);
+  assert.match(trainingSection, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
+});
+
+test("Home Mira voice overlay hands an editable question to the existing Mira app", () => {
+  const launcherStart = home.indexOf("function MiraOverlayLauncher");
+  const launcherEnd = home.indexOf("type HubArtworkKind", launcherStart);
+  const launcher = home.slice(launcherStart, launcherEnd);
+  const voiceDialog = readFileSync(
+    resolve(process.cwd(), "src/components/mira/MiraVoiceChatDialog.tsx"),
+    "utf8",
+  );
+  const handoff = readFileSync(
+    resolve(process.cwd(), "src/components/alo/MiraHandoff.tsx"),
+    "utf8",
+  );
+  const miraRoute = readFileSync(
+    resolve(process.cwd(), "src/routes/_authenticated/ai.tsx"),
+    "utf8",
+  );
+
+  assert.notEqual(launcherStart, -1);
+  assert.match(launcher, /createBrowserSpeechRecognitionFactory/);
+  assert.match(launcher, /<MiraVoiceChatDialog/);
+  assert.match(launcher, /onContinue=\{continueToMira\}/);
+  assert.match(launcher, /<MiraHandoff[\s\S]*?text=\{handoffRequest\.text\}/);
+  assert.match(launcher, /openOnMount/);
+  assert.doesNotMatch(launcher, /<SuperAiPage|superAiChat|submit\(/);
+  assert.match(voiceDialog, /Erkannten Text bearbeiten/);
+  assert.match(voiceDialog, /Mira wird nicht automatisch kontaktiert/);
+  assert.doesNotMatch(handoff, /superAiChat|fetch\(|submit\(/);
+  assert.match(miraRoute, /<SuperAiPage sketchLayout \/>/);
+});
+
+test("tablet Home keeps the narrow centered canvas, four-icon row, and matching training card", () => {
+  assert.match(home, /max-w-\[32rem\]/);
+  assert.match(homeStyles, /main\.alo-tablet-home-page\s*\{\s*max-width:\s*32rem;/);
+  assert.match(homeStyles, /\.alo-tablet-home-apps\s*\{\s*grid-template-columns:\s*repeat\(4,/);
+  assert.match(
+    homeStyles,
+    /\.alo-tablet-home-page #training-overview\s*\{[\s\S]*?max-width:\s*32rem;/,
+  );
 });
 
 test("the Home exposes two separate game icons only after a server-confirmed Admin check", () => {
@@ -64,6 +147,8 @@ test("the icon artwork is square and original, and the training dashboard stays 
   assert.match(artwork, /kind === "settings"/);
   assert.match(artwork, /kind === "gridDefense"/);
   assert.match(artwork, /kind === "kupferkern"/);
+  assert.match(artwork, /kind === "more"/);
+  assert.match(artwork, /kind === "training"/);
   assert.doesNotMatch(artwork, /kind === "adventure"/);
 
   const trainingSection = home.slice(home.indexOf('id="training-overview"'));
