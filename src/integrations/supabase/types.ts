@@ -732,6 +732,39 @@ export type Database = {
         }
         Relationships: []
       }
+      meal_logs: {
+        Row: {
+          created_at: string
+          day: string
+          id: string
+          kcal: number
+          protein_g: number
+          tip: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day?: string
+          id?: string
+          kcal?: number
+          protein_g?: number
+          tip?: string | null
+          title?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          id?: string
+          kcal?: number
+          protein_g?: number
+          tip?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       message_reactions: {
         Row: {
           created_at: string
