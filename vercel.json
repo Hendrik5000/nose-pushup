@@ -4,7 +4,6 @@
   "installCommand": "npm ci --no-audit --no-fund",
   "framework": null,
   "github": { "silent": true },
-  "git": { "deploymentEnabled": { "cue/grid-defense-20261102": false } },
   "headers": [
     {
       "source": "/manifest.webmanifest",
