@@ -8,11 +8,20 @@
   "id": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "display_override": [
+    "fullscreen",
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait",
   "background_color": "#0b1017",
   "theme_color": "#0b1017",
-  "categories": ["productivity", "social", "health", "fitness"],
+  "categories": [
+    "productivity",
+    "social",
+    "health",
+    "fitness"
+  ],
   "prefer_related_applications": false,
   "icons": [
     {
@@ -33,6 +42,17 @@
       "name": "Nose-Pushup starten",
       "short_name": "Training",
       "url": "/",
+      "icons": [
+        {
+          "src": "/alo-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Lauf starten",
+      "short_name": "Laufen",
+      "url": "/run",
       "icons": [
         {
           "src": "/alo-icon-192.png",
