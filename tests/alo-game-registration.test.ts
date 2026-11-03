@@ -12,10 +12,17 @@ const accessHook = readFileSync(resolve(root, "src/lib/use-private-game-access.t
 
 test("Home surfaces the game hub only after a server-confirmed Admin check", () => {
   assert.match(home, /getAdminAreaAccess\(\)/);
+  const gatedGameIcons = home.match(/\{canSeeAdmin\s*&&\s*\([\s\S]*?\)\}/)?.[0] ?? "";
   assert.match(
-    home,
-    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/games" title="Admin-Spiele" artwork="adventure" \/>/,
+    gatedGameIcons,
+    /<HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" \/>/,
   );
+  assert.match(
+    gatedGameIcons,
+    /<HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" \/>/,
+  );
+  assert.match(home, /function HubGameAppIcon[\s\S]*?to="\/games"[\s\S]*?search=\{\{ game \}\}/);
+  assert.doesNotMatch(home, /title="Admin-Spiele"/);
   assert.match(home, /setCanSeeAdmin\(false\)/);
   assert.match(home, /\}, \[user\.id\]\)/);
   assert.match(

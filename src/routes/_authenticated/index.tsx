@@ -2,6 +2,7 @@ import { progressState } from "@/lib/alo-ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
+import type { PrivateGameId } from "@/lib/private-game-policy";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { ALARM_SETTINGS_EVENT, readSavedAlarmSettings, type AlarmSettings } from "@/lib/alarm";
@@ -173,7 +174,12 @@ function HomeAppHub({
         <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
         <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
         {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
-        {canSeeAdmin && <HubAppIcon to="/games" title="Admin-Spiele" artwork="adventure" />}
+        {canSeeAdmin && (
+          <>
+            <HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" />
+            <HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" />
+          </>
+        )}
       </nav>
       <div className="alo-tablet-home-tools mt-4 grid grid-cols-2 gap-2">
         <button
@@ -225,43 +231,71 @@ function HomeAppHub({
   );
 }
 
+type HubArtworkKind =
+  "mira" | "nexus" | "health" | "settings" | "admin" | "gridDefense" | "kupferkern";
+
+const HUB_APP_ICON_CLASS_NAME =
+  "group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+
 function HubAppIcon({
   to,
   title,
   artwork,
 }: {
-  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin" | "/games";
+  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin";
   title: string;
-  artwork: "mira" | "nexus" | "health" | "settings" | "admin" | "adventure";
+  artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
+}) {
+  return (
+    <Link to={to} aria-label={`${title} öffnen`} className={HUB_APP_ICON_CLASS_NAME}>
+      <HubAppIconContents title={title} artwork={artwork} />
+    </Link>
+  );
+}
+
+function HubGameAppIcon({
+  game,
+  title,
+  artwork,
+}: {
+  game: PrivateGameId;
+  title: string;
+  artwork: "gridDefense" | "kupferkern";
 }) {
   return (
     <Link
-      to={to}
+      to="/games"
+      search={{ game }}
       aria-label={`${title} öffnen`}
-      className="group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      className={HUB_APP_ICON_CLASS_NAME}
     >
+      <HubAppIconContents title={title} artwork={artwork} />
+    </Link>
+  );
+}
+
+function HubAppIconContents({ title, artwork }: { title: string; artwork: HubArtworkKind }) {
+  return (
+    <>
       <span className="relative grid aspect-square w-full max-w-[72px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg">
         <HubArtwork kind={artwork} />
       </span>
       <span className="max-w-[84px] truncate text-[10px] font-medium leading-tight text-foreground sm:text-xs">
         {title}
       </span>
-    </Link>
+    </>
   );
 }
 
-function HubArtwork({
-  kind,
-}: {
-  kind: "mira" | "nexus" | "health" | "settings" | "admin" | "adventure";
-}) {
+function HubArtwork({ kind }: { kind: HubArtworkKind }) {
   const palettes = {
     mira: { bg: "#211c37", accent: "#c4b5fd", glow: "#8b5cf6" },
     nexus: { bg: "#122d3a", accent: "#67e8f9", glow: "#0ea5e9" },
     health: { bg: "#15352e", accent: "#86efac", glow: "#10b981" },
     settings: { bg: "#3a2e1e", accent: "#fcd34d", glow: "#f59e0b" },
     admin: { bg: "#182b3b", accent: "#a5d8ff", glow: "#38bdf8" },
-    adventure: { bg: "#30233d", accent: "#f0abfc", glow: "#c026d3" },
+    gridDefense: { bg: "#152b32", accent: "#a7f3d0", glow: "#22c55e" },
+    kupferkern: { bg: "#38251c", accent: "#fdba74", glow: "#c2410c" },
   } as const;
   const palette = palettes[kind];
 
@@ -384,18 +418,40 @@ function HubArtwork({
           />
         </>
       )}
-      {kind === "adventure" && (
+      {kind === "gridDefense" && (
         <>
-          <path d="M0 100 70 48l42 32 58-52 110 78v26H0Z" fill={palette.glow} opacity=".42" />
-          <path d="m46 105 53-49 39 31 40-42 58 60Z" fill={palette.accent} opacity=".78" />
-          <circle cx="202" cy="35" r="15" fill={palette.accent} opacity=".88" />
           <path
-            d="M140 46v27m-13-13.5h26"
-            stroke="#fff"
-            strokeWidth="4"
-            strokeLinecap="round"
-            opacity=".9"
+            d="M88 42h104M88 66h104M88 90h104M108 34v72M140 34v72M172 34v72"
+            stroke={palette.accent}
+            strokeOpacity=".28"
+            strokeWidth="2"
           />
+          <path d="M119 90V68h42v22Z" fill={palette.glow} opacity=".72" />
+          <path d="M129 68V54l11-20 11 20v14Z" fill={palette.accent} />
+          <path
+            d="M140 44v12m-6-6h12"
+            stroke="#fff"
+            strokeWidth="3"
+            strokeLinecap="round"
+            opacity=".92"
+          />
+        </>
+      )}
+      {kind === "kupferkern" && (
+        <>
+          <path
+            d="M88 43h24l13 23h30l13-23h24M88 89h24l13-23h30l13 23h24"
+            fill="none"
+            stroke={palette.accent}
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity=".72"
+          />
+          <circle cx="140" cy="66" r="29" fill={palette.glow} opacity=".25" />
+          <circle cx="140" cy="66" r="18" fill={palette.glow} />
+          <circle cx="140" cy="66" r="8" fill={palette.accent} />
+          <circle cx="140" cy="66" r="3" fill="#fff" />
         </>
       )}
       <path d="M18 18h22" stroke="#fff" strokeOpacity=".22" strokeWidth="3" strokeLinecap="round" />
