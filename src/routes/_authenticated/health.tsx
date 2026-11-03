@@ -9,6 +9,7 @@ import { AloPageSidebar, AloPageSidebarTrigger } from "@/components/alo/AloPageS
 import { SmartwatchPanel } from "@/components/SmartwatchPanel";
 import { HealthConnectPanel } from "@/components/HealthConnectPanel";
 import { WeightTrendCard } from "@/components/WeightTrendCard";
+import { MealPhotoCard } from "@/components/MealPhotoCard";
 import { SleepDebtCard } from "@/components/SleepDebtCard";
 import { WeeklyStepsGoal } from "@/components/WeeklyStepsGoal";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
@@ -240,6 +241,7 @@ function HealthPage() {
                 className="health-classic-widget-card health-classic-sleep-widget"
               >
                 <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
+                <MealPhotoCard />
               </div>
               <div className="health-classic-widget-card">
                 <WeightTrendCard
@@ -518,6 +520,7 @@ function HealthPage() {
             <div className="space-y-5">
               <WeeklyStepsGoal todaySteps={glanceSteps} />
               <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
+                <MealPhotoCard />
             </div>
             <WeightTrendCard
               points={entries
