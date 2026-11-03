@@ -19,16 +19,11 @@ import { runMiraPowerAction } from "@/lib/mira-power-runner";
 import { miraMemorySystemBlock } from "@/lib/mira-memory";
 import { loadPersonaMix, personaMixSystemBlock } from "@/lib/mira-power-features";
 import { MiraRunwareResult } from "@/components/alo/MiraRunwareResult";
-import { MiraSources } from "@/components/alo/MiraSources";
 import {
-  Lightbulb,
-  PenLine,
-  BookOpen,
   Mic,
   ArrowUp,
   Plus,
   Settings2,
-  ArrowUpRight,
   House,
   Headphones,
   UserRound,
@@ -919,14 +914,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             <AloPageSidebarTrigger />
             {sketchLayout ? (
               <>
-                <Link
-                  to="/"
-                  className="alo-mira-sketch-control"
-                  aria-label="Zur Alo-Startseite"
-                  title="Startseite"
-                >
-                  <House aria-hidden="true" />
-                </Link>
                 <div className="alo-mira-sketch-meta" aria-live="polite" aria-atomic="true">
                   <h1 className="alo-mira-sketch-title">{activeTitle}</h1>
                   <span className="alo-mira-sketch-provider">
@@ -1084,7 +1071,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           <div
             className={`alo-classic-composer mt-2 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur ${sketchLayout ? "alo-mira-sketch-composer-wrap" : ""}`}
           >
-            {userId && <MiraSources userId={userId} />}
             <MiraAttachmentPreview
               items={attachments}
               onChange={setAttachments}
@@ -1519,14 +1505,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           {sketchLayout && sportAiView === "chat" && (
             <header className="alo-mira-sketch-header">
               <AloPageSidebarTrigger />
-              <Link
-                to="/"
-                className="alo-mira-sketch-control"
-                aria-label="Zur Alo-Startseite"
-                title="Startseite"
-              >
-                <House aria-hidden="true" />
-              </Link>
               <div className="alo-mira-sketch-meta" aria-live="polite" aria-atomic="true">
                 <h1 className="alo-mira-sketch-title">{activeTitle}</h1>
                 <span className="alo-mira-sketch-provider">
@@ -1892,7 +1870,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           {sportAiView === "chat" && (
             <div className="sport-ai-chat-grid">
               <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
-                <details className="sport-ai-chat-options">
+                <details className="sport-ai-chat-options" hidden={sketchLayout}>
                   <summary>Gesprächsoptionen</summary>
                   <div className="mira-chat-control-panel">
                     <div className="mira-chat-quick-actions" aria-label="Mira-Aktionen">
@@ -2046,45 +2024,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                         Hallo{profileName ? ` ${profileName}` : ""}, wobei kann ich helfen?
                       </h3>
                       <p>Was möchtest du heute angehen?</p>
-                      <div
-                        className="ai-starter-grid"
-                        role="group"
-                        aria-label="Mit einer Aufgabe starten"
-                      >
-                        {[
-                          {
-                            id: "ideas",
-                            icon: Lightbulb,
-                            hint: "Neue Ideen für dein Vorhaben",
-                          },
-                          {
-                            id: "draft",
-                            icon: PenLine,
-                            hint: "Einen passenden Text schreiben",
-                          },
-                          { id: "explain", icon: BookOpen, hint: "Komplexes einfach verstehen" },
-                        ].map(({ id, icon: Icon, hint }) => {
-                          const tool = SUPER_TOOLS.find((item) => item.id === id)!;
-                          return (
-                            <button
-                              key={id}
-                              type="button"
-                              className="ai-starter-card"
-                              onClick={() => setInput(tool.prompt)}
-                            >
-                              <Icon aria-hidden="true" />
-                              <span>
-                                <strong>{tool.label}</strong>
-                                <small>{hint}</small>
-                              </span>
-                              <ArrowUpRight aria-hidden="true" />
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <span className="ai-starter-hint">
-                        Vorschlag wählen, anpassen und senden.
-                      </span>
                     </div>
                   )}
                   {messages.map((m, i) => (
@@ -2309,7 +2248,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     {error}
                   </div>
                 )}
-                {userId && <MiraSources userId={userId} />}
                 <MiraAttachmentPreview
                   items={attachments}
                   onChange={setAttachments}
@@ -2369,13 +2307,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     <ArrowUp className="h-5 w-5" aria-hidden="true" />
                   </button>
                 </form>
-                <details className="mira-file-help text-[10px] text-muted-foreground">
-                  <summary>Anhänge bleiben lokal, bis du sendest · Dateilimits</summary>
-                  <p>
-                    Bis 4 Anhänge, zusammen 3 MB. Bilder/PDF je 1 MB; Text je 128 KB, zusammen 6000
-                    Zeichen. PDF: Google. Word/Excel als PDF, TXT oder CSV exportieren.
-                  </p>
-                </details>
               </div>
               <aside className="sport-ai-chat-aside flex flex-col gap-4 lg:sticky lg:top-5">
                 <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-5">

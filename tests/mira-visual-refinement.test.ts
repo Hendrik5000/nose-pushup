@@ -35,26 +35,40 @@ test("quiet navy colors stay local to Mira and the authenticated shell has no sh
   assert.match(page, /sport-ai-page/);
 });
 
-test("three concise starter tasks only prepare an editable draft", () => {
-  const start = page.indexOf('aria-label="Mit einer Aufgabe starten"');
-  const starters = page.slice(start, page.indexOf("{messages.map", start));
-  for (const id of ["ideas", "draft", "explain"]) assert.ok(starters.includes(`id: "${id}"`));
-  for (const icon of ["Lightbulb", "PenLine", "BookOpen"]) assert.ok(starters.includes(icon));
-  assert.match(starters, /onClick=\{\(\) => setInput\(tool.prompt\)\}/);
-  assert.doesNotMatch(starters, /submit\(|send\(|runMiraPowerAction\(/);
-  assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
-  assert.match(css, /@media \(min-width: 768px\)/);
+test("the separate Workspace tools remain available without welcome starter cards", () => {
+  assert.match(page, /toolsExpanded \? SUPER_TOOLS : SUPER_TOOLS\.slice\(0, 3\)/);
+  assert.match(page, /setInput\(t\.prompt\)/);
+  assert.doesNotMatch(page, /aria-label="Mit einer Aufgabe starten"/);
 });
 
-test("Mira keeps Home and provider status in the upper header and hides its duplicate compact footer", () => {
+test("Mira welcome keeps the greeting and spark without the removed starter cards or helper", () => {
+  assert.match(page, /messages\.length === 0 && \(\s*<div className="ai-welcome/);
+  assert.match(page, /<MiraSpark \/>/);
+  assert.match(page, /Hallo\{profileName \? ` \$\{profileName\}` : ""\}, wobei kann ich helfen\?/);
+  assert.doesNotMatch(
+    page,
+    /className="ai-starter-grid"|className="ai-starter-card"|ai-starter-hint/,
+  );
+  assert.doesNotMatch(page, /Vorschlag wählen, anpassen und senden\./);
+});
+
+test("Mira compact header removes its Home house while separate Home navigation remains", () => {
   assert.doesNotMatch(page, /sport-ai-compact-heading|sport-ai-chat-actions/);
   const headerStart = page.indexOf('sketchLayout ? "alo-mira-sketch-header"');
   const headerEnd = page.indexOf("<MiraGithubRepository />", headerStart);
   const header = page.slice(headerStart, headerEnd);
+  const compactStart = header.indexOf("{sketchLayout ? (");
+  const compactEnd = header.indexOf(") : (", compactStart);
+  const compactHeader = header.slice(compactStart, compactEnd);
   assert.ok(headerStart >= 0, "compact Mira should render its own chat header");
-  assert.match(header, /aria-label="Zur Alo-Startseite"/);
-  assert.match(header, /alo-mira-sketch-title/);
-  assert.match(header, /alo-mira-sketch-provider/);
+  assert.match(header, /<AloPageSidebarTrigger \/>/);
+  assert.doesNotMatch(compactHeader, /aria-label="Zur Alo-Startseite"|<House/);
+  assert.match(compactHeader, /alo-mira-sketch-title/);
+  assert.match(compactHeader, /alo-mira-sketch-provider/);
+  assert.match(
+    page,
+    /\{!sketchLayout && \(\s*<div className="mira-chat-bottom-row">[\s\S]*?<Link\s+to="\/"/,
+  );
   assert.match(page, /\{!sketchLayout && \(\s*<div className="mira-chat-bottom-row">/);
   const homeRow = css.slice(
     css.indexOf(".mira-chat-bottom-row {"),
@@ -64,23 +78,36 @@ test("Mira keeps Home and provider status in the upper header and hides its dupl
   assert.doesNotMatch(homeRow, /position:\s*(fixed|sticky|absolute)/);
 });
 
-test("Mira's compact header keeps menu, Home, short chat title/provider status, profile and settings", () => {
+test("Mira compact header keeps menu, title/provider, profile and settings", () => {
   const headerStart = page.indexOf('sketchLayout ? "alo-mira-sketch-header"');
   const headerEnd = page.indexOf("<MiraGithubRepository />", headerStart);
   const header = page.slice(headerStart, headerEnd);
+  const compactTitleStart = header.indexOf("{sketchLayout ? (");
+  const compactTitleEnd = header.indexOf(") : (", compactTitleStart);
+  const compactControlsStart = header.indexOf("{sketchLayout ? (", compactTitleEnd + 1);
+  const compactControlsEnd = header.indexOf(") : (", compactControlsStart);
+  const compactHeader =
+    header.slice(compactTitleStart, compactTitleEnd) +
+    header.slice(compactControlsStart, compactControlsEnd);
+  const sportHeaderStart = page.indexOf('<header className="alo-mira-sketch-header">');
+  const sportHeaderEnd = page.indexOf("</header>", sportHeaderStart);
+  const sportHeader = page.slice(sportHeaderStart, sportHeaderEnd);
   const overlay = read("mira-home-overlay.css");
 
   assert.notEqual(headerStart, -1);
   assert.match(header, /<AloPageSidebarTrigger \/>/);
-  assert.match(header, /aria-label="Zur Alo-Startseite"/);
-  assert.match(header, /alo-mira-sketch-title/);
-  assert.match(header, /alo-mira-sketch-provider/);
-  assert.match(header, /aria-label="Profil öffnen"/);
-  assert.match(header, /aria-label="Mira-Einstellungen öffnen"/);
-  assert.match(
-    overlay,
-    /grid-template-columns: 2\.75rem 2\.75rem minmax\(0, 1fr\) repeat\(2, 2\.75rem\)/,
-  );
+  assert.doesNotMatch(compactHeader, /aria-label="Zur Alo-Startseite"|<House/);
+  assert.match(compactHeader, /alo-mira-sketch-title/);
+  assert.match(compactHeader, /alo-mira-sketch-provider/);
+  assert.match(compactHeader, /aria-label="Profil öffnen"/);
+  assert.match(compactHeader, /aria-label="Mira-Einstellungen öffnen"/);
+  assert.ok(sportHeaderStart >= 0);
+  assert.match(sportHeader, /<AloPageSidebarTrigger \/>/);
+  assert.doesNotMatch(sportHeader, /aria-label="Zur Alo-Startseite"|<House/);
+  assert.match(sportHeader, /alo-mira-sketch-title/);
+  assert.match(sportHeader, /aria-label="Profil öffnen"/);
+  assert.match(sportHeader, /aria-label="Mira-Einstellungen öffnen"/);
+  assert.match(overlay, /grid-template-columns: 2\.75rem minmax\(0, 1fr\) repeat\(2, 2\.75rem\)/);
   assert.match(overlay, /width: 2\.75rem;[\s\S]*?height: 2\.75rem;/);
 });
 
@@ -101,6 +128,8 @@ test("conversation metadata, privacy, history and favorites remain reachable", (
     "Technische Details",
   ])
     assert.ok(page.includes(label));
+  assert.match(page, /<details className="sport-ai-chat-options" hidden=\{sketchLayout\}>/);
+  assert.doesNotMatch(page, /<MiraSources|Quellen: aus · nur dein Mira-Chat/);
   const options = page.slice(
     page.indexOf('className="sport-ai-chat-options"'),
     page.indexOf('className="sport-chat-stage'),
@@ -118,6 +147,7 @@ test("conversation metadata, privacy, history and favorites remain reachable", (
     assert.ok(options.includes(feature), `missing chat control: ${feature}`);
   assert.match(page, /function MiraPrivacySettings\(/);
   assert.match(page, /settingsOpen &&[\s\S]*?<MiraPrivacySettings/);
+  assert.match(page, /<MiraContextControls userId=\{userId\} \/>/);
   assert.match(page, /Beim Senden gehen deine Frage und der aktuelle Mira-Chatverlauf/);
   assert.doesNotMatch(page, /Kontext beim Senden|Welche App-Daten gehen mit\?/);
 });
@@ -132,10 +162,15 @@ test("attachment preview, explicit submit, microphone and accessible file limits
   assert.match(chat, /aria-label="Freisprechgespräch mit Mira öffnen"/);
   assert.match(chat, /aria-label="Diktierfunktion öffnen"/);
   assert.match(chat, /onClick=\{\(\) => handleVoiceChatOpenChange\(true\)\}/);
-  assert.match(chat, /disabled=\{loading \|\| \(!input.trim\(\) && !attachments.length\)\}/);
-  assert.match(chat, /<details className="mira-file-help/);
-  for (const limit of ["4 Anhänge", "3 MB", "1 MB", "128 KB", "6000", "PDF: Google"])
-    assert.ok(chat.includes(limit));
+  assert.match(chat, /disabled=\{loading \|\| \(!input\.trim\(\) && !attachments\.length\)\}/);
+  assert.doesNotMatch(chat, /mira-file-help|Anhänge bleiben lokal, bis du sendest/);
+  const composerStart = chat.indexOf("className={`sport-chat-composer");
+  const composer = chat.slice(composerStart, chat.indexOf("</form>", composerStart));
+  assert.match(composer, /<MiraAttachmentPicker/);
+  assert.match(composer, /<Headphones aria-hidden="true" \/>/);
+  assert.match(composer, /<Mic className="h-5 w-5" aria-hidden="true" \/>/);
+  assert.match(composer, /aria-label="Nachricht senden"/);
+  assert.doesNotMatch(composer, /<Plus\b/);
 });
 
 test("small-screen chat keeps a non-floating composer, scrollable messages and safe-area padding", () => {
