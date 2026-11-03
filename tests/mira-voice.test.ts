@@ -32,8 +32,8 @@ test("Sprachdialog hält den Text editierbar und sendet ihn nicht selbst", () =>
   const dialog = readFileSync("src/components/mira/MiraVoiceChatDialog.tsx", "utf8");
   const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
   const submitStart = page.indexOf("const submit = async");
-  const regenerateStart = page.indexOf("const regenerate =", submitStart);
-  const submitHandler = page.slice(submitStart, regenerateStart);
+  const submitEnd = page.indexOf("const messagesRef = useRef(messages);", submitStart);
+  const submitHandler = page.slice(submitStart, submitEnd);
 
   assert.equal((page.match(/aria-label="Sprachdialog mit Mikrofon öffnen"/g) ?? []).length, 2);
   assert.doesNotMatch(page, /onClick=\{toggleVoice\}/);
