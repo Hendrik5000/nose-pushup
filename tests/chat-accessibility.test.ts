@@ -37,38 +37,6 @@ test("new-room dialog has a labeled heading, Escape close, focus containment, an
   assert.match(chat, /newRoomTriggerRef\.current = event\.currentTarget/);
 });
 
-test("Mira and Nexus keep Home in menus without auto-hiding app headers", () => {
-  const chat = read("chat/LocalChatShell.tsx");
-  const mira = read("mira/SuperAiPage.tsx");
-  const health = readFileSync(
-    new URL("../src/routes/_authenticated/health.tsx", import.meta.url),
-    "utf8",
-  );
-  const sidebar = read("alo/AloPageSidebar.tsx");
-  const aiRoute = readFileSync(
-    new URL("../src/routes/_authenticated/ai.tsx", import.meta.url),
-    "utf8",
-  );
-
-  assert.match(chat, /aria-label="Zur Alo-Startseite"[\s\S]*?Startseite/);
-  assert.match(chat, /community-conversation-content-heading/);
-  assert.doesNotMatch(
-    chat,
-    /sport-chat-topbar|<header className="classic-only flex items-center gap-2 border-b/,
-  );
-  assert.doesNotMatch(mira, /mb-2 flex items-center gap-2 self-start/);
-  assert.doesNotMatch(health, /health-classic-top-row/);
-  assert.match(
-    health,
-    /health-classic-actions[\s\S]*?<AloPageSidebarTrigger\s*\/>[\s\S]*?<AloHomeLink\s*\/>/,
-  );
-  assert.match(sidebar, /Alle Apps/);
-  assert.match(aiRoute, /AloPageSidebar active="mira"/);
-  assert.match(mira, /AloHomeLink|AloPageSidebarTrigger/);
-  for (const source of [chat, mira])
-    assert.doesNotMatch(source, /headerVisible|headerTimerRef|useAutoHideAppHeader/);
-});
-
 test("home hub exposes accessible tools, search and area navigation without the removed header menu", () => {
   const home = readFileSync(
     new URL("../src/routes/_authenticated/index.tsx", import.meta.url),

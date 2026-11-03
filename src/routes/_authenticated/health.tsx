@@ -123,14 +123,19 @@ function HealthPage() {
       <DesignView variant="classic">
         <main className="classic-only health-classic-dashboard alo-tablet-health mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-4 pt-5 pb-28 sm:px-8">
           <header className="health-classic-header">
+            <div className="health-classic-top-row">
+              <div className="flex items-center gap-2">
+                <AloPageSidebarTrigger />
+                <AloHomeLink className="px-2 text-[10px]" />
+              </div>
+              <span className="health-classic-brand-pill">
+                <HeartPulse aria-hidden="true" /> Alo Health
+              </span>
+            </div>
             <p className="health-classic-kicker">DEIN WOHLBEFINDEN</p>
             <h1>Gesundheit im Blick</h1>
             <p>Schritte, Schlaf und Aktivität – mit deinen echten Messwerten an einem Ort.</p>
           </header>
-          <div className="health-classic-actions flex flex-wrap items-center gap-2 self-start">
-            <AloPageSidebarTrigger />
-            <AloHomeLink />
-          </div>
           <nav
             className="health-category-nav health-classic-category-nav"
             aria-label="Gesundheitsbereiche"

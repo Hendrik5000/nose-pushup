@@ -101,7 +101,7 @@ export function DashboardGrid({
             setEditing((e) => !e);
             setAddOpen(false);
           }}
-          className={`min-h-11 rounded-full px-4 py-2 text-xs font-semibold transition ${
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
             editing
               ? "bg-primary text-primary-foreground"
               : "border border-border bg-secondary/50 text-muted-foreground"
@@ -114,7 +114,7 @@ export function DashboardGrid({
             <button
               type="button"
               onClick={() => setAddOpen((v) => !v)}
-              className="min-h-11 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary"
+              className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
             >
               + Widget
             </button>
@@ -124,7 +124,7 @@ export function DashboardGrid({
                 setLayout(resetLayout());
                 setAddOpen(false);
               }}
-              className="min-h-11 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground"
+              className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground"
             >
               Standard
             </button>
@@ -148,7 +148,7 @@ export function DashboardGrid({
                   <button
                     type="button"
                     onClick={() => add(w.id)}
-                    className="min-h-11 w-full rounded-xl border border-border bg-secondary/40 px-3 py-2 text-left text-xs transition active:scale-[0.98]"
+                    className="w-full rounded-xl border border-border bg-secondary/40 px-2 py-2 text-left text-xs transition active:scale-[0.98]"
                   >
                     <span className="font-semibold text-foreground">{w.label}</span>
                     <span className="mt-0.5 block text-[10px] text-muted-foreground">

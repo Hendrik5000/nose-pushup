@@ -18,13 +18,13 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
+import { Route as AuthenticatedAlarmRouteImport } from './routes/_authenticated/alarm'
 import { Route as AuthenticatedBattleLeagueRouteImport } from './routes/_authenticated/battle-league'
 import { Route as AuthenticatedCalisthenicsRouteImport } from './routes/_authenticated/calisthenics'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedClubsRouteImport } from './routes/_authenticated/clubs'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedExercisesRouteImport } from './routes/_authenticated/exercises'
-import { Route as AuthenticatedGamesRouteImport } from './routes/_authenticated/games'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedPostfachRouteImport } from './routes/_authenticated/postfach'
@@ -87,6 +87,11 @@ const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
   path: '/ai',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAlarmRoute = AuthenticatedAlarmRouteImport.update({
+  id: '/alarm',
+  path: '/alarm',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedBattleLeagueRoute =
   AuthenticatedBattleLeagueRouteImport.update({
     id: '/battle-league',
@@ -117,11 +122,6 @@ const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
 const AuthenticatedExercisesRoute = AuthenticatedExercisesRouteImport.update({
   id: '/exercises',
   path: '/exercises',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedGamesRoute = AuthenticatedGamesRouteImport.update({
-  id: '/games',
-  path: '/games',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHealthRoute = AuthenticatedHealthRouteImport.update({
@@ -209,13 +209,13 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
+  '/alarm': typeof AuthenticatedAlarmRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/exercises': typeof AuthenticatedExercisesRoute
-  '/games': typeof AuthenticatedGamesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/postfach': typeof AuthenticatedPostfachRoute
@@ -239,13 +239,13 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
+  '/alarm': typeof AuthenticatedAlarmRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/exercises': typeof AuthenticatedExercisesRoute
-  '/games': typeof AuthenticatedGamesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/postfach': typeof AuthenticatedPostfachRoute
@@ -272,13 +272,13 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
+  '/_authenticated/alarm': typeof AuthenticatedAlarmRoute
   '/_authenticated/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/_authenticated/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/clubs': typeof AuthenticatedClubsRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/exercises': typeof AuthenticatedExercisesRoute
-  '/_authenticated/games': typeof AuthenticatedGamesRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/postfach': typeof AuthenticatedPostfachRoute
@@ -306,13 +306,13 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/ai'
+    | '/alarm'
     | '/battle-league'
     | '/calisthenics'
     | '/chat'
     | '/clubs'
     | '/coach'
     | '/exercises'
-    | '/games'
     | '/health'
     | '/leaderboard'
     | '/postfach'
@@ -336,13 +336,13 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/ai'
+    | '/alarm'
     | '/battle-league'
     | '/calisthenics'
     | '/chat'
     | '/clubs'
     | '/coach'
     | '/exercises'
-    | '/games'
     | '/health'
     | '/leaderboard'
     | '/postfach'
@@ -368,13 +368,13 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
     | '/_authenticated/ai'
+    | '/_authenticated/alarm'
     | '/_authenticated/battle-league'
     | '/_authenticated/calisthenics'
     | '/_authenticated/chat'
     | '/_authenticated/clubs'
     | '/_authenticated/coach'
     | '/_authenticated/exercises'
-    | '/_authenticated/games'
     | '/_authenticated/health'
     | '/_authenticated/leaderboard'
     | '/_authenticated/postfach'
@@ -469,6 +469,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/alarm': {
+      id: '/_authenticated/alarm'
+      path: '/alarm'
+      fullPath: '/alarm'
+      preLoaderRoute: typeof AuthenticatedAlarmRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/battle-league': {
       id: '/_authenticated/battle-league'
       path: '/battle-league'
@@ -509,13 +516,6 @@ declare module '@tanstack/react-router' {
       path: '/exercises'
       fullPath: '/exercises'
       preLoaderRoute: typeof AuthenticatedExercisesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/games': {
-      id: '/_authenticated/games'
-      path: '/games'
-      fullPath: '/games'
-      preLoaderRoute: typeof AuthenticatedGamesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/health': {
@@ -622,13 +622,13 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
+  AuthenticatedAlarmRoute: typeof AuthenticatedAlarmRoute
   AuthenticatedBattleLeagueRoute: typeof AuthenticatedBattleLeagueRoute
   AuthenticatedCalisthenicsRoute: typeof AuthenticatedCalisthenicsRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedClubsRoute: typeof AuthenticatedClubsRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedExercisesRoute: typeof AuthenticatedExercisesRoute
-  AuthenticatedGamesRoute: typeof AuthenticatedGamesRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedPostfachRoute: typeof AuthenticatedPostfachRoute
@@ -646,13 +646,13 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
+  AuthenticatedAlarmRoute: AuthenticatedAlarmRoute,
   AuthenticatedBattleLeagueRoute: AuthenticatedBattleLeagueRoute,
   AuthenticatedCalisthenicsRoute: AuthenticatedCalisthenicsRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedClubsRoute: AuthenticatedClubsRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedExercisesRoute: AuthenticatedExercisesRoute,
-  AuthenticatedGamesRoute: AuthenticatedGamesRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedPostfachRoute: AuthenticatedPostfachRoute,

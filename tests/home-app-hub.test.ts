@@ -5,10 +5,6 @@ import { test } from "node:test";
 
 const homePath = resolve(process.cwd(), "src/routes/_authenticated/index.tsx");
 const home = readFileSync(homePath, "utf8");
-const accessHook = readFileSync(
-  resolve(process.cwd(), "src/lib/use-private-game-access.ts"),
-  "utf8",
-);
 const hubStart = home.indexOf("function HomeAppHub");
 const artworkStart = home.indexOf("function HubArtwork");
 const dashboardStart = home.indexOf("function Dashboard", artworkStart);
@@ -39,26 +35,16 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.match(hub, /avatarUrl\s*\?/);
 });
 
-test("Home has two distinct Admin game tiles gated by the server-side role check", () => {
-  assert.match(hub, /usePrivateGameAccess\(userId, 5_000\)/);
-  assert.match(home, /const \{ user \} = Route\.useRouteContext\(\)/);
-  assert.match(home, /userId=\{user\.id\}/);
-  assert.match(accessHook, /onAuthStateChange/);
-  assert.match(accessHook, /authUserIdRef\.current !== userId/);
-  assert.match(
-    hub,
-    /canSeeAdmin\s*&&\s*<AdminGameTile game="grid-defense" title="Grid Defense" icon=\{Target\} \/>/,
-  );
-  assert.match(
-    hub,
-    /canSeeAdmin\s*&&\s*<AdminGameTile game="kupferkern" title="Kupferkern" icon=\{Activity\} \/>/,
-  );
-  assert.match(hub, /search=\{\{ game \}\}/);
-  assert.match(hub, /Admin-Spiel/);
-  assert.doesNotMatch(hub, /PrivateGameTile|LockKeyhole/);
-  assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated/games.tsx")));
-  const gameTile = hub.slice(hub.indexOf("function AdminGameTile"));
-  assert.doesNotMatch(gameTile, /\.from\(|fetch\(|\.insert\(|dispatchEvent\(/);
+test("the planned original game remains visible but locked and non-interactive", () => {
+  const gameStart = hub.indexOf('aria-label="Spiel-App, gesperrt und noch nicht verfügbar"');
+  assert.notEqual(gameStart, -1);
+  const gameEnd = hub.indexOf("</nav>", gameStart);
+  const game = hub.slice(gameStart, gameEnd);
+  assert.match(game, /Spiel/);
+  assert.match(game, /Gesperrt/);
+  assert.match(game, /<LockKeyhole/);
+  assert.doesNotMatch(game, /<Link\b|href=|onClick=/);
+  assert.doesNotMatch(game, /\.from\(|fetch\(|\.insert\(|dispatchEvent\(/);
 });
 
 test("the icon artwork is square and original, and the training dashboard stays collapsible", () => {
@@ -118,16 +104,6 @@ test("home hub keeps every former shared-menu destination and workspace action r
 
 test("every authenticated section exposes a clearly named route to the Alo home hub", () => {
   const homeSources = [
-    [
-      "Grid Defense",
-      "src/routes/_authenticated/games.tsx",
-      /aria-label="Spielnavigation"[\s\S]*?<AloHomeLink/,
-    ],
-    [
-      "Kupferkern",
-      "src/routes/_authenticated/games.tsx",
-      /aria-label="Spielnavigation"[\s\S]*?<AloHomeLink/,
-    ],
     ["Mira", "src/components/mira/SuperAiPage.tsx", /mira-chat-home-action|<AloHomeLink/],
     ["Nexus Chat", "src/components/chat/LocalChatShell.tsx", /aria-label="Zur Alo-Startseite"/],
     ["Übungen", "src/routes/_authenticated/exercises.tsx", /Startseite/],

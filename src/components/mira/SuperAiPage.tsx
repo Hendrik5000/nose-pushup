@@ -714,7 +714,26 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
     <>
       <DesignView variant="classic">
         <main className="classic-only alo-classic-mira alo-tablet-mira mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pt-5 pb-3">
-          <AloHomeLink className="mb-2 self-start" />
+          <div className="mb-2 flex items-center gap-2 self-start">
+            <AloPageSidebarTrigger />
+            <Link
+              to="/"
+              aria-label="Zur Alo-Startseite"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <House className="h-4 w-4" aria-hidden="true" />
+              Startseite
+            </Link>
+            <button
+              type="button"
+              onClick={() => handleVoiceChatOpenChange(true)}
+              aria-label="Sprachchat mit Mira öffnen"
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <Mic className="h-4 w-4" aria-hidden="true" />
+              Sprechen
+            </button>
+          </div>
           <MiraGithubRepository />
           {/* Header */}
           <details
@@ -723,18 +742,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             onToggle={(e) => setClassicOptionsOpen(e.currentTarget.open)}
           >
             <summary>Gesprächsoptionen & Aufgaben</summary>
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <AloPageSidebarTrigger />
-              <button
-                type="button"
-                onClick={() => handleVoiceChatOpenChange(true)}
-                aria-label="Sprachchat mit Mira öffnen"
-                className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                <Mic className="h-4 w-4" aria-hidden="true" />
-                Sprechen
-              </button>
-            </div>
             <header className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/20 via-card/80 to-background p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
