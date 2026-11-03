@@ -50,7 +50,9 @@ export const analyzeMeal = createServerFn({ method: "POST" })
     });
     if (!res.ok) {
       console.error("meal gateway", res.status, await res.text().catch(() => ""));
-      throw new Error(res.status === 429 ? "Zu viele Anfragen – kurz warten." : "Analyse fehlgeschlagen.");
+      throw new Error(
+        res.status === 429 ? "Zu viele Anfragen – kurz warten." : "Analyse fehlgeschlagen.",
+      );
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     let parsed: Record<string, unknown> = {};

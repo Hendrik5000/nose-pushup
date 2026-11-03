@@ -520,7 +520,7 @@ function HealthPage() {
             <div className="space-y-5">
               <WeeklyStepsGoal todaySteps={glanceSteps} />
               <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
-                <MealPhotoCard />
+              <MealPhotoCard />
             </div>
             <WeightTrendCard
               points={entries
