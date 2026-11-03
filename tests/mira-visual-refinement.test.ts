@@ -50,7 +50,7 @@ test("Mira chat stays headerless and Home is an in-flow action before the compos
   assert.doesNotMatch(page, /sport-ai-compact-heading|sport-ai-chat-actions/);
   const stage = page.indexOf('className="sport-chat-stage');
   const home = page.indexOf('className="mira-chat-home-action"');
-  const composer = page.indexOf('className="sport-chat-composer', home);
+  const composer = page.indexOf("sport-chat-composer", home);
   assert.ok(stage >= 0 && home > stage, "Home should follow the conversation stage");
   assert.ok(composer > home, "Home should appear before, not over, the composer");
   assert.match(page.slice(home, page.indexOf("</Link>", home)), /Zur Alo-Startseite/);
@@ -60,6 +60,21 @@ test("Mira chat stays headerless and Home is an in-flow action before the compos
   );
   assert.match(homeRow, /flex: 0 0 auto/);
   assert.doesNotMatch(homeRow, /position:\s*(fixed|sticky|absolute)/);
+});
+
+test("Mira's sketch header keeps only menu, chat title, profile and settings with room to breathe", () => {
+  const headerStart = page.indexOf('sketchLayout ? "alo-mira-sketch-header"');
+  const headerEnd = page.indexOf("<MiraGithubRepository />", headerStart);
+  const header = page.slice(headerStart, headerEnd);
+  const overlay = read("mira-home-overlay.css");
+
+  assert.notEqual(headerStart, -1);
+  assert.match(header, /<AloPageSidebarTrigger \/>/);
+  assert.match(header, /alo-mira-sketch-title/);
+  assert.match(header, /aria-label="Profil öffnen"/);
+  assert.match(header, /aria-label="Mira-Einstellungen öffnen"/);
+  assert.match(overlay, /grid-template-columns: 2\.75rem minmax\(0, 1fr\) repeat\(2, 2\.75rem\)/);
+  assert.match(overlay, /width: 2\.75rem;[\s\S]*?height: 2\.75rem;/);
 });
 
 test("empty welcome does not replace saved conversation messages", () => {
@@ -105,7 +120,8 @@ test("attachment preview, explicit submit, microphone and accessible file limits
   assert.match(chat, /<MiraAttachmentPicker/);
   assert.match(chat, /void submit\(\)/);
   assert.match(chat, /aria-label="Deine Frage an Mira"/);
-  assert.match(chat, /aria-label="Sprachdialog mit Mikrofon öffnen"/);
+  assert.match(chat, /aria-label="Freisprechgespräch mit Mira öffnen"/);
+  assert.match(chat, /aria-label="Diktierfunktion öffnen"/);
   assert.match(chat, /onClick=\{\(\) => handleVoiceChatOpenChange\(true\)\}/);
   assert.match(chat, /disabled=\{loading \|\| \(!input.trim\(\) && !attachments.length\)\}/);
   assert.match(chat, /<details className="mira-file-help/);
@@ -132,4 +148,32 @@ test("small-screen chat keeps a non-floating composer, scrollable messages and s
   assert.match(attachments, /grid-template-columns: 44px minmax\(0, 1fr\) 44px 44px;/);
   assert.match(attachments, /grid-column: 1 \/ -1;/);
   assert.match(attachments, /font-size: 16px;/);
+});
+
+test("Mira shows an accessible generation indicator and safely reveals one complete reply", () => {
+  const overlay = read("mira-home-overlay.css");
+  const submitStart = page.indexOf("const submit = async");
+  const submitEnd = page.indexOf("const messagesRef = useRef(messages);", submitStart);
+  const submit = page.slice(submitStart, submitEnd);
+  const server = read("lib/super-ai.functions.ts");
+
+  assert.equal((page.match(/\{loading && <MiraGeneratingIndicator \/>}/g) ?? []).length, 2);
+  assert.match(
+    page,
+    /function MiraGeneratingIndicator\(\)[\s\S]*?role="status"[\s\S]*?aria-live="polite"/,
+  );
+  assert.match(page, /setReplyAnimation\(\{ sessionId: activeId, index: nextMsgs.length \}\)/);
+  assert.match(submit, /const assistantMessage: Msg = \{[\s\S]*?content: assistantText,/);
+  assert.equal((submit.match(/role: "assistant"/g) ?? []).length, 1);
+  assert.match(submit, /setMessages\(\[\.\.\.nextMsgs, assistantMessage\]\)/);
+  assert.match(page, /MiraAnswerText text=\{m\.content\}/);
+  assert.match(page, /aria-live=\{isFreshAssistantReply\(m, i\) \? "polite" : undefined\}/);
+  assert.match(overlay, /\.alo-mira-generating-dot\s*\{[\s\S]*?animation:/);
+  assert.match(overlay, /\.alo-mira-response-arrival\s*\{[\s\S]*?animation:/);
+  assert.match(
+    overlay,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.alo-mira-generating-dot,[\s\S]*?\.alo-mira-response-arrival\s*\{\s*animation: none;/,
+  );
+  assert.doesNotMatch(server, /ReadableStream|text\/event-stream|stream\s*:\s*true/i);
+  assert.match(server, /await res\.json\(\)/);
 });

@@ -1,6 +1,6 @@
 import { progressState } from "@/lib/alo-ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import type { PrivateGameId } from "@/lib/private-game-policy";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +37,13 @@ import { WorkoutNotesPanel } from "@/components/WorkoutNotesPanel";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import type { WidgetId, WidgetSize } from "@/lib/dashboard-layout";
 import { SportSectionLabel } from "@/components/SportPageIntro";
+import { MiraHandoff } from "@/components/alo/MiraHandoff";
+import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
+import {
+  createBrowserSpeechRecognitionFactory,
+  type MiraSpeechRecognitionLike,
+} from "@/lib/mira-voice-conversation";
+import "@/mira-home-overlay.css";
 import {
   Activity,
   ArrowUpRight,
@@ -47,6 +54,7 @@ import {
   Footprints,
   Hand,
   HeartPulse,
+  Mic,
   Search,
   ScanFace,
   Target,
@@ -103,13 +111,16 @@ const PROFILE_COLS =
 function HomeAppHub({
   displayName,
   avatarUrl,
+  onOpenTrainingOverview,
 }: {
   displayName: string | null | undefined;
   avatarUrl: string | null | undefined;
+  onOpenTrainingOverview: () => void;
 }) {
   const { user } = Route.useRouteContext();
   const [savedAlarm, setSavedAlarm] = useState<AlarmSettings | null>(null);
   const [canSeeAdmin, setCanSeeAdmin] = useState(false);
+  const [moreAreasOpen, setMoreAreasOpen] = useState(false);
   useEffect(() => {
     const loadAlarm = () => setSavedAlarm(readSavedAlarmSettings(user.id));
     loadAlarm();
@@ -141,6 +152,14 @@ function HomeAppHub({
           Alo
         </h1>
         <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label="Überall suchen"
+            onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" }))}
+          >
+            <Search className="h-5 w-5" aria-hidden="true" />
+          </button>
           <PostfachBell />
           <Link
             to="/profile"
@@ -166,7 +185,7 @@ function HomeAppHub({
         </div>
       </header>
       <nav
-        className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-2 gap-y-5 sm:grid-cols-5"
+        className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
         aria-label="Alo-Apps"
       >
         <HubAppIcon to="/ai" title="Mira" artwork="mira" />
@@ -180,33 +199,51 @@ function HomeAppHub({
             <HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" />
           </>
         )}
-      </nav>
-      <div className="alo-tablet-home-tools mt-4 grid grid-cols-2 gap-2">
         <button
           type="button"
-          className="alo-btn flex min-h-11 items-center justify-center gap-2"
+          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
+          aria-label={
+            moreAreasOpen
+              ? "Weitere Bereiche schließen"
+              : `Weitere Bereiche öffnen (${MORE_AREAS.length})`
+          }
+          aria-expanded={moreAreasOpen}
+          aria-controls="more-areas-panel"
+          onClick={() => setMoreAreasOpen((open) => !open)}
+        >
+          <HubAppIconContents title="Weitere Bereiche" artwork="more" />
+        </button>
+        <button
+          type="button"
+          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
+          aria-label="Trainingsübersicht & Gym öffnen"
+          onClick={onOpenTrainingOverview}
+        >
+          <HubAppIconContents title="Trainingsübersicht & Gym" artwork="training" />
+        </button>
+      </nav>
+      <div className="alo-tablet-home-tools mt-4 grid grid-cols-1 gap-2">
+        <button
+          type="button"
+          className="alo-btn flex min-h-11 w-full items-center justify-center gap-2"
           aria-label="Alo-Werkzeuge öffnen"
           onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "menu" }))}
         >
           <Zap className="h-4 w-4" aria-hidden="true" />
           Alo-Werkzeuge
         </button>
-        <button
-          type="button"
-          className="alo-btn flex min-h-11 items-center justify-center gap-2"
-          aria-label="Überall suchen"
-          onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" }))}
-        >
-          <Search className="h-4 w-4" aria-hidden="true" />
-          Überall suchen
-        </button>
       </div>
-      <details className="mt-4 rounded-2xl border border-border bg-card/35 px-3">
-        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 font-medium">
+      <section
+        id="more-areas-panel"
+        className="alo-tablet-home-more mt-4 w-full rounded-3xl border border-border bg-card/45 p-4"
+        aria-label="Weitere Alo-Bereiche"
+        hidden={!moreAreasOpen}
+      >
+        <h2 className="mb-3 flex items-center justify-between text-sm font-semibold">
           Weitere Bereiche
-          <span className="text-xs text-muted-foreground">{MORE_AREAS.length}</span>
-        </summary>
-        <nav className="grid grid-cols-2 gap-2 pb-3" aria-label="Weitere Alo-Bereiche">
+          <span className="text-xs font-normal text-muted-foreground">{MORE_AREAS.length}</span>
+        </h2>
+        <nav className="grid grid-cols-2 gap-2" aria-label="Weitere Alo-Bereiche">
           {MORE_AREAS.map((area) => (
             <Link
               key={area.to}
@@ -226,13 +263,164 @@ function HomeAppHub({
             </Link>
           ))}
         </nav>
-      </details>
+      </section>
     </section>
   );
 }
 
+function MiraOverlayLauncher() {
+  const { user } = Route.useRouteContext();
+  const [open, setOpen] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [listening, setListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [handoffRequest, setHandoffRequest] = useState<{ id: number; text: string } | null>(null);
+  const recognitionRef = useRef<MiraSpeechRecognitionLike | null>(null);
+  const handoffIdRef = useRef(0);
+
+  const stopListening = () => {
+    const recognition = recognitionRef.current;
+    recognitionRef.current = null;
+    if (recognition) {
+      try {
+        recognition.stop();
+      } catch {
+        // Recognition may already have ended.
+      }
+    }
+    setListening(false);
+  };
+
+  const startListening = () => {
+    const recognitionFactory = createBrowserSpeechRecognitionFactory();
+    const recognition = recognitionFactory?.();
+    if (!recognition) {
+      setVoiceError("Spracherkennung wird in diesem Browser nicht unterstützt.");
+      return;
+    }
+
+    setVoiceError(null);
+    recognition.lang = "de-DE";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const recognized = event.results[0]?.[0]?.transcript?.trim() ?? "";
+      if (recognized)
+        setTranscript((previous) => (previous ? `${previous} ${recognized}` : recognized));
+    };
+    recognition.onerror = (event) => {
+      const message =
+        event?.error === "not-allowed" || event?.error === "service-not-allowed"
+          ? "Mikrofonzugriff wurde nicht erlaubt. Prüfe die Browser-Berechtigung und tippe erneut."
+          : event?.error === "audio-capture"
+            ? "Kein verwendbares Mikrofon gefunden. Prüfe dein Gerät und versuche es erneut."
+            : event?.error === "no-speech"
+              ? "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut."
+              : "Spracherkennung fehlgeschlagen. Versuche es erneut oder nutze den Textbereich.";
+      setVoiceError(message);
+      setListening(false);
+    };
+    recognition.onend = () => {
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
+      setListening(false);
+    };
+    recognitionRef.current = recognition;
+    setListening(true);
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setListening(false);
+      setVoiceError(
+        "Das Mikrofon konnte nicht gestartet werden. Prüfe die Berechtigung und versuche es erneut.",
+      );
+    }
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) stopListening();
+    else setVoiceError(null);
+    setOpen(nextOpen);
+  };
+
+  const continueToMira = () => {
+    const text = transcript.trim();
+    if (!text) return;
+    stopListening();
+    setOpen(false);
+    handoffIdRef.current += 1;
+    setHandoffRequest({ id: handoffIdRef.current, text });
+  };
+
+  useEffect(
+    () => () => {
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        // Recognition may already have ended.
+      }
+      recognitionRef.current = null;
+    },
+    [],
+  );
+
+  return (
+    <>
+      <div className="alo-mira-home-launcher">
+        <button
+          type="button"
+          className="alo-mira-home-launcher-button"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => handleOpenChange(true)}
+        >
+          <Mic aria-hidden="true" />
+          <span>Frag Mira</span>
+          <ArrowUpRight aria-hidden="true" />
+        </button>
+      </div>
+      <MiraVoiceChatDialog
+        open={open}
+        onOpenChange={handleOpenChange}
+        transcript={transcript}
+        onTranscriptChange={setTranscript}
+        listening={listening}
+        onStartListening={startListening}
+        onStopListening={stopListening}
+        error={voiceError}
+        onContinue={continueToMira}
+        continueLabel="Frage in Mira prüfen"
+        className="alo-dialog alo-mira-voice-entry-dialog max-h-[88dvh] overflow-y-auto sm:max-w-md"
+      />
+      {handoffRequest && (
+        <MiraHandoff
+          key={handoffRequest.id}
+          userId={user.id}
+          text={handoffRequest.text}
+          source="deine eingesprochene Frage"
+          label="Eingesprochene Frage an Mira übergeben"
+          className="hidden"
+          openOnMount
+          onNavigate={() => {
+            setHandoffRequest(null);
+            setTranscript("");
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 type HubArtworkKind =
-  "mira" | "nexus" | "health" | "settings" | "admin" | "gridDefense" | "kupferkern";
+  | "mira"
+  | "nexus"
+  | "health"
+  | "settings"
+  | "admin"
+  | "gridDefense"
+  | "kupferkern"
+  | "more"
+  | "training";
 
 const HUB_APP_ICON_CLASS_NAME =
   "group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
@@ -277,10 +465,10 @@ function HubGameAppIcon({
 function HubAppIconContents({ title, artwork }: { title: string; artwork: HubArtworkKind }) {
   return (
     <>
-      <span className="relative grid aspect-square w-full max-w-[72px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg">
+      <span className="relative grid aspect-square w-full max-w-[96px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg">
         <HubArtwork kind={artwork} />
       </span>
-      <span className="max-w-[84px] truncate text-[10px] font-medium leading-tight text-foreground sm:text-xs">
+      <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
         {title}
       </span>
     </>
@@ -296,6 +484,8 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
     admin: { bg: "#182b3b", accent: "#a5d8ff", glow: "#38bdf8" },
     gridDefense: { bg: "#152b32", accent: "#a7f3d0", glow: "#22c55e" },
     kupferkern: { bg: "#38251c", accent: "#fdba74", glow: "#c2410c" },
+    more: { bg: "#172735", accent: "#67e8f9", glow: "#0ea5e9" },
+    training: { bg: "#30291d", accent: "#fcd34d", glow: "#f59e0b" },
   } as const;
   const palette = palettes[kind];
 
@@ -454,6 +644,30 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
           <circle cx="140" cy="66" r="3" fill="#fff" />
         </>
       )}
+      {kind === "more" && (
+        <>
+          <circle cx="140" cy="66" r="43" fill={palette.glow} opacity=".28" />
+          <path
+            d="M140 39v54M113 66h54"
+            stroke={palette.accent}
+            strokeWidth="12"
+            strokeLinecap="round"
+          />
+        </>
+      )}
+      {kind === "training" && (
+        <>
+          <circle cx="140" cy="66" r="43" fill={palette.glow} opacity=".25" />
+          <path
+            d="M104 54v24m12-33v42m48-42v42m12-33v24M116 66h48"
+            fill="none"
+            stroke={palette.accent}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </>
+      )}
       <path d="M18 18h22" stroke="#fff" strokeOpacity=".22" strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
@@ -472,6 +686,15 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
   const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
+
+  const openTrainingOverview = () => {
+    const overview = document.getElementById("training-overview");
+    if (!(overview instanceof HTMLDetailsElement)) return;
+    overview.open = true;
+    window.requestAnimationFrame(() =>
+      overview.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
 
   useEffect(() => {
     (async () => {
@@ -898,8 +1121,13 @@ function Dashboard() {
   };
 
   return (
-    <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
-      <HomeAppHub displayName={profile?.display_name} avatarUrl={profile?.avatar_url} />
+    <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-[32rem] flex-col px-5 pt-6 pb-24">
+      <HomeAppHub
+        displayName={profile?.display_name}
+        avatarUrl={profile?.avatar_url}
+        onOpenTrainingOverview={openTrainingOverview}
+      />
+      <MiraOverlayLauncher />
       <details
         className="group rounded-3xl border border-border bg-card/45 shadow-sm"
         id="training-overview"
