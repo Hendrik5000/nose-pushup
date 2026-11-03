@@ -46,7 +46,6 @@ import {
   Footprints,
   Hand,
   HeartPulse,
-  LockKeyhole,
   Search,
   ScanFace,
   Target,
@@ -122,6 +121,7 @@ function HomeAppHub({
   }, [user.id]);
   useEffect(() => {
     let active = true;
+    setCanSeeAdmin(false);
     void getAdminAreaAccess()
       .then((allowed) => {
         if (active && allowed === true) setCanSeeAdmin(true);
@@ -130,7 +130,7 @@ function HomeAppHub({
     return () => {
       active = false;
     };
-  }, []);
+  }, [user.id]);
   const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
 
   return (
@@ -173,22 +173,7 @@ function HomeAppHub({
         <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
         <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
         {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
-        <div
-          role="img"
-          aria-label="Spiel-App, gesperrt und noch nicht verfügbar"
-          className="flex w-full min-w-0 flex-col items-center gap-2 text-center text-muted-foreground"
-        >
-          <span className="relative grid aspect-square w-full max-w-[72px] place-items-center overflow-hidden rounded-[20px] border border-dashed border-border bg-card/30 opacity-60 grayscale">
-            <HubArtwork kind="adventure" />
-            <span className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border border-border bg-background text-muted-foreground shadow-sm">
-              <LockKeyhole className="h-3.5 w-3.5" aria-hidden="true" />
-            </span>
-          </span>
-          <span className="max-w-[84px] truncate text-[10px] font-medium leading-tight sm:text-xs">
-            Spiel
-          </span>
-          <span className="-mt-1 text-[10px] leading-tight">Gesperrt</span>
-        </div>
+        {canSeeAdmin && <HubAppIcon to="/games" title="Admin-Spiele" artwork="adventure" />}
       </nav>
       <div className="alo-tablet-home-tools mt-4 grid grid-cols-2 gap-2">
         <button
@@ -245,9 +230,9 @@ function HubAppIcon({
   title,
   artwork,
 }: {
-  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin";
+  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin" | "/games";
   title: string;
-  artwork: "mira" | "nexus" | "health" | "settings" | "admin";
+  artwork: "mira" | "nexus" | "health" | "settings" | "admin" | "adventure";
 }) {
   return (
     <Link

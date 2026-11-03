@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="private-game-payload" content="kupferkern-server-only-v1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; font-src 'none'; form-action 'none'; frame-src 'none'; img-src 'none'; media-src 'none'; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'" />
+    <title>Kupferkern — Admin-Spiel</title>
+    <style>
+      :root { color-scheme: dark; --bg:#0b1220; --surface:#111c2c; --line:#293b51; --text:#edf5ff; --muted:#9db0c6; --cyan:#67e8f9; --orange:#fdba74; }
+      * { box-sizing:border-box; }
+      body { min-height:100vh; margin:0; padding:clamp(16px,4vw,38px); background:radial-gradient(ellipse at 50% -18%,#1c3550 0,var(--bg) 58%); color:var(--text); font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+      main { width:min(760px,100%); margin:0 auto; padding:clamp(18px,4vw,30px); border:1px solid var(--line); border-radius:24px; background:#111c2ccc; box-shadow:0 20px 60px #0005; }
+      .head { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:22px; }
+      .eyebrow { margin:0 0 4px; color:#a5f3fc; font-size:11px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
+      h1 { margin:0; font-size:clamp(24px,5vw,34px); letter-spacing:-.035em; }
+      .intro { max-width:500px; margin:8px 0 0; color:var(--muted); font-size:14px; }
+      .moves { min-width:88px; padding:9px 12px; border:1px solid var(--line); border-radius:12px; background:#0b122088; text-align:center; font-variant-numeric:tabular-nums; }
+      .board { display:grid; width:min(100%,420px); grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin:0 auto; padding:10px; border:1px solid #304255; border-radius:18px; background:#080f19; }
+      .cell { display:grid; aspect-ratio:1; place-items:center; min-width:0; border:1px solid #ffffff0b; border-radius:12px; background:#ffffff04; }
+      .cell.empty::after { width:4px; height:4px; border-radius:50%; background:#64748b66; content:""; }
+      .cell.endpoint { border-color:#fbbf2455; background:#f59e0b19; color:#ffedb3; }
+      .cell.core { border-color:#67e8f955; background:#06b6d419; color:#a5f3fc; }
+      .cell.core.powered { border-color:#a5f3fc; background:#67e8f933; box-shadow:0 0 20px #67e8f944; color:#ecfeff; }
+      .piece { display:grid; width:100%; height:100%; place-items:center; padding:4px; border:1px solid #fdba7444; border-radius:12px; background:#f9731614; color:var(--orange); cursor:pointer; touch-action:manipulation; transition:background .15s,border-color .15s,transform .15s; }
+      .piece:hover { border-color:#fed7aa; background:#fb923c2e; }
+      .piece:active { transform:scale(.95); }
+      button:focus-visible { outline:2px solid var(--cyan); outline-offset:3px; }
+      .mark { width:100%; height:100%; max-width:56px; max-height:56px; }
+      .controls { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; width:min(100%,420px); margin:16px auto 0; }
+      .hint { margin:0; color:var(--muted); font-size:12px; }
+      #reset { min-height:42px; padding:9px 14px; border:1px solid #405266; border-radius:10px; background:#182638; color:var(--text); font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+      #reset:hover { border-color:#8ba4bd; }
+      .status { display:flex; align-items:center; gap:12px; width:min(100%,420px); min-height:52px; margin:18px auto 0; padding:12px 15px; border:1px solid var(--line); border-radius:13px; background:#0b122088; color:var(--muted); }
+      .status.powered { border-color:#67e8f966; background:#67e8f910; color:#cffafe; }
+      .zap { flex:none; color:#64748b; font-size:22px; }
+      .powered .zap { color:var(--cyan); }
+      @media (max-width:480px) { body { padding:12px; } main { padding:16px 12px; border-radius:18px; } .board { gap:5px; padding:7px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="head">
+        <div>
+          <p class="eyebrow">Energiepfad-Puzzle</p>
+          <h1>Kupferkern</h1>
+          <p class="intro">Drehe die Leitungsstücke und verbinde den Generator mit dem Kern. Jedes Stück rastet bei einer Vierteldrehung ein.</p>
+        </div>
+        <div id="moves" class="moves" aria-live="polite">0 Züge</div>
+      </header>
+      <div id="board" class="board" role="group" aria-label="Kupferkern-Energiepfad, fünf mal fünf Felder"></div>
+      <div class="controls">
+        <p class="hint">Tippe ein Leitungsteil an, um es zu drehen.</p>
+        <button id="reset" type="button">Neu starten</button>
+      </div>
+      <div id="status" class="status" role="status" aria-live="polite"><span class="zap" aria-hidden="true">ϟ</span><span id="status-text">Noch keine Verbindung. Richte die Leitungsstücke auf dem Weg zum Kern aus.</span></div>
+    </main>
+    <script>
+      const GRID_SIZE = 5;
+      const SOURCE = { x: 0, y: 2 };
+      const CORE = { x: 4, y: 2 };
+      const INITIAL_PIECES = [
+        { id: "western-elbow", x: 1, y: 2, kind: "elbow", rotation: 0 },
+        { id: "northwest-elbow", x: 1, y: 1, kind: "elbow", rotation: 3 },
+        { id: "north-straight", x: 2, y: 1, kind: "straight", rotation: 0 },
+        { id: "northeast-elbow", x: 3, y: 1, kind: "elbow", rotation: 0 },
+        { id: "eastern-elbow", x: 3, y: 2, kind: "elbow", rotation: 2 },
+      ];
+      const DELTAS = { N: { x: 0, y: -1 }, E: { x: 1, y: 0 }, S: { x: 0, y: 1 }, W: { x: -1, y: 0 } };
+      const OPPOSITE = { N: "S", E: "W", S: "N", W: "E" };
+      const PORT_COORDINATES = { N: [24, 4], E: [44, 24], S: [24, 44], W: [4, 24] };
+      const boardElement = document.getElementById("board");
+      const movesElement = document.getElementById("moves");
+      const statusElement = document.getElementById("status");
+      const statusTextElement = document.getElementById("status-text");
+      let pieces = createInitialBoard();
+      let moves = 0;
+
+      function createInitialBoard() {
+        return INITIAL_PIECES.map((piece) => ({ ...piece }));
+      }
+
+      function getPiecePorts(piece) {
+        const rotation = ((piece.rotation % 4) + 4) % 4;
+        if (piece.kind === "straight") return rotation % 2 === 0 ? ["N", "S"] : ["E", "W"];
+        return [["N", "E"], ["E", "S"], ["S", "W"], ["W", "N"]][rotation];
+      }
+
+      function isPowerConnected() {
+        const byPosition = new Map(pieces.map((piece) => [`${piece.x},${piece.y}`, piece]));
+        const queue = [{ ...SOURCE }];
+        const visited = new Set([`${SOURCE.x},${SOURCE.y}`]);
+        while (queue.length) {
+          const current = queue.shift();
+          const key = `${current.x},${current.y}`;
+          const ports = key === `${SOURCE.x},${SOURCE.y}` ? ["E"] : getPiecePorts(byPosition.get(key) || { kind: "straight", rotation: -1 });
+          for (const direction of ports) {
+            const delta = DELTAS[direction];
+            const next = { x: current.x + delta.x, y: current.y + delta.y };
+            const nextKey = `${next.x},${next.y}`;
+            if (next.x < 0 || next.y < 0 || next.x >= GRID_SIZE || next.y >= GRID_SIZE) continue;
+            if (next.x === CORE.x && next.y === CORE.y) {
+              if (direction === "E") return true;
+              continue;
+            }
+            const neighbor = byPosition.get(nextKey);
+            if (!neighbor || !getPiecePorts(neighbor).includes(OPPOSITE[direction]) || visited.has(nextKey)) continue;
+            visited.add(nextKey);
+            queue.push(next);
+          }
+        }
+        return false;
+      }
+
+      function createMark(ports, endpoint = false) {
+        const ns = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(ns, "svg");
+        svg.setAttribute("viewBox", "0 0 48 48");
+        svg.setAttribute("class", "mark");
+        svg.setAttribute("aria-hidden", "true");
+        for (const port of ports) {
+          const [x, y] = PORT_COORDINATES[port];
+          const line = document.createElementNS(ns, "line");
+          line.setAttribute("x1", "24"); line.setAttribute("y1", "24");
+          line.setAttribute("x2", String(x)); line.setAttribute("y2", String(y));
+          line.setAttribute("stroke", "currentColor");
+          line.setAttribute("stroke-width", endpoint ? "7" : "8");
+          line.setAttribute("stroke-linecap", "round");
+          svg.append(line);
+        }
+        const center = document.createElementNS(ns, "circle");
+        center.setAttribute("cx", "24"); center.setAttribute("cy", "24");
+        center.setAttribute("r", endpoint ? "7" : "6"); center.setAttribute("fill", "currentColor");
+        svg.append(center);
+        if (endpoint) {
+          const inner = document.createElementNS(ns, "circle");
+          inner.setAttribute("cx", "24"); inner.setAttribute("cy", "24");
+          inner.setAttribute("r", "2.25"); inner.setAttribute("fill", "#0f172a");
+          svg.append(inner);
+        }
+        return svg;
+      }
+
+      function render() {
+        const powered = isPowerConnected();
+        boardElement.replaceChildren();
+        for (let y = 0; y < GRID_SIZE; y += 1) {
+          for (let x = 0; x < GRID_SIZE; x += 1) {
+            const piece = pieces.find((candidate) => candidate.x === x && candidate.y === y);
+            const cell = document.createElement("div");
+            if (x === SOURCE.x && y === SOURCE.y) {
+              cell.className = "cell endpoint";
+              cell.setAttribute("role", "img");
+              cell.setAttribute("aria-label", "Generator, Ausgang nach Osten");
+              cell.append(createMark(["E"], true));
+            } else if (x === CORE.x && y === CORE.y) {
+              cell.className = `cell core${powered ? " powered" : ""}`;
+              cell.setAttribute("role", "img");
+              cell.setAttribute("aria-label", "Kupferkern, Eingang nach Westen");
+              cell.append(createMark(["W"], true));
+            } else if (!piece) {
+              cell.className = "cell empty";
+              cell.setAttribute("aria-hidden", "true");
+            } else {
+              cell.className = "cell";
+              const button = document.createElement("button");
+              button.type = "button";
+              button.className = "piece";
+              const ports = getPiecePorts(piece);
+              const kind = piece.kind === "elbow" ? "Eckleitung" : "Gerade Leitung";
+              button.setAttribute("aria-label", `${kind} in Zeile ${y + 1}, Spalte ${x + 1} drehen; Ausgänge ${ports.join(" und ")}`);
+              button.title = "Zum Drehen antippen";
+              button.append(createMark(ports));
+              button.addEventListener("click", () => {
+                pieces = pieces.map((item) => item.id === piece.id ? { ...item, rotation: (item.rotation + 1) % 4 } : item);
+                moves += 1;
+                render();
+              });
+              cell.append(button);
+            }
+            boardElement.append(cell);
+          }
+        }
+        movesElement.textContent = `${moves} ${moves === 1 ? "Zug" : "Züge"}`;
+        statusElement.classList.toggle("powered", powered);
+        statusTextElement.textContent = powered
+          ? `Energiepfad geschlossen — der Kupferkern ist versorgt. ${moves} ${moves === 1 ? "Zug" : "Züge"}.`
+          : "Noch keine Verbindung. Richte die Leitungsstücke auf dem Weg zum Kern aus.";
+      }
+
+      document.getElementById("reset").addEventListener("click", () => {
+        pieces = createInitialBoard();
+        moves = 0;
+        render();
+      });
+      render();
+    </script>
+  </body>
+</html>
