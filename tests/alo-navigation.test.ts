@@ -63,7 +63,7 @@ test("onboarding, swipe, hidden-by-default bottom navigation, and optional conte
   const home = read("routes/_authenticated/index.tsx");
   assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
   assert.match(home, /aria-label="Überall suchen"/);
-  assert.match(home, /aria-label="Weitere Alo-Bereiche"/);
+  assert.match(home, /Weitere Bereiche öffnen/);
   const ai = read("components/mira/SuperAiPage.tsx");
   assert.match(ai, /MIRA_CONTEXT_KEY/);
   assert.match(ai, /MiraContextControls/);

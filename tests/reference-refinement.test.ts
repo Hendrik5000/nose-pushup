@@ -17,7 +17,7 @@ test("reference interiors keep contextual navigation and move global tools into 
   assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
   assert.match(home, /aria-label="Überall suchen"/);
   assert.match(home, /to="\/profile"/);
-  assert.match(home, /aria-label="Weitere Alo-Bereiche"/);
+  assert.match(home, /Weitere Bereiche öffnen/);
   assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
   assert.match(layout, /className="authenticated-shell alo-no-global-header/);
 });

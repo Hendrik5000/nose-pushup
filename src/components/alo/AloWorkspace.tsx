@@ -2,7 +2,7 @@ import { priorityTasks } from "@/lib/alo-ui";
 import { readAttachment } from "@/lib/alo-attachments";
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Search, Layers, Plus, CalendarDays, ShieldCheck, Zap } from "lucide-react";
+import { ALO_WORKSPACE_TOOLS as TABS } from "@/lib/home-app-menus";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   ALO_EVENT,
@@ -31,15 +31,7 @@ const AREA_LABELS: Record<string, string> = {
   mira: "Mira",
   nexus: "Nexus",
 };
-type Tab = "menu" | "today" | "search" | "capture" | "collections" | "shortcuts" | "privacy";
-const TABS = [
-  { id: "today", label: "Tagesübersicht", icon: CalendarDays },
-  { id: "search", label: "Überall suchen", icon: Search },
-  { id: "capture", label: "Schnell speichern", icon: Plus },
-  { id: "collections", label: "Sammlungen", icon: Layers },
-  { id: "shortcuts", label: "Schnellaktionen", icon: Zap },
-  { id: "privacy", label: "Daten & Datenschutz", icon: ShieldCheck },
-] as const;
+type Tab = "menu" | (typeof TABS)[number]["id"];
 const MENU_LABELS: Record<(typeof TABS)[number]["id"], string> = {
   today: "Heute",
   search: "Suchen",

@@ -2,13 +2,12 @@ import "@/mira-attachments.css";
 // Conversation UI restored selectively from 34f2313; current routing/security remain in their modules.
 import { MiraAttachmentPicker, MiraAttachmentPreview } from "@/components/mira/MiraAttachments";
 import { MiraSpark } from "@/components/mira/MiraSpark";
-import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
+import { MiraProgressiveAnswer } from "@/components/mira/MiraProgressiveAnswer";
 import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
 import { MiraVoiceConversationDialog } from "@/components/mira/MiraVoiceConversationDialog";
 import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
-import { AloHomeLink } from "@/components/AloHomeLink";
 import {
   assertMiraAttachmentProvider,
   checkMiraFile,
@@ -68,6 +67,7 @@ import {
   type MiraSpeechUtteranceLike,
 } from "@/lib/mira-voice-conversation";
 import type { AppContextPack } from "@/lib/ai-context";
+import { createMiraChatTitle } from "@/lib/mira-chat-title";
 import type { PcConfiguratorInteraction } from "@/lib/mira-interactions";
 import {
   classifyTask,
@@ -155,6 +155,61 @@ function MiraGeneratingIndicator() {
   );
 }
 
+function MiraPrivacySettings({
+  userId,
+  contextAllowed,
+  contextLoading,
+  appContext,
+  contextHint,
+}: {
+  userId: string | null;
+  contextAllowed: boolean;
+  contextLoading: boolean;
+  appContext: AppContextPack | null;
+  contextHint: string | null;
+}) {
+  return (
+    <section
+      className="mira-settings-privacy-panel mt-4 rounded-2xl border border-border/70 bg-background/45 p-4"
+      aria-labelledby="mira-privacy-settings-title"
+    >
+      <h3 id="mira-privacy-settings-title" className="font-bold">
+        Datenschutz & Datenfreigaben
+      </h3>
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+        Beim Senden gehen deine Frage und der aktuelle Mira-Chatverlauf an den ausgewählten
+        KI-Anbieter. App-Daten sind optional; Anhänge werden nur mit der ausdrücklich gesendeten
+        Anfrage übertragen und nicht im Verlauf gespeichert. Fehlende Werte bleiben unbekannt.
+      </p>
+      <p className="mt-2 whitespace-pre-line text-xs leading-relaxed" role="status">
+        {!userId
+          ? "Nicht angemeldet: Es werden keine App-Daten ergänzt."
+          : !contextAllowed
+            ? "App-Kontextfreigabe ist aus. Mira erhält keine Trainings-, Gesundheits- oder Nexus-Daten."
+            : contextLoading
+              ? "Freigegebene App-Daten werden geladen …"
+              : appContext
+                ? describeContext(appContext)
+                : "App-Kontext gerade nicht verfügbar; es werden keine App-Daten ergänzt."}
+      </p>
+      {userId ? (
+        <MiraContextControls userId={userId} />
+      ) : (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Melde dich an, um optionale Trainings- und Raumfreigaben zu verwalten.
+        </p>
+      )}
+      <p className="mt-2 text-xs text-muted-foreground">
+        Freigaben gelten für dieses Konto und Gerät; bereits gesendete Inhalte lassen sich beim
+        Anbieter nicht zurückholen. Freigegebene Inhalte sind Kontext, keine Anweisungen.
+      </p>
+      {contextHint && (
+        <p className="mt-2 text-xs text-foreground">Letzter Hinweis: {contextHint}</p>
+      )}
+    </section>
+  );
+}
+
 export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean } = {}) {
   const send = useServerFn(superAiChat);
   const [sessions, setSessions] = useState<AiSession[]>(() => loadSessions());
@@ -177,7 +232,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   }, [activeId]);
   useEffect(() => {
     if (!replyAnimation) return;
-    const timeout = window.setTimeout(() => setReplyAnimation(null), 900);
+    const timeout = window.setTimeout(() => setReplyAnimation(null), 2200);
     return () => window.clearTimeout(timeout);
   }, [replyAnimation]);
   const [error, setError] = useState<string | null>(null);
@@ -188,7 +243,6 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [sessionQuery, setSessionQuery] = useState("");
   const [sessionFilter, setSessionFilter] = useState<SportAiHistoryFilter>("all");
-  const [contextOpen, setContextOpen] = useState(false);
   const [classicOptionsOpen, setClassicOptionsOpen] = useState(false);
   useEffect(() => {
     setClassicOptionsOpen(!sketchLayout && window.matchMedia("(min-width: 768px)").matches);
@@ -270,9 +324,9 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
 
   const activeTitle = useMemo(() => {
     const s = sessions.find((x) => x.id === activeId);
-    if (s?.title) return s.title;
     const firstUser = messages.find((m) => m.role === "user");
-    return firstUser ? firstUser.content.slice(0, 28) : "Neuer Chat";
+    if (firstUser) return createMiraChatTitle(firstUser.content);
+    return s?.title ? createMiraChatTitle(s.title) : "Neuer Chat";
   }, [sessions, activeId, messages]);
 
   const filteredSessions = useMemo(() => {
@@ -381,7 +435,8 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   // Persist active session
   useEffect(() => {
     if (!messages.length) return;
-    const title = messages.find((m) => m.role === "user")?.content.slice(0, 40) || "Neuer Chat";
+    const firstUser = messages.find((m) => m.role === "user");
+    const title = firstUser ? createMiraChatTitle(firstUser.content) : "Neuer Chat";
     setSessions((prev) => {
       const current = prev.find((s) => s.id === activeId);
       if (current && JSON.stringify(current.messages) === JSON.stringify(messages.slice(-60)))
@@ -863,7 +918,23 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           >
             <AloPageSidebarTrigger />
             {sketchLayout ? (
-              <h1 className="alo-mira-sketch-title">{activeTitle}</h1>
+              <>
+                <Link
+                  to="/"
+                  className="alo-mira-sketch-control"
+                  aria-label="Zur Alo-Startseite"
+                  title="Startseite"
+                >
+                  <House aria-hidden="true" />
+                </Link>
+                <div className="alo-mira-sketch-meta" aria-live="polite" aria-atomic="true">
+                  <h1 className="alo-mira-sketch-title">{activeTitle}</h1>
+                  <span className="alo-mira-sketch-provider">
+                    <span className="sr-only">Vorschau für die nächste Anfrage: </span>
+                    {activeProvider?.label ?? "Kein Anbieter"}
+                  </span>
+                </div>
+              </>
             ) : (
               <Link
                 to="/"
@@ -913,7 +984,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h1 className="text-xl font-bold tracking-tight">Mira</h1>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">{activeTitle}</p>
                 </div>
                 <div className="flex flex-wrap justify-end gap-1.5">
                   <IconBtn label="Chats" onClick={() => setSessionsOpen((v) => !v)}>
@@ -922,10 +992,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   <IconBtn label="Werkzeuge" onClick={() => setToolsOpen((v) => !v)}>
                     ✦
                   </IconBtn>
-                  <IconBtn label="Kontext" onClick={() => setContextOpen((v) => !v)}>
-                    ⧉
-                  </IconBtn>
-                  <IconBtn label="Zugangsdaten" onClick={() => setSettingsOpen((v) => !v)}>
+                  <IconBtn label="Mira-Einstellungen" onClick={() => setSettingsOpen((v) => !v)}>
                     ⚙️
                   </IconBtn>
                 </div>
@@ -1079,32 +1146,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             </form>
           </div>
 
-          <section
-            className="alo-classic-context-note mt-2 rounded-xl border border-border bg-card/50 px-3 py-2 text-[10px] text-muted-foreground"
-            aria-label="Datenkontext vor dem Senden"
-          >
-            <div className="font-semibold text-foreground">Daten, die beim Senden mitgehen</div>
-            <p className="mt-0.5 whitespace-pre-line">
-              {!contextAllowed
-                ? "Aus. Mira erhält nur deine Frage und den Verlauf dieses Chats."
-                : contextLoading
-                  ? "Freigegebene App-Daten werden geladen …"
-                  : appContext
-                    ? describeContext(appContext)
-                    : userId
-                      ? "App-Kontext gerade nicht verfügbar; es werden keine App-Daten ergänzt."
-                      : "Noch nicht angemeldet oder kein App-Kontext geladen; es werden keine App-Daten ergänzt."}
-            </p>
-            <p className="mt-1">
-              Dazu kommen deine Eingabe und dieser Chatverlauf. Fehlende Werte bleiben unbekannt; es
-              werden keine Trainings- oder Gesundheitswerte erfunden.
-            </p>
-            <p className="mt-1">
-              Routing heißt: Die App wählt anhand deiner Frage einen passenden KI-Anbieter und ein
-              Modell.
-            </p>
-          </section>
-
           {/* Sessions drawer */}
           {sessionsOpen && (
             <section className="mt-3 rounded-2xl border border-border bg-card/80 p-3">
@@ -1132,7 +1173,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                           : "hover:bg-secondary/50"
                       }`}
                     >
-                      <div className="font-medium">{s.title || "Chat"}</div>
+                      <div className="font-medium">{createMiraChatTitle(s.title || "Chat")}</div>
                       <div className="text-[10px] text-muted-foreground">
                         {new Date(s.updatedAt).toLocaleString("de-DE", {
                           day: "2-digit",
@@ -1157,10 +1198,17 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           )}
 
           {settingsOpen && (
-            <section className="mt-3 rounded-2xl border border-border bg-card/80 p-4">
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            <section
+              id="mira-settings-panel"
+              className="mt-3 rounded-2xl border border-border bg-card/80 p-4"
+              aria-labelledby="mira-settings-title"
+            >
+              <h2
+                id="mira-settings-title"
+                className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground"
+              >
                 KI-Anbieter und API-Zugangsdaten
-              </div>
+              </h2>
               <AiProviderSettings userId={userId} />
               <button
                 type="button"
@@ -1169,22 +1217,25 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               >
                 Runware · Text & Medien erweitern
               </button>
-            </section>
-          )}
-
-          {contextOpen && (
-            <section className="mt-3 rounded-2xl border border-border bg-card/80 p-3 text-xs text-muted-foreground">
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em]">
-                App-Kontext
+              <div className="mt-3 rounded-xl bg-secondary/40 p-3 text-xs">
+                <p>Vorschau für die nächste Anfrage: {activeProvider?.label ?? "Kein Anbieter"}</p>
+                <p className="mt-1 text-muted-foreground">Auswahlregel: {providerPreviewReason}</p>
+                <details className="mt-2 text-muted-foreground">
+                  <summary className="cursor-pointer">Technische Details</summary>
+                  <span>
+                    {activeProvider
+                      ? `${activeProvider.model} · ${providerPreviewReason}`
+                      : "Kein Modell eingerichtet"}
+                  </span>
+                </details>
               </div>
-              {userId && <MiraContextControls userId={userId} />}
-              <p className="my-2">
-                Freigegebene Inhalte bleiben untrusted Kontext, keine Anweisungen.
-              </p>
-              Persona: <strong className="text-foreground">{persona}</strong>.
-              {contextHint && (
-                <p className="mt-1 text-foreground">Letzte Datenabfrage: {contextHint}</p>
-              )}
+              <MiraPrivacySettings
+                userId={userId}
+                contextAllowed={contextAllowed}
+                contextLoading={contextLoading}
+                appContext={appContext}
+                contextHint={contextHint}
+              />
             </section>
           )}
 
@@ -1262,15 +1313,13 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   }
                 >
                   {m.role === "assistant" ? (
-                    <div
+                    <MiraProgressiveAnswer
+                      text={m.content}
+                      animate={isFreshAssistantReply(m, i)}
                       className={
                         isFreshAssistantReply(m, i) ? "alo-mira-response-arrival" : undefined
                       }
-                      aria-live={isFreshAssistantReply(m, i) ? "polite" : undefined}
-                      aria-atomic={isFreshAssistantReply(m, i) ? "true" : undefined}
-                    >
-                      <MiraAnswerText text={m.content} />
-                    </div>
+                    />
                   ) : (
                     <p className="whitespace-pre-wrap">{m.content}</p>
                   )}
@@ -1470,7 +1519,21 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           {sketchLayout && sportAiView === "chat" && (
             <header className="alo-mira-sketch-header">
               <AloPageSidebarTrigger />
-              <h1 className="alo-mira-sketch-title">{activeTitle}</h1>
+              <Link
+                to="/"
+                className="alo-mira-sketch-control"
+                aria-label="Zur Alo-Startseite"
+                title="Startseite"
+              >
+                <House aria-hidden="true" />
+              </Link>
+              <div className="alo-mira-sketch-meta" aria-live="polite" aria-atomic="true">
+                <h1 className="alo-mira-sketch-title">{activeTitle}</h1>
+                <span className="alo-mira-sketch-provider">
+                  <span className="sr-only">Vorschau für die nächste Anfrage: </span>
+                  {activeProvider?.label ?? "Kein Anbieter"}
+                </span>
+              </div>
               <Link to="/profile" aria-label="Profil öffnen" className="alo-mira-sketch-control">
                 <UserRound aria-hidden="true" />
               </Link>
@@ -1552,9 +1615,15 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             </>
           )}
           {settingsOpen && (
-            <section className="sport-ai-settings-card rounded-[1.5rem] border border-border/70 bg-card/75 p-5">
+            <section
+              id="mira-settings-panel"
+              className="sport-ai-settings-card rounded-[1.5rem] border border-border/70 bg-card/75 p-5"
+              aria-labelledby="mira-settings-title"
+            >
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-lg font-bold">KI-Anbieter und Zugangsdaten</h2>
+                <h2 id="mira-settings-title" className="text-lg font-bold">
+                  KI-Anbieter und Zugangsdaten
+                </h2>
                 <button
                   type="button"
                   className="text-sm font-semibold text-primary"
@@ -1574,6 +1643,25 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               >
                 Runware · Text & Medien erweitern
               </button>
+              <div className="mt-3 rounded-xl bg-secondary/40 p-3 text-xs">
+                <p>Vorschau für die nächste Anfrage: {activeProvider?.label ?? "Kein Anbieter"}</p>
+                <p className="mt-1 text-muted-foreground">Auswahlregel: {providerPreviewReason}</p>
+                <details className="mt-2 text-muted-foreground">
+                  <summary className="cursor-pointer">Technische Details</summary>
+                  <span>
+                    {activeProvider
+                      ? `${activeProvider.model} · ${providerPreviewReason}`
+                      : "Kein Modell eingerichtet"}
+                  </span>
+                </details>
+              </div>
+              <MiraPrivacySettings
+                userId={userId}
+                contextAllowed={contextAllowed}
+                contextLoading={contextLoading}
+                appContext={appContext}
+                contextHint={contextHint}
+              />
             </section>
           )}
           {sportAiView !== "chat" && (
@@ -1770,10 +1858,12 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       className={`sport-ai-session-row ${session.id === activeId ? "is-active" : ""}`}
                     >
                       <span className="sport-ai-session-avatar" aria-hidden="true">
-                        {(session.title || "C").slice(0, 1).toLocaleUpperCase("de-DE")}
+                        {createMiraChatTitle(session.title || "Neuer Chat")
+                          .slice(0, 1)
+                          .toLocaleUpperCase("de-DE")}
                       </span>
                       <span className="sport-ai-session-copy">
-                        <strong>{session.title || "Neuer Chat"}</strong>
+                        <strong>{createMiraChatTitle(session.title || "Neuer Chat")}</strong>
                         <span>{preview}</span>
                       </span>
                       <time dateTime={session.updatedAt}>
@@ -1803,34 +1893,11 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             <div className="sport-ai-chat-grid">
               <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
                 <details className="sport-ai-chat-options">
-                  <summary>Gesprächsoptionen & Datenschutz</summary>
+                  <summary>Gesprächsoptionen</summary>
                   <div className="mira-chat-control-panel">
-                    <div className="mira-chat-live-preview" aria-live="polite">
-                      <strong>{activeTitle}</strong>
-                      <span>
-                        Vorschau nächste Anfrage: {activeProvider?.label ?? "Kein Anbieter"}
-                      </span>
-                      <details>
-                        <summary className="cursor-pointer">Technische Details</summary>
-                        <span>
-                          {activeProvider
-                            ? `${activeProvider.model} · ${providerPreviewReason}`
-                            : "Kein Modell eingerichtet"}
-                        </span>
-                      </details>
-                    </div>
                     <div className="mira-chat-quick-actions" aria-label="Mira-Aktionen">
-                      <AloHomeLink />
                       <button type="button" onClick={startNewSession} aria-label="Neuer Chat">
                         <Plus aria-hidden="true" /> Neuer Chat
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSettingsOpen((value) => !value)}
-                        aria-pressed={settingsOpen}
-                      >
-                        <Settings2 aria-hidden="true" />
-                        {settingsOpen ? "Einstellungen schließen" : "KI-Einstellungen"}
                       </button>
                       <details className="mira-chat-view-menu">
                         <summary>Ansichten & Werkzeuge</summary>
@@ -1937,33 +2004,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                         </div>
                       </details>
                     </div>
-                    <button
-                      type="button"
-                      className="mt-2 text-xs font-semibold text-muted-foreground"
-                      onClick={() => setContextOpen((v) => !v)}
-                    >
-                      {contextOpen ? "Kontextdetails ausblenden" : "Welche App-Daten gehen mit?"}
-                    </button>
                   </section>
-                  {contextOpen && (
-                    <section className="rounded-[1.5rem] border border-border/70 bg-card/75 p-5 text-sm">
-                      <h3 className="font-bold">Mira-Datenfreigabe</h3>
-                      {userId && <MiraContextControls userId={userId} />}
-                      <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
-                        {contextLoading
-                          ? "App-Daten werden geladen …"
-                          : appContext
-                            ? describeContext(appContext)
-                            : userId
-                              ? "App-Kontext gerade nicht verfügbar; es werden keine App-Daten ergänzt."
-                              : "Noch nicht angemeldet oder kein App-Kontext geladen; es werden keine App-Daten ergänzt."}
-                      </p>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Deine Eingabe und dieser Chatverlauf werden ergänzt. Fehlende Werte bleiben
-                        unbekannt. Routing heißt: Die App wählt passend zur Frage ein Modell.
-                      </p>
-                    </section>
-                  )}
                   <div className="flex flex-wrap gap-2">
                     <SmallAction onClick={regenerate} disabled={loading || messages.length === 0}>
                       Neu generieren
@@ -2054,13 +2095,17 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       <article
                         className={`sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/70 bg-background/80"}`}
                       >
-                        <p
-                          className={`whitespace-pre-wrap ${isFreshAssistantReply(m, i) ? "alo-mira-response-arrival" : ""}`}
-                          aria-live={isFreshAssistantReply(m, i) ? "polite" : undefined}
-                          aria-atomic={isFreshAssistantReply(m, i) ? "true" : undefined}
-                        >
-                          {m.content}
-                        </p>
+                        {m.role === "assistant" ? (
+                          <MiraProgressiveAnswer
+                            text={m.content}
+                            animate={isFreshAssistantReply(m, i)}
+                            className={
+                              isFreshAssistantReply(m, i) ? "alo-mira-response-arrival" : undefined
+                            }
+                          />
+                        ) : (
+                          <p className="whitespace-pre-wrap">{m.content}</p>
+                        )}
                         {m.role === "assistant" && m.interaction && (
                           <MiraInteractiveCard
                             interaction={m.interaction}
@@ -2229,18 +2274,18 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   ))}
                   {loading && <MiraGeneratingIndicator />}
                 </div>
-                <div className="mira-chat-bottom-row">
-                  {!sketchLayout && <AloPageSidebarTrigger />}
-                  <Link
-                    to="/"
-                    className="mira-chat-home-action"
-                    aria-label="Zur Alo-Startseite"
-                    title="Zur Startseite"
-                  >
-                    <House aria-hidden="true" />
-                    <span>Startseite</span>
-                  </Link>
-                  {!sketchLayout && (
+                {!sketchLayout && (
+                  <div className="mira-chat-bottom-row">
+                    <AloPageSidebarTrigger />
+                    <Link
+                      to="/"
+                      className="mira-chat-home-action"
+                      aria-label="Zur Alo-Startseite"
+                      title="Zur Startseite"
+                    >
+                      <House aria-hidden="true" />
+                      <span>Startseite</span>
+                    </Link>
                     <button
                       type="button"
                       onClick={() => handleVoiceConversationOpenChange(true)}
@@ -2250,12 +2295,12 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       <Mic className="h-4 w-4" aria-hidden="true" />
                       Freisprechen
                     </button>
-                  )}
-                  <div className="mira-chat-live-status" aria-live="polite">
-                    <strong>{activeTitle}</strong>
-                    <span>Vorschau: {activeProvider?.label ?? "Kein Anbieter"}</span>
+                    <div className="mira-chat-live-status" aria-live="polite">
+                      <strong>{activeTitle}</strong>
+                      <span>Vorschau: {activeProvider?.label ?? "Kein Anbieter"}</span>
+                    </div>
                   </div>
-                </div>
+                )}
                 {error && (
                   <div
                     role="alert"
@@ -2404,20 +2449,17 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   </section>
                 )}
                 <section className="rounded-[1.5rem] border border-border/70 bg-card/60 p-5">
-                  <h3 className="font-bold">Kontext beim Senden</h3>
+                  <h3 className="font-bold">Datenschutz und Datenfreigaben</h3>
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                    {contextLoading
-                      ? "App-Daten werden geladen …"
-                      : appContext
-                        ? `${appContext.recentWorkouts.length} letzte Trainings · ${appContext.health.length} Tage Gesundheitsdaten · ${appContext.chatRooms.length} Chat-Räume`
-                        : "Keine App-Daten verfügbar. Fehlende Werte werden nicht erfunden."}
+                    Details zu optionalen App-Daten, Empfängern und Widerruf findest du zentral in
+                    den Mira-Einstellungen.
                   </p>
                   <button
                     type="button"
-                    onClick={() => setContextOpen((v) => !v)}
-                    className="mt-3 text-xs font-semibold text-primary"
+                    onClick={() => setSettingsOpen(true)}
+                    className="mt-3 min-h-11 text-xs font-semibold text-primary"
                   >
-                    {contextOpen ? "Kontext schließen" : "Details anzeigen →"}
+                    Mira-Einstellungen öffnen →
                   </button>
                 </section>
               </aside>

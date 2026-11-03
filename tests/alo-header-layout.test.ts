@@ -47,10 +47,11 @@ test("swipe and bottom-navigation alternatives remain while all former header de
   const layout = read("routes/_authenticated/route.tsx");
   const hub = read("routes/_authenticated/index.tsx");
   const swipe = read("lib/module-swipe-gesture.ts");
+  const areaMenus = read("lib/home-app-menus.ts");
   assert.match(layout, /installModuleSwipeGesture/);
   assert.match(swipe, /getSwipeDestination/);
   assert.match(hub, /aria-label="Alo-Werkzeuge öffnen"/);
-  assert.match(hub, /detail: "menu"/);
+  assert.match(hub, /to="\/tools"/);
   assert.match(hub, /aria-label="Überall suchen"/);
   assert.match(hub, /detail: "search"/);
   for (const route of [
@@ -63,8 +64,9 @@ test("swipe and bottom-navigation alternatives remain while all former header de
     "/battle-league",
     "/leaderboard",
     "/clubs",
+    "/alarm",
   ]) {
-    assert.ok(hub.includes(`to: "${route}"`), `hub should link to ${route}`);
+    assert.ok(areaMenus.includes(`to: "${route}"`), `areas app should link to ${route}`);
   }
   assert.match(read("components/TopNav.tsx"), /\{ to: "\/ai", label: "Mira"/);
   assert.match(read("components/TopNav.tsx"), /\{ to: "\/chat", label: "Nexus Chat"/);
