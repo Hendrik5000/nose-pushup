@@ -1,6 +1,8 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { Mic, MicOff, Volume2 } from "lucide-react";
+import { MiraSpark } from "@/components/mira/MiraSpark";
 import type { MiraVoiceConversationPhase } from "@/lib/mira-voice-conversation";
+import { ArrowLeft, Info, MessageCircle, Mic, MicOff, VolumeX, X } from "lucide-react";
+import "@/mira-voice.css";
 
 type MiraVoiceConversationDialogProps = {
   open: boolean;
@@ -19,13 +21,13 @@ function getStatus(phase: MiraVoiceConversationPhase): string {
     case "listening":
       return "Ich höre zu. Sprich einfach los.";
     case "thinking":
-      return "Mira verarbeitet deinen erkannten Text …";
+      return "Mira denkt kurz nach …";
     case "speaking":
-      return "Mira antwortet. Du kannst sie mit deiner Stimme oder der Taste unterbrechen.";
+      return "Mira spricht. Du kannst sie jederzeit unterbrechen.";
     case "error":
       return "Das Sprachgespräch ist pausiert.";
     default:
-      return "Das Mikrofon bleibt aus, bis du das Gespräch startest.";
+      return "Starte das Gespräch, wenn du bereit bist.";
   }
 }
 
@@ -41,114 +43,171 @@ export function MiraVoiceConversationDialog({
   onInterruptSpeech,
 }: MiraVoiceConversationDialogProps) {
   const active = phase === "listening" || phase === "thinking" || phase === "speaking";
+  const orbState =
+    phase === "listening"
+      ? "is-listening"
+      : phase === "thinking" || phase === "speaking"
+        ? `is-${phase}`
+        : "";
+  const micAction = phase === "speaking" ? onInterruptSpeech : active ? onStop : onStart;
+  const micLabel =
+    phase === "speaking"
+      ? "Mira unterbrechen und weiter zuhören"
+      : active
+        ? "Sprachgespräch beenden und Mikrofon ausschalten"
+        : "Sprachgespräch mit Mira starten";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="alo-dialog max-h-[88dvh] overflow-y-auto sm:max-w-xl">
-        <DialogTitle className="pr-8">Freisprechen mit Mira</DialogTitle>
-        <DialogDescription>
-          Starte die Sitzung bewusst. Danach werden erkannte Sätze über denselben Mira-Anbieter wie
-          im Textchat gesendet und Antworten mit der Gerätestimme vorgelesen.
+      <DialogContent className="mira-voice-dialog fixed inset-0 z-50 grid h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-none border-0 p-0 text-white shadow-none sm:rounded-none">
+        <DialogTitle className="sr-only">Sprachgespräch mit Mira</DialogTitle>
+        <DialogDescription className="sr-only">
+          Ein bewusst gestartetes Sprachgespräch mit Mira. Du kannst Mira jederzeit unterbrechen
+          oder die Ansicht schließen, um zum Textchat zurückzukehren.
         </DialogDescription>
 
-        <section className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed">
-          <p>
-            Dein Browser wandelt Sprache in Text um. Je nach Browser kann dafür Audio an einen
-            Browser-Spracherkennungsdienst übertragen werden; eine lokale Verarbeitung ist nicht
-            garantiert. Mira erhält nur den erkannten Text, keine rohe Mikrofonaufnahme. Der Text
-            aus deinem normalen Entwurf und vorhandene Anhänge werden nicht mitgesendet.
-          </p>
-          <p className="mt-2 text-muted-foreground">
-            Die Sprachausgabe nutzt die eingebaute Stimme deines Geräts. Stimme, Verfügbarkeit und
-            Unterbrechungsverhalten hängen von Browser und Gerät ab.
-          </p>
-          <p className="mt-2 text-muted-foreground">
-            Bereits gesendete Anfragen lassen sich hier nicht zurückholen; ihre Textantwort kann
-            noch im Chat ankommen, wird nach dem Beenden aber nicht mehr vorgelesen.
-          </p>
-        </section>
+        <header className="mira-voice-header flex items-center justify-between gap-3 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            aria-label="Zum Mira-Chat zurückkehren"
+            className="mira-voice-icon-button"
+          >
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+          </button>
 
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border/70 bg-background/60 p-5 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary">
-            {phase === "speaking" ? (
-              <Volume2 className="h-7 w-7" aria-hidden="true" />
-            ) : phase === "listening" ? (
-              <Mic className="h-7 w-7" aria-hidden="true" />
-            ) : (
-              <MicOff className="h-7 w-7" aria-hidden="true" />
+          <div
+            className="flex min-w-0 items-center gap-2.5"
+            role="group"
+            aria-label="Mira Sprachgespräch"
+          >
+            <span className="mira-voice-brand-mark" aria-hidden="true">
+              <MiraSpark />
+            </span>
+            <div className="min-w-0 text-left">
+              <p className="truncate text-sm font-semibold tracking-wide">Mira</p>
+              <p className="truncate text-[11px] text-white/55">Sprachgespräch</p>
+            </div>
+          </div>
+
+          <details className="mira-voice-info">
+            <summary className="mira-voice-icon-button" aria-label="Datenschutz und Audiohinweise">
+              <Info className="h-5 w-5" aria-hidden="true" />
+            </summary>
+            <div className="mira-voice-info__panel" role="note">
+              <p className="font-semibold text-white">Datenschutz &amp; Audio</p>
+              <p className="mt-2">
+                Dein Browser wandelt Sprache in Text um. Je nach Browser kann dafür Audio an einen
+                Browser-Spracherkennungsdienst übertragen werden; eine lokale Verarbeitung ist nicht
+                garantiert. Mira erhält nur den erkannten Text, keine rohe Mikrofonaufnahme. Dein
+                normaler Entwurf und vorhandene Anhänge werden nicht mitgesendet.
+              </p>
+              <p className="mt-2">
+                Miras Antwort wird mit der eingebauten Stimme deines Geräts vorgelesen. Stimme,
+                Verfügbarkeit und Unterbrechungsverhalten hängen von Browser und Gerät ab.
+              </p>
+              <p className="mt-2">
+                Beim Beenden oder Schließen werden Mikrofon und Wiedergabe gestoppt. Bereits
+                gesendete Anfragen lassen sich hier nicht zurückholen; ihre Textantwort kann noch im
+                Chat ankommen, wird nach dem Beenden aber nicht mehr vorgelesen.
+              </p>
+              <p className="mt-2 text-white/55">
+                Anbieter: {providerLabel ?? "kein aktiver Anbieter"}. Die endgültige Auswahl erfolgt
+                wie im Textchat anhand deiner Frage.
+              </p>
+            </div>
+          </details>
+        </header>
+
+        <main className="mira-voice-stage min-h-0 overflow-y-auto py-5">
+          <div className="mira-voice-stage__content flex min-h-full flex-col items-center justify-center gap-5 text-center">
+            <div
+              className={`mira-voice-orb ${orbState}`}
+              role="img"
+              aria-label="Miras blau leuchtendes, animiertes Orb"
+            />
+
+            <div className="w-full max-w-xl px-2">
+              <p className="text-base font-medium text-white" aria-live="polite">
+                {getStatus(phase)}
+              </p>
+              {phase === "idle" && (
+                <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-white/55">
+                  Dein Mikrofon bleibt aus, bis du das Gespräch bewusst startest.
+                </p>
+              )}
+            </div>
+
+            {transcript && (
+              <section
+                className="mira-voice-transcript w-full max-w-xl"
+                aria-label="Zuletzt erkannter Text"
+                aria-live="polite"
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-100/65">
+                  Du
+                </p>
+                <p className="mt-1 max-h-24 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-white/90">
+                  {transcript}
+                </p>
+              </section>
+            )}
+
+            {error && (
+              <p
+                role="alert"
+                className="mx-auto w-full max-w-xl rounded-2xl border border-red-200/20 bg-red-950/55 px-4 py-3 text-left text-sm text-red-100"
+              >
+                {error}
+              </p>
             )}
           </div>
-          <p className="text-sm font-semibold" aria-live="polite">
-            {getStatus(phase)}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Anbieter-Vorschau: {providerLabel ?? "kein aktiver Anbieter"}. Die endgültige Auswahl
-            erfolgt wie im Textchat anhand deiner Frage.
-          </p>
+        </main>
 
-          <div className="flex flex-wrap justify-center gap-2">
-            {active ? (
-              <button
-                type="button"
-                onClick={onStop}
-                className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 text-sm font-semibold text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                aria-label="Freisprechgespräch beenden und Mikrofon ausschalten"
-              >
-                <MicOff className="h-4 w-4" aria-hidden="true" />
-                Gespräch beenden
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onStart}
-                className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                aria-label="Freisprechgespräch starten und Mikrofon aktivieren"
-              >
-                <Mic className="h-4 w-4" aria-hidden="true" />
-                Gespräch starten
-              </button>
-            )}
-            {phase === "speaking" && (
-              <button
-                type="button"
-                onClick={onInterruptSpeech}
-                className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                aria-label="Miras Antwort unterbrechen und weiter zuhören"
-              >
-                Antwort unterbrechen
-              </button>
-            )}
+        <footer className="mira-voice-footer px-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3">
+          <div className="mira-voice-controls mx-auto flex w-full max-w-3xl items-center gap-2.5">
+            <div
+              className="mira-voice-conversation-pill"
+              role="group"
+              aria-label="Status des Sprachgesprächs"
+            >
+              <MessageCircle className="h-5 w-5 shrink-0 text-white/75" aria-hidden="true" />
+              <div className="min-w-0 text-left">
+                <p className="truncate text-sm text-white/90">
+                  {transcript || (active ? getStatus(phase) : "Mit Mira sprechen")}
+                </p>
+                <p className="truncate text-[10px] text-white/50">
+                  {active ? "Sprachgespräch aktiv" : "Mira wartet auf deinen Start"}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={micAction}
+              aria-label={micLabel}
+              aria-pressed={active}
+              className={`mira-voice-control-button ${active ? "is-active" : "is-ready"}`}
+            >
+              {phase === "speaking" ? (
+                <VolumeX className="h-5 w-5" aria-hidden="true" />
+              ) : active ? (
+                <MicOff className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <Mic className="h-5 w-5" aria-hidden="true" />
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="inline-flex min-h-12 items-center rounded-xl border border-border px-4 text-sm font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              aria-label="Sprachansicht schließen und zum Mira-Chat zurückkehren"
+              className="mira-voice-close-button"
             >
-              Schließen
+              <X className="h-6 w-6" aria-hidden="true" />
             </button>
           </div>
-        </div>
-
-        {transcript && (
-          <section
-            className="rounded-xl border border-border bg-background/60 p-3"
-            aria-label="Zuletzt erkannter Text"
-            aria-live="polite"
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Erkannter Text
-            </p>
-            <p className="mt-1 whitespace-pre-wrap text-sm">{transcript}</p>
-          </section>
-        )}
-
-        {error && (
-          <p
-            role="alert"
-            className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            {error}
-          </p>
-        )}
+        </footer>
       </DialogContent>
     </Dialog>
   );

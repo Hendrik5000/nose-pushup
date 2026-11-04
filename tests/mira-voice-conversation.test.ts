@@ -263,10 +263,17 @@ test("Integration behält bearbeitbares Diktat und sendet Sprachturns text-only 
     "src/components/mira/MiraVoiceConversationDialog.tsx",
     "utf8",
   );
+  const voiceStyles = readFileSync("src/mira-voice.css", "utf8");
   const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
 
   assert.match(dialog, /Erkannten Text bearbeiten/);
   assert.match(dialog, /Mira wird nicht automatisch kontaktiert/);
+  assert.match(conversationDialog, /mira-voice-dialog fixed inset-0/);
+  assert.match(conversationDialog, /mira-voice-orb/);
+  assert.doesNotMatch(conversationDialog, /ChatGPT/);
+  assert.match(conversationDialog, /onClick=\{micAction\}/);
+  assert.match(conversationDialog, /phase === "speaking" \? onInterruptSpeech/);
+  assert.match(voiceStyles, /prefers-reduced-motion/);
   assert.match(page, /includeAttachments: false/);
   assert.match(page, /preserveComposer: true/);
   assert.match(page, /submitRef\.current\(transcript, messagesRef\.current/);
@@ -276,8 +283,11 @@ test("Integration behält bearbeitbares Diktat und sendet Sprachturns text-only 
     /Mira erhält nur den erkannten Text, keine rohe Mikrofonaufnahme/,
   );
   assert.match(conversationDialog, /Je nach Browser kann dafür Audio/);
-  assert.match(conversationDialog, /Bereits gesendete Anfragen lassen sich hier nicht zurückholen/);
+  assert.match(
+    conversationDialog,
+    /Bereits\s+gesendete Anfragen lassen sich hier nicht zurückholen/,
+  );
   assert.match(conversationDialog, /wird nach dem Beenden aber nicht mehr vorgelesen/);
-  assert.match(conversationDialog, /onClick=\{onInterruptSpeech\}/);
-  assert.match(conversationDialog, /Gespräch beenden/);
+  assert.match(conversationDialog, /onClick=\{\(\) => onOpenChange\(false\)\}/);
+  assert.match(conversationDialog, /Sprachgespräch beenden und Mikrofon ausschalten/);
 });
