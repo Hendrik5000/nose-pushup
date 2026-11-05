@@ -23,7 +23,7 @@ test("Mira's reference chat keeps its formatted, accessible historical answer pr
   assert.match(page, /<MiraSources userId=\{userId\} \/>/);
   assert.match(page, /Gesprächsoptionen & Datenschutz/);
   assert.match(page, /Anbieter für diese Antwort:/);
-  assert.match(page, /className="sport-chat-composer/);
+  assert.match(page, /className=\{`sport-chat-composer/);
 });
 
 test("restored chat motion respects reduced-motion preferences and preserves modern voice controls", () => {

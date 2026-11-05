@@ -37,8 +37,8 @@ test("quiet navy colors stay local to Mira and the authenticated shell has no sh
 });
 
 test("three concise starter tasks only prepare an editable draft", () => {
-  const start = page.indexOf('aria-label="Mit einer Aufgabe starten"');
-  const starters = page.slice(start, page.indexOf("{messages.map", start));
+  const start = page.indexOf("function MiraStarterSuggestions");
+  const starters = page.slice(start, page.indexOf("export function SuperAiPage", start));
   for (const id of ["ideas", "draft", "explain"]) assert.ok(starters.includes(`id: "${id}"`));
   for (const icon of ["Lightbulb", "PenLine", "BookOpen"]) assert.ok(starters.includes(icon));
   assert.match(starters, /onClick=\{\(\) => setInput\(tool.prompt\)\}/);
@@ -47,11 +47,11 @@ test("three concise starter tasks only prepare an editable draft", () => {
   assert.match(css, /@media \(min-width: 768px\)/);
 });
 
-test("Mira chat stays headerless and Home is an in-flow action before the composer", () => {
+test("non-reference Mira keeps Home as an in-flow action before the composer", () => {
   assert.doesNotMatch(page, /sport-ai-compact-heading|sport-ai-chat-actions/);
   const stage = page.indexOf('className="sport-chat-stage');
   const home = page.indexOf('className="mira-chat-home-action"');
-  const composer = page.indexOf('className="sport-chat-composer', home);
+  const composer = page.indexOf("className={`sport-chat-composer", home);
   assert.ok(stage >= 0 && home > stage, "Home should follow the conversation stage");
   assert.ok(composer > home, "Home should appear before, not over, the composer");
   assert.match(page.slice(home, page.indexOf("</Link>", home)), /Zur Alo-Startseite/);
@@ -64,13 +64,17 @@ test("Mira chat stays headerless and Home is an in-flow action before the compos
 });
 
 test("empty welcome does not replace saved conversation messages", () => {
-  assert.match(page, /messages\.length === 0 && \(\s*<div className="mira-chat-welcome/);
+  const stage = page.slice(page.indexOf('className="sport-chat-stage'));
+  assert.match(stage, /messages\.length === 0 && \(\s*<div className="mira-chat-welcome/);
   assert.match(page, /\{messages\.map\(\(m, i\) => \(/);
   assert.match(page, /loadSessions\(\)\[0\]\?\.messages \?\? \[\]/);
 });
 
 test("Mira's chat start feels conversational and answer bubbles carry Mira's own mark", () => {
-  const welcomeStart = page.indexOf('className="mira-chat-welcome');
+  const welcomeStart = page.indexOf(
+    'className="mira-chat-welcome',
+    page.indexOf('className="sport-chat-stage'),
+  );
   const messagesStart = page.indexOf("{messages.map", welcomeStart);
   const welcome = page.slice(welcomeStart, messagesStart);
   assert.ok(welcomeStart >= 0 && messagesStart > welcomeStart);
@@ -80,9 +84,12 @@ test("Mira's chat start feels conversational and answer bubbles carry Mira's own
     chatDesign,
     /mira-chat-welcome > \.mira-chat-welcome-copy[\s\S]*?display: block !important/,
   );
-  assert.match(welcome, /aria-label="Mit einer Aufgabe starten"/);
-  assert.match(welcome, /className="mira-chat-suggestion"/);
-  assert.match(welcome, /onClick=\{\(\) => setInput\(tool\.prompt\)\}/);
+  assert.match(welcome, /sketchLayout \? \([\s\S]*?wobei kann ich helfen\?/);
+  assert.match(welcome, /<MiraStarterSuggestions setInput=\{setInput\} \/>/);
+  assert.match(
+    page,
+    /className="mira-chat-suggestion"[\s\S]*?onClick=\{\(\) => setInput\(tool\.prompt\)\}/,
+  );
   assert.match(chatDesign, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important/);
   assert.match(chatDesign, /\.mira-chat-welcome\s*\{[^}]*flex: 0 0 auto;/s);
   assert.match(

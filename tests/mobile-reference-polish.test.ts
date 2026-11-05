@@ -6,7 +6,7 @@ test("empty performance coach offers editable starter tasks without sending imme
   const ai = read("components/mira/SuperAiPage.tsx");
   const start = ai.indexOf('aria-label="Mit einer Aufgabe starten"');
   assert.ok(start > 0);
-  const cards = ai.slice(start, ai.indexOf("{messages.map", start));
+  const cards = ai.slice(start, ai.indexOf("export function SuperAiPage", start));
   for (const id of ["ideas", "draft", "explain"]) assert.ok(cards.includes(id));
   assert.match(cards, /setInput\(tool.prompt\)/);
   assert.doesNotMatch(cards, /void submit/);
