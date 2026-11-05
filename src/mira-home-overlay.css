@@ -1,0 +1,118 @@
+.alo-mira-home-launcher {
+  position: fixed;
+  z-index: 40;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  left: 50%;
+  width: 3.5rem;
+  transform: translateX(-50%);
+}
+
+html[data-navigation-visible="true"][data-navigation-expanded="true"]:is(
+    [data-navigation-layout="bottom"],
+    [data-navigation-layout="floating"]
+  )
+  .alo-mira-home-launcher {
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px) + 0.75rem);
+}
+
+.alo-mira-home-launcher.has-handoff {
+  width: min(19rem, calc(100vw - 2rem));
+}
+
+.alo-mira-home-launcher-button {
+  display: grid;
+  width: 3.5rem;
+  min-width: 3.5rem;
+  height: 3.5rem;
+  min-height: 3.5rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--card) 94%, var(--background));
+  color: var(--foreground);
+  box-shadow: 0 10px 32px color-mix(in srgb, #000 28%, transparent);
+  font: inherit;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.alo-mira-home-launcher-button > svg {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.alo-mira-home-launcher-button:hover {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--accent));
+  background: color-mix(in srgb, var(--card) 86%, var(--primary));
+}
+
+.alo-mira-home-launcher-button:focus-visible,
+.alo-mira-home-handoff-button:focus-visible,
+.alo-mira-home-handoff-dismiss:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.alo-mira-home-handoff-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.alo-mira-home-handoff-button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 3.25rem;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--card) 96%, var(--background));
+  color: var(--foreground);
+  box-shadow: 0 10px 32px color-mix(in srgb, #000 28%, transparent);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.alo-mira-home-handoff-dismiss {
+  display: grid;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.alo-mira-home-handoff-actions [role="status"] {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  width: min(19rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card);
+  padding: 0.625rem 0.75rem;
+  color: var(--foreground);
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 24%, transparent);
+}
+
+.alo-mira-voice-entry-dialog {
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border)) !important;
+  border-radius: 1.25rem !important;
+  background: color-mix(in srgb, var(--card) 96%, var(--background)) !important;
+  box-shadow: 0 24px 80px color-mix(in srgb, #000 42%, transparent) !important;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
