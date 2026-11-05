@@ -7,6 +7,8 @@ const authenticatedRoute = read("routes/_authenticated/route.tsx");
 const authRoute = read("routes/auth.tsx");
 const rootRoute = read("routes/__root.tsx");
 const notificationsHook = read("hooks/useNotifications.ts");
+const homeRoute = read("routes/_authenticated/index.tsx");
+const readinessHook = read("hooks/useReadiness.ts");
 
 test("authenticated route uses its persisted client session for the UI gate", () => {
   assert.match(authenticatedRoute, /supabase\.auth\.getSession\(\)/);
@@ -21,6 +23,14 @@ test("sign-in redirect and optional root theme do not force auth user fetches", 
   assert.match(rootRoute, /supabase\.auth\.getSession\(\)/);
   assert.doesNotMatch(rootRoute, /supabase\.auth\.getUser\(\)/);
   assert.match(rootRoute, /Theme loading is optional/);
+});
+
+test("Home dashboard and readiness reuse the authenticated route user", () => {
+  assert.match(homeRoute, /const \{ user \} = Route\.useRouteContext\(\)/);
+  assert.doesNotMatch(homeRoute, /supabase\.auth\.getUser\(\)/);
+  assert.match(homeRoute, /useReadiness\(\{ userId: user\.id, streak \}\)/);
+  assert.match(readinessHook, /userId: string/);
+  assert.doesNotMatch(readinessHook, /supabase\.auth\.getUser\(\)/);
 });
 
 test("background notifications reuse the authenticated user id and contain transient request failures", () => {

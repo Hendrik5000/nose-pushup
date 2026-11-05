@@ -1,6 +1,6 @@
 import { progressState } from "@/lib/alo-ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
@@ -36,6 +36,14 @@ import { WorkoutNotesPanel } from "@/components/WorkoutNotesPanel";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import type { WidgetId, WidgetSize } from "@/lib/dashboard-layout";
 import { SportSectionLabel } from "@/components/SportPageIntro";
+import { MiraHandoff } from "@/components/alo/MiraHandoff";
+import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
+import { MiraSpark } from "@/components/mira/MiraSpark";
+import {
+  createBrowserSpeechRecognitionFactory,
+  type MiraSpeechRecognitionLike,
+} from "@/lib/mira-voice-conversation";
+import "@/mira-home-overlay.css";
 import {
   Activity,
   ArrowUpRight,
@@ -51,6 +59,7 @@ import {
   Target,
   Trophy,
   Users,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -403,10 +412,166 @@ function HubArtwork({
   );
 }
 
+function MiraOverlayLauncher() {
+  const { user } = Route.useRouteContext();
+  const [open, setOpen] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [listening, setListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [handoffRequest, setHandoffRequest] = useState<{ id: number; text: string } | null>(null);
+  const recognitionRef = useRef<MiraSpeechRecognitionLike | null>(null);
+  const handoffIdRef = useRef(0);
+
+  const stopListening = () => {
+    const recognition = recognitionRef.current;
+    recognitionRef.current = null;
+    if (recognition) {
+      try {
+        recognition.stop();
+      } catch {
+        // Recognition may already have ended.
+      }
+    }
+    setListening(false);
+  };
+
+  const startListening = () => {
+    const recognitionFactory = createBrowserSpeechRecognitionFactory();
+    const recognition = recognitionFactory?.();
+    if (!recognition) {
+      setVoiceError("Spracherkennung wird in diesem Browser nicht unterstützt.");
+      return;
+    }
+
+    setVoiceError(null);
+    recognition.lang = "de-DE";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const recognized = event.results[0]?.[0]?.transcript?.trim() ?? "";
+      if (recognized)
+        setTranscript((previous) => (previous ? `${previous} ${recognized}` : recognized));
+    };
+    recognition.onerror = (event) => {
+      const message =
+        event?.error === "not-allowed" || event?.error === "service-not-allowed"
+          ? "Mikrofonzugriff wurde nicht erlaubt. Prüfe die Browser-Berechtigung und tippe erneut."
+          : event?.error === "audio-capture"
+            ? "Kein verwendbares Mikrofon gefunden. Prüfe dein Gerät und versuche es erneut."
+            : event?.error === "no-speech"
+              ? "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut."
+              : "Spracherkennung fehlgeschlagen. Versuche es erneut oder nutze den Textbereich.";
+      setVoiceError(message);
+      setListening(false);
+    };
+    recognition.onend = () => {
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
+      setListening(false);
+    };
+    recognitionRef.current = recognition;
+    setListening(true);
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setListening(false);
+      setVoiceError(
+        "Das Mikrofon konnte nicht gestartet werden. Prüfe die Berechtigung und versuche es erneut.",
+      );
+    }
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) stopListening();
+    else setVoiceError(null);
+    setOpen(nextOpen);
+  };
+
+  const continueToMira = () => {
+    const text = transcript.trim();
+    if (!text) return;
+    stopListening();
+    setOpen(false);
+    handoffIdRef.current += 1;
+    setHandoffRequest({ id: handoffIdRef.current, text });
+  };
+
+  useEffect(
+    () => () => {
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        // Recognition may already have ended.
+      }
+      recognitionRef.current = null;
+    },
+    [],
+  );
+
+  return (
+    <>
+      <div className={`alo-mira-home-launcher${handoffRequest ? " has-handoff" : ""}`}>
+        {handoffRequest ? (
+          <div className="alo-mira-home-handoff-actions">
+            <MiraHandoff
+              key={handoffRequest.id}
+              userId={user.id}
+              text={handoffRequest.text}
+              source="deine eingesprochene Frage"
+              label="Frage in Mira prüfen"
+              className="alo-mira-home-handoff-button"
+              onNavigate={() => {
+                setHandoffRequest(null);
+                setTranscript("");
+              }}
+            />
+            <button
+              type="button"
+              className="alo-mira-home-handoff-dismiss"
+              aria-label="Diktierte Frage verwerfen"
+              onClick={() => {
+                setHandoffRequest(null);
+                setTranscript("");
+              }}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="alo-mira-home-launcher-button"
+            aria-label="Mira öffnen und eine Frage stellen"
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            onClick={() => handleOpenChange(true)}
+          >
+            <MiraSpark />
+          </button>
+        )}
+      </div>
+      <MiraVoiceChatDialog
+        open={open}
+        onOpenChange={handleOpenChange}
+        transcript={transcript}
+        onTranscriptChange={setTranscript}
+        listening={listening}
+        onStartListening={startListening}
+        onStopListening={stopListening}
+        error={voiceError}
+        onContinue={continueToMira}
+        continueLabel="Frage in Mira prüfen"
+        className="alo-dialog alo-mira-voice-entry-dialog max-h-[88dvh] overflow-y-auto sm:max-w-md"
+      />
+    </>
+  );
+}
+
 function Dashboard() {
+  const { user } = Route.useRouteContext();
   const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(user.id);
   const [todayReps, setTodayReps] = useState(0);
   const [todaySteps, setTodaySteps] = useState(0);
   const [hasTodayData, setHasTodayData] = useState(false);
@@ -418,43 +583,53 @@ function Dashboard() {
   const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
 
   useEffect(() => {
+    let active = true;
+    setExercises([]);
+    setProfile(null);
+    setUserId(user.id);
+    setTodayReps(0);
+    setTodaySteps(0);
+    setHasTodayData(false);
+    setWorkoutAvailable(true);
+    setHasWorkoutData(false);
+    setWeekReps(null);
+    setLoading(true);
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      setUserId(u.user.id);
       const now = new Date();
       const today = localDateKey(now);
       const week = getTrainingWeekBounds(now);
       const [{ data: ex }, { data: p }, { data: he }, workouts] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
-        supabase.from("profiles").select(PROFILE_COLS).eq("id", u.user.id).maybeSingle(),
+        supabase.from("profiles").select(PROFILE_COLS).eq("id", user.id).maybeSingle(),
         supabase
           .from("health_entries")
           .select("steps")
-          .eq("user_id", u.user.id)
+          .eq("user_id", user.id)
           .eq("day", today)
           .maybeSingle(),
         supabase
           .from("workouts")
           .select("count, created_at")
-          .eq("user_id", u.user.id)
+          .eq("user_id", user.id)
           .eq("exercise_id", "pushup")
           .gte("created_at", week.startInclusive)
           .lt("created_at", week.endExclusive),
       ]);
+      if (!active) return;
       if (ex) setExercises(ex as ExerciseMeta[]);
       let prof = p;
       if (!prof) {
         const { data: created } = await supabase
           .from("profiles")
           .insert({
-            id: u.user.id,
+            id: user.id,
             display_name:
-              (u.user.user_metadata?.display_name as string | undefined) ??
-              (u.user.is_anonymous ? "Gast" : (u.user.email?.split("@")[0] ?? null)),
+              (user.user_metadata?.display_name as string | undefined) ??
+              (user.is_anonymous ? "Gast" : (user.email?.split("@")[0] ?? null)),
           })
           .select(PROFILE_COLS)
           .maybeSingle();
+        if (!active) return;
         prof = created;
       }
       if (prof) {
@@ -484,11 +659,14 @@ function Dashboard() {
       setWeekReps(workouts.error ? null : sumTrainingWeekReps(workouts.data ?? [], now));
       setLoading(false);
     })();
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const lp = useMemo(() => levelProgress(profile?.xp ?? 0), [profile?.xp]);
   const streak = profile?.current_streak ?? 0;
-  const readinessData = useReadiness({ streak });
+  const readinessData = useReadiness({ userId: user.id, streak });
   const { readiness } = readinessData;
   const goal = profile?.daily_goal || 50;
   const todayProgress = progressState(loading, workoutAvailable, hasTodayData, todayReps);
@@ -844,6 +1022,7 @@ function Dashboard() {
   return (
     <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
       <HomeAppHub displayName={profile?.display_name} avatarUrl={profile?.avatar_url} />
+      <MiraOverlayLauncher />
       <details
         className="group rounded-3xl border border-border bg-card/45 shadow-sm"
         id="training-overview"
