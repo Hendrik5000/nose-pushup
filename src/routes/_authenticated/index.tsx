@@ -2,9 +2,10 @@ import { progressState } from "@/lib/alo-ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
+import type { PrivateGameId } from "@/lib/private-game-policy";
+import { HOME_OTHER_AREAS } from "@/lib/home-app-menus";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
-import { ALARM_SETTINGS_EVENT, readSavedAlarmSettings, type AlarmSettings } from "@/lib/alarm";
 import { levelProgress } from "@/lib/level";
 import {
   getQuickStartPlan,
@@ -63,19 +64,6 @@ import {
   Zap,
 } from "lucide-react";
 
-const MORE_AREAS = [
-  { to: "/health", label: "Gesundheit" },
-  { to: "/programs", label: "Programme" },
-  { to: "/calisthenics", label: "Calisthenics" },
-  { to: "/run", label: "Laufen" },
-  { to: "/season", label: "Saison" },
-  { to: "/battle", label: "Wettkampf" },
-  { to: "/battle-league", label: "Battle-Liga" },
-  { to: "/leaderboard", label: "Rangliste" },
-  { to: "/clubs", label: "Clubs" },
-  { to: "/alarm", label: "Wecker" },
-] as const;
-
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
@@ -111,23 +99,14 @@ const PROFILE_COLS =
 function HomeAppHub({
   displayName,
   avatarUrl,
+  onOpenTrainingOverview,
 }: {
   displayName: string | null | undefined;
   avatarUrl: string | null | undefined;
+  onOpenTrainingOverview: () => void;
 }) {
   const { user } = Route.useRouteContext();
-  const [savedAlarm, setSavedAlarm] = useState<AlarmSettings | null>(null);
   const [canSeeAdmin, setCanSeeAdmin] = useState(false);
-  useEffect(() => {
-    const loadAlarm = () => setSavedAlarm(readSavedAlarmSettings(user.id));
-    loadAlarm();
-    window.addEventListener(ALARM_SETTINGS_EVENT, loadAlarm);
-    window.addEventListener("storage", loadAlarm);
-    return () => {
-      window.removeEventListener(ALARM_SETTINGS_EVENT, loadAlarm);
-      window.removeEventListener("storage", loadAlarm);
-    };
-  }, [user.id]);
   useEffect(() => {
     let active = true;
     setCanSeeAdmin(false);
@@ -149,6 +128,14 @@ function HomeAppHub({
           Alo
         </h1>
         <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label="Überall suchen"
+            onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" }))}
+          >
+            <Search className="h-5 w-5" aria-hidden="true" />
+          </button>
           <PostfachBell />
           <Link
             to="/profile"
@@ -174,7 +161,7 @@ function HomeAppHub({
         </div>
       </header>
       <nav
-        className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-2 gap-y-5 sm:grid-cols-5"
+        className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
         aria-label="Alo-Apps"
       >
         <HubAppIcon to="/ai" title="Mira" artwork="mira" />
@@ -182,95 +169,116 @@ function HomeAppHub({
         <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
         <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
         {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
-        {canSeeAdmin && <HubAppIcon to="/games" title="Admin-Spiele" artwork="adventure" />}
-      </nav>
-      <div className="alo-tablet-home-tools mt-4 grid grid-cols-2 gap-2">
+        {canSeeAdmin && (
+          <>
+            <HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" />
+            <HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" />
+          </>
+        )}
+        <Link
+          to="/areas"
+          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
+          aria-label={`Weitere Bereiche öffnen (${HOME_OTHER_AREAS.length})`}
+        >
+          <HubAppIconContents title="Weitere Bereiche" artwork="more" />
+        </Link>
         <button
           type="button"
-          className="alo-btn flex min-h-11 items-center justify-center gap-2"
+          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
+          aria-label="Trainingsübersicht & Gym öffnen"
+          onClick={onOpenTrainingOverview}
+        >
+          <HubAppIconContents title="Trainingsübersicht & Gym" artwork="training" />
+        </button>
+        <Link
+          to="/tools"
+          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
           aria-label="Alo-Werkzeuge öffnen"
-          onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "menu" }))}
         >
-          <Zap className="h-4 w-4" aria-hidden="true" />
-          Alo-Werkzeuge
-        </button>
-        <button
-          type="button"
-          className="alo-btn flex min-h-11 items-center justify-center gap-2"
-          aria-label="Überall suchen"
-          onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" }))}
-        >
-          <Search className="h-4 w-4" aria-hidden="true" />
-          Überall suchen
-        </button>
-      </div>
-      <details className="mt-4 rounded-2xl border border-border bg-card/35 px-3">
-        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 font-medium">
-          Weitere Bereiche
-          <span className="text-xs text-muted-foreground">{MORE_AREAS.length}</span>
-        </summary>
-        <nav className="grid grid-cols-2 gap-2 pb-3" aria-label="Weitere Alo-Bereiche">
-          {MORE_AREAS.map((area) => (
-            <Link
-              key={area.to}
-              to={area.to}
-              className="flex min-h-11 items-center rounded-xl border border-border/70 bg-background/40 px-3 text-sm font-medium transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              {area.to === "/alarm" && savedAlarm ? (
-                <span className="flex min-w-0 flex-col py-2">
-                  <span>{area.label}</span>
-                  <span className="text-xs text-muted-foreground">
-                    Täglich {savedAlarm.time} · {savedAlarm.enabled ? "Ein" : "Aus"}
-                  </span>
-                </span>
-              ) : (
-                area.label
-              )}
-            </Link>
-          ))}
-        </nav>
-      </details>
+          <HubAppIconContents title="Alo-Werkzeuge" artwork="tools" />
+        </Link>
+      </nav>
     </section>
   );
 }
+
+type HubArtworkKind =
+  | "mira"
+  | "nexus"
+  | "health"
+  | "settings"
+  | "admin"
+  | "gridDefense"
+  | "kupferkern"
+  | "more"
+  | "training"
+  | "tools";
+
+const HUB_APP_ICON_CLASS_NAME =
+  "group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 function HubAppIcon({
   to,
   title,
   artwork,
 }: {
-  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin" | "/games";
+  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin";
   title: string;
-  artwork: "mira" | "nexus" | "health" | "settings" | "admin" | "adventure";
+  artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
 }) {
   return (
-    <Link
-      to={to}
-      aria-label={`${title} öffnen`}
-      className="group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-    >
-      <span className="relative grid aspect-square w-full max-w-[72px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg">
-        <HubArtwork kind={artwork} />
-      </span>
-      <span className="max-w-[84px] truncate text-[10px] font-medium leading-tight text-foreground sm:text-xs">
-        {title}
-      </span>
+    <Link to={to} aria-label={`${title} öffnen`} className={HUB_APP_ICON_CLASS_NAME}>
+      <HubAppIconContents title={title} artwork={artwork} />
     </Link>
   );
 }
 
-function HubArtwork({
-  kind,
+function HubGameAppIcon({
+  game,
+  title,
+  artwork,
 }: {
-  kind: "mira" | "nexus" | "health" | "settings" | "admin" | "adventure";
+  game: PrivateGameId;
+  title: string;
+  artwork: "gridDefense" | "kupferkern";
 }) {
+  return (
+    <Link
+      to="/games"
+      search={{ game }}
+      aria-label={`${title} öffnen`}
+      className={HUB_APP_ICON_CLASS_NAME}
+    >
+      <HubAppIconContents title={title} artwork={artwork} />
+    </Link>
+  );
+}
+
+function HubAppIconContents({ title, artwork }: { title: string; artwork: HubArtworkKind }) {
+  return (
+    <>
+      <span className="relative grid aspect-square w-full max-w-[96px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg">
+        <HubArtwork kind={artwork} />
+      </span>
+      <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
+        {title}
+      </span>
+    </>
+  );
+}
+
+function HubArtwork({ kind }: { kind: HubArtworkKind }) {
   const palettes = {
     mira: { bg: "#211c37", accent: "#c4b5fd", glow: "#8b5cf6" },
     nexus: { bg: "#122d3a", accent: "#67e8f9", glow: "#0ea5e9" },
     health: { bg: "#15352e", accent: "#86efac", glow: "#10b981" },
     settings: { bg: "#3a2e1e", accent: "#fcd34d", glow: "#f59e0b" },
     admin: { bg: "#182b3b", accent: "#a5d8ff", glow: "#38bdf8" },
-    adventure: { bg: "#30233d", accent: "#f0abfc", glow: "#c026d3" },
+    gridDefense: { bg: "#152b32", accent: "#a7f3d0", glow: "#22c55e" },
+    kupferkern: { bg: "#38251c", accent: "#fdba74", glow: "#c2410c" },
+    more: { bg: "#172735", accent: "#67e8f9", glow: "#0ea5e9" },
+    training: { bg: "#30291d", accent: "#fcd34d", glow: "#f59e0b" },
+    tools: { bg: "#25233a", accent: "#c4b5fd", glow: "#8b5cf6" },
   } as const;
   const palette = palettes[kind];
 
@@ -393,18 +401,82 @@ function HubArtwork({
           />
         </>
       )}
-      {kind === "adventure" && (
+      {kind === "gridDefense" && (
         <>
-          <path d="M0 100 70 48l42 32 58-52 110 78v26H0Z" fill={palette.glow} opacity=".42" />
-          <path d="m46 105 53-49 39 31 40-42 58 60Z" fill={palette.accent} opacity=".78" />
-          <circle cx="202" cy="35" r="15" fill={palette.accent} opacity=".88" />
           <path
-            d="M140 46v27m-13-13.5h26"
-            stroke="#fff"
-            strokeWidth="4"
-            strokeLinecap="round"
-            opacity=".9"
+            d="M88 42h104M88 66h104M88 90h104M108 34v72M140 34v72M172 34v72"
+            stroke={palette.accent}
+            strokeOpacity=".28"
+            strokeWidth="2"
           />
+          <path d="M119 90V68h42v22Z" fill={palette.glow} opacity=".72" />
+          <path d="M129 68V54l11-20 11 20v14Z" fill={palette.accent} />
+          <path
+            d="M140 44v12m-6-6h12"
+            stroke="#fff"
+            strokeWidth="3"
+            strokeLinecap="round"
+            opacity=".92"
+          />
+        </>
+      )}
+      {kind === "kupferkern" && (
+        <>
+          <path
+            d="M88 43h24l13 23h30l13-23h24M88 89h24l13-23h30l13 23h24"
+            fill="none"
+            stroke={palette.accent}
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity=".72"
+          />
+          <circle cx="140" cy="66" r="29" fill={palette.glow} opacity=".25" />
+          <circle cx="140" cy="66" r="18" fill={palette.glow} />
+          <circle cx="140" cy="66" r="8" fill={palette.accent} />
+          <circle cx="140" cy="66" r="3" fill="#fff" />
+        </>
+      )}
+      {kind === "more" && (
+        <>
+          <circle cx="140" cy="66" r="43" fill={palette.glow} opacity=".28" />
+          <path
+            d="M140 39v54M113 66h54"
+            stroke={palette.accent}
+            strokeWidth="12"
+            strokeLinecap="round"
+          />
+        </>
+      )}
+      {kind === "training" && (
+        <>
+          <circle cx="140" cy="66" r="43" fill={palette.glow} opacity=".25" />
+          <path
+            d="M104 54v24m12-33v42m48-42v42m12-33v24M116 66h48"
+            fill="none"
+            stroke={palette.accent}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </>
+      )}
+      {kind === "tools" && (
+        <>
+          <circle cx="140" cy="66" r="44" fill={palette.glow} opacity=".24" />
+          <path
+            d="M104 54h72a8 8 0 0 1 8 8v37a8 8 0 0 1-8 8h-72a8 8 0 0 1-8-8V62a8 8 0 0 1 8-8Z"
+            fill={palette.accent}
+          />
+          <path
+            d="M124 54V44a8 8 0 0 1 8-8h16a8 8 0 0 1 8 8v10m-60 20h88m-52 0v12h16V74"
+            fill="none"
+            stroke={palette.bg}
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="184" cy="37" r="4" fill="#fff" opacity=".9" />
         </>
       )}
       <path d="M18 18h22" stroke="#fff" strokeOpacity=".22" strokeWidth="3" strokeLinecap="round" />
@@ -581,6 +653,14 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
   const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
+  const openTrainingOverview = () => {
+    const overview = document.getElementById("training-overview");
+    if (!(overview instanceof HTMLDetailsElement)) return;
+    overview.open = true;
+    window.requestAnimationFrame(() =>
+      overview.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
 
   useEffect(() => {
     let active = true;
@@ -1021,7 +1101,11 @@ function Dashboard() {
 
   return (
     <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
-      <HomeAppHub displayName={profile?.display_name} avatarUrl={profile?.avatar_url} />
+      <HomeAppHub
+        displayName={profile?.display_name}
+        avatarUrl={profile?.avatar_url}
+        onOpenTrainingOverview={openTrainingOverview}
+      />
       <MiraOverlayLauncher />
       <details
         className="group rounded-3xl border border-border bg-card/45 shadow-sm"

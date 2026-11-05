@@ -14,7 +14,7 @@ test("Home surfaces the game hub only after a server-confirmed Admin check", () 
   assert.match(home, /getAdminAreaAccess\(\)/);
   assert.match(
     home,
-    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/games" title="Admin-Spiele" artwork="adventure" \/>/,
+    /canSeeAdmin\s*&&\s*\([\s\S]*HubGameAppIcon game="grid-defense" title="Grid Defense"[\s\S]*HubGameAppIcon game="kupferkern" title="Kupferkern"/,
   );
   assert.match(home, /setCanSeeAdmin\(false\)/);
   assert.match(home, /\}, \[user\.id\]\)/);

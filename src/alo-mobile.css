@@ -213,6 +213,14 @@ html[data-design-style] .alo-workspace[data-view="search"] {
   text-align: left;
   flex: none;
 }
+.alo-tablet-home-app-action {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  cursor: pointer;
+}
 .alo-stat-details summary {
   cursor: pointer;
   padding-block: 12px;
@@ -1238,7 +1246,7 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
 
   html[data-design-style] .alo-tablet-home-hub {
     width: 100%;
-    max-width: 68rem;
+    max-width: 32rem;
     margin-inline: auto;
   }
 
@@ -1247,25 +1255,25 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
   }
 
   html[data-design-style] .alo-tablet-home-apps {
-    grid-template-columns: repeat(5, minmax(0, 108px));
-    justify-content: start;
-    gap: 1.5rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    justify-content: center;
+    gap: 1.5rem 0.75rem;
     width: 100%;
-    max-width: 42rem;
-    margin-inline: 0;
+    max-width: 32rem;
+    margin-inline: auto;
   }
 
-  html[data-design-style] .alo-tablet-home-apps > :is(a, div) {
+  html[data-design-style] .alo-tablet-home-apps > :is(a, button, div) {
     min-width: 0;
     min-height: 124px;
     padding: 0.35rem;
   }
 
-  html[data-design-style] .alo-tablet-home-apps > :is(a, div) > span:first-child {
-    max-width: 92px;
+  html[data-design-style] .alo-tablet-home-apps > :is(a, button, div) > span:first-child {
+    max-width: 96px;
   }
 
-  html[data-design-style] .alo-tablet-home-apps > a > span:last-child {
+  html[data-design-style] .alo-tablet-home-apps > :is(a, button) > span:last-child {
     max-width: 7rem;
     overflow: visible;
     overflow-wrap: anywhere;

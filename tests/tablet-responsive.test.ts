@@ -73,7 +73,8 @@ test("the tablet rules cover Home, Mira, Nexus, Health, training and Settings", 
     assert.ok(source.includes(className), `${surface} should expose its responsive layout hook`);
   }
 
-  assert.match(tabletStyles, /grid-template-columns: repeat\(5, minmax\(0, 108px\)\)/);
+  assert.match(tabletStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(tabletStyles, /alo-tablet-home-apps > :is\(a, button, div\)/);
   assert.match(tabletStyles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(tabletStyles, /max-width: 76rem/);
   assert.match(tabletStyles, /env\(safe-area-inset-(left|right|bottom)/);
