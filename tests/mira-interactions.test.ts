@@ -170,7 +170,7 @@ test("Mira keeps the Markdown and Nexus paths separate; card changes remain loca
     "utf8",
   );
   assert.equal((page.match(/<MiraInteractiveCard/g) ?? []).length, 2);
-  assert.ok(page.includes("<MiraAnswerText text={m.content} />"));
+  assert.ok(page.includes("<MiraProgressiveAnswer"));
   assert.ok(page.includes('enableNexusDraft={m.role === "assistant"}'));
   assert.match(
     page,
