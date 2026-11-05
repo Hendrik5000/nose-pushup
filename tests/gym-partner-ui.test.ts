@@ -76,19 +76,26 @@ test("new gym data is not wired to the automatic Mira context or tools", () => {
   assert.doesNotMatch(source, /buildAppContext|miraSend|aiContext/);
 });
 
-test("App hub precedes the Gym card; the Gym card remains before the training plan", () => {
+test("Gym partners appear only in the training app and still precede the training plan", () => {
   const home = readFileSync(
     new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(home, /<main\b[^>]*>\s*<HomeAppHub[\s\S]*?<GymPartnerPanel \/>/);
-  assert.equal((home.match(/<GymPartnerPanel \/>/g) ?? []).length, 1);
+  const training = readFileSync(
+    new URL("../src/components/TrainingDashboard.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(home, /<GymPartnerPanel/);
+  assert.equal((training.match(/<GymPartnerPanel \/>/g) ?? []).length, 1);
   assert.ok(
-    home.indexOf("<GymPartnerPanel />") < home.indexOf('className="classic-only dashboard-header'),
+    training.indexOf("<GymPartnerPanel />") <
+      training.indexOf('className="classic-only dashboard-header'),
   );
   assert.ok(
-    home.indexOf("<GymPartnerPanel />") <
-      home.indexOf('className="sport-only sport-dashboard-welcome"'),
+    training.indexOf("<GymPartnerPanel />") <
+      training.indexOf('className="sport-only sport-dashboard-welcome"'),
   );
-  assert.ok(home.indexOf("<GymPartnerPanel />") < home.indexOf('number="01">Dein Plan heute'));
+  assert.ok(
+    training.indexOf("<GymPartnerPanel />") < training.indexOf('number="01">Dein Plan heute'),
+  );
 });
