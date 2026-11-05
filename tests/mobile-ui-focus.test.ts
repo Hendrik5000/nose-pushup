@@ -128,7 +128,8 @@ test("Nexus keeps quick answers and message tools secondary and never invents a 
   );
   assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
   assert.match(home, /aria-label="Überall suchen"/);
-  assert.match(home, /aria-label="Weitere Alo-Bereiche"/);
+  assert.match(home, /to="\/areas"/);
+  assert.match(home, /to="\/tools"/);
 });
 
 test("Alo retains its supplied brand assets in the document metadata after header removal", () => {
@@ -174,8 +175,11 @@ test("the shared upper brand header is gone while app destinations remain in the
   assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
   assert.match(layout, /<AppNavigation\s*\/>/);
   assert.doesNotMatch(navigation, /alo-module-switcher/);
-  for (const route of ["/ai", "/chat", "/exercises", "/profile", "/health", "/programs", "/clubs"])
+  const areaMenus = read("lib/home-app-menus.ts");
+  for (const route of ["/ai", "/chat", "/exercises", "/profile", "/areas", "/tools"])
     assert.ok(home.includes(`"${route}"`), `home hub should retain ${route}`);
+  for (const route of ["/health", "/programs", "/clubs"])
+    assert.ok(areaMenus.includes(`to: "${route}"`), `Areas should retain ${route}`);
   assert.match(home, /Alo-Werkzeuge öffnen/);
   assert.match(home, /Überall suchen/);
 });

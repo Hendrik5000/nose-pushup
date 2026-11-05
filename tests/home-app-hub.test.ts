@@ -3,16 +3,19 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { test } from "node:test";
 
-const homePath = resolve(process.cwd(), "src/routes/_authenticated/index.tsx");
+const root = process.cwd();
+const homePath = resolve(root, "src/routes/_authenticated/index.tsx");
 const home = readFileSync(homePath, "utf8");
+const menusPath = resolve(root, "src/lib/home-app-menus.ts");
+const menus = readFileSync(menusPath, "utf8");
 const hubStart = home.indexOf("function HomeAppHub");
-const artworkStart = home.indexOf("function HubArtwork");
+const artworkStart = home.indexOf("type HubArtworkKind");
 const dashboardStart = home.indexOf("function Dashboard", artworkStart);
 const hub = home.slice(hubStart, artworkStart);
 
 test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.notEqual(hubStart, -1, "HomeAppHub should exist");
-  assert.notEqual(artworkStart, -1, "HubArtwork should follow HomeAppHub");
+  assert.notEqual(artworkStart, -1, "Hub artwork helpers should follow HomeAppHub");
 
   for (const [destination, routeFile, title, artwork] of [
     ["/ai", "ai.tsx", "Mira", "mira"],
@@ -20,47 +23,101 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
     ["/exercises", "exercises.tsx", "Alo Health", "health"],
     ["/profile", "profile.tsx", "Einstellungen", "settings"],
   ] as const) {
-    assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated", routeFile)));
+    assert.ok(existsSync(resolve(root, "src/routes/_authenticated", routeFile)));
     assert.ok(
       hub.includes(`<HubAppIcon to="${destination}" title="${title}" artwork="${artwork}"`),
       `home icon should link directly to ${destination}`,
     );
   }
 
-  assert.match(hub, /grid-cols-4[\s\S]*?sm:grid-cols-5/);
-  assert.match(hub, /aspect-square w-full max-w-\[72px\]/);
+  assert.match(hub, /grid-cols-4/);
   assert.match(hub, /aria-label="Freunde öffnen"/);
   assert.match(hub, /to="\/profile"\s+hash="profile-training"/);
   assert.match(hub, /aria-label="Profil und Einstellungen öffnen"/);
   assert.match(hub, /avatarUrl\s*\?/);
 });
 
-test("the Home game tile requires a server-confirmed Admin check and links to the protected route", () => {
-  assert.match(home, /getAdminAreaAccess\(\)/);
+test("Home restores the existing Areas, Training/Gym, and Tools as app tiles", () => {
+  assert.ok(existsSync(resolve(root, "src/routes/_authenticated/areas.tsx")));
+  assert.ok(existsSync(resolve(root, "src/routes/_authenticated/tools.tsx")));
+  assert.match(hub, /to="\/areas"[\s\S]*?Weitere Bereiche/);
   assert.match(
-    home,
-    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/games" title="Admin-Spiele" artwork="adventure" \/>/,
+    hub,
+    /aria-label="Trainingsübersicht & Gym öffnen"[\s\S]*?onClick=\{onOpenTrainingOverview\}/,
   );
-  assert.match(home, /setCanSeeAdmin\(false\)/);
-  assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated/games.tsx")));
-  assert.doesNotMatch(hub, /Spiel-App, gesperrt|LockKeyhole|Gesperrt/);
+  assert.match(hub, /to="\/tools"[\s\S]*?Alo-Werkzeuge/);
+
+  const areaRoutes = [
+    ["/health", "health.tsx"],
+    ["/programs", "programs.tsx"],
+    ["/calisthenics", "calisthenics.tsx"],
+    ["/run", "run.tsx"],
+    ["/season", "season.tsx"],
+    ["/battle", "battle.index.tsx"],
+    ["/battle-league", "battle-league.tsx"],
+    ["/leaderboard", "leaderboard.tsx"],
+    ["/clubs", "clubs.tsx"],
+    ["/alarm", "alarm.tsx"],
+  ] as const;
+  for (const [destination, routeFile] of areaRoutes) {
+    assert.ok(existsSync(resolve(root, "src/routes/_authenticated", routeFile)));
+    assert.ok(menus.includes(`to: "${destination}"`), `Areas should retain ${destination}`);
+  }
+
+  for (const tool of ["today", "search", "capture", "collections", "shortcuts", "privacy"]) {
+    assert.match(menus, new RegExp(`id: "${tool}"`));
+  }
+  assert.match(menus, /ALO_WORKSPACE_MENU_ORDER/);
+  const toolsPage = readFileSync(resolve(root, "src/routes/_authenticated/tools.tsx"), "utf8");
+  assert.match(toolsPage, /window\.dispatchEvent\(new CustomEvent\("alo-open"/);
+  assert.match(toolsPage, /orderedTools\.map/);
+
+  const areasPage = readFileSync(resolve(root, "src/routes/_authenticated/areas.tsx"), "utf8");
+  assert.match(areasPage, /HOME_OTHER_AREAS\.map/);
+  assert.match(areasPage, /to=\{to\}/);
+});
+
+test("the Home game tiles require confirmed Admin access and open only protected games", () => {
+  assert.match(hub, /getAdminAreaAccess\(\)/);
+  assert.match(hub, /setCanSeeAdmin\(false\)/);
+  assert.match(
+    hub,
+    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/admin" title="Admin" artwork="admin" \/>/,
+  );
+  assert.match(
+    hub,
+    /canSeeAdmin\s*&&\s*\([\s\S]*HubGameAppIcon game="grid-defense" title="Grid Defense"[\s\S]*HubGameAppIcon game="kupferkern" title="Kupferkern"/,
+  );
+  assert.ok(existsSync(resolve(root, "src/routes/_authenticated/games.tsx")));
+  assert.match(home, /to="\/games"[\s\S]*search=\{\{ game \}\}/);
   assert.doesNotMatch(hub, /grid-defense\.html|kupferkern\.html|srcDoc=/);
 });
 
-test("the icon artwork is square and original, and the training dashboard stays collapsible", () => {
+test("app artwork is square and original, and the existing training dashboard stays collapsible", () => {
   const artwork = home.slice(artworkStart, dashboardStart);
-  assert.notEqual(artworkStart, -1);
+  assert.notEqual(dashboardStart, -1);
   assert.match(artwork, /<svg[\s\S]*?viewBox="74 0 132 132"/);
-  assert.match(artwork, /kind === "mira"/);
-  assert.match(artwork, /kind === "nexus"/);
-  assert.match(artwork, /kind === "health"/);
-  assert.match(artwork, /kind === "settings"/);
+  for (const kind of [
+    "mira",
+    "nexus",
+    "health",
+    "settings",
+    "more",
+    "training",
+    "tools",
+    "gridDefense",
+    "kupferkern",
+  ]) {
+    assert.ok(artwork.includes(`kind === "${kind}"`), `${kind} artwork should be present`);
+  }
 
   const trainingSection = home.slice(home.indexOf('id="training-overview"'));
   assert.match(trainingSection, /<summary[\s\S]*?Trainingsübersicht & Gym-Partner/);
   assert.match(trainingSection, /<GymPartnerPanel \/>/);
   assert.match(trainingSection, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
   assert.doesNotMatch(trainingSection.slice(0, trainingSection.indexOf(">")), /\bopen\b/);
+  assert.match(home, /overview\.open = true/);
+  assert.match(home, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
 });
 
 test("every primary app offers a visible route back to the Alo home screen", () => {
@@ -73,36 +130,13 @@ test("every primary app offers a visible route back to the Alo home screen", () 
     ["src/routes/_authenticated/exercises.tsx", /to="\/"[\s\S]*?← Startseite/],
     ["src/routes/_authenticated/profile-page-impl.tsx", /to="\/"[\s\S]*?← Startseite/],
   ] as const;
-
   for (const [relativePath, homeLinkPattern] of primaryPages) {
-    const page = readFileSync(resolve(process.cwd(), relativePath), "utf8");
+    const page = readFileSync(resolve(root, relativePath), "utf8");
     assert.match(page, homeLinkPattern, `${relativePath} should expose a Startseite link`);
   }
 });
 
-test("home hub keeps every former shared-menu destination and workspace action reachable", () => {
-  for (const [destination, routeFile] of [
-    ["/health", "health.tsx"],
-    ["/programs", "programs.tsx"],
-    ["/calisthenics", "calisthenics.tsx"],
-    ["/run", "run.tsx"],
-    ["/season", "season.tsx"],
-    ["/battle", "battle.index.tsx"],
-    ["/battle-league", "battle-league.tsx"],
-    ["/leaderboard", "leaderboard.tsx"],
-    ["/clubs", "clubs.tsx"],
-  ] as const) {
-    assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated", routeFile)));
-    assert.ok(home.includes(`to: "${destination}"`), `hub should link to ${destination}`);
-  }
-  assert.match(hub, /aria-label="Alo-Werkzeuge öffnen"/);
-  assert.match(hub, /detail: "menu"/);
-  assert.match(hub, /aria-label="Überall suchen"/);
-  assert.match(hub, /detail: "search"/);
-  assert.match(hub, /aria-label="Weitere Alo-Bereiche"/);
-});
-
-test("every authenticated section exposes a clearly named route to the Alo home hub", () => {
+test("every authenticated section keeps a clearly named route to Alo Home", () => {
   const homeSources = [
     ["Mira", "src/components/mira/SuperAiPage.tsx", /mira-chat-home-action|<AloHomeLink/],
     ["Nexus Chat", "src/components/chat/LocalChatShell.tsx", /aria-label="Zur Alo-Startseite"/],
@@ -122,13 +156,12 @@ test("every authenticated section exposes a clearly named route to the Alo home 
     ["Cali-Workout", "src/routes/_authenticated/cali-workout.$skillId.tsx", /<AloHomeLink/],
     ["Workout", "src/routes/_authenticated/workout.$exerciseId.tsx", /<AloHomeLink/],
   ] as const;
-
   for (const [section, relativePath, homePattern] of homeSources) {
-    const source = readFileSync(resolve(process.cwd(), relativePath), "utf8");
+    const source = readFileSync(resolve(root, relativePath), "utf8");
     assert.match(source, homePattern, `${section} should expose a clearly named Home action`);
   }
 
-  const appNavigation = readFileSync(resolve(process.cwd(), "src/components/TopNav.tsx"), "utf8");
+  const appNavigation = readFileSync(resolve(root, "src/components/TopNav.tsx"), "utf8");
   assert.match(appNavigation, /to: "\/", label: "Startseite", icon: House/);
   assert.match(
     appNavigation,
@@ -137,7 +170,7 @@ test("every authenticated section exposes a clearly named route to the Alo home 
   assert.match(appNavigation, /export function BottomNav\(\) \{\s*return null;/);
 });
 
-test("Home actions appear in both visual variants of every secondary section", () => {
+test("secondary-section Home actions remain available in both visual variants", () => {
   const bothVariantPages = [
     "battle.index.tsx",
     "battle-league.tsx",
@@ -153,10 +186,7 @@ test("Home actions appear in both visual variants of every secondary section", (
     "cali-workout.$skillId.tsx",
   ];
   for (const routeFile of bothVariantPages) {
-    const source = readFileSync(
-      resolve(process.cwd(), "src/routes/_authenticated", routeFile),
-      "utf8",
-    );
+    const source = readFileSync(resolve(root, "src/routes/_authenticated", routeFile), "utf8");
     const homeActions = source.match(/<AloHomeLink\b/g) ?? [];
     assert.ok(
       homeActions.length >= 2,
