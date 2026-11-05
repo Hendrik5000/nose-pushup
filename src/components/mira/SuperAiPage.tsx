@@ -1,8 +1,9 @@
 import "@/mira-attachments.css";
+import "@/mira-chat-design.css";
 // Conversation UI restored selectively from 34f2313; current routing/security remain in their modules.
 import { MiraAttachmentPicker, MiraAttachmentPreview } from "@/components/mira/MiraAttachments";
 import { MiraSpark } from "@/components/mira/MiraSpark";
-import { MiraAnswerText } from "@/components/mira/MiraAnswerText";
+import { MiraProgressiveAnswer } from "@/components/mira/MiraProgressiveAnswer";
 import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
 import { MiraVoiceConversationDialog } from "@/components/mira/MiraVoiceConversationDialog";
@@ -59,6 +60,7 @@ import {
   type PlanFeedback,
 } from "@/lib/ai-plan";
 import { getMiraSpeechSettings, prepareMiraSpeechText } from "@/lib/mira-voice";
+import { createMiraChatTitle } from "@/lib/mira-chat-title";
 import {
   createBrowserSpeechRecognitionFactory,
   MiraVoiceConversationController,
@@ -135,6 +137,24 @@ function describeContext(ctx: AppContextPack): string {
   ].join("\n");
 }
 
+function MiraGeneratingIndicator() {
+  return (
+    <div
+      className="alo-mira-generating-indicator"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <span>Mira schreibt</span>
+      <span className="alo-mira-generating-dots" aria-hidden="true">
+        <span className="alo-mira-generating-dot" />
+        <span className="alo-mira-generating-dot" />
+        <span className="alo-mira-generating-dot" />
+      </span>
+    </div>
+  );
+}
+
 export function SuperAiPage() {
   const send = useServerFn(superAiChat);
   const [sessions, setSessions] = useState<AiSession[]>(() => loadSessions());
@@ -145,12 +165,21 @@ export function SuperAiPage() {
   const [messages, setMessages] = useState<Msg[]>(() => loadSessions()[0]?.messages ?? []);
   const [input, setInput] = useState(() => readMiraDraft(loadSessions()[0]?.id ?? ""));
   const [loading, setLoading] = useState(false);
+  const [replyAnimation, setReplyAnimation] = useState<{ sessionId: string; index: number } | null>(
+    null,
+  );
   const [attachments, setAttachments] = useState<LocalMiraAttachment[]>([]);
   const sendingRef = useRef(false);
   useEffect(() => {
     setAttachments([]);
+    setReplyAnimation(null);
     sendingRef.current = false;
   }, [activeId]);
+  useEffect(() => {
+    if (!replyAnimation) return;
+    const timeout = window.setTimeout(() => setReplyAnimation(null), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [replyAnimation]);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [runwareOpen, setRunwareOpen] = useState(false);
@@ -241,9 +270,9 @@ export function SuperAiPage() {
 
   const activeTitle = useMemo(() => {
     const s = sessions.find((x) => x.id === activeId);
-    if (s?.title) return s.title;
+    if (s?.title) return createMiraChatTitle(s.title);
     const firstUser = messages.find((m) => m.role === "user");
-    return firstUser ? firstUser.content.slice(0, 28) : "Neuer Chat";
+    return firstUser ? createMiraChatTitle(firstUser.content) : "Neuer Chat";
   }, [sessions, activeId, messages]);
 
   const filteredSessions = useMemo(() => {
@@ -352,7 +381,7 @@ export function SuperAiPage() {
   // Persist active session
   useEffect(() => {
     if (!messages.length) return;
-    const title = messages.find((m) => m.role === "user")?.content.slice(0, 40) || "Neuer Chat";
+    const title = createMiraChatTitle(messages.find((m) => m.role === "user")?.content ?? "");
     setSessions((prev) => {
       const current = prev.find((s) => s.id === activeId);
       if (current && JSON.stringify(current.messages) === JSON.stringify(messages.slice(-60)))
@@ -455,6 +484,10 @@ export function SuperAiPage() {
     [setClassicOptionsOpen, setSessionsOpen, setSettingsOpen, setSportAiView, startNewSession],
   );
   useAloPageSidebarCommands(sidebarCommands, activeSidebarItem);
+  const isFreshAssistantReply = (message: Msg, index: number) =>
+    message.role === "assistant" &&
+    replyAnimation?.sessionId === activeId &&
+    replyAnimation.index === index;
 
   const updateInteraction = (messageIndex: number, interaction: PcConfiguratorInteraction) => {
     setMessages((current) =>
@@ -473,6 +506,7 @@ export function SuperAiPage() {
     const submittedAttachments = options.includeAttachments === false ? [] : attachments;
     if ((!text && !submittedAttachments.length) || loading || sendingRef.current) return null;
     setError(null);
+    setReplyAnimation(null);
     const task: AiTask = classifyTask(text, {
       hasImage: submittedAttachments.some((item) => checkMiraFile(item.file).startsWith("image/")),
     });
@@ -568,6 +602,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
       const plan = parsed.plan ? applyPlanFeedback(parsed.plan, lastFeedback) : undefined;
       const assistantText =
         parsed.reply || (plan ? "Hier ist dein unverbindlicher Trainingsvorschlag." : res.reply);
+      setReplyAnimation({ sessionId: activeId, index: nextMsgs.length });
       setMessages((m) => [
         ...m,
         {
@@ -1060,7 +1095,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                           : "hover:bg-secondary/50"
                       }`}
                     >
-                      <div className="font-medium">{s.title || "Chat"}</div>
+                      <div className="font-medium">{createMiraChatTitle(s.title || "Chat")}</div>
                       <div className="text-[10px] text-muted-foreground">
                         {new Date(s.updatedAt).toLocaleString("de-DE", {
                           day: "2-digit",
@@ -1190,7 +1225,13 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   }
                 >
                   {m.role === "assistant" ? (
-                    <MiraAnswerText text={m.content} />
+                    <MiraProgressiveAnswer
+                      text={m.content}
+                      animate={isFreshAssistantReply(m, i)}
+                      className={
+                        isFreshAssistantReply(m, i) ? "alo-mira-response-arrival" : undefined
+                      }
+                    />
                   ) : (
                     <p className="whitespace-pre-wrap">{m.content}</p>
                   )}
@@ -1371,16 +1412,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               </div>
             ))}
 
-            {loading && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="inline-flex gap-1">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:0ms]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:150ms]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:300ms]" />
-                </span>
-                Mira denkt…
-              </div>
-            )}
+            {loading && <MiraGeneratingIndicator />}
           </div>
 
           {error && (
@@ -1681,10 +1713,10 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       className={`sport-ai-session-row ${session.id === activeId ? "is-active" : ""}`}
                     >
                       <span className="sport-ai-session-avatar" aria-hidden="true">
-                        {(session.title || "C").slice(0, 1).toLocaleUpperCase("de-DE")}
+                        {createMiraChatTitle(session.title || "Chat").slice(0, 1)}
                       </span>
                       <span className="sport-ai-session-copy">
-                        <strong>{session.title || "Neuer Chat"}</strong>
+                        <strong>{createMiraChatTitle(session.title || "Neuer Chat")}</strong>
                         <span>{preview}</span>
                       </span>
                       <time dateTime={session.updatedAt}>
@@ -1965,7 +1997,17 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       <article
                         className={`sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/70 bg-background/80"}`}
                       >
-                        <p className="whitespace-pre-wrap">{m.content}</p>
+                        {m.role === "assistant" ? (
+                          <MiraProgressiveAnswer
+                            text={m.content}
+                            animate={isFreshAssistantReply(m, i)}
+                            className={
+                              isFreshAssistantReply(m, i) ? "alo-mira-response-arrival" : undefined
+                            }
+                          />
+                        ) : (
+                          <p className="whitespace-pre-wrap">{m.content}</p>
+                        )}
                         {m.role === "assistant" && m.interaction && (
                           <MiraInteractiveCard
                             interaction={m.interaction}
@@ -2132,11 +2174,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       </article>
                     </div>
                   ))}
-                  {loading && (
-                    <div className="self-start rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
-                      Mira denkt…
-                    </div>
-                  )}
+                  {loading && <MiraGeneratingIndicator />}
                 </div>
                 <div className="mira-chat-bottom-row">
                   <AloPageSidebarTrigger />

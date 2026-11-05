@@ -248,7 +248,7 @@ test("both Mira chat views pass optional visuals to the fixed component only", (
   );
   assert.equal((page.match(/<MiraVisualAnswerCard/g) ?? []).length, 2);
   assert.match(page, /\.\.\.\(parsed\.visual \? \{ visual: parsed\.visual \} : \{\}\)/);
-  assert.ok(page.includes("<MiraAnswerText text={m.content} />"));
+  assert.equal((page.match(/<MiraProgressiveAnswer/g) ?? []).length, 2);
   assert.match(card, /validateMiraVisualAnswer\(visual\)/);
   assert.doesNotMatch(card, /dangerouslySetInnerHTML|<iframe|<script|href=|fetch\(/i);
 });
