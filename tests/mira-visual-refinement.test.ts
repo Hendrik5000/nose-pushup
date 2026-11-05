@@ -8,6 +8,7 @@ import { MiraSpark } from "../src/components/mira/MiraSpark.tsx";
 const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
 const page = read("components/mira/SuperAiPage.tsx");
 const css = read("ai-reference.css");
+const chatDesign = read("mira-chat-design.css");
 
 test("Mira uses a decorative four-point spark with unique gradients, not a provider logo", () => {
   const markup = renderToStaticMarkup(
@@ -63,9 +64,42 @@ test("Mira chat stays headerless and Home is an in-flow action before the compos
 });
 
 test("empty welcome does not replace saved conversation messages", () => {
-  assert.match(page, /messages\.length === 0 && \(\s*<div className="ai-welcome/);
+  assert.match(page, /messages\.length === 0 && \(\s*<div className="mira-chat-welcome/);
   assert.match(page, /\{messages\.map\(\(m, i\) => \(/);
   assert.match(page, /loadSessions\(\)\[0\]\?\.messages \?\? \[\]/);
+});
+
+test("Mira's chat start feels conversational and answer bubbles carry Mira's own mark", () => {
+  const welcomeStart = page.indexOf('className="mira-chat-welcome');
+  const messagesStart = page.indexOf("{messages.map", welcomeStart);
+  const welcome = page.slice(welcomeStart, messagesStart);
+  assert.ok(welcomeStart >= 0 && messagesStart > welcomeStart);
+  assert.match(welcome, /mira-chat-welcome-mark[\s\S]*?<MiraSpark \/>/);
+  assert.match(welcome, /Was möchtest du heute besprechen\?/);
+  assert.match(
+    chatDesign,
+    /mira-chat-welcome > \.mira-chat-welcome-copy[\s\S]*?display: block !important/,
+  );
+  assert.match(welcome, /aria-label="Mit einer Aufgabe starten"/);
+  assert.match(welcome, /className="mira-chat-suggestion"/);
+  assert.match(welcome, /onClick=\{\(\) => setInput\(tool\.prompt\)\}/);
+  assert.match(chatDesign, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important/);
+  assert.match(chatDesign, /\.mira-chat-welcome\s*\{[^}]*flex: 0 0 auto;/s);
+  assert.match(
+    chatDesign,
+    /mira-chat-suggestion:focus-visible\s*\{[^}]*outline: 2px solid var\(--ring\);/s,
+  );
+  assert.doesNotMatch(welcome, /ai-welcome|ai-starter-card|ai-starter-grid/);
+  assert.match(
+    chatDesign,
+    /@media \(max-width: 767px\)[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/,
+  );
+  const replyMarkup = page.slice(
+    messagesStart,
+    page.indexOf('className="mira-chat-bottom-row"', messagesStart),
+  );
+  assert.match(replyMarkup, /mira-chat-answer-mark[\s\S]*?<MiraSpark \/>/);
+  assert.match(replyMarkup, /mira-chat-answer-bubble/);
 });
 
 test("conversation metadata, privacy, history and favorites remain reachable", () => {
