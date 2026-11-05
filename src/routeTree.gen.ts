@@ -35,6 +35,7 @@ import { Route as AuthenticatedProgramsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRunRouteImport } from './routes/_authenticated/run'
 import { Route as AuthenticatedSeasonRouteImport } from './routes/_authenticated/season'
 import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated/tools'
+import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
 import { Route as USlugRouteImport } from './routes/u.$slug'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -178,6 +179,11 @@ const AuthenticatedToolsRoute = AuthenticatedToolsRouteImport.update({
   path: '/tools',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const USlugRoute = USlugRouteImport.update({
   id: '/u/$slug',
   path: '/u/$slug',
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/run': typeof AuthenticatedRunRoute
   '/season': typeof AuthenticatedSeasonRoute
   '/tools': typeof AuthenticatedToolsRoute
+  '/training': typeof AuthenticatedTrainingRoute
   '/u/$slug': typeof USlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/run': typeof AuthenticatedRunRoute
   '/season': typeof AuthenticatedSeasonRoute
   '/tools': typeof AuthenticatedToolsRoute
+  '/training': typeof AuthenticatedTrainingRoute
   '/u/$slug': typeof USlugRoute
   '/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -313,6 +321,7 @@ export interface FileRoutesById {
   '/_authenticated/run': typeof AuthenticatedRunRoute
   '/_authenticated/season': typeof AuthenticatedSeasonRoute
   '/_authenticated/tools': typeof AuthenticatedToolsRoute
+  '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/u/$slug': typeof USlugRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -350,6 +359,7 @@ export interface FileRouteTypes {
     | '/run'
     | '/season'
     | '/tools'
+    | '/training'
     | '/u/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/run'
     | '/season'
     | '/tools'
+    | '/training'
     | '/u/$slug'
     | '/'
     | '/.lovable/oauth/consent'
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '/_authenticated/run'
     | '/_authenticated/season'
     | '/_authenticated/tools'
+    | '/_authenticated/training'
     | '/u/$slug'
     | '/_authenticated/'
     | '/.lovable/oauth/consent'
@@ -624,6 +636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedToolsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/training': {
+      id: '/_authenticated/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof AuthenticatedTrainingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/u/$slug': {
       id: '/u/$slug'
       path: '/u/$slug'
@@ -696,6 +715,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRunRoute: typeof AuthenticatedRunRoute
   AuthenticatedSeasonRoute: typeof AuthenticatedSeasonRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
+  AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
   AuthenticatedCaliWorkoutSkillIdRoute: typeof AuthenticatedCaliWorkoutSkillIdRoute
@@ -723,6 +743,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRunRoute: AuthenticatedRunRoute,
   AuthenticatedSeasonRoute: AuthenticatedSeasonRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
+  AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
   AuthenticatedCaliWorkoutSkillIdRoute: AuthenticatedCaliWorkoutSkillIdRoute,

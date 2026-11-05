@@ -58,8 +58,8 @@ test("new page structures are shared across training, health, community, account
   }
   assert.match(read("components/chat/LocalChatShell.tsx"), /sport-/);
   assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage \/>/);
-  assert.match(read("routes/_authenticated/index.tsx"), /training-progress/);
-  assert.match(read("routes/_authenticated/index.tsx"), /sport-shortcuts/);
+  assert.match(read("components/TrainingDashboard.tsx"), /training-progress/);
+  assert.match(read("components/TrainingDashboard.tsx"), /sport-shortcuts/);
 });
 
 test("new and old markup are mutually exclusive without rewriting saved appearance or widget choices", () => {
@@ -83,8 +83,8 @@ test("new and old markup are mutually exclusive without rewriting saved appearan
   assert.ok(root.indexOf("href: sportCss") > root.indexOf("href: appCss"));
 });
 
-test("performance home puts today's workout before status metrics and keeps widget sizing responsive", () => {
-  const home = read("routes/_authenticated/index.tsx");
+test("performance training app puts today's workout before status metrics and keeps widget sizing responsive", () => {
+  const home = read("components/TrainingDashboard.tsx");
   assert.match(home, /sport-dashboard-title">Heute trainieren/);
   assert.equal((home.match(/<PlanGoalNote/g) ?? []).length, 2);
   assert.match(

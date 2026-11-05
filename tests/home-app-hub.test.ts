@@ -22,6 +22,7 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
     ["/chat", "chat.tsx", "Nexus Chat", "nexus"],
     ["/exercises", "exercises.tsx", "Alo Health", "health"],
     ["/profile", "profile.tsx", "Einstellungen", "settings"],
+    ["/training", "training.tsx", "Trainingsübersicht & Gym", "training"],
   ] as const) {
     assert.ok(existsSync(resolve(root, "src/routes/_authenticated", routeFile)));
     assert.ok(
@@ -43,7 +44,7 @@ test("Home restores the existing Areas, Training/Gym, and Tools as app tiles", (
   assert.match(hub, /to="\/areas"[\s\S]*?Weitere Bereiche/);
   assert.match(
     hub,
-    /aria-label="Trainingsübersicht & Gym öffnen"[\s\S]*?onClick=\{onOpenTrainingOverview\}/,
+    /<HubAppIcon to="\/training" title="Trainingsübersicht & Gym" artwork="training"/,
   );
   assert.match(hub, /to="\/tools"[\s\S]*?Alo-Werkzeuge/);
 
@@ -93,7 +94,7 @@ test("the Home game tiles require confirmed Admin access and open only protected
   assert.doesNotMatch(hub, /grid-defense\.html|kupferkern\.html|srcDoc=/);
 });
 
-test("app artwork is square and original, and the existing training dashboard stays collapsible", () => {
+test("app artwork is square and original, and training is no longer a collapsible Home card", () => {
   const artwork = home.slice(artworkStart, dashboardStart);
   assert.notEqual(dashboardStart, -1);
   assert.match(artwork, /<svg[\s\S]*?viewBox="74 0 132 132"/);
@@ -111,13 +112,14 @@ test("app artwork is square and original, and the existing training dashboard st
     assert.ok(artwork.includes(`kind === "${kind}"`), `${kind} artwork should be present`);
   }
 
-  const trainingSection = home.slice(home.indexOf('id="training-overview"'));
-  assert.match(trainingSection, /<summary[\s\S]*?Trainingsübersicht & Gym-Partner/);
-  assert.match(trainingSection, /<GymPartnerPanel \/>/);
-  assert.match(trainingSection, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
-  assert.doesNotMatch(trainingSection.slice(0, trainingSection.indexOf(">")), /\bopen\b/);
-  assert.match(home, /overview\.open = true/);
-  assert.match(home, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
+  assert.doesNotMatch(
+    home,
+    /training-overview|onOpenTrainingOverview|overview\.open|scrollIntoView/,
+  );
+  assert.doesNotMatch(home, /<GymPartnerPanel|<DashboardGrid/);
+  const training = readFileSync(resolve(root, "src/components/TrainingDashboard.tsx"), "utf8");
+  assert.match(training, /<GymPartnerPanel \/>/);
+  assert.match(training, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
 });
 
 test("every primary app offers a visible route back to the Alo home screen", () => {
