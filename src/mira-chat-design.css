@@ -72,3 +72,224 @@
     transform: none;
   }
 }
+
+/* Mira's empty chat should feel like the start of a conversation, not a stack of forms. */
+html[data-design-style] .sport-ai-chat-mode .mira-chat-welcome {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  flex: 0 0 auto;
+  width: min(100%, 46rem) !important;
+  max-width: 46rem !important;
+  gap: 0.35rem;
+  margin: auto !important;
+  padding: 1rem 0.25rem !important;
+  text-align: center;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-welcome-mark {
+  display: grid;
+  place-items: center;
+  width: 4rem !important;
+  height: 4rem !important;
+  margin-bottom: 0.25rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(
+      circle at 30% 18%,
+      color-mix(in srgb, var(--primary) 24%, transparent),
+      transparent 62%
+    ),
+    color-mix(in srgb, var(--card) 84%, var(--background));
+  box-shadow: 0 0.6rem 2rem color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-welcome-mark svg {
+  width: 2.45rem !important;
+  height: 2.45rem !important;
+}
+
+.mira-chat-welcome-label {
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-welcome h3 {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.55rem, 3.5vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-welcome > .mira-chat-welcome-copy {
+  display: block !important;
+  max-width: 34ch;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  width: min(100%, 45rem) !important;
+  max-width: 45rem !important;
+  gap: 0.65rem !important;
+  margin: 1.15rem 0 0.2rem !important;
+  text-align: left;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  min-width: 0 !important;
+  min-height: 4.5rem !important;
+  padding: 0.75rem 0.8rem !important;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent) !important;
+  border-radius: 1.15rem !important;
+  background: color-mix(in srgb, var(--card) 94%, var(--background)) !important;
+  color: var(--foreground);
+  text-align: left !important;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border)) !important;
+  background: color-mix(in srgb, var(--primary) 7%, var(--card)) !important;
+}
+html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion > svg:first-child {
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--primary);
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion > span {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion strong {
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion small {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion > svg:last-child {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--muted-foreground);
+}
+
+.mira-chat-suggestion-hint {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-answer-mark {
+  display: grid;
+  flex: 0 0 2rem;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
+  color: var(--primary);
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-answer-mark svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+html[data-design-style] .sport-ai-chat-mode .mira-chat-answer-bubble {
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border)) !important;
+  border-top-left-radius: 0.5rem !important;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--primary) 7%, var(--card)),
+    color-mix(in srgb, var(--card) 97%, var(--background)) 68%
+  ) !important;
+  box-shadow: 0 0.65rem 1.8rem color-mix(in srgb, var(--primary) 5%, transparent) !important;
+}
+
+@media (max-width: 767px) {
+  html[data-design-style] .sport-ai-chat-mode .mira-chat-welcome {
+    gap: 0.25rem;
+    margin: 0.5rem auto !important;
+    padding: 0.45rem 0 !important;
+  }
+
+  html[data-design-style] .sport-ai-chat-mode .mira-chat-welcome-mark {
+    width: 3.4rem !important;
+    height: 3.4rem !important;
+    border-radius: 1.15rem;
+  }
+
+  html[data-design-style] .sport-ai-chat-mode .mira-chat-welcome-mark svg {
+    width: 2.05rem !important;
+    height: 2.05rem !important;
+  }
+
+  html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+    margin-top: 0.8rem !important;
+  }
+
+  html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion {
+    min-height: 3.6rem !important;
+    gap: 0.5rem !important;
+    padding: 0.65rem !important;
+  }
+
+  html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion:last-child {
+    grid-column: 1 / -1;
+  }
+
+  html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion small {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestions {
+    grid-template-columns: 1fr !important;
+  }
+
+  html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion:last-child {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-design-style] .sport-ai-chat-mode .mira-chat-suggestion {
+    transition: none;
+  }
+}

@@ -1940,16 +1940,17 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   className="sport-chat-stage flex min-h-[38vh] flex-1 flex-col gap-4 overflow-y-auto rounded-[2rem] border border-border/70 bg-card/55 p-4 shadow-sm sm:p-6"
                 >
                   {messages.length === 0 && (
-                    <div className="ai-welcome mx-auto my-auto max-w-lg py-8 text-center">
-                      <span className="ai-welcome-mark" aria-hidden="true">
+                    <div className="mira-chat-welcome mx-auto my-auto max-w-lg py-8 text-center">
+                      <span className="mira-chat-welcome-mark" aria-hidden="true">
                         <MiraSpark />
                       </span>
+                      <span className="mira-chat-welcome-label">Mira · dein Gespräch</span>
                       <h3 className="mt-4 text-xl font-bold">
-                        Hallo{profileName ? ` ${profileName}` : ""}, wobei kann ich helfen?
+                        Hallo{profileName ? ` ${profileName}` : ""}.
                       </h3>
-                      <p>Was möchtest du heute angehen?</p>
+                      <p className="mira-chat-welcome-copy">Was möchtest du heute besprechen?</p>
                       <div
-                        className="ai-starter-grid"
+                        className="mira-chat-suggestions"
                         role="group"
                         aria-label="Mit einer Aufgabe starten"
                       >
@@ -1971,7 +1972,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                             <button
                               key={id}
                               type="button"
-                              className="ai-starter-card"
+                              className="mira-chat-suggestion"
                               onClick={() => setInput(tool.prompt)}
                             >
                               <Icon aria-hidden="true" />
@@ -1984,18 +1985,23 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                           );
                         })}
                       </div>
-                      <span className="ai-starter-hint">
-                        Vorschlag wählen, anpassen und senden.
+                      <span className="mira-chat-suggestion-hint">
+                        Ein Vorschlag füllt deinen Entwurf – gesendet wird erst auf Wunsch.
                       </span>
                     </div>
                   )}
                   {messages.map((m, i) => (
                     <div
                       key={i}
-                      className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                      className={`flex items-start gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}
                     >
+                      {m.role === "assistant" && (
+                        <span className="mira-chat-answer-mark mt-1" aria-hidden="true">
+                          <MiraSpark />
+                        </span>
+                      )}
                       <article
-                        className={`sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/70 bg-background/80"}`}
+                        className={`sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "mira-chat-user-bubble rounded-br-md bg-primary text-primary-foreground" : "mira-chat-answer-bubble rounded-bl-md border border-border/70 bg-background/80"}`}
                       >
                         {m.role === "assistant" ? (
                           <MiraProgressiveAnswer
