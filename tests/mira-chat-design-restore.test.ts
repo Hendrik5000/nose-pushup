@@ -22,7 +22,7 @@ test("Mira's reference chat keeps its formatted, accessible historical answer pr
   assert.match(stage, /<MiraInteractiveCard/);
   assert.match(page, /<MiraSources userId=\{userId\} \/>/);
   assert.match(page, /Gesprächsoptionen & Datenschutz/);
-  assert.match(page, /Anbieter für diese Antwort:/);
+  assert.match(stage, /<MiraAnswerActions[\s\S]*?meta=\{m\.meta\}/);
   assert.match(page, /className=\{`sport-chat-composer/);
 });
 

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { MessageCircle } from "lucide-react";
+import { ContentActionButton } from "./ContentActionButton";
 import { useNavigate } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -16,6 +18,7 @@ export function MiraHandoff({
   label = "Mit Mira besprechen",
   onNavigate,
   className = "text-xs font-semibold text-primary",
+  iconOnly = false,
 }: {
   userId: string;
   text: string;
@@ -23,6 +26,7 @@ export function MiraHandoff({
   label?: string;
   onNavigate?: () => void;
   className?: string;
+  iconOnly?: boolean;
 }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -57,9 +61,13 @@ export function MiraHandoff({
   };
   return (
     <>
-      <button type="button" className={className} onClick={begin}>
-        {label}
-      </button>
+      <ContentActionButton
+        label={label}
+        icon={MessageCircle}
+        iconOnly={iconOnly}
+        className={className}
+        onClick={begin}
+      />
       {!open && status && (
         <p role="status" className="text-xs">
           {status}

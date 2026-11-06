@@ -9,6 +9,7 @@ import {
 } from "@/components/mira/MiraAttachments";
 import { MiraSpark } from "@/components/mira/MiraSpark";
 import { MiraProgressiveAnswer } from "@/components/mira/MiraProgressiveAnswer";
+import { MiraAnswerActions } from "@/components/mira/MiraAnswerActions";
 import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
 import { MiraVoiceConversationDialog } from "@/components/mira/MiraVoiceConversationDialog";
@@ -37,8 +38,6 @@ import {
   Settings2,
   ArrowUpRight,
   House,
-  Volume2,
-  VolumeX,
   Headphones,
   UserRound,
 } from "lucide-react";
@@ -1357,13 +1356,12 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     </ul>
                   ) : null}
                   {m.media && <MiraRunwareResult result={m.media} />}
-                  {userId && (
+                  {userId && m.role !== "assistant" && (
                     <ContentActions
                       userId={userId}
                       text={m.content}
                       title={m.plan?.title ?? "Mira-Antwort"}
                       source="Mira"
-                      enableNexusDraft={m.role === "assistant"}
                       extra={m.plan ? { plan: m.plan } : {}}
                     />
                   )}
@@ -1447,67 +1445,25 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     </section>
                   )}
                   {m.role === "assistant" && (
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {m.meta && (
-                        <>
-                          <span className="text-[10px] text-muted-foreground">
-                            Anbieter für diese Antwort:{" "}
-                            {providerLabel(m.meta.provider ?? "unbekannt")}
-                          </span>
-                          {m.meta.routingReason && (
-                            <span className="text-[10px] text-muted-foreground">
-                              Auswahlregel: {m.meta.routingReason}
-                            </span>
-                          )}
-                          {m.meta.provider === "lovable" && (
-                            <span className="text-[10px] text-muted-foreground">
-                              Lovable Gateway; das interne Backend ist nicht ausgewiesen.
-                            </span>
-                          )}
-                          <details className="text-[10px] text-muted-foreground">
-                            <summary className="cursor-pointer">Technische Details</summary>
-                            <span>
-                              {m.meta.task} · {m.meta.provider} · Modellkennung: {m.meta.model}
-                            </span>
-                          </details>
-                        </>
+                    <MiraAnswerActions
+                      meta={m.meta}
+                      speaking={speakingMessage === i}
+                      onSpeak={() => speakMiraMessage(i, m.content)}
+                      onCopy={() => void copyText(m.content)}
+                      onBookmark={() => setFavs(toggleFavPrompt(m.content.slice(0, 120)))}
+                    >
+                      {userId && (
+                        <ContentActions
+                          userId={userId}
+                          text={m.content}
+                          title={m.plan?.title ?? "Mira-Antwort"}
+                          source="Mira"
+                          enableNexusDraft={m.role === "assistant"}
+                          extra={m.plan ? { plan: m.plan } : {}}
+                          iconOnly
+                        />
                       )}
-                      <button
-                        type="button"
-                        className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                        aria-pressed={speakingMessage === i}
-                        aria-label={
-                          speakingMessage === i ? "Miras Antwort stoppen" : "Miras Antwort vorlesen"
-                        }
-                        onClick={() => speakMiraMessage(i, m.content)}
-                      >
-                        {speakingMessage === i ? (
-                          <span className="inline-flex items-center gap-1">
-                            <VolumeX className="h-3.5 w-3.5" aria-hidden="true" />
-                            Stopp
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1">
-                            <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
-                            Vorlesen
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        className="text-[10px] font-medium text-primary"
-                        onClick={() => void copyText(m.content)}
-                      >
-                        Kopieren
-                      </button>
-                      <button
-                        type="button"
-                        className="text-[10px] font-medium text-muted-foreground"
-                        onClick={() => setFavs(toggleFavPrompt(m.content.slice(0, 120)))}
-                      >
-                        ★ Merken
-                      </button>
-                    </div>
+                    </MiraAnswerActions>
                   )}
                 </div>
               </div>
@@ -2218,7 +2174,13 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                           </section>
                         )}
                         {m.role === "assistant" && (
-                          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border/50 pt-2 text-[10px]">
+                          <MiraAnswerActions
+                            meta={m.meta}
+                            speaking={speakingMessage === i}
+                            onSpeak={() => speakMiraMessage(i, m.content)}
+                            onCopy={() => void copyText(m.content)}
+                            onBookmark={() => setFavs(toggleFavPrompt(m.content.slice(0, 120)))}
+                          >
                             {userId && (
                               <ContentActions
                                 userId={userId}
@@ -2226,71 +2188,10 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                                 title={m.plan?.title ?? "Mira-Antwort"}
                                 source="Mira"
                                 extra={m.plan ? { plan: m.plan } : {}}
+                                iconOnly
                               />
                             )}
-                            {m.meta && (
-                              <>
-                                <span className="text-muted-foreground">
-                                  Anbieter für diese Antwort:{" "}
-                                  {providerLabel(m.meta.provider ?? "unbekannt")}
-                                </span>
-                                {m.meta.routingReason && (
-                                  <span className="text-muted-foreground">
-                                    Auswahlregel: {m.meta.routingReason}
-                                  </span>
-                                )}
-                                {m.meta.provider === "lovable" && (
-                                  <span className="text-muted-foreground">
-                                    Lovable Gateway; das interne Backend ist nicht ausgewiesen.
-                                  </span>
-                                )}
-                                <details className="text-muted-foreground">
-                                  <summary className="cursor-pointer">Technische Details</summary>
-                                  <span>
-                                    {m.meta.task} · {m.meta.provider} · Modellkennung:{" "}
-                                    {m.meta.model}
-                                  </span>
-                                </details>
-                              </>
-                            )}
-                            <button
-                              type="button"
-                              aria-pressed={speakingMessage === i}
-                              aria-label={
-                                speakingMessage === i
-                                  ? "Miras Antwort stoppen"
-                                  : "Miras Antwort vorlesen"
-                              }
-                              className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2.5 font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                              onClick={() => speakMiraMessage(i, m.content)}
-                            >
-                              {speakingMessage === i ? (
-                                <>
-                                  <VolumeX className="h-4 w-4" aria-hidden="true" />
-                                  Stopp
-                                </>
-                              ) : (
-                                <>
-                                  <Volume2 className="h-4 w-4" aria-hidden="true" />
-                                  Vorlesen
-                                </>
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              className="font-semibold text-primary"
-                              onClick={() => void copyText(m.content)}
-                            >
-                              Kopieren
-                            </button>
-                            <button
-                              type="button"
-                              className="font-semibold text-muted-foreground"
-                              onClick={() => setFavs(toggleFavPrompt(m.content.slice(0, 120)))}
-                            >
-                              ★ Merken
-                            </button>
-                          </div>
+                          </MiraAnswerActions>
                         )}
                       </article>
                     </div>

@@ -9,6 +9,7 @@ const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.met
 const page = read("components/mira/SuperAiPage.tsx");
 const css = read("ai-reference.css");
 const chatDesign = read("mira-chat-design.css");
+const replyActions = read("components/mira/MiraAnswerActions.tsx");
 
 test("Mira uses a decorative four-point spark with unique gradients, not a provider logo", () => {
   const markup = renderToStaticMarkup(
@@ -117,7 +118,7 @@ test("conversation metadata, privacy, history and favorites remain reachable", (
     "Mira-Datenfreigabe",
     "Gespeicherte Chats durchsuchen",
   ])
-    assert.ok(page.includes(label));
+    assert.ok((page + replyActions).includes(label));
   const options = page.slice(
     page.indexOf('className="sport-ai-chat-options"'),
     page.indexOf('className="sport-chat-stage'),

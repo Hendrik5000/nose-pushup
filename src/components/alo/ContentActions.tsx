@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { LayoutGrid } from "lucide-react";
+import { ContentActionButton } from "./ContentActionButton";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { listAlo, putAlo, type AloBody } from "@/lib/alo-store";
 import { loadRoomsForUser, detectChatMode, postMessage, type LocalRoom } from "@/lib/chat-backend";
@@ -22,6 +24,7 @@ export function ContentActions({
   extra = {},
   onMiraNavigate,
   enableNexusDraft = false,
+  iconOnly = false,
 }: {
   userId: string;
   text: string;
@@ -31,6 +34,7 @@ export function ContentActions({
   extra?: AloBody;
   onMiraNavigate?: () => void;
   enableNexusDraft?: boolean;
+  iconOnly?: boolean;
 }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -174,14 +178,19 @@ export function ContentActions({
   const draftPreview = previewMiraNexusDraft(roomDraftSnapshot, text, draftChoice);
   return (
     <>
-      <MiraHandoff userId={userId} text={text} source={source} onNavigate={onMiraNavigate} />
-      <button
-        type="button"
-        className="text-xs font-semibold text-primary"
+      <MiraHandoff
+        userId={userId}
+        text={text}
+        source={source}
+        onNavigate={onMiraNavigate}
+        iconOnly={iconOnly}
+      />
+      <ContentActionButton
+        label={triggerLabel}
+        icon={LayoutGrid}
+        iconOnly={iconOnly}
         onClick={() => void begin()}
-      >
-        {triggerLabel}
-      </button>
+      />
       <Dialog
         open={open}
         onOpenChange={(next) => {

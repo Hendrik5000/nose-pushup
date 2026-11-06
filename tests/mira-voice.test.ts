@@ -45,7 +45,9 @@ test("Sprachdialog hält den Text editierbar und sendet ihn nicht selbst", () =>
 
 test("Sprachausgabe startet nur über eine Antwortaktion und lässt sich abbrechen", () => {
   const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
-  assert.match(page, /onClick=\{\(\) => speakMiraMessage\(i, m\.content\)\}/);
+  const actions = readFileSync("src/components/mira/MiraAnswerActions.tsx", "utf8");
+  assert.match(page, /onSpeak=\{\(\) => speakMiraMessage\(i, m\.content\)\}/);
+  assert.match(actions, /onClick=\{onSpeak\}/);
   assert.match(page, /window\.speechSynthesis\.cancel\(\)/);
   assert.match(page, /Spracherkennung wird in diesem Browser nicht unterstützt/);
   assert.match(page, /Mikrofonzugriff wurde nicht erlaubt/);
