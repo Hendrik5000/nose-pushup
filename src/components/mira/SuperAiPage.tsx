@@ -200,6 +200,10 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   const [messages, setMessages] = useState<Msg[]>(() => loadSessions()[0]?.messages ?? []);
   const [input, setInput] = useState(() => readMiraDraft(loadSessions()[0]?.id ?? ""));
   const [loading, setLoading] = useState(false);
+  const [pendingUserMessage, setPendingUserMessage] = useState<{
+    sessionId: string;
+    message: Msg;
+  } | null>(null);
   const [replyAnimation, setReplyAnimation] = useState<{ sessionId: string; index: number } | null>(
     null,
   );
@@ -207,6 +211,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   const sendingRef = useRef(false);
   useEffect(() => {
     setAttachments([]);
+    setPendingUserMessage(null);
     setReplyAnimation(null);
     sendingRef.current = false;
   }, [activeId]);
@@ -263,6 +268,9 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
       : "";
   const lastFeedback = getMostRecentPlanFeedback(messages);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pendingQuestionRef = useRef<HTMLDivElement>(null);
+  const activePendingUserMessage =
+    pendingUserMessage?.sessionId === activeId ? pendingUserMessage.message : null;
   const generationRef = useRef(0);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const voiceConversationControllerRef = useRef<MiraVoiceConversationController | null>(null);
@@ -282,6 +290,11 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   useEffect(
     () => () => {
       generationRef.current += 1;
+      if (sendingRef.current) {
+        sendingRef.current = false;
+        setPendingUserMessage(null);
+        setLoading(false);
+      }
       recognitionRef.current?.stop();
       if (typeof window !== "undefined" && "speechSynthesis" in window)
         window.speechSynthesis.cancel();
@@ -375,6 +388,8 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
       let draftSessionId = session?.id ?? activeId;
       if (selected) {
         generationRef.current += 1;
+        sendingRef.current = false;
+        setPendingUserMessage(null);
         setLoading(false);
         if (session) {
           setActiveId(session.id);
@@ -393,6 +408,8 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
         setSportAiView("chat");
       } else if (!session) {
         generationRef.current += 1;
+        sendingRef.current = false;
+        setPendingUserMessage(null);
         setLoading(false);
         const id = newSessionId();
         draftSessionId = id;
@@ -446,11 +463,27 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   }, [activeId]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
+    const container = scrollRef.current;
+    if (!container) return;
+    const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+      ? "auto"
+      : "smooth";
+    const question = activePendingUserMessage ? pendingQuestionRef.current : null;
+    if (question) {
+      const questionOffset =
+        question.getBoundingClientRect().top - container.getBoundingClientRect().top;
+      container.scrollTo({
+        top: Math.max(0, container.scrollTop + questionOffset - 12),
+        behavior,
+      });
+      return;
+    }
+    container.scrollTo({ top: container.scrollHeight, behavior });
+  }, [messages, loading, activeId, activePendingUserMessage]);
 
   const switchSession = (id: string) => {
     generationRef.current += 1;
+    setPendingUserMessage(null);
     stopVoiceConversation();
     stopMiraSpeech();
     recognitionRef.current?.stop();
@@ -469,6 +502,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
 
   const startNewSession = useCallback(() => {
     generationRef.current += 1;
+    setPendingUserMessage(null);
     stopVoiceConversation();
     stopMiraSpeech();
     recognitionRef.current?.stop();
@@ -557,26 +591,25 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     setSportAiView("chat");
 
     const userContent = text || "Bitte analysiere die angehängten Dateien.";
-    const nextMsgs: Msg[] = [
-      ...history,
-      {
-        role: "user",
-        content: userContent,
-        ...(submittedAttachments.length
-          ? {
-              attachments: submittedAttachments.map(({ file }) => ({
-                name: file.name,
-                mime: checkMiraFile(file),
-                size: file.size,
-              })),
-            }
-          : {}),
-      },
-    ];
+    const userMessage: Msg = {
+      role: "user",
+      content: userContent,
+      ...(submittedAttachments.length
+        ? {
+            attachments: submittedAttachments.map(({ file }) => ({
+              name: file.name,
+              mime: checkMiraFile(file),
+              size: file.size,
+            })),
+          }
+        : {}),
+    };
+    const nextMsgs: Msg[] = [...history, userMessage];
     recognitionRef.current?.stop();
     setListening(false);
     sendingRef.current = true;
     const generation = ++generationRef.current;
+    setPendingUserMessage({ sessionId: activeId, message: userMessage });
     setLoading(true);
     try {
       assertMiraAttachmentProvider(
@@ -633,14 +666,13 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
         setInput("");
         setAttachments([]);
       }
-      setMessages(nextMsgs);
       const parsed = parseAiResponse(res.reply);
       const plan = parsed.plan ? applyPlanFeedback(parsed.plan, lastFeedback) : undefined;
       const assistantText =
         parsed.reply || (plan ? "Hier ist dein unverbindlicher Trainingsvorschlag." : res.reply);
       setReplyAnimation({ sessionId: activeId, index: nextMsgs.length });
-      setMessages((m) => [
-        ...m,
+      setMessages([
+        ...nextMsgs,
         {
           role: "assistant",
           content: assistantText,
@@ -655,11 +687,13 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           },
         },
       ]);
+      setPendingUserMessage(null);
       return assistantText;
     } catch (e) {
       if (generation !== generationRef.current) return null;
       const msg = e instanceof Error ? e.message : "Fehler";
       setError(msg);
+      setPendingUserMessage(null);
       // Keep the draft and local attachments; errors are never added to AI history.
       return null;
     } finally {
@@ -1029,6 +1063,8 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   )
                     return;
                   generationRef.current += 1;
+                  sendingRef.current = false;
+                  setPendingUserMessage(null);
                   setLoading(false);
                   removeAlo(`mira:${activeId}`);
                   setSessions(loadSessions());
@@ -1285,6 +1321,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             className="alo-classic-mira-messages mt-3 flex-1 space-y-3 overflow-y-auto rounded-3xl border border-border bg-card/30 p-3 backdrop-blur"
           >
             {messages.length === 0 &&
+              !activePendingUserMessage &&
               (sketchLayout ? (
                 <div className="mira-chat-welcome mx-auto py-8 text-center">
                   <span className="mira-chat-welcome-mark" aria-hidden="true">
@@ -1469,6 +1506,26 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               </div>
             ))}
 
+            {activePendingUserMessage && (
+              <div ref={pendingQuestionRef} data-mira-pending-question className="flex justify-end">
+                <div className="max-w-[88%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-sm text-primary-foreground shadow-sm">
+                  <p className="whitespace-pre-wrap">{activePendingUserMessage.content}</p>
+                  {activePendingUserMessage.attachments?.length ? (
+                    <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
+                      {activePendingUserMessage.attachments.map((item, index) => (
+                        <li key={index}>
+                          {item.name} · {item.mime}
+                        </li>
+                      ))}
+                      <li>
+                        Dateiinhalte wurden nur für diese Anfrage übertragen und nicht im Verlauf
+                        gespeichert.
+                      </li>
+                    </ul>
+                  ) : null}
+                </div>
+              </div>
+            )}
             {loading && <MiraGeneratingIndicator />}
           </div>
 
@@ -2021,6 +2078,8 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                         )
                           return;
                         generationRef.current += 1;
+                        sendingRef.current = false;
+                        setPendingUserMessage(null);
                         setLoading(false);
                         removeAlo(`mira:${activeId}`);
                         setSessions(loadSessions());
@@ -2037,7 +2096,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   ref={scrollRef}
                   className="sport-chat-stage flex min-h-[38vh] flex-1 flex-col gap-4 overflow-y-auto rounded-[2rem] border border-border/70 bg-card/55 p-4 shadow-sm sm:p-6"
                 >
-                  {messages.length === 0 && (
+                  {messages.length === 0 && !activePendingUserMessage && (
                     <div className="mira-chat-welcome mx-auto my-auto max-w-lg py-8 text-center">
                       <span className="mira-chat-welcome-mark" aria-hidden="true">
                         <MiraSpark />
@@ -2195,6 +2254,30 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       </article>
                     </div>
                   ))}
+                  {activePendingUserMessage && (
+                    <div
+                      ref={pendingQuestionRef}
+                      data-mira-pending-question
+                      className="flex items-start justify-end gap-2"
+                    >
+                      <article className="sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm mira-chat-user-bubble rounded-br-md bg-primary text-primary-foreground">
+                        <p className="whitespace-pre-wrap">{activePendingUserMessage.content}</p>
+                        {activePendingUserMessage.attachments?.length ? (
+                          <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
+                            {activePendingUserMessage.attachments.map((item, index) => (
+                              <li key={index}>
+                                {item.name} · {item.mime}
+                              </li>
+                            ))}
+                            <li>
+                              Dateiinhalte wurden nur für diese Anfrage übertragen und nicht im
+                              Verlauf gespeichert.
+                            </li>
+                          </ul>
+                        ) : null}
+                      </article>
+                    </div>
+                  )}
                   {loading && <MiraGeneratingIndicator />}
                 </div>
                 {!sketchLayout && (
