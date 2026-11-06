@@ -168,12 +168,26 @@ test("responsive sketch layout removes the empty frame but lets real chat histor
   assert.match(css.slice(shortViewportRule), /sport-chat-stage:not\(:has\(\.mira-chat-welcome\)\)/);
   assert.match(emptyStageRule, /min-height: 0 !important;/);
   assert.match(emptyStageRule, /max-height: none !important;/);
-  assert.match(emptyStageRule, /flex: 0 0 auto !important;/);
+  assert.match(emptyStageRule, /flex: 1 1 0 !important;/);
+  assert.match(emptyStageRule, /justify-content: center;/);
   assert.match(emptyStageRule, /overflow: visible;/);
   assert.match(
     css,
-    /\.sport-chat-stage:has\(\.mira-chat-welcome\)\s+\.mira-chat-welcome\s*\{[\s\S]*?margin: 0\.5rem auto 0\.75rem !important;/,
+    /\.sport-chat-stage:has\(\.mira-chat-welcome\)\s+\.mira-chat-welcome\s*\{[\s\S]*?margin: 0 auto !important;/,
   );
+
+  const classicEmptyStageStart = css.indexOf(".alo-classic-mira-messages:has(.mira-chat-welcome)");
+  const classicEmptyStageEnd = css.indexOf("\n}", classicEmptyStageStart);
+  const classicEmptyStageRule = css.slice(classicEmptyStageStart, classicEmptyStageEnd);
+  assert.ok(classicEmptyStageStart >= 0);
+  assert.match(classicEmptyStageRule, /justify-content: center;/);
+  const classicWelcomeStart = css.indexOf(
+    ".alo-classic-mira-messages:has(.mira-chat-welcome)\n  .mira-chat-welcome",
+  );
+  const classicWelcomeEnd = css.indexOf("\n}", classicWelcomeStart);
+  const classicWelcomeRule = css.slice(classicWelcomeStart, classicWelcomeEnd);
+  assert.ok(classicWelcomeStart >= 0);
+  assert.match(classicWelcomeRule, /margin: 0 auto !important;/);
 
   const narrowViewportStart = css.indexOf("@media (max-width: 360px)");
   const reducedMotionStart = css.indexOf("@media (prefers-reduced-motion: reduce)");
