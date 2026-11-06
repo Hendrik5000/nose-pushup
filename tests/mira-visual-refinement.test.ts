@@ -66,7 +66,10 @@ test("non-reference Mira keeps Home as an in-flow action before the composer", (
 
 test("empty welcome does not replace saved conversation messages", () => {
   const stage = page.slice(page.indexOf('className="sport-chat-stage'));
-  assert.match(stage, /messages\.length === 0 && \(\s*<div className="mira-chat-welcome/);
+  assert.match(
+    stage,
+    /messages\.length === 0 &&\s*!activePendingUserMessage && \([\s\S]*?<div className="mira-chat-welcome/,
+  );
   assert.match(page, /\{messages\.map\(\(m, i\) => \(/);
   assert.match(page, /loadSessions\(\)\[0\]\?\.messages \?\? \[\]/);
 });
