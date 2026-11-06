@@ -1,6 +1,27 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Dumbbell, HeartPulse, Search } from "lucide-react";
+import {
+  Activity,
+  Bell,
+  CalendarDays,
+  Dumbbell,
+  Footprints,
+  Gamepad2,
+  HeartPulse,
+  Inbox,
+  Layers,
+  Medal,
+  MessageCircle,
+  Plus,
+  Search,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Swords,
+  Trophy,
+  Users,
+  Zap,
+} from "lucide-react";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import {
@@ -18,6 +39,7 @@ import {
   removeMarketplacePlugin,
   runMarketplaceAdminAction,
   saveMarketplaceInstallState,
+  type MarketplaceCategory,
   type MarketplaceIconId,
   type MarketplaceInstallState,
 } from "@/lib/marketplace";
@@ -45,10 +67,38 @@ export const Route = createFileRoute("/_authenticated/marketplace")({
 });
 
 const PLUGIN_ICONS = {
-  training: Dumbbell,
+  mira: Sparkles,
+  nexus: MessageCircle,
   health: HeartPulse,
+  settings: Settings,
+  training: Dumbbell,
+  admin: ShieldCheck,
+  hub: Layers,
+  coach: Activity,
+  inbox: Inbox,
+  game: Gamepad2,
+  programs: CalendarDays,
+  calisthenics: Activity,
+  run: Footprints,
+  season: Trophy,
+  battle: Swords,
+  league: Trophy,
+  leaderboard: Medal,
+  clubs: Users,
+  alarm: Bell,
+  today: CalendarDays,
   search: Search,
+  capture: Plus,
+  collections: Layers,
+  shortcuts: Zap,
+  privacy: ShieldCheck,
 } satisfies Record<MarketplaceIconId, typeof Dumbbell>;
+
+const CATEGORY_LABELS = {
+  app: "Alo-App",
+  area: "Bereich",
+  tool: "Werkzeug",
+} satisfies Record<MarketplaceCategory, string>;
 
 type AccountMarketplaceState = {
   userId: string;
@@ -177,7 +227,7 @@ function MarketplaceContent({ userId }: { userId: string }) {
     <HomeAppMenuLayout
       eyebrow="ALO · KURATIERT"
       title="Marketplace"
-      description="Installiere Alo-Erweiterungen, die ausschließlich vorhandene Alo-Seiten und Werkzeuge öffnen. Es gibt hier keine Drittanbieter-Pakete oder ausführbaren Plugin-Skripte."
+      description="Installiere vorhandene Alo-Apps, Bereiche und Werkzeuge. Einträge öffnen nur vorregistrierte Alo-Ziele; Drittanbieter-Pakete und ausführbare Plugin-Skripte gibt es hier nicht."
     >
       <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
         Installationen und Aktivierungen werden nur in diesem Browser auf diesem Gerät gespeichert,
@@ -199,7 +249,7 @@ function MarketplaceContent({ userId }: { userId: string }) {
 
       <section
         className="grid grid-cols-1 gap-4 sm:grid-cols-2"
-        aria-label="Kuratierte Alo-Erweiterungen"
+        aria-label="Kuratierte Alo-Apps, Bereiche und Werkzeuge"
       >
         {MARKETPLACE_CATALOG.map((plugin) => {
           const Icon = PLUGIN_ICONS[plugin.icon];
@@ -218,7 +268,8 @@ function MarketplaceContent({ userId }: { userId: string }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                    {plugin.publisher} · Version {plugin.version}
+                    {CATEGORY_LABELS[plugin.category]} · {plugin.publisher} · Version{" "}
+                    {plugin.version}
                   </p>
                   <h2
                     id={`marketplace-${plugin.id}-title`}
@@ -285,6 +336,15 @@ function MarketplaceContent({ userId }: { userId: string }) {
                 {enabled && plugin.action.type === "navigate" && (
                   <Link
                     to={plugin.action.to}
+                    className="min-h-11 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  >
+                    Öffnen
+                  </Link>
+                )}
+                {enabled && plugin.action.type === "open-game" && (
+                  <Link
+                    to="/games"
+                    search={{ game: plugin.action.gameId }}
                     className="min-h-11 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   >
                     Öffnen

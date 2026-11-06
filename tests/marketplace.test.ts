@@ -19,6 +19,8 @@ import {
   saveMarketplaceInstallState,
   validateMarketplaceManifest,
 } from "../src/lib/marketplace";
+import { ALO_WORKSPACE_TOOLS, HOME_OTHER_AREAS } from "../src/lib/home-app-menus";
+import { PRIVATE_GAME_IDS } from "../src/lib/private-game-policy";
 
 class MemoryStorage {
   readonly values = new Map<string, string>();
@@ -34,7 +36,7 @@ class MemoryStorage {
 
 test("bundled Marketplace manifests are canonical, declarative and host-registered", () => {
   assert.equal(new Set(MARKETPLACE_CATALOG.map(({ id }) => id)).size, MARKETPLACE_CATALOG.length);
-  assert.equal(MARKETPLACE_CATALOG.length, 3);
+  assert.equal(MARKETPLACE_CATALOG.length, 29);
 
   assert.ok(Object.isFrozen(MARKETPLACE_CATALOG));
   for (const manifest of MARKETPLACE_CATALOG) {
@@ -59,12 +61,87 @@ test("bundled Marketplace manifests are canonical, declarative and host-register
 
   assert.match(
     describeMarketplacePermissions(MARKETPLACE_CATALOG[0])[0],
-    /Keine zusätzlichen Datenrechte/,
+    /Keine zusätzlichen Plugin-Datenrechte/,
   );
-  assert.match(
-    describeMarketplacePermissions(MARKETPLACE_CATALOG[2])[0],
-    /erst nach deinem Tippen/,
-  );
+  const toolManifest = MARKETPLACE_CATALOG.find(({ action }) => action.type === "open-tool");
+  assert.ok(toolManifest);
+  assert.match(describeMarketplacePermissions(toolManifest)[0], /erst nach deinem Tippen/);
+  const gameManifest = MARKETPLACE_CATALOG.find(({ action }) => action.type === "open-game");
+  assert.ok(gameManifest);
+  assert.match(describeMarketplacePermissions(gameManifest)[0], /Admin-Schutz gilt weiter/);
+});
+
+test("Marketplace covers all existing first-party app, area, tool and game registrations", () => {
+  const appRoutes = [
+    "/ai",
+    "/chat",
+    "/exercises",
+    "/profile",
+    "/training",
+    "/admin",
+    "/areas",
+    "/tools",
+    "/marketplace",
+    "/coach",
+    "/postfach",
+  ];
+  for (const route of appRoutes) {
+    assert.ok(
+      MARKETPLACE_CATALOG.some(
+        (plugin) =>
+          plugin.category === "app" &&
+          plugin.action.type === "navigate" &&
+          plugin.action.to === route,
+      ),
+      `missing existing Alo app route ${route}`,
+    );
+  }
+
+  for (const { to, label, description } of HOME_OTHER_AREAS) {
+    const area = MARKETPLACE_CATALOG.find(
+      (plugin) =>
+        plugin.category === "area" && plugin.action.type === "navigate" && plugin.action.to === to,
+    );
+    assert.ok(area, `missing registered Alo area ${to}`);
+    assert.equal(area.name, label, `area label must match Alo navigation for ${to}`);
+    assert.equal(
+      area.description,
+      description,
+      `area description must match Alo navigation for ${to}`,
+    );
+  }
+
+  for (const { id, label, description } of ALO_WORKSPACE_TOOLS) {
+    const tool = MARKETPLACE_CATALOG.find(
+      (plugin) =>
+        plugin.category === "tool" &&
+        plugin.action.type === "open-tool" &&
+        plugin.action.toolId === id,
+    );
+    assert.ok(tool, `missing registered Alo tool ${id}`);
+    assert.equal(tool.name, label, `tool label must match Alo navigation for ${id}`);
+    assert.equal(
+      tool.description,
+      description,
+      `tool description must match Alo navigation for ${id}`,
+    );
+  }
+
+  for (const gameId of PRIVATE_GAME_IDS) {
+    assert.ok(
+      MARKETPLACE_CATALOG.some(
+        (plugin) =>
+          plugin.category === "app" &&
+          plugin.action.type === "open-game" &&
+          plugin.action.gameId === gameId,
+      ),
+      `missing existing Admin-protected game ${gameId}`,
+    );
+  }
+
+  assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "app").length, 13);
+  assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "area").length, 10);
+  assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "tool").length, 6);
 });
 
 test("install, enable, disable and remove are separate explicit local state transitions", () => {
@@ -120,6 +197,16 @@ test("unknown IDs, malformed manifests, invalid actions and malformed saved stat
       validateMarketplaceManifest({
         ...canonical,
         action: { type: "navigate", to: "https://example.invalid" },
+      }),
+    /stimmt nicht/,
+  );
+  const gameManifest = MARKETPLACE_CATALOG.find(({ action }) => action.type === "open-game");
+  assert.ok(gameManifest);
+  assert.throws(
+    () =>
+      validateMarketplaceManifest({
+        ...gameManifest,
+        action: { type: "open-game", gameId: "unregistered-game" },
       }),
     /stimmt nicht/,
   );

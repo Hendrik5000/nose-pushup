@@ -1,13 +1,58 @@
-import { ALO_WORKSPACE_TOOLS, type AloWorkspaceToolId } from "./home-app-menus";
+import { ALO_WORKSPACE_TOOLS, HOME_OTHER_AREAS, type AloWorkspaceToolId } from "./home-app-menus";
+import { PRIVATE_GAME_IDS, type PrivateGameId } from "./private-game-policy";
 import { scopedStorageKey } from "../integrations/supabase/backendScope";
 
+export type MarketplaceCategory = "app" | "area" | "tool";
 export type MarketplacePermissionId = "alo.navigate" | "alo.open-existing-tool";
-export type MarketplaceIconId = "training" | "health" | "search";
-export type MarketplaceRouteTarget = "/programs" | "/health";
-export type MarketplaceToolTarget = Extract<AloWorkspaceToolId, "search">;
+export type MarketplaceIconId =
+  | "mira"
+  | "nexus"
+  | "health"
+  | "settings"
+  | "training"
+  | "admin"
+  | "hub"
+  | "coach"
+  | "inbox"
+  | "game"
+  | "programs"
+  | "calisthenics"
+  | "run"
+  | "season"
+  | "battle"
+  | "league"
+  | "leaderboard"
+  | "clubs"
+  | "alarm"
+  | "today"
+  | "search"
+  | "capture"
+  | "collections"
+  | "shortcuts"
+  | "privacy";
+
+const MARKETPLACE_APP_ROUTES = [
+  "/ai",
+  "/chat",
+  "/exercises",
+  "/profile",
+  "/training",
+  "/admin",
+  "/areas",
+  "/tools",
+  "/marketplace",
+  "/coach",
+  "/postfach",
+] as const;
+
+export type MarketplaceRouteTarget =
+  (typeof MARKETPLACE_APP_ROUTES)[number] | (typeof HOME_OTHER_AREAS)[number]["to"];
+export type MarketplaceToolTarget = AloWorkspaceToolId;
+export type MarketplaceGameTarget = PrivateGameId;
 
 export type MarketplaceHostAction =
   | { type: "navigate"; to: MarketplaceRouteTarget }
+  | { type: "open-game"; gameId: MarketplaceGameTarget }
   | { type: "open-tool"; toolId: MarketplaceToolTarget };
 
 export type MarketplacePluginManifest = {
@@ -15,6 +60,7 @@ export type MarketplacePluginManifest = {
   name: string;
   version: "1.0.0";
   publisher: "Alo";
+  category: MarketplaceCategory;
   description: string;
   icon: MarketplaceIconId;
   permissions: readonly MarketplacePermissionId[];
@@ -23,38 +69,331 @@ export type MarketplacePluginManifest = {
 
 /**
  * Bundled catalogue only. These records are descriptive data, never executable plugin code.
- * New entries require a source change and must use a host-registered route or capability.
+ * New entries require a source change and must use a host-registered route, game ID, or capability.
  */
 const BUNDLED_MARKETPLACE_CATALOG = [
   {
-    id: "alo-training-programs",
-    name: "Trainingsprogramme",
+    id: "alo-mira",
+    name: "Mira",
     version: "1.0.0",
     publisher: "Alo",
-    description: "Öffnet den vorhandenen Alo-Bereich für Trainingsprogramme.",
+    category: "app",
+    description:
+      "Öffnet Miras vorhandene Seite. Eine KI-Anfrage startet erst, wenn du dort selbst eine Nachricht sendest.",
+    icon: "mira",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/ai" },
+  },
+  {
+    id: "alo-nexus-chat",
+    name: "Nexus Chat",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description:
+      "Öffnet den vorhandenen Nexus-Chat. Eine Nachricht wird erst durch deine eigene Sendeaktion übermittelt.",
+    icon: "nexus",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/chat" },
+  },
+  {
+    id: "alo-health-app",
+    name: "Alo Health",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description: "Öffnet die bestehende Alo-Health-App.",
+    icon: "health",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/exercises" },
+  },
+  {
+    id: "alo-settings",
+    name: "Einstellungen",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description: "Öffnet dein vorhandenes Alo-Profil und die Einstellungen.",
+    icon: "settings",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/profile" },
+  },
+  {
+    id: "alo-training",
+    name: "Trainingsübersicht & Gym",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description: "Öffnet die vorhandene Trainingsübersicht und Gym-Funktionen.",
     icon: "training",
     permissions: ["alo.navigate"],
-    action: { type: "navigate", to: "/programs" },
+    action: { type: "navigate", to: "/training" },
+  },
+  {
+    id: "alo-admin",
+    name: "Admin-Bereich",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description:
+      "Öffnet den vorhandenen Admin-Bereich. Bestehende Berechtigungen für Rollenverwaltung bleiben unverändert.",
+    icon: "admin",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/admin" },
+  },
+  {
+    id: "alo-all-areas",
+    name: "Weitere Bereiche",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description: "Öffnet die vorhandene Übersicht aller weiteren Alo-Bereiche.",
+    icon: "hub",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/areas" },
+  },
+  {
+    id: "alo-workspace-tools",
+    name: "Alo-Werkzeuge",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description: "Öffnet die vorhandene Übersicht der registrierten Alo-Werkzeuge.",
+    icon: "hub",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/tools" },
+  },
+  {
+    id: "alo-marketplace",
+    name: "Marketplace",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description: "Öffnet den vorhandenen Alo Marketplace.",
+    icon: "hub",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/marketplace" },
+  },
+  {
+    id: "alo-smart-coach",
+    name: "Smart Coach",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description:
+      "Öffnet den vorhandenen Fitness-Coach. Eine KI-Anfrage startet erst, wenn du dort selbst eine Nachricht sendest.",
+    icon: "coach",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/coach" },
+  },
+  {
+    id: "alo-postfach",
+    name: "Postfach",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description: "Öffnet dein vorhandenes Postfach mit Einladungen und verpassten Anrufen.",
+    icon: "inbox",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/postfach" },
+  },
+  {
+    id: "alo-grid-defense",
+    name: "Grid Defense",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description: "Öffnet das vorhandene, Admin-geschützte Grid-Defense-Spiel.",
+    icon: "game",
+    permissions: ["alo.navigate"],
+    action: { type: "open-game", gameId: "grid-defense" },
+  },
+  {
+    id: "alo-kupferkern",
+    name: "Kupferkern",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description: "Öffnet das vorhandene, Admin-geschützte Spiel Kupferkern.",
+    icon: "game",
+    permissions: ["alo.navigate"],
+    action: { type: "open-game", gameId: "kupferkern" },
   },
   {
     id: "alo-health-overview",
-    name: "Gesundheitsübersicht",
+    name: "Gesundheit",
     version: "1.0.0",
     publisher: "Alo",
-    description: "Öffnet den vorhandenen Alo-Gesundheitsbereich.",
+    category: "area",
+    description: "Gesundheit und Wohlbefinden",
     icon: "health",
     permissions: ["alo.navigate"],
     action: { type: "navigate", to: "/health" },
   },
   {
-    id: "alo-quick-search",
-    name: "Alo-Suche",
+    id: "alo-training-programs",
+    name: "Programme",
     version: "1.0.0",
     publisher: "Alo",
-    description: "Öffnet das bestehende Alo-Suchwerkzeug.",
+    category: "area",
+    description: "Trainingsprogramme und Pläne",
+    icon: "programs",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/programs" },
+  },
+  {
+    id: "alo-calisthenics",
+    name: "Calisthenics",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "area",
+    description: "Kraft und Körpergewicht",
+    icon: "calisthenics",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/calisthenics" },
+  },
+  {
+    id: "alo-running",
+    name: "Laufen",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "area",
+    description: "Laufen und Ausdauer",
+    icon: "run",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/run" },
+  },
+  {
+    id: "alo-season",
+    name: "Saison",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "area",
+    description: "Deine aktuelle Saison",
+    icon: "season",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/season" },
+  },
+  {
+    id: "alo-battle",
+    name: "Wettkampf",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "area",
+    description: "Wettkampf und Battles",
+    icon: "battle",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/battle" },
+  },
+  {
+    id: "alo-battle-league",
+    name: "Battle-Liga",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "area",
+    description: "Liga und Ranglisten",
+    icon: "league",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/battle-league" },
+  },
+  {
+    id: "alo-leaderboard",
+    name: "Rangliste",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "area",
+    description: "Punkte und Bestenlisten",
+    icon: "leaderboard",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/leaderboard" },
+  },
+  {
+    id: "alo-clubs",
+    name: "Clubs",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "area",
+    description: "Gemeinsam trainieren",
+    icon: "clubs",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/clubs" },
+  },
+  {
+    id: "alo-alarm",
+    name: "Wecker",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "area",
+    description: "Trainingswecker verwalten",
+    icon: "alarm",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/alarm" },
+  },
+  {
+    id: "alo-today",
+    name: "Tagesübersicht",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "tool",
+    description: "Gespeicherte Inhalte und Aufgaben für heute ansehen.",
+    icon: "today",
+    permissions: ["alo.open-existing-tool"],
+    action: { type: "open-tool", toolId: "today" },
+  },
+  {
+    id: "alo-quick-search",
+    name: "Überall suchen",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "tool",
+    description: "Alo-Inhalte und gespeicherte Einträge durchsuchen.",
     icon: "search",
     permissions: ["alo.open-existing-tool"],
     action: { type: "open-tool", toolId: "search" },
+  },
+  {
+    id: "alo-quick-save",
+    name: "Schnell speichern",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "tool",
+    description: "Notizen, Links und Anhänge in Alo ablegen.",
+    icon: "capture",
+    permissions: ["alo.open-existing-tool"],
+    action: { type: "open-tool", toolId: "capture" },
+  },
+  {
+    id: "alo-collections",
+    name: "Sammlungen",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "tool",
+    description: "Gespeicherte Inhalte ordnen und wiederfinden.",
+    icon: "collections",
+    permissions: ["alo.open-existing-tool"],
+    action: { type: "open-tool", toolId: "collections" },
+  },
+  {
+    id: "alo-shortcuts",
+    name: "Schnellaktionen",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "tool",
+    description: "Häufige Alo-Aktionen direkt starten.",
+    icon: "shortcuts",
+    permissions: ["alo.open-existing-tool"],
+    action: { type: "open-tool", toolId: "shortcuts" },
+  },
+  {
+    id: "alo-privacy",
+    name: "Daten & Datenschutz",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "tool",
+    description: "Synchronisierung und Datenfreigaben verwalten.",
+    icon: "privacy",
+    permissions: ["alo.open-existing-tool"],
+    action: { type: "open-tool", toolId: "privacy" },
   },
 ] as const satisfies readonly MarketplacePluginManifest[];
 
@@ -69,9 +408,12 @@ export const MARKETPLACE_CATALOG: readonly MarketplacePluginManifest[] = Object.
 const MARKETPLACE_PLUGIN_BY_ID = new Map<string, MarketplacePluginManifest>(
   MARKETPLACE_CATALOG.map((plugin) => [plugin.id, plugin]),
 );
-const KNOWN_ROUTES = new Set<MarketplaceRouteTarget>(["/programs", "/health"]);
-const REGISTERED_TOOLS = new Set<AloWorkspaceToolId>(ALO_WORKSPACE_TOOLS.map(({ id }) => id));
-const ALLOWED_TOOL_TARGETS = new Set<MarketplaceToolTarget>(["search"]);
+const KNOWN_ROUTES = new Set<MarketplaceRouteTarget>([
+  ...MARKETPLACE_APP_ROUTES,
+  ...HOME_OTHER_AREAS.map(({ to }) => to),
+]);
+const REGISTERED_TOOLS = new Set<MarketplaceToolTarget>(ALO_WORKSPACE_TOOLS.map(({ id }) => id));
+const REGISTERED_GAMES = new Set<MarketplaceGameTarget>(PRIVATE_GAME_IDS);
 
 export const EMPTY_MARKETPLACE_INSTALL_STATE: MarketplaceInstallState = Object.freeze({
   schemaVersion: 1,
@@ -120,12 +462,20 @@ function actionMatchesCanonical(value: unknown, expected: MarketplaceHostAction)
       value.to === expected.to
     );
   }
+  if (expected.type === "open-game") {
+    return (
+      hasExactKeys(value, ["type", "gameId"]) &&
+      value.type === "open-game" &&
+      typeof value.gameId === "string" &&
+      REGISTERED_GAMES.has(value.gameId as MarketplaceGameTarget) &&
+      value.gameId === expected.gameId
+    );
+  }
   return (
     hasExactKeys(value, ["type", "toolId"]) &&
     value.type === "open-tool" &&
     typeof value.toolId === "string" &&
-    ALLOWED_TOOL_TARGETS.has(value.toolId as MarketplaceToolTarget) &&
-    REGISTERED_TOOLS.has(value.toolId as AloWorkspaceToolId) &&
+    REGISTERED_TOOLS.has(value.toolId as MarketplaceToolTarget) &&
     value.toolId === expected.toolId
   );
 }
@@ -149,6 +499,7 @@ export function validateMarketplaceManifest(value: unknown): MarketplacePluginMa
       "name",
       "version",
       "publisher",
+      "category",
       "description",
       "icon",
       "permissions",
@@ -158,6 +509,7 @@ export function validateMarketplaceManifest(value: unknown): MarketplacePluginMa
     value.name === canonical.name &&
     value.version === canonical.version &&
     value.publisher === canonical.publisher &&
+    value.category === canonical.category &&
     value.description === canonical.description &&
     value.icon === canonical.icon &&
     sameStringArray(value.permissions, canonical.permissions) &&
@@ -177,23 +529,34 @@ export function getMarketplaceManifest(pluginId: unknown): MarketplacePluginMani
   return manifest;
 }
 
-const ROUTE_NAMES: Record<MarketplaceRouteTarget, string> = {
-  "/programs": "Trainingsprogramme",
-  "/health": "Gesundheit",
-};
+function nameForRoute(to: MarketplaceRouteTarget) {
+  return MARKETPLACE_CATALOG.find(
+    (plugin) => plugin.action.type === "navigate" && plugin.action.to === to,
+  )?.name;
+}
 
-const TOOL_NAMES: Record<MarketplaceToolTarget, string> = {
-  search: "Überall suchen",
-};
+function nameForGame(gameId: MarketplaceGameTarget) {
+  return MARKETPLACE_CATALOG.find(
+    (plugin) => plugin.action.type === "open-game" && plugin.action.gameId === gameId,
+  )?.name;
+}
 
 export function describeMarketplacePermissions(manifestInput: unknown): readonly string[] {
   const manifest = validateMarketplaceManifest(manifestInput);
+  const action = manifest.action;
   return manifest.permissions.map((permission) => {
-    if (permission === "alo.navigate" && manifest.action.type === "navigate") {
-      return `Öffnet nur die bestehende Alo-Seite „${ROUTE_NAMES[manifest.action.to]}“ und erst nach deinem Tippen. Keine zusätzlichen Datenrechte, Hintergrundaktionen, Netzwerk- oder KI-Aufrufe.`;
+    if (permission === "alo.navigate" && action.type === "navigate") {
+      const name = nameForRoute(action.to) ?? action.to;
+      return `Öffnet nur die vorhandene Alo-Seite „${name}“ und erst nach deinem Tippen. Keine zusätzlichen Plugin-Datenrechte oder Hintergrundaktionen; die bestehende App nutzt ihre normalen Alo-Funktionen.`;
     }
-    if (permission === "alo.open-existing-tool" && manifest.action.type === "open-tool") {
-      return `Öffnet nur das vorhandene Alo-Werkzeug „${TOOL_NAMES[manifest.action.toolId]}“ und erst nach deinem Tippen. Keine Plugin-Hintergrundrechte oder Datenübertragung.`;
+    if (permission === "alo.navigate" && action.type === "open-game") {
+      const name = nameForGame(action.gameId) ?? action.gameId;
+      return `Öffnet nur das vorhandene Alo-Spiel „${name}“ nach deinem Tippen. Der bestehende Admin-Schutz gilt weiter; das Plugin führt keinen eigenen Code aus.`;
+    }
+    if (permission === "alo.open-existing-tool" && action.type === "open-tool") {
+      const name =
+        ALO_WORKSPACE_TOOLS.find(({ id }) => id === action.toolId)?.label ?? action.toolId;
+      return `Öffnet nur das registrierte Alo-Werkzeug „${name}“ und erst nach deinem Tippen. Keine zusätzlichen Plugin-Rechte oder Hintergrundaktionen; das Werkzeug bleibt im normalen Alo-Kontext.`;
     }
     throw new Error("Plugin-Berechtigung passt nicht zur registrierten Alo-Aktion.");
   });
