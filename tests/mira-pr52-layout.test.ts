@@ -99,14 +99,21 @@ test("capsule keeps attachment, text, hands-free, dictation and explicit submit 
   assert.match(page, /sendTranscript: \(transcript\) =>[\s\S]*?submitRef.current\(transcript/);
 });
 
-test("PR52 attachment icons are centered together and privacy/file limits live in Mira settings", () => {
+test("compact attachment picker has one centered paperclip, no plus, and retains file-picker semantics", () => {
   const attachmentPicker = read("components/mira/MiraAttachments.tsx");
   const optionsStart = sport.indexOf('id="mira-chat-options"');
   const stageStart = sport.indexOf('className="sport-chat-stage', optionsStart);
   const options = sport.slice(optionsStart, stageStart);
   assert.match(
     attachmentPicker,
-    /className="alo-mira-attachment-icons"[\s\S]*?<Plus \/>[\s\S]*?<Paperclip \/>/,
+    /<summary[\s\S]*?aria-label="Foto oder Datei hinzufügen"[\s\S]*?<Paperclip aria-hidden="true" \/>[\s\S]*?<\/summary>/,
+  );
+  assert.doesNotMatch(attachmentPicker, /<Plus\b|alo-mira-attachment-icons/);
+  assert.match(attachmentPicker, /aria-label="Dateien vom Gerät auswählen"/);
+  assert.match(attachmentPicker, /onClick=\{\(\) => files\.current\?\.click\(\)\}/);
+  assert.match(
+    attachmentPicker,
+    /if \(event\.key === "Escape"\)[\s\S]*?querySelector\("summary"\)\?\.focus\(\)/,
   );
   assert.match(attachmentPicker, /export function MiraAttachmentPolicy\(\)/);
   assert.match(attachmentPicker, /Anhänge bleiben lokal, bis du sendest · Dateilimits/);
@@ -114,8 +121,9 @@ test("PR52 attachment icons are centered together and privacy/file limits live i
   assert.match(options, /<MiraAttachmentPolicy \/>/);
   assert.match(
     read("mira-pr52-design.css"),
-    /\.alo-mira-attachment-icons[\s\S]*?justify-content: center;/,
+    /\.mira-attachment-picker\s*>\s*summary,[\s\S]*?display: grid;[\s\S]*?place-items: center;[\s\S]*?border-radius: 50%;/,
   );
+  assert.doesNotMatch(read("mira-pr52-design.css"), /alo-mira-attachment-icons/);
   assert.match(
     read("mira-pr52-design.css"),
     /\.mira-attachment-picker[\s\S]*?> summary::marker[\s\S]*?content: ""/,
