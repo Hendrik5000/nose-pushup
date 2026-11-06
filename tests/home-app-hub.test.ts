@@ -23,6 +23,7 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
     ["/exercises", "exercises.tsx", "Alo Health", "health"],
     ["/profile", "profile.tsx", "Einstellungen", "settings"],
     ["/training", "training.tsx", "Trainingsübersicht & Gym", "training"],
+    ["/marketplace", "marketplace.tsx", "Marketplace", "marketplace"],
   ] as const) {
     assert.ok(existsSync(resolve(root, "src/routes/_authenticated", routeFile)));
     assert.ok(
@@ -38,15 +39,17 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.match(hub, /avatarUrl\s*\?/);
 });
 
-test("Home restores the existing Areas, Training/Gym, and Tools as app tiles", () => {
+test("Home restores Areas, Training/Gym, Tools, and the curated Marketplace as app tiles", () => {
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/areas.tsx")));
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/tools.tsx")));
+  assert.ok(existsSync(resolve(root, "src/routes/_authenticated/marketplace.tsx")));
   assert.match(hub, /to="\/areas"[\s\S]*?Weitere Bereiche/);
   assert.match(
     hub,
     /<HubAppIcon to="\/training" title="Trainingsübersicht & Gym" artwork="training"/,
   );
   assert.match(hub, /to="\/tools"[\s\S]*?Alo-Werkzeuge/);
+  assert.match(hub, /<HubAppIcon to="\/marketplace" title="Marketplace" artwork="marketplace"/);
 
   const areaRoutes = [
     ["/health", "health.tsx"],
@@ -106,6 +109,7 @@ test("app artwork is square and original, and training is no longer a collapsibl
     "more",
     "training",
     "tools",
+    "marketplace",
     "gridDefense",
     "kupferkern",
   ]) {

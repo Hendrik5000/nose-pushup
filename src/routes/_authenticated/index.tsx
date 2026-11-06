@@ -120,6 +120,7 @@ function HomeAppHub({
         >
           <HubAppIconContents title="Alo-Werkzeuge" artwork="tools" />
         </Link>
+        <HubAppIcon to="/marketplace" title="Marketplace" artwork="marketplace" />
       </nav>
     </section>
   );
@@ -135,7 +136,8 @@ type HubArtworkKind =
   | "kupferkern"
   | "more"
   | "training"
-  | "tools";
+  | "tools"
+  | "marketplace";
 
 const HUB_APP_ICON_CLASS_NAME =
   "group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
@@ -145,7 +147,7 @@ function HubAppIcon({
   title,
   artwork,
 }: {
-  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin" | "/training";
+  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin" | "/training" | "/marketplace";
   title: string;
   artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
 }) {
@@ -202,6 +204,7 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
     more: { bg: "#172735", accent: "#67e8f9", glow: "#0ea5e9" },
     training: { bg: "#30291d", accent: "#fcd34d", glow: "#f59e0b" },
     tools: { bg: "#25233a", accent: "#c4b5fd", glow: "#8b5cf6" },
+    marketplace: { bg: "#32261c", accent: "#fdba74", glow: "#ea580c" },
   } as const;
   const palette = palettes[kind];
 
@@ -400,6 +403,21 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
             strokeLinejoin="round"
           />
           <circle cx="184" cy="37" r="4" fill="#fff" opacity=".9" />
+        </>
+      )}
+      {kind === "marketplace" && (
+        <>
+          <circle cx="140" cy="68" r="45" fill={palette.glow} opacity=".24" />
+          <path d="M108 53h64l6 57h-76l6-57Z" fill={palette.accent} />
+          <path
+            d="M126 53v-9a14 14 0 0 1 28 0v9"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="6"
+            strokeLinecap="round"
+          />
+          <path d="M124 78h32" stroke={palette.bg} strokeWidth="5" strokeLinecap="round" />
+          <circle cx="140" cy="92" r="7" fill={palette.glow} />
         </>
       )}
       <path d="M18 18h22" stroke="#fff" strokeOpacity=".22" strokeWidth="3" strokeLinecap="round" />
