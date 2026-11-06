@@ -95,7 +95,7 @@ export function MiraAttachmentPicker({
             if (disabled) event.preventDefault();
           }}
         >
-          <Paperclip aria-hidden="true" />
+          <Paperclip aria-hidden="true" className="alo-mira-attachment-icon" />
         </summary>
         <div className="mira-attachment-menu" role="group" aria-label="Anhang auswählen">
           <button type="button" disabled={disabled} onClick={() => camera.current?.click()}>
