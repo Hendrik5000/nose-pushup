@@ -71,7 +71,7 @@ test("empty welcome does not replace saved conversation messages", () => {
   assert.match(page, /loadSessions\(\)\[0\]\?\.messages \?\? \[\]/);
 });
 
-test("Mira's chat start feels conversational and answer bubbles carry Mira's own mark", () => {
+test("Mira's chat start keeps its welcome mark while answers stay unframed", () => {
   const welcomeStart = page.indexOf(
     'className="mira-chat-welcome',
     page.indexOf('className="sport-chat-stage'),
@@ -106,8 +106,9 @@ test("Mira's chat start feels conversational and answer bubbles carry Mira's own
     messagesStart,
     page.indexOf('className="mira-chat-bottom-row"', messagesStart),
   );
-  assert.match(replyMarkup, /mira-chat-answer-mark[\s\S]*?<MiraSpark \/>/);
-  assert.match(replyMarkup, /mira-chat-answer-bubble/);
+  assert.doesNotMatch(replyMarkup, /mira-chat-answer-mark|mira-chat-answer-bubble|<MiraSpark/);
+  assert.match(replyMarkup, /<MiraProgressiveAnswer/);
+  assert.match(replyMarkup, /<MiraAnswerActions/);
 });
 
 test("conversation metadata, privacy, history and favorites remain reachable", () => {
