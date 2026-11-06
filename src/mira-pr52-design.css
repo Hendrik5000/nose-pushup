@@ -178,7 +178,8 @@ html:root[data-design-style] .alo-mira-sketch-page .sport-chat-stage {
 html:root[data-design-style] .alo-mira-sketch-page .sport-chat-stage:has(.mira-chat-welcome) {
   min-height: 0 !important;
   max-height: none !important;
-  flex: 0 0 auto !important;
+  flex: 1 1 0 !important;
+  justify-content: center;
   overflow: visible;
   padding-block: 0;
 }
@@ -187,7 +188,7 @@ html:root[data-design-style]
   .alo-mira-sketch-page
   .sport-chat-stage:has(.mira-chat-welcome)
   .mira-chat-welcome {
-  margin: 0.5rem auto 0.75rem !important;
+  margin: 0 auto !important;
   padding-block: 0.5rem !important;
 }
 
@@ -524,4 +525,17 @@ html:root[data-design-style] .alo-mira-sketch-page .alo-classic-mira-messages {
   background: color-mix(in srgb, var(--card) 92%, var(--background));
   box-shadow: 0 0.8rem 2.2rem color-mix(in srgb, var(--background) 22%, transparent);
   scrollbar-width: thin;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-classic-mira-messages:has(.mira-chat-welcome) {
+  justify-content: center;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-classic-mira-messages:has(.mira-chat-welcome)
+  .mira-chat-welcome {
+  margin: 0 auto !important;
 }
