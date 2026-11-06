@@ -38,14 +38,16 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.match(hub, /avatarUrl\s*\?/);
 });
 
-test("Home restores the existing Areas, Training/Gym, and Tools as app tiles", () => {
+test("Home restores Areas, Training/Gym, Tools, and the curated Marketplace as app tiles", () => {
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/areas.tsx")));
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/tools.tsx")));
+  assert.ok(existsSync(resolve(root, "src/routes/_authenticated/marketplace.tsx")));
   assert.match(hub, /to="\/areas"[\s\S]*?Weitere Bereiche/);
   assert.match(
     hub,
-    /<HubAppIcon to="\/training" title="Trainingsübersicht & Gym" artwork="training"/,
+    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/marketplace" title="Marketplace" artwork="marketplace" \/>/,
   );
+  assert.doesNotMatch(hub, /^\s*<HubAppIcon to="\/marketplace"/m);
   assert.match(hub, /to="\/tools"[\s\S]*?Alo-Werkzeuge/);
 
   const areaRoutes = [
@@ -94,6 +96,18 @@ test("the Home game tiles require confirmed Admin access and open only protected
   assert.doesNotMatch(hub, /grid-defense\.html|kupferkern\.html|srcDoc=/);
 });
 
+test("Home Admin-only Marketplace entry remounts immediately when the account changes", () => {
+  const dashboard = home.slice(dashboardStart);
+  assert.match(dashboard, /<HomeAppHub[\s\S]*?key=\{user\.id\}/);
+  assert.match(hub, /const \{ user \} = Route\.useRouteContext\(\)/);
+  assert.match(hub, /setCanSeeAdmin\(false\)/);
+  assert.match(hub, /getAdminAreaAccess\(\)[\s\S]*?if \(active && allowed === true\)/);
+  assert.match(
+    hub,
+    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/marketplace" title="Marketplace" artwork="marketplace" \/>/,
+  );
+});
+
 test("app artwork is square and original, and training is no longer a collapsible Home card", () => {
   const artwork = home.slice(artworkStart, dashboardStart);
   assert.notEqual(dashboardStart, -1);
@@ -106,6 +120,7 @@ test("app artwork is square and original, and training is no longer a collapsibl
     "more",
     "training",
     "tools",
+    "marketplace",
     "gridDefense",
     "kupferkern",
   ]) {

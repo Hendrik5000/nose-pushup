@@ -29,6 +29,7 @@ import { Route as AuthenticatedExercisesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedGamesRouteImport } from './routes/_authenticated/games'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
+import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated/marketplace'
 import { Route as AuthenticatedPostfachRouteImport } from './routes/_authenticated/postfach'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProgramsRouteImport } from './routes/_authenticated/programs'
@@ -149,6 +150,12 @@ const AuthenticatedLeaderboardRoute =
     path: '/leaderboard',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMarketplaceRoute =
+  AuthenticatedMarketplaceRouteImport.update({
+    id: '/marketplace',
+    path: '/marketplace',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPostfachRoute = AuthenticatedPostfachRouteImport.update({
   id: '/postfach',
   path: '/postfach',
@@ -244,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/games': typeof AuthenticatedGamesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/postfach': typeof AuthenticatedPostfachRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/programs': typeof AuthenticatedProgramsRoute
@@ -278,6 +286,7 @@ export interface FileRoutesByTo {
   '/games': typeof AuthenticatedGamesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/postfach': typeof AuthenticatedPostfachRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/programs': typeof AuthenticatedProgramsRoute
@@ -315,6 +324,7 @@ export interface FileRoutesById {
   '/_authenticated/games': typeof AuthenticatedGamesRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRoute
   '/_authenticated/postfach': typeof AuthenticatedPostfachRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/programs': typeof AuthenticatedProgramsRoute
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/games'
     | '/health'
     | '/leaderboard'
+    | '/marketplace'
     | '/postfach'
     | '/profile'
     | '/programs'
@@ -387,6 +398,7 @@ export interface FileRouteTypes {
     | '/games'
     | '/health'
     | '/leaderboard'
+    | '/marketplace'
     | '/postfach'
     | '/profile'
     | '/programs'
@@ -423,6 +435,7 @@ export interface FileRouteTypes {
     | '/_authenticated/games'
     | '/_authenticated/health'
     | '/_authenticated/leaderboard'
+    | '/_authenticated/marketplace'
     | '/_authenticated/postfach'
     | '/_authenticated/profile'
     | '/_authenticated/programs'
@@ -594,6 +607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/marketplace': {
+      id: '/_authenticated/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof AuthenticatedMarketplaceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/postfach': {
       id: '/_authenticated/postfach'
       path: '/postfach'
@@ -709,6 +729,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGamesRoute: typeof AuthenticatedGamesRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
+  AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRoute
   AuthenticatedPostfachRoute: typeof AuthenticatedPostfachRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedProgramsRoute: typeof AuthenticatedProgramsRoute
@@ -737,6 +758,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGamesRoute: AuthenticatedGamesRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
+  AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRoute,
   AuthenticatedPostfachRoute: AuthenticatedPostfachRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedProgramsRoute: AuthenticatedProgramsRoute,
