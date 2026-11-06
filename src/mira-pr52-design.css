@@ -324,6 +324,38 @@ html:root[data-design-style] .alo-mira-sketch-page .alo-mira-capsule-composer > 
 html:root[data-design-style]
   .alo-mira-sketch-page
   .alo-mira-capsule-composer
+  .mira-attachment-picker
+  > summary::marker {
+  content: "";
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-mira-capsule-composer
+  .mira-attachment-picker
+  > summary
+  .alo-mira-attachment-icons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-mira-capsule-composer
+  .mira-attachment-picker
+  > summary
+  .alo-mira-attachment-icons
+  svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-mira-capsule-composer
   .alo-mira-composer-action
   svg {
   width: 1.1rem;
