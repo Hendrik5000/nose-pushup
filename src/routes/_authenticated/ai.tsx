@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/ai")({
 function MiraPage() {
   return (
     <AloPageSidebar active="mira">
-      <SuperAiPage />
+      <SuperAiPage sketchLayout />
     </AloPageSidebar>
   );
 }

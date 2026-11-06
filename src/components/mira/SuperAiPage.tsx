@@ -1,6 +1,7 @@
 import "@/mira-attachments.css";
 import "@/mira-chat-design.css";
-// Conversation UI restored selectively from 34f2313; current routing/security remain in their modules.
+import "@/mira-pr52-design.css";
+// PR52 (95da77c) is a visual opt-in only; current chat, voice and privacy logic stays intact.
 import { MiraAttachmentPicker, MiraAttachmentPreview } from "@/components/mira/MiraAttachments";
 import { MiraSpark } from "@/components/mira/MiraSpark";
 import { MiraProgressiveAnswer } from "@/components/mira/MiraProgressiveAnswer";
@@ -34,6 +35,8 @@ import {
   House,
   Volume2,
   VolumeX,
+  Headphones,
+  UserRound,
 } from "lucide-react";
 import { ALO_EVENT, ALO_REMOTE_EVENT, getMiraGrants, putAlo, removeAlo } from "@/lib/alo-store";
 import { MiraContextControls } from "@/components/alo/MiraContextControls";
@@ -155,7 +158,36 @@ function MiraGeneratingIndicator() {
   );
 }
 
-export function SuperAiPage() {
+function MiraStarterSuggestions({ setInput }: { setInput: (value: string) => void }) {
+  return (
+    <div className="mira-chat-suggestions" role="group" aria-label="Mit einer Aufgabe starten">
+      {[
+        { id: "ideas", icon: Lightbulb, hint: "Neue Ideen für dein Vorhaben" },
+        { id: "draft", icon: PenLine, hint: "Einen passenden Text schreiben" },
+        { id: "explain", icon: BookOpen, hint: "Komplexes einfach verstehen" },
+      ].map(({ id, icon: Icon, hint }) => {
+        const tool = SUPER_TOOLS.find((item) => item.id === id)!;
+        return (
+          <button
+            key={id}
+            type="button"
+            className="mira-chat-suggestion"
+            onClick={() => setInput(tool.prompt)}
+          >
+            <Icon aria-hidden="true" />
+            <span>
+              <strong>{tool.label}</strong>
+              <small>{hint}</small>
+            </span>
+            <ArrowUpRight aria-hidden="true" />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean } = {}) {
   const send = useServerFn(superAiChat);
   const [sessions, setSessions] = useState<AiSession[]>(() => loadSessions());
   const [activeId, setActiveId] = useState<string>(() => {
@@ -183,16 +215,17 @@ export function SuperAiPage() {
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [runwareOpen, setRunwareOpen] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(true);
+  const [toolsOpen, setToolsOpen] = useState(!sketchLayout);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [sessionQuery, setSessionQuery] = useState("");
   const [sessionFilter, setSessionFilter] = useState<SportAiHistoryFilter>("all");
   const [contextOpen, setContextOpen] = useState(false);
   const [classicOptionsOpen, setClassicOptionsOpen] = useState(false);
+  const [chatOptionsOpen, setChatOptionsOpen] = useState(false);
   useEffect(() => {
-    setClassicOptionsOpen(window.matchMedia("(min-width: 768px)").matches);
-  }, []);
+    setClassicOptionsOpen(!sketchLayout && window.matchMedia("(min-width: 768px)").matches);
+  }, [sketchLayout]);
   const [contextAllowed, setContextAllowed] = useState(getMiraContextPreference);
   const [grants, setGrants] = useState(getMiraGrants);
   const [persona, setPersona] = useState<AiPersona>(() => loadPersona());
@@ -855,35 +888,71 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
   return (
     <>
       <DesignView variant="classic">
-        <main className="classic-only alo-classic-mira alo-tablet-mira mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pt-5 pb-3">
-          <div className="mb-2 flex items-center gap-2 self-start">
+        <main
+          className={`classic-only alo-classic-mira alo-tablet-mira mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pt-5 pb-3 ${sketchLayout ? "alo-mira-sketch-page" : ""}`}
+        >
+          <div
+            className={
+              sketchLayout ? "alo-mira-sketch-header" : "mb-2 flex items-center gap-2 self-start"
+            }
+          >
             <AloPageSidebarTrigger />
-            <Link
-              to="/"
-              aria-label="Zur Alo-Startseite"
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              <House className="h-4 w-4" aria-hidden="true" />
-              Startseite
-            </Link>
-            <button
-              type="button"
-              onClick={() => handleVoiceConversationOpenChange(true)}
-              aria-label="Freisprechgespräch mit Mira öffnen"
-              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <Mic className="h-4 w-4" aria-hidden="true" />
-              Freisprechen
-            </button>
+            {sketchLayout ? (
+              <>
+                <div className="alo-mira-sketch-meta" aria-live="polite" aria-atomic="true">
+                  <h1 className="alo-mira-sketch-title">{activeTitle}</h1>
+                  <span className="alo-mira-sketch-provider">
+                    <span className="sr-only">Vorschau für die nächste Anfrage: </span>
+                    {activeProvider?.label ?? "Kein Anbieter"}
+                  </span>
+                </div>
+                <Link to="/profile" aria-label="Profil öffnen" className="alo-mira-sketch-control">
+                  <UserRound aria-hidden="true" />
+                </Link>
+                <button
+                  type="button"
+                  className="alo-mira-sketch-control"
+                  aria-label="Mira-Einstellungen und Datenschutz öffnen"
+                  aria-controls="mira-classic-options"
+                  aria-expanded={classicOptionsOpen}
+                  onClick={() => setClassicOptionsOpen((value) => !value)}
+                >
+                  <Settings2 aria-hidden="true" />
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/"
+                  aria-label="Zur Alo-Startseite"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <House className="h-4 w-4" aria-hidden="true" />
+                  Startseite
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => handleVoiceConversationOpenChange(true)}
+                  aria-label="Freisprechgespräch mit Mira öffnen"
+                  className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <Mic className="h-4 w-4" aria-hidden="true" />
+                  Freisprechen
+                </button>
+              </>
+            )}
           </div>
-          <MiraGithubRepository />
+          {!sketchLayout && <MiraGithubRepository />}
           {/* Header */}
           <details
+            id="mira-classic-options"
             className="alo-classic-mira-options"
+            aria-label="Gesprächsoptionen & Datenschutz"
             open={classicOptionsOpen}
             onToggle={(e) => setClassicOptionsOpen(e.currentTarget.open)}
           >
             <summary>Gesprächsoptionen & Aufgaben</summary>
+            {sketchLayout && <MiraGithubRepository />}
             <header className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/20 via-card/80 to-background p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -989,7 +1058,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           </details>
 
           {/* Composer */}
-          <div className="alo-classic-composer mt-2 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur">
+          <div
+            className={`alo-classic-composer mt-2 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur ${sketchLayout ? "alo-mira-sketch-composer-wrap" : ""}`}
+          >
             {userId && <MiraSources userId={userId} />}
             <MiraAttachmentPreview
               items={attachments}
@@ -1001,7 +1072,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 e.preventDefault();
                 void submit();
               }}
-              className="mira-classic-composer-form flex items-end gap-2"
+              className={`mira-classic-composer-form flex items-end gap-2 ${sketchLayout ? "alo-mira-capsule-composer" : ""}`}
             >
               <MiraAttachmentPicker
                 items={attachments}
@@ -1009,6 +1080,31 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 onError={setError}
                 disabled={loading}
               />
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={
+                  sketchLayout
+                    ? "Frag Mira …"
+                    : "Frag Mira alles – Alltag, Wissen, Schreiben, Ideen …"
+                }
+                aria-label="Deine Frage an Mira"
+                rows={1}
+                className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm outline-none"
+                style={{ maxHeight: 140 }}
+                disabled={loading}
+              />
+              {sketchLayout && (
+                <button
+                  type="button"
+                  className="alo-mira-composer-action"
+                  onClick={() => handleVoiceConversationOpenChange(true)}
+                  aria-label="Freisprechgespräch mit Mira öffnen"
+                  title="Freisprechen mit Mira"
+                >
+                  <Headphones aria-hidden="true" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => handleVoiceChatOpenChange(true)}
@@ -1018,19 +1114,10 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     : "border-border bg-secondary/40 text-muted-foreground"
                 }`}
                 aria-label="Sprachdialog mit Mikrofon öffnen"
+                aria-pressed={listening}
               >
-                🎤
+                <Mic className="h-5 w-5" aria-hidden="true" />
               </button>
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Frag Mira alles – Alltag, Wissen, Schreiben, Ideen …"
-                aria-label="Deine Frage an Mira"
-                rows={1}
-                className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm outline-none"
-                style={{ maxHeight: 140 }}
-                disabled={loading}
-              />
               <button
                 type="submit"
                 aria-label="Nachricht senden"
@@ -1192,25 +1279,33 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             ref={scrollRef}
             className="alo-classic-mira-messages mt-3 flex-1 space-y-3 overflow-y-auto rounded-3xl border border-border bg-card/30 p-3 backdrop-blur"
           >
-            {messages.length === 0 && (
-              <div className="flex flex-col items-center gap-2 py-8 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-3xl shadow-inner">
-                  ⚡
+            {messages.length === 0 &&
+              (sketchLayout ? (
+                <div className="mira-chat-welcome mx-auto py-8 text-center">
+                  <span className="mira-chat-welcome-mark" aria-hidden="true">
+                    <MiraSpark />
+                  </span>
+                  <h3>Hallo{profileName ? ` ${profileName}` : ""}, wobei kann ich helfen?</h3>
                 </div>
-                <p className="text-sm font-semibold">Deine vielseitige KI Mira</p>
-                <p className="max-w-[260px] text-xs text-muted-foreground">
-                  Fragen klären, Texte schreiben oder Ideen entwickeln. Du entscheidest, was du
-                  teilst.
-                </p>
-                <button
-                  type="button"
-                  className="alo-btn"
-                  onClick={() => setInput("Erkläre mir ein Thema in einfachen Worten: ")}
-                >
-                  Eine Frage vorbereiten
-                </button>
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-col items-center gap-2 py-8 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-3xl shadow-inner">
+                    ⚡
+                  </div>
+                  <p className="text-sm font-semibold">Deine vielseitige KI Mira</p>
+                  <p className="max-w-[260px] text-xs text-muted-foreground">
+                    Fragen klären, Texte schreiben oder Ideen entwickeln. Du entscheidest, was du
+                    teilst.
+                  </p>
+                  <button
+                    type="button"
+                    className="alo-btn"
+                    onClick={() => setInput("Erkläre mir ein Thema in einfachen Worten: ")}
+                  >
+                    Eine Frage vorbereiten
+                  </button>
+                </div>
+              ))}
 
             {messages.map((m, i) => (
               <div
@@ -1426,8 +1521,33 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
       </DesignView>
       <DesignView variant="sport">
         <main
-          className={`sport-only sport-ai-page alo-tablet-mira mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8 ${sportAiView === "chat" ? "sport-ai-chat-mode" : ""}`}
+          className={`sport-only sport-ai-page alo-tablet-mira mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8 ${sportAiView === "chat" ? "sport-ai-chat-mode" : ""} ${sketchLayout && sportAiView === "chat" ? "alo-mira-sketch-page" : ""}`}
         >
+          {sketchLayout && sportAiView === "chat" && (
+            <header className="alo-mira-sketch-header">
+              <AloPageSidebarTrigger />
+              <div className="alo-mira-sketch-meta" aria-live="polite" aria-atomic="true">
+                <h1 className="alo-mira-sketch-title">{activeTitle}</h1>
+                <span className="alo-mira-sketch-provider">
+                  <span className="sr-only">Vorschau für die nächste Anfrage: </span>
+                  {activeProvider?.label ?? "Kein Anbieter"}
+                </span>
+              </div>
+              <Link to="/profile" aria-label="Profil öffnen" className="alo-mira-sketch-control">
+                <UserRound aria-hidden="true" />
+              </Link>
+              <button
+                type="button"
+                className="alo-mira-sketch-control"
+                aria-label="Mira-Einstellungen und Datenschutz öffnen"
+                aria-controls="mira-chat-options"
+                aria-expanded={chatOptionsOpen}
+                onClick={() => setChatOptionsOpen((value) => !value)}
+              >
+                <Settings2 aria-hidden="true" />
+              </button>
+            </header>
+          )}
           {sportAiView !== "chat" && (
             <>
               <SportPageIntro
@@ -1745,9 +1865,24 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           {sportAiView === "chat" && (
             <div className="sport-ai-chat-grid">
               <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
-                <details className="sport-ai-chat-options">
+                <details
+                  id="mira-chat-options"
+                  className="sport-ai-chat-options"
+                  aria-label="Gesprächsoptionen & Datenschutz"
+                  open={chatOptionsOpen}
+                  onToggle={(event) => setChatOptionsOpen(event.currentTarget.open)}
+                >
                   <summary>Gesprächsoptionen & Datenschutz</summary>
                   <div className="mira-chat-control-panel">
+                    {sketchLayout && (
+                      <section aria-label="Ideen und Vorlagen">
+                        <h3>Ideen & Vorlagen</h3>
+                        <MiraStarterSuggestions setInput={setInput} />
+                        <p className="mira-chat-suggestion-hint">
+                          Ein Vorschlag füllt deinen Entwurf – gesendet wird erst auf Wunsch.
+                        </p>
+                      </section>
+                    )}
                     <div className="mira-chat-live-preview" aria-live="polite">
                       <strong>{activeTitle}</strong>
                       <span>
@@ -1944,50 +2079,23 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       <span className="mira-chat-welcome-mark" aria-hidden="true">
                         <MiraSpark />
                       </span>
-                      <span className="mira-chat-welcome-label">Mira · dein Gespräch</span>
-                      <h3 className="mt-4 text-xl font-bold">
-                        Hallo{profileName ? ` ${profileName}` : ""}.
-                      </h3>
-                      <p className="mira-chat-welcome-copy">Was möchtest du heute besprechen?</p>
-                      <div
-                        className="mira-chat-suggestions"
-                        role="group"
-                        aria-label="Mit einer Aufgabe starten"
-                      >
-                        {[
-                          {
-                            id: "ideas",
-                            icon: Lightbulb,
-                            hint: "Neue Ideen für dein Vorhaben",
-                          },
-                          {
-                            id: "draft",
-                            icon: PenLine,
-                            hint: "Einen passenden Text schreiben",
-                          },
-                          { id: "explain", icon: BookOpen, hint: "Komplexes einfach verstehen" },
-                        ].map(({ id, icon: Icon, hint }) => {
-                          const tool = SUPER_TOOLS.find((item) => item.id === id)!;
-                          return (
-                            <button
-                              key={id}
-                              type="button"
-                              className="mira-chat-suggestion"
-                              onClick={() => setInput(tool.prompt)}
-                            >
-                              <Icon aria-hidden="true" />
-                              <span>
-                                <strong>{tool.label}</strong>
-                                <small>{hint}</small>
-                              </span>
-                              <ArrowUpRight aria-hidden="true" />
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <span className="mira-chat-suggestion-hint">
-                        Ein Vorschlag füllt deinen Entwurf – gesendet wird erst auf Wunsch.
-                      </span>
+                      {sketchLayout ? (
+                        <h3>Hallo{profileName ? ` ${profileName}` : ""}, wobei kann ich helfen?</h3>
+                      ) : (
+                        <>
+                          <span className="mira-chat-welcome-label">Mira · dein Gespräch</span>
+                          <h3 className="mt-4 text-xl font-bold">
+                            Hallo{profileName ? ` ${profileName}` : ""}.
+                          </h3>
+                          <p className="mira-chat-welcome-copy">
+                            Was möchtest du heute besprechen?
+                          </p>
+                          <MiraStarterSuggestions setInput={setInput} />
+                          <span className="mira-chat-suggestion-hint">
+                            Ein Vorschlag füllt deinen Entwurf – gesendet wird erst auf Wunsch.
+                          </span>
+                        </>
+                      )}
                     </div>
                   )}
                   {messages.map((m, i) => (
@@ -2182,31 +2290,33 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   ))}
                   {loading && <MiraGeneratingIndicator />}
                 </div>
-                <div className="mira-chat-bottom-row">
-                  <AloPageSidebarTrigger />
-                  <Link
-                    to="/"
-                    className="mira-chat-home-action"
-                    aria-label="Zur Alo-Startseite"
-                    title="Zur Startseite"
-                  >
-                    <House aria-hidden="true" />
-                    <span>Startseite</span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => handleVoiceConversationOpenChange(true)}
-                    aria-label="Freisprechgespräch mit Mira öffnen"
-                    className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 text-sm font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <Mic className="h-4 w-4" aria-hidden="true" />
-                    Freisprechen
-                  </button>
-                  <div className="mira-chat-live-status" aria-live="polite">
-                    <strong>{activeTitle}</strong>
-                    <span>Vorschau: {activeProvider?.label ?? "Kein Anbieter"}</span>
+                {!sketchLayout && (
+                  <div className="mira-chat-bottom-row">
+                    <AloPageSidebarTrigger />
+                    <Link
+                      to="/"
+                      className="mira-chat-home-action"
+                      aria-label="Zur Alo-Startseite"
+                      title="Zur Startseite"
+                    >
+                      <House aria-hidden="true" />
+                      <span>Startseite</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleVoiceConversationOpenChange(true)}
+                      aria-label="Freisprechgespräch mit Mira öffnen"
+                      className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 text-sm font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      <Mic className="h-4 w-4" aria-hidden="true" />
+                      Freisprechen
+                    </button>
+                    <div className="mira-chat-live-status" aria-live="polite">
+                      <strong>{activeTitle}</strong>
+                      <span>Vorschau: {activeProvider?.label ?? "Kein Anbieter"}</span>
+                    </div>
                   </div>
-                </div>
+                )}
                 {error && (
                   <div
                     role="alert"
@@ -2226,7 +2336,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     e.preventDefault();
                     void submit();
                   }}
-                  className="sport-chat-composer flex items-end gap-2 rounded-[1.5rem] border border-border/70 bg-card/85 p-3 shadow-lg"
+                  className={`sport-chat-composer flex items-end gap-2 rounded-[1.5rem] border border-border/70 bg-card/85 p-3 shadow-lg ${sketchLayout ? "alo-mira-capsule-composer" : ""}`}
                 >
                   <MiraAttachmentPicker
                     items={attachments}
@@ -2244,6 +2354,17 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     style={{ maxHeight: 140 }}
                     disabled={loading}
                   />
+                  {sketchLayout && (
+                    <button
+                      type="button"
+                      className="alo-mira-composer-action"
+                      onClick={() => handleVoiceConversationOpenChange(true)}
+                      aria-label="Freisprechgespräch mit Mira öffnen"
+                      title="Freisprechen mit Mira"
+                    >
+                      <Headphones aria-hidden="true" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleVoiceChatOpenChange(true)}
