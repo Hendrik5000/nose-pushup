@@ -85,13 +85,14 @@ test("capsule keeps attachment, text, hands-free, dictation and explicit submit 
     "<MiraAttachmentPicker",
     "<textarea",
     "<Headphones",
-    'aria-label="Sprachdialog mit Mikrofon öffnen"',
+    'aria-label="Spracheingabe"',
     'aria-label="Nachricht senden"',
   ];
   const positions = labels.map((label) => composer.indexOf(label));
   assert.ok(positions.every((position, i) => position >= 0 && (!i || position > positions[i - 1])));
   assert.match(composer, /handleVoiceConversationOpenChange\(true\)/);
-  assert.match(composer, /handleVoiceChatOpenChange\(true\)/);
+  assert.match(composer, /startInlineDictation/);
+  assert.doesNotMatch(composer, /handleVoiceChatOpenChange|MiraVoiceChatDialog/);
   assert.match(composer, /disabled=\{loading \|\| \(!input.trim\(\) && !attachments.length\)\}/);
   assert.match(composer, /compact=\{sketchLayout\}/);
   assert.match(sport, /\{!sketchLayout && userId && <MiraSources userId=\{userId\} \/>\}/);

@@ -1,6 +1,7 @@
 import "@/mira-attachments.css";
 import "@/mira-chat-design.css";
 import "@/mira-pr52-design.css";
+import "@/mira-inline-dictation.css";
 // PR52 (95da77c) is a visual opt-in only; current chat, voice and privacy logic stays intact.
 import {
   MiraAttachmentPicker,
@@ -11,7 +12,6 @@ import { MiraSpark } from "@/components/mira/MiraSpark";
 import { MiraProgressiveAnswer } from "@/components/mira/MiraProgressiveAnswer";
 import { MiraAnswerActions } from "@/components/mira/MiraAnswerActions";
 import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
-import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
 import { MiraVoiceConversationDialog } from "@/components/mira/MiraVoiceConversationDialog";
 import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
@@ -40,6 +40,8 @@ import {
   House,
   Headphones,
   UserRound,
+  Check,
+  X,
 } from "lucide-react";
 import { ALO_EVENT, ALO_REMOTE_EVENT, getMiraGrants, putAlo, removeAlo } from "@/lib/alo-store";
 import { MiraContextControls } from "@/components/alo/MiraContextControls";
@@ -48,7 +50,14 @@ import { ContentActions } from "@/components/alo/ContentActions";
 import { DesignView } from "@/components/DesignView";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { SportPageIntro } from "@/components/SportPageIntro";
 import {
@@ -77,13 +86,16 @@ import {
   type MiraVoiceConversationPhase,
   type MiraSpeechUtteranceLike,
 } from "@/lib/mira-voice-conversation";
+import {
+  MiraComposerPressAndHold,
+  MiraInlineDictationController,
+} from "@/lib/mira-inline-dictation";
 import type { AppContextPack } from "@/lib/ai-context";
 import type { PcConfiguratorInteraction } from "@/lib/mira-interactions";
 import {
   classifyTask,
   describeProviderSelection,
   loadProviders,
-  providerLabel,
   selectProvider,
   toPayload,
   type AiTask,
@@ -194,6 +206,84 @@ function MiraStarterSuggestions({ setInput }: { setInput: (value: string) => voi
   );
 }
 
+function formatDictationElapsed(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = String(seconds % 60).padStart(2, "0");
+  return `${minutes}:${remainder}`;
+}
+
+function MiraInlineDictationControls({
+  listening,
+  elapsed,
+  onCancel,
+  onConfirm,
+}: {
+  listening: boolean;
+  elapsed: number;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      className="mira-inline-dictation-controls"
+      data-listening={listening ? "true" : "false"}
+      role="group"
+      aria-label="Spracheingabe"
+    >
+      <button
+        type="button"
+        className="mira-inline-dictation-control mira-inline-dictation-control--cancel"
+        onClick={onCancel}
+        aria-label="Diktat abbrechen"
+        title="Diktat abbrechen"
+      >
+        <X className="h-5 w-5" aria-hidden="true" />
+      </button>
+      <span className="mira-inline-dictation-status">
+        <span className="mira-inline-dictation-wave" aria-hidden="true">
+          {Array.from({ length: 10 }, (_, index) => (
+            <span key={index} />
+          ))}
+        </span>
+        <span aria-hidden="true">{formatDictationElapsed(elapsed)}</span>
+      </span>
+      <span className="sr-only" role="status" aria-live="polite">
+        {listening ? "Spracheingabe läuft." : "Diktat bereit zum Übernehmen."}
+      </span>
+      <button
+        type="button"
+        className="mira-inline-dictation-control mira-inline-dictation-control--confirm"
+        onClick={onConfirm}
+        aria-label={listening ? "Spracheingabe beenden und Text übernehmen" : "Diktat übernehmen"}
+        title={listening ? "Spracheingabe beenden" : "Diktat übernehmen"}
+      >
+        <Check className="h-5 w-5" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+function MiraSpeechPrivacySettings() {
+  return (
+    <section
+      className="mt-4 rounded-xl border border-border/70 bg-background/50 p-3 text-sm"
+      aria-label="Spracheingabe und Datenschutz"
+    >
+      <h3 className="font-semibold">Spracheingabe &amp; Datenschutz</h3>
+      <p className="mt-1 text-muted-foreground">
+        Für Diktat und Freisprechen nutzt Mira die SpeechRecognition-Schnittstelle deines Browsers.
+        Je nach Browser kann Audio an dessen Spracherkennungsdienst übertragen werden; eine lokale
+        Verarbeitung ist nicht garantiert. Mira erhält erkannten Text, keine rohe Mikrofonaufnahme.
+      </p>
+      <p className="mt-2 text-muted-foreground">
+        Beim Diktat bleibt der Text bearbeitbar im Composer und wird erst nach deinem normalen Tipp
+        auf „Senden“ an Mira übermittelt. Freisprechen ist ein separater, bewusst gestarteter Modus;
+        dein normaler Entwurf und vorhandene Anhänge werden dabei nicht mitgesendet.
+      </p>
+    </section>
+  );
+}
+
 export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean } = {}) {
   const send = useServerFn(superAiChat);
   const [sessions, setSessions] = useState<AiSession[]>(() => loadSessions());
@@ -258,8 +348,9 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   const [appContext, setAppContext] = useState<AppContextPack | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
   const [listening, setListening] = useState(false);
-  const [voiceChatOpen, setVoiceChatOpen] = useState(false);
-  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [dictationOpen, setDictationOpen] = useState(false);
+  const [dictationElapsed, setDictationElapsed] = useState(0);
+  const [dictationStartedAt, setDictationStartedAt] = useState<number | null>(null);
   const [voiceConversationOpen, setVoiceConversationOpen] = useState(false);
   const [voiceConversationPhase, setVoiceConversationPhase] =
     useState<MiraVoiceConversationPhase>("idle");
@@ -287,9 +378,114 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   const activePendingUserMessage =
     pendingUserMessage?.sessionId === activeId ? pendingUserMessage.message : null;
   const generationRef = useRef(0);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const dictationOpenRef = useRef(false);
+  const draftBeforeDictationRef = useRef("");
+  const dictationControllerRef = useRef<MiraInlineDictationController | null>(null);
+  if (!dictationControllerRef.current) {
+    dictationControllerRef.current = new MiraInlineDictationController({
+      createRecognition: () => createBrowserSpeechRecognitionFactory()?.() ?? null,
+      onTranscript: (transcript) => {
+        const current = inputRef.current;
+        const next = current
+          ? `${current}${/\s$/.test(current) ? "" : " "}${transcript}`
+          : transcript;
+        inputRef.current = next;
+        setInputState(next);
+      },
+      onListeningChange: setListening,
+      onError: setError,
+    });
+  }
+  const dictationStartActionRef = useRef<() => void>(() => undefined);
+  const dictationStopActionRef = useRef<() => void>(() => undefined);
+  const dictationCancelActionRef = useRef<() => void>(() => undefined);
+  const dictationPressRef = useRef<MiraComposerPressAndHold | null>(null);
+  if (!dictationPressRef.current) {
+    dictationPressRef.current = new MiraComposerPressAndHold(
+      () => dictationStartActionRef.current(),
+      () => dictationStopActionRef.current(),
+      () => dictationCancelActionRef.current(),
+    );
+  }
   const voiceConversationControllerRef = useRef<MiraVoiceConversationController | null>(null);
   const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const startInlineDictation = useCallback(() => {
+    if (dictationOpenRef.current) return;
+    dictationOpenRef.current = true;
+    draftBeforeDictationRef.current = inputRef.current;
+    setDictationOpen(true);
+    setDictationElapsed(0);
+    setDictationStartedAt(Date.now());
+    setError(null);
+    const started = dictationControllerRef.current?.start() ?? false;
+    if (!started) {
+      dictationOpenRef.current = false;
+      setDictationOpen(false);
+      setDictationStartedAt(null);
+    }
+  }, []);
+  const cancelInlineDictation = useCallback((restoreDraft = true) => {
+    const wasOpen = dictationOpenRef.current;
+    dictationPressRef.current?.reset();
+    dictationOpenRef.current = false;
+    dictationControllerRef.current?.cancel();
+    setDictationOpen(false);
+    setDictationStartedAt(null);
+    setDictationElapsed(0);
+    if (restoreDraft && wasOpen) {
+      const draft = draftBeforeDictationRef.current;
+      inputRef.current = draft;
+      setInputState(draft);
+    }
+  }, []);
+  const confirmInlineDictation = useCallback(() => {
+    if (!dictationOpenRef.current) return;
+    dictationPressRef.current?.reset();
+    dictationOpenRef.current = false;
+    setDictationOpen(false);
+    setDictationStartedAt(null);
+    dictationControllerRef.current?.stop();
+  }, []);
+  dictationStartActionRef.current = startInlineDictation;
+  dictationStopActionRef.current = () => confirmInlineDictation();
+  dictationCancelActionRef.current = () => cancelInlineDictation();
+  const handleComposerPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLTextAreaElement>) => {
+      if (dictationOpenRef.current || loading || event.button !== 0) return;
+      dictationPressRef.current?.pointerDown(
+        event.pointerId,
+        event.clientX,
+        event.clientY,
+        event.isPrimary,
+      );
+    },
+    [loading],
+  );
+  const handleComposerPointerMove = useCallback((event: ReactPointerEvent<HTMLTextAreaElement>) => {
+    dictationPressRef.current?.pointerMove(event.pointerId, event.clientX, event.clientY);
+  }, []);
+  const handleComposerPointerUp = useCallback((event: ReactPointerEvent<HTMLTextAreaElement>) => {
+    dictationPressRef.current?.pointerUp(event.pointerId);
+  }, []);
+  const handleComposerPointerCancel = useCallback(
+    (event: ReactPointerEvent<HTMLTextAreaElement>) => {
+      dictationPressRef.current?.pointerCancel(event.pointerId);
+    },
+    [],
+  );
+  useEffect(() => {
+    if (!listening || dictationStartedAt === null) return;
+    const updateElapsed = () =>
+      setDictationElapsed(Math.max(0, Math.floor((Date.now() - dictationStartedAt) / 1000)));
+    updateElapsed();
+    const interval = window.setInterval(updateElapsed, 1000);
+    return () => window.clearInterval(interval);
+  }, [listening, dictationStartedAt]);
+  const dictationSessionRef = useRef(activeId);
+  useEffect(() => {
+    if (dictationSessionRef.current !== activeId) cancelInlineDictation(false);
+    dictationSessionRef.current = activeId;
+  }, [activeId, cancelInlineDictation]);
   const stopMiraSpeech = useCallback(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window)
       window.speechSynthesis.cancel();
@@ -310,13 +506,22 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
         setPendingUserMessage(null);
         setLoading(false);
       }
-      recognitionRef.current?.stop();
       if (typeof window !== "undefined" && "speechSynthesis" in window)
         window.speechSynthesis.cancel();
       speechUtteranceRef.current = null;
       setSpeakingMessage(null);
     },
     [sportAiView],
+  );
+  useEffect(() => {
+    if (sportAiView !== "chat") cancelInlineDictation(false);
+  }, [sportAiView, cancelInlineDictation]);
+  useEffect(
+    () => () => {
+      dictationPressRef.current?.reset();
+      dictationControllerRef.current?.dispose();
+    },
+    [],
   );
   useEffect(() => {
     if (sportAiView !== "chat" && voiceConversationOpen) {
@@ -395,6 +600,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   }, []);
   useEffect(() => {
     const refresh = () => {
+      cancelInlineDictation(false);
       const all = loadSessions();
       setSessions(all);
       const selected = window.sessionStorage.getItem("alo-open-mira");
@@ -437,7 +643,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     const requested = window.sessionStorage.getItem("alo-open-mira");
     if (requested) refresh();
     return () => window.removeEventListener(ALO_REMOTE_EVENT, refresh);
-  }, [activeId, loading]);
+  }, [activeId, cancelInlineDictation, loading]);
   useEffect(() => {
     try {
       putAlo("draft", { target: "mira", text: input }, miraDraftId(activeId));
@@ -501,9 +707,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     setPendingUserMessage(null);
     stopVoiceConversation();
     stopMiraSpeech();
-    recognitionRef.current?.stop();
-    setListening(false);
-    setVoiceChatOpen(false);
+    cancelInlineDictation(false);
     setVoiceConversationOpen(false);
     setLoading(false);
     const s = sessions.find((x) => x.id === id);
@@ -520,9 +724,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     setPendingUserMessage(null);
     stopVoiceConversation();
     stopMiraSpeech();
-    recognitionRef.current?.stop();
-    setListening(false);
-    setVoiceChatOpen(false);
+    cancelInlineDictation(false);
     setVoiceConversationOpen(false);
     setLoading(false);
     const id = newSessionId();
@@ -532,7 +734,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     setSessionsOpen(false);
     setError(null);
     setSportAiView("chat");
-  }, [stopMiraSpeech, stopVoiceConversation]);
+  }, [cancelInlineDictation, stopMiraSpeech, stopVoiceConversation]);
 
   const activeSidebarItem = settingsOpen
     ? "mira-open-settings"
@@ -590,6 +792,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     const text = (textOverride ?? input).trim();
     const submittedAttachments = options.includeAttachments === false ? [] : attachments;
     if ((!text && !submittedAttachments.length) || loading || sendingRef.current) return null;
+    cancelInlineDictation(false);
     setError(null);
     setReplyAnimation(null);
     const task: AiTask = classifyTask(text, {
@@ -626,8 +829,6 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
         : {}),
     };
     const nextMsgs: Msg[] = [...history, userMessage];
-    recognitionRef.current?.stop();
-    setListening(false);
     sendingRef.current = true;
     const generation = ++generationRef.current;
     setPendingUserMessage({ sessionId: activeId, message: userMessage });
@@ -759,10 +960,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
       setSportAiView("chat");
       voiceConversationControllerRef.current?.stop();
       voiceConversationControllerRef.current = null;
-      setVoiceChatOpen(false);
-      recognitionRef.current?.stop();
-      recognitionRef.current = null;
-      setListening(false);
+      cancelInlineDictation(false);
       setVoiceConversationTranscript("");
       setVoiceConversationError(null);
       stopMiraSpeech();
@@ -831,89 +1029,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
     void copyText(md);
     setError(null);
     setContextHint("Chat als Markdown in die Zwischenablage kopiert.");
-  };
-
-  const handleVoiceChatOpenChange = (open: boolean) => {
-    setVoiceChatOpen(open);
-    if (open) {
-      stopVoiceConversation();
-      setVoiceConversationOpen(false);
-      setVoiceError(null);
-      setError(null);
-      stopMiraSpeech();
-    } else if (listening) {
-      recognitionRef.current?.stop();
-      recognitionRef.current = null;
-      setListening(false);
-    }
-  };
-
-  const toggleVoice = () => {
-    const SR =
-      typeof window !== "undefined"
-        ? (
-            window as unknown as {
-              SpeechRecognition?: new () => SpeechRecognitionLike;
-              webkitSpeechRecognition?: new () => SpeechRecognitionLike;
-            }
-          ).SpeechRecognition ||
-          (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike })
-            .webkitSpeechRecognition
-        : undefined;
-
-    if (!SR) {
-      const message = "Spracherkennung wird in diesem Browser nicht unterstützt.";
-      if (voiceChatOpen) setVoiceError(message);
-      else setError(message);
-      return;
-    }
-    if (listening && recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-      setListening(false);
-      return;
-    }
-    setVoiceError(null);
-    const rec = new SR();
-    rec.lang = "de-DE";
-    rec.interimResults = false;
-    rec.onresult = (ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => {
-      if (sendingRef.current) return;
-      const t = ev.results[0]?.[0]?.transcript ?? "";
-      if (t) {
-        setInput((prev) => (prev ? `${prev} ${t}` : t));
-        setVoiceError(null);
-      }
-    };
-    rec.onerror = (event) => {
-      const message =
-        event?.error === "not-allowed" || event?.error === "service-not-allowed"
-          ? "Mikrofonzugriff wurde nicht erlaubt. Prüfe die Browser-Berechtigung und tippe erneut."
-          : event?.error === "audio-capture"
-            ? "Kein verwendbares Mikrofon gefunden. Prüfe dein Gerät und versuche es erneut."
-            : event?.error === "no-speech"
-              ? "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut."
-              : "Spracherkennung fehlgeschlagen. Versuche es erneut oder nutze den Textchat.";
-      if (voiceChatOpen) setVoiceError(message);
-      else setError(message);
-      setListening(false);
-    };
-    rec.onend = () => {
-      recognitionRef.current = null;
-      setListening(false);
-    };
-    recognitionRef.current = rec;
-    setListening(true);
-    try {
-      rec.start();
-    } catch {
-      recognitionRef.current = null;
-      setListening(false);
-      const message =
-        "Das Mikrofon konnte nicht gestartet werden. Prüfe die Berechtigung und versuche es erneut.";
-      if (voiceChatOpen) setVoiceError(message);
-      else setError(message);
-    }
   };
 
   const speakMiraMessage = (index: number, text: string) => {
@@ -1108,6 +1223,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     return;
                   generationRef.current += 1;
                   sendingRef.current = false;
+                  cancelInlineDictation(false);
                   setPendingUserMessage(null);
                   setLoading(false);
                   removeAlo(`mira:${activeId}`);
@@ -1169,14 +1285,23 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
-                  sketchLayout
-                    ? "Frag Mira …"
-                    : "Frag Mira alles – Alltag, Wissen, Schreiben, Ideen …"
+                  dictationOpen && listening
+                    ? "Nur zu, ich höre zu…"
+                    : sketchLayout
+                      ? "Frag Mira …"
+                      : "Frag Mira alles – Alltag, Wissen, Schreiben, Ideen …"
                 }
                 aria-label="Deine Frage an Mira"
                 rows={1}
                 className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm outline-none"
                 style={{ maxHeight: 140 }}
+                onPointerDown={handleComposerPointerDown}
+                onPointerMove={handleComposerPointerMove}
+                onPointerUp={handleComposerPointerUp}
+                onPointerCancel={handleComposerPointerCancel}
+                onPointerLeave={(event) =>
+                  dictationPressRef.current?.pointerCancel(event.pointerId)
+                }
               />
               {sketchLayout && (
                 <button
@@ -1189,19 +1314,25 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   <Headphones aria-hidden="true" />
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => handleVoiceChatOpenChange(true)}
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm ${
-                  listening
-                    ? "border-primary bg-primary/20 text-primary"
-                    : "border-border bg-secondary/40 text-muted-foreground"
-                }`}
-                aria-label="Sprachdialog mit Mikrofon öffnen"
-                aria-pressed={listening}
-              >
-                <Mic className="h-5 w-5" aria-hidden="true" />
-              </button>
+              {dictationOpen ? (
+                <MiraInlineDictationControls
+                  listening={listening}
+                  elapsed={dictationElapsed}
+                  onCancel={() => cancelInlineDictation()}
+                  onConfirm={confirmInlineDictation}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={startInlineDictation}
+                  className="mira-inline-dictation-trigger flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary/40 text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  aria-label="Spracheingabe"
+                  aria-pressed={false}
+                  title="Spracheingabe starten"
+                >
+                  <Mic className="h-5 w-5" aria-hidden="true" />
+                </button>
+              )}
               <button
                 type="submit"
                 aria-label="Nachricht senden"
@@ -1296,6 +1427,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 KI-Anbieter und API-Zugangsdaten
               </div>
               <AiProviderSettings userId={userId} />
+              <MiraSpeechPrivacySettings />
               <button
                 type="button"
                 className="alo-text-action"
@@ -1692,6 +1824,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 onSaved={() => refreshProviderStatus((revision) => revision + 1)}
                 userId={userId}
               />
+              <MiraSpeechPrivacySettings />
               <button
                 type="button"
                 className="alo-text-action"
@@ -2122,6 +2255,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                           return;
                         generationRef.current += 1;
                         sendingRef.current = false;
+                        cancelInlineDictation(false);
                         setPendingUserMessage(null);
                         setLoading(false);
                         removeAlo(`mira:${activeId}`);
@@ -2381,11 +2515,20 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Frag Mira …"
+                    placeholder={
+                      dictationOpen && listening ? "Nur zu, ich höre zu…" : "Frag Mira …"
+                    }
                     aria-label="Deine Frage an Mira"
                     rows={1}
                     className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
                     style={{ maxHeight: 140 }}
+                    onPointerDown={handleComposerPointerDown}
+                    onPointerMove={handleComposerPointerMove}
+                    onPointerUp={handleComposerPointerUp}
+                    onPointerCancel={handleComposerPointerCancel}
+                    onPointerLeave={(event) =>
+                      dictationPressRef.current?.pointerCancel(event.pointerId)
+                    }
                   />
                   {sketchLayout && (
                     <button
@@ -2398,15 +2541,25 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       <Headphones aria-hidden="true" />
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => handleVoiceChatOpenChange(true)}
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
-                    aria-label="Sprachdialog mit Mikrofon öffnen"
-                    aria-pressed={listening}
-                  >
-                    <Mic className="h-5 w-5" aria-hidden="true" />
-                  </button>
+                  {dictationOpen ? (
+                    <MiraInlineDictationControls
+                      listening={listening}
+                      elapsed={dictationElapsed}
+                      onCancel={() => cancelInlineDictation()}
+                      onConfirm={confirmInlineDictation}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startInlineDictation}
+                      className="mira-inline-dictation-trigger flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      aria-label="Spracheingabe"
+                      aria-pressed={false}
+                      title="Spracheingabe starten"
+                    >
+                      <Mic className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  )}
                   <button
                     type="submit"
                     aria-label="Nachricht senden"
@@ -2515,22 +2668,11 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
         open={voiceConversationOpen}
         phase={voiceConversationPhase}
         transcript={voiceConversationTranscript}
-        providerLabel={providerPreview.provider?.label ?? null}
         error={voiceConversationError}
         onOpenChange={handleVoiceConversationOpenChange}
         onStart={startVoiceConversation}
         onStop={stopVoiceConversation}
         onInterruptSpeech={interruptVoiceConversationSpeech}
-      />
-      <MiraVoiceChatDialog
-        open={voiceChatOpen}
-        onOpenChange={handleVoiceChatOpenChange}
-        transcript={input}
-        onTranscriptChange={setInput}
-        listening={listening}
-        onStartListening={toggleVoice}
-        onStopListening={toggleVoice}
-        error={voiceError}
       />
       <MiraRunwareTools
         open={runwareOpen}
@@ -2553,17 +2695,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
     </>
   );
 }
-
-type SpeechRecognitionLike = {
-  lang: string;
-  interimResults: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult:
-    ((ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null;
-  onerror: ((event?: { error?: string }) => void) | null;
-  onend: (() => void) | null;
-};
 
 function IconBtn({
   children,

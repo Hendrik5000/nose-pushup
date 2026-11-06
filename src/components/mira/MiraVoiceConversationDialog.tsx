@@ -1,14 +1,13 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { MiraSpark } from "@/components/mira/MiraSpark";
 import type { MiraVoiceConversationPhase } from "@/lib/mira-voice-conversation";
-import { ArrowLeft, Info, MessageCircle, Mic, MicOff, VolumeX, X } from "lucide-react";
+import { ArrowLeft, MessageCircle, Mic, MicOff, VolumeX, X } from "lucide-react";
 import "@/mira-voice.css";
 
 type MiraVoiceConversationDialogProps = {
   open: boolean;
   phase: MiraVoiceConversationPhase;
   transcript: string;
-  providerLabel: string | null;
   error: string | null;
   onOpenChange: (open: boolean) => void;
   onStart: () => void;
@@ -35,7 +34,6 @@ export function MiraVoiceConversationDialog({
   open,
   phase,
   transcript,
-  providerLabel,
   error,
   onOpenChange,
   onStart,
@@ -89,34 +87,6 @@ export function MiraVoiceConversationDialog({
               <p className="truncate text-[11px] text-white/55">Sprachgespräch</p>
             </div>
           </div>
-
-          <details className="mira-voice-info">
-            <summary className="mira-voice-icon-button" aria-label="Datenschutz und Audiohinweise">
-              <Info className="h-5 w-5" aria-hidden="true" />
-            </summary>
-            <div className="mira-voice-info__panel" role="note">
-              <p className="font-semibold text-white">Datenschutz &amp; Audio</p>
-              <p className="mt-2">
-                Dein Browser wandelt Sprache in Text um. Je nach Browser kann dafür Audio an einen
-                Browser-Spracherkennungsdienst übertragen werden; eine lokale Verarbeitung ist nicht
-                garantiert. Mira erhält nur den erkannten Text, keine rohe Mikrofonaufnahme. Dein
-                normaler Entwurf und vorhandene Anhänge werden nicht mitgesendet.
-              </p>
-              <p className="mt-2">
-                Miras Antwort wird mit der eingebauten Stimme deines Geräts vorgelesen. Stimme,
-                Verfügbarkeit und Unterbrechungsverhalten hängen von Browser und Gerät ab.
-              </p>
-              <p className="mt-2">
-                Beim Beenden oder Schließen werden Mikrofon und Wiedergabe gestoppt. Bereits
-                gesendete Anfragen lassen sich hier nicht zurückholen; ihre Textantwort kann noch im
-                Chat ankommen, wird nach dem Beenden aber nicht mehr vorgelesen.
-              </p>
-              <p className="mt-2 text-white/55">
-                Anbieter: {providerLabel ?? "kein aktiver Anbieter"}. Die endgültige Auswahl erfolgt
-                wie im Textchat anhand deiner Frage.
-              </p>
-            </div>
-          </details>
         </header>
 
         <main className="mira-voice-stage min-h-0 overflow-y-auto py-5">
