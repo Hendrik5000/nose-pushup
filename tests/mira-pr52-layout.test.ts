@@ -93,9 +93,33 @@ test("capsule keeps attachment, text, hands-free, dictation and explicit submit 
   assert.match(composer, /handleVoiceConversationOpenChange\(true\)/);
   assert.match(composer, /handleVoiceChatOpenChange\(true\)/);
   assert.match(composer, /disabled=\{loading \|\| \(!input.trim\(\) && !attachments.length\)\}/);
-  assert.match(sport, /\{userId && <MiraSources userId=\{userId\} \/>\}/);
-  assert.match(sport, /Anhänge bleiben lokal, bis du sendest · Dateilimits/);
+  assert.match(composer, /compact=\{sketchLayout\}/);
+  assert.match(sport, /\{!sketchLayout && userId && <MiraSources userId=\{userId\} \/>\}/);
+  assert.doesNotMatch(sport, /Anhänge bleiben lokal, bis du sendest · Dateilimits/);
   assert.match(page, /sendTranscript: \(transcript\) =>[\s\S]*?submitRef.current\(transcript/);
+});
+
+test("PR52 attachment icons are centered together and privacy/file limits live in Mira settings", () => {
+  const attachmentPicker = read("components/mira/MiraAttachments.tsx");
+  const optionsStart = sport.indexOf('id="mira-chat-options"');
+  const stageStart = sport.indexOf('className="sport-chat-stage', optionsStart);
+  const options = sport.slice(optionsStart, stageStart);
+  assert.match(
+    attachmentPicker,
+    /className="alo-mira-attachment-icons"[\s\S]*?<Plus \/>[\s\S]*?<Paperclip \/>/,
+  );
+  assert.match(attachmentPicker, /export function MiraAttachmentPolicy\(\)/);
+  assert.match(attachmentPicker, /Anhänge bleiben lokal, bis du sendest · Dateilimits/);
+  assert.match(options, /<MiraContextControls/);
+  assert.match(options, /<MiraAttachmentPolicy \/>/);
+  assert.match(
+    read("mira-pr52-design.css"),
+    /\.alo-mira-attachment-icons[\s\S]*?justify-content: center;/,
+  );
+  assert.match(
+    read("mira-pr52-design.css"),
+    /\.mira-attachment-picker[\s\S]*?> summary::marker[\s\S]*?content: ""/,
+  );
 });
 
 test("reference CSS defeats legacy grid/transparent-stage rules while retaining scrolling, touch and theme tokens", () => {
@@ -128,6 +152,7 @@ test("compact classic keeps the repository feature in reachable options and spor
     classic.indexOf("</details>", classic.indexOf('id="mira-classic-options"')),
   );
   assert.match(options, /\{sketchLayout && <MiraGithubRepository \/>\}/);
+  assert.match(options, /<MiraAttachmentPolicy \/>/);
   const stageRule = css.slice(
     css.indexOf(".sport-chat-stage {"),
     css.indexOf("}", css.indexOf(".sport-chat-stage {")),

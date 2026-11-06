@@ -2,7 +2,11 @@ import "@/mira-attachments.css";
 import "@/mira-chat-design.css";
 import "@/mira-pr52-design.css";
 // PR52 (95da77c) is a visual opt-in only; current chat, voice and privacy logic stays intact.
-import { MiraAttachmentPicker, MiraAttachmentPreview } from "@/components/mira/MiraAttachments";
+import {
+  MiraAttachmentPicker,
+  MiraAttachmentPolicy,
+  MiraAttachmentPreview,
+} from "@/components/mira/MiraAttachments";
 import { MiraSpark } from "@/components/mira/MiraSpark";
 import { MiraProgressiveAnswer } from "@/components/mira/MiraProgressiveAnswer";
 import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
@@ -952,6 +956,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             onToggle={(e) => setClassicOptionsOpen(e.currentTarget.open)}
           >
             <summary>Gesprächsoptionen & Aufgaben</summary>
+            {sketchLayout && <MiraAttachmentPolicy />}
             {sketchLayout && <MiraGithubRepository />}
             <header className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/20 via-card/80 to-background p-4">
               <div className="flex items-start justify-between gap-2">
@@ -1061,7 +1066,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           <div
             className={`alo-classic-composer mt-2 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur ${sketchLayout ? "alo-mira-sketch-composer-wrap" : ""}`}
           >
-            {userId && <MiraSources userId={userId} />}
+            {!sketchLayout && userId && <MiraSources userId={userId} />}
             <MiraAttachmentPreview
               items={attachments}
               onChange={setAttachments}
@@ -1076,6 +1081,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             >
               <MiraAttachmentPicker
                 items={attachments}
+                compact={sketchLayout}
                 onChange={setAttachments}
                 onError={setError}
                 disabled={loading}
@@ -1873,6 +1879,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   onToggle={(event) => setChatOptionsOpen(event.currentTarget.open)}
                 >
                   <summary>Gesprächsoptionen & Datenschutz</summary>
+                  {sketchLayout && <MiraAttachmentPolicy />}
                   <div className="mira-chat-control-panel">
                     {sketchLayout && (
                       <section aria-label="Ideen und Vorlagen">
@@ -2325,7 +2332,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     {error}
                   </div>
                 )}
-                {userId && <MiraSources userId={userId} />}
+                {!sketchLayout && userId && <MiraSources userId={userId} />}
                 <MiraAttachmentPreview
                   items={attachments}
                   onChange={setAttachments}
@@ -2340,6 +2347,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 >
                   <MiraAttachmentPicker
                     items={attachments}
+                    compact={sketchLayout}
                     onChange={setAttachments}
                     onError={setError}
                     disabled={loading}
@@ -2383,13 +2391,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     <ArrowUp className="h-5 w-5" aria-hidden="true" />
                   </button>
                 </form>
-                <details className="mira-file-help text-[10px] text-muted-foreground">
-                  <summary>Anhänge bleiben lokal, bis du sendest · Dateilimits</summary>
-                  <p>
-                    Bis 4 Anhänge, zusammen 3 MB. Bilder/PDF je 1 MB; Text je 128 KB, zusammen 6000
-                    Zeichen. PDF: Google. Word/Excel als PDF, TXT oder CSV exportieren.
-                  </p>
-                </details>
               </div>
               <aside className="sport-ai-chat-aside flex flex-col gap-4 lg:sticky lg:top-5">
                 <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-5">

@@ -149,9 +149,10 @@ test("attachment preview, explicit submit, microphone and accessible file limits
   assert.match(chat, /aria-label="Sprachdialog mit Mikrofon öffnen"/);
   assert.match(chat, /onClick=\{\(\) => handleVoiceChatOpenChange\(true\)\}/);
   assert.match(chat, /disabled=\{loading \|\| \(!input.trim\(\) && !attachments.length\)\}/);
-  assert.match(chat, /<details className="mira-file-help/);
+  assert.match(chat, /<MiraAttachmentPolicy \/>/);
+  const attachmentPolicy = read("components/mira/MiraAttachments.tsx");
   for (const limit of ["4 Anhänge", "3 MB", "1 MB", "128 KB", "6000", "PDF: Google"])
-    assert.ok(chat.includes(limit));
+    assert.ok(attachmentPolicy.includes(limit));
 });
 
 test("small-screen chat keeps a non-floating composer, scrollable messages and safe-area padding", () => {

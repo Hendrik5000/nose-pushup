@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, FilePlus2, Images, Paperclip, X } from "lucide-react";
+import { Camera, FilePlus2, Images, Paperclip, Plus, X } from "lucide-react";
 import {
   checkMiraSelection,
   MIRA_FILE_ACCEPT,
@@ -13,8 +13,15 @@ type Props = {
   onChange: (items: LocalMiraAttachment[]) => void;
   onError: (error: string) => void;
   disabled: boolean;
+  compact?: boolean;
 };
-export function MiraAttachmentPicker({ items, onChange, onError, disabled }: Props) {
+export function MiraAttachmentPicker({
+  items,
+  onChange,
+  onError,
+  disabled,
+  compact = false,
+}: Props) {
   const camera = useRef<HTMLInputElement>(null);
   const photos = useRef<HTMLInputElement>(null);
   const files = useRef<HTMLInputElement>(null);
@@ -73,7 +80,7 @@ export function MiraAttachmentPicker({ items, onChange, onError, disabled }: Pro
       />
       <details
         ref={menu}
-        className="mira-attachment-picker"
+        className={`mira-attachment-picker ${compact ? "alo-mira-attachment-picker" : ""}`}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             menu.current?.removeAttribute("open");
@@ -88,7 +95,14 @@ export function MiraAttachmentPicker({ items, onChange, onError, disabled }: Pro
             if (disabled) event.preventDefault();
           }}
         >
-          <Paperclip aria-hidden="true" />
+          {compact ? (
+            <span className="alo-mira-attachment-icons" aria-hidden="true">
+              <Plus />
+              <Paperclip />
+            </span>
+          ) : (
+            <Paperclip aria-hidden="true" />
+          )}
         </summary>
         <div className="mira-attachment-menu" role="group" aria-label="Anhang auswählen">
           <button type="button" disabled={disabled} onClick={() => camera.current?.click()}>
@@ -108,6 +122,17 @@ export function MiraAttachmentPicker({ items, onChange, onError, disabled }: Pro
     </>
   );
 }
+export function MiraAttachmentPolicy() {
+  return (
+    <details className="mira-file-help text-[10px] text-muted-foreground">
+      <summary>Anhänge bleiben lokal, bis du sendest · Dateilimits</summary>
+      <p>
+        Bis 4 Anhänge, zusammen 3 MB. Bilder/PDF je 1 MB; Text je 128 KB, zusammen 6000 Zeichen.
+        PDF: Google. Word/Excel als PDF, TXT oder CSV exportieren.
+      </p>
+    </details>
+  );
+}
 function LocalPreview({ item }: { item: LocalMiraAttachment }) {
   const [url, setUrl] = useState<string>();
   useEffect(() => {
@@ -122,7 +147,11 @@ function LocalPreview({ item }: { item: LocalMiraAttachment }) {
     <FilePlus2 aria-hidden="true" />
   );
 }
-export function MiraAttachmentPreview({ items, onChange, disabled }: Omit<Props, "onError">) {
+export function MiraAttachmentPreview({
+  items,
+  onChange,
+  disabled,
+}: Omit<Props, "onError" | "compact">) {
   if (!items.length) return null;
   return (
     <section className="mira-attachment-preview" aria-label="Lokale Anhänge vor dem Senden">
