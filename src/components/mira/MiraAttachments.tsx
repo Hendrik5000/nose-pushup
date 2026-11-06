@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, FilePlus2, Images, Paperclip, Plus, X } from "lucide-react";
+import { Camera, FilePlus2, Images, Paperclip, X } from "lucide-react";
 import {
   checkMiraSelection,
   MIRA_FILE_ACCEPT,
@@ -95,14 +95,7 @@ export function MiraAttachmentPicker({
             if (disabled) event.preventDefault();
           }}
         >
-          {compact ? (
-            <span className="alo-mira-attachment-icons" aria-hidden="true">
-              <Plus />
-              <Paperclip />
-            </span>
-          ) : (
-            <Paperclip aria-hidden="true" />
-          )}
+          <Paperclip aria-hidden="true" />
         </summary>
         <div className="mira-attachment-menu" role="group" aria-label="Anhang auswählen">
           <button type="button" disabled={disabled} onClick={() => camera.current?.click()}>
