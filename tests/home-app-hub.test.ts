@@ -23,7 +23,6 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
     ["/exercises", "exercises.tsx", "Alo Health", "health"],
     ["/profile", "profile.tsx", "Einstellungen", "settings"],
     ["/training", "training.tsx", "Trainingsübersicht & Gym", "training"],
-    ["/marketplace", "marketplace.tsx", "Marketplace", "marketplace"],
   ] as const) {
     assert.ok(existsSync(resolve(root, "src/routes/_authenticated", routeFile)));
     assert.ok(
@@ -46,10 +45,10 @@ test("Home restores Areas, Training/Gym, Tools, and the curated Marketplace as a
   assert.match(hub, /to="\/areas"[\s\S]*?Weitere Bereiche/);
   assert.match(
     hub,
-    /<HubAppIcon to="\/training" title="Trainingsübersicht & Gym" artwork="training"/,
+    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/marketplace" title="Marketplace" artwork="marketplace" \/>/,
   );
+  assert.doesNotMatch(hub, /^\s*<HubAppIcon to="\/marketplace"/m);
   assert.match(hub, /to="\/tools"[\s\S]*?Alo-Werkzeuge/);
-  assert.match(hub, /<HubAppIcon to="\/marketplace" title="Marketplace" artwork="marketplace"/);
 
   const areaRoutes = [
     ["/health", "health.tsx"],
@@ -95,6 +94,18 @@ test("the Home game tiles require confirmed Admin access and open only protected
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/games.tsx")));
   assert.match(home, /to="\/games"[\s\S]*search=\{\{ game \}\}/);
   assert.doesNotMatch(hub, /grid-defense\.html|kupferkern\.html|srcDoc=/);
+});
+
+test("Home Admin-only Marketplace entry remounts immediately when the account changes", () => {
+  const dashboard = home.slice(dashboardStart);
+  assert.match(dashboard, /<HomeAppHub[\s\S]*?key=\{user\.id\}/);
+  assert.match(hub, /const \{ user \} = Route\.useRouteContext\(\)/);
+  assert.match(hub, /setCanSeeAdmin\(false\)/);
+  assert.match(hub, /getAdminAreaAccess\(\)[\s\S]*?if \(active && allowed === true\)/);
+  assert.match(
+    hub,
+    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/marketplace" title="Marketplace" artwork="marketplace" \/>/,
+  );
 });
 
 test("app artwork is square and original, and training is no longer a collapsible Home card", () => {

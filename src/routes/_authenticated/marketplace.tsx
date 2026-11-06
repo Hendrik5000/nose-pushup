@@ -1,18 +1,22 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Dumbbell, HeartPulse, Search } from "lucide-react";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
+import { getAdminAreaAccess } from "@/lib/admin.functions";
 import {
   describeMarketplacePermissions,
   disableMarketplacePlugin,
   EMPTY_MARKETPLACE_INSTALL_STATE,
   enableMarketplacePlugin,
   getEnabledMarketplaceAction,
+  isMarketplaceAdminAccessGranted,
+  isMarketplaceAdminForUser,
   installMarketplacePlugin,
   loadMarketplaceInstallState,
   MARKETPLACE_CATALOG,
   marketplaceInstallStorageKey,
   removeMarketplacePlugin,
+  runMarketplaceAdminAction,
   saveMarketplaceInstallState,
   type MarketplaceIconId,
   type MarketplaceInstallState,
@@ -28,6 +32,15 @@ export const Route = createFileRoute("/_authenticated/marketplace")({
       },
     ],
   }),
+  beforeLoad: async () => {
+    let roleAccess = false;
+    try {
+      roleAccess = await getAdminAreaAccess();
+    } catch {
+      roleAccess = false;
+    }
+    if (!isMarketplaceAdminAccessGranted(roleAccess)) throw redirect({ to: "/" });
+  },
   component: MarketplacePage,
 });
 
@@ -48,14 +61,37 @@ function MarketplacePage() {
 }
 
 function MarketplaceContent({ userId }: { userId: string }) {
+  const navigate = useNavigate();
+  const [adminAccess, setAdminAccess] = useState<{ userId: string; isAdmin: boolean } | null>(null);
+  const roleCheckComplete = adminAccess?.userId === userId;
+  const isMarketplaceAdmin = isMarketplaceAdminForUser(adminAccess, userId);
   const [accountState, setAccountState] = useState<AccountMarketplaceState | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const state =
     accountState?.userId === userId ? accountState.state : EMPTY_MARKETPLACE_INSTALL_STATE;
-  const ready = accountState?.userId === userId && !storageError;
+  const ready = isMarketplaceAdmin && accountState?.userId === userId && !storageError;
 
   useEffect(() => {
+    let active = true;
+    void getAdminAreaAccess()
+      .then((access) => {
+        if (active) setAdminAccess({ userId, isAdmin: isMarketplaceAdminAccessGranted(access) });
+      })
+      .catch(() => {
+        if (active) setAdminAccess({ userId, isAdmin: false });
+      });
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (roleCheckComplete && !isMarketplaceAdmin) void navigate({ to: "/", replace: true });
+  }, [isMarketplaceAdmin, navigate, roleCheckComplete]);
+
+  useEffect(() => {
+    if (!isMarketplaceAdmin) return;
     const load = () => {
       try {
         setAccountState({
@@ -75,52 +111,67 @@ function MarketplaceContent({ userId }: { userId: string }) {
     load();
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, [userId]);
+  }, [userId, isMarketplaceAdmin]);
 
   const persist = (next: MarketplaceInstallState, message: string) => {
-    try {
-      saveMarketplaceInstallState(window.localStorage, userId, next);
-      setAccountState({ userId, state: next });
-      setStorageError(null);
-      setStatus(message);
-    } catch {
-      setStorageError("Änderung nicht gespeichert. Bitte prüfe den lokalen Browserspeicher.");
-      setStatus("");
-    }
+    runMarketplaceAdminAction(isMarketplaceAdmin, () => {
+      try {
+        saveMarketplaceInstallState(window.localStorage, userId, next);
+        setAccountState({ userId, state: next });
+        setStorageError(null);
+        setStatus(message);
+      } catch {
+        setStorageError("Änderung nicht gespeichert. Bitte prüfe den lokalen Browserspeicher.");
+        setStatus("");
+      }
+    });
   };
 
   const onInstall = (pluginId: string, name: string) => {
-    try {
-      persist(installMarketplacePlugin(state, pluginId), `${name} wurde lokal installiert.`);
-    } catch {
-      setStatus("Dieses Alo-Plugin kann nicht installiert werden.");
-    }
+    runMarketplaceAdminAction(isMarketplaceAdmin, () => {
+      try {
+        persist(installMarketplacePlugin(state, pluginId), `${name} wurde lokal installiert.`);
+      } catch {
+        setStatus("Dieses Alo-Plugin kann nicht installiert werden.");
+      }
+    });
   };
 
   const onToggle = (pluginId: string, name: string, enabled: boolean) => {
-    try {
-      const next = enabled
-        ? disableMarketplacePlugin(state, pluginId)
-        : enableMarketplacePlugin(state, pluginId);
-      persist(next, `${name} wurde ${enabled ? "deaktiviert" : "aktiviert"}.`);
-    } catch {
-      setStatus("Diese Plugin-Änderung ist nicht verfügbar.");
-    }
+    runMarketplaceAdminAction(isMarketplaceAdmin, () => {
+      try {
+        const next = enabled
+          ? disableMarketplacePlugin(state, pluginId)
+          : enableMarketplacePlugin(state, pluginId);
+        persist(next, `${name} wurde ${enabled ? "deaktiviert" : "aktiviert"}.`);
+      } catch {
+        setStatus("Diese Plugin-Änderung ist nicht verfügbar.");
+      }
+    });
   };
 
   const onRemove = (pluginId: string, name: string) => {
-    try {
-      persist(removeMarketplacePlugin(state, pluginId), `${name} wurde von diesem Gerät entfernt.`);
-    } catch {
-      setStatus("Dieses Alo-Plugin kann nicht entfernt werden.");
-    }
+    runMarketplaceAdminAction(isMarketplaceAdmin, () => {
+      try {
+        persist(
+          removeMarketplacePlugin(state, pluginId),
+          `${name} wurde von diesem Gerät entfernt.`,
+        );
+      } catch {
+        setStatus("Dieses Alo-Plugin kann nicht entfernt werden.");
+      }
+    });
   };
 
   const onOpenTool = (pluginId: string) => {
-    const action = getEnabledMarketplaceAction(state, pluginId);
-    if (!action || action.type !== "open-tool") return;
-    window.dispatchEvent(new CustomEvent("alo-open", { detail: action.toolId }));
+    runMarketplaceAdminAction(isMarketplaceAdmin, () => {
+      const action = getEnabledMarketplaceAction(state, pluginId);
+      if (!action || action.type !== "open-tool") return;
+      window.dispatchEvent(new CustomEvent("alo-open", { detail: action.toolId }));
+    });
   };
+
+  if (!isMarketplaceAdmin) return null;
 
   return (
     <HomeAppMenuLayout

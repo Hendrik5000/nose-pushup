@@ -199,6 +199,23 @@ export function describeMarketplacePermissions(manifestInput: unknown): readonly
   });
 }
 
+export function isMarketplaceAdminAccessGranted(value: unknown): value is true {
+  return value === true;
+}
+
+export function isMarketplaceAdminForUser(
+  access: { userId: string; isAdmin: boolean } | null,
+  currentUserId: string,
+): boolean {
+  return access?.userId === currentUserId && isMarketplaceAdminAccessGranted(access.isAdmin);
+}
+
+export function runMarketplaceAdminAction(value: unknown, action: () => void): boolean {
+  if (!isMarketplaceAdminAccessGranted(value)) return false;
+  action();
+  return true;
+}
+
 function validatePluginIds(value: unknown, name: string): readonly string[] {
   if (!Array.isArray(value)) throw new Error(`${name} muss eine Liste sein.`);
   const ids: string[] = [];

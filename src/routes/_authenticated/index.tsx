@@ -99,6 +99,7 @@ function HomeAppHub({
         <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
         <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
         {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
+        {canSeeAdmin && <HubAppIcon to="/marketplace" title="Marketplace" artwork="marketplace" />}
         {canSeeAdmin && (
           <>
             <HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" />
@@ -120,7 +121,6 @@ function HomeAppHub({
         >
           <HubAppIconContents title="Alo-Werkzeuge" artwork="tools" />
         </Link>
-        <HubAppIcon to="/marketplace" title="Marketplace" artwork="marketplace" />
       </nav>
     </section>
   );
@@ -618,7 +618,11 @@ function Dashboard() {
   }, [user]);
   return (
     <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
-      <HomeAppHub displayName={profile?.display_name} avatarUrl={profile?.avatar_url} />
+      <HomeAppHub
+        key={user.id}
+        displayName={profile?.display_name}
+        avatarUrl={profile?.avatar_url}
+      />
       <MiraOverlayLauncher />
     </main>
   );

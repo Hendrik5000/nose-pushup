@@ -8,11 +8,14 @@ import {
   disableMarketplacePlugin,
   enableMarketplacePlugin,
   getEnabledMarketplaceAction,
+  isMarketplaceAdminAccessGranted,
+  isMarketplaceAdminForUser,
   installMarketplacePlugin,
   loadMarketplaceInstallState,
   marketplaceInstallStorageKey,
   parseMarketplaceInstallState,
   removeMarketplacePlugin,
+  runMarketplaceAdminAction,
   saveMarketplaceInstallState,
   validateMarketplaceManifest,
 } from "../src/lib/marketplace";
@@ -206,6 +209,50 @@ test("failed local writes propagate without claiming a persisted installation", 
   );
 });
 
+test("non-admin Marketplace action attempts fail closed without local or host side effects", () => {
+  const storage = new MemoryStorage();
+  const pluginId = MARKETPLACE_CATALOG[0].id;
+  const installed = installMarketplacePlugin(EMPTY_MARKETPLACE_INSTALL_STATE, pluginId);
+  const enabled = enableMarketplacePlugin(installed, pluginId);
+  const disabled = disableMarketplacePlugin(enabled, pluginId);
+  const removed = removeMarketplacePlugin(disabled, pluginId);
+  let hostOpenCount = 0;
+
+  assert.equal(isMarketplaceAdminAccessGranted(true), true);
+  for (const denied of [false, undefined, null, "true", 1]) {
+    assert.equal(isMarketplaceAdminAccessGranted(denied), false);
+  }
+
+  const actions = [
+    () => saveMarketplaceInstallState(storage, "account-one", installed),
+    () => saveMarketplaceInstallState(storage, "account-one", enabled),
+    () => saveMarketplaceInstallState(storage, "account-one", disabled),
+    () => saveMarketplaceInstallState(storage, "account-one", removed),
+    () => {
+      hostOpenCount += 1;
+    },
+  ];
+  for (const action of actions) assert.equal(runMarketplaceAdminAction(false, action), false);
+  assert.equal(storage.values.size, 0);
+  assert.equal(hostOpenCount, 0);
+
+  assert.equal(runMarketplaceAdminAction(true, actions[0]), true);
+  assert.equal(storage.values.size, 1, "a verified Admin action may persist locally");
+});
+
+test("Marketplace Admin access is bound to the current account during either switch direction", () => {
+  const adminA = { userId: "account-admin-a", isAdmin: true };
+  const deniedB = { userId: "account-b", isAdmin: false };
+  const newlyVerifiedAdminB = { userId: "account-b", isAdmin: true };
+
+  assert.equal(isMarketplaceAdminForUser(adminA, "account-admin-a"), true);
+  assert.equal(isMarketplaceAdminForUser(adminA, "account-b"), false);
+  assert.equal(isMarketplaceAdminForUser(deniedB, "account-b"), false);
+  assert.equal(isMarketplaceAdminForUser(deniedB, "account-admin-a"), false);
+  assert.equal(isMarketplaceAdminForUser(newlyVerifiedAdminB, "account-b"), true);
+  assert.equal(isMarketplaceAdminForUser(null, "account-b"), false);
+});
+
 test("Marketplace implementation has no executable plugin or network primitives", () => {
   const library = readFileSync(new URL("../src/lib/marketplace.ts", import.meta.url), "utf8");
   const route = readFileSync(
@@ -220,6 +267,24 @@ test("Marketplace implementation has no executable plugin or network primitives"
     );
   }
   assert.doesNotMatch(route, /srcDoc|<script\b/i);
+  assert.match(
+    route,
+    /beforeLoad:[\s\S]*?getAdminAreaAccess\(\)[\s\S]*?isMarketplaceAdminAccessGranted\([\s\S]*?redirect/,
+  );
+  assert.match(route, /if \(!isMarketplaceAdmin\) return null/);
+  assert.match(route, /getAdminAreaAccess\(\)[\s\S]*?setAdminAccess\(\{ userId, isAdmin:/);
+  assert.match(route, /isMarketplaceAdminForUser\(adminAccess, userId\)/);
+  assert.match(route, /roleCheckComplete && !isMarketplaceAdmin/);
+  for (const handler of ["onInstall", "onToggle", "onRemove", "onOpenTool"]) {
+    assert.match(
+      route,
+      new RegExp(`const ${handler} = [\\s\\S]*?runMarketplaceAdminAction\\(isMarketplaceAdmin`),
+    );
+  }
+  assert.doesNotMatch(
+    route,
+    /\.rpc\s*\(|grantAdminAccess|revokeAdminAccess|grant_global_role|revoke_global_role|list_admin_role_assignments/,
+  );
   assert.match(route, /<MarketplaceContent key=\{user\.id\} userId=\{user\.id\}/);
   assert.match(route, /saveMarketplaceInstallState\(window\.localStorage, userId, next\)/);
   assert.match(route, /Änderung nicht gespeichert/);
