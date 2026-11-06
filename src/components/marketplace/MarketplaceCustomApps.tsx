@@ -11,6 +11,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { MarketplaceIcon } from "@/components/marketplace/MarketplaceIcon";
 import { MarketplaceManifestView } from "@/components/marketplace/MarketplaceManifestView";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import { loadProviders, selectProvider } from "@/lib/ai-providers";
@@ -109,6 +111,7 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
   const [revokeConfirmationApp, setRevokeConfirmationApp] =
     useState<MarketplacePublishedVersion | null>(null);
   const [status, setStatus] = useState("");
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -463,11 +466,11 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
 
   if (!isAdmin) return null;
 
-  const installedIds = new Set(installState.installs.map((entry) => entry.appId));
   const unavailableInstalls =
     catalogState === "ready"
       ? installState.installs.filter((entry) => !apps.some((app) => app.appId === entry.appId))
       : [];
+  const selectedApp = apps.find((app) => app.appId === selectedAppId) ?? null;
 
   return (
     <section
@@ -630,120 +633,183 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
           </p>
         )}
         {catalogState === "ready" && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6">
             {apps.map((app) => {
               const installed = installState.installs.find((entry) => entry.appId === app.appId);
-              const enabled = installed?.enabled ?? false;
-              const pinnedVersion = installed?.version;
-              const newerVersionAvailable =
-                installed !== undefined && installed.version < app.currentVersion;
               return (
-                <article
+                <button
                   key={app.appId}
-                  className="flex min-w-0 flex-col rounded-2xl border border-border/70 bg-card/75 p-4 shadow-sm"
-                  aria-label={`Alo-App ${app.manifest.name}`}
+                  type="button"
+                  aria-label={`${app.manifest.name}, Alo-Admin-App. Details öffnen${installed ? ", lokal installiert" : ""}`}
+                  onClick={() => setSelectedAppId(app.appId)}
+                  className="flex min-h-32 min-w-0 flex-col items-center justify-center gap-3 rounded-2xl border border-border/70 bg-card/75 p-3 text-center shadow-sm transition hover:border-primary/45 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-h-36 sm:p-4"
                 >
-                  <header className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
-                        Alo-Admin · Version {app.currentVersion}
-                        {app.canManage ? " · Deine App" : " · anderer Admin"}
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-14 sm:w-14">
+                    <MarketplaceIcon icon={app.manifest.icon} className="h-6 w-6 sm:h-7 sm:w-7" />
+                  </span>
+                  <span className="line-clamp-2 text-xs font-semibold leading-tight sm:text-sm">
+                    {app.manifest.name}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    Version {app.currentVersion}
+                  </span>
+                  {installed && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                      Installiert
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <Dialog
+        open={selectedApp !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedAppId(null);
+        }}
+      >
+        <DialogContent className="!fixed !left-0 !top-0 !z-50 !m-0 !flex !h-[100dvh] !w-screen !max-w-none !translate-x-0 !translate-y-0 !flex-col !gap-0 !overflow-y-auto !rounded-none !border-0 !p-0 !shadow-none">
+          {selectedApp &&
+            (() => {
+              const installed = installState.installs.find(
+                (entry) => entry.appId === selectedApp.appId,
+              );
+              const enabled = installed?.enabled ?? false;
+              const newerVersionAvailable =
+                installed !== undefined && installed.version < selectedApp.currentVersion;
+              const openedApp =
+                installed && openedPinnedApps[selectedApp.appId]?.version === installed.version
+                  ? openedPinnedApps[selectedApp.appId]
+                  : null;
+              return (
+                <section
+                  key={selectedApp.appId}
+                  className="mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col px-5 pb-8 pt-16 sm:px-8 sm:pt-20"
+                >
+                  <header className="flex items-start gap-4">
+                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-20 sm:w-20">
+                      <MarketplaceIcon
+                        icon={selectedApp.manifest.icon}
+                        className="h-8 w-8 sm:h-10 sm:w-10"
+                      />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                        Alo-Admin · Version {selectedApp.currentVersion}
+                        {selectedApp.canManage ? " · Deine App" : " · anderer Admin"}
                       </p>
-                      <h4 className="mt-1 text-base font-bold">{app.manifest.name}</h4>
+                      <DialogTitle className="mt-2 text-2xl font-bold leading-tight sm:text-3xl">
+                        {selectedApp.manifest.name}
+                      </DialogTitle>
                     </div>
-                    {installed && (
-                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                        Lokal installiert · Version {pinnedVersion}
-                        {enabled ? " · aktiv" : " · deaktiviert"}
-                      </span>
-                    )}
                   </header>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {app.manifest.description}
-                  </p>
-                  <AuthoredPermissionList manifest={app.manifest} />
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <DialogDescription className="mt-6 text-base leading-relaxed text-foreground">
+                    {selectedApp.manifest.description}
+                  </DialogDescription>
+                  <AuthoredPermissionList manifest={selectedApp.manifest} />
+                  <section className="mt-4 rounded-2xl border border-border/70 bg-card/60 p-4">
+                    <h3 className="text-sm font-bold">Installation und Versionen</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      Die geprüfte App-Version wird beim Installieren vom Alo-Katalog geladen und
+                      lokal auf diesem Gerät gespeichert. Aktionen bleiben auf fest registrierte
+                      Alo-Ziele beschränkt.
+                    </p>
+                    {installed && (
+                      <p className="mt-2 text-sm font-medium text-primary">
+                        Lokal installiert · Version {installed.version} ·{" "}
+                        {enabled ? "aktiv" : "deaktiviert"}
+                      </p>
+                    )}
+                  </section>
+                  <div className="mt-auto flex flex-wrap gap-3 pt-8">
                     {!installed ? (
                       <button
                         type="button"
                         disabled={catalogState !== "ready"}
-                        onClick={() => void onInstall(app)}
-                        className="min-h-11 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                        onClick={() => void onInstall(selectedApp)}
+                        className="min-h-11 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Lokal installieren
+                        Herunterladen & installieren
                       </button>
                     ) : (
                       <>
                         <button
                           type="button"
                           aria-pressed={enabled}
-                          onClick={() => void onToggle(app, enabled)}
-                          className="min-h-11 rounded-xl border border-border px-4 py-2 text-sm font-semibold"
+                          onClick={() => void onToggle(selectedApp, enabled)}
+                          className="min-h-11 rounded-xl border border-border bg-background px-5 py-2 text-sm font-semibold"
                         >
                           {enabled ? "Deaktivieren" : "Aktivieren"}
                         </button>
                         {newerVersionAvailable && (
                           <button
                             type="button"
-                            onClick={() => void onUpdate(app)}
+                            onClick={() => void onUpdate(selectedApp)}
                             className="min-h-11 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary"
                           >
-                            Auf Version {app.currentVersion} aktualisieren
+                            Auf Version {selectedApp.currentVersion} aktualisieren
                           </button>
                         )}
                         <button
                           type="button"
-                          onClick={() => void onRemove(app.appId, app.manifest.name)}
-                          className="min-h-11 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground underline underline-offset-4"
+                          onClick={() =>
+                            void onRemove(selectedApp.appId, selectedApp.manifest.name)
+                          }
+                          className="min-h-11 rounded-xl border border-border px-4 py-2 text-sm font-medium text-muted-foreground"
                         >
                           Entfernen
                         </button>
                       </>
                     )}
-                    {app.canManage && (
+                    {selectedApp.canManage && (
                       <>
                         <button
                           type="button"
-                          onClick={() => startNewVersion(app)}
+                          onClick={() => {
+                            startNewVersion(selectedApp);
+                            setSelectedAppId(null);
+                          }}
                           disabled={isGenerating}
                           className="min-h-11 rounded-xl border border-border px-4 py-2 text-sm font-semibold"
                         >
-                          Neue Version mit Mira
+                          Mit Mira bearbeiten
                         </button>
                         <button
                           type="button"
-                          onClick={() => setRevokeConfirmationApp(app)}
+                          onClick={() => setRevokeConfirmationApp(selectedApp)}
                           className="min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-destructive underline underline-offset-4"
                         >
                           Widerrufen …
                         </button>
                       </>
                     )}
-                  </div>
-                  {enabled && installed && (
-                    <div className="mt-3 space-y-2">
+                    {enabled && installed && (
                       <button
                         type="button"
-                        onClick={() => void onLaunch(app)}
+                        onClick={() => void onLaunch(selectedApp)}
                         className="min-h-11 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary"
                       >
                         App öffnen · installierte Version {installed.version}
                       </button>
-                      {openedPinnedApps[app.appId]?.version === installed.version && (
-                        <MarketplaceManifestView
-                          manifest={openedPinnedApps[app.appId].manifest}
-                          canRunActions
-                          onAction={(actionId) => void onOpenAction(app.appId, actionId)}
-                        />
-                      )}
+                    )}
+                  </div>
+                  {enabled && installed && openedApp && (
+                    <div className="mt-5">
+                      <MarketplaceManifestView
+                        manifest={openedApp.manifest}
+                        canRunActions
+                        onAction={(actionId) => void onOpenAction(selectedApp.appId, actionId)}
+                      />
                     </div>
                   )}
-                </article>
+                </section>
               );
-            })}
-          </div>
-        )}
-      </section>
+            })()}
+        </DialogContent>
+      </Dialog>
 
       {catalogState === "ready" && unavailableInstalls.length > 0 && (
         <section className="space-y-2" aria-label="Nicht verfügbare lokale Apps">

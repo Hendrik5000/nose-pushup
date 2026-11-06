@@ -105,7 +105,7 @@ test("importing into a full history does not silently discard a prior session", 
 });
 
 test("performance coach shares the AI workspace while classic remains selectable", () => {
-  assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage \/>/);
+  assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage userId=\{user\.id\} \/>/);
   assert.match(read("routes/_authenticated/coach.tsx"), /<DesignView variant="classic">/);
   assert.match(read("components/AiCoachCard.tsx"), /to="\/ai"/);
   assert.match(read("components/mira/SuperAiPage.tsx"), /useState<SportAiView>\("chat"\)/);

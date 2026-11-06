@@ -57,7 +57,10 @@ test("the three routes retain their pages, Health data sources and new Classic d
   const mira = read("routes/_authenticated/ai.tsx");
   const nexus = read("routes/_authenticated/chat.tsx");
   const health = read("routes/_authenticated/health.tsx");
-  assert.match(mira, /<AloPageSidebar active="mira">[\s\S]*?<SuperAiPage sketchLayout \/>/);
+  assert.match(
+    mira,
+    /<AloPageSidebar active="mira">[\s\S]*?<SuperAiPage sketchLayout userId=\{user\.id\} \/>/,
+  );
   assert.match(
     nexus,
     /<AloPageSidebar active="nexus">[\s\S]*?<LocalChatShell initialDmId=\{dm\} \/>/,

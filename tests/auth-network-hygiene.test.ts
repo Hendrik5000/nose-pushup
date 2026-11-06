@@ -11,6 +11,9 @@ const homeRoute = read("routes/_authenticated/index.tsx");
 const readinessHook = read("hooks/useReadiness.ts");
 const trainingRoute = read("routes/_authenticated/training.tsx");
 const trainingDashboard = read("components/TrainingDashboard.tsx");
+const miraPage = read("components/mira/SuperAiPage.tsx");
+const miraRoute = read("routes/_authenticated/ai.tsx");
+const coachRoute = read("routes/_authenticated/coach.tsx");
 
 test("authenticated route uses its persisted client session for the UI gate", () => {
   assert.match(authenticatedRoute, /supabase\.auth\.getSession\(\)/);
@@ -44,4 +47,14 @@ test("background notifications reuse the authenticated user id and contain trans
   assert.doesNotMatch(notificationsHook, /supabase\.auth\.getUser\(\)/);
   assert.match(notificationsHook, /profileError \|\| statsError/);
   assert.match(notificationsHook, /best-effort/);
+});
+
+test("Mira and Coach reuse the authenticated route user instead of fetching it again", () => {
+  assert.match(miraRoute, /const \{ user \} = Route\.useRouteContext\(\)/);
+  assert.match(miraRoute, /<SuperAiPage sketchLayout userId=\{user\.id\} \/>/);
+  assert.match(coachRoute, /const \{ user \} = Route\.useRouteContext\(\)/);
+  assert.match(coachRoute, /<SuperAiPage userId=\{user\.id\} \/>/);
+  assert.match(miraPage, /userId: string/);
+  assert.doesNotMatch(miraPage, /supabase\.auth\.getUser\(\)/);
+  assert.match(miraPage, /<MarketplaceMiraAuthoring userId=\{userId\} \/>/);
 });
