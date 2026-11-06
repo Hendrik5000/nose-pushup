@@ -202,12 +202,16 @@ test("only deliberate submit sends attachments; failures preserve drafts and byt
   const submit = page.slice(page.indexOf("const submit ="), page.indexOf("const regenerate ="));
   assert.match(submit, /readMiraAttachments/);
   assert.match(submit, /attachments: preparedAttachments/);
-  assert.ok(submit.indexOf("await send(") < submit.indexOf('setInput("")'));
-  assert.ok(submit.indexOf("await send(") < submit.indexOf("setAttachments([])"));
-  assert.doesNotMatch(
-    submit.slice(submit.indexOf("catch (e)")),
-    /setInput|setAttachments\(\[\]\)|role: "assistant"/,
+  const pendingIndex = submit.indexOf(
+    "setPendingUserMessage({ sessionId: activeId, message: userMessage })",
   );
+  assert.ok(pendingIndex < submit.indexOf('setInput("")'));
+  assert.ok(submit.indexOf('setInput("")') < submit.indexOf("await readMiraAttachments("));
+  assert.match(submit, /putAlo\("draft", \{ target: "mira", text: "" \}/);
+  assert.ok(submit.indexOf("await send(") < submit.indexOf("setAttachments([])"));
+  const failure = submit.slice(submit.indexOf("catch (e)"));
+  assert.match(failure, /restoreMiraComposerTextAfterFailure/);
+  assert.doesNotMatch(failure, /setAttachments\(\[\]\)|role: "assistant"/);
   assert.match(page, /sendingRef.current/);
   assert.doesNotMatch(page, /onKeyDown=\{/);
   assert.equal(

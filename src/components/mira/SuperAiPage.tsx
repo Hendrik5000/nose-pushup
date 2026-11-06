@@ -60,6 +60,10 @@ import { AiProviderSettings } from "@/components/AiProviderSettings";
 import { buildAppContext, contextToSystemBlock } from "@/lib/ai-context";
 import { miraDraftId, readMiraDraft, rememberMiraSession } from "@/lib/mira-handoff";
 import {
+  captureMiraComposerTextForSubmission,
+  restoreMiraComposerTextAfterFailure,
+} from "@/lib/mira-composer-submit";
+import {
   applyPlanFeedback,
   getMostRecentPlanFeedback,
   parseAiResponse,
@@ -193,12 +197,23 @@ function MiraStarterSuggestions({ setInput }: { setInput: (value: string) => voi
 export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean } = {}) {
   const send = useServerFn(superAiChat);
   const [sessions, setSessions] = useState<AiSession[]>(() => loadSessions());
-  const [activeId, setActiveId] = useState<string>(() => {
+  const [activeId, setActiveIdState] = useState<string>(() => {
     const list = loadSessions();
     return list[0]?.id ?? newSessionId();
   });
+  const activeIdRef = useRef(activeId);
+  const setActiveId = (id: string) => {
+    activeIdRef.current = id;
+    setActiveIdState(id);
+  };
   const [messages, setMessages] = useState<Msg[]>(() => loadSessions()[0]?.messages ?? []);
-  const [input, setInput] = useState(() => readMiraDraft(loadSessions()[0]?.id ?? ""));
+  const [input, setInputState] = useState(() => readMiraDraft(loadSessions()[0]?.id ?? ""));
+  const inputRef = useRef(input);
+  const setInput = (value: string | ((previous: string) => string)) => {
+    const next = typeof value === "function" ? value(inputRef.current) : value;
+    inputRef.current = next;
+    setInputState(next);
+  };
   const [loading, setLoading] = useState(false);
   const [pendingUserMessage, setPendingUserMessage] = useState<{
     sessionId: string;
@@ -588,6 +603,12 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
       setSettingsOpen(true);
       return null;
     }
+    const submittedComposerText = captureMiraComposerTextForSubmission(
+      input,
+      textOverride,
+      options.preserveComposer === true,
+    );
+    const submissionSessionId = activeId;
     setSportAiView("chat");
 
     const userContent = text || "Bitte analysiere die angehängten Dateien.";
@@ -611,6 +632,14 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     const generation = ++generationRef.current;
     setPendingUserMessage({ sessionId: activeId, message: userMessage });
     setLoading(true);
+    if (submittedComposerText !== null) {
+      setInput("");
+      try {
+        putAlo("draft", { target: "mira", text: "" }, miraDraftId(submissionSessionId));
+      } catch {
+        setError("Entwurf konnte nicht lokal gespeichert werden. Gerätespeicher prüfen.");
+      }
+    }
     try {
       assertMiraAttachmentProvider(
         provider.id,
@@ -662,10 +691,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
         },
       });
       if (generation !== generationRef.current) return null;
-      if (!options.preserveComposer) {
-        setInput("");
-        setAttachments([]);
-      }
+      if (!options.preserveComposer) setAttachments([]);
       const parsed = parseAiResponse(res.reply);
       const plan = parsed.plan ? applyPlanFeedback(parsed.plan, lastFeedback) : undefined;
       const assistantText =
@@ -694,6 +720,24 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
       const msg = e instanceof Error ? e.message : "Fehler";
       setError(msg);
       setPendingUserMessage(null);
+      const restoredComposerText = restoreMiraComposerTextAfterFailure({
+        activeSessionId: activeIdRef.current,
+        submittedSessionId: submissionSessionId,
+        currentText: inputRef.current,
+        submittedText: submittedComposerText,
+      });
+      if (restoredComposerText !== null) {
+        setInput(restoredComposerText);
+        try {
+          putAlo(
+            "draft",
+            { target: "mira", text: restoredComposerText },
+            miraDraftId(submissionSessionId),
+          );
+        } catch {
+          setError("Entwurf konnte nicht lokal gespeichert werden. Gerätespeicher prüfen.");
+        }
+      }
       // Keep the draft and local attachments; errors are never added to AI history.
       return null;
     } finally {
@@ -1133,7 +1177,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 rows={1}
                 className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm outline-none"
                 style={{ maxHeight: 140 }}
-                disabled={loading}
               />
               {sketchLayout && (
                 <button
@@ -2343,7 +2386,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     rows={1}
                     className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
                     style={{ maxHeight: 140 }}
-                    disabled={loading}
                   />
                   {sketchLayout && (
                     <button
