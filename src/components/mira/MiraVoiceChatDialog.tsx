@@ -25,7 +25,7 @@ export function MiraVoiceChatDialog({
   onStopListening,
   error,
   onContinue,
-  continueLabel = "Entwurf im Chat ansehen",
+  continueLabel = "Übernehmen",
   className = "alo-dialog max-h-[88dvh] overflow-y-auto sm:max-w-md",
 }: MiraVoiceChatDialogProps) {
   return (
@@ -36,18 +36,10 @@ export function MiraVoiceChatDialog({
           Sprich deinen Text ein, prüfe oder bearbeite die Erkennung und tippe danach im Chat selbst
           auf „Senden“. Mira wird nicht automatisch kontaktiert.
         </DialogDescription>
-
-        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm">
-          <p>
-            Die Spracherkennung läuft über den Browser. Je nach Browser kann Audio an dessen
-            Spracherkennungsdienst übertragen werden. Mira erhält erst den Text, den du anschließend
-            im Chat sendest.
-          </p>
-          <p className="mt-2 text-muted-foreground">
-            Antworten kannst du einzeln über „Vorlesen“ anhören. Tempo und Stimme richten sich nach
-            den Möglichkeiten deines Geräts.
-          </p>
-        </div>
+        <p className="rounded-xl border border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
+          Antworten kannst du einzeln über „Vorlesen“ anhören. Stimme und Tempo richten sich nach
+          den Möglichkeiten deines Geräts.
+        </p>
 
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border/70 bg-background/60 p-5 text-center">
           <button

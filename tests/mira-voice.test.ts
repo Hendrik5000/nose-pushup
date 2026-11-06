@@ -28,27 +28,51 @@ test("Vorlesestimme bevorzugt Deutsch und nutzt ein sanft langsameres Tempo", ()
   );
 });
 
-test("Sprachdialog hält den Text editierbar und sendet ihn nicht selbst", () => {
-  const dialog = readFileSync("src/components/mira/MiraVoiceChatDialog.tsx", "utf8");
+test("Mikrofonklick und Composer-Halten nutzen denselben editierbaren Push-to-talk-Modus", () => {
   const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
-  const submitStart = page.indexOf("const submit = async");
-  const submitEnd = page.indexOf("const messagesRef = useRef(messages);", submitStart);
-  const submitHandler = page.slice(submitStart, submitEnd);
+  const controller = readFileSync("src/lib/mira-inline-dictation.ts", "utf8");
+  assert.equal((page.match(/<MiraInlineDictationControls/g) ?? []).length, 2);
+  assert.equal((page.match(/onClick=\{startInlineDictation\}/g) ?? []).length, 2);
+  assert.equal((page.match(/onPointerDown=\{handleComposerPointerDown\}/g) ?? []).length, 2);
+  assert.match(page, /new MiraComposerPressAndHold/);
+  assert.match(controller, /private readonly delayMs = 300/);
+  assert.match(controller, /if \(shouldStop\) this\.onStop\(\)/);
+  assert.match(page, /"Nur zu, ich höre zu…"/);
+  assert.match(page, /Diktat abbrechen/);
+  assert.match(page, /Diktat übernehmen/);
+  assert.match(page, /aria-label="Nachricht senden"/);
+  assert.doesNotMatch(page, /MiraVoiceChatDialog|Entwurf im Chat ansehen|toggleVoice/);
+  assert.doesNotMatch(controller, /submit\(|sendTranscript|fetch\(/);
+  assert.match(controller, /recognition\.lang = "de-DE"/);
+  assert.match(controller, /recognition\.abort\(\)/);
+});
 
-  assert.equal((page.match(/aria-label="Sprachdialog mit Mikrofon öffnen"/g) ?? []).length, 2);
-  assert.doesNotMatch(page, /onClick=\{toggleVoice\}/);
-  assert.match(dialog, /Erkannten Text bearbeiten/);
-  assert.match(dialog, /Mira wird nicht automatisch kontaktiert/);
-  assert.doesNotMatch(dialog, /onSubmit|superAiChat|submit\(/);
-  assert.doesNotMatch(submitHandler, /speechSynthesis|speakMiraMessage/);
+test("Mikrofon- und Browser-Spracherkennungsdetails stehen in Mira-Einstellungen, nicht in einem Diktat-Modal", () => {
+  const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
+  const homeVoiceDialog = readFileSync("src/components/mira/MiraVoiceChatDialog.tsx", "utf8");
+  const conversationDialog = readFileSync(
+    "src/components/mira/MiraVoiceConversationDialog.tsx",
+    "utf8",
+  );
+  assert.equal((page.match(/<MiraSpeechPrivacySettings \/>/g) ?? []).length, 2);
+  assert.match(
+    page,
+    /Je nach Browser kann Audio an dessen Spracherkennungsdienst übertragen werden/,
+  );
+  assert.match(page, /Mira erhält erkannten Text, keine rohe Mikrofonaufnahme/);
+  assert.match(page, /erst nach deinem normalen Tipp\s+auf „Senden“ an Mira übermittelt/);
+  assert.doesNotMatch(page, /MiraVoiceChatDialog|Entwurf im Chat ansehen/);
+  assert.doesNotMatch(homeVoiceDialog, /Browser-Spracherkennungsdienst|Audio an dessen/);
+  assert.doesNotMatch(conversationDialog, /mira-voice-info|Browser-Spracherkennungsdienst/);
 });
 
 test("Sprachausgabe startet nur über eine Antwortaktion und lässt sich abbrechen", () => {
   const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
   const actions = readFileSync("src/components/mira/MiraAnswerActions.tsx", "utf8");
+  const dictation = readFileSync("src/lib/mira-inline-dictation.ts", "utf8");
   assert.match(page, /onSpeak=\{\(\) => speakMiraMessage\(i, m\.content\)\}/);
   assert.match(actions, /onClick=\{onSpeak\}/);
   assert.match(page, /window\.speechSynthesis\.cancel\(\)/);
-  assert.match(page, /Spracherkennung wird in diesem Browser nicht unterstützt/);
-  assert.match(page, /Mikrofonzugriff wurde nicht erlaubt/);
+  assert.match(dictation, /Spracherkennung wird in diesem Browser nicht unterstützt/);
+  assert.match(dictation, /Mikrofonzugriff wurde nicht erlaubt/);
 });
