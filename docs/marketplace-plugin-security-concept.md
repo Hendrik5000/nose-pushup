@@ -122,7 +122,7 @@ Sandboxing ist keine harte CPU-/Speichergrenze: eine Endlosschleife kann mindest
 6. Welche Offline-, Updates-, Nutzerexport-, Lösch-, Backup- und Aufbewahrungsregeln gelten?
 7. Welche rechtliche/Datenschutzprüfung ist für Gesundheits-, Trainings- und Chatdaten sowie externe Empfänger nötig?
 
-Bis diese Punkte beantwortet und die Phasen gesondert freigegeben sind, bleibt dies ein nicht freigegebener Konzeptentwurf. Es wurden keine Tabellen, Policies, App-Routen, Plugin-APIs, Pakete oder Hosts eingerichtet.
+Dieser Statussatz hielt den Stand vor der späteren Freigabe fest: Damals waren weder Marketplace-Publikationsschema noch Plugin-API eingerichtet. Die nachfolgend beschriebenen v1-Artefakte liegen ausschließlich im Feature-Branch; die Migration wurde nicht angewendet.
 
 ## Nachtrag: freigegebene deklarative v1 (2026-11-06)
 
