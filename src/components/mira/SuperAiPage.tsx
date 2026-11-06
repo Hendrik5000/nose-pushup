@@ -1321,7 +1321,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   className={
                     m.role === "user"
                       ? "max-w-[88%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-sm text-primary-foreground shadow-sm"
-                      : "max-w-[92%] rounded-2xl rounded-bl-md border border-border/80 bg-background/70 px-3.5 py-2.5 text-sm leading-relaxed shadow-sm"
+                      : "max-w-[92%] text-sm leading-relaxed"
                   }
                 >
                   {m.role === "assistant" ? (
@@ -2066,13 +2066,12 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       key={i}
                       className={`flex items-start gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}
                     >
-                      {m.role === "assistant" && (
-                        <span className="mira-chat-answer-mark mt-1" aria-hidden="true">
-                          <MiraSpark />
-                        </span>
-                      )}
                       <article
-                        className={`sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm ${m.role === "user" ? "mira-chat-user-bubble rounded-br-md bg-primary text-primary-foreground" : "mira-chat-answer-bubble rounded-bl-md border border-border/70 bg-background/80"}`}
+                        className={
+                          m.role === "user"
+                            ? "sport-ai-bubble max-w-[90%] rounded-[1.5rem] px-5 py-4 text-sm leading-relaxed shadow-sm mira-chat-user-bubble rounded-br-md bg-primary text-primary-foreground"
+                            : "max-w-[90%] min-w-0 text-sm leading-relaxed"
+                        }
                       >
                         {m.role === "assistant" ? (
                           <MiraProgressiveAnswer
