@@ -23,6 +23,7 @@ import {
   Zap,
 } from "lucide-react";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
+import { MarketplaceCustomApps } from "@/components/marketplace/MarketplaceCustomApps";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import {
   describeMarketplacePermissions,
@@ -227,13 +228,16 @@ function MarketplaceContent({ userId }: { userId: string }) {
     <HomeAppMenuLayout
       eyebrow="ALO · KURATIERT"
       title="Marketplace"
-      description="Installiere vorhandene Alo-Apps, Bereiche und Werkzeuge. Einträge öffnen nur vorregistrierte Alo-Ziele; Drittanbieter-Pakete und ausführbare Plugin-Skripte gibt es hier nicht."
+      description="Installiere vorhandene Alo-Apps, Bereiche und Werkzeuge oder entwirf mit Mira eine deklarative Admin-App. Nur ausdrücklich bestätigte Manifeste werden mit den bestehenden Alo-Admins geteilt; ausführbare Plugins gibt es nicht."
     >
       <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
-        Installationen und Aktivierungen werden nur in diesem Browser auf diesem Gerät gespeichert,
-        getrennt nach deinem Alo-Konto. Sie werden nicht mit der Alo-Cloud oder anderen Geräten
-        synchronisiert.
+        Persönliche Installationen, Aktivierungen und Versions-Pins werden nur in diesem Browser auf
+        diesem Gerät und getrennt nach deinem Alo-Konto gespeichert. Sie werden nicht
+        synchronisiert. Ein selbst erstelltes Manifest wird erst nach deiner ausdrücklichen
+        Bestätigung im gemeinsamen Admin-Marketplace veröffentlicht.
       </aside>
+
+      {isMarketplaceAdmin && <MarketplaceCustomApps userId={userId} isAdmin={isMarketplaceAdmin} />}
 
       {storageError && (
         <p

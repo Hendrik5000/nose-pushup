@@ -405,6 +405,46 @@ export const MARKETPLACE_CATALOG: readonly MarketplacePluginManifest[] = Object.
   }),
 );
 
+export type MarketplaceAuthorAction = Readonly<{
+  id: string;
+  label: string;
+  action: MarketplaceHostAction;
+  permission: MarketplacePermissionId;
+}>;
+
+function marketplaceAuthorActionId(action: MarketplaceHostAction): string {
+  if (action.type === "navigate") return `route:${action.to}`;
+  if (action.type === "open-game") return `game:${action.gameId}`;
+  return `tool:${action.toolId}`;
+}
+
+const authorActionById = new Map<string, MarketplaceAuthorAction>();
+for (const plugin of MARKETPLACE_CATALOG) {
+  if (plugin.action.type === "navigate" && plugin.action.to === "/marketplace") continue;
+  const id = marketplaceAuthorActionId(plugin.action);
+  if (!authorActionById.has(id)) {
+    authorActionById.set(
+      id,
+      Object.freeze({
+        id,
+        label: plugin.name,
+        action: plugin.action,
+        permission: plugin.action.type === "open-tool" ? "alo.open-existing-tool" : "alo.navigate",
+      }),
+    );
+  }
+}
+
+/** Actions available to authored apps are derived only from the bundled host catalog. */
+export const MARKETPLACE_AUTHOR_ACTIONS: readonly MarketplaceAuthorAction[] = Object.freeze([
+  ...authorActionById.values(),
+]);
+
+export function getMarketplaceAuthorAction(value: unknown): MarketplaceAuthorAction | null {
+  if (typeof value !== "string") return null;
+  return authorActionById.get(value) ?? null;
+}
+
 const MARKETPLACE_PLUGIN_BY_ID = new Map<string, MarketplacePluginManifest>(
   MARKETPLACE_CATALOG.map((plugin) => [plugin.id, plugin]),
 );
