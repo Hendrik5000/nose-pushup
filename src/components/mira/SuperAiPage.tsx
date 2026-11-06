@@ -263,6 +263,16 @@ function MiraInlineDictationControls({
   );
 }
 
+function MiraInlineDictationPreview({ draft, interim }: { draft: string; interim: string }) {
+  const transcript = [draft.trim(), interim.trim()].filter(Boolean).join(" ");
+  return (
+    <div className="mira-inline-dictation-preview" aria-label="Erkannter Text" aria-live="polite">
+      <span className="mira-inline-dictation-preview-label">Diktat</span>
+      <span className="mira-inline-dictation-preview-text">{transcript || "Ich höre zu …"}</span>
+    </div>
+  );
+}
+
 function MiraSpeechPrivacySettings() {
   return (
     <section
@@ -349,6 +359,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   const [contextLoading, setContextLoading] = useState(false);
   const [listening, setListening] = useState(false);
   const [dictationOpen, setDictationOpen] = useState(false);
+  const [dictationInterim, setDictationInterim] = useState("");
   const [dictationElapsed, setDictationElapsed] = useState(0);
   const [dictationStartedAt, setDictationStartedAt] = useState<number | null>(null);
   const [voiceConversationOpen, setVoiceConversationOpen] = useState(false);
@@ -392,6 +403,9 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
         inputRef.current = next;
         setInputState(next);
       },
+      onInterimTranscript: (transcript) => {
+        if (dictationOpenRef.current) setDictationInterim(transcript);
+      },
       onListeningChange: setListening,
       onError: setError,
     });
@@ -414,6 +428,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     dictationOpenRef.current = true;
     draftBeforeDictationRef.current = inputRef.current;
     setDictationOpen(true);
+    setDictationInterim("");
     setDictationElapsed(0);
     setDictationStartedAt(Date.now());
     setError(null);
@@ -430,6 +445,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     dictationOpenRef.current = false;
     dictationControllerRef.current?.cancel();
     setDictationOpen(false);
+    setDictationInterim("");
     setDictationStartedAt(null);
     setDictationElapsed(0);
     if (restoreDraft && wasOpen) {
@@ -443,6 +459,7 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     dictationPressRef.current?.reset();
     dictationOpenRef.current = false;
     setDictationOpen(false);
+    setDictationInterim("");
     setDictationStartedAt(null);
     dictationControllerRef.current?.stop();
   }, []);
@@ -461,18 +478,22 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
     },
     [loading],
   );
-  const handleComposerPointerMove = useCallback((event: ReactPointerEvent<HTMLTextAreaElement>) => {
-    dictationPressRef.current?.pointerMove(event.pointerId, event.clientX, event.clientY);
-  }, []);
-  const handleComposerPointerUp = useCallback((event: ReactPointerEvent<HTMLTextAreaElement>) => {
-    dictationPressRef.current?.pointerUp(event.pointerId);
-  }, []);
-  const handleComposerPointerCancel = useCallback(
-    (event: ReactPointerEvent<HTMLTextAreaElement>) => {
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) =>
+      dictationPressRef.current?.pointerMove(event.pointerId, event.clientX, event.clientY);
+    const handlePointerUp = (event: PointerEvent) =>
+      dictationPressRef.current?.pointerUp(event.pointerId);
+    const handlePointerCancel = (event: PointerEvent) =>
       dictationPressRef.current?.pointerCancel(event.pointerId);
-    },
-    [],
-  );
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerCancel);
+    };
+  }, []);
   useEffect(() => {
     if (!listening || dictationStartedAt === null) return;
     const updateElapsed = () =>
@@ -1262,58 +1283,23 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
             className={`alo-classic-composer mt-2 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur ${sketchLayout ? "alo-mira-sketch-composer-wrap" : ""}`}
           >
             {!sketchLayout && userId && <MiraSources userId={userId} />}
-            <MiraAttachmentPreview
-              items={attachments}
-              onChange={setAttachments}
-              disabled={loading}
-            />
+            {!dictationOpen && (
+              <MiraAttachmentPreview
+                items={attachments}
+                onChange={setAttachments}
+                disabled={loading}
+              />
+            )}
+            {dictationOpen && (
+              <MiraInlineDictationPreview draft={input} interim={dictationInterim} />
+            )}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 void submit();
               }}
-              className={`mira-classic-composer-form flex items-end gap-2 ${sketchLayout ? "alo-mira-capsule-composer" : ""}`}
+              className={`mira-classic-composer-form flex items-end gap-2 ${sketchLayout ? "alo-mira-capsule-composer" : ""} ${dictationOpen ? "mira-inline-dictation-active" : ""}`}
             >
-              <MiraAttachmentPicker
-                items={attachments}
-                compact={sketchLayout}
-                onChange={setAttachments}
-                onError={setError}
-                disabled={loading}
-              />
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={
-                  dictationOpen && listening
-                    ? "Nur zu, ich höre zu…"
-                    : sketchLayout
-                      ? "Frag Mira …"
-                      : "Frag Mira alles – Alltag, Wissen, Schreiben, Ideen …"
-                }
-                aria-label="Deine Frage an Mira"
-                rows={1}
-                className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm outline-none"
-                style={{ maxHeight: 140 }}
-                onPointerDown={handleComposerPointerDown}
-                onPointerMove={handleComposerPointerMove}
-                onPointerUp={handleComposerPointerUp}
-                onPointerCancel={handleComposerPointerCancel}
-                onPointerLeave={(event) =>
-                  dictationPressRef.current?.pointerCancel(event.pointerId)
-                }
-              />
-              {sketchLayout && (
-                <button
-                  type="button"
-                  className="alo-mira-composer-action"
-                  onClick={() => handleVoiceConversationOpenChange(true)}
-                  aria-label="Freisprechgespräch mit Mira öffnen"
-                  title="Freisprechen mit Mira"
-                >
-                  <Headphones aria-hidden="true" />
-                </button>
-              )}
               {dictationOpen ? (
                 <MiraInlineDictationControls
                   listening={listening}
@@ -1322,25 +1308,59 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   onConfirm={confirmInlineDictation}
                 />
               ) : (
-                <button
-                  type="button"
-                  onClick={startInlineDictation}
-                  className="mira-inline-dictation-trigger flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary/40 text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  aria-label="Spracheingabe"
-                  aria-pressed={false}
-                  title="Spracheingabe starten"
-                >
-                  <Mic className="h-5 w-5" aria-hidden="true" />
-                </button>
+                <>
+                  <MiraAttachmentPicker
+                    items={attachments}
+                    compact={sketchLayout}
+                    onChange={setAttachments}
+                    onError={setError}
+                    disabled={loading}
+                  />
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={
+                      sketchLayout
+                        ? "Frag Mira …"
+                        : "Frag Mira alles – Alltag, Wissen, Schreiben, Ideen …"
+                    }
+                    aria-label="Deine Frage an Mira"
+                    rows={1}
+                    className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm outline-none"
+                    style={{ maxHeight: 140 }}
+                    onPointerDown={handleComposerPointerDown}
+                  />
+                  {sketchLayout && (
+                    <button
+                      type="button"
+                      className="alo-mira-composer-action"
+                      onClick={() => handleVoiceConversationOpenChange(true)}
+                      aria-label="Freisprechgespräch mit Mira öffnen"
+                      title="Freisprechen mit Mira"
+                    >
+                      <Headphones aria-hidden="true" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={startInlineDictation}
+                    className="mira-inline-dictation-trigger flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary/40 text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    aria-label="Spracheingabe"
+                    aria-pressed={false}
+                    title="Spracheingabe starten"
+                  >
+                    <Mic className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="submit"
+                    aria-label="Nachricht senden"
+                    disabled={loading || (!input.trim() && !attachments.length)}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-40"
+                  >
+                    ↑
+                  </button>
+                </>
               )}
-              <button
-                type="submit"
-                aria-label="Nachricht senden"
-                disabled={loading || (!input.trim() && !attachments.length)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-40"
-              >
-                ↑
-              </button>
             </form>
           </div>
 
@@ -2493,54 +2513,23 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   </div>
                 )}
                 {!sketchLayout && userId && <MiraSources userId={userId} />}
-                <MiraAttachmentPreview
-                  items={attachments}
-                  onChange={setAttachments}
-                  disabled={loading}
-                />
+                {!dictationOpen && (
+                  <MiraAttachmentPreview
+                    items={attachments}
+                    onChange={setAttachments}
+                    disabled={loading}
+                  />
+                )}
+                {dictationOpen && (
+                  <MiraInlineDictationPreview draft={input} interim={dictationInterim} />
+                )}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     void submit();
                   }}
-                  className={`sport-chat-composer flex items-end gap-2 rounded-[1.5rem] border border-border/70 bg-card/85 p-3 shadow-lg ${sketchLayout ? "alo-mira-capsule-composer" : ""}`}
+                  className={`sport-chat-composer flex items-end gap-2 rounded-[1.5rem] border border-border/70 bg-card/85 p-3 shadow-lg ${sketchLayout ? "alo-mira-capsule-composer" : ""} ${dictationOpen ? "mira-inline-dictation-active" : ""}`}
                 >
-                  <MiraAttachmentPicker
-                    items={attachments}
-                    compact={sketchLayout}
-                    onChange={setAttachments}
-                    onError={setError}
-                    disabled={loading}
-                  />
-                  <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder={
-                      dictationOpen && listening ? "Nur zu, ich höre zu…" : "Frag Mira …"
-                    }
-                    aria-label="Deine Frage an Mira"
-                    rows={1}
-                    className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
-                    style={{ maxHeight: 140 }}
-                    onPointerDown={handleComposerPointerDown}
-                    onPointerMove={handleComposerPointerMove}
-                    onPointerUp={handleComposerPointerUp}
-                    onPointerCancel={handleComposerPointerCancel}
-                    onPointerLeave={(event) =>
-                      dictationPressRef.current?.pointerCancel(event.pointerId)
-                    }
-                  />
-                  {sketchLayout && (
-                    <button
-                      type="button"
-                      className="alo-mira-composer-action"
-                      onClick={() => handleVoiceConversationOpenChange(true)}
-                      aria-label="Freisprechgespräch mit Mira öffnen"
-                      title="Freisprechen mit Mira"
-                    >
-                      <Headphones aria-hidden="true" />
-                    </button>
-                  )}
                   {dictationOpen ? (
                     <MiraInlineDictationControls
                       listening={listening}
@@ -2549,25 +2538,55 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       onConfirm={confirmInlineDictation}
                     />
                   ) : (
-                    <button
-                      type="button"
-                      onClick={startInlineDictation}
-                      className="mira-inline-dictation-trigger flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      aria-label="Spracheingabe"
-                      aria-pressed={false}
-                      title="Spracheingabe starten"
-                    >
-                      <Mic className="h-5 w-5" aria-hidden="true" />
-                    </button>
+                    <>
+                      <MiraAttachmentPicker
+                        items={attachments}
+                        compact={sketchLayout}
+                        onChange={setAttachments}
+                        onError={setError}
+                        disabled={loading}
+                      />
+                      <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Frag Mira …"
+                        aria-label="Deine Frage an Mira"
+                        rows={1}
+                        className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
+                        style={{ maxHeight: 140 }}
+                        onPointerDown={handleComposerPointerDown}
+                      />
+                      {sketchLayout && (
+                        <button
+                          type="button"
+                          className="alo-mira-composer-action"
+                          onClick={() => handleVoiceConversationOpenChange(true)}
+                          aria-label="Freisprechgespräch mit Mira öffnen"
+                          title="Freisprechen mit Mira"
+                        >
+                          <Headphones aria-hidden="true" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={startInlineDictation}
+                        className="mira-inline-dictation-trigger flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        aria-label="Spracheingabe"
+                        aria-pressed={false}
+                        title="Spracheingabe starten"
+                      >
+                        <Mic className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="submit"
+                        aria-label="Nachricht senden"
+                        disabled={loading || (!input.trim() && !attachments.length)}
+                        className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
+                      >
+                        <ArrowUp className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                    </>
                   )}
-                  <button
-                    type="submit"
-                    aria-label="Nachricht senden"
-                    disabled={loading || (!input.trim() && !attachments.length)}
-                    className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
-                  >
-                    <ArrowUp className="h-5 w-5" aria-hidden="true" />
-                  </button>
                 </form>
               </div>
               <aside className="sport-ai-chat-aside flex flex-col gap-4 lg:sticky lg:top-5">

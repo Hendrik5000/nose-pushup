@@ -35,9 +35,10 @@ test("Mikrofonklick und Composer-Halten nutzen denselben editierbaren Push-to-ta
   assert.equal((page.match(/onClick=\{startInlineDictation\}/g) ?? []).length, 2);
   assert.equal((page.match(/onPointerDown=\{handleComposerPointerDown\}/g) ?? []).length, 2);
   assert.match(page, /new MiraComposerPressAndHold/);
+  assert.match(page, /window\.addEventListener\("pointerup", handlePointerUp\)/);
   assert.match(controller, /private readonly delayMs = 300/);
   assert.match(controller, /if \(shouldStop\) this\.onStop\(\)/);
-  assert.match(page, /"Nur zu, ich höre zu…"/);
+  assert.match(page, /"Ich höre zu …"/);
   assert.match(page, /Diktat abbrechen/);
   assert.match(page, /Diktat übernehmen/);
   assert.match(page, /aria-label="Nachricht senden"/);
@@ -45,6 +46,21 @@ test("Mikrofonklick und Composer-Halten nutzen denselben editierbaren Push-to-ta
   assert.doesNotMatch(controller, /submit\(|sendTranscript|fetch\(/);
   assert.match(controller, /recognition\.lang = "de-DE"/);
   assert.match(controller, /recognition\.abort\(\)/);
+});
+
+test("Diktat zeigt Live-Text oberhalb und ersetzt währenddessen die normalen Composer-Aktionen", () => {
+  const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
+  assert.equal((page.match(/<MiraInlineDictationPreview/g) ?? []).length, 2);
+  assert.equal((page.match(/\{!dictationOpen && \(\s*<MiraAttachmentPreview/g) ?? []).length, 2);
+  assert.match(
+    page,
+    /onInterimTranscript: \(transcript\) =>[\s\S]*?setDictationInterim\(transcript\)/,
+  );
+  assert.match(page, /aria-label="Erkannter Text"[\s\S]*?aria-live="polite"/);
+  assert.match(
+    page,
+    /dictationOpen \? \([\s\S]*?<MiraInlineDictationControls[\s\S]*?\) : \([\s\S]*?<MiraAttachmentPicker[\s\S]*?<textarea[\s\S]*?<Headphones/,
+  );
 });
 
 test("Mikrofon- und Browser-Spracherkennungsdetails stehen in Mira-Einstellungen, nicht in einem Diktat-Modal", () => {

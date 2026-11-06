@@ -48,15 +48,17 @@ class FakeRecognition implements MiraSpeechRecognitionLike {
 
 function createController(recognition: FakeRecognition | null) {
   const transcripts: string[] = [];
+  const interimTranscripts: string[] = [];
   const listening: boolean[] = [];
   const errors: string[] = [];
   const controller = new MiraInlineDictationController({
     createRecognition: () => recognition,
     onTranscript: (transcript) => transcripts.push(transcript),
+    onInterimTranscript: (transcript) => interimTranscripts.push(transcript),
     onListeningChange: (value) => listening.push(value),
     onError: (message) => errors.push(message),
   });
-  return { controller, transcripts, listening, errors };
+  return { controller, transcripts, interimTranscripts, listening, errors };
 }
 
 type ScheduledTask = { callback: () => void; dueAt: number };
@@ -87,25 +89,40 @@ class FakeScheduler {
   }
 }
 
-test("inline dictation uses browser German recognition, accepts only final text, and never sends", () => {
+test("inline dictation streams interim text, commits final text, and never sends", () => {
   const recognition = new FakeRecognition();
   const harness = createController(recognition);
   assert.equal(harness.controller.start(), true);
   assert.equal(recognition.lang, "de-DE");
   assert.equal(recognition.continuous, false);
-  assert.equal(recognition.interimResults, false);
+  assert.equal(recognition.interimResults, true);
   assert.equal(recognition.startCount, 1);
   recognition.emitResult([
     { transcript: "Zwischenergebnis", isFinal: false },
     { transcript: "Erster Satz", isFinal: true },
   ]);
   assert.deepEqual(harness.transcripts, ["Erster Satz"]);
+  assert.deepEqual(harness.interimTranscripts, ["Zwischenergebnis"]);
   recognition.emitResult([
     { transcript: "Zwischenergebnis", isFinal: false },
     { transcript: "Erster Satz", isFinal: true },
   ]);
   assert.deepEqual(harness.transcripts, ["Erster Satz"], "duplicate results are ignored");
+  assert.deepEqual(harness.interimTranscripts, ["Zwischenergebnis", "Zwischenergebnis"]);
   assert.deepEqual(harness.listening, [true]);
+});
+
+test("final recognition clears the interim preview while preserving committed speech", () => {
+  const recognition = new FakeRecognition();
+  const harness = createController(recognition);
+  harness.controller.start();
+  recognition.emitResult([{ transcript: "Guten Morgen", isFinal: false }]);
+  assert.deepEqual(harness.interimTranscripts, ["Guten Morgen"]);
+  assert.deepEqual(harness.transcripts, []);
+
+  recognition.emitResult([{ transcript: "Guten Morgen, Mira.", isFinal: true }]);
+  assert.deepEqual(harness.transcripts, ["Guten Morgen, Mira."]);
+  assert.deepEqual(harness.interimTranscripts, ["Guten Morgen", ""]);
 });
 
 test("normal stop ends listening immediately but allows a final result before onend", () => {

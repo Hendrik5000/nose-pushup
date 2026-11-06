@@ -6,6 +6,7 @@ type RecognitionError = Parameters<NonNullable<MiraSpeechRecognitionLike["onerro
 export type MiraInlineDictationOptions = {
   createRecognition: () => MiraSpeechRecognitionLike | null;
   onTranscript: (transcript: string) => void;
+  onInterimTranscript?: (transcript: string) => void;
   onListeningChange?: (listening: boolean) => void;
   onError?: (message: string) => void;
 };
@@ -58,16 +59,23 @@ export class MiraInlineDictationController {
     this.processedFinalResults.clear();
     recognition.lang = "de-DE";
     recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.onresult = (event: RecognitionEvent) => {
       if (!this.isCurrent(recognition, session)) return;
+      const interimTranscripts: string[] = [];
       for (let index = 0; index < event.results.length; index += 1) {
         const result = event.results[index];
-        if (!result?.isFinal || this.processedFinalResults.has(index)) continue;
-        this.processedFinalResults.add(index);
+        if (!result) continue;
         const transcript = result[0]?.transcript?.trim();
+        if (!result.isFinal) {
+          if (transcript) interimTranscripts.push(transcript);
+          continue;
+        }
+        if (this.processedFinalResults.has(index)) continue;
+        this.processedFinalResults.add(index);
         if (transcript) this.options.onTranscript(transcript);
       }
+      this.options.onInterimTranscript?.(interimTranscripts.join(" "));
     };
     recognition.onerror = (event?: RecognitionError) => {
       if (!this.isCurrent(recognition, session)) return;
