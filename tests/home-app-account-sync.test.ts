@@ -396,6 +396,8 @@ test("migration is transactional, user-bound, SELECT-only RLS with narrow owners
   assert.match(sql, /FOR UPDATE/);
   assert.match(sql, /pg_advisory_xact_lock/);
   assert.match(sql, /version IS NOT NULL AND version > 0/);
+  assert.match(sql, />= \(CASE WHEN p_kind = 'home_name' THEN 128 ELSE 100 END\) THEN/);
+  assert.doesNotMatch(sql.replace(/ON DELETE CASCADE/g, ""), /\b(?:DELETE|DROP|TRUNCATE)\b/i);
   assert.doesNotMatch(sql, /ALTER TABLE public\.(?!home_app_sync_records)/);
   assert.doesNotMatch(sql, /INSERT INTO public\.(?!home_app_sync_records)/);
   const columns = sql.slice(sql.indexOf("CREATE TABLE"), sql.indexOf("ALTER TABLE"));
