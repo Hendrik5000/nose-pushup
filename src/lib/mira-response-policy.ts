@@ -6,10 +6,17 @@ export const MIRA_BASE_SYSTEM_PROMPT = [
 ].join(" ");
 
 const EXPLICIT_CODE_REQUEST =
-  /\b(?:codebeispiel(?:e|en)?|quellcode|quelltext|programmierhilfe|programmieren|debugging|debuggen|debugge)\b|\b(?:schreib(?:e|en)?|erstell(?:e|en)?|generier(?:e|en)?|zeig(?:e|en)?|liefer(?:e|n)?|implementier(?:e|en)?|write|create|generate|show|provide|implement|debug|fix)\b.{0,48}\b(?:code|typescript|javascript|python|sql|html|css|script|skript|funktion|klasse)\b/i;
+  /\b(?:codebeispiel(?:e|en)?|quellcode|quelltext|programmierhilfe|programmieren|debugging|debuggen|debugge)\b|\b(?:schreib(?:e|en)?|erstell(?:e|en)?|generier(?:e|en)?|zeig(?:e|en)?|gib|liefer(?:e|n)?|implementier(?:e|en)?|write|create|generate|show|provide|implement|debug|fix)\b.{0,48}\b(?:code|json|manifest|typescript|javascript|python|sql|html|css|script|skript|funktion|klasse)\b/i;
+const EXPLICIT_SOURCE_WORD =
+  /\b(?:code|codebeispiel(?:e|en)?|quellcode|quelltext|json|manifest|typescript|javascript|python|sql|html|css|script|skript|debugging|debuggen|debugge)\b/i;
+const NEGATED_CODE_REQUEST =
+  /\b(?:kein(?:e[nr]?)?|ohne)\s+(?:code|codebeispiel(?:e|en)?|quellcode|quelltext|json|manifest)\b/i;
 
 export function isExplicitMiraCodeRequest(text: string): boolean {
-  return EXPLICIT_CODE_REQUEST.test(text.normalize("NFKC").trim());
+  const request = text.normalize("NFKC").trim();
+  if (NEGATED_CODE_REQUEST.test(request)) return false;
+  if (/\bapps?\b/i.test(request) && !EXPLICIT_SOURCE_WORD.test(request)) return false;
+  return EXPLICIT_CODE_REQUEST.test(request);
 }
 
 export function buildMiraSystemPrompt(extra: string): string {

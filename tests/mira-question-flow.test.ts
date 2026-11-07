@@ -17,9 +17,13 @@ test("first pending question hides the empty greeting in both Mira chat layouts"
   const classic = sliceBetween(
     page,
     'className="alo-classic-mira-messages',
-    "{messages.map((m, i) => (",
+    "{displayMessages.map((m, i) => (",
   );
-  const sport = sliceBetween(page, 'className="sport-chat-stage', "{messages.map((m, i) => (");
+  const sport = sliceBetween(
+    page,
+    'className="sport-chat-stage',
+    "{displayMessages.map((m, i) => (",
+  );
 
   assert.match(classic, /messages\.length === 0\s*&&\s*!activePendingUserMessage/);
   assert.match(sport, /messages\.length === 0\s*&&\s*!activePendingUserMessage/);
@@ -36,7 +40,9 @@ test("pending user questions use the right-aligned user bubble and precede Mira'
 
   for (const view of [classic, sport]) {
     const questionIndex = view.indexOf("data-mira-pending-question");
-    const statusIndex = view.indexOf("{loading && <MiraGeneratingIndicator />}");
+    const statusIndex = view.indexOf(
+      "{loading && <MiraGeneratingIndicator label={marketplaceProgress ?? undefined} />}",
+    );
     assert.ok(questionIndex >= 0 && statusIndex > questionIndex);
     assert.match(
       view,

@@ -9,8 +9,11 @@ const answerActions = read("components/mira/MiraAnswerActions.tsx");
 
 test("assistant answers flow without a frame or Mira mark in both chat layouts", () => {
   const classicStart = page.indexOf('className="alo-classic-mira-messages');
-  const classicMessagesStart = page.indexOf("{messages.map((m, i) => (", classicStart);
-  const classicEnd = page.indexOf("{loading && <MiraGeneratingIndicator />}", classicMessagesStart);
+  const classicMessagesStart = page.indexOf("{displayMessages.map((m, i) => (", classicStart);
+  const classicEnd = page.indexOf(
+    "{loading && <MiraGeneratingIndicator label={marketplaceProgress ?? undefined} />}",
+    classicMessagesStart,
+  );
   const classicWelcome = page.slice(classicStart, classicMessagesStart);
   const classic = page.slice(classicMessagesStart, classicEnd);
   assert.ok(
@@ -26,7 +29,7 @@ test("assistant answers flow without a frame or Mira mark in both chat layouts",
 
   const stageStart = page.indexOf('className="sport-chat-stage');
   const welcomeStart = page.indexOf('className="mira-chat-welcome', stageStart);
-  const messagesStart = page.indexOf("{messages.map((m, i) => (", welcomeStart);
+  const messagesStart = page.indexOf("{displayMessages.map((m, i) => (", welcomeStart);
   const bottomRowStart = page.indexOf('className="mira-chat-bottom-row"', messagesStart);
   const welcome = page.slice(welcomeStart, messagesStart);
   const replies = page.slice(messagesStart, bottomRowStart);

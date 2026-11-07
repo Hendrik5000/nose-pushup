@@ -112,8 +112,11 @@ import { getMiraAloKnowledgeContext } from "@/lib/mira-alo-knowledge";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import { isMarketplaceAdminAccessGranted } from "@/lib/marketplace";
 import { listMarketplaceCurrentApps, publishMarketplaceApp } from "@/lib/marketplace.functions";
+import { MarketplaceManifestView } from "@/components/marketplace/MarketplaceManifestView";
+import { presentMiraMarketplaceReply } from "@/lib/mira-marketplace-reply";
 import {
   generateMarketplaceManifestDraft,
+  type MarketplaceAuthoredManifest,
   type MarketplaceMiraSend,
 } from "@/lib/marketplace-authoring";
 import {
@@ -183,7 +186,7 @@ function describeContext(ctx: AppContextPack): string {
   ].join("\n");
 }
 
-function MiraGeneratingIndicator() {
+function MiraGeneratingIndicator({ label = "Mira schreibt" }: { label?: string }) {
   return (
     <div
       className="alo-mira-generating-indicator"
@@ -191,7 +194,7 @@ function MiraGeneratingIndicator() {
       aria-live="polite"
       aria-atomic="true"
     >
-      <span>Mira schreibt</span>
+      <span>{label}</span>
       <span className="alo-mira-generating-dots" aria-hidden="true">
         <span className="alo-mira-generating-dot" />
         <span className="alo-mira-generating-dot" />
@@ -319,6 +322,24 @@ export function SuperAiPage({
     setActiveIdState(id);
   };
   const [messages, setMessages] = useState<Msg[]>(() => loadSessions()[0]?.messages ?? []);
+  const displayMessages = useMemo<
+    Array<Msg & { marketplaceManifest?: MarketplaceAuthoredManifest }>
+  >(() => {
+    let userRequest = "";
+    return messages.map((message) => {
+      if (message.role === "user") {
+        userRequest = message.content;
+        return message;
+      }
+      const presentation = presentMiraMarketplaceReply(message.content, userRequest);
+      return {
+        ...message,
+        content: presentation.reply,
+        marketplaceManifest: presentation.manifest,
+      };
+    });
+  }, [messages]);
+  const [marketplaceProgress, setMarketplaceProgress] = useState<string | null>(null);
   const [input, setInputState] = useState(() => readMiraDraft(loadSessions()[0]?.id ?? ""));
   const inputRef = useRef(input);
   const inputRevisionRef = useRef(0);
@@ -836,6 +857,7 @@ export function SuperAiPage({
     const text = (textOverride ?? input).trim();
     const submittedAttachments = options.includeAttachments === false ? [] : attachments;
     if ((!text && !submittedAttachments.length) || loading || sendingRef.current) return null;
+    setMarketplaceProgress(null);
 
     const marketplaceIntent = options.skipMarketplaceAuthoring
       ? null
@@ -857,17 +879,15 @@ export function SuperAiPage({
       sendingRef.current = true;
       setLoading(true);
       setError(null);
+      setMarketplaceProgress("App-Erstellung wird vorbereitet …");
       const authoringGeneration = ++generationRef.current;
       let hasMarketplaceAdminAccess = false;
       try {
         hasMarketplaceAdminAccess = isMarketplaceAdminAccessGranted(await checkMarketplaceAdmin());
-      } catch (error) {
+      } catch {
         if (authoringGeneration === generationRef.current) {
-          setError(
-            error instanceof Error && error.message
-              ? error.message
-              : "Admin-Zugriff konnte nicht bestätigt werden.",
-          );
+          setError("App-Zugriff konnte nicht bestätigt werden. Dein Text bleibt erhalten.");
+          setMarketplaceProgress(null);
           sendingRef.current = false;
           setLoading(false);
         }
@@ -949,7 +969,11 @@ export function SuperAiPage({
             current: { provider: string; model: string; task: string } | null;
           } = { current: null };
           const sendMarketplaceRequest: MarketplaceMiraSend = async ({ data }) => {
+            setMarketplaceProgress("Mira erstellt den App-Entwurf …");
             const response = await send({ data });
+            if (authoringGeneration === generationRef.current) {
+              setMarketplaceProgress("App-Entwurf wird geprüft …");
+            }
             responseMeta.current = response;
             return response;
           };
@@ -995,10 +1019,11 @@ export function SuperAiPage({
           setMessages([...nextMessages, assistantMessage]);
           setPendingUserMessage(null);
           return assistantText;
-        } catch (error) {
+        } catch {
           if (authoringGeneration !== generationRef.current) return null;
-          const message = error instanceof Error && error.message ? error.message : "Fehler";
-          setError(message);
+          setError(
+            "Der App-Entwurf konnte nicht sicher erstellt werden. Dein Text bleibt erhalten; es wurde nichts veröffentlicht.",
+          );
           setPendingUserMessage(null);
           const restoredComposerText = restoreMiraComposerTextAfterFailure({
             activeSessionId: activeIdRef.current,
@@ -1023,6 +1048,7 @@ export function SuperAiPage({
           return null;
         } finally {
           if (authoringGeneration === generationRef.current) {
+            setMarketplaceProgress(null);
             sendingRef.current = false;
             setLoading(false);
           }
@@ -1030,6 +1056,7 @@ export function SuperAiPage({
       }
 
       // Non-admins can still discuss app ideas with Mira, but cannot create or publish Marketplace apps.
+      setMarketplaceProgress(null);
       sendingRef.current = false;
       setLoading(false);
     }
@@ -1145,12 +1172,13 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
       const plan = parsed.plan ? applyPlanFeedback(parsed.plan, lastFeedback) : undefined;
       const assistantText =
         parsed.reply || (plan ? "Hier ist dein unverbindlicher Trainingsvorschlag." : res.reply);
+      const assistantPresentation = presentMiraMarketplaceReply(assistantText, text);
       setReplyAnimation({ sessionId: activeId, index: nextMsgs.length });
       setMessages([
         ...nextMsgs,
         {
           role: "assistant",
-          content: assistantText,
+          content: assistantPresentation.manifest ? assistantText : assistantPresentation.reply,
           ...(plan ? { plan } : {}),
           ...(parsed.interaction ? { interaction: parsed.interaction } : {}),
           ...(parsed.visual ? { visual: parsed.visual } : {}),
@@ -1163,7 +1191,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
         },
       ]);
       setPendingUserMessage(null);
-      return assistantText;
+      return assistantPresentation.reply;
     } catch (e) {
       if (generation !== generationRef.current) return null;
       const msg = e instanceof Error ? e.message : "Fehler";
@@ -1829,7 +1857,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 </div>
               ))}
 
-            {messages.map((m, i) => (
+            {displayMessages.map((m, i) => (
               <div
                 key={i}
                 className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
@@ -1851,6 +1879,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     />
                   ) : (
                     <p className="whitespace-pre-wrap">{m.content}</p>
+                  )}
+                  {m.role === "assistant" && m.marketplaceManifest && (
+                    <MarketplaceManifestView manifest={m.marketplaceManifest} preview />
                   )}
                   {m.role === "assistant" && m.interaction && (
                     <MiraInteractiveCard
@@ -2006,7 +2037,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 </div>
               </div>
             )}
-            {loading && <MiraGeneratingIndicator />}
+            {loading && <MiraGeneratingIndicator label={marketplaceProgress ?? undefined} />}
           </div>
 
           {error && (
@@ -2599,7 +2630,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       )}
                     </div>
                   )}
-                  {messages.map((m, i) => (
+                  {displayMessages.map((m, i) => (
                     <div
                       key={i}
                       className={`flex items-start gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}
@@ -2621,6 +2652,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                           />
                         ) : (
                           <p className="whitespace-pre-wrap">{m.content}</p>
+                        )}
+                        {m.role === "assistant" && m.marketplaceManifest && (
+                          <MarketplaceManifestView manifest={m.marketplaceManifest} preview />
                         )}
                         {m.role === "assistant" && m.interaction && (
                           <MiraInteractiveCard
@@ -2773,7 +2807,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       </article>
                     </div>
                   )}
-                  {loading && <MiraGeneratingIndicator />}
+                  {loading && <MiraGeneratingIndicator label={marketplaceProgress ?? undefined} />}
                 </div>
                 {!sketchLayout && (
                   <div className="mira-chat-bottom-row">

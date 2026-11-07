@@ -71,7 +71,7 @@ test("empty welcome does not replace saved conversation messages", () => {
     stage,
     /messages\.length === 0 &&\s*!activePendingUserMessage && \([\s\S]*?<div className="mira-chat-welcome/,
   );
-  assert.match(page, /\{messages\.map\(\(m, i\) => \(/);
+  assert.match(page, /\{displayMessages\.map\(\(m, i\) => \(/);
   assert.match(page, /loadSessions\(\)\[0\]\?\.messages \?\? \[\]/);
 });
 
@@ -99,7 +99,7 @@ test("Mira's chat start keeps its welcome mark while answers stay unframed", () 
     'className="mira-chat-welcome',
     page.indexOf('className="sport-chat-stage'),
   );
-  const messagesStart = page.indexOf("{messages.map", welcomeStart);
+  const messagesStart = page.indexOf("{displayMessages.map", welcomeStart);
   const welcome = page.slice(welcomeStart, messagesStart);
   assert.ok(welcomeStart >= 0 && messagesStart > welcomeStart);
   assert.match(welcome, /mira-chat-welcome-mark[\s\S]*?<MiraSpark \/>/);
