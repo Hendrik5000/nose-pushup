@@ -26,6 +26,10 @@ test("Home restores the historical bottom-center Mira launcher and voice dialog"
   assert.match(launcher, /if \(wasCanceled\) suppressNextClick\(\)/);
   assert.match(launcher, /MiraInlineDictationController/);
   assert.match(launcher, /interimTranscript/);
+  assert.match(
+    launcher,
+    /\(listening \|\| interimTranscript\)[\s\S]*alo-mira-home-live-transcript[\s\S]*\{transcript\}[\s\S]*\{interimTranscript\}/,
+  );
   assert.match(launcher, /aria-describedby="home-mira-hold-disclosure"/);
   assert.match(launcher, /holdTriggeredRef/);
   assert.match(styles, /position:\s*fixed/);
@@ -37,7 +41,10 @@ test("Home restores the historical bottom-center Mira launcher and voice dialog"
   assert.match(styles, /data-navigation-layout="floating"/);
   assert.match(styles, /bottom:\s*calc\(5rem \+ env\(safe-area-inset-bottom, 0px\) \+ 0\.75rem\)/);
   assert.match(styles, /touch-action:\s*none/);
-  assert.match(styles, /\.alo-mira-home-live-transcript/);
+  assert.match(
+    styles,
+    /\.alo-mira-home-live-transcript\s*\{[\s\S]*position:\s*absolute;[\s\S]*bottom:\s*calc\(100% \+ 0\.75rem\)/,
+  );
 });
 
 test("Home voice handoff keeps the current explicit preview and never sends to Mira automatically", () => {
