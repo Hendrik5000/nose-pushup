@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -33,19 +34,7 @@ import {
   createBrowserSpeechRecognitionFactory,
   type MiraSpeechRecognitionLike,
 } from "@/lib/mira-voice-conversation";
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  GripVertical,
-  Mic,
-  MoreHorizontal,
-  Pencil,
-  Search,
-  Trash2,
-  Users,
-  X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Mic, Search, Trash2, Users, X } from "lucide-react";
 import {
   EMPTY_HOME_APP_HUB_SETTINGS,
   HOME_BACKGROUND_PRESETS,
@@ -225,14 +214,20 @@ function HomeAppHub({
   const [draggingAppId, setDraggingAppId] = useState<string | null>(null);
   const [dropTargetAppId, setDropTargetAppId] = useState<string | null>(null);
   const [dropTargetPlacement, setDropTargetPlacement] = useState<"before" | "after" | null>(null);
-  const longPressStartRef = useRef<{
+  const [keyboardGrabbedAppId, setKeyboardGrabbedAppId] = useState<string | null>(null);
+  const longPressStartRef = useRef<
+    | { kind: "app"; appId: string; pointerId: number; x: number; y: number }
+    | { kind: "empty"; pointerId: number; x: number; y: number }
+    | null
+  >(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredAppIdRef = useRef<string | null>(null);
+  const pendingHomeDragRef = useRef<{
     appId: string;
     pointerId: number;
     x: number;
     y: number;
   } | null>(null);
-  const longPressTimerRef = useRef<number | null>(null);
-  const longPressTriggeredAppIdRef = useRef<string | null>(null);
   const dragSourceAppIdRef = useRef<string | null>(null);
   const dragPointerIdRef = useRef<number | null>(null);
   const dropTargetAppIdRef = useRef<string | null>(null);
@@ -408,6 +403,9 @@ function HomeAppHub({
     };
     const cancelOnPointerEnd = (event: PointerEvent) => {
       if (longPressStartRef.current?.pointerId === event.pointerId) cancelHomeLongPress();
+      if (pendingHomeDragRef.current?.pointerId === event.pointerId) {
+        pendingHomeDragRef.current = null;
+      }
     };
     window.addEventListener("pointermove", cancelIfMoved, true);
     window.addEventListener("pointerup", cancelOnPointerEnd, true);
@@ -420,20 +418,72 @@ function HomeAppHub({
   }, []);
 
   const startHomeLongPress = (event: ReactPointerEvent<HTMLDivElement>, appId: string) => {
+    if ((event.pointerType !== "touch" && event.pointerType !== "pen") || event.button !== 0) {
+      return;
+    }
+    cancelHomeLongPress();
+    const start = {
+      kind: "app" as const,
+      appId,
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    longPressStartRef.current = start;
+    longPressTimerRef.current = window.setTimeout(() => {
+      if (
+        longPressStartRef.current?.kind !== "app" ||
+        longPressStartRef.current.pointerId !== start.pointerId
+      )
+        return;
+      longPressTriggeredAppIdRef.current = appId;
+      if (pendingHomeDragRef.current?.pointerId === start.pointerId) {
+        pendingHomeDragRef.current = null;
+      }
+      dragSourceAppIdRef.current = null;
+      dragPointerIdRef.current = null;
+      dropTargetAppIdRef.current = null;
+      setDraggingAppId(null);
+      setDropTargetAppId(null);
+      setDropTargetPlacement(null);
+      setActiveAppMenuId(appId);
+      setHomeStatus("App-Aktionen geöffnet.");
+    }, 560);
+  };
+
+  const startEmptyHomeLongPress = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!event.isPrimary || event.button !== 0) return;
+    const target = event.target;
     if (
-      isEditingHub ||
-      (event.pointerType !== "touch" && event.pointerType !== "pen") ||
-      event.button !== 0
+      !(target instanceof Element) ||
+      target.closest(
+        'button, a, input, textarea, select, [role="button"], [contenteditable="true"], [data-home-app-id], [data-home-press-ignore]',
+      )
     ) {
       return;
     }
     cancelHomeLongPress();
-    const start = { appId, pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    const start = {
+      kind: "empty" as const,
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
     longPressStartRef.current = start;
     longPressTimerRef.current = window.setTimeout(() => {
-      if (longPressStartRef.current?.pointerId !== start.pointerId) return;
-      longPressTriggeredAppIdRef.current = appId;
-      setActiveAppMenuId(appId);
+      if (
+        longPressStartRef.current?.kind !== "empty" ||
+        longPressStartRef.current.pointerId !== start.pointerId
+      )
+        return;
+      setRenamingAppId(null);
+      setKeyboardGrabbedAppId(null);
+      setIsEditingHub(!isEditingHub);
+      setHomeStatus(
+        isEditingHub
+          ? "Home-Bearbeitung beendet."
+          : "Home-Bearbeitung gestartet. Ziehe ein App-Symbol an die gewünschte Position.",
+      );
     }, 560);
   };
 
@@ -463,7 +513,7 @@ function HomeAppHub({
     return { appId, placement: x < rect.left + rect.width / 2 ? "before" : "after" } as const;
   };
 
-  const beginHomeTileDrag = (event: ReactPointerEvent<HTMLButtonElement>, appId: string) => {
+  const beginHomeTileDrag = (event: ReactPointerEvent<HTMLDivElement>, appId: string) => {
     if (!isEditingHub || !event.isPrimary || event.button !== 0) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -476,7 +526,7 @@ function HomeAppHub({
     setDropTargetPlacement("before");
   };
 
-  const moveHomeTileDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+  const moveHomeTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (dragPointerIdRef.current !== event.pointerId) return;
     const target = getHomeTileDropTargetAtPoint(event.clientX, event.clientY);
     if (!target || !visibleAppIds.includes(target.appId)) return;
@@ -487,6 +537,7 @@ function HomeAppHub({
   };
 
   const clearHomeTileDrag = () => {
+    pendingHomeDragRef.current = null;
     dragSourceAppIdRef.current = null;
     dragPointerIdRef.current = null;
     dropTargetAppIdRef.current = null;
@@ -496,7 +547,7 @@ function HomeAppHub({
     setDropTargetPlacement(null);
   };
 
-  const finishHomeTileDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+  const finishHomeTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (dragPointerIdRef.current !== event.pointerId) return;
     const sourceId = dragSourceAppIdRef.current;
     const drop =
@@ -516,8 +567,79 @@ function HomeAppHub({
     }
   };
 
-  const cancelHomeTileDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+  const cancelHomeTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (dragPointerIdRef.current === event.pointerId) clearHomeTileDrag();
+  };
+
+  const toggleHomeEditing = () => {
+    const next = !isEditingHub;
+    cancelHomeLongPress();
+    clearHomeTileDrag();
+    setRenamingAppId(null);
+    setKeyboardGrabbedAppId(null);
+    setIsEditingHub(next);
+    setHomeStatus(
+      next
+        ? "Home-Bearbeitung gestartet. Ziehe ein App-Symbol an die gewünschte Position."
+        : "Home-Bearbeitung beendet.",
+    );
+  };
+
+  const handleHomeHubKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.target !== event.currentTarget || (event.key !== " " && event.key !== "Enter"))
+      return;
+    event.preventDefault();
+    toggleHomeEditing();
+  };
+
+  const handleHomeTileKeyDown = (
+    event: ReactKeyboardEvent<HTMLDivElement>,
+    appId: string,
+    title: string,
+  ) => {
+    if (
+      event.key === "ContextMenu" ||
+      (event.shiftKey && event.key === "F10") ||
+      event.key === "F2"
+    ) {
+      event.preventDefault();
+      setActiveAppMenuId(appId);
+      return;
+    }
+    if (!isEditingHub) return;
+
+    if (keyboardGrabbedAppId === appId) {
+      if (event.key === "Escape" || event.key === " " || event.key === "Enter") {
+        event.preventDefault();
+        setKeyboardGrabbedAppId(null);
+        setHomeStatus(`${title} abgelegt. Die lokale Reihenfolge bleibt gespeichert.`);
+        return;
+      }
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      const delta = event.key === "ArrowLeft" ? -1 : 1;
+      const index = orderedTiles.findIndex((tile) => tile.id === appId);
+      if (index < 0 || index + delta < 0 || index + delta >= orderedTiles.length) {
+        setHomeStatus(`${title} kann in diese Richtung nicht weiter verschoben werden.`);
+        return;
+      }
+      try {
+        persistSettings(
+          moveHomeApp(settings, visibleAppIds, appId, delta),
+          `${title} wurde lokal verschoben. Mit den Pfeiltasten weiterbewegen oder Enter ablegen.`,
+        );
+        setKeyboardGrabbedAppId(appId);
+      } catch {
+        setSettingsError("Diese App konnte nicht verschoben werden.");
+      }
+      return;
+    }
+
+    if (event.key === " " || event.key === "Enter") {
+      event.preventDefault();
+      setKeyboardGrabbedAppId(appId);
+      setHomeStatus(`${title} aufgenommen. Mit links oder rechts verschieben, Enter ablegen.`);
+    }
   };
 
   const saveRename = (event: ChangeEvent<HTMLFormElement>) => {
@@ -688,6 +810,10 @@ function HomeAppHub({
       <section
         className={`alo-tablet-home-hub mb-8${backgroundUrl ? " relative isolate overflow-hidden rounded-3xl border border-border/40 p-4 sm:p-6" : ""}`}
         aria-labelledby="app-hub-title"
+        aria-describedby="home-hub-edit-help"
+        tabIndex={0}
+        onPointerDown={startEmptyHomeLongPress}
+        onKeyDown={handleHomeHubKeyDown}
         style={
           backgroundUrl
             ? {
@@ -705,7 +831,22 @@ function HomeAppHub({
           />
         )}
         <div className="relative z-10">
-          <header className="mb-7 flex items-center justify-between gap-3">
+          <p id="home-hub-edit-help" className="sr-only">
+            Auf Touchgeräten eine freie Stelle lange drücken, um Apps zu bearbeiten oder die
+            Bearbeitung zu beenden. Mit der Tastatur diesen Startseitenbereich fokussieren und Enter
+            oder Leertaste drücken. Im Bearbeitungsmodus ein App-Symbol fokussieren, Leertaste zum
+            Aufnehmen und links oder rechts zum Verschieben; Enter legt ab. Für App-Aktionen lange
+            drücken oder Umschalt+F10 verwenden.
+          </p>
+          <p id="home-app-edit-help" className="sr-only">
+            Leertaste nimmt die App auf. Pfeil links oder rechts verschiebt sie lokal. Enter legt
+            ab; Escape beendet das Verschieben. Umschalt+F10 oder F2 öffnet Umbenennen und lokale
+            Deinstallation.
+          </p>
+          <header
+            className="mb-7 flex items-center justify-between gap-3"
+            data-home-press-ignore="true"
+          >
             <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
               Alo
             </h1>
@@ -742,29 +883,13 @@ function HomeAppHub({
                   initials
                 )}
               </Link>
-              <button
-                type="button"
-                aria-pressed={isEditingHub}
-                aria-label={isEditingHub ? "Home-Bearbeitung beenden" : "Home-Apps anpassen"}
-                onClick={() => {
-                  setIsEditingHub((editing) => !editing);
-                  setRenamingAppId(null);
-                }}
-                className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-semibold shadow-sm transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-              >
-                {isEditingHub ? (
-                  <Check className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <Pencil className="h-4 w-4" aria-hidden="true" />
-                )}
-                <span className="hidden sm:inline">{isEditingHub ? "Fertig" : "Anpassen"}</span>
-              </button>
             </div>
           </header>
           {isEditingHub && (
             <p className="mb-4 max-w-xl text-xs leading-relaxed text-muted-foreground">
-              Ziehe Apps am Griff an eine neue Position. Marketplace-Apps kannst du hier lokal
-              entfernen; veröffentlichte Einträge bleiben erhalten.
+              Ziehe die App-Symbole direkt an eine neue Position. Halte eine App lange gedrückt oder
+              wähle Umschalt+F10 für Aktionen. Halte eine freie Stelle erneut, um die Bearbeitung zu
+              beenden.
             </p>
           )}
           <nav
@@ -780,29 +905,67 @@ function HomeAppHub({
                   data-drop-placement={
                     dropTargetAppId === tile.id ? dropTargetPlacement : undefined
                   }
-                  className={`relative min-w-0 select-none rounded-xl transition ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
-                  onPointerDown={(event) => startHomeLongPress(event, tile.id)}
-                  onPointerMove={moveHomeLongPress}
-                  onPointerUp={cancelHomeLongPress}
-                  onPointerCancel={cancelHomeLongPress}
+                  role={isEditingHub ? "button" : undefined}
+                  tabIndex={isEditingHub ? 0 : undefined}
+                  aria-label={
+                    isEditingHub
+                      ? `${title}. Leertaste zum Aufnehmen, Pfeiltasten zum Verschieben; lange drücken oder Umschalt+F10 für Aktionen.`
+                      : undefined
+                  }
+                  aria-pressed={isEditingHub ? keyboardGrabbedAppId === tile.id : undefined}
+                  aria-haspopup={isEditingHub ? "dialog" : undefined}
+                  aria-describedby={isEditingHub ? "home-app-edit-help" : undefined}
+                  className={`relative min-w-0 select-none rounded-xl transition ${isEditingHub ? "touch-none cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:cursor-grabbing" : ""} ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                  onPointerDown={(event) => {
+                    startHomeLongPress(event, tile.id);
+                    if (isEditingHub && event.isPrimary && event.button === 0) {
+                      pendingHomeDragRef.current = {
+                        appId: tile.id,
+                        pointerId: event.pointerId,
+                        x: event.clientX,
+                        y: event.clientY,
+                      };
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                    }
+                  }}
+                  onPointerMove={(event) => {
+                    moveHomeLongPress(event);
+                    if (isEditingHub) {
+                      const pendingDrag = pendingHomeDragRef.current;
+                      if (
+                        pendingDrag?.pointerId === event.pointerId &&
+                        (Math.abs(event.clientX - pendingDrag.x) > 12 ||
+                          Math.abs(event.clientY - pendingDrag.y) > 12)
+                      ) {
+                        pendingHomeDragRef.current = null;
+                        cancelHomeLongPress();
+                        beginHomeTileDrag(event, pendingDrag.appId);
+                      }
+                      moveHomeTileDrag(event);
+                    }
+                  }}
+                  onPointerUp={(event) => {
+                    pendingHomeDragRef.current = null;
+                    cancelHomeLongPress();
+                    if (isEditingHub) finishHomeTileDrag(event);
+                  }}
+                  onPointerCancel={(event) => {
+                    pendingHomeDragRef.current = null;
+                    cancelHomeLongPress();
+                    if (isEditingHub) cancelHomeTileDrag(event);
+                  }}
                   onClickCapture={(event) => suppressLongPressClick(event, tile.id)}
                   onContextMenu={(event) => {
-                    if (isEditingHub) return;
                     event.preventDefault();
-                    if (longPressStartRef.current?.appId === tile.id) {
+                    if (
+                      longPressStartRef.current?.kind === "app" &&
+                      longPressStartRef.current.appId === tile.id
+                    ) {
                       longPressTriggeredAppIdRef.current = tile.id;
                     }
                     setActiveAppMenuId(tile.id);
                   }}
-                  onKeyDown={(event) => {
-                    if (
-                      !isEditingHub &&
-                      (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10"))
-                    ) {
-                      event.preventDefault();
-                      setActiveAppMenuId(tile.id);
-                    }
-                  }}
+                  onKeyDown={(event) => handleHomeTileKeyDown(event, tile.id, title)}
                 >
                   {renderTile(tile, title)}
                   {draggingAppId && dropTargetAppId === tile.id && dropTargetPlacement && (
@@ -811,39 +974,13 @@ function HomeAppHub({
                       className={`pointer-events-none absolute inset-y-0 z-20 w-1 rounded-full bg-primary ${dropTargetPlacement === "before" ? "left-0" : "right-0"}`}
                     />
                   )}
-                  {isEditingHub && (
-                    <div className="mt-2 flex flex-wrap items-center justify-center gap-1">
-                      <button
-                        type="button"
-                        aria-label={`${title} ziehen und verschieben`}
-                        title="Ziehen, um zu verschieben"
-                        onPointerDown={(event) => beginHomeTileDrag(event, tile.id)}
-                        onPointerMove={moveHomeTileDrag}
-                        onPointerUp={finishHomeTileDrag}
-                        onPointerCancel={cancelHomeTileDrag}
-                        className="grid h-11 w-11 touch-none place-items-center rounded-full border border-border bg-card cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                      >
-                        <GripVertical className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`${title} Aktionen`}
-                        aria-haspopup="dialog"
-                        title="App-Aktionen"
-                        onClick={() => setActiveAppMenuId(tile.id)}
-                        className="grid h-11 w-11 place-items-center rounded-full border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                      >
-                        <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                    </div>
-                  )}
                 </div>
               );
             })}
           </nav>
 
           {isEditingHub && (
-            <div className="mt-6 max-w-xl space-y-5">
+            <div className="mt-6 max-w-xl space-y-5" data-home-press-ignore="true">
               {renamingTile && (
                 <form
                   onSubmit={saveRename}

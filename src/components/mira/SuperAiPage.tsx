@@ -83,6 +83,7 @@ import {
   parseAiResponse,
   type PlanFeedback,
 } from "@/lib/ai-plan";
+import { isExplicitMiraCodeRequest } from "@/lib/mira-response-policy";
 import { getMiraSpeechSettings, prepareMiraSpeechText } from "@/lib/mira-voice";
 import { createMiraChatTitle } from "@/lib/mira-chat-title";
 import {
@@ -1140,7 +1141,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
       });
       if (generation !== generationRef.current) return null;
       if (!options.preserveComposer) setAttachments([]);
-      const parsed = parseAiResponse(res.reply);
+      const parsed = parseAiResponse(res.reply, {
+        preserveCode: isExplicitMiraCodeRequest(text),
+      });
       const plan = parsed.plan ? applyPlanFeedback(parsed.plan, lastFeedback) : undefined;
       const assistantText =
         parsed.reply || (plan ? "Hier ist dein unverbindlicher Trainingsvorschlag." : res.reply);

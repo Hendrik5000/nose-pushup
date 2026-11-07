@@ -442,16 +442,80 @@ export function parseMarketplaceMiraManifestReply(reply: unknown): MarketplaceAu
   if (typeof reply !== "string" || reply.length > MARKETPLACE_MAX_MANIFEST_BYTES * 2) {
     throw new Error("Mira-Antwort ist leer oder zu groß.");
   }
-  let jsonText = reply.trim();
-  const codeFence = /^```(?:json)?\s*\n?([\s\S]*?)\n?```$/i.exec(jsonText);
-  if (codeFence) jsonText = codeFence[1].trim();
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(jsonText) as unknown;
-  } catch {
-    throw new Error("Mira hat kein gültiges JSON-Manifest zurückgegeben. Bitte neu entwerfen.");
+  const text = reply.trim();
+  const candidates = [text];
+  const codeFence = /^```(?:json)?\s*\n?([\s\S]*?)\n?```$/i.exec(text);
+  if (codeFence) candidates.unshift(codeFence[1].trim());
+  const trailing = extractTrailingMarketplaceJson(text);
+  if (trailing && !candidates.includes(trailing)) candidates.push(trailing);
+
+  let lastError: unknown;
+  for (const candidate of candidates) {
+    try {
+      let parsed: unknown = JSON.parse(candidate) as unknown;
+      if (typeof parsed === "string") parsed = JSON.parse(parsed) as unknown;
+      if (isRecord(parsed) && hasOnlyKeys(parsed, ["manifest"], ["reply"])) {
+        if (parsed.reply !== undefined && typeof parsed.reply !== "string") continue;
+        parsed = parsed.manifest;
+      }
+      return validateMarketplaceAuthoredManifest(parsed);
+    } catch (error) {
+      lastError = error;
+    }
   }
-  return validateMarketplaceAuthoredManifest(parsed);
+  if (
+    lastError instanceof Error &&
+    /nicht unterstützte Felder|Manifestversion|Symbol|Block|Alo-App|Spiel/i.test(lastError.message)
+  )
+    throw lastError;
+  throw new Error("Mira hat kein gültiges JSON-Manifest zurückgegeben. Bitte neu entwerfen.");
+}
+
+function extractTrailingMarketplaceJson(text: string): string | null {
+  let source = text.trim();
+  if (source.endsWith("```")) source = source.slice(0, -3).trimEnd();
+  for (let start = 0; start < source.length; start += 1) {
+    if (source[start] !== "{" && source[start] !== '"') continue;
+    const end = findJsonValueEnd(source, start);
+    if (end === null || source.slice(end).trim()) continue;
+    return source.slice(start, end);
+  }
+  return null;
+}
+
+function findJsonValueEnd(source: string, start: number): number | null {
+  const opening = source[start];
+  if (opening === '"') {
+    let escaped = false;
+    for (let index = start + 1; index < source.length; index += 1) {
+      const character = source[index];
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') return index + 1;
+    }
+    return null;
+  }
+  if (opening !== "{") return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < source.length; index += 1) {
+    const character = source[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+    if (character === '"') inString = true;
+    else if (character === "{") depth += 1;
+    else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) return index + 1;
+    }
+  }
+  return null;
 }
 
 /** One explicit Mira request; no chat history, attachments, unrelated app context, or automatic persistence. */

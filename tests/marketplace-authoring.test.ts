@@ -366,7 +366,7 @@ test("Mira receives one explicit goal and fixed action list, without history, at
       sendCount += 1;
       captured = outgoing;
       return {
-        reply: JSON.stringify(VALID_MANIFEST),
+        reply: `Hier ist dein Entwurf:\\n\\n${JSON.stringify({ reply: "Lokale Vorschau", manifest: VALID_MANIFEST })}`,
         provider: "lovable",
         model: "test",
         task: "general",
@@ -476,7 +476,7 @@ test("published app matching is exact-name based and excludes other admins' apps
   });
 });
 
-test("Mira response parser requires a complete JSON object and validates fenced JSON identically", () => {
+test("Mira response parser extracts only validated manifests from wrapped, escaped or prefaced JSON", () => {
   assert.deepEqual(
     parseMarketplaceMiraManifestReply(JSON.stringify(VALID_MANIFEST)),
     validateMarketplaceAuthoredManifest(VALID_MANIFEST),
@@ -489,9 +489,19 @@ test("Mira response parser requires a complete JSON object and validates fenced 
     parseMarketplaceMiraManifestReply(JSON.stringify(VALID_GAME_MANIFEST)),
     validateMarketplaceAuthoredManifest(VALID_GAME_MANIFEST),
   );
-  assert.throws(
-    () => parseMarketplaceMiraManifestReply(`Hier ist die App: ${JSON.stringify(VALID_MANIFEST)}`),
-    /JSON-Manifest/,
+  assert.deepEqual(
+    parseMarketplaceMiraManifestReply(JSON.stringify(JSON.stringify(VALID_MANIFEST))),
+    validateMarketplaceAuthoredManifest(VALID_MANIFEST),
+  );
+  assert.deepEqual(
+    parseMarketplaceMiraManifestReply(`Hier ist die App:\\n\\n${JSON.stringify(VALID_MANIFEST)}`),
+    validateMarketplaceAuthoredManifest(VALID_MANIFEST),
+  );
+  assert.deepEqual(
+    parseMarketplaceMiraManifestReply(
+      JSON.stringify({ reply: "Vorschau", manifest: VALID_MANIFEST }),
+    ),
+    validateMarketplaceAuthoredManifest(VALID_MANIFEST),
   );
   assert.throws(() => parseMarketplaceMiraManifestReply("{not json}"), /JSON-Manifest/);
   assert.throws(() => parseMarketplaceMiraManifestReply(`${"x".repeat(40_000)}`), /zu groß/);

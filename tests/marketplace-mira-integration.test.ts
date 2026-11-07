@@ -11,6 +11,7 @@ const appViewer = read("components/marketplace/MarketplacePublishedAppViewer.tsx
 const marketplaceRoute = read("routes/_authenticated/marketplace.tsx");
 const iconRegistry = read("components/marketplace/MarketplaceIcon.tsx");
 const chatIntent = read("lib/marketplace-chat-intent.ts");
+const authoring = read("lib/marketplace-authoring.ts");
 const manifestRenderer = read("components/marketplace/MarketplaceManifestView.tsx");
 
 test("Alo apps are authored from ordinary Mira chat messages without a separate builder", () => {
@@ -48,6 +49,18 @@ test("the local chat preview uses the fixed manifest renderer and inline explici
   assert.match(draftPreview, /Ja, veröffentlichen/);
   assert.match(draftPreview, /noch nicht veröffentlicht/);
   assert.doesNotMatch(draftPreview, /\bDialog(?:Content|Description)?\b/);
+});
+
+test("Mira authoring shows only a validated structured manifest as the local chat preview", () => {
+  assert.match(authoring, /extractTrailingMarketplaceJson/);
+  assert.match(authoring, /return validateMarketplaceAuthoredManifest\(parsed\)/);
+  const manifestIndex = miraPage.indexOf(
+    "const manifest = await generateMarketplaceManifestDraft(",
+  );
+  const previewStateIndex = miraPage.indexOf("setMarketplaceDraft({", manifestIndex);
+  assert.ok(manifestIndex >= 0 && previewStateIndex > manifestIndex);
+  assert.match(draftPreview, /Lokale Vorschau · noch nicht veröffentlicht/);
+  assert.match(draftPreview, /<MarketplaceManifestView manifest=\{manifest\} preview \/>/);
 });
 
 test("Mira game requests render a directly playable local quiz instead of a generic info app", () => {
