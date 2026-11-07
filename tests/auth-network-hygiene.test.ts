@@ -56,5 +56,4 @@ test("Mira and Coach reuse the authenticated route user instead of fetching it a
   assert.match(coachRoute, /<SuperAiPage userId=\{user\.id\} \/>/);
   assert.match(miraPage, /userId: string/);
   assert.doesNotMatch(miraPage, /supabase\.auth\.getUser\(\)/);
-  assert.match(miraPage, /<MarketplaceMiraAuthoring userId=\{userId\} \/>/);
 });

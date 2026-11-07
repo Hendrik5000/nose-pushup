@@ -1,27 +1,50 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
-const miraEntry = read("components/marketplace/MarketplaceMiraAuthoring.tsx");
 const miraPage = read("components/mira/SuperAiPage.tsx");
+const draftPreview = read("components/marketplace/MiraMarketplaceDraftPreview.tsx");
 const appCatalog = read("components/marketplace/MarketplaceAppCatalog.tsx");
 const customApps = read("components/marketplace/MarketplaceCustomApps.tsx");
 const marketplaceRoute = read("routes/_authenticated/marketplace.tsx");
 const iconRegistry = read("components/marketplace/MarketplaceIcon.tsx");
 
-test("Mira exposes the existing app authoring tool only after server-verified admin access", () => {
-  assert.match(miraPage, /<MarketplaceMiraAuthoring userId=\{userId\} \/>/);
-  assert.match(miraEntry, /useServerFn\(getAdminAreaAccess\)/);
-  assert.match(miraEntry, /isMarketplaceAdminAccessGranted/);
-  assert.match(miraEntry, /if \(!isAdmin\) return null/);
-  assert.match(miraEntry, /await checkAdminAccess\(\)/);
-  assert.match(miraEntry, /<MarketplaceCustomApps userId=\{userId\} isAdmin=\{isAdmin\} \/>/);
-  assert.match(miraEntry, /keine Alo-Website-Quelltexte oder beliebigen\s+Skripte/);
-  assert.match(
-    customApps,
-    /Frühere Chats, Anhänge[\s\S]*?Gesundheits- oder Trainingsdaten werden nicht automatisch/,
+test("Alo apps are authored from ordinary Mira chat messages without a separate builder", () => {
+  assert.doesNotMatch(miraPage, /MarketplaceMiraAuthoring/);
+  assert.equal(
+    existsSync(
+      new URL("../src/components/marketplace/MarketplaceMiraAuthoring.tsx", import.meta.url),
+    ),
+    false,
   );
+  assert.match(miraPage, /classifyMarketplaceChatIntent/);
+  assert.match(miraPage, /await checkMarketplaceAdmin\(\)/);
+  assert.match(miraPage, /generateMarketplaceManifestDraft\(/);
+  assert.match(miraPage, /role: "user", content: text/);
+  assert.match(miraPage, /previousManifest/);
+  assert.match(miraPage, /MiraMarketplaceDraftPreview/);
+  assert.match(miraPage, /confirmed: true as const/);
+  assert.match(miraPage, /angehängten Dateien habe ich für diesen Entwurf nicht gesendet/);
+  assert.doesNotMatch(
+    customApps,
+    /ADMIN-APP-BUILDER|Was soll die App tun\?|Mit Mira entwerfen|Mit Mira bearbeiten/,
+  );
+  assert.doesNotMatch(customApps, /generateMarketplaceManifestDraft/);
+  assert.match(customApps, /Widerrufen …/);
+  assert.match(
+    marketplaceRoute,
+    /<MarketplaceCustomApps userId=\{userId\} isAdmin=\{isMarketplaceAdmin\}/,
+  );
+});
+
+test("the local chat preview uses the fixed manifest renderer and inline explicit publication confirmation", () => {
+  assert.match(draftPreview, /<MarketplaceManifestView manifest=\{manifest\} preview \/>/);
+  assert.match(draftPreview, /describeMarketplaceAuthoredPermissions\(manifest\)/);
+  assert.match(draftPreview, /role="group"/);
+  assert.match(draftPreview, /Ja, veröffentlichen/);
+  assert.match(draftPreview, /noch nicht veröffentlicht/);
+  assert.doesNotMatch(draftPreview, /\bDialog(?:Content|Description)?\b/);
 });
 
 test("curated Marketplace catalog uses icon-name tiles and full-screen detail permissions/actions", () => {
@@ -36,14 +59,13 @@ test("curated Marketplace catalog uses icon-name tiles and full-screen detail pe
   assert.match(appCatalog, /onOpen\(selected\.id\)/);
 });
 
-test("published admin apps share the icon grid and a full-screen download/details flow", () => {
+test("published admin apps keep their icon grid and full-screen download/details flow", () => {
   assert.match(customApps, /MarketplaceIcon\s+icon=\{app\.manifest\.icon\}/);
   assert.match(customApps, /grid-cols-3[\s\S]*lg:grid-cols-6/);
   assert.match(customApps, /setSelectedAppId\(app\.appId\)/);
   assert.match(customApps, /!h-\[100dvh\] !w-screen !max-w-none/);
   assert.match(customApps, /Herunterladen & installieren/);
   assert.match(customApps, /AuthoredPermissionList manifest=\{selectedApp\.manifest\}/);
-  assert.match(customApps, /Mit Mira bearbeiten/);
   assert.match(customApps, /MarketplaceManifestView/);
 });
 
