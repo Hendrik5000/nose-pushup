@@ -1236,7 +1236,9 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                       onOpen={(url, name) => setLightbox({ url, name })}
                     />
                   )}
-                  {m.content && <div className="whitespace-pre-wrap break-words">{m.content}</div>}
+                  {m.content && (
+                    <div className="whitespace-pre-wrap break-words select-text">{m.content}</div>
+                  )}
                   {m.edited_at && <div className="mt-0.5 text-[10px] opacity-60">(bearbeitet)</div>}
                 </div>
 

@@ -120,9 +120,11 @@ export function NotificationSettings() {
 
   return (
     <div className="space-y-3">
-      <div
-        onClick={toggleLocal}
-        className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all ${
+      <button
+        type="button"
+        onClick={() => void toggleLocal()}
+        aria-pressed={enabled}
+        className={`flex w-full cursor-pointer items-center justify-between rounded-2xl border p-4 text-left transition-all ${
           enabled ? "border-primary/50 bg-primary/5" : "border-border bg-secondary/40"
         }`}
       >
@@ -138,10 +140,13 @@ export function NotificationSettings() {
             {denied && <p className="text-[10px] text-muted-foreground">Berechtigung blockiert</p>}
           </div>
         </div>
-      </div>
-      <div
-        onClick={!loading ? togglePush : undefined}
-        className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all ${
+      </button>
+      <button
+        type="button"
+        onClick={() => void togglePush()}
+        aria-pressed={pushEnabled}
+        disabled={loading}
+        className={`flex w-full cursor-pointer items-center justify-between rounded-2xl border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
           pushEnabled ? "border-primary/50 bg-primary/5" : "border-border bg-secondary/40"
         }`}
       >
@@ -160,7 +165,7 @@ export function NotificationSettings() {
             </p>
           </div>
         </div>
-      </div>
+      </button>
       {enabled && (
         <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 p-4">
           <div className="flex items-center gap-4">
