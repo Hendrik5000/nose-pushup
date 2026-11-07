@@ -175,7 +175,12 @@ export function editMessage(userId: string, messageId: string, content: string) 
 
 export function deleteMessage(userId: string, messageId: string) {
   const store = loadChatStore(userId);
-  store.messages = store.messages.filter((m) => m.id !== messageId || m.user_id !== userId);
+  const target = store.messages.find((m) => m.id === messageId && m.user_id === userId);
+  if (!target) return;
+
+  store.messages = store.messages
+    .filter((m) => m.id !== messageId)
+    .map((m) => (m.reply_to_id === messageId ? { ...m, reply_to_id: null } : m));
   store.reactions = store.reactions.filter((r) => r.message_id !== messageId);
   saveChatStore(userId, store);
 }

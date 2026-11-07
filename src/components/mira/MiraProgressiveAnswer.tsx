@@ -51,9 +51,16 @@ export function MiraProgressiveAnswer({
     setReveal({ text, visibleLength: 0, animating: true });
 
     const step = (now: number) => {
-      const progress = Math.min(1, (now - startedAt) / plan.durationMs);
-      const boundaryCount =
-        progress >= 1 ? plan.boundaries.length : Math.floor(progress * plan.boundaries.length);
+      const elapsedMs = now - startedAt;
+      const progress = Math.min(1, elapsedMs / plan.durationMs);
+      let boundaryCount = 0;
+      while (
+        boundaryCount < plan.boundaryTimesMs.length &&
+        elapsedMs >= plan.boundaryTimesMs[boundaryCount]
+      ) {
+        boundaryCount += 1;
+      }
+      if (progress >= 1) boundaryCount = plan.boundaries.length;
       if (boundaryCount !== lastBoundary) {
         lastBoundary = boundaryCount;
         const visibleLength = plan.boundaries[boundaryCount - 1] ?? 0;

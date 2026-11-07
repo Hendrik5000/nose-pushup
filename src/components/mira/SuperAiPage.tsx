@@ -341,8 +341,10 @@ export function SuperAiPage({
   const [messages, setMessages] = useState<Msg[]>(() => loadSessions()[0]?.messages ?? []);
   const [input, setInputState] = useState(() => readMiraDraft(loadSessions()[0]?.id ?? ""));
   const inputRef = useRef(input);
+  const inputRevisionRef = useRef(0);
   const setInput = (value: string | ((previous: string) => string)) => {
     const next = typeof value === "function" ? value(inputRef.current) : value;
+    inputRevisionRef.current += 1;
     inputRef.current = next;
     setInputState(next);
   };
@@ -441,6 +443,7 @@ export function SuperAiPage({
           ? `${current}${/\s$/.test(current) ? "" : " "}${transcript}`
           : transcript;
         inputRef.current = next;
+        inputRevisionRef.current += 1;
         setInputState(next);
       },
       onInterimTranscript: (transcript) => {
@@ -491,6 +494,7 @@ export function SuperAiPage({
     if (restoreDraft && wasOpen) {
       const draft = draftBeforeDictationRef.current;
       inputRef.current = draft;
+      inputRevisionRef.current += 1;
       setInputState(draft);
     }
   }, []);
@@ -844,6 +848,7 @@ export function SuperAiPage({
     history = messages,
     options: MiraSubmitOptions = {},
   ): Promise<string | null> => {
+    const composerRevisionAtStart = inputRevisionRef.current;
     const text = (textOverride ?? input).trim();
     const submittedAttachments = options.includeAttachments === false ? [] : attachments;
     if ((!text && !submittedAttachments.length) || loading || sendingRef.current) return null;
@@ -888,6 +893,7 @@ export function SuperAiPage({
 
       if (hasMarketplaceAdminAccess) {
         const submissionSessionId = activeId;
+        let submittedComposerRevision = composerRevisionAtStart;
         let submittedComposerText: string | null = null;
         try {
           let target: MarketplaceMiraDraftTarget | null = null;
@@ -934,8 +940,12 @@ export function SuperAiPage({
             textOverride,
             options.preserveComposer === true,
           );
+          if (inputRevisionRef.current !== composerRevisionAtStart) {
+            submittedComposerText = null;
+          }
           if (submittedComposerText !== null) {
             setInput("");
+            submittedComposerRevision = inputRevisionRef.current;
             try {
               putAlo("draft", { target: "mira", text: "" }, miraDraftId(submissionSessionId));
             } catch {
@@ -1011,6 +1021,8 @@ export function SuperAiPage({
             submittedSessionId: submissionSessionId,
             currentText: inputRef.current,
             submittedText: submittedComposerText,
+            currentRevision: inputRevisionRef.current,
+            submittedRevision: submittedComposerRevision,
           });
           if (restoredComposerText !== null) {
             setInput(restoredComposerText);
@@ -1057,6 +1069,7 @@ export function SuperAiPage({
       textOverride,
       options.preserveComposer === true,
     );
+    let submittedComposerRevision = composerRevisionAtStart;
     const submissionSessionId = activeId;
     setSportAiView("chat");
 
@@ -1081,6 +1094,7 @@ export function SuperAiPage({
     setLoading(true);
     if (submittedComposerText !== null) {
       setInput("");
+      submittedComposerRevision = inputRevisionRef.current;
       try {
         putAlo("draft", { target: "mira", text: "" }, miraDraftId(submissionSessionId));
       } catch {
@@ -1176,6 +1190,8 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
         submittedSessionId: submissionSessionId,
         currentText: inputRef.current,
         submittedText: submittedComposerText,
+        currentRevision: inputRevisionRef.current,
+        submittedRevision: submittedComposerRevision,
       });
       if (restoredComposerText !== null) {
         setInput(restoredComposerText);

@@ -52,3 +52,18 @@ export function sumTrainingWeekReps(records: readonly TrainingRecord[], now = ne
     return total + count;
   }, 0);
 }
+
+/** Counts saved workout records in the current local Monday-to-Monday week. */
+export function countTrainingWeekSessions(
+  records: readonly TrainingRecord[],
+  now = new Date(),
+): number {
+  const { startInclusive, endExclusive } = getTrainingWeekBounds(now);
+  const start = Date.parse(startInclusive);
+  const end = Date.parse(endExclusive);
+
+  return records.reduce((total, record) => {
+    const createdAt = record.created_at ? Date.parse(record.created_at) : Number.NaN;
+    return Number.isFinite(createdAt) && createdAt >= start && createdAt < end ? total + 1 : total;
+  }, 0);
+}
