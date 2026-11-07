@@ -177,7 +177,7 @@ test("attachment preview, explicit submit, microphone and accessible file limits
   assert.match(chat, /disabled=\{loading \|\| \(!input.trim\(\) && !attachments.length\)\}/);
   assert.match(chat, /<MiraAttachmentPolicy \/>/);
   const attachmentPolicy = read("components/mira/MiraAttachments.tsx");
-  for (const limit of ["4 Anhänge", "3 MB", "1 MB", "128 KB", "6000", "PDF: Google"])
+  for (const limit of ["4 Anhänge", "3 MB", "1 MB", "128 KB", "10.000", "PDF: Google"])
     assert.ok(attachmentPolicy.includes(limit));
 });
 
