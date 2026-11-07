@@ -202,7 +202,7 @@ function HomeAppHub({
   avatarUrl: string | null | undefined;
 }) {
   const { user } = Route.useRouteContext();
-  const accountSyncMessage = useHomeAppAccountSync(user.id);
+  useHomeAppAccountSync(user.id);
   const activeUserIdRef = useRef<string | null>(user.id);
   activeUserIdRef.current = user.id;
   useEffect(() => {
@@ -1201,14 +1201,6 @@ function HomeAppHub({
               {settingsError || marketplaceStorageError}
             </p>
           )}
-          <p
-            className="mt-4 max-w-xl text-xs text-muted-foreground"
-            role="status"
-            data-home-account-sync
-          >
-            {accountSyncMessage} Reihenfolge, Hintergründe und Aktionsfreigaben bleiben auf diesem
-            Gerät.
-          </p>
           <p className="sr-only" role="status" aria-live="polite">
             {homeStatus}
           </p>
