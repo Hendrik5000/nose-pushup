@@ -80,7 +80,7 @@ test("reference empty stage is the simple spark greeting while stored replies an
   assert.match(stage, /mira-chat-welcome-mark[\s\S]*?<MiraSpark/);
   for (const component of ["MiraProgressiveAnswer", "MiraInteractiveCard", "MiraVisualAnswerCard"])
     assert.ok(stage.includes(`<${component}`), component);
-  assert.match(stage, /\{messages.map\(\(m, i\) => \(/);
+  assert.match(stage, /\{displayMessages.map\(\(m, i\) => \(/);
 });
 
 test("capsule keeps attachment, text, hands-free, dictation and explicit submit in screenshot order", () => {
@@ -208,7 +208,7 @@ test("responsive sketch layout removes the empty frame but lets real chat histor
     sport.indexOf('className="mira-chat-bottom-row'),
   );
   assert.match(stageMarkup, /messages\.length === 0[\s\S]*?mira-chat-welcome/);
-  assert.match(stageMarkup, /messages\.map\(/);
+  assert.match(stageMarkup, /displayMessages\.map\(/);
 });
 
 test("reference CSS defeats legacy grid/transparent-stage rules while retaining scrolling, touch and theme tokens", () => {
