@@ -9,11 +9,14 @@ import {
   removeMiraAttachment,
   assertMiraAttachmentProvider,
   miraAttachmentText,
+  includeMiraTextAttachments,
+  miraInputCharacterCount,
   openAiAttachmentParts,
   googleAttachmentParts,
   anthropicAttachmentParts,
   MIRA_FILE_LIMIT,
   MIRA_TEXT_FILE_LIMIT,
+  MIRA_ATTACHMENT_TEXT_LIMIT,
   MIRA_FILE_ACCEPT,
 } from "../src/lib/mira-attachments.ts";
 import { fetchAiProvider } from "../src/lib/ai-provider-fetch.ts";
@@ -131,16 +134,19 @@ test("binary signatures, forged sizes and unsafe encodings fail on both client a
   );
 });
 test("text is bounded without silent truncation, and read errors remain actionable", async () => {
+  assert.equal(MIRA_ATTACHMENT_TEXT_LIMIT, 10_000);
+  const accepted = await readMiraAttachments([new File(["a".repeat(10_000)], "max.txt")]);
+  assert.equal(accepted[0].text?.length, 10_000);
   await assert.rejects(
-    readMiraAttachments([new File(["a".repeat(6001)], "large.txt")]),
-    /6000 Zeichen/,
+    readMiraAttachments([new File(["a".repeat(10_001)], "large.txt")]),
+    /10000 Zeichen/,
   );
   await assert.rejects(
     readMiraAttachments([
-      new File(["a".repeat(3001)], "a.txt"),
-      new File(["b".repeat(3000)], "b.txt"),
+      new File(["a".repeat(5001)], "a.txt"),
+      new File(["b".repeat(5000)], "b.txt"),
     ]),
-    /6000 Zeichen/,
+    /10000 Zeichen/,
   );
   await assert.rejects(readMiraAttachments([new File(["  "], "empty.txt")]), /UTF-8/);
   const file = image();
@@ -165,6 +171,21 @@ test("PDF capability is gated, custom image routing rejected; no silently discar
 });
 test("provider payloads transmit images/PDF as binary parts, text as labelled untrusted context", async () => {
   const items = await readMiraAttachments([image(), pdf(), new File(["hello"], "Notes.txt")]);
+  const history = [
+    { role: "user" as const, content: "Earlier question" },
+    { role: "assistant" as const, content: "Earlier answer" },
+    { role: "user" as const, content: "Summarize these", attachments: items },
+  ];
+  const providerMessages = includeMiraTextAttachments(history);
+  assert.equal(providerMessages[0].content, history[0].content);
+  assert.equal(providerMessages[1].content, history[1].content);
+  assert.equal(providerMessages[2].attachments, items);
+  assert.match(providerMessages[2].content, /Summarize these[\s\S]*Notes.txt[\s\S]*hello/);
+  assert.equal(
+    miraInputCharacterCount(history, items),
+    history.reduce((total, message) => total + message.content.length, 0) +
+      miraAttachmentText(items).length,
+  );
   const openai = openAiAttachmentParts(items);
   assert.equal(openai.length, 1);
   assert.equal(openai[0].image_url.url, items[0].dataUrl);
@@ -176,6 +197,17 @@ test("provider payloads transmit images/PDF as binary parts, text as labelled un
   assert.equal(anthropic[0].source.media_type, "image/png");
   assert.match(miraAttachmentText(items), /nicht vertrauenswürdiger Inhalt/);
   assert.match(miraAttachmentText(items), /Notes.txt[\s\S]*hello/);
+});
+test("the server includes text attachments before every provider call and enforces the same 12k budget", () => {
+  const server = read("lib/super-ai.functions.ts");
+  assert.match(server, /const providerMessages = includeMiraTextAttachments\(data\.messages\)/);
+  assert.match(server, /miraInputCharacterCount\(cleaned, attachments\)/);
+  assert.match(server, /const MAX_INPUT_CHARS = 12_000/);
+  const dispatchStart = server.indexOf("const providerMessages");
+  const dispatchEnd = server.indexOf("return {", dispatchStart);
+  assert.ok(dispatchEnd > dispatchStart);
+  const dispatch = server.slice(dispatchStart, dispatchEnd);
+  assert.equal((dispatch.match(/\bproviderMessages\b/g) ?? []).length, 6);
 });
 test("camera is retained separately from library/device pickers, with accessible removal and local previews", () => {
   const picker = read("components/mira/MiraAttachments.tsx");
@@ -196,6 +228,7 @@ test("camera is retained separately from library/device pickers, with accessible
     /fetch\(|readAsDataURL|readMiraAttachments\(|localStorage|showDirectoryPicker/,
   );
   assert.match(picker, /event.currentTarget.value = ""/);
+  assert.match(picker, /zusammen 10\.000 Zeichen/);
 });
 test("only deliberate submit sends attachments; failures preserve drafts and bytes never enter history", () => {
   const page = read("components/mira/SuperAiPage.tsx");

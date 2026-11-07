@@ -2,7 +2,8 @@ import { fetchAiProvider } from "@/lib/ai-provider-fetch";
 import {
   assertMiraAttachmentProvider,
   validateMiraAttachments,
-  miraAttachmentText,
+  includeMiraTextAttachments,
+  miraInputCharacterCount,
   openAiAttachmentParts,
   googleAttachmentParts,
   anthropicAttachmentParts,
@@ -334,9 +335,8 @@ export const superAiChat = createServerFn({ method: "POST" })
         throw new Error("Anhänge nur an der letzten Nutzernachricht erlaubt.");
       last.attachments = attachments;
     }
-    const attachmentChars = attachments.reduce((sum, item) => sum + (item.text?.length ?? 0), 0);
-    const totalChars = cleaned.reduce((n, m) => n + m.content.length, 0);
-    if (totalChars + attachmentChars > MAX_INPUT_CHARS) {
+    const totalChars = miraInputCharacterCount(cleaned, attachments);
+    if (totalChars > MAX_INPUT_CHARS) {
       throw new Error(`Eingabe zu lang (max. ${MAX_INPUT_CHARS} Zeichen insgesamt)`);
     }
     if (!raw.provider?.id) throw new Error("Kein Provider gewählt");
@@ -366,17 +366,22 @@ export const superAiChat = createServerFn({ method: "POST" })
       data.messages.flatMap((m) => m.attachments ?? []),
     );
 
+    const providerMessages = includeMiraTextAttachments(data.messages);
     const system = buildMiraSystemPrompt(data.systemExtra ?? "");
 
     let reply = "";
     if (p.id === "lovable") {
-      reply = await callLovable(p.model || "google/gemini-3-flash-preview", system, data.messages);
+      reply = await callLovable(
+        p.model || "google/gemini-3-flash-preview",
+        system,
+        providerMessages,
+      );
     } else if (p.id === "anthropic") {
       if (!p.apiKey) throw new Error("Anthropic API-Key fehlt");
-      reply = await callAnthropic(p.apiKey, p.model, system, data.messages);
+      reply = await callAnthropic(p.apiKey, p.model, system, providerMessages);
     } else if (p.id === "google") {
       if (!p.apiKey) throw new Error("Google API-Key fehlt");
-      reply = await callGoogle(p.apiKey, p.model, system, data.messages);
+      reply = await callGoogle(p.apiKey, p.model, system, providerMessages);
     } else if (p.id === "openai") {
       if (!p.apiKey) throw new Error("OpenAI API-Key fehlt");
       reply = await callOpenAICompat(
@@ -384,12 +389,12 @@ export const superAiChat = createServerFn({ method: "POST" })
         p.apiKey,
         p.model,
         system,
-        data.messages,
+        providerMessages,
       );
     } else if (p.id === "custom") {
       if (!p.apiKey || !p.baseUrl) throw new Error("Custom: API-Key und Base-URL nötig");
       const safeBase = await assertSafeCustomBaseUrl(p.baseUrl);
-      reply = await callOpenAICompat(safeBase, p.apiKey, p.model, system, data.messages);
+      reply = await callOpenAICompat(safeBase, p.apiKey, p.model, system, providerMessages);
     } else {
       throw new Error("Unbekannter Provider");
     }
