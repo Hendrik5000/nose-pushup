@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { ShieldCheck } from "lucide-react";
 import { AloHomeLink } from "@/components/AloHomeLink";
+import { FeatureReleaseDigestPanel } from "@/components/admin/FeatureReleaseDigestPanel";
 import {
   getAdminAreaAccess,
   getAdminRoleManagement,
@@ -106,9 +107,12 @@ function AdminOverview() {
           Verwaltungsbereiche
         </h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Weitere Admin-Funktionen können hier ergänzt werden.
+          Veröffentlichungen für alle Konten erfordern eine eigene Vorschau und ausdrückliche
+          Bestätigung.
         </p>
       </section>
+
+      <FeatureReleaseDigestPanel />
 
       {roleLoadError && (
         <p className="text-sm text-destructive" role="alert">

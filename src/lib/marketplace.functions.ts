@@ -6,6 +6,10 @@ import {
   validateMarketplaceAuthoredManifest,
   type MarketplaceAuthoredManifest,
 } from "@/lib/marketplace-authoring";
+import {
+  parseFeatureReleaseDigestRequest,
+  parseFeatureReleaseDigestResult,
+} from "@/lib/feature-release-digest";
 
 type ServerAuthContext = {
   userId: string;
@@ -157,6 +161,24 @@ function parsePublishResult(value: unknown) {
   }
   return Object.freeze({ appId: row.app_id.toLowerCase(), version: row.version });
 }
+
+export const publishFeatureReleaseDigest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(parseFeatureReleaseDigestRequest)
+  .handler(async ({ data, context }) => {
+    await requireMarketplaceAdmin(context as ServerAuthContext);
+    const { data: result, error } = await context.supabase.rpc(
+      "publish_feature_release_digest" as never,
+      {
+        p_release_key: data.releaseKey,
+        p_title: data.title,
+        p_body: data.body,
+        p_confirmed: data.confirmed,
+      } as never,
+    );
+    if (error) throw new Error("Feature-Digest konnte nicht ins Postfach eingereiht werden.");
+    return parseFeatureReleaseDigestResult(result);
+  });
 
 export const listMarketplaceCurrentApps = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
