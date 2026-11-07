@@ -407,10 +407,17 @@ function HomeAppHub({
         pendingHomeDragRef.current = null;
       }
     };
+    const cancelOnAdditionalTouch = (event: PointerEvent) => {
+      if (event.pointerType !== "touch" || event.isPrimary) return;
+      cancelHomeLongPress();
+      clearHomeTileDrag();
+    };
+    window.addEventListener("pointerdown", cancelOnAdditionalTouch, true);
     window.addEventListener("pointermove", cancelIfMoved, true);
     window.addEventListener("pointerup", cancelOnPointerEnd, true);
     window.addEventListener("pointercancel", cancelOnPointerEnd, true);
     return () => {
+      window.removeEventListener("pointerdown", cancelOnAdditionalTouch, true);
       window.removeEventListener("pointermove", cancelIfMoved, true);
       window.removeEventListener("pointerup", cancelOnPointerEnd, true);
       window.removeEventListener("pointercancel", cancelOnPointerEnd, true);
@@ -418,7 +425,11 @@ function HomeAppHub({
   }, []);
 
   const startHomeLongPress = (event: ReactPointerEvent<HTMLDivElement>, appId: string) => {
-    if ((event.pointerType !== "touch" && event.pointerType !== "pen") || event.button !== 0) {
+    if (
+      !event.isPrimary ||
+      (event.pointerType !== "touch" && event.pointerType !== "pen") ||
+      event.button !== 0
+    ) {
       return;
     }
     cancelHomeLongPress();
@@ -514,7 +525,8 @@ function HomeAppHub({
   };
 
   const beginHomeTileDrag = (event: ReactPointerEvent<HTMLDivElement>, appId: string) => {
-    if (!isEditingHub || !event.isPrimary || event.button !== 0) return;
+    // The primary left-button is validated on pointerdown; on pointermove, button may be -1.
+    if (!isEditingHub || !event.isPrimary) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     dragSourceAppIdRef.current = appId;

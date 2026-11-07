@@ -200,6 +200,16 @@ test("Home edit mode uses empty-area hold, direct icon drag, keyboard movement, 
     hub,
     /pendingHomeDragRef\.current = null;\s*\}\s*dragSourceAppIdRef\.current = null/,
   );
+  const beginDragStart = hub.indexOf("const beginHomeTileDrag");
+  const beginDragEnd = hub.indexOf("const moveHomeTileDrag", beginDragStart);
+  const beginDrag = hub.slice(beginDragStart, beginDragEnd);
+  assert.match(beginDrag, /if \(!isEditingHub \|\| !event\.isPrimary\) return/);
+  assert.doesNotMatch(beginDrag, /event\.button/);
+  assert.match(
+    hub,
+    /if \(isEditingHub && event\.isPrimary && event\.button === 0\)[\s\S]*?pendingHomeDragRef\.current =/,
+  );
+  assert.match(hub, /Math\.abs\(event\.clientX - pendingDrag\.x\) > 12/);
   assert.match(
     hub,
     /if \(isEditingHub\) \{\s*const pendingDrag = pendingHomeDragRef\.current;[\s\S]*?moveHomeTileDrag\(event\);/,
@@ -226,6 +236,21 @@ test("Home edit mode uses empty-area hold, direct icon drag, keyboard movement, 
   assert.match(hub, /forgetHomeAppPersonalization\(settings, uninstallTargetTile\.id\)/);
   assert.match(hub, /Der Marketplace-Eintrag bleibt erhalten/);
   assert.doesNotMatch(hub, /publishMarketplaceApp|revokeMarketplaceApp/);
+});
+
+test("a second touch cancels Home gestures and cannot arm another app long-press", () => {
+  assert.match(
+    hub,
+    /const cancelOnAdditionalTouch = \(event: PointerEvent\) => \{\s*if \(event\.pointerType !== "touch" \|\| event\.isPrimary\) return;\s*cancelHomeLongPress\(\);\s*clearHomeTileDrag\(\);/,
+  );
+  assert.match(hub, /window\.addEventListener\("pointerdown", cancelOnAdditionalTouch, true\)/);
+  assert.match(hub, /window\.removeEventListener\("pointerdown", cancelOnAdditionalTouch, true\)/);
+  const start = hub.slice(
+    hub.indexOf("const startHomeLongPress"),
+    hub.indexOf("const startEmptyHomeLongPress"),
+  );
+  assert.match(start, /!event\.isPrimary/);
+  assert.ok(start.indexOf("!event.isPrimary") < start.indexOf("cancelHomeLongPress()"));
 });
 
 test("secondary-section Home actions remain available in both visual variants", () => {
