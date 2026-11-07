@@ -1,8 +1,11 @@
 /**
  * Automatic client error reports.
- * Stored in localStorage (always) and optionally Supabase (if migrated).
+ * Full reports stay in localStorage; only a sanitized allowlist signal may leave the server.
  * Agent protocol: on next edit, read open reports and fix them.
  */
+
+import { sendSanitizedErrorReport } from "./error-reporting.functions";
+import { buildSanitizedErrorReport } from "./error-report-payload";
 
 export type ErrorReport = {
   id: string;
@@ -80,30 +83,6 @@ export function exportErrorReportsJson(): string {
   return JSON.stringify(getErrorReports(), null, 2);
 }
 
-async function trySupabaseInsert(report: ErrorReport) {
-  try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { data: userData } = await supabase.auth.getUser();
-    const row = {
-      id: report.id,
-      message: report.message.slice(0, 2000),
-      name: report.name?.slice(0, 200) ?? null,
-      stack: report.stack?.slice(0, 8000) ?? null,
-      route: report.route.slice(0, 500),
-      source: report.source.slice(0, 200),
-      severity: report.severity,
-      user_agent: report.userAgent?.slice(0, 500) ?? null,
-      user_id: userData.user?.id ?? null,
-      extra: report.extra ?? {},
-      created_at: report.ts,
-    };
-    // Table may not exist yet — ignore failures
-    await supabase.from("error_reports" as never).insert(row as never);
-  } catch {
-    // offline / missing table
-  }
-}
-
 export function reportError(
   error: unknown,
   context: {
@@ -115,7 +94,7 @@ export function reportError(
   if (typeof window === "undefined") return;
 
   const ser = serializeError(error);
-  // Deduplicate identical message+route within 30s
+  // Deduplicate identical message+route within 30s (local-only values).
   const existing = getErrorReports();
   const now = Date.now();
   const dup = existing.find(
@@ -141,18 +120,16 @@ export function reportError(
   };
 
   saveReports([report, ...existing].slice(0, MAX_REPORTS));
-  void trySupabaseInsert(report);
 
-  // Forward to Lovable if present
-  try {
-    window.__lovableEvents?.captureException?.(error, {
-      source: report.source,
-      route: report.route,
-      ...context.extra,
-    });
-  } catch {
-    // ignore
-  }
+  // Build this payload only from the three safe inputs; no Error or report fields pass through.
+  const sanitized = buildSanitizedErrorReport({
+    pathname: window.location.pathname,
+    source: context.source ?? "manual",
+    severity: context.severity ?? "error",
+  });
+  void sendSanitizedErrorReport(sanitized).catch(() => {
+    // Reporting must never create a second client error or telemetry event.
+  });
 }
 
 let installed = false;
