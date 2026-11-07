@@ -76,12 +76,16 @@ test("onboarding, swipe, hidden-by-default bottom navigation, and optional conte
 test("the shared upper Alo header is absent and area navigation lives in the app hub", () => {
   const layout = read("routes/_authenticated/route.tsx");
   const hub = read("routes/_authenticated/index.tsx");
+  const tileBuilder = hub.slice(
+    hub.indexOf("function buildHomeHubTiles"),
+    hub.indexOf("function HomeAppHub"),
+  );
   assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
   assert.match(layout, /<AppNavigation\s*\/>/);
-  assert.match(hub, /<HubAppIcon to="\/ai"/);
-  assert.match(hub, /<HubAppIcon to="\/chat"/);
-  assert.match(hub, /<HubAppIcon to="\/exercises"/);
-  assert.match(hub, /<HubAppIcon to="\/profile"/);
+  assert.match(tileBuilder, /id: "mira"[\s\S]*?to: "\/ai"/);
+  assert.match(tileBuilder, /id: "nexus"[\s\S]*?to: "\/chat"/);
+  assert.match(tileBuilder, /id: "health"[\s\S]*?to: "\/exercises"/);
+  assert.match(tileBuilder, /id: "settings"[\s\S]*?to: "\/profile"/);
 });
 
 // General defaults must not remove the original optional training helpers.

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="800" y1="0" x2="800" y2="900" gradientUnits="userSpaceOnUse"><stop stop-color="#293750"/><stop offset=".52" stop-color="#a06f75"/><stop offset="1" stop-color="#edb77e"/></linearGradient>
+    <radialGradient id="sun" cx="0" cy="0" r="1" gradientTransform="matrix(0 246 -246 0 1128 442)" gradientUnits="userSpaceOnUse"><stop stop-color="#fff1c1"/><stop offset=".55" stop-color="#ffc989" stop-opacity=".82"/><stop offset="1" stop-color="#ffc989" stop-opacity="0"/></radialGradient>
+    <linearGradient id="hill" x1="780" y1="512" x2="780" y2="900" gradientUnits="userSpaceOnUse"><stop stop-color="#705165"/><stop offset="1" stop-color="#2c3447"/></linearGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h1600v900H0z"/>
+  <circle cx="1128" cy="442" r="246" fill="url(#sun)"/>
+  <circle cx="1128" cy="442" r="93" fill="#ffe6b4" fill-opacity=".88"/>
+  <path fill="#fff0cf" fill-opacity=".18" d="M0 464c220-51 377-35 567 8 217 50 363 16 537-25 165-39 315-43 496-3v52c-217-32-365-19-537 22-203 48-371 67-578 14C320 487 169 482 0 520v-56Z"/>
+  <path fill="url(#hill)" d="M0 655c176-83 321-113 504-55 161 51 282 41 441-31 172-78 348-96 655-2v333H0V655Z"/>
+  <path fill="#222a3d" fill-opacity=".9" d="M0 777c195-111 327-97 498-36 172 61 287 54 462-24 208-94 404-38 640 44v139H0V777Z"/>
+  <path stroke="#ffe3b0" stroke-opacity=".35" stroke-width="3" d="M0 655c176-83 321-113 504-55 161 51 282 41 441-31 172-78 348-96 655-2"/>
+</svg>

@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import type { PrivateGameId } from "@/lib/private-game-policy";
 import { HOME_OTHER_AREAS } from "@/lib/home-app-menus";
 import { supabase } from "@/integrations/supabase/client";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
+import { MarketplaceIcon } from "@/components/marketplace/MarketplaceIcon";
+import { MarketplacePublishedAppViewer } from "@/components/marketplace/MarketplacePublishedAppViewer";
 import { MiraHandoff } from "@/components/alo/MiraHandoff";
 import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
 import { MiraSpark } from "@/components/mira/MiraSpark";
@@ -12,7 +14,48 @@ import {
   createBrowserSpeechRecognitionFactory,
   type MiraSpeechRecognitionLike,
 } from "@/lib/mira-voice-conversation";
-import { Search, Users, X } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Mic,
+  Pencil,
+  Search,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
+import {
+  EMPTY_HOME_APP_HUB_SETTINGS,
+  HOME_BACKGROUND_PRESETS,
+  HOME_DEFAULT_BACKGROUND,
+  clearHomeAppName,
+  loadHomeAppHubSettings,
+  loadHomeBackgroundImage,
+  moveHomeApp,
+  orderHomeAppIds,
+  prepareHomeBackgroundImage,
+  removeHomeBackgroundImage,
+  saveHomeAppHubSettings,
+  saveHomeBackgroundImage,
+  setHomeAppName,
+  setHomeBackground,
+  type HomeAppHubSettings,
+} from "@/lib/home-app-hub";
+import {
+  EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE,
+  loadMarketplacePublishedInstallState,
+  marketplacePublishedInstallStorageKey,
+  parseMarketplacePublishedInstallState,
+  saveMarketplacePublishedInstallState,
+  type MarketplacePublishedInstall,
+  type MarketplacePublishedInstallState,
+} from "@/lib/marketplace-authoring";
+import { isMarketplaceAdminAccessGranted } from "@/lib/marketplace";
+import {
+  MiraComposerPressAndHold,
+  MiraInlineDictationController,
+} from "@/lib/mira-inline-dictation";
 import "@/mira-home-overlay.css";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -28,6 +71,107 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
 });
 
+type HubAppRoute =
+  | "/ai"
+  | "/chat"
+  | "/exercises"
+  | "/profile"
+  | "/admin"
+  | "/marketplace"
+  | "/training"
+  | "/areas"
+  | "/tools";
+
+type HomeHubTile =
+  | {
+      kind: "standard";
+      id: string;
+      title: string;
+      artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
+      to: HubAppRoute;
+    }
+  | {
+      kind: "game";
+      id: string;
+      title: string;
+      artwork: "gridDefense" | "kupferkern";
+      game: PrivateGameId;
+    }
+  | { kind: "marketplace"; id: string; title: string; install: MarketplacePublishedInstall };
+
+function buildHomeHubTiles(
+  canSeeAdmin: boolean,
+  installs: readonly MarketplacePublishedInstall[],
+): HomeHubTile[] {
+  const tiles: HomeHubTile[] = [
+    { kind: "standard", id: "mira", title: "Mira", artwork: "mira", to: "/ai" },
+    { kind: "standard", id: "nexus", title: "Nexus Chat", artwork: "nexus", to: "/chat" },
+    { kind: "standard", id: "health", title: "Alo Health", artwork: "health", to: "/exercises" },
+    {
+      kind: "standard",
+      id: "settings",
+      title: "Einstellungen",
+      artwork: "settings",
+      to: "/profile",
+    },
+  ];
+  if (canSeeAdmin) {
+    tiles.push(
+      { kind: "standard", id: "admin", title: "Admin", artwork: "admin", to: "/admin" },
+      {
+        kind: "standard",
+        id: "marketplace",
+        title: "Marketplace",
+        artwork: "marketplace",
+        to: "/marketplace",
+      },
+      {
+        kind: "game",
+        id: "grid-defense",
+        title: "Grid Defense",
+        artwork: "gridDefense",
+        game: "grid-defense",
+      },
+      {
+        kind: "game",
+        id: "kupferkern",
+        title: "Kupferkern",
+        artwork: "kupferkern",
+        game: "kupferkern",
+      },
+    );
+  }
+  tiles.push(
+    {
+      kind: "standard",
+      id: "areas",
+      title: "Weitere Bereiche",
+      artwork: "more",
+      to: "/areas",
+    },
+    {
+      kind: "standard",
+      id: "training",
+      title: "Trainingsübersicht & Gym",
+      artwork: "training",
+      to: "/training",
+    },
+    { kind: "standard", id: "tools", title: "Alo-Werkzeuge", artwork: "tools", to: "/tools" },
+  );
+  if (canSeeAdmin) {
+    for (const install of installs) {
+      if (!install.enabled) continue;
+      tiles.push({
+        kind: "marketplace",
+        id: `marketplace:${install.appId}`,
+        title: install.manifestName ?? `Alo-App ${install.appId.slice(0, 8)}`,
+        install,
+      });
+    }
+  }
+  return tiles;
+}
+
 function HomeAppHub({
   displayName,
   avatarUrl,
@@ -37,92 +181,588 @@ function HomeAppHub({
 }) {
   const { user } = Route.useRouteContext();
   const [canSeeAdmin, setCanSeeAdmin] = useState(false);
+  const [installState, setInstallState] = useState<MarketplacePublishedInstallState>(
+    EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE,
+  );
+  const [marketplaceStorageError, setMarketplaceStorageError] = useState("");
+  const [settings, setSettings] = useState<HomeAppHubSettings>(EMPTY_HOME_APP_HUB_SETTINGS);
+  const [settingsError, setSettingsError] = useState("");
+  const [isEditingHub, setIsEditingHub] = useState(false);
+  const [renamingAppId, setRenamingAppId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [homeStatus, setHomeStatus] = useState("");
+  const [runningMarketplaceAppId, setRunningMarketplaceAppId] = useState<string | null>(null);
+  const [customBackgroundUrl, setCustomBackgroundUrl] = useState<string | null>(null);
+  const [backgroundBusy, setBackgroundBusy] = useState(false);
+  const [backgroundError, setBackgroundError] = useState("");
+  const backgroundInputRef = useRef<HTMLInputElement | null>(null);
+  const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
+
   useEffect(() => {
     let active = true;
     setCanSeeAdmin(false);
     void getAdminAreaAccess()
-      .then((allowed) => {
-        if (active && allowed === true) setCanSeeAdmin(true);
+      .then((access) => {
+        if (active) setCanSeeAdmin(isMarketplaceAdminAccessGranted(access));
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (active) setCanSeeAdmin(false);
+      });
     return () => {
       active = false;
     };
   }, [user.id]);
-  const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
 
-  return (
-    <section className="alo-tablet-home-hub mb-8" aria-labelledby="app-hub-title">
-      <header className="mb-7 flex items-center justify-between gap-3">
-        <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
-          Alo
-        </h1>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label="Überall suchen"
-            onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" }))}
-          >
-            <Search className="h-5 w-5" aria-hidden="true" />
-          </button>
-          <PostfachBell />
-          <Link
-            to="/profile"
-            hash="profile-training"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label="Freunde öffnen"
-            title="Freunde"
-          >
-            <Users className="h-5 w-5" aria-hidden="true" />
-          </Link>
-          <Link
-            to="/profile"
-            className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-foreground shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label="Profil und Einstellungen öffnen"
-            title="Profil und Einstellungen"
-          >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              initials
-            )}
-          </Link>
+  useEffect(() => {
+    try {
+      setSettings(loadHomeAppHubSettings(window.localStorage, user.id));
+      setSettingsError("");
+    } catch {
+      setSettings(EMPTY_HOME_APP_HUB_SETTINGS);
+      setSettingsError("Home-Einstellungen sind in diesem Browser nicht verfügbar.");
+    }
+  }, [user.id]);
+
+  useEffect(() => {
+    if (!canSeeAdmin) {
+      setInstallState(EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE);
+      setMarketplaceStorageError("");
+      return;
+    }
+    const load = () => {
+      try {
+        setInstallState(loadMarketplacePublishedInstallState(window.localStorage, user.id));
+        setMarketplaceStorageError("");
+      } catch {
+        setInstallState(EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE);
+        setMarketplaceStorageError("Installierte Apps sind in diesem Browser nicht verfügbar.");
+      }
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === marketplacePublishedInstallStorageKey(user.id)) load();
+    };
+    load();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [canSeeAdmin, user.id]);
+
+  const backgroundPreference = settings.background;
+  const backgroundLoadKey =
+    backgroundPreference.kind === "preset"
+      ? `preset:${backgroundPreference.presetId}`
+      : backgroundPreference.kind;
+
+  useEffect(() => {
+    let active = true;
+    let createdUrl: string | null = null;
+    setCustomBackgroundUrl(null);
+    if (backgroundLoadKey !== "custom") return;
+    void loadHomeBackgroundImage(user.id)
+      .then((blob) => {
+        if (!active) return;
+        if (!blob) {
+          setBackgroundError("Eigenes Hintergrundbild ist nicht mehr lokal vorhanden.");
+          return;
+        }
+        createdUrl = URL.createObjectURL(blob);
+        setCustomBackgroundUrl(createdUrl);
+        setBackgroundError("");
+      })
+      .catch(() => {
+        if (active) setBackgroundError("Eigenes Hintergrundbild konnte nicht geladen werden.");
+      });
+    return () => {
+      active = false;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [backgroundLoadKey, user.id]);
+
+  const tiles = buildHomeHubTiles(canSeeAdmin, installState.installs);
+  const visibleAppIds = tiles.map((tile) => tile.id);
+  const orderedTiles = orderHomeAppIds(visibleAppIds, settings.order).flatMap((appId) => {
+    const tile = tiles.find((candidate) => candidate.id === appId);
+    return tile ? [tile] : [];
+  });
+  const renamingTile = orderedTiles.find((tile) => tile.id === renamingAppId) ?? null;
+  const runningInstall = installState.installs.find(
+    (entry) => entry.appId === runningMarketplaceAppId && entry.enabled,
+  );
+  const backgroundUrl =
+    backgroundPreference.kind === "preset"
+      ? (HOME_BACKGROUND_PRESETS.find(({ id }) => id === backgroundPreference.presetId)?.src ??
+        null)
+      : backgroundPreference.kind === "custom"
+        ? customBackgroundUrl
+        : null;
+
+  const persistSettings = (next: HomeAppHubSettings, status: string) => {
+    try {
+      saveHomeAppHubSettings(window.localStorage, user.id, next);
+      setSettings(next);
+      setSettingsError("");
+      setHomeStatus(status);
+      return true;
+    } catch {
+      setSettingsError("Die Änderung konnte nicht lokal gespeichert werden.");
+      return false;
+    }
+  };
+
+  const persistInstallState = async (nextInput: unknown, status: string) => {
+    if (!isMarketplaceAdminAccessGranted(await getAdminAreaAccess())) {
+      setHomeStatus("Admin-Zugriff ist nicht mehr bestätigt. Die Änderung wurde blockiert.");
+      return false;
+    }
+    try {
+      const next = parseMarketplacePublishedInstallState(nextInput);
+      saveMarketplacePublishedInstallState(window.localStorage, user.id, next);
+      setInstallState(next);
+      setMarketplaceStorageError("");
+      setHomeStatus(status);
+      return true;
+    } catch {
+      setMarketplaceStorageError("Die lokale App-Änderung konnte nicht gespeichert werden.");
+      return false;
+    }
+  };
+
+  const saveRename = (event: ChangeEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!renamingAppId) return;
+    try {
+      const next = setHomeAppName(settings, renamingAppId, renameDraft);
+      if (persistSettings(next, "App-Name wurde nur auf diesem Gerät gespeichert.")) {
+        setRenamingAppId(null);
+        setRenameDraft("");
+      }
+    } catch (error) {
+      setSettingsError(error instanceof Error ? error.message : "Ungültiger App-Name.");
+    }
+  };
+
+  const resetRename = () => {
+    if (!renamingAppId) return;
+    try {
+      const next = clearHomeAppName(settings, renamingAppId);
+      if (persistSettings(next, "Standardname wiederhergestellt.")) {
+        setRenamingAppId(null);
+        setRenameDraft("");
+      }
+    } catch {
+      setSettingsError("Der Standardname konnte nicht wiederhergestellt werden.");
+    }
+  };
+
+  const uploadBackground = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    setBackgroundBusy(true);
+    setBackgroundError("");
+    try {
+      const image = await prepareHomeBackgroundImage(file);
+      await saveHomeBackgroundImage(user.id, image);
+      const next = setHomeBackground(settings, { kind: "custom" });
+      if (
+        persistSettings(next, "Eigenes Hintergrundbild wurde verkleinert und nur hier gespeichert.")
+      ) {
+        setBackgroundError("");
+      }
+    } catch (error) {
+      setBackgroundError(
+        error instanceof Error ? error.message : "Bild konnte nicht verarbeitet werden.",
+      );
+    } finally {
+      setBackgroundBusy(false);
+    }
+  };
+
+  const removeCustomBackground = async () => {
+    try {
+      await removeHomeBackgroundImage(user.id);
+      if (
+        persistSettings(
+          setHomeBackground(settings, HOME_DEFAULT_BACKGROUND),
+          "Eigenes Hintergrundbild lokal entfernt.",
+        )
+      ) {
+        setBackgroundError("");
+      }
+    } catch {
+      setBackgroundError("Eigenes Hintergrundbild konnte nicht entfernt werden.");
+    }
+  };
+
+  const renderTile = (tile: HomeHubTile, title: string) => {
+    if (tile.kind === "marketplace") {
+      const contents = (
+        <>
+          <span className="relative grid aspect-square w-full max-w-[96px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md">
+            <MarketplaceIcon icon={tile.install.icon ?? "hub"} className="h-8 w-8 text-primary" />
+          </span>
+          <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
+            {title}
+          </span>
+        </>
+      );
+      return isEditingHub ? (
+        <div className={HUB_APP_ICON_CLASS_NAME} aria-label={`${title}, Marketplace-App`}>
+          {contents}
         </div>
-      </header>
-      <nav
-        className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
-        aria-label="Alo-Apps"
-      >
-        <HubAppIcon to="/ai" title="Mira" artwork="mira" />
-        <HubAppIcon to="/chat" title="Nexus Chat" artwork="nexus" />
-        <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
-        <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
-        {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
-        {canSeeAdmin && <HubAppIcon to="/marketplace" title="Marketplace" artwork="marketplace" />}
-        {canSeeAdmin && (
-          <>
-            <HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" />
-            <HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" />
-          </>
-        )}
+      ) : (
+        <button
+          type="button"
+          className={HUB_APP_ICON_CLASS_NAME}
+          aria-label={`${title} öffnen`}
+          onClick={() => setRunningMarketplaceAppId(tile.install.appId)}
+        >
+          {contents}
+        </button>
+      );
+    }
+    if (isEditingHub) {
+      return (
+        <div className={HUB_APP_ICON_CLASS_NAME} aria-label={`${title}, Home-App`}>
+          <HubAppIconContents title={title} artwork={tile.artwork} />
+        </div>
+      );
+    }
+    if (tile.kind === "game") {
+      return <HubGameAppIcon game={tile.game} title={title} artwork={tile.artwork} />;
+    }
+    if (tile.to === "/areas") {
+      return (
         <Link
           to="/areas"
           className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
           aria-label={`Weitere Bereiche öffnen (${HOME_OTHER_AREAS.length})`}
         >
-          <HubAppIconContents title="Weitere Bereiche" artwork="more" />
+          <HubAppIconContents title={title} artwork={tile.artwork} />
         </Link>
-        <HubAppIcon to="/training" title="Trainingsübersicht & Gym" artwork="training" />
+      );
+    }
+    if (tile.to === "/tools") {
+      return (
         <Link
           to="/tools"
           className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
           aria-label="Alo-Werkzeuge öffnen"
         >
-          <HubAppIconContents title="Alo-Werkzeuge" artwork="tools" />
+          <HubAppIconContents title={title} artwork={tile.artwork} />
         </Link>
-      </nav>
-    </section>
+      );
+    }
+    return <HubAppIcon to={tile.to} title={title} artwork={tile.artwork} />;
+  };
+
+  return (
+    <>
+      <section
+        className={`alo-tablet-home-hub mb-8${backgroundUrl ? " relative isolate overflow-hidden rounded-3xl border border-border/40 p-4 sm:p-6" : ""}`}
+        aria-labelledby="app-hub-title"
+        style={
+          backgroundUrl
+            ? {
+                backgroundImage: `url("${backgroundUrl}")`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : undefined
+        }
+      >
+        {backgroundUrl && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-[inherit] bg-background/65 backdrop-blur-[2px]"
+          />
+        )}
+        <div className="relative z-10">
+          <header className="mb-7 flex items-center justify-between gap-3">
+            <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
+              Alo
+            </h1>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                aria-label="Überall suchen"
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" }))
+                }
+              >
+                <Search className="h-5 w-5" aria-hidden="true" />
+              </button>
+              <PostfachBell />
+              <Link
+                to="/profile"
+                hash="profile-training"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                aria-label="Freunde öffnen"
+                title="Freunde"
+              >
+                <Users className="h-5 w-5" aria-hidden="true" />
+              </Link>
+              <Link
+                to="/profile"
+                className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-foreground shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                aria-label="Profil und Einstellungen öffnen"
+                title="Profil und Einstellungen"
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  initials
+                )}
+              </Link>
+              <button
+                type="button"
+                aria-pressed={isEditingHub}
+                aria-label={isEditingHub ? "Home-Bearbeitung beenden" : "Home-Apps anpassen"}
+                onClick={() => {
+                  setIsEditingHub((editing) => !editing);
+                  setRenamingAppId(null);
+                }}
+                className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-semibold shadow-sm transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              >
+                {isEditingHub ? (
+                  <Check className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Pencil className="h-4 w-4" aria-hidden="true" />
+                )}
+                <span className="hidden sm:inline">{isEditingHub ? "Fertig" : "Anpassen"}</span>
+              </button>
+            </div>
+          </header>
+          <nav
+            className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
+            aria-label="Alo-Apps"
+          >
+            {orderedTiles.map((tile, index) => {
+              const title = settings.nameOverrides[tile.id] ?? tile.title;
+              return (
+                <div key={tile.id} className="relative min-w-0">
+                  {renderTile(tile, title)}
+                  {isEditingHub && (
+                    <div className="mt-2 flex items-center justify-center gap-1">
+                      <button
+                        type="button"
+                        aria-label={`${title} nach links verschieben`}
+                        title="Nach links verschieben"
+                        disabled={index === 0}
+                        onClick={() => {
+                          try {
+                            persistSettings(
+                              moveHomeApp(settings, visibleAppIds, tile.id, -1),
+                              "Home-App-Reihenfolge lokal gespeichert.",
+                            );
+                          } catch {
+                            setSettingsError("Diese App konnte nicht verschoben werden.");
+                          }
+                        }}
+                        className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card disabled:opacity-40"
+                      >
+                        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`${title} nach rechts verschieben`}
+                        title="Nach rechts verschieben"
+                        disabled={index === orderedTiles.length - 1}
+                        onClick={() => {
+                          try {
+                            persistSettings(
+                              moveHomeApp(settings, visibleAppIds, tile.id, 1),
+                              "Home-App-Reihenfolge lokal gespeichert.",
+                            );
+                          } catch {
+                            setSettingsError("Diese App konnte nicht verschoben werden.");
+                          }
+                        }}
+                        className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card disabled:opacity-40"
+                      >
+                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`${title} umbenennen`}
+                        title="Umbenennen"
+                        onClick={() => {
+                          setRenamingAppId(tile.id);
+                          setRenameDraft(settings.nameOverrides[tile.id] ?? tile.title);
+                          setSettingsError("");
+                        }}
+                        className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card"
+                      >
+                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+
+          {isEditingHub && (
+            <div className="mt-6 max-w-xl space-y-5">
+              {renamingTile && (
+                <form
+                  onSubmit={saveRename}
+                  className="space-y-3 rounded-2xl border border-border/70 bg-card/80 p-4"
+                >
+                  <label className="block space-y-2 text-sm font-semibold" htmlFor="home-app-name">
+                    <span>{renamingTile.title} – eigener Name</span>
+                    <input
+                      id="home-app-name"
+                      value={renameDraft}
+                      maxLength={48}
+                      onChange={(event) => setRenameDraft(event.target.value)}
+                      className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-normal"
+                    />
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="submit"
+                      className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                    >
+                      Name speichern
+                    </button>
+                    {settings.nameOverrides[renamingTile.id] && (
+                      <button
+                        type="button"
+                        onClick={resetRename}
+                        className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold"
+                      >
+                        Standardname
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setRenamingAppId(null)}
+                      className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold"
+                    >
+                      Abbrechen
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              <section
+                className="space-y-3 rounded-2xl border border-border/70 bg-card/80 p-4"
+                aria-label="Home-Hintergrund wählen"
+              >
+                <div>
+                  <h2 className="text-sm font-bold">Home-Hintergrund</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Presets oder ein eigenes Bild. Eigene Bilder werden verkleinert und
+                    ausschließlich lokal in diesem Browser gespeichert.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    aria-pressed={settings.background.kind === "none"}
+                    onClick={() =>
+                      persistSettings(
+                        setHomeBackground(settings, HOME_DEFAULT_BACKGROUND),
+                        "Kein Home-Hintergrundbild ausgewählt.",
+                      )
+                    }
+                    className="min-h-20 rounded-xl border border-border bg-background p-3 text-xs font-semibold"
+                  >
+                    Kein Bild
+                  </button>
+                  {HOME_BACKGROUND_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      aria-pressed={
+                        settings.background.kind === "preset" &&
+                        settings.background.presetId === preset.id
+                      }
+                      onClick={() =>
+                        persistSettings(
+                          setHomeBackground(settings, { kind: "preset", presetId: preset.id }),
+                          `${preset.label} als Home-Hintergrund gewählt.`,
+                        )
+                      }
+                      style={{
+                        backgroundImage: `linear-gradient(0deg, rgba(8,12,20,.68), rgba(8,12,20,.12)), url("${preset.src}")`,
+                      }}
+                      className="min-h-20 rounded-xl border border-border bg-cover bg-center p-3 text-left text-xs font-semibold text-white shadow-sm"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                  <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-primary/50 bg-primary/5 p-3 text-center text-xs font-semibold">
+                    <input
+                      ref={backgroundInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={(event) => void uploadBackground(event)}
+                    />
+                    <span>
+                      {backgroundBusy ? "Bild wird verarbeitet …" : "Eigenes Bild hochladen"}
+                    </span>
+                    <span className="text-[10px] font-normal text-muted-foreground">
+                      JPEG, PNG oder WebP · max. 10 MB
+                    </span>
+                  </label>
+                </div>
+                {settings.background.kind === "custom" && (
+                  <button
+                    type="button"
+                    onClick={() => void removeCustomBackground()}
+                    className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-semibold text-muted-foreground underline underline-offset-4"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    Eigenes Bild entfernen
+                  </button>
+                )}
+                {backgroundError && (
+                  <p role="alert" className="text-xs text-destructive">
+                    {backgroundError}
+                  </p>
+                )}
+              </section>
+            </div>
+          )}
+
+          {(settingsError || marketplaceStorageError) && (
+            <p
+              role="alert"
+              className="mt-4 max-w-xl rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm"
+            >
+              {settingsError || marketplaceStorageError}
+            </p>
+          )}
+          <p className="sr-only" role="status" aria-live="polite">
+            {homeStatus}
+          </p>
+        </div>
+      </section>
+      {runningInstall && (
+        <MarketplacePublishedAppViewer
+          userId={user.id}
+          appId={runningInstall.appId}
+          installedVersion={runningInstall.version}
+          displayName={
+            settings.nameOverrides[`marketplace:${runningInstall.appId}`] ??
+            runningInstall.manifestName ??
+            `Alo-App ${runningInstall.appId.slice(0, 8)}`
+          }
+          icon={runningInstall.icon ?? "hub"}
+          isAdmin={canSeeAdmin}
+          open={runningMarketplaceAppId !== null}
+          onOpenChange={(open) => {
+            if (!open) setRunningMarketplaceAppId(null);
+          }}
+          onInstallStateChange={persistInstallState}
+          onStatus={setHomeStatus}
+        />
+      )}
+    </>
   );
 }
 
@@ -429,11 +1069,29 @@ function MiraOverlayLauncher() {
   const { user } = Route.useRouteContext();
   const [open, setOpen] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [interimTranscript, setInterimTranscript] = useState("");
   const [listening, setListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [handoffRequest, setHandoffRequest] = useState<{ id: number; text: string } | null>(null);
   const recognitionRef = useRef<MiraSpeechRecognitionLike | null>(null);
+  const inlineDictationRef = useRef<MiraInlineDictationController | null>(null);
+  const pressAndHoldRef = useRef<MiraComposerPressAndHold | null>(null);
+  const holdTriggeredRef = useRef(false);
+  const canceledPointerIdRef = useRef<number | null>(null);
+  const suppressClickRef = useRef(false);
+  const suppressClickTimerRef = useRef<number | null>(null);
   const handoffIdRef = useRef(0);
+
+  const suppressNextClick = useCallback(() => {
+    suppressClickRef.current = true;
+    if (suppressClickTimerRef.current !== null) {
+      window.clearTimeout(suppressClickTimerRef.current);
+    }
+    suppressClickTimerRef.current = window.setTimeout(() => {
+      suppressClickRef.current = false;
+      suppressClickTimerRef.current = null;
+    }, 0);
+  }, []);
 
   const stopListening = () => {
     const recognition = recognitionRef.current;
@@ -495,35 +1153,111 @@ function MiraOverlayLauncher() {
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) stopListening();
-    else setVoiceError(null);
+    if (!nextOpen) {
+      stopListening();
+      inlineDictationRef.current?.cancel();
+      setInterimTranscript("");
+    } else setVoiceError(null);
     setOpen(nextOpen);
   };
 
   const continueToMira = () => {
+    if (listening) {
+      stopListening();
+      inlineDictationRef.current?.stop();
+      setVoiceError(
+        "Diktat beendet. Prüfe den erkannten Text und tippe danach erneut auf die Übergabe.",
+      );
+      return;
+    }
     const text = transcript.trim();
     if (!text) return;
     stopListening();
+    inlineDictationRef.current?.cancel();
     setOpen(false);
     handoffIdRef.current += 1;
     setHandoffRequest({ id: handoffIdRef.current, text });
   };
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const recognitionFactory = createBrowserSpeechRecognitionFactory();
+    const inlineDictation = new MiraInlineDictationController({
+      createRecognition: () => recognitionFactory?.() ?? null,
+      onTranscript: (recognized) =>
+        setTranscript((previous) => (previous ? `${previous} ${recognized}` : recognized)),
+      onInterimTranscript: setInterimTranscript,
+      onListeningChange: setListening,
+      onError: setVoiceError,
+    });
+    inlineDictationRef.current = inlineDictation;
+    const pressAndHold = new MiraComposerPressAndHold(
+      () => {
+        holdTriggeredRef.current = true;
+        setVoiceError(null);
+        setTranscript("");
+        setInterimTranscript("");
+        inlineDictation.start();
+      },
+      () => {
+        if (!holdTriggeredRef.current) return;
+        holdTriggeredRef.current = false;
+        inlineDictation.stop();
+        setInterimTranscript("");
+        setOpen(true);
+        suppressNextClick();
+      },
+      () => {
+        if (!holdTriggeredRef.current) return;
+        holdTriggeredRef.current = false;
+        inlineDictation.cancel();
+        setInterimTranscript("");
+        setVoiceError(null);
+        suppressNextClick();
+      },
+    );
+    pressAndHoldRef.current = pressAndHold;
+    return () => {
+      pressAndHold.reset();
+      canceledPointerIdRef.current = null;
+      inlineDictation.dispose();
       try {
         recognitionRef.current?.stop();
       } catch {
         // Recognition may already have ended.
       }
       recognitionRef.current = null;
-    },
-    [],
-  );
+      inlineDictationRef.current = null;
+      pressAndHoldRef.current = null;
+      if (suppressClickTimerRef.current !== null) {
+        window.clearTimeout(suppressClickTimerRef.current);
+        suppressClickTimerRef.current = null;
+      }
+    };
+  }, [suppressNextClick]);
 
   return (
     <>
       <div className={`alo-mira-home-launcher${handoffRequest ? " has-handoff" : ""}`}>
+        <p id="home-mira-hold-disclosure" className="sr-only">
+          Halte die Mira-Schaltfläche, um zu diktieren; loslassen beendet die Aufnahme. Je nach
+          Browser kann Sprache über einen Browser-Dienst erkannt werden. Der Text wird erst nach
+          deiner Prüfung und einem eigenen Tipp an Mira übergeben.
+        </p>
+        {(listening || interimTranscript) && (
+          <div className="alo-mira-home-live-transcript" role="status" aria-live="polite">
+            <span className="flex items-center gap-2 font-semibold">
+              <Mic className="h-4 w-4" aria-hidden="true" />
+              {listening ? "Sprich jetzt · loslassen beendet" : "Erkannt"}
+            </span>
+            {(transcript || interimTranscript) && (
+              <span className="mt-1 block font-normal">
+                {transcript}
+                {transcript && interimTranscript ? " " : ""}
+                <span className="text-muted-foreground">{interimTranscript}</span>
+              </span>
+            )}
+          </div>
+        )}
         {handoffRequest ? (
           <div className="alo-mira-home-handoff-actions">
             <MiraHandoff
@@ -554,10 +1288,63 @@ function MiraOverlayLauncher() {
           <button
             type="button"
             className="alo-mira-home-launcher-button"
-            aria-label="Mira öffnen und eine Frage stellen"
+            aria-label="Mira öffnen oder halten, um eine Frage zu diktieren"
+            aria-describedby="home-mira-hold-disclosure"
+            title="Tippen öffnet den Diktierdialog. Halten startet die Aufnahme; loslassen beendet sie."
             aria-haspopup="dialog"
             aria-expanded={open}
-            onClick={() => handleOpenChange(true)}
+            onPointerDown={(event) => {
+              if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
+              canceledPointerIdRef.current = null;
+              try {
+                event.currentTarget.setPointerCapture(event.pointerId);
+              } catch {
+                // Pointer capture is not supported in every browser.
+              }
+              pressAndHoldRef.current?.pointerDown(
+                event.pointerId,
+                event.clientX,
+                event.clientY,
+                event.isPrimary,
+              );
+            }}
+            onPointerMove={(event) => {
+              if (
+                pressAndHoldRef.current?.pointerMove(event.pointerId, event.clientX, event.clientY)
+              ) {
+                canceledPointerIdRef.current = event.pointerId;
+              }
+            }}
+            onPointerUp={(event) => {
+              const wasCanceled = canceledPointerIdRef.current === event.pointerId;
+              canceledPointerIdRef.current = null;
+              pressAndHoldRef.current?.pointerUp(event.pointerId);
+              if (wasCanceled) suppressNextClick();
+            }}
+            onPointerCancel={(event) => {
+              if (pressAndHoldRef.current?.pointerCancel(event.pointerId)) {
+                canceledPointerIdRef.current = event.pointerId;
+                suppressNextClick();
+              }
+            }}
+            onLostPointerCapture={(event) => {
+              if (pressAndHoldRef.current?.pointerCancel(event.pointerId)) {
+                canceledPointerIdRef.current = event.pointerId;
+                suppressNextClick();
+              }
+            }}
+            onContextMenu={(event) => event.preventDefault()}
+            onClick={() => {
+              if (suppressClickRef.current) {
+                suppressClickRef.current = false;
+                if (suppressClickTimerRef.current !== null) {
+                  window.clearTimeout(suppressClickTimerRef.current);
+                  suppressClickTimerRef.current = null;
+                }
+                return;
+              }
+              handleOpenChange(true);
+            }}
           >
             <MiraSpark />
           </button>

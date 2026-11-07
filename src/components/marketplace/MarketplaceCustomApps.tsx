@@ -1,5 +1,4 @@
 import { useServerFn } from "@tanstack/react-start";
-import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   AlertDialog,
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { MarketplaceIcon } from "@/components/marketplace/MarketplaceIcon";
-import { MarketplaceManifestView } from "@/components/marketplace/MarketplaceManifestView";
+import { MarketplacePublishedAppViewer } from "@/components/marketplace/MarketplacePublishedAppViewer";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import {
   describeMarketplaceAuthoredPermissions,
@@ -30,11 +29,7 @@ import {
   type MarketplacePublishedInstallState,
   type MarketplacePublishedVersion,
 } from "@/lib/marketplace-authoring";
-import {
-  getMarketplaceAuthorAction,
-  isMarketplaceAdminAccessGranted,
-  type MarketplaceHostAction,
-} from "@/lib/marketplace";
+import { isMarketplaceAdminAccessGranted } from "@/lib/marketplace";
 import {
   getMarketplaceAppVersion,
   listMarketplaceCurrentApps,
@@ -68,16 +63,12 @@ function AuthoredPermissionList({ manifest }: { manifest: MarketplaceAuthoredMan
 }
 
 export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
-  const navigate = useNavigate();
   const listApps = useServerFn(listMarketplaceCurrentApps);
   const getAppVersion = useServerFn(getMarketplaceAppVersion);
   const revokeApp = useServerFn(revokeMarketplaceApp);
   const [catalogState, setCatalogState] = useState<CatalogState>("loading");
   const [catalogError, setCatalogError] = useState("");
   const [apps, setApps] = useState<readonly MarketplacePublishedVersion[]>([]);
-  const [openedPinnedApps, setOpenedPinnedApps] = useState<
-    Record<string, { version: number; manifest: MarketplaceAuthoredManifest }>
-  >({});
   const [installState, setInstallState] = useState<MarketplacePublishedInstallState>(
     EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE,
   );
@@ -87,6 +78,7 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
     useState<MarketplacePublishedVersion | null>(null);
   const [status, setStatus] = useState("");
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [runningAppId, setRunningAppId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -172,7 +164,10 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
       const checked = await getAppVersion({ data: { appId: app.appId, version: app.version } });
       if (!isExpectedAppVersion(checked, app.appId, app.version))
         throw new Error("Version mismatch");
-      const next = installMarketplacePublishedApp(installState, checked.appId, checked.version);
+      const next = installMarketplacePublishedApp(installState, checked.appId, checked.version, {
+        name: checked.manifest.name,
+        icon: checked.manifest.icon,
+      });
       await persistInstallState(
         next,
         `„${checked.manifest.name}“ wurde lokal mit Version ${checked.version} installiert (deaktiviert).`,
@@ -181,34 +176,6 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
       setStatus(
         "Diese Veröffentlichung ist nicht verfügbar. Installieren wurde nicht gespeichert.",
       );
-      void refreshCatalog().catch(() => setCatalogState("error"));
-    }
-  };
-
-  const onLaunch = async (app: MarketplacePublishedVersion) => {
-    if (!isAdmin) return;
-    const installed = installState.installs.find((entry) => entry.appId === app.appId);
-    if (!installed?.enabled) return;
-    try {
-      const checked = await getAppVersion({
-        data: { appId: app.appId, version: installed.version },
-      });
-      if (!isExpectedAppVersion(checked, app.appId, installed.version))
-        throw new Error("Version mismatch");
-      setOpenedPinnedApps((current) => ({
-        ...current,
-        [app.appId]: { version: checked.version, manifest: checked.manifest },
-      }));
-      setStatus(
-        `„${checked.manifest.name}“ Version ${checked.version} wurde serverseitig geprüft.`,
-      );
-    } catch {
-      setOpenedPinnedApps((current) => {
-        const next = { ...current };
-        delete next[app.appId];
-        return next;
-      });
-      setStatus("Diese installierte Version wurde widerrufen oder ist nicht verfügbar.");
       void refreshCatalog().catch(() => setCatalogState("error"));
     }
   };
@@ -225,11 +192,7 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
           installed.version,
           false,
         );
-        setOpenedPinnedApps((current) => {
-          const nextOpened = { ...current };
-          delete nextOpened[app.appId];
-          return nextOpened;
-        });
+        if (runningAppId === app.appId) setRunningAppId(null);
         await persistInstallState(next, `„${app.manifest.name}“ wurde lokal deaktiviert.`);
         return;
       }
@@ -259,12 +222,11 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
       const checked = await getAppVersion({ data: { appId: app.appId, version: app.version } });
       if (!isExpectedAppVersion(checked, app.appId, app.version))
         throw new Error("Version mismatch");
-      const next = updateMarketplacePublishedAppVersion(installState, app.appId, checked.version);
-      setOpenedPinnedApps((current) => {
-        const nextOpened = { ...current };
-        delete nextOpened[app.appId];
-        return nextOpened;
+      const next = updateMarketplacePublishedAppVersion(installState, app.appId, checked.version, {
+        name: checked.manifest.name,
+        icon: checked.manifest.icon,
       });
+      if (runningAppId === app.appId) setRunningAppId(null);
       await persistInstallState(
         next,
         `„${checked.manifest.name}“ wurde nach deiner Bestätigung auf Version ${checked.version} aktualisiert.`,
@@ -281,43 +243,10 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
     if (!isAdmin) return;
     try {
       const next = removeMarketplacePublishedApp(installState, appId);
+      if (runningAppId === appId) setRunningAppId(null);
       await persistInstallState(next, `„${appName}“ wurde von diesem Gerät entfernt.`);
     } catch {
       setStatus("Die lokale App-Installation konnte nicht entfernt werden.");
-    }
-  };
-
-  const performHostAction = (action: MarketplaceHostAction) => {
-    if (action.type === "navigate") {
-      void navigate({ to: action.to });
-    } else if (action.type === "open-game") {
-      void navigate({ to: "/games", search: { game: action.gameId } });
-    } else {
-      window.dispatchEvent(new CustomEvent("alo-open", { detail: action.toolId }));
-    }
-  };
-
-  const onOpenAction = async (appId: string, actionId: string) => {
-    if (!isAdmin) return;
-    const installed = installState.installs.find((entry) => entry.appId === appId);
-    if (!installed?.enabled || openedPinnedApps[appId]?.version !== installed.version) return;
-    try {
-      const checked = await getAppVersion({ data: { appId, version: installed.version } });
-      if (!isExpectedAppVersion(checked, appId, installed.version))
-        throw new Error("Version mismatch");
-      const isDeclared = checked.manifest.blocks.some(
-        (block) => block.type === "action" && block.actionId === actionId,
-      );
-      const registered = getMarketplaceAuthorAction(actionId);
-      if (!isDeclared || !registered) throw new Error("Action not registered");
-      const stillInstalled = installState.installs.find(
-        (entry) => entry.appId === appId && entry.version === installed.version && entry.enabled,
-      );
-      if (!stillInstalled) return;
-      performHostAction(registered.action);
-    } catch {
-      setStatus("Diese App wurde widerrufen oder ist nicht verfügbar. Der Start wurde blockiert.");
-      void refreshCatalog().catch(() => setCatalogState("error"));
     }
   };
 
@@ -433,10 +362,6 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
               const enabled = installed?.enabled ?? false;
               const newerVersionAvailable =
                 installed !== undefined && installed.version < selectedApp.currentVersion;
-              const openedApp =
-                installed && openedPinnedApps[selectedApp.appId]?.version === installed.version
-                  ? openedPinnedApps[selectedApp.appId]
-                  : null;
               return (
                 <section
                   key={selectedApp.appId}
@@ -529,27 +454,42 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
                     {enabled && installed && (
                       <button
                         type="button"
-                        onClick={() => void onLaunch(selectedApp)}
+                        onClick={() => setRunningAppId(selectedApp.appId)}
                         className="min-h-11 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary"
                       >
                         App öffnen · installierte Version {installed.version}
                       </button>
                     )}
                   </div>
-                  {enabled && installed && openedApp && (
-                    <div className="mt-5">
-                      <MarketplaceManifestView
-                        manifest={openedApp.manifest}
-                        canRunActions
-                        onAction={(actionId) => void onOpenAction(selectedApp.appId, actionId)}
-                      />
-                    </div>
-                  )}
                 </section>
               );
             })()}
         </DialogContent>
       </Dialog>
+
+      {selectedApp &&
+        (() => {
+          const installed = installState.installs.find(
+            (entry) => entry.appId === selectedApp.appId,
+          );
+          if (!installed) return null;
+          return (
+            <MarketplacePublishedAppViewer
+              userId={userId}
+              appId={selectedApp.appId}
+              installedVersion={installed.version}
+              displayName={installed.manifestName ?? selectedApp.manifest.name}
+              icon={installed.icon ?? selectedApp.manifest.icon}
+              isAdmin={isAdmin}
+              open={runningAppId === selectedApp.appId}
+              onOpenChange={(open) => {
+                if (!open) setRunningAppId(null);
+              }}
+              onInstallStateChange={persistInstallState}
+              onStatus={setStatus}
+            />
+          );
+        })()}
 
       {catalogState === "ready" && unavailableInstalls.length > 0 && (
         <section className="space-y-2" aria-label="Nicht verfügbare lokale Apps">

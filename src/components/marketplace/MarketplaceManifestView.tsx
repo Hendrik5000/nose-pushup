@@ -5,6 +5,8 @@ type MarketplaceManifestViewProps = {
   manifest: MarketplaceAuthoredManifest;
   preview?: boolean;
   canRunActions?: boolean;
+  allowedActionIds?: readonly string[];
+  pendingActionId?: string | null;
   onAction?: (actionId: string) => void;
 };
 
@@ -12,6 +14,8 @@ export function MarketplaceManifestView({
   manifest,
   preview = false,
   canRunActions = false,
+  allowedActionIds,
+  pendingActionId = null,
   onAction,
 }: MarketplaceManifestViewProps) {
   return (
@@ -49,17 +53,24 @@ export function MarketplaceManifestView({
           <div key={`action-${index}`} className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              disabled={preview || !canRunActions || !hostAction || !onAction}
+              disabled={
+                preview ||
+                !canRunActions ||
+                !hostAction ||
+                !onAction ||
+                (allowedActionIds !== undefined && !allowedActionIds.includes(block.actionId)) ||
+                pendingActionId !== null
+              }
               onClick={() => onAction?.(block.actionId)}
               className="min-h-11 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {block.label}
+              {pendingActionId === block.actionId ? "Wird geöffnet …" : block.label}
             </button>
             {registered && (
               <span className="text-xs text-muted-foreground">
-                {registered.permission === "alo.open-existing-tool"
-                  ? `Öffnet ${registered.label} nach deinem Tippen`
-                  : `Öffnet ${registered.label} nach deinem Tippen`}
+                {allowedActionIds !== undefined && !allowedActionIds.includes(block.actionId)
+                  ? "Nicht freigegeben"
+                  : `Öffnet ${registered.label} erst nach deinem Tippen`}
               </span>
             )}
           </div>

@@ -123,11 +123,15 @@ test("community identifies local storage and separates mobile list from conversa
 
 test("community and appearance remain reachable from the hub without a fixed upper shortcut", () => {
   const home = read("routes/_authenticated/index.tsx");
+  const tileBuilder = home.slice(
+    home.indexOf("function buildHomeHubTiles"),
+    home.indexOf("function HomeAppHub"),
+  );
   const areas = read("routes/_authenticated/areas.tsx");
   const nav = read("components/TopNav.tsx");
-  assert.match(home, /to="\/chat"/);
-  assert.match(home, /to="\/profile"/);
-  assert.match(home, /to="\/areas"/);
+  assert.match(tileBuilder, /id: "nexus"[\s\S]*?to: "\/chat"/);
+  assert.match(tileBuilder, /id: "settings"[\s\S]*?to: "\/profile"/);
+  assert.match(tileBuilder, /id: "areas"[\s\S]*?to: "\/areas"/);
   assert.match(areas, /aria-label="Alle weiteren Alo-Bereiche"/);
   assert.doesNotMatch(nav, /alo-module-switcher/);
   assert.match(nav, /layout === "bottom" \|\| layout === "floating"/);

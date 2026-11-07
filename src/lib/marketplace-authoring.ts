@@ -44,6 +44,10 @@ export type MarketplacePublishedInstall = Readonly<{
   appId: string;
   version: number;
   enabled: boolean;
+  manifestName?: string;
+  icon?: MarketplaceIconId;
+  permissionsReviewVersion?: number;
+  grantedActionIds?: readonly string[];
 }>;
 
 export type MarketplacePublishedInstallState = Readonly<{
@@ -91,6 +95,18 @@ function hasExactKeys(value: Record<string, unknown>, keys: readonly string[]) {
   const actual = Object.keys(value).sort();
   const expected = [...keys].sort();
   return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
+}
+
+function hasOnlyKeys(
+  value: Record<string, unknown>,
+  requiredKeys: readonly string[],
+  optionalKeys: readonly string[],
+) {
+  const allowed = new Set([...requiredKeys, ...optionalKeys]);
+  return (
+    requiredKeys.every((key) => Object.prototype.hasOwnProperty.call(value, key)) &&
+    Object.keys(value).every((key) => allowed.has(key))
+  );
 }
 
 function safeText(value: unknown, maxChars: number, field: string): string {
@@ -411,7 +427,11 @@ export function parseMarketplacePublishedInstallState(
   const installs = value.installs.map((entry) => {
     if (
       !isRecord(entry) ||
-      !hasExactKeys(entry, ["appId", "version", "enabled"]) ||
+      !hasOnlyKeys(
+        entry,
+        ["appId", "version", "enabled"],
+        ["manifestName", "icon", "permissionsReviewVersion", "grantedActionIds"],
+      ) ||
       !isUuid(entry.appId) ||
       !validVersion(entry.version) ||
       typeof entry.enabled !== "boolean"
@@ -421,7 +441,46 @@ export function parseMarketplacePublishedInstallState(
     const appId = entry.appId.toLowerCase();
     if (seen.has(appId)) throw new Error("Alo-App darf nur einmal lokal installiert sein.");
     seen.add(appId);
-    return Object.freeze({ appId, version: entry.version, enabled: entry.enabled });
+    const manifestName =
+      entry.manifestName === undefined ? undefined : safeText(entry.manifestName, 48, "App-Name");
+    const icon = entry.icon === undefined ? undefined : entry.icon;
+    if (icon !== undefined && (typeof icon !== "string" || !MARKETPLACE_ICON_SET.has(icon))) {
+      throw new Error("Ungültiges lokales Alo-App-Symbol.");
+    }
+    const permissionsReviewVersion = entry.permissionsReviewVersion;
+    if (
+      permissionsReviewVersion !== undefined &&
+      (!validVersion(permissionsReviewVersion) || permissionsReviewVersion > entry.version)
+    ) {
+      throw new Error("Ungültige lokale App-Berechtigungsfreigabe.");
+    }
+    let grantedActionIds: string[] | undefined;
+    if (entry.grantedActionIds !== undefined) {
+      if (
+        !Array.isArray(entry.grantedActionIds) ||
+        entry.grantedActionIds.length > MARKETPLACE_MAX_ACTIONS ||
+        !entry.grantedActionIds.every(
+          (actionId) =>
+            typeof actionId === "string" && Boolean(getMarketplaceAuthorAction(actionId)),
+        ) ||
+        new Set(entry.grantedActionIds).size !== entry.grantedActionIds.length ||
+        (entry.grantedActionIds.length > 0 && permissionsReviewVersion === undefined)
+      ) {
+        throw new Error("Ungültige oder nicht bestätigte lokale App-Aktionen.");
+      }
+      grantedActionIds = [...entry.grantedActionIds] as string[];
+    }
+    return Object.freeze({
+      appId,
+      version: entry.version,
+      enabled: entry.enabled,
+      ...(manifestName === undefined ? {} : { manifestName }),
+      ...(icon === undefined ? {} : { icon: icon as MarketplaceIconId }),
+      ...(permissionsReviewVersion === undefined ? {} : { permissionsReviewVersion }),
+      ...(grantedActionIds === undefined
+        ? {}
+        : { grantedActionIds: Object.freeze(grantedActionIds) }),
+    });
   });
   return Object.freeze({ schemaVersion: 1, installs: Object.freeze(installs) });
 }
@@ -439,6 +498,7 @@ export function installMarketplacePublishedApp(
   stateInput: unknown,
   appIdInput: unknown,
   versionInput: unknown,
+  metadata?: Pick<MarketplaceAuthoredManifest, "name" | "icon">,
 ): MarketplacePublishedInstallState {
   const appId = requireUuidAppId(appIdInput);
   if (!validVersion(versionInput)) throw new Error("Ungültige Alo-App-Version.");
@@ -453,7 +513,15 @@ export function installMarketplacePublishedApp(
   }
   return requireInstallState({
     schemaVersion: 1,
-    installs: [...state.installs, { appId, version: versionInput, enabled: false }],
+    installs: [
+      ...state.installs,
+      {
+        appId,
+        version: versionInput,
+        enabled: false,
+        ...(metadata ? { manifestName: metadata.name, icon: metadata.icon } : {}),
+      },
+    ],
   });
 }
 
@@ -461,6 +529,7 @@ export function updateMarketplacePublishedAppVersion(
   stateInput: unknown,
   appIdInput: unknown,
   versionInput: unknown,
+  metadata?: Pick<MarketplaceAuthoredManifest, "name" | "icon">,
 ): MarketplacePublishedInstallState {
   const appId = requireUuidAppId(appIdInput);
   if (!validVersion(versionInput)) throw new Error("Ungültige Alo-App-Version.");
@@ -470,7 +539,63 @@ export function updateMarketplacePublishedAppVersion(
   return requireInstallState({
     schemaVersion: 1,
     installs: state.installs.map((entry) =>
-      entry.appId === appId ? { ...entry, version: versionInput } : entry,
+      entry.appId === appId
+        ? {
+            appId: entry.appId,
+            version: versionInput,
+            enabled: entry.enabled,
+            ...(metadata
+              ? { manifestName: metadata.name, icon: metadata.icon }
+              : {
+                  ...(entry.manifestName === undefined ? {} : { manifestName: entry.manifestName }),
+                  ...(entry.icon === undefined ? {} : { icon: entry.icon }),
+                }),
+          }
+        : entry,
+    ),
+  });
+}
+
+export function setMarketplacePublishedAppPermissions(
+  stateInput: unknown,
+  appIdInput: unknown,
+  versionInput: unknown,
+  manifestInput: unknown,
+  grantedActionIdsInput: unknown,
+): MarketplacePublishedInstallState {
+  const appId = requireUuidAppId(appIdInput);
+  if (!validVersion(versionInput) || !Array.isArray(grantedActionIdsInput)) {
+    throw new Error("Ungültige Alo-App-Berechtigungen.");
+  }
+  const manifest = validateMarketplaceAuthoredManifest(manifestInput);
+  const declaredActionIds = new Set(getMarketplaceAuthoredActions(manifest).map(({ id }) => id));
+  if (
+    grantedActionIdsInput.length > MARKETPLACE_MAX_ACTIONS ||
+    !grantedActionIdsInput.every(
+      (actionId) => typeof actionId === "string" && declaredActionIds.has(actionId),
+    ) ||
+    new Set(grantedActionIdsInput).size !== grantedActionIdsInput.length
+  ) {
+    throw new Error(
+      "Es kann nur eine ausdrücklich ausgewählte, deklarierte Alo-Aktion freigegeben werden.",
+    );
+  }
+  const grantedActionIds = [...grantedActionIdsInput] as string[];
+  const state = requireInstallState(stateInput);
+  const existing = state.installs.find((entry) => entry.appId === appId);
+  if (!existing || existing.version !== versionInput) {
+    throw new Error("Die installierte Alo-App-Version stimmt nicht überein.");
+  }
+  return requireInstallState({
+    schemaVersion: 1,
+    installs: state.installs.map((entry) =>
+      entry.appId === appId
+        ? {
+            ...entry,
+            permissionsReviewVersion: versionInput,
+            grantedActionIds,
+          }
+        : entry,
     ),
   });
 }

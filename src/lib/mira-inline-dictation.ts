@@ -196,11 +196,13 @@ export class MiraComposerPressAndHold {
     }, this.delayMs);
   }
 
-  pointerMove(pointerId: number, x: number, y: number): void {
-    if (!this.pointer || this.pointer.id !== pointerId) return;
+  pointerMove(pointerId: number, x: number, y: number): boolean {
+    if (!this.pointer || this.pointer.id !== pointerId) return false;
     if (Math.hypot(x - this.pointer.x, y - this.pointer.y) > this.movementThreshold) {
       this.cancelPointer();
+      return true;
     }
+    return false;
   }
 
   pointerUp(pointerId: number): void {
@@ -210,9 +212,10 @@ export class MiraComposerPressAndHold {
     if (shouldStop) this.onStop();
   }
 
-  pointerCancel(pointerId: number): void {
-    if (!this.pointer || this.pointer.id !== pointerId) return;
+  pointerCancel(pointerId: number): boolean {
+    if (!this.pointer || this.pointer.id !== pointerId) return false;
     this.cancelPointer();
+    return true;
   }
 
   /** Clear a pending press without affecting a dictation started by another control. */

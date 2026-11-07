@@ -10,6 +10,10 @@ import {
 
 const root = process.cwd();
 const home = readFileSync(resolve(root, "src/routes/_authenticated/index.tsx"), "utf8");
+const homeTileBuilder = home.slice(
+  home.indexOf("function buildHomeHubTiles"),
+  home.indexOf("function HomeAppHub"),
+);
 const route = readFileSync(resolve(root, "src/routes/_authenticated/admin.tsx"), "utf8");
 const marketplaceRoute = readFileSync(
   resolve(root, "src/routes/_authenticated/marketplace.tsx"),
@@ -38,10 +42,10 @@ test("only the server-verified owner identity may manage global roles", () => {
 
 test("Admin tile is rendered only after the server-side access function returns true", () => {
   assert.match(home, /getAdminAreaAccess\(\)/);
-  assert.match(home, /canSeeAdmin\s*&&\s*<HubAppIcon to="\/admin" title="Admin" artwork="admin"/);
+  assert.match(homeTileBuilder, /if \(canSeeAdmin\)[\s\S]*?id: "admin"[\s\S]*?to: "\/admin"/);
   assert.match(
-    home,
-    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/marketplace" title="Marketplace" artwork="marketplace" \/>/,
+    homeTileBuilder,
+    /if \(canSeeAdmin\)[\s\S]*?id: "marketplace"[\s\S]*?to: "\/marketplace"/,
   );
   assert.match(
     home,

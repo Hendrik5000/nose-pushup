@@ -5,6 +5,10 @@ import { test } from "node:test";
 
 const root = process.cwd();
 const home = readFileSync(resolve(root, "src/routes/_authenticated/index.tsx"), "utf8");
+const homeTileBuilder = home.slice(
+  home.indexOf("function buildHomeHubTiles"),
+  home.indexOf("function HomeAppHub"),
+);
 const route = readFileSync(resolve(root, "src/routes/_authenticated/games.tsx"), "utf8");
 const adminFunctions = readFileSync(resolve(root, "src/lib/admin.functions.ts"), "utf8");
 const gameServerFunction = readFileSync(resolve(root, "src/lib/private-game.functions.ts"), "utf8");
@@ -13,8 +17,8 @@ const accessHook = readFileSync(resolve(root, "src/lib/use-private-game-access.t
 test("Home surfaces the game hub only after a server-confirmed Admin check", () => {
   assert.match(home, /getAdminAreaAccess\(\)/);
   assert.match(
-    home,
-    /canSeeAdmin\s*&&\s*\([\s\S]*HubGameAppIcon game="grid-defense" title="Grid Defense"[\s\S]*HubGameAppIcon game="kupferkern" title="Kupferkern"/,
+    homeTileBuilder,
+    /if \(canSeeAdmin\)[\s\S]*?id: "grid-defense"[\s\S]*?game: "grid-defense"[\s\S]*?id: "kupferkern"[\s\S]*?game: "kupferkern"/,
   );
   assert.match(home, /setCanSeeAdmin\(false\)/);
   assert.match(home, /\}, \[user\.id\]\)/);
