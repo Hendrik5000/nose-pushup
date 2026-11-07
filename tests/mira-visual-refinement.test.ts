@@ -10,6 +10,7 @@ const page = read("components/mira/SuperAiPage.tsx");
 const css = read("ai-reference.css");
 const chatDesign = read("mira-chat-design.css");
 const miraSketchDesign = read("mira-pr52-design.css");
+const responsive = read("ai-responsive.css");
 const replyActions = read("components/mira/MiraAnswerActions.tsx");
 
 test("Mira uses a decorative four-point spark with unique gradients, not a provider logo", () => {
@@ -75,7 +76,7 @@ test("empty welcome does not replace saved conversation messages", () => {
   assert.match(page, /loadSessions\(\)\[0\]\?\.messages \?\? \[\]/);
 });
 
-test("Mira conversation stages keep their scroll surface without an outer border", () => {
+test("Mira conversation stages stay frameless while keeping scrolling and user bubbles", () => {
   const classicStage = page.match(/className="(alo-classic-mira-messages[^"]*)"/)?.[1] ?? "";
   const sportStage = page.match(/className="(sport-chat-stage[^"]*)"/)?.[1] ?? "";
   const classicStageCss =
@@ -85,13 +86,25 @@ test("Mira conversation stages keep their scroll surface without an outer border
   assert.ok(classicStage, "classic messages stage should remain present");
   assert.ok(sportStage, "sport messages stage should remain present");
   assert.ok(classicStageCss, "classic messages CSS should remain present");
-  assert.doesNotMatch(classicStageCss, /\bborder\s*:/);
   for (const stageClasses of [classicStage, sportStage]) {
-    assert.doesNotMatch(stageClasses, /\bborder(?:-[^\s]+)?/);
-    assert.match(stageClasses, /\brounded-/);
-    assert.match(stageClasses, /\bbg-card/);
+    assert.doesNotMatch(
+      stageClasses,
+      /\b(?:border(?:-[^\s]+)?|rounded-[^\s]+|bg-card[^\s]*|shadow-[^\s]+|backdrop-blur)\b/,
+    );
     assert.match(stageClasses, /\boverflow-y-auto\b/);
   }
+  for (const style of [
+    /border-radius:\s*0\s*!important;/,
+    /background:\s*transparent\s*!important;/,
+    /box-shadow:\s*none\s*!important;/,
+    /backdrop-filter:\s*none\s*!important;/,
+  ])
+    assert.match(classicStageCss, style);
+  const reducedTransparency = responsive.slice(
+    responsive.indexOf("@media (prefers-reduced-transparency: reduce)"),
+  );
+  assert.doesNotMatch(reducedTransparency, /\.alo-classic-mira-messages/);
+  assert.match(page, /mira-chat-user-bubble rounded-br-md bg-primary text-primary-foreground/);
 });
 
 test("Mira's chat start keeps its welcome mark while answers stay unframed", () => {
