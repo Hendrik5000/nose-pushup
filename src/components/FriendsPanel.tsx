@@ -17,6 +17,7 @@ export function FriendsPanel({ userId }: { userId: string }) {
   const postfach = usePostfach();
   const [tab, setTab] = useState<Tab>("friends");
   const [friends, setFriends] = useState<FriendEntry[]>([]);
+  const [friendsError, setFriendsError] = useState<string | null>(null);
   const [sent, setSent] = useState<SentFriendRequest[]>([]);
   const [sentError, setSentError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,8 +28,10 @@ export function FriendsPanel({ userId }: { userId: string }) {
     setLoading(true);
     try {
       setFriends(await loadFriendEntries(userId));
+      setFriendsError(null);
     } catch {
       setFriends([]);
+      setFriendsError("Die Freundesliste konnte nicht geladen werden.");
     }
     try {
       setSent(await friendsClient.listSent());
@@ -38,7 +41,7 @@ export function FriendsPanel({ userId }: { userId: string }) {
       setSentError(
         error instanceof BackendNotReadyError
           ? "Einladungen per Code sind auf dem Server noch nicht eingerichtet."
-          : null,
+          : "Einladungen konnten nicht geladen werden.",
       );
     }
     setLoading(false);
@@ -120,11 +123,17 @@ export function FriendsPanel({ userId }: { userId: string }) {
       <div className="mt-4 space-y-2">
         {tab === "code" && <FriendCodeCard onSent={() => void load()} />}
 
-        {tab !== "code" && loading && <p className="text-xs text-muted-foreground">Lade…</p>}
+        {tab !== "code" && loading && (
+          <p role="status" className="text-xs text-muted-foreground">
+            Lade…
+          </p>
+        )}
 
         {!loading &&
           tab === "friends" &&
-          (friends.length === 0 ? (
+          (friendsError ? (
+            <RetryMessage text={friendsError} onRetry={() => void load()} />
+          ) : friends.length === 0 ? (
             <Empty text="Noch keine Freunde. Tausche im Tab Code deinen Freundescode mit einem Freund." />
           ) : (
             friends.map((friend) => (
@@ -209,7 +218,7 @@ export function FriendsPanel({ userId }: { userId: string }) {
         {!loading &&
           tab === "sent" &&
           (sentError ? (
-            <Empty text={sentError} />
+            <RetryMessage text={sentError} onRetry={() => void load()} />
           ) : sent.length === 0 ? (
             <Empty text="Keine offenen Einladungen. Dein Freund muss eine Einladung im Postfach annehmen." />
           ) : (
@@ -339,5 +348,23 @@ function Empty({ text }: { text: string }) {
     <p className="rounded-2xl border border-border bg-card/40 p-4 text-center text-xs text-muted-foreground">
       {text}
     </p>
+  );
+}
+
+function RetryMessage({ text, onRetry }: { text: string; onRetry: () => void }) {
+  return (
+    <div
+      role="alert"
+      className="rounded-2xl border border-border bg-card/40 p-4 text-center text-xs text-muted-foreground"
+    >
+      <p>{text}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-3 min-h-11 rounded-full border border-primary/40 px-4 py-2 font-semibold text-primary hover:bg-primary/10"
+      >
+        Erneut versuchen
+      </button>
+    </div>
   );
 }

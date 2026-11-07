@@ -376,7 +376,6 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     -webkit-overflow-scrolling: touch;
-    user-select: none;
     background-attachment: fixed;
     min-height: var(--app-viewport-height);
     padding-top: env(safe-area-inset-top);
@@ -422,6 +421,9 @@
   }
   :where(input, textarea, p) {
     user-select: text;
+  }
+  :where(button, [role="button"], a, summary) {
+    user-select: none;
   }
 }
 
@@ -1458,7 +1460,6 @@ html[data-navigation-visible]:not([data-navigation-expanded="true"])[data-naviga
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
 }
-
 
 /* A local-only accent that recolors navigation/menu affordances without replacing the app theme. */
 :root {
