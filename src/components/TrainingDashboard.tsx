@@ -3,6 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
+import { onlyFavoriteExercises } from "@/lib/exercise-catalog";
+import { getFavoriteExercises } from "@/lib/extra-features";
 import { levelProgress } from "@/lib/level";
 import {
   getQuickStartPlan,
@@ -89,6 +91,8 @@ export function TrainingDashboard({ user }: { user: User }) {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
   const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState(() => getFavoriteExercises());
 
   useEffect(() => {
     let active = true;
@@ -183,6 +187,11 @@ export function TrainingDashboard({ user }: { user: User }) {
   const goalPct = Math.min(1, todayReps / goal);
   const pushupBest = profile?.personal_bests?.pushup ?? profile?.best_count ?? 0;
   const otherExercises = exercises.filter((e) => e.id !== "pushup");
+  const visibleOtherExercises = onlyFavoriteExercises(
+    otherExercises,
+    favoriteIds,
+    showOnlyFavorites,
+  );
   const quickStart = getQuickStartPlan({ best: pushupBest, todayReps, streak, goal });
   const pushupEx = exercises.find((e) => e.id === "pushup");
   const dateLabel = new Date().toLocaleDateString("de-DE", {
@@ -497,16 +506,26 @@ export function TrainingDashboard({ user }: { user: User }) {
       case "exercises":
         return wrap(
           <section>
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Weitere Übungen
-            </h2>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Weitere Übungen
+              </h2>
+              <button
+                type="button"
+                aria-pressed={showOnlyFavorites}
+                onClick={() => setShowOnlyFavorites((enabled) => !enabled)}
+                className="min-h-11 rounded-xl border border-border px-3 text-xs font-medium"
+              >
+                {showOnlyFavorites ? "Alle Übungen" : "Nur Favoriten"}
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {loading && (
                 <div className="col-span-full rounded-2xl border border-border p-6 text-center text-sm text-muted-foreground">
                   Lade…
                 </div>
               )}
-              {otherExercises.map((ex) => {
+              {visibleOtherExercises.map((ex) => {
                 const best = profile?.personal_bests?.[ex.id] ?? 0;
                 return (
                   <Link
@@ -517,13 +536,18 @@ export function TrainingDashboard({ user }: { user: User }) {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-3xl">{ex.icon}</span>
-                      <FavoriteStar exerciseId={ex.id} />
+                      <FavoriteStar exerciseId={ex.id} onChange={setFavoriteIds} />
                     </div>
                     <span className="text-sm font-semibold">{ex.name}</span>
                     <span className="text-xs text-muted-foreground">Bestwert {best}</span>
                   </Link>
                 );
               })}
+              {!loading && showOnlyFavorites && visibleOtherExercises.length === 0 && (
+                <p className="col-span-full rounded-2xl border border-border p-4 text-center text-xs text-muted-foreground">
+                  Noch keine weiteren Übungen als Favorit markiert.
+                </p>
+              )}
             </div>
           </section>,
           size,

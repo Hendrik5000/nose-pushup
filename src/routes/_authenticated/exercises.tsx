@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
+import { searchExerciseCatalog } from "@/lib/exercise-catalog";
 import { BottomNav } from "@/components/BottomNav";
 import { CALI_PATHS, getSkillStatus } from "@/lib/calisthenics";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
@@ -39,6 +40,7 @@ function ExercisesPage() {
   const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
   const [bests, setBests] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [exerciseSearch, setExerciseSearch] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -72,6 +74,10 @@ function ExercisesPage() {
   const activeCaliSkill = CALI_PATHS.flatMap((p) =>
     p.skills.filter((s) => getSkillStatus(bests, s) === "active"),
   )[0];
+  const standardExercises = searchExerciseCatalog(
+    exercises.filter((ex) => !ex.id.startsWith("cali_")),
+    exerciseSearch,
+  );
 
   return (
     <>
@@ -158,6 +164,18 @@ function ExercisesPage() {
           </section>
           <section className="space-y-4">
             <SportSectionLabel number="02">Klassische Übungen</SportSectionLabel>
+            <label className="block">
+              <span className="sr-only">Übungen durchsuchen</span>
+              <input
+                type="search"
+                aria-label="Übungen durchsuchen"
+                value={exerciseSearch}
+                maxLength={80}
+                onChange={(event) => setExerciseSearch(event.target.value)}
+                placeholder="Übung suchen"
+                className="min-h-11 w-full rounded-xl border border-border bg-background/60 px-3 text-sm"
+              />
+            </label>
             {loading && (
               <div className="rounded-3xl border border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
                 Übungen werden geladen …
@@ -168,59 +186,64 @@ function ExercisesPage() {
                 Keine Übungen verfügbar.
               </div>
             )}
+            {!loading &&
+              exercises.some((ex) => !ex.id.startsWith("cali_")) &&
+              standardExercises.length === 0 && (
+                <div className="rounded-3xl border border-border bg-card/50 p-5 text-center text-sm text-muted-foreground">
+                  Keine passende Übung gefunden.
+                </div>
+              )}
             <div className="grid gap-3 sm:grid-cols-2">
-              {exercises
-                .filter((ex) => !ex.id.startsWith("cali_"))
-                .map((ex) => {
-                  const best = bests[ex.id] ?? 0;
-                  const Icon =
-                    ex.detection_type === "timer"
-                      ? Timer
-                      : ex.detection_type === "motion_vertical"
-                        ? Activity
-                        : ex.detection_type === "combo"
-                          ? Zap
-                          : Dumbbell;
-                  return (
-                    <Link
-                      key={ex.id}
-                      to="/workout/$exerciseId"
-                      params={{ exerciseId: ex.id }}
-                      className="group flex min-h-36 items-center gap-4 rounded-3xl border border-border bg-card/55 p-5 transition hover:border-primary/50 hover:bg-card/80"
-                    >
-                      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-                        <Icon size={26} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span className="text-lg font-bold">{ex.name}</span>
-                          <span className="rounded-full border border-border bg-secondary/60 px-2 py-1 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
-                            {DETECTION_LABEL[ex.detection_type]}
-                          </span>
+              {standardExercises.map((ex) => {
+                const best = bests[ex.id] ?? 0;
+                const Icon =
+                  ex.detection_type === "timer"
+                    ? Timer
+                    : ex.detection_type === "motion_vertical"
+                      ? Activity
+                      : ex.detection_type === "combo"
+                        ? Zap
+                        : Dumbbell;
+                return (
+                  <Link
+                    key={ex.id}
+                    to="/workout/$exerciseId"
+                    params={{ exerciseId: ex.id }}
+                    className="group flex min-h-36 items-center gap-4 rounded-3xl border border-border bg-card/55 p-5 transition hover:border-primary/50 hover:bg-card/80"
+                  >
+                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+                      <Icon size={26} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="text-lg font-bold">{ex.name}</span>
+                        <span className="rounded-full border border-border bg-secondary/60 px-2 py-1 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                          {DETECTION_LABEL[ex.detection_type]}
                         </span>
-                        {ex.description && (
-                          <span className="mt-1 block line-clamp-2 text-xs text-muted-foreground">
-                            {ex.description}
-                          </span>
+                      </span>
+                      {ex.description && (
+                        <span className="mt-1 block line-clamp-2 text-xs text-muted-foreground">
+                          {ex.description}
+                        </span>
+                      )}
+                      <span className="mt-3 block text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                        {best > 0 ? (
+                          <>
+                            Best{" "}
+                            <b className="ml-1 tabular-nums text-foreground">{`${best}${ex.unit === "seconds" ? "s" : ""}`}</b>
+                          </>
+                        ) : (
+                          "Noch kein Bestwert"
                         )}
-                        <span className="mt-3 block text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                          {best > 0 ? (
-                            <>
-                              Best{" "}
-                              <b className="ml-1 tabular-nums text-foreground">{`${best}${ex.unit === "seconds" ? "s" : ""}`}</b>
-                            </>
-                          ) : (
-                            "Noch kein Bestwert"
-                          )}
-                        </span>
                       </span>
-                      <ArrowUpRight
-                        className="shrink-0 text-muted-foreground transition group-hover:text-primary"
-                        size={20}
-                      />
-                    </Link>
-                  );
-                })}
+                    </span>
+                    <ArrowUpRight
+                      className="shrink-0 text-muted-foreground transition group-hover:text-primary"
+                      size={20}
+                    />
+                  </Link>
+                );
+              })}
             </div>
           </section>
           <BottomNav />
@@ -332,6 +355,18 @@ function ExercisesPage() {
             <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
               Klassische Übungen
             </h2>
+            <label className="block">
+              <span className="sr-only">Übungen durchsuchen</span>
+              <input
+                type="search"
+                aria-label="Übungen durchsuchen"
+                value={exerciseSearch}
+                maxLength={80}
+                onChange={(event) => setExerciseSearch(event.target.value)}
+                placeholder="Übung suchen"
+                className="min-h-11 w-full rounded-xl border border-border bg-background/60 px-3 text-sm"
+              />
+            </label>
 
             {loading && (
               <div className="rounded-2xl border border-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
@@ -344,46 +379,51 @@ function ExercisesPage() {
                 Keine Übungen verfügbar.
               </div>
             )}
+            {!loading &&
+              exercises.some((ex) => !ex.id.startsWith("cali_")) &&
+              standardExercises.length === 0 && (
+                <div className="rounded-2xl border border-border bg-card/40 p-5 text-center text-sm text-muted-foreground">
+                  Keine passende Übung gefunden.
+                </div>
+              )}
 
-            {exercises
-              .filter((ex) => !ex.id.startsWith("cali_"))
-              .map((ex) => {
-                const best = bests[ex.id] ?? 0;
-                return (
-                  <Link
-                    key={ex.id}
-                    to="/workout/$exerciseId"
-                    params={{ exerciseId: ex.id }}
-                    className="group flex items-center gap-4 rounded-3xl border border-border bg-card/50 p-4 backdrop-blur transition active:scale-[0.98] hover:border-primary/40"
-                  >
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-background/50 text-3xl">
-                      {ex.icon}
+            {standardExercises.map((ex) => {
+              const best = bests[ex.id] ?? 0;
+              return (
+                <Link
+                  key={ex.id}
+                  to="/workout/$exerciseId"
+                  params={{ exerciseId: ex.id }}
+                  className="group flex items-center gap-4 rounded-3xl border border-border bg-card/50 p-4 backdrop-blur transition active:scale-[0.98] hover:border-primary/40"
+                >
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-background/50 text-3xl">
+                    {ex.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-semibold text-foreground">{ex.name}</span>
+                      <span className="rounded-full border border-border bg-secondary/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.15em] text-muted-foreground">
+                        {DETECTION_LABEL[ex.detection_type]}
+                      </span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base font-semibold text-foreground">{ex.name}</span>
-                        <span className="rounded-full border border-border bg-secondary/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.15em] text-muted-foreground">
-                          {DETECTION_LABEL[ex.detection_type]}
-                        </span>
-                      </div>
-                      {ex.description && (
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {ex.description}
-                        </p>
-                      )}
-                      <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                        Best:{" "}
-                        <span className="tabular-nums text-foreground">
-                          {best > 0 ? `${best}${ex.unit === "seconds" ? "s" : ""}` : "—"}
-                        </span>
-                      </div>
+                    {ex.description && (
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {ex.description}
+                      </p>
+                    )}
+                    <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                      Best:{" "}
+                      <span className="tabular-nums text-foreground">
+                        {best > 0 ? `${best}${ex.unit === "seconds" ? "s" : ""}` : "—"}
+                      </span>
                     </div>
-                    <span className="text-lg text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary">
-                      →
-                    </span>
-                  </Link>
-                );
-              })}
+                  </div>
+                  <span className="text-lg text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary">
+                    →
+                  </span>
+                </Link>
+              );
+            })}
           </section>
 
           <BottomNav />

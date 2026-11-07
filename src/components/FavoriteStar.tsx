@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { isFavoriteExercise, toggleFavoriteExercise } from "@/lib/extra-features";
 
-export function FavoriteStar({ exerciseId }: { exerciseId: string }) {
+export function FavoriteStar({
+  exerciseId,
+  onChange,
+}: {
+  exerciseId: string;
+  onChange?: (favoriteIds: string[]) => void;
+}) {
   const [on, setOn] = useState(() => isFavoriteExercise(exerciseId));
   return (
     <button
@@ -10,8 +16,9 @@ export function FavoriteStar({ exerciseId }: { exerciseId: string }) {
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        toggleFavoriteExercise(exerciseId);
-        setOn(isFavoriteExercise(exerciseId));
+        const favorites = toggleFavoriteExercise(exerciseId);
+        setOn(favorites.includes(exerciseId));
+        onChange?.(favorites);
       }}
       className="rounded-full px-2 py-1 text-base leading-none"
     >
