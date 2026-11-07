@@ -52,6 +52,7 @@ import { ALO_EVENT, ALO_REMOTE_EVENT, getMiraGrants, putAlo, removeAlo } from "@
 import { MiraContextControls } from "@/components/alo/MiraContextControls";
 import { MiraRunwareTools } from "@/components/alo/MiraRunwareTools";
 import { ContentActions } from "@/components/alo/ContentActions";
+import { AppSettingsGear } from "@/components/settings/AppSettingsGear";
 import { DesignView } from "@/components/DesignView";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -70,7 +71,7 @@ import {
   useAloPageSidebarCommands,
   type AloPageSidebarCommands,
 } from "@/components/alo/AloPageSidebar";
-import { AiProviderSettings } from "@/components/AiProviderSettings";
+import { MiraAppSettingsControls } from "@/components/mira/MiraAppSettingsControls";
 import { buildAppContext, contextToSystemBlock } from "@/lib/ai-context";
 import { miraDraftId, readMiraDraft, rememberMiraSession } from "@/lib/mira-handoff";
 import {
@@ -293,27 +294,6 @@ function MiraInlineDictationPreview({ draft, interim }: { draft: string; interim
       <span className="mira-inline-dictation-preview-label">Diktat</span>
       <span className="mira-inline-dictation-preview-text">{transcript || "Ich höre zu …"}</span>
     </div>
-  );
-}
-
-function MiraSpeechPrivacySettings() {
-  return (
-    <section
-      className="mt-4 rounded-xl border border-border/70 bg-background/50 p-3 text-sm"
-      aria-label="Spracheingabe und Datenschutz"
-    >
-      <h3 className="font-semibold">Spracheingabe &amp; Datenschutz</h3>
-      <p className="mt-1 text-muted-foreground">
-        Für Diktat und Freisprechen nutzt Mira die SpeechRecognition-Schnittstelle deines Browsers.
-        Je nach Browser kann Audio an dessen Spracherkennungsdienst übertragen werden; eine lokale
-        Verarbeitung ist nicht garantiert. Mira erhält erkannten Text, keine rohe Mikrofonaufnahme.
-      </p>
-      <p className="mt-2 text-muted-foreground">
-        Beim Diktat bleibt der Text bearbeitbar im Composer und wird erst nach deinem normalen Tipp
-        auf „Senden“ an Mira übermittelt. Freisprechen ist ein separater, bewusst gestarteter Modus;
-        dein normaler Entwurf und vorhandene Anhänge werden dabei nicht mitgesendet.
-      </p>
-    </section>
   );
 }
 
@@ -1424,7 +1404,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
         >
           <div
             className={
-              sketchLayout ? "alo-mira-sketch-header" : "mb-2 flex items-center gap-2 self-start"
+              sketchLayout ? "alo-mira-sketch-header" : "mb-2 flex w-full items-center gap-2"
             }
           >
             <AloPageSidebarTrigger />
@@ -1440,16 +1420,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 <Link to="/profile" aria-label="Profil öffnen" className="alo-mira-sketch-control">
                   <UserRound aria-hidden="true" />
                 </Link>
-                <button
-                  type="button"
-                  className="alo-mira-sketch-control"
-                  aria-label="Mira-Einstellungen und Datenschutz öffnen"
-                  aria-controls="mira-classic-options"
-                  aria-expanded={classicOptionsOpen}
-                  onClick={() => setClassicOptionsOpen((value) => !value)}
-                >
-                  <Settings2 aria-hidden="true" />
-                </button>
+                <AppSettingsGear appId="mira" className="alo-mira-sketch-control ml-auto" />
               </>
             ) : (
               <>
@@ -1470,6 +1441,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   <Mic className="h-4 w-4" aria-hidden="true" />
                   Freisprechen
                 </button>
+                <AppSettingsGear appId="mira" className="ml-auto" />
               </>
             )}
           </div>
@@ -1760,8 +1732,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 KI-Anbieter und API-Zugangsdaten
               </div>
-              <AiProviderSettings userId={userId} />
-              <MiraSpeechPrivacySettings />
+              <MiraAppSettingsControls userId={userId} />
               <button
                 type="button"
                 className="alo-text-action"
@@ -2064,16 +2035,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               <Link to="/profile" aria-label="Profil öffnen" className="alo-mira-sketch-control">
                 <UserRound aria-hidden="true" />
               </Link>
-              <button
-                type="button"
-                className="alo-mira-sketch-control"
-                aria-label="Mira-Einstellungen und Datenschutz öffnen"
-                aria-controls="mira-chat-options"
-                aria-expanded={chatOptionsOpen}
-                onClick={() => setChatOptionsOpen((value) => !value)}
-              >
-                <Settings2 aria-hidden="true" />
-              </button>
+              <AppSettingsGear appId="mira" className="alo-mira-sketch-control ml-auto" />
             </header>
           )}
           {sportAiView !== "chat" && (
@@ -2087,6 +2049,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 <Link to="/" className="sport-back-link">
                   ← Startseite
                 </Link>
+                <AppSettingsGear appId="mira" className="ml-auto" />
               </SportPageIntro>
               <section className="sport-ai-hub" aria-label="Mira-Navigation">
                 <div className="sport-ai-provider-status">
@@ -2154,11 +2117,10 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   Schließen
                 </button>
               </div>
-              <AiProviderSettings
-                onSaved={() => refreshProviderStatus((revision) => revision + 1)}
+              <MiraAppSettingsControls
+                onProviderSaved={() => refreshProviderStatus((revision) => revision + 1)}
                 userId={userId}
               />
-              <MiraSpeechPrivacySettings />
               <button
                 type="button"
                 className="alo-text-action"
@@ -2394,6 +2356,11 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           {sportAiView === "chat" && (
             <div className="sport-ai-chat-grid">
               <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
+                {!sketchLayout && (
+                  <div className="flex justify-end">
+                    <AppSettingsGear appId="mira" />
+                  </div>
+                )}
                 <details
                   id="mira-chat-options"
                   className="sport-ai-chat-options"

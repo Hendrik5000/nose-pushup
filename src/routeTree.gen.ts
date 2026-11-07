@@ -43,7 +43,9 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as AuthenticatedBattleIndexRouteImport } from './routes/_authenticated/battle.index'
 import { Route as AuthenticatedBattleIdRouteImport } from './routes/_authenticated/battle.$id'
 import { Route as AuthenticatedCaliWorkoutSkillIdRouteImport } from './routes/_authenticated/cali-workout.$skillId'
+import { Route as AuthenticatedSettingsCategoryRouteImport } from './routes/_authenticated/settings.$category'
 import { Route as AuthenticatedWorkoutExerciseIdRouteImport } from './routes/_authenticated/workout.$exerciseId'
+import { Route as AuthenticatedSettingsAppsAppIdRouteImport } from './routes/_authenticated/settings.apps.$appId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -224,10 +226,22 @@ const AuthenticatedCaliWorkoutSkillIdRoute =
     path: '/cali-workout/$skillId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSettingsCategoryRoute =
+  AuthenticatedSettingsCategoryRouteImport.update({
+    id: '/settings/$category',
+    path: '/settings/$category',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedWorkoutExerciseIdRoute =
   AuthenticatedWorkoutExerciseIdRouteImport.update({
     id: '/workout/$exerciseId',
     path: '/workout/$exerciseId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsAppsAppIdRoute =
+  AuthenticatedSettingsAppsAppIdRouteImport.update({
+    id: '/settings/apps/$appId',
+    path: '/settings/apps/$appId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -264,8 +278,10 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
   '/cali-workout/$skillId': typeof AuthenticatedCaliWorkoutSkillIdRoute
+  '/settings/$category': typeof AuthenticatedSettingsCategoryRoute
   '/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
   '/battle/': typeof AuthenticatedBattleIndexRoute
+  '/settings/apps/$appId': typeof AuthenticatedSettingsAppsAppIdRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -300,8 +316,10 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
   '/cali-workout/$skillId': typeof AuthenticatedCaliWorkoutSkillIdRoute
+  '/settings/$category': typeof AuthenticatedSettingsCategoryRoute
   '/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
   '/battle': typeof AuthenticatedBattleIndexRoute
+  '/settings/apps/$appId': typeof AuthenticatedSettingsAppsAppIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -338,8 +356,10 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/battle/$id': typeof AuthenticatedBattleIdRoute
   '/_authenticated/cali-workout/$skillId': typeof AuthenticatedCaliWorkoutSkillIdRoute
+  '/_authenticated/settings/$category': typeof AuthenticatedSettingsCategoryRoute
   '/_authenticated/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
   '/_authenticated/battle/': typeof AuthenticatedBattleIndexRoute
+  '/_authenticated/settings/apps/$appId': typeof AuthenticatedSettingsAppsAppIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -376,8 +396,10 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/battle/$id'
     | '/cali-workout/$skillId'
+    | '/settings/$category'
     | '/workout/$exerciseId'
     | '/battle/'
+    | '/settings/apps/$appId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -412,8 +434,10 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/battle/$id'
     | '/cali-workout/$skillId'
+    | '/settings/$category'
     | '/workout/$exerciseId'
     | '/battle'
+    | '/settings/apps/$appId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -449,8 +473,10 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/battle/$id'
     | '/_authenticated/cali-workout/$skillId'
+    | '/_authenticated/settings/$category'
     | '/_authenticated/workout/$exerciseId'
     | '/_authenticated/battle/'
+    | '/_authenticated/settings/apps/$appId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -705,11 +731,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCaliWorkoutSkillIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings/$category': {
+      id: '/_authenticated/settings/$category'
+      path: '/settings/$category'
+      fullPath: '/settings/$category'
+      preLoaderRoute: typeof AuthenticatedSettingsCategoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/workout/$exerciseId': {
       id: '/_authenticated/workout/$exerciseId'
       path: '/workout/$exerciseId'
       fullPath: '/workout/$exerciseId'
       preLoaderRoute: typeof AuthenticatedWorkoutExerciseIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/apps/$appId': {
+      id: '/_authenticated/settings/apps/$appId'
+      path: '/settings/apps/$appId'
+      fullPath: '/settings/apps/$appId'
+      preLoaderRoute: typeof AuthenticatedSettingsAppsAppIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -740,8 +780,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
   AuthenticatedCaliWorkoutSkillIdRoute: typeof AuthenticatedCaliWorkoutSkillIdRoute
+  AuthenticatedSettingsCategoryRoute: typeof AuthenticatedSettingsCategoryRoute
   AuthenticatedWorkoutExerciseIdRoute: typeof AuthenticatedWorkoutExerciseIdRoute
   AuthenticatedBattleIndexRoute: typeof AuthenticatedBattleIndexRoute
+  AuthenticatedSettingsAppsAppIdRoute: typeof AuthenticatedSettingsAppsAppIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -769,8 +811,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
   AuthenticatedCaliWorkoutSkillIdRoute: AuthenticatedCaliWorkoutSkillIdRoute,
+  AuthenticatedSettingsCategoryRoute: AuthenticatedSettingsCategoryRoute,
   AuthenticatedWorkoutExerciseIdRoute: AuthenticatedWorkoutExerciseIdRoute,
   AuthenticatedBattleIndexRoute: AuthenticatedBattleIndexRoute,
+  AuthenticatedSettingsAppsAppIdRoute: AuthenticatedSettingsAppsAppIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

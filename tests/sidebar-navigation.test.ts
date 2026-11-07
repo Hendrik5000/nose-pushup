@@ -152,7 +152,7 @@ test("reference glows follow theme tokens and existing personal themes stay scop
   const mira = read("ai-reference.css");
   const nexus = read("community-reference.css");
   const health = read("health-reference.css");
-  assert.match(sidebarCss, /color-mix\(in srgb, var\(--primary\)/);
+  assert.match(sidebarCss, /color-mix\(in srgb, var\(--menu-accent, var\(--primary\)\)/);
   assert.doesNotMatch(sidebarCss, /#38bdf8|#8b5cf6/);
   assert.match(
     mira,

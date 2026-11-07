@@ -1458,3 +1458,49 @@ html[data-navigation-visible]:not([data-navigation-expanded="true"])[data-naviga
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
 }
+
+
+/* A local-only accent that recolors navigation/menu affordances without replacing the app theme. */
+:root {
+  --menu-accent: var(--primary);
+  --menu-accent-soft: color-mix(in srgb, var(--menu-accent) 15%, transparent);
+  --menu-accent-border: color-mix(in srgb, var(--menu-accent) 42%, var(--border));
+}
+.settings-category-row {
+  color: var(--foreground);
+  text-decoration: none;
+}
+.settings-category-row:hover {
+  border-color: var(--menu-accent-border);
+  background: var(--menu-accent-soft);
+}
+.settings-category-icon {
+  background: var(--menu-accent-soft);
+  color: var(--menu-accent);
+}
+.settings-app-row:hover {
+  border-color: var(--menu-accent-border);
+  background: var(--menu-accent-soft);
+}
+.app-homebar .homebar-link[aria-current="page"] {
+  color: var(--foreground);
+  background: var(--menu-accent-soft);
+  box-shadow: inset 0 -2px 0 var(--menu-accent);
+}
+.app-homebar .homebar-link[aria-current="page"] .homebar-icon {
+  color: var(--menu-accent);
+}
+html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current="page"] {
+  border-bottom-color: var(--menu-accent);
+  color: var(--menu-accent);
+  background: transparent;
+}
+[data-alo-menu-surface="true"] > header {
+  border-bottom-color: var(--menu-accent-border);
+}
+[data-alo-menu-surface="true"] :is(a, button):hover {
+  border-color: var(--menu-accent-border);
+}
+[data-alo-menu-surface="true"] :is(a, button):focus-visible {
+  outline-color: var(--menu-accent);
+}

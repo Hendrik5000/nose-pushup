@@ -198,4 +198,7 @@ export function applyTheme(theme: ThemeId) {
   } catch {
     // Storage may be unavailable; applying the visual theme still succeeds.
   }
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+    window.dispatchEvent(new Event("np-theme-change"));
+  }
 }
