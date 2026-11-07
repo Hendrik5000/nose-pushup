@@ -394,6 +394,43 @@ test("Mira receives one explicit goal and fixed action list, without history, at
   assert.doesNotMatch(component, /generateMarketplaceManifestDraft/);
 });
 
+test("football-results app requests use the allowlisted leaderboard icon when Mira invents a symbol", async () => {
+  const goal = "Erstelle eine Fußball Ergebnisse App";
+  assert.equal(classifyMarketplaceChatIntent(goal), "create");
+  const provider = DEFAULT_PROVIDERS.find((entry) => entry.id === "lovable");
+  assert.ok(provider);
+  let systemExtra = "";
+  const generated = await generateMarketplaceManifestDraft(goal, provider, async ({ data }) => {
+    systemExtra = data.systemExtra;
+    return {
+      reply: JSON.stringify({ ...VALID_MANIFEST, name: "Fußball-Ergebnisse", icon: "football" }),
+      provider: "lovable",
+      model: "test",
+      task: "general",
+    };
+  });
+  assert.equal(generated.icon, "leaderboard");
+  assert.equal(MARKETPLACE_ICON_IDS.includes(generated.icon), true);
+  for (const iconId of MARKETPLACE_ICON_IDS) assert.ok(systemExtra.includes(iconId));
+  assert.throws(
+    () => validateMarketplaceAuthoredManifest({ ...VALID_MANIFEST, icon: "football" }),
+    /Symbol/,
+    "the strict manifest validator must still reject non-allowlisted IDs",
+  );
+  for (const unsafeIcon of [
+    "https://evil.invalid/icon.svg",
+    "<svg/onload=alert(1)>",
+    "javascript:alert(1)",
+  ]) {
+    assert.throws(
+      () =>
+        parseMarketplaceMiraManifestReply(JSON.stringify({ ...VALID_MANIFEST, icon: unsafeIcon })),
+      /Symbol/,
+      "remote, markup, and script-like icon content must not be repaired or accepted",
+    );
+  }
+});
+
 test("a published manifest is sent only as explicit same-app edit context and is marked untrusted", () => {
   const provider = DEFAULT_PROVIDERS.find((entry) => entry.id === "lovable");
   assert.ok(provider);

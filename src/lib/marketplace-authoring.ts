@@ -106,6 +106,37 @@ const MARKETPLACE_ICON_SET = new Set<string>(MARKETPLACE_ICON_IDS);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const UNSAFE_TEXT_PATTERN = /[<>]|(?:javascript|vbscript|data)\s*:|https?:\/\//i;
 
+function marketplaceIconFallbackForGoal(goal: string): MarketplaceIconId {
+  const normalizedGoal = goal.normalize("NFKC").toLocaleLowerCase("de-DE");
+  if (
+    /(?:fußball|fussball|football|soccer|ergebnis|result|spielstand|tabelle|rangliste|score|liga)/.test(
+      normalizedGoal,
+    )
+  ) {
+    return "leaderboard";
+  }
+  if (/(?:quiz|rätsel|raetsel|ratespiel|memory)/.test(normalizedGoal)) return "game";
+  if (/(?:gesundheit|health|herz|puls)/.test(normalizedGoal)) return "health";
+  if (/(?:training|workout|fitness|calisthenics|gym)/.test(normalizedGoal)) return "training";
+  if (/(?:kalender|termin|zeitplan|programme?)/.test(normalizedGoal)) return "programs";
+  return "hub";
+}
+
+function applySafeMiraIconFallback(value: unknown, fallbackIcon: MarketplaceIconId): unknown {
+  if (
+    !isRecord(value) ||
+    typeof value.icon !== "string" ||
+    MARKETPLACE_ICON_SET.has(value.icon) ||
+    !/^[a-z][a-z0-9-]{0,31}$/i.test(value.icon)
+  ) {
+    return value;
+  }
+  return {
+    ...value,
+    icon: MARKETPLACE_ICON_SET.has(fallbackIcon) ? fallbackIcon : "hub",
+  };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -382,9 +413,12 @@ function marketplaceMiraInstructions() {
   const actionList = MARKETPLACE_AUTHOR_ACTIONS.map(({ id, label }) => `- ${id}: ${label}`).join(
     "\n",
   );
+  const iconList = MARKETPLACE_ICON_IDS.join(", ");
   return [
     "Erstelle genau ein JSON-Manifest für eine deklarative Alo-App. Antworte ausschließlich mit JSON, ohne Markdown oder Erklärung.",
     "Keine HTML-, JavaScript-, CSS-, URL-, Netzwerk-, Daten-, Provider- oder Berechtigungseinträge. Verwende nur die unten gelisteten actionId-Werte.",
+    "Das icon-Feld muss exakt eine Alo-App-Symbol-ID aus der folgenden Allowlist verwenden. Wähle thematisch passend (Ergebnisse/Tabellen: leaderboard; Quiz: game; allgemeine App: hub). Kein Emoji, keine URL, kein HTML/JavaScript und kein selbst erfundenes Symbol.",
+    `Zulässige icon-IDs: ${iconList}`,
     "Für normale Apps gilt ausschließlich schemaVersion 1 mit den festen Blöcken heading, paragraph, list und action; erforderlich sind 1–12 Blöcke und 1–4 unterschiedliche registrierte Aktionen.",
     "Nur wenn das Ziel ausdrücklich ein spielbares Quiz-Spiel verlangt, verwende schemaVersion 2; das Manifest hat dann genau die Schlüssel schemaVersion, name, description, icon, blocks und game.",
     "Das v2-Feld game hat genau type='quiz', title, instructions, questions und completionMessage. questions enthält 3–12 feste Fragen mit prompt, 2–4 choices, einem 0-basierten correctIndex und optional explanation.",
@@ -438,7 +472,10 @@ export function buildMarketplaceMiraRequest(
   };
 }
 
-export function parseMarketplaceMiraManifestReply(reply: unknown): MarketplaceAuthoredManifest {
+export function parseMarketplaceMiraManifestReply(
+  reply: unknown,
+  fallbackIcon: MarketplaceIconId = "hub",
+): MarketplaceAuthoredManifest {
   if (typeof reply !== "string" || reply.length > MARKETPLACE_MAX_MANIFEST_BYTES * 2) {
     throw new Error("Mira-Antwort ist leer oder zu groß.");
   }
@@ -458,7 +495,7 @@ export function parseMarketplaceMiraManifestReply(reply: unknown): MarketplaceAu
         if (parsed.reply !== undefined && typeof parsed.reply !== "string") continue;
         parsed = parsed.manifest;
       }
-      return validateMarketplaceAuthoredManifest(parsed);
+      return validateMarketplaceAuthoredManifest(applySafeMiraIconFallback(parsed, fallbackIcon));
     } catch (error) {
       lastError = error;
     }
@@ -526,7 +563,7 @@ export async function generateMarketplaceManifestDraft(
   previousManifest?: unknown,
 ): Promise<MarketplaceAuthoredManifest> {
   const reply = await send(buildMarketplaceMiraRequest(goal, provider, previousManifest));
-  return parseMarketplaceMiraManifestReply(reply.reply);
+  return parseMarketplaceMiraManifestReply(reply.reply, marketplaceIconFallbackForGoal(goal));
 }
 
 function isUuid(value: unknown): value is string {
