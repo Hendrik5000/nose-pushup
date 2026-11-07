@@ -23,6 +23,13 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import type { PrivateGameId } from "@/lib/private-game-policy";
 import { HOME_OTHER_AREAS } from "@/lib/home-app-menus";
+import { useHomeAppAccountSync } from "@/hooks/use-home-app-account-sync";
+import {
+  HOME_APP_SYNC_APPLIED,
+  mergeHomeAppLocalEdit,
+  mergeMarketplaceLocalEdit,
+  requestHomeAppAccountSync,
+} from "@/lib/home-app-account-sync";
 import { supabase } from "@/integrations/supabase/client";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
 import { MarketplaceIcon } from "@/components/marketplace/MarketplaceIcon";
@@ -42,6 +49,7 @@ import {
   hasHomeAppDragThreshold,
   clearHomeAppName,
   forgetHomeAppPersonalization,
+  homeAppHubSettingsStorageKey,
   loadHomeAppHubSettings,
   loadHomeBackgroundImage,
   moveHomeApp,
@@ -194,6 +202,15 @@ function HomeAppHub({
   avatarUrl: string | null | undefined;
 }) {
   const { user } = Route.useRouteContext();
+  const accountSyncMessage = useHomeAppAccountSync(user.id);
+  const activeUserIdRef = useRef<string | null>(user.id);
+  activeUserIdRef.current = user.id;
+  useEffect(() => {
+    activeUserIdRef.current = user.id;
+    return () => {
+      activeUserIdRef.current = null;
+    };
+  }, [user.id]);
   const [canSeeAdmin, setCanSeeAdmin] = useState(false);
   const [installState, setInstallState] = useState<MarketplacePublishedInstallState>(
     EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE,
@@ -265,13 +282,28 @@ function HomeAppHub({
   }, [user.id]);
 
   useEffect(() => {
-    try {
-      setSettings(loadHomeAppHubSettings(window.localStorage, user.id));
-      setSettingsError("");
-    } catch {
-      setSettings(EMPTY_HOME_APP_HUB_SETTINGS);
-      setSettingsError("Home-Einstellungen sind in diesem Browser nicht verfügbar.");
-    }
+    const load = () => {
+      try {
+        setSettings(loadHomeAppHubSettings(window.localStorage, user.id));
+        setSettingsError("");
+      } catch {
+        setSettings(EMPTY_HOME_APP_HUB_SETTINGS);
+        setSettingsError("Home-Einstellungen sind in diesem Browser nicht verfügbar.");
+      }
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === homeAppHubSettingsStorageKey(user.id)) load();
+    };
+    const onApplied = (event: Event) => {
+      if ((event as CustomEvent<{ userId?: string }>).detail?.userId === user.id) load();
+    };
+    load();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(HOME_APP_SYNC_APPLIED, onApplied);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(HOME_APP_SYNC_APPLIED, onApplied);
+    };
   }, [user.id]);
 
   useEffect(() => {
@@ -292,9 +324,16 @@ function HomeAppHub({
     const onStorage = (event: StorageEvent) => {
       if (event.key === marketplacePublishedInstallStorageKey(user.id)) load();
     };
+    const onApplied = (event: Event) => {
+      if ((event as CustomEvent<{ userId?: string }>).detail?.userId === user.id) load();
+    };
     load();
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener(HOME_APP_SYNC_APPLIED, onApplied);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(HOME_APP_SYNC_APPLIED, onApplied);
+    };
   }, [canSeeAdmin, user.id]);
 
   const backgroundPreference = settings.background;
@@ -359,10 +398,18 @@ function HomeAppHub({
 
   const persistSettings = (next: HomeAppHubSettings, status: string) => {
     try {
-      saveHomeAppHubSettings(window.localStorage, user.id, next);
-      setSettings(next);
+      if (activeUserIdRef.current !== user.id) return false;
+      const merged = mergeHomeAppLocalEdit(
+        settings,
+        next,
+        loadHomeAppHubSettings(window.localStorage, user.id),
+      );
+      saveHomeAppHubSettings(window.localStorage, user.id, merged);
+      setSettings(merged);
       setSettingsError("");
       setHomeStatus(status);
+      if (JSON.stringify(settings.nameOverrides) !== JSON.stringify(next.nameOverrides))
+        requestHomeAppAccountSync(user.id);
       return true;
     } catch {
       setSettingsError("Die Änderung konnte nicht lokal gespeichert werden.");
@@ -371,19 +418,29 @@ function HomeAppHub({
   };
 
   const persistInstallState = async (nextInput: unknown, status: string) => {
-    if (!isMarketplaceAdminAccessGranted(await getAdminAreaAccess())) {
-      setHomeStatus("Admin-Zugriff ist nicht mehr bestätigt. Die Änderung wurde blockiert.");
-      return false;
-    }
     try {
-      const next = parseMarketplacePublishedInstallState(nextInput);
+      const access = await getAdminAreaAccess();
+      if (activeUserIdRef.current !== user.id) return false;
+      if (!isMarketplaceAdminAccessGranted(access)) {
+        setHomeStatus("Admin-Zugriff ist nicht mehr bestätigt. Die Änderung wurde blockiert.");
+        return false;
+      }
+      const next = mergeMarketplaceLocalEdit(
+        installState,
+        parseMarketplacePublishedInstallState(nextInput),
+        loadMarketplacePublishedInstallState(window.localStorage, user.id),
+      );
       saveMarketplacePublishedInstallState(window.localStorage, user.id, next);
       setInstallState(next);
       setMarketplaceStorageError("");
       setHomeStatus(status);
+      requestHomeAppAccountSync(user.id);
       return true;
     } catch {
-      setMarketplaceStorageError("Die lokale App-Änderung konnte nicht gespeichert werden.");
+      if (activeUserIdRef.current === user.id)
+        setMarketplaceStorageError(
+          "Die App-Änderung konnte nicht gespeichert werden. Bitte erneut versuchen.",
+        );
       return false;
     }
   };
@@ -688,7 +745,7 @@ function HomeAppHub({
     if (!renamingAppId) return;
     try {
       const next = setHomeAppName(settings, renamingAppId, renameDraft);
-      if (persistSettings(next, "App-Name wurde nur auf diesem Gerät gespeichert.")) {
+      if (persistSettings(next, "App-Name gespeichert. Kontoabgleich folgt.")) {
         setRenamingAppId(null);
         setRenameDraft("");
       }
@@ -715,7 +772,7 @@ function HomeAppHub({
       return;
     }
     const { appId } = uninstallTargetTile.install;
-    const status = `„${uninstallTargetTitle}“ wurde nur von diesem Gerät entfernt. Der Marketplace-Eintrag bleibt erhalten.`;
+    const status = `„${uninstallTargetTitle}“ wurde entfernt. Eigene Apps werden im Konto abgeglichen; der Marketplace-Eintrag bleibt erhalten.`;
     setIsUninstallingApp(true);
     try {
       const removed = await persistInstallState(
@@ -724,10 +781,15 @@ function HomeAppHub({
       );
       if (!removed) return;
       try {
-        const nextSettings = forgetHomeAppPersonalization(settings, uninstallTargetTile.id);
+        const nextSettings = mergeHomeAppLocalEdit(
+          settings,
+          forgetHomeAppPersonalization(settings, uninstallTargetTile.id),
+          loadHomeAppHubSettings(window.localStorage, user.id),
+        );
         saveHomeAppHubSettings(window.localStorage, user.id, nextSettings);
         setSettings(nextSettings);
         setSettingsError("");
+        requestHomeAppAccountSync(user.id);
       } catch {
         setSettingsError(
           "Die Installation wurde entfernt; der gespeicherte App-Name konnte nicht bereinigt werden.",
@@ -1139,6 +1201,14 @@ function HomeAppHub({
               {settingsError || marketplaceStorageError}
             </p>
           )}
+          <p
+            className="mt-4 max-w-xl text-xs text-muted-foreground"
+            role="status"
+            data-home-account-sync
+          >
+            {accountSyncMessage} Reihenfolge, Hintergründe und Aktionsfreigaben bleiben auf diesem
+            Gerät.
+          </p>
           <p className="sr-only" role="status" aria-live="polite">
             {homeStatus}
           </p>
@@ -1160,8 +1230,8 @@ function HomeAppHub({
               <DialogTitle>{activeActionTitle}</DialogTitle>
               <DialogDescription>
                 {activeActionTile.kind === "marketplace"
-                  ? "Der Name ist nur auf diesem Gerät geändert. Deinstallieren entfernt nur diese lokale Installation."
-                  : "Der Name dieser Alo-App wird nur auf diesem Gerät geändert."}
+                  ? "Name und Installation eigener veröffentlichter Apps werden mit deinem Konto abgeglichen. Fremde Marketplace-Apps bleiben lokal. Aktionsfreigaben gelten nur auf diesem Gerät."
+                  : "Der Name dieser Alo-App wird mit deinem Konto abgeglichen. Reihenfolge und Hintergrund bleiben auf diesem Gerät."}
               </DialogDescription>
               {isEditingHub && (
                 <div className="mt-4 grid grid-cols-2 gap-2">
@@ -1232,7 +1302,7 @@ function HomeAppHub({
                     }}
                     className="min-h-12 rounded-xl border border-destructive/40 px-4 text-left text-sm font-semibold text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   >
-                    Lokal deinstallieren
+                    Deinstallieren
                   </button>
                 )}
               </div>
@@ -1248,11 +1318,12 @@ function HomeAppHub({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>„{uninstallTargetTitle}“ nur lokal deinstallieren?</AlertDialogTitle>
+            <AlertDialogTitle>„{uninstallTargetTitle}“ deinstallieren?</AlertDialogTitle>
             <AlertDialogDescription>
-              Entfernt wird nur die Installation auf diesem Gerät. Der veröffentlichte Marketplace-
-              Eintrag und seine Version bleiben unverändert und können später erneut installiert
-              werden.
+              Bei eigenen veröffentlichten Apps wird das Entfernen mit allen angemeldeten Geräten
+              abgeglichen; fremde Apps werden nur hier entfernt. Der Marketplace-Eintrag bleibt
+              unverändert. Aktionsfreigaben müssen bei einer erneuten Installation auf jedem Gerät
+              neu bestätigt werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1264,7 +1335,7 @@ function HomeAppHub({
                 void uninstallMarketplaceAppFromHome();
               }}
             >
-              {isUninstallingApp ? "Entferne …" : "Lokal deinstallieren"}
+              {isUninstallingApp ? "Entferne …" : "Deinstallieren"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

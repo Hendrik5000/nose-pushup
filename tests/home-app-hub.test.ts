@@ -243,10 +243,11 @@ test("Home edit mode uses empty-area hold, direct icon drag, keyboard movement, 
   assert.doesNotMatch(hub, /GripVertical|MoreHorizontal|Pencil|Home-Apps anpassen/);
   assert.doesNotMatch(hub, /mt-2 flex flex-wrap items-center justify-center gap-1/);
   assert.match(hub, /setActiveAppMenuId\(appId\)/);
-  assert.match(hub, /Lokal deinstallieren/);
+  assert.match(hub, /Deinstallieren/);
   assert.match(hub, /removeMarketplacePublishedApp\(installState, appId\)/);
   assert.match(hub, /forgetHomeAppPersonalization\(settings, uninstallTargetTile\.id\)/);
-  assert.match(hub, /Der Marketplace-Eintrag bleibt erhalten/);
+  assert.match(hub, /Marketplace-Eintrag bleibt/);
+  assert.match(hub, /allen angemeldeten Geräten/);
   assert.doesNotMatch(hub, /publishMarketplaceApp|revokeMarketplaceApp/);
 });
 
