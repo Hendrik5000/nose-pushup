@@ -17,6 +17,11 @@ const authoringComponent = readFileSync(
   `${root}/src/components/marketplace/MarketplaceCustomApps.tsx`,
   "utf8",
 );
+const miraChat = readFileSync(`${root}/src/components/mira/SuperAiPage.tsx`, "utf8");
+const draftPreview = readFileSync(
+  `${root}/src/components/marketplace/MiraMarketplaceDraftPreview.tsx`,
+  "utf8",
+);
 const manifestRenderer = readFileSync(
   `${root}/src/components/marketplace/MarketplaceManifestView.tsx`,
   "utf8",
@@ -101,12 +106,11 @@ test("publish and revoke request validators fail closed unless the Admin explici
   assert.equal(version.expectedVersion, 1);
   assert.equal(version.appId, "8c2e1891-c4da-4c12-a47d-9fb0bda5d712");
 
-  assert.match(authoringComponent, /open=\{publishConfirmationOpen\}/);
-  assert.match(
-    authoringComponent,
-    /onClick=\{\(event\) => \{[\s\S]*?event\.preventDefault\(\);[\s\S]*?void onConfirmPublish\(\);/,
-  );
-  assert.match(authoringComponent, /confirmed: true as const/);
+  assert.doesNotMatch(authoringComponent, /publishConfirmationOpen|onConfirmPublish/);
+  assert.match(miraChat, /confirmed: true as const/);
+  assert.match(draftPreview, /role="group"/);
+  assert.match(draftPreview, /onConfirmPublish/);
+  assert.match(draftPreview, /Ja, veröffentlichen/);
   assert.match(authoringComponent, /open=\{revokeConfirmationApp !== null\}/);
   assert.match(authoringComponent, /pinned|unveränderlich/i);
 });
@@ -223,14 +227,17 @@ test("only the fixed renderer is used: no dynamic imports, remote URLs, executab
   assert.match(manifestRenderer, /block\.type === "list"/);
   assert.match(manifestRenderer, /getMarketplaceAuthorAction\(block\.actionId\)/);
   assert.match(manifestRenderer, /onAction\?\.\(block\.actionId\)/);
-  assert.match(
+  assert.doesNotMatch(
     authoringComponent,
-    /Frühere Chats, Anhänge[\s\S]*?Gesundheits- oder Trainingsdaten werden nicht automatisch/,
+    /ADMIN-APP-BUILDER|marketplace-app-goal|Mit Mira entwerfen/,
   );
-  assert.match(
-    authoringComponent,
-    /generateMarketplaceManifestDraft\(prompt, selection\.provider, send\)/,
-  );
+  assert.doesNotMatch(authoringComponent, /generateMarketplaceManifestDraft/);
+  assert.match(miraChat, /classifyMarketplaceChatIntent/);
+  assert.match(miraChat, /await checkMarketplaceAdmin\(\)/);
+  assert.match(miraChat, /generateMarketplaceManifestDraft\(/);
+  assert.match(miraChat, /confirmed: true as const/);
+  assert.match(draftPreview, /role="group"/);
+  assert.match(draftPreview, /Ja, veröffentlichen/);
   const effectBodies = authoringComponent
     .split("useEffect(() => {")
     .slice(1)

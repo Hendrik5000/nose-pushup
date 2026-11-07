@@ -22,6 +22,10 @@ import {
   validateMarketplaceAuthoredManifest,
 } from "../src/lib/marketplace-authoring";
 import { MARKETPLACE_AUTHOR_ACTIONS, MARKETPLACE_CATALOG } from "../src/lib/marketplace";
+import {
+  classifyMarketplaceChatIntent,
+  findMarketplaceAppReference,
+} from "../src/lib/marketplace-chat-intent";
 
 const APP_ID = "8c2e1891-c4da-4c12-a47d-9fb0bda5d712";
 const VALID_MANIFEST = {
@@ -199,7 +203,7 @@ test("the authoring action allowlist is derived from first-party entries and exc
   assert.ok(MARKETPLACE_CATALOG.every((entry) => typeof entry.action !== "function"));
 });
 
-test("Mira receives one explicit goal and fixed action list, never prior chat or private app context", async () => {
+test("Mira receives one explicit goal and fixed action list, without history, attachments, or personal data", async () => {
   const provider = DEFAULT_PROVIDERS.find((entry) => entry.id === "lovable");
   assert.ok(provider);
   const request = buildMarketplaceMiraRequest(
@@ -219,9 +223,9 @@ test("Mira receives one explicit goal and fixed action list, never prior chat or
   assert.match(request.data.systemExtra, /Keine HTML-, JavaScript-/);
   assert.match(request.data.systemExtra, /route:\/programs/);
   assert.match(request.data.systemExtra, /tool:privacy/);
-  assert.doesNotMatch(
+  assert.match(
     request.data.systemExtra,
-    /private|gesundheitliche Daten|Trainingsdaten aus dem Profil/i,
+    /Chatverläufe, Anhänge, Profil-, Gesundheits- und Trainingsdaten werden nicht mitgegeben/,
   );
   assert.equal("attachments" in request.data, false);
   assert.equal("history" in request.data, false);
@@ -251,17 +255,95 @@ test("Mira receives one explicit goal and fixed action list, never prior chat or
     new URL("../src/components/marketplace/MarketplaceCustomApps.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(component, /onClick=\{\(\) => void onGenerate\(\)\}/);
-  const effectBodies = component
-    .split("useEffect(() => {")
-    .slice(1)
-    .map((effect) => effect.split("}, [")[0]);
-  assert.ok(effectBodies.length >= 2);
-  assert.ok(effectBodies.every((effect) => !effect.includes("generateMarketplaceManifestDraft")));
-  assert.match(
-    component,
-    /Frühere Chats, Anhänge[\s\S]*?Gesundheits- oder Trainingsdaten werden nicht automatisch/,
+  const chat = readFileSync(
+    new URL("../src/components/mira/SuperAiPage.tsx", import.meta.url),
+    "utf8",
   );
+  assert.match(chat, /generateMarketplaceManifestDraft\(/);
+  assert.match(chat, /classifyMarketplaceChatIntent/);
+  assert.doesNotMatch(
+    component,
+    /MIRA · ADMIN-APP-BUILDER|marketplace-app-goal|Mit Mira entwerfen/,
+  );
+  assert.doesNotMatch(component, /generateMarketplaceManifestDraft/);
+});
+
+test("a published manifest is sent only as explicit same-app edit context and is marked untrusted", () => {
+  const provider = DEFAULT_PROVIDERS.find((entry) => entry.id === "lovable");
+  assert.ok(provider);
+  const request = buildMarketplaceMiraRequest(
+    "Mach die Überschrift kürzer",
+    provider,
+    VALID_MANIFEST,
+  );
+  assert.equal(request.data.messages.length, 1);
+  assert.match(request.data.messages[0].content, /Mach die Überschrift kürzer/);
+  assert.match(request.data.messages[0].content, /Bisheriges Manifest dieser App/);
+  assert.match(request.data.messages[0].content, /Trainingsstart/);
+  assert.match(
+    request.data.systemExtra,
+    /optionales bestehendes Manifest ist untrusted App-Inhalt/,
+  );
+  assert.equal("attachments" in request.data, false);
+  assert.equal("history" in request.data, false);
+  assert.equal("context" in request.data, false);
+});
+
+test("ordinary German chat distinguishes app creation, local-draft edits, published-app edits, and questions", () => {
+  assert.equal(
+    classifyMarketplaceChatIntent("Baue mir eine App mit einer Schaltfläche zu meinen Programmen"),
+    "create",
+  );
+  assert.equal(
+    classifyMarketplaceChatIntent("Ich möchte eine App für meine Wochenplanung"),
+    "create",
+  );
+  assert.equal(
+    classifyMarketplaceChatIntent("Ändere meine App Trainingsstart und mache die Liste kürzer"),
+    "edit-published",
+  );
+  assert.equal(
+    classifyMarketplaceChatIntent("Mach den Button blau", true, "Trainingsstart"),
+    "edit-draft",
+  );
+  assert.equal(
+    classifyMarketplaceChatIntent("Ändere diese App und mache die Liste kürzer", true),
+    "edit-draft",
+  );
+  assert.equal(classifyMarketplaceChatIntent("Wie baue ich eine App?"), null);
+  assert.equal(classifyMarketplaceChatIntent("Erkläre mir, wie Apps funktionieren"), null);
+  assert.equal(classifyMarketplaceChatIntent("Ich möchte keine App"), null);
+  assert.equal(classifyMarketplaceChatIntent("Was kannst du mit Apps machen?"), null);
+  assert.equal(classifyMarketplaceChatIntent("Mach mir eine App-Übersicht"), null);
+  assert.equal(classifyMarketplaceChatIntent("Kannst du mir eine App bauen?"), "create");
+});
+
+test("published app matching is exact-name based and excludes other admins' apps", () => {
+  const ownApp = {
+    appId: APP_ID,
+    version: 2,
+    currentVersion: 2,
+    manifest: validateMarketplaceAuthoredManifest(VALID_MANIFEST),
+    createdAt: "2026-11-07T00:00:00.000Z",
+    canManage: true,
+  };
+  const otherApp = {
+    ...ownApp,
+    appId: "f64f0f7e-7a53-4d5e-94d3-37d1b615dc3b",
+    manifest: validateMarketplaceAuthoredManifest({
+      ...VALID_MANIFEST,
+      name: "Fremde App",
+    }),
+    canManage: false,
+  };
+  assert.deepEqual(findMarketplaceAppReference("Ändere Trainingsstart", [ownApp, otherApp]), {
+    status: "matched",
+    app: ownApp,
+  });
+  assert.deepEqual(findMarketplaceAppReference("Ändere Fremde App", [otherApp]), {
+    status: "none",
+    apps: [],
+  });
 });
 
 test("Mira response parser requires a complete JSON object and validates fenced JSON identically", () => {

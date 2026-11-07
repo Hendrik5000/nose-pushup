@@ -200,16 +200,19 @@ test("camera is retained separately from library/device pickers, with accessible
 test("only deliberate submit sends attachments; failures preserve drafts and bytes never enter history", () => {
   const page = read("components/mira/SuperAiPage.tsx");
   const submit = page.slice(page.indexOf("const submit ="), page.indexOf("const regenerate ="));
-  assert.match(submit, /readMiraAttachments/);
-  assert.match(submit, /attachments: preparedAttachments/);
-  const pendingIndex = submit.indexOf(
+  const ordinarySubmit = submit.slice(submit.indexOf("cancelInlineDictation(false)"));
+  assert.match(ordinarySubmit, /readMiraAttachments/);
+  assert.match(ordinarySubmit, /attachments: preparedAttachments/);
+  const pendingIndex = ordinarySubmit.indexOf(
     "setPendingUserMessage({ sessionId: activeId, message: userMessage })",
   );
-  assert.ok(pendingIndex < submit.indexOf('setInput("")'));
-  assert.ok(submit.indexOf('setInput("")') < submit.indexOf("await readMiraAttachments("));
-  assert.match(submit, /putAlo\("draft", \{ target: "mira", text: "" \}/);
-  assert.ok(submit.indexOf("await send(") < submit.indexOf("setAttachments([])"));
-  const failure = submit.slice(submit.indexOf("catch (e)"));
+  assert.ok(pendingIndex < ordinarySubmit.indexOf('setInput("")'));
+  assert.ok(
+    ordinarySubmit.indexOf('setInput("")') < ordinarySubmit.indexOf("await readMiraAttachments("),
+  );
+  assert.match(ordinarySubmit, /putAlo\("draft", \{ target: "mira", text: "" \}/);
+  assert.ok(ordinarySubmit.indexOf("await send(") < ordinarySubmit.indexOf("setAttachments([])"));
+  const failure = ordinarySubmit.slice(ordinarySubmit.indexOf("catch (e)"));
   assert.match(failure, /restoreMiraComposerTextAfterFailure/);
   assert.doesNotMatch(failure, /setAttachments\(\[\]\)|role: "assistant"/);
   assert.match(page, /sendingRef.current/);

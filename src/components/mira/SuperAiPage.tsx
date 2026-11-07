@@ -15,7 +15,11 @@ import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { MiraVoiceConversationDialog } from "@/components/mira/MiraVoiceConversationDialog";
 import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
-import { MarketplaceMiraAuthoring } from "@/components/marketplace/MarketplaceMiraAuthoring";
+import {
+  MiraMarketplaceDraftPreview,
+  type MarketplaceMiraDraft,
+  type MarketplaceMiraDraftTarget,
+} from "@/components/marketplace/MiraMarketplaceDraftPreview";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import {
   assertMiraAttachmentProvider,
@@ -102,6 +106,17 @@ import {
   type AiTask,
 } from "@/lib/ai-providers";
 import { superAiChat } from "@/lib/super-ai.functions";
+import { getAdminAreaAccess } from "@/lib/admin.functions";
+import { isMarketplaceAdminAccessGranted } from "@/lib/marketplace";
+import { listMarketplaceCurrentApps, publishMarketplaceApp } from "@/lib/marketplace.functions";
+import {
+  generateMarketplaceManifestDraft,
+  type MarketplaceMiraSend,
+} from "@/lib/marketplace-authoring";
+import {
+  classifyMarketplaceChatIntent,
+  findMarketplaceAppReference,
+} from "@/lib/marketplace-chat-intent";
 import { supabase } from "@/integrations/supabase/client";
 import {
   exportChatMarkdown,
@@ -124,7 +139,12 @@ type Msg = Omit<StoredMsg, "meta"> & {
 };
 type SportAiView = "coach" | "chat" | "history";
 type SportAiHistoryFilter = "all" | "plans";
-type MiraSubmitOptions = { includeAttachments?: boolean; preserveComposer?: boolean };
+type MiraSubmitOptions = {
+  includeAttachments?: boolean;
+  preserveComposer?: boolean;
+  skipMarketplaceAuthoring?: boolean;
+};
+type LocalMarketplaceMiraDraft = MarketplaceMiraDraft & { sessionId: string };
 // Legacy MIRA_CONTEXT_KEY (alo-mira-context-enabled) is deliberately not migrated: consent defaults off per account.
 function getMiraContextPreference() {
   const grants = getMiraGrants();
@@ -303,6 +323,9 @@ export function SuperAiPage({
   userId: string;
 }) {
   const send = useServerFn(superAiChat);
+  const checkMarketplaceAdmin = useServerFn(getAdminAreaAccess);
+  const listMarketplaceApps = useServerFn(listMarketplaceCurrentApps);
+  const publishMarketplaceAppFn = useServerFn(publishMarketplaceApp);
   const [sessions, setSessions] = useState<AiSession[]>(() => loadSessions());
   const [activeId, setActiveIdState] = useState<string>(() => {
     const list = loadSessions();
@@ -326,6 +349,10 @@ export function SuperAiPage({
     sessionId: string;
     message: Msg;
   } | null>(null);
+  const [marketplaceDraft, setMarketplaceDraft] = useState<LocalMarketplaceMiraDraft | null>(null);
+  const [marketplacePublishConfirmationOpen, setMarketplacePublishConfirmationOpen] =
+    useState(false);
+  const [isPublishingMarketplaceApp, setIsPublishingMarketplaceApp] = useState(false);
   const [replyAnimation, setReplyAnimation] = useState<{ sessionId: string; index: number } | null>(
     null,
   );
@@ -337,6 +364,10 @@ export function SuperAiPage({
     setReplyAnimation(null);
     sendingRef.current = false;
   }, [activeId]);
+  useEffect(() => {
+    setMarketplaceDraft(null);
+    setMarketplacePublishConfirmationOpen(false);
+  }, [activeId, userId]);
   useEffect(() => {
     if (!replyAnimation) return;
     const timeout = window.setTimeout(() => setReplyAnimation(null), 2200);
@@ -394,6 +425,7 @@ export function SuperAiPage({
   const pendingQuestionRef = useRef<HTMLDivElement>(null);
   const activePendingUserMessage =
     pendingUserMessage?.sessionId === activeId ? pendingUserMessage.message : null;
+  const activeMarketplaceDraft = marketplaceDraft?.sessionId === activeId ? marketplaceDraft : null;
   const generationRef = useRef(0);
   const dictationOpenRef = useRef(false);
   const draftBeforeDictationRef = useRef("");
@@ -813,6 +845,194 @@ export function SuperAiPage({
     const text = (textOverride ?? input).trim();
     const submittedAttachments = options.includeAttachments === false ? [] : attachments;
     if ((!text && !submittedAttachments.length) || loading || sendingRef.current) return null;
+
+    const marketplaceIntent = options.skipMarketplaceAuthoring
+      ? null
+      : classifyMarketplaceChatIntent(
+          text,
+          activeMarketplaceDraft !== null && activeMarketplaceDraft.sessionId === activeId,
+          activeMarketplaceDraft?.manifest.name,
+        );
+    if (marketplaceIntent) {
+      const marketplaceSelection = selectProvider(loadProviders(userId), "general");
+      if (!marketplaceSelection.provider) {
+        setError(
+          "Kein aktiver KI-Anbieter. Öffne Zugangsdaten und hinterlege einen API-Schlüssel.",
+        );
+        setSettingsOpen(true);
+        return null;
+      }
+
+      sendingRef.current = true;
+      setLoading(true);
+      setError(null);
+      const authoringGeneration = ++generationRef.current;
+      let hasMarketplaceAdminAccess = false;
+      try {
+        hasMarketplaceAdminAccess = isMarketplaceAdminAccessGranted(await checkMarketplaceAdmin());
+      } catch (error) {
+        if (authoringGeneration === generationRef.current) {
+          setError(
+            error instanceof Error && error.message
+              ? error.message
+              : "Admin-Zugriff konnte nicht bestätigt werden.",
+          );
+          sendingRef.current = false;
+          setLoading(false);
+        }
+        return null;
+      }
+      if (authoringGeneration !== generationRef.current) return null;
+
+      if (hasMarketplaceAdminAccess) {
+        const submissionSessionId = activeId;
+        let submittedComposerText: string | null = null;
+        try {
+          let target: MarketplaceMiraDraftTarget | null = null;
+          let previousManifest: unknown;
+          let clarification: string | null = null;
+
+          if (marketplaceIntent === "edit-draft") {
+            if (!activeMarketplaceDraft) {
+              clarification =
+                "Ich finde in diesem Chat keinen lokalen App-Entwurf. Beschreibe die gewünschte Alo-App direkt, zum Beispiel: ‚Baue mir eine App …‘.";
+            } else {
+              target = activeMarketplaceDraft.target;
+              previousManifest = activeMarketplaceDraft.manifest;
+            }
+          } else if (marketplaceIntent === "edit-published") {
+            const publishedApps = await listMarketplaceApps();
+            if (authoringGeneration !== generationRef.current) return null;
+            const reference = findMarketplaceAppReference(text, publishedApps);
+            if (reference.status === "matched") {
+              if (reference.app.version !== reference.app.currentVersion) {
+                throw new Error("Die aktuelle App-Version konnte nicht sicher aufgelöst werden.");
+              }
+              target = {
+                appId: reference.app.appId,
+                expectedVersion: reference.app.currentVersion,
+                appName: reference.app.manifest.name,
+              };
+              previousManifest = reference.app.manifest;
+            } else {
+              const names = [...new Set(reference.apps.map((app) => app.manifest.name))];
+              clarification = names.length
+                ? `Ich kann die gewünschte eigene App nicht eindeutig zuordnen. Schreib bitte ihren genauen Namen in die Nachricht: ${names.join(", ")}.`
+                : "Ich finde noch keine veröffentlichte Alo-App, die du bearbeiten kannst. Beschreibe eine neue App direkt im Chat, zum Beispiel: ‚Baue mir eine App …‘.";
+            }
+          }
+
+          if (authoringGeneration !== generationRef.current) return null;
+          const userMessage: Msg = { role: "user", content: text };
+          const nextMessages: Msg[] = [...history, userMessage];
+          setPendingUserMessage({ sessionId: submissionSessionId, message: userMessage });
+          setSportAiView("chat");
+          submittedComposerText = captureMiraComposerTextForSubmission(
+            input,
+            textOverride,
+            options.preserveComposer === true,
+          );
+          if (submittedComposerText !== null) {
+            setInput("");
+            try {
+              putAlo("draft", { target: "mira", text: "" }, miraDraftId(submissionSessionId));
+            } catch {
+              setError("Entwurf konnte nicht lokal gespeichert werden. Gerätespeicher prüfen.");
+            }
+          }
+
+          if (clarification) {
+            const assistantMessage: Msg = { role: "assistant", content: clarification };
+            setReplyAnimation({ sessionId: submissionSessionId, index: nextMessages.length });
+            setMessages([...nextMessages, assistantMessage]);
+            setPendingUserMessage(null);
+            return clarification;
+          }
+
+          const responseMeta: {
+            current: { provider: string; model: string; task: string } | null;
+          } = { current: null };
+          const sendMarketplaceRequest: MarketplaceMiraSend = async ({ data }) => {
+            const response = await send({ data });
+            responseMeta.current = response;
+            return response;
+          };
+          const manifest = await generateMarketplaceManifestDraft(
+            text,
+            marketplaceSelection.provider,
+            sendMarketplaceRequest,
+            previousManifest,
+          );
+          if (authoringGeneration !== generationRef.current) return null;
+
+          setLastTask("general");
+          setMarketplaceDraft({
+            manifest,
+            target,
+            providerLabel: marketplaceSelection.provider.label,
+            sessionId: submissionSessionId,
+          });
+          setMarketplacePublishConfirmationOpen(false);
+          const assistantText =
+            `Ich habe eine lokale Vorschau für „${manifest.name}“ erstellt. Sag mir hier im Chat einfach, was ich daran ändern soll. Zum Veröffentlichen brauchst du anschließend noch eine ausdrückliche Bestätigung.` +
+            (attachments.length
+              ? "\n\nDeine angehängten Dateien habe ich für diesen Entwurf nicht gesendet; sie bleiben im Composer."
+              : "");
+          const assistantMessage: Msg = {
+            role: "assistant",
+            content: assistantText,
+            ...(responseMeta.current
+              ? {
+                  meta: {
+                    provider: responseMeta.current.provider,
+                    model: responseMeta.current.model,
+                    task: responseMeta.current.task,
+                    routingReason: describeProviderSelection(marketplaceSelection, "general"),
+                  },
+                }
+              : {}),
+          };
+          setReplyAnimation({ sessionId: submissionSessionId, index: nextMessages.length });
+          setMessages([...nextMessages, assistantMessage]);
+          setPendingUserMessage(null);
+          return assistantText;
+        } catch (error) {
+          if (authoringGeneration !== generationRef.current) return null;
+          const message = error instanceof Error && error.message ? error.message : "Fehler";
+          setError(message);
+          setPendingUserMessage(null);
+          const restoredComposerText = restoreMiraComposerTextAfterFailure({
+            activeSessionId: activeIdRef.current,
+            submittedSessionId: submissionSessionId,
+            currentText: inputRef.current,
+            submittedText: submittedComposerText,
+          });
+          if (restoredComposerText !== null) {
+            setInput(restoredComposerText);
+            try {
+              putAlo(
+                "draft",
+                { target: "mira", text: restoredComposerText },
+                miraDraftId(submissionSessionId),
+              );
+            } catch {
+              setError("Entwurf konnte nicht lokal gespeichert werden. Gerätespeicher prüfen.");
+            }
+          }
+          return null;
+        } finally {
+          if (authoringGeneration === generationRef.current) {
+            sendingRef.current = false;
+            setLoading(false);
+          }
+        }
+      }
+
+      // Non-admins can still discuss app ideas with Mira, but cannot create or publish Marketplace apps.
+      sendingRef.current = false;
+      setLoading(false);
+    }
+
     cancelInlineDictation(false);
     setError(null);
     setReplyAnimation(null);
@@ -1100,6 +1320,71 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
   const onPersona = (p: AiPersona) => {
     setPersona(p);
     savePersona(p);
+  };
+
+  const requestMarketplacePublishConfirmation = async () => {
+    const draft = activeMarketplaceDraft;
+    if (!draft || isPublishingMarketplaceApp) return;
+    try {
+      const allowed = isMarketplaceAdminAccessGranted(await checkMarketplaceAdmin());
+      if (activeIdRef.current !== draft.sessionId) return;
+      if (!allowed) {
+        setMarketplacePublishConfirmationOpen(false);
+        setError("Admin-Zugriff ist nicht mehr bestätigt. Der Entwurf bleibt unveröffentlicht.");
+        return;
+      }
+      setError(null);
+      setMarketplacePublishConfirmationOpen(true);
+    } catch {
+      if (activeIdRef.current === draft.sessionId) {
+        setMarketplacePublishConfirmationOpen(false);
+        setError(
+          "Admin-Zugriff konnte nicht bestätigt werden. Der Entwurf bleibt unveröffentlicht.",
+        );
+      }
+    }
+  };
+
+  const publishMarketplaceDraft = async () => {
+    const draft = activeMarketplaceDraft;
+    if (!draft || !marketplacePublishConfirmationOpen || isPublishingMarketplaceApp) return;
+    const submissionSessionId = draft.sessionId;
+    setIsPublishingMarketplaceApp(true);
+    setError(null);
+    try {
+      const request = draft.target
+        ? {
+            manifest: draft.manifest,
+            confirmed: true as const,
+            appId: draft.target.appId,
+            expectedVersion: draft.target.expectedVersion,
+          }
+        : { manifest: draft.manifest, confirmed: true as const };
+      const result = await publishMarketplaceAppFn({ data: request });
+      if (activeIdRef.current === submissionSessionId) {
+        setMarketplaceDraft(null);
+        setMarketplacePublishConfirmationOpen(false);
+        const appName = draft.manifest.name;
+        setMessages((current) => [
+          ...current,
+          {
+            role: "assistant",
+            content: `„${appName}“ wurde als Version ${result.version} für Alo-Admins veröffentlicht.`,
+          },
+        ]);
+      }
+    } catch (error) {
+      if (activeIdRef.current === submissionSessionId) {
+        setMarketplacePublishConfirmationOpen(false);
+        setError(
+          error instanceof Error && error.message
+            ? error.message
+            : "Veröffentlichung fehlgeschlagen. Der Entwurf blieb unveröffentlicht.",
+        );
+      }
+    } finally {
+      setIsPublishingMarketplaceApp(false);
+    }
   };
 
   return (
@@ -2080,9 +2365,6 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           {sportAiView === "chat" && (
             <div className="sport-ai-chat-grid">
               <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
-                <div className="flex justify-end">
-                  <MarketplaceMiraAuthoring userId={userId} />
-                </div>
                 <details
                   id="mira-chat-options"
                   className="sport-ai-chat-options"
@@ -2454,6 +2736,22 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       </article>
                     </div>
                   ))}
+                  {activeMarketplaceDraft && (
+                    <div className="flex w-full items-start justify-start">
+                      <MiraMarketplaceDraftPreview
+                        draft={activeMarketplaceDraft}
+                        confirming={marketplacePublishConfirmationOpen}
+                        publishing={isPublishingMarketplaceApp}
+                        onAskPublish={() => void requestMarketplacePublishConfirmation()}
+                        onConfirmPublish={() => void publishMarketplaceDraft()}
+                        onCancelPublish={() => setMarketplacePublishConfirmationOpen(false)}
+                        onDiscard={() => {
+                          setMarketplaceDraft(null);
+                          setMarketplacePublishConfirmationOpen(false);
+                        }}
+                      />
+                    </div>
+                  )}
                   {activePendingUserMessage && (
                     <div
                       ref={pendingQuestionRef}

@@ -90,5 +90,5 @@ test("the next-request provider is explicitly a preview, while each reply carrie
   );
   assert.match(replyActions, /Auswahlregel: \{meta\.routingReason\}/);
   assert.equal((route.match(/meta=\{m\.meta\}/g) ?? []).length, 2);
-  assert.equal((route.match(/\bsend\(\{/g) ?? []).length, 1);
+  assert.equal((route.match(/\bsend\(\{/g) ?? []).length, 2);
 });
