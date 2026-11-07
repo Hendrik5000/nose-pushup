@@ -38,6 +38,18 @@ export const HOME_BACKGROUND_MAX_PIXELS = 24_000_000;
 export const HOME_BACKGROUND_MAX_SOURCE_DIMENSION = 8_000;
 export const HOME_BACKGROUND_MAX_OUTPUT_DIMENSION = 1_920;
 export const HOME_BACKGROUND_MAX_OUTPUT_BYTES = 2 * 1024 * 1024;
+export const HOME_APP_DRAG_THRESHOLD_PX = 12;
+
+export function hasHomeAppDragThreshold(
+  start: Readonly<{ x: number; y: number }>,
+  x: number,
+  y: number,
+) {
+  return (
+    Math.abs(x - start.x) > HOME_APP_DRAG_THRESHOLD_PX ||
+    Math.abs(y - start.y) > HOME_APP_DRAG_THRESHOLD_PX
+  );
+}
 
 const HOME_PRESET_IDS = new Set<string>(HOME_BACKGROUND_PRESETS.map(({ id }) => id));
 const HOME_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);

@@ -39,6 +39,7 @@ import {
   EMPTY_HOME_APP_HUB_SETTINGS,
   HOME_BACKGROUND_PRESETS,
   HOME_DEFAULT_BACKGROUND,
+  hasHomeAppDragThreshold,
   clearHomeAppName,
   forgetHomeAppPersonalization,
   loadHomeAppHubSettings,
@@ -201,6 +202,7 @@ function HomeAppHub({
   const [settings, setSettings] = useState<HomeAppHubSettings>(EMPTY_HOME_APP_HUB_SETTINGS);
   const [settingsError, setSettingsError] = useState("");
   const [isEditingHub, setIsEditingHub] = useState(false);
+  const isEditingHubRef = useRef(isEditingHub);
   const [renamingAppId, setRenamingAppId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [homeStatus, setHomeStatus] = useState("");
@@ -227,6 +229,7 @@ function HomeAppHub({
     pointerId: number;
     x: number;
     y: number;
+    element: HTMLDivElement;
   } | null>(null);
   const dragSourceAppIdRef = useRef<string | null>(null);
   const dragPointerIdRef = useRef<number | null>(null);
@@ -234,6 +237,10 @@ function HomeAppHub({
   const dropTargetPlacementRef = useRef<"before" | "after">("before");
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
   const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
+  const setHomeEditingMode = (next: boolean) => {
+    isEditingHubRef.current = next;
+    setIsEditingHub(next);
+  };
 
   useEffect(
     () => () => {
@@ -395,17 +402,37 @@ function HomeAppHub({
       if (
         !start ||
         start.pointerId !== event.pointerId ||
-        (Math.abs(event.clientX - start.x) <= 12 && Math.abs(event.clientY - start.y) <= 12)
+        !hasHomeAppDragThreshold(start, event.clientX, event.clientY)
       ) {
         return;
       }
       cancelHomeLongPress();
+    };
+    const startPendingHomeTileDrag = (event: PointerEvent) => {
+      const pendingDrag = pendingHomeDragRef.current;
+      if (
+        !isEditingHubRef.current ||
+        !pendingDrag ||
+        pendingDrag.pointerId !== event.pointerId ||
+        !hasHomeAppDragThreshold(pendingDrag, event.clientX, event.clientY)
+      ) {
+        return;
+      }
+      pendingHomeDragRef.current = null;
+      cancelHomeLongPress();
+      beginHomeTileDrag(event, pendingDrag.appId, pendingDrag.element);
     };
     const cancelOnPointerEnd = (event: PointerEvent) => {
       if (longPressStartRef.current?.pointerId === event.pointerId) cancelHomeLongPress();
       if (pendingHomeDragRef.current?.pointerId === event.pointerId) {
         pendingHomeDragRef.current = null;
       }
+      if (event.type === "pointercancel" && dragPointerIdRef.current === event.pointerId) {
+        clearHomeTileDrag();
+      }
+    };
+    const cancelOnLostPointerCapture = (event: PointerEvent) => {
+      if (dragPointerIdRef.current === event.pointerId) clearHomeTileDrag();
     };
     const cancelOnAdditionalTouch = (event: PointerEvent) => {
       if (event.pointerType !== "touch" || event.isPrimary) return;
@@ -414,13 +441,17 @@ function HomeAppHub({
     };
     window.addEventListener("pointerdown", cancelOnAdditionalTouch, true);
     window.addEventListener("pointermove", cancelIfMoved, true);
+    window.addEventListener("pointermove", startPendingHomeTileDrag, true);
     window.addEventListener("pointerup", cancelOnPointerEnd, true);
     window.addEventListener("pointercancel", cancelOnPointerEnd, true);
+    window.addEventListener("lostpointercapture", cancelOnLostPointerCapture, true);
     return () => {
       window.removeEventListener("pointerdown", cancelOnAdditionalTouch, true);
       window.removeEventListener("pointermove", cancelIfMoved, true);
+      window.removeEventListener("pointermove", startPendingHomeTileDrag, true);
       window.removeEventListener("pointerup", cancelOnPointerEnd, true);
       window.removeEventListener("pointercancel", cancelOnPointerEnd, true);
+      window.removeEventListener("lostpointercapture", cancelOnLostPointerCapture, true);
     };
   }, []);
 
@@ -489,24 +520,13 @@ function HomeAppHub({
         return;
       setRenamingAppId(null);
       setKeyboardGrabbedAppId(null);
-      setIsEditingHub(!isEditingHub);
+      setHomeEditingMode(!isEditingHub);
       setHomeStatus(
         isEditingHub
           ? "Home-Bearbeitung beendet."
           : "Home-Bearbeitung gestartet. Ziehe ein App-Symbol an die gewünschte Position.",
       );
     }, 560);
-  };
-
-  const moveHomeLongPress = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const start = longPressStartRef.current;
-    if (
-      start &&
-      start.pointerId === event.pointerId &&
-      (Math.abs(event.clientX - start.x) > 12 || Math.abs(event.clientY - start.y) > 12)
-    ) {
-      cancelHomeLongPress();
-    }
   };
 
   const suppressLongPressClick = (event: ReactMouseEvent<HTMLDivElement>, appId: string) => {
@@ -524,11 +544,20 @@ function HomeAppHub({
     return { appId, placement: x < rect.left + rect.width / 2 ? "before" : "after" } as const;
   };
 
-  const beginHomeTileDrag = (event: ReactPointerEvent<HTMLDivElement>, appId: string) => {
+  const beginHomeTileDrag = (
+    event: Pick<PointerEvent, "pointerId" | "isPrimary" | "preventDefault">,
+    appId: string,
+    sourceElement: HTMLDivElement,
+  ) => {
     // The primary left-button is validated on pointerdown; on pointermove, button may be -1.
-    if (!isEditingHub || !event.isPrimary) return;
+    if (!event.isPrimary) return;
     event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
+    try {
+      sourceElement.setPointerCapture(event.pointerId);
+    } catch {
+      setHomeStatus("Das App-Symbol konnte nicht verschoben werden. Bitte erneut versuchen.");
+      return;
+    }
     dragSourceAppIdRef.current = appId;
     dragPointerIdRef.current = event.pointerId;
     dropTargetAppIdRef.current = appId;
@@ -538,7 +567,7 @@ function HomeAppHub({
     setDropTargetPlacement("before");
   };
 
-  const moveHomeTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const moveHomeTileDrag = (event: ReactPointerEvent<HTMLElement>) => {
     if (dragPointerIdRef.current !== event.pointerId) return;
     const target = getHomeTileDropTargetAtPoint(event.clientX, event.clientY);
     if (!target || !visibleAppIds.includes(target.appId)) return;
@@ -589,7 +618,7 @@ function HomeAppHub({
     clearHomeTileDrag();
     setRenamingAppId(null);
     setKeyboardGrabbedAppId(null);
-    setIsEditingHub(next);
+    setHomeEditingMode(next);
     setHomeStatus(
       next
         ? "Home-Bearbeitung gestartet. Ziehe ein App-Symbol an die gewünschte Position."
@@ -907,6 +936,7 @@ function HomeAppHub({
           <nav
             className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
             aria-label="Alo-Apps"
+            onPointerMoveCapture={moveHomeTileDrag}
           >
             {orderedTiles.map((tile) => {
               const title = settings.nameOverrides[tile.id] ?? tile.title;
@@ -936,24 +966,8 @@ function HomeAppHub({
                         pointerId: event.pointerId,
                         x: event.clientX,
                         y: event.clientY,
+                        element: event.currentTarget,
                       };
-                      event.currentTarget.setPointerCapture(event.pointerId);
-                    }
-                  }}
-                  onPointerMove={(event) => {
-                    moveHomeLongPress(event);
-                    if (isEditingHub) {
-                      const pendingDrag = pendingHomeDragRef.current;
-                      if (
-                        pendingDrag?.pointerId === event.pointerId &&
-                        (Math.abs(event.clientX - pendingDrag.x) > 12 ||
-                          Math.abs(event.clientY - pendingDrag.y) > 12)
-                      ) {
-                        pendingHomeDragRef.current = null;
-                        cancelHomeLongPress();
-                        beginHomeTileDrag(event, pendingDrag.appId);
-                      }
-                      moveHomeTileDrag(event);
                     }
                   }}
                   onPointerUp={(event) => {
@@ -1202,7 +1216,7 @@ function HomeAppHub({
                       settings.nameOverrides[activeActionTile.id] ?? activeActionTile.title,
                     );
                     setSettingsError("");
-                    setIsEditingHub(true);
+                    setHomeEditingMode(true);
                     setActiveAppMenuId(null);
                   }}
                   className="min-h-12 rounded-xl border border-border px-4 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
