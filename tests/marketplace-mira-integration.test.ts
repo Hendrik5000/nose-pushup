@@ -53,7 +53,8 @@ test("the local chat preview uses the fixed manifest renderer and inline explici
 
 test("Mira authoring shows only a validated structured manifest as the local chat preview", () => {
   assert.match(authoring, /extractTrailingMarketplaceJson/);
-  assert.match(authoring, /return validateMarketplaceAuthoredManifest\(parsed\)/);
+  assert.match(authoring, /applySafeMiraIconFallback\(parsed, fallbackIcon\)/);
+  assert.match(authoring, /return validateMarketplaceAuthoredManifest\(applySafeMiraIconFallback/);
   const manifestIndex = miraPage.indexOf(
     "const manifest = await generateMarketplaceManifestDraft(",
   );
