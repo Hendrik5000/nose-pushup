@@ -346,8 +346,12 @@ test("Marketplace implementation has no executable plugin or network primitives"
     new URL("../src/routes/_authenticated/marketplace.tsx", import.meta.url),
     "utf8",
   );
+  const catalog = readFileSync(
+    new URL("../src/components/marketplace/MarketplaceAppCatalog.tsx", import.meta.url),
+    "utf8",
+  );
 
-  for (const source of [library, route]) {
+  for (const source of [library, route, catalog]) {
     assert.doesNotMatch(
       source,
       /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\beval\s*\(|\bFunction\s*\(|dangerouslySetInnerHTML|\bimport\s*\(/,
@@ -362,7 +366,7 @@ test("Marketplace implementation has no executable plugin or network primitives"
   assert.match(route, /getAdminAreaAccess\(\)[\s\S]*?setAdminAccess\(\{ userId, isAdmin:/);
   assert.match(route, /isMarketplaceAdminForUser\(adminAccess, userId\)/);
   assert.match(route, /roleCheckComplete && !isMarketplaceAdmin/);
-  for (const handler of ["onInstall", "onToggle", "onRemove", "onOpenTool"]) {
+  for (const handler of ["onInstall", "onToggle", "onRemove", "onOpenPlugin"]) {
     assert.match(
       route,
       new RegExp(`const ${handler} = [\\s\\S]*?runMarketplaceAdminAction\\(isMarketplaceAdmin`),

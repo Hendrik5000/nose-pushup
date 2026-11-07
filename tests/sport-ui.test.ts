@@ -57,7 +57,7 @@ test("new page structures are shared across training, health, community, account
     assert.match(source, /classic-only/, `${page}: must preserve the original presentation`);
   }
   assert.match(read("components/chat/LocalChatShell.tsx"), /sport-/);
-  assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage \/>/);
+  assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage userId=\{user\.id\} \/>/);
   assert.match(read("components/TrainingDashboard.tsx"), /training-progress/);
   assert.match(read("components/TrainingDashboard.tsx"), /sport-shortcuts/);
 });

@@ -15,6 +15,7 @@ import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { MiraVoiceConversationDialog } from "@/components/mira/MiraVoiceConversationDialog";
 import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
+import { MarketplaceMiraAuthoring } from "@/components/marketplace/MarketplaceMiraAuthoring";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import {
   assertMiraAttachmentProvider,
@@ -294,7 +295,13 @@ function MiraSpeechPrivacySettings() {
   );
 }
 
-export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean } = {}) {
+export function SuperAiPage({
+  sketchLayout = false,
+  userId,
+}: {
+  sketchLayout?: boolean;
+  userId: string;
+}) {
   const send = useServerFn(superAiChat);
   const [sessions, setSessions] = useState<AiSession[]>(() => loadSessions());
   const [activeId, setActiveIdState] = useState<string>(() => {
@@ -353,7 +360,6 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
   const [grants, setGrants] = useState(getMiraGrants);
   const [persona, setPersona] = useState<AiPersona>(() => loadPersona());
   const [favs, setFavs] = useState<string[]>(() => loadFavPrompts());
-  const [userId, setUserId] = useState<string | null>(null);
   const [contextHint, setContextHint] = useState<string | null>(null);
   const [appContext, setAppContext] = useState<AppContextPack | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
@@ -576,12 +582,6 @@ export function SuperAiPage({ sketchLayout = false }: { sketchLayout?: boolean }
       return matchesFilter && matchesQuery;
     });
   }, [sessions, sessionQuery, sessionFilter]);
-
-  useEffect(() => {
-    void supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id);
-    });
-  }, []);
 
   useEffect(() => {
     if (!userId || !contextAllowed) {
@@ -2080,6 +2080,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           {sportAiView === "chat" && (
             <div className="sport-ai-chat-grid">
               <div className="sport-ai-chat-main flex min-w-0 flex-col gap-5">
+                <div className="flex justify-end">
+                  <MarketplaceMiraAuthoring userId={userId} />
+                </div>
                 <details
                   id="mira-chat-options"
                   className="sport-ai-chat-options"

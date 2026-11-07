@@ -37,6 +37,7 @@ const SUGGESTIONS = [
 ];
 
 function CoachChatPage() {
+  const { user } = Route.useRouteContext();
   const send = useServerFn(coachChat);
   const [messages, setMessages] = useState<Msg[]>(() => {
     try {
@@ -242,7 +243,7 @@ function CoachChatPage() {
         </main>
       </DesignView>
       <DesignView variant="sport">
-        <SuperAiPage />
+        <SuperAiPage userId={user.id} />
       </DesignView>
     </>
   );

@@ -8,8 +8,11 @@ const css = read("mira-pr52-design.css");
 const sport = page.slice(page.indexOf('<DesignView variant="sport">'));
 
 test("PR52 reference is an explicit Mira-route visual opt-in, not a global app rollback", () => {
-  assert.match(read("routes/_authenticated/ai.tsx"), /<SuperAiPage sketchLayout \/>/);
-  assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage \/>/);
+  assert.match(
+    read("routes/_authenticated/ai.tsx"),
+    /<SuperAiPage sketchLayout userId=\{user\.id\} \/>/,
+  );
+  assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage userId=\{user\.id\} \/>/);
   assert.match(page, /sketchLayout = false/);
   assert.ok(
     page.indexOf('import "@/mira-pr52-design.css"') >
