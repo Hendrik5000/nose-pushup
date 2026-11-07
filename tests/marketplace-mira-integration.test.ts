@@ -10,6 +10,8 @@ const customApps = read("components/marketplace/MarketplaceCustomApps.tsx");
 const appViewer = read("components/marketplace/MarketplacePublishedAppViewer.tsx");
 const marketplaceRoute = read("routes/_authenticated/marketplace.tsx");
 const iconRegistry = read("components/marketplace/MarketplaceIcon.tsx");
+const chatIntent = read("lib/marketplace-chat-intent.ts");
+const manifestRenderer = read("components/marketplace/MarketplaceManifestView.tsx");
 
 test("Alo apps are authored from ordinary Mira chat messages without a separate builder", () => {
   assert.doesNotMatch(miraPage, /MarketplaceMiraAuthoring/);
@@ -46,6 +48,21 @@ test("the local chat preview uses the fixed manifest renderer and inline explici
   assert.match(draftPreview, /Ja, veröffentlichen/);
   assert.match(draftPreview, /noch nicht veröffentlicht/);
   assert.doesNotMatch(draftPreview, /\bDialog(?:Content|Description)?\b/);
+});
+
+test("Mira game requests render a directly playable local quiz instead of a generic info app", () => {
+  assert.match(chatIntent, /GAME_WORD/);
+  assert.match(chatIntent, /GAME_WORD\.test\(message\)/);
+  assert.match(miraPage, /manifest\.game/);
+  assert.match(miraPage, /lokal spielbare Quiz/);
+  assert.match(manifestRenderer, /MarketplaceQuizGameView/);
+  assert.match(manifestRenderer, /game\.questions\.map/);
+  assert.match(manifestRenderer, /Noch einmal spielen/);
+  assert.match(manifestRenderer, /role="status" aria-live="polite"/);
+  assert.match(manifestRenderer, /aria-disabled=\{answered\}/);
+  assert.match(manifestRenderer, /aria-atomic="true"/);
+  assert.match(appViewer, /getMarketplaceAuthoredActions\(checked\.manifest\)\.length > 0/);
+  assert.match(appViewer, /keine zusätzlichen Alo-Berechtigungen/);
 });
 
 test("curated Marketplace catalog uses icon-name tiles and full-screen detail permissions/actions", () => {

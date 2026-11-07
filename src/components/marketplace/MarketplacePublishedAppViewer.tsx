@@ -111,7 +111,9 @@ export function MarketplacePublishedAppViewer({
       setPinnedInstall(installed);
       setManifest(checked.manifest);
       const alreadyReviewed = installed.permissionsReviewVersion === installedVersion;
-      setReviewingPermissions(!alreadyReviewed);
+      setReviewingPermissions(
+        !alreadyReviewed && getMarketplaceAuthoredActions(checked.manifest).length > 0,
+      );
       setSelectedActionIds(
         new Set(
           alreadyReviewed
@@ -174,7 +176,7 @@ export function MarketplacePublishedAppViewer({
   };
 
   const openPermissionReview = () => {
-    if (!manifest || !pinnedInstall) return;
+    if (!manifest || !pinnedInstall || getMarketplaceAuthoredActions(manifest).length === 0) return;
     setSelectedActionIds(new Set(pinnedInstall.grantedActionIds ?? []));
     setReviewingPermissions(true);
     setError("");
@@ -323,13 +325,20 @@ export function MarketplacePublishedAppViewer({
                     pendingActionId={pendingActionId}
                     onAction={(actionId) => void runAction(actionId)}
                   />
-                  <button
-                    type="button"
-                    onClick={openPermissionReview}
-                    className="mt-4 min-h-11 self-start rounded-xl border border-border px-4 py-2 text-sm font-semibold"
-                  >
-                    Berechtigungen erneut prüfen
-                  </button>
+                  {declaredActions.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={openPermissionReview}
+                      className="mt-4 min-h-11 self-start rounded-xl border border-border px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    >
+                      Berechtigungen erneut prüfen
+                    </button>
+                  ) : (
+                    <p className="mt-4 rounded-xl border border-border/70 bg-background/60 p-3 text-sm leading-relaxed text-muted-foreground">
+                      Dieses Quiz benötigt keine zusätzlichen Alo-Berechtigungen und läuft nur lokal
+                      auf diesem Gerät.
+                    </p>
+                  )}
                 </>
               )}
             </>

@@ -47,17 +47,24 @@ function isExpectedAppVersion(app: MarketplacePublishedVersion, appId: string, v
 }
 
 function AuthoredPermissionList({ manifest }: { manifest: MarketplaceAuthoredManifest }) {
+  const permissions = describeMarketplaceAuthoredPermissions(manifest);
   return (
     <section
       className="mt-4 rounded-xl border border-border/60 bg-background/50 p-3"
       aria-label={`Berechtigungen für ${manifest.name}`}
     >
       <h3 className="text-xs font-bold uppercase tracking-wide">Berechtigungen</h3>
-      <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed text-muted-foreground">
-        {describeMarketplaceAuthoredPermissions(manifest).map((permission, index) => (
-          <li key={`${index}-${permission}`}>{permission}</li>
-        ))}
-      </ul>
+      {permissions.length > 0 ? (
+        <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed text-muted-foreground">
+          {permissions.map((permission, index) => (
+            <li key={`${index}-${permission}`}>{permission}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          Dieses Quiz läuft lokal und benötigt keine zusätzlichen Alo-Berechtigungen.
+        </p>
+      )}
     </section>
   );
 }

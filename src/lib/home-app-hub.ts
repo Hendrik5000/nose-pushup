@@ -201,6 +201,25 @@ export function moveHomeApp(
   return parseHomeAppHubSettings({ ...settings, order });
 }
 
+export function moveHomeAppRelative(
+  settingsInput: unknown,
+  visibleAppIds: readonly string[],
+  appId: string,
+  targetAppId: string,
+  placement: "before" | "after",
+): HomeAppHubSettings {
+  const settings = parseHomeAppHubSettings(settingsInput);
+  if (appId === targetAppId) return settings;
+  const order = [...orderHomeAppIds(visibleAppIds, settings.order)];
+  const fromIndex = order.indexOf(appId);
+  const targetIndex = order.indexOf(targetAppId);
+  if (fromIndex < 0 || targetIndex < 0) return settings;
+  order.splice(fromIndex, 1);
+  const indexAfterRemoval = fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
+  order.splice(indexAfterRemoval + (placement === "after" ? 1 : 0), 0, appId);
+  return parseHomeAppHubSettings({ ...settings, order });
+}
+
 export function setHomeAppName(
   settingsInput: unknown,
   appId: string,
@@ -221,6 +240,21 @@ export function clearHomeAppName(settingsInput: unknown, appId: string): HomeApp
   const nameOverrides = { ...settings.nameOverrides };
   delete nameOverrides[appId];
   return parseHomeAppHubSettings({ ...settings, nameOverrides });
+}
+
+export function forgetHomeAppPersonalization(
+  settingsInput: unknown,
+  appId: string,
+): HomeAppHubSettings {
+  if (!validHomeAppId(appId)) throw new Error("Ungültige Alo-App.");
+  const settings = parseHomeAppHubSettings(settingsInput);
+  const nameOverrides = { ...settings.nameOverrides };
+  delete nameOverrides[appId];
+  return parseHomeAppHubSettings({
+    ...settings,
+    order: settings.order.filter((savedId) => savedId !== appId),
+    nameOverrides,
+  });
 }
 
 export function setHomeBackground(

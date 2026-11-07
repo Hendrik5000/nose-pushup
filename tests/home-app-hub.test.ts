@@ -182,6 +182,30 @@ test("every authenticated section keeps a clearly named route to Alo Home", () =
   assert.match(appNavigation, /export function BottomNav\(\) \{\s*return null;/);
 });
 
+test("Home edit mode supports pointer drag, accessible Long-Press actions, and local Marketplace removal", () => {
+  assert.match(hub, /data-home-app-id=\{tile\.id\}/);
+  assert.match(hub, /startHomeLongPress\(event, tile\.id\)/);
+  assert.match(hub, /longPressTriggeredAppIdRef\.current = appId/);
+  assert.match(hub, /onClickCapture=\{\(event\) => suppressLongPressClick\(event, tile\.id\)\}/);
+  assert.match(hub, /window\.addEventListener\("pointerup", cancelOnPointerEnd, true\)/);
+  assert.match(hub, /window\.addEventListener\("pointercancel", cancelOnPointerEnd, true\)/);
+  assert.match(hub, /onContextMenu=\{/);
+  assert.match(hub, /beginHomeTileDrag\(event, tile\.id\)/);
+  assert.match(hub, /onPointerMove=\{moveHomeTileDrag\}/);
+  assert.match(hub, /finishHomeTileDrag\}/);
+  assert.match(
+    hub,
+    /moveHomeAppRelative\(settings, visibleAppIds, sourceId, drop\.appId, drop\.placement\)/,
+  );
+  assert.match(hub, /GripVertical/);
+  assert.match(hub, /setActiveAppMenuId\(appId\)/);
+  assert.match(hub, /Lokal deinstallieren/);
+  assert.match(hub, /removeMarketplacePublishedApp\(installState, appId\)/);
+  assert.match(hub, /forgetHomeAppPersonalization\(settings, uninstallTargetTile\.id\)/);
+  assert.match(hub, /Der Marketplace-Eintrag bleibt erhalten/);
+  assert.doesNotMatch(hub, /publishMarketplaceApp|revokeMarketplaceApp/);
+});
+
 test("secondary-section Home actions remain available in both visual variants", () => {
   const bothVariantPages = [
     "battle.index.tsx",

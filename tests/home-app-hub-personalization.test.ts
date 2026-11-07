@@ -9,9 +9,11 @@ import {
   HOME_BACKGROUND_PRESETS,
   HOME_DEFAULT_BACKGROUND,
   clearHomeAppName,
+  forgetHomeAppPersonalization,
   homeAppHubSettingsStorageKey,
   loadHomeAppHubSettings,
   moveHomeApp,
+  moveHomeAppRelative,
   orderHomeAppIds,
   parseHomeAppHubSettings,
   planHomeBackgroundImage,
@@ -71,6 +73,46 @@ test("Home order ignores unknown saved IDs and supports accessible boundary-safe
   ]);
   assert.deepEqual(moveHomeApp(state, ["mira", "training"], "mira", 1).order, state.order);
   assert.throws(() => moveHomeApp(state, ["mira"], "mira", 2 as -1), /richtung/i);
+});
+
+test("Home drag reordering is local, deterministic, and ignores missing drop targets", () => {
+  const marketplaceId = installedIds[1]!;
+  const reordered = moveHomeAppRelative(
+    EMPTY_HOME_APP_HUB_SETTINGS,
+    installedIds,
+    marketplaceId,
+    "mira",
+    "before",
+  );
+  assert.deepEqual(reordered.order, [marketplaceId, "mira", "training"]);
+  assert.deepEqual(
+    moveHomeAppRelative(reordered, installedIds, "training", marketplaceId, "before").order,
+    ["training", marketplaceId, "mira"],
+  );
+  assert.deepEqual(
+    moveHomeAppRelative(EMPTY_HOME_APP_HUB_SETTINGS, installedIds, "mira", "training", "after")
+      .order,
+    [marketplaceId, "training", "mira"],
+  );
+  assert.deepEqual(
+    moveHomeAppRelative(reordered, installedIds, "missing-app", "mira", "before"),
+    reordered,
+  );
+});
+
+test("locally uninstalling a tile clears only that tile's name/order preferences", () => {
+  const marketplaceId = installedIds[1]!;
+  const customized = setHomeAppName(
+    moveHomeAppRelative(EMPTY_HOME_APP_HUB_SETTINGS, installedIds, marketplaceId, "mira", "before"),
+    marketplaceId,
+    "Mein Spiel",
+  );
+  const removed = forgetHomeAppPersonalization(customized, marketplaceId);
+
+  assert.deepEqual(removed.order, ["mira", "training"]);
+  assert.equal(removed.nameOverrides[marketplaceId], undefined);
+  assert.deepEqual(removed.background, customized.background);
+  assert.throws(() => forgetHomeAppPersonalization(customized, "not/a/route"), /Ungültige Alo-App/);
 });
 
 test("home app aliases are bounded, text-only local labels and can be reset", () => {

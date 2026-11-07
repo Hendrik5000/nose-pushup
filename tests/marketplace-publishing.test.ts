@@ -12,6 +12,8 @@ import { MARKETPLACE_ICON_IDS } from "../src/lib/marketplace-authoring";
 const root = process.cwd();
 const migrationName = "20261106223000_marketplace_authoring_v1.sql";
 const migration = readFileSync(`${root}/supabase/migrations/${migrationName}`, "utf8");
+const gameMigrationName = "20261107104500_marketplace_declarative_quiz_v2.sql";
+const gameMigration = readFileSync(`${root}/supabase/migrations/${gameMigrationName}`, "utf8");
 const serverFunctions = readFileSync(`${root}/src/lib/marketplace.functions.ts`, "utf8");
 const authoringComponent = readFileSync(
   `${root}/src/components/marketplace/MarketplaceCustomApps.tsx`,
@@ -218,6 +220,36 @@ test("SQL action and icon allowlists exactly match the compiled host registry", 
 
   const iconBlock = migration.match(/icon_name NOT IN \(([\s\S]*?)\n\s{2}\)/);
   assert.ok(iconBlock, "SQL must have an explicit icon allowlist");
+  const sqlIcons = [...iconBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1]).sort();
+  assert.deepEqual(sqlIcons, [...MARKETPLACE_ICON_IDS].sort());
+});
+
+test("v2 quiz migration is append-only, bounded and preserves the registered action/icon allowlists", () => {
+  assert.match(gameMigration, /^BEGIN;[\s\S]*COMMIT;\s*$/);
+  assert.match(gameMigration, /CREATE OR REPLACE FUNCTION public\.marketplace_quiz_game_is_valid/);
+  assert.match(gameMigration, /CREATE OR REPLACE FUNCTION public\.marketplace_manifest_is_valid/);
+  assert.match(gameMigration, /schema_version = 1/);
+  assert.match(gameMigration, /schema_version = 2/);
+  assert.match(gameMigration, /question_count < 3 OR question_count > 12/);
+  assert.match(gameMigration, /choice_count < 2 OR choice_count > 4/);
+  assert.match(gameMigration, /correct_index < 0 OR correct_index >= choice_count/);
+  assert.match(gameMigration, /public\.marketplace_text_is_safe/);
+  assert.match(gameMigration, /REVOKE ALL ON FUNCTION public\.marketplace_quiz_game_is_valid/);
+  assert.match(gameMigration, /REVOKE ALL ON FUNCTION public\.marketplace_manifest_is_valid/);
+  assert.doesNotMatch(
+    gameMigration,
+    /\b(?:CREATE|ALTER|DROP)\s+(?:TABLE|POLICY)\b|\bINSERT\s+INTO\b|\bUPDATE\s+public\.|\bDELETE\s+FROM\b/i,
+  );
+
+  const actionBlock = gameMigration.match(
+    /action_id NOT IN \(([\s\S]*?)\) OR action_id = ANY\(action_ids\)/,
+  );
+  assert.ok(actionBlock, "v2 SQL must retain an explicit registered-action allowlist");
+  const sqlActionIds = [...actionBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1]).sort();
+  assert.deepEqual(sqlActionIds, MARKETPLACE_AUTHOR_ACTIONS.map(({ id }) => id).sort());
+
+  const iconBlock = gameMigration.match(/icon_name NOT IN \(([\s\S]*?)\n\s{2}\)/);
+  assert.ok(iconBlock, "v2 SQL must retain an explicit icon allowlist");
   const sqlIcons = [...iconBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1]).sort();
   assert.deepEqual(sqlIcons, [...MARKETPLACE_ICON_IDS].sort());
 });
