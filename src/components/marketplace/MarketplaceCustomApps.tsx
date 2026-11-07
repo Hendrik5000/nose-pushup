@@ -1,5 +1,11 @@
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useHomeAppAccountSync } from "@/hooks/use-home-app-account-sync";
+import {
+  HOME_APP_SYNC_APPLIED,
+  mergeMarketplaceLocalEdit,
+  requestHomeAppAccountSync,
+} from "@/lib/home-app-account-sync";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,6 +76,15 @@ function AuthoredPermissionList({ manifest }: { manifest: MarketplaceAuthoredMan
 }
 
 export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
+  const accountSyncMessage = useHomeAppAccountSync(userId, isAdmin);
+  const activeUserIdRef = useRef<string | null>(userId);
+  activeUserIdRef.current = userId;
+  useEffect(() => {
+    activeUserIdRef.current = userId;
+    return () => {
+      activeUserIdRef.current = null;
+    };
+  }, [userId]);
   const listApps = useServerFn(listMarketplaceCurrentApps);
   const getAppVersion = useServerFn(getMarketplaceAppVersion);
   const revokeApp = useServerFn(revokeMarketplaceApp);
@@ -126,9 +141,16 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
     const onStorage = (event: StorageEvent) => {
       if (event.key === marketplacePublishedInstallStorageKey(userId)) load();
     };
+    const onApplied = (event: Event) => {
+      if ((event as CustomEvent<{ userId?: string }>).detail?.userId === userId) load();
+    };
     load();
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener(HOME_APP_SYNC_APPLIED, onApplied);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(HOME_APP_SYNC_APPLIED, onApplied);
+    };
   }, [isAdmin, userId]);
 
   const refreshCatalog = async () => {
@@ -141,23 +163,31 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
   const verifyAdmin = async () => {
     if (!isAdmin) return false;
     try {
-      return isMarketplaceAdminAccessGranted(await getAdminAreaAccess());
+      const access = await getAdminAreaAccess();
+      return activeUserIdRef.current === userId && isMarketplaceAdminAccessGranted(access);
     } catch {
       return false;
     }
   };
 
   const persistInstallState = async (nextInput: unknown, message: string) => {
-    if (!(await verifyAdmin())) {
+    const allowed = await verifyAdmin();
+    if (activeUserIdRef.current !== userId) return false;
+    if (!allowed) {
       setStatus("Admin-Zugriff ist nicht mehr bestätigt. Bitte lade den Marketplace neu.");
       return false;
     }
     try {
-      const next = parseMarketplacePublishedInstallState(nextInput);
+      const next = mergeMarketplaceLocalEdit(
+        installState,
+        parseMarketplacePublishedInstallState(nextInput),
+        loadMarketplacePublishedInstallState(window.localStorage, userId),
+      );
       saveMarketplacePublishedInstallState(window.localStorage, userId, next);
       setInstallState(next);
       setStorageError("");
       setStatus(message);
+      requestHomeAppAccountSync(userId);
       return true;
     } catch {
       setStorageError("Lokale Änderung nicht gespeichert. Bitte prüfe den Browserspeicher.");
@@ -169,6 +199,7 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
     if (!isAdmin || catalogState !== "ready") return;
     try {
       const checked = await getAppVersion({ data: { appId: app.appId, version: app.version } });
+      if (activeUserIdRef.current !== userId) return;
       if (!isExpectedAppVersion(checked, app.appId, app.version))
         throw new Error("Version mismatch");
       const next = installMarketplacePublishedApp(installState, checked.appId, checked.version, {
@@ -177,7 +208,7 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
       });
       await persistInstallState(
         next,
-        `„${checked.manifest.name}“ wurde lokal mit Version ${checked.version} installiert (deaktiviert).`,
+        `„${checked.manifest.name}“ wurde mit Version ${checked.version} installiert (deaktiviert). Kontoabgleich folgt für eigene Apps.`,
       );
     } catch {
       setStatus(
@@ -200,12 +231,16 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
           false,
         );
         if (runningAppId === app.appId) setRunningAppId(null);
-        await persistInstallState(next, `„${app.manifest.name}“ wurde lokal deaktiviert.`);
+        await persistInstallState(
+          next,
+          `„${app.manifest.name}“ wurde deaktiviert. Kontoabgleich folgt für eigene Apps.`,
+        );
         return;
       }
       const checked = await getAppVersion({
         data: { appId: app.appId, version: installed.version },
       });
+      if (activeUserIdRef.current !== userId) return;
       if (!isExpectedAppVersion(checked, app.appId, installed.version))
         throw new Error("Version mismatch");
       const next = setMarketplacePublishedAppEnabled(
@@ -214,7 +249,10 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
         installed.version,
         true,
       );
-      await persistInstallState(next, `„${checked.manifest.name}“ wurde lokal aktiviert.`);
+      await persistInstallState(
+        next,
+        `„${checked.manifest.name}“ wurde aktiviert. Kontoabgleich folgt für eigene Apps.`,
+      );
     } catch {
       setStatus("Diese App-Version ist nicht mehr verfügbar oder wurde widerrufen.");
       void refreshCatalog().catch(() => setCatalogState("error"));
@@ -227,6 +265,7 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
     if (!installed || installed.version >= app.version) return;
     try {
       const checked = await getAppVersion({ data: { appId: app.appId, version: app.version } });
+      if (activeUserIdRef.current !== userId) return;
       if (!isExpectedAppVersion(checked, app.appId, app.version))
         throw new Error("Version mismatch");
       const next = updateMarketplacePublishedAppVersion(installState, app.appId, checked.version, {
@@ -251,7 +290,10 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
     try {
       const next = removeMarketplacePublishedApp(installState, appId);
       if (runningAppId === appId) setRunningAppId(null);
-      await persistInstallState(next, `„${appName}“ wurde von diesem Gerät entfernt.`);
+      await persistInstallState(
+        next,
+        `„${appName}“ wurde entfernt. Kontoabgleich folgt für eigene Apps.`,
+      );
     } catch {
       setStatus("Die lokale App-Installation konnte nicht entfernt werden.");
     }
@@ -300,6 +342,10 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
             <span className="text-xs text-muted-foreground">Katalog wird geladen …</span>
           )}
         </div>
+        <p className="text-xs text-muted-foreground" role="status" data-marketplace-account-sync>
+          {accountSyncMessage} Aktionsfreigaben bleiben gerätelokal und müssen auf jedem Gerät und
+          je Version bestätigt werden.
+        </p>
         {catalogState === "error" && (
           <p
             role="alert"
@@ -399,12 +445,14 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
                     <h3 className="text-sm font-bold">Installation und Versionen</h3>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                       Die geprüfte App-Version wird beim Installieren vom Alo-Katalog geladen und
-                      lokal auf diesem Gerät gespeichert. Aktionen bleiben auf fest registrierte
-                      Alo-Ziele beschränkt.
+                      lokal zwischengespeichert. Installation, Version und Aktivierung eigener Apps
+                      werden mit deinem Konto abgeglichen; fremde Apps bleiben lokal.
+                      Aktionsfreigaben gelten nur auf diesem Gerät. Aktionen bleiben auf
+                      registrierte Alo-Ziele beschränkt.
                     </p>
                     {installed && (
                       <p className="mt-2 text-sm font-medium text-primary">
-                        Lokal installiert · Version {installed.version} ·{" "}
+                        Installiert · Version {installed.version} ·{" "}
                         {enabled ? "aktiv" : "deaktiviert"}
                       </p>
                     )}
