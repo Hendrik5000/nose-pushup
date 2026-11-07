@@ -15,6 +15,14 @@ const dashboardStart = home.indexOf("function Dashboard", artworkStart);
 const hub = home.slice(hubStart, artworkStart);
 const tileBuilder = home.slice(tileBuilderStart, hubStart);
 
+test("Home keeps account sync active without rendering the explanatory status paragraph", () => {
+  assert.match(home, /useHomeAppAccountSync\(user\.id\);/);
+  assert.doesNotMatch(
+    home,
+    /accountSyncMessage|data-home-account-sync|Reihenfolge, Hintergründe und Aktionsfreigaben bleiben auf diesem Gerät/,
+  );
+});
+
 test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.notEqual(hubStart, -1, "HomeAppHub should exist");
   assert.notEqual(artworkStart, -1, "Hub artwork helpers should follow HomeAppHub");
