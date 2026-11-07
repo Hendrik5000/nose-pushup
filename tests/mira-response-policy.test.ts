@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { getMiraAloKnowledgeContext } from "../src/lib/mira-alo-knowledge.ts";
-import { buildMiraSystemPrompt, MIRA_BASE_SYSTEM_PROMPT } from "../src/lib/mira-response-policy.ts";
+import {
+  buildMiraSystemPrompt,
+  isExplicitMiraCodeRequest,
+  MIRA_BASE_SYSTEM_PROMPT,
+} from "../src/lib/mira-response-policy.ts";
 
 const miraPage = readFileSync(
   new URL("../src/components/mira/SuperAiPage.tsx", import.meta.url),
@@ -23,6 +27,9 @@ test("Mira avoids unsolicited code but preserves explicitly requested coding hel
     MIRA_BASE_SYSTEM_PROMPT,
     /Wenn Code ausdrücklich verlangt ist, liefere den passenden Code/i,
   );
+  assert.equal(isExplicitMiraCodeRequest("Schreib mir bitte den TypeScript-Code dafür."), true);
+  assert.equal(isExplicitMiraCodeRequest("Bitte debugge diesen Fehler im Quellcode."), true);
+  assert.equal(isExplicitMiraCodeRequest("Was macht dieser Code in Alo?"), false);
 });
 
 test("fixed Alo app authoring remains available without allowing executable markup", () => {

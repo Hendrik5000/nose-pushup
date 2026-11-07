@@ -182,22 +182,44 @@ test("every authenticated section keeps a clearly named route to Alo Home", () =
   assert.match(appNavigation, /export function BottomNav\(\) \{\s*return null;/);
 });
 
-test("Home edit mode supports pointer drag, accessible Long-Press actions, and local Marketplace removal", () => {
+test("Home edit mode uses empty-area hold, direct icon drag, keyboard movement, and local removal", () => {
   assert.match(hub, /data-home-app-id=\{tile\.id\}/);
   assert.match(hub, /startHomeLongPress\(event, tile\.id\)/);
+  assert.match(hub, /onPointerDown=\{startEmptyHomeLongPress\}/);
+  assert.match(hub, /target\.closest\([\s\S]*data-home-app-id/);
+  assert.match(hub, /onKeyDown=\{handleHomeHubKeyDown\}/);
   assert.match(hub, /longPressTriggeredAppIdRef\.current = appId/);
   assert.match(hub, /onClickCapture=\{\(event\) => suppressLongPressClick\(event, tile\.id\)\}/);
   assert.match(hub, /window\.addEventListener\("pointerup", cancelOnPointerEnd, true\)/);
   assert.match(hub, /window\.addEventListener\("pointercancel", cancelOnPointerEnd, true\)/);
   assert.match(hub, /onContextMenu=\{/);
-  assert.match(hub, /beginHomeTileDrag\(event, tile\.id\)/);
-  assert.match(hub, /onPointerMove=\{moveHomeTileDrag\}/);
-  assert.match(hub, /finishHomeTileDrag\}/);
+  assert.match(hub, /pendingHomeDragRef\.current = \{\s*appId: tile\.id/);
+  assert.match(hub, /pendingDrag\?\.pointerId === event\.pointerId/);
+  assert.match(hub, /beginHomeTileDrag\(event, pendingDrag\.appId\)/);
+  assert.match(
+    hub,
+    /pendingHomeDragRef\.current = null;\s*\}\s*dragSourceAppIdRef\.current = null/,
+  );
+  assert.match(
+    hub,
+    /if \(isEditingHub\) \{\s*const pendingDrag = pendingHomeDragRef\.current;[\s\S]*?moveHomeTileDrag\(event\);/,
+  );
+  assert.match(hub, /finishHomeTileDrag\(event\)/);
   assert.match(
     hub,
     /moveHomeAppRelative\(settings, visibleAppIds, sourceId, drop\.appId, drop\.placement\)/,
   );
-  assert.match(hub, /GripVertical/);
+  assert.match(hub, /role=\{isEditingHub \? "button" : undefined\}/);
+  assert.match(hub, /keyboardGrabbedAppId === appId/);
+  assert.match(hub, /event\.key !== "ArrowLeft" && event\.key !== "ArrowRight"/);
+  assert.match(hub, /freie Stelle lange drücken/);
+  const renderTileStart = hub.indexOf("const renderTile =");
+  const editBranch = hub.indexOf("if (isEditingHub) {", renderTileStart);
+  const firstRouteLink = hub.indexOf("<Link", editBranch);
+  assert.ok(editBranch > renderTileStart && firstRouteLink > editBranch);
+  assert.match(hub.slice(editBranch, firstRouteLink), /<div className=\{HUB_APP_ICON_CLASS_NAME\}/);
+  assert.doesNotMatch(hub, /GripVertical|MoreHorizontal|Pencil|Home-Apps anpassen/);
+  assert.doesNotMatch(hub, /mt-2 flex flex-wrap items-center justify-center gap-1/);
   assert.match(hub, /setActiveAppMenuId\(appId\)/);
   assert.match(hub, /Lokal deinstallieren/);
   assert.match(hub, /removeMarketplacePublishedApp\(installState, appId\)/);
