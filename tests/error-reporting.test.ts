@@ -139,61 +139,50 @@ test("serialized outbound body contains only validated fields and no sensitive v
   for (const raw of rawValues) assert.equal(body.includes(raw), false);
 });
 
-test(
-  "forwarder serializes exact payload through an injected mock, never a real request",
-  async () => {
-    let capturedBody = "";
-    let capturedMethod = "";
-    let capturedRedirect = "";
-    let fetchCount = 0;
-    const mockFetch: typeof fetch = async (input, init) => {
-      fetchCount++;
-      capturedBody = String(init?.body ?? "");
-      capturedMethod = init?.method ?? "";
-      capturedRedirect = init?.redirect ?? "";
-      assert.match(
-        String(input),
-        /^https:\/\/api\.manus\.im\/api\/webhook\/triggers\/00000000-/,
-      );
-      return new Response(null, { status: 202 });
-    };
+test("forwarder serializes exact payload through an injected mock, never a real request", async () => {
+  let capturedBody = "";
+  let capturedMethod = "";
+  let capturedRedirect = "";
+  let fetchCount = 0;
+  const mockFetch: typeof fetch = async (input, init) => {
+    fetchCount++;
+    capturedBody = String(init?.body ?? "");
+    capturedMethod = init?.method ?? "";
+    capturedRedirect = init?.redirect ?? "";
+    assert.match(String(input), /^https:\/\/api\.manus\.im\/api\/webhook\/triggers\/00000000-/);
+    return new Response(null, { status: 202 });
+  };
 
-    await forwardSanitizedErrorReport(validReport, {
-      webhookUrl:
-        "https://api.manus.im/api/webhook/triggers/00000000-0000-0000-0000-000000000000",
-      fetchImpl: mockFetch,
-    });
-    assert.equal(fetchCount, 1);
-    assert.equal(capturedMethod, "POST");
-    assert.equal(capturedRedirect, "error");
-    assert.deepEqual(JSON.parse(capturedBody), validReport);
-    assert.deepEqual(Object.keys(JSON.parse(capturedBody)).sort(), expectedKeys);
-  },
-);
+  await forwardSanitizedErrorReport(validReport, {
+    webhookUrl: "https://api.manus.im/api/webhook/triggers/00000000-0000-0000-0000-000000000000",
+    fetchImpl: mockFetch,
+  });
+  assert.equal(fetchCount, 1);
+  assert.equal(capturedMethod, "POST");
+  assert.equal(capturedRedirect, "manual");
+  assert.deepEqual(JSON.parse(capturedBody), validReport);
+  assert.deepEqual(Object.keys(JSON.parse(capturedBody)).sort(), expectedKeys);
+});
 
-test(
-  "invalid payloads and unapproved destinations never reach the injected transport",
-  async () => {
-    let fetchCount = 0;
-    const mockFetch: typeof fetch = async () => {
-      fetchCount++;
-      return new Response(null, { status: 202 });
-    };
-    await forwardSanitizedErrorReport(
-      { ...validReport, message: "forbidden" },
-      {
-        webhookUrl:
-          "https://api.manus.im/api/webhook/triggers/00000000-0000-0000-0000-000000000000",
-        fetchImpl: mockFetch,
-      },
-    );
-    await forwardSanitizedErrorReport(validReport, {
-      webhookUrl: "https://example.invalid/api/webhook/triggers/00000000-0000-0000-0000-000000000000",
+test("invalid payloads and unapproved destinations never reach the injected transport", async () => {
+  let fetchCount = 0;
+  const mockFetch: typeof fetch = async () => {
+    fetchCount++;
+    return new Response(null, { status: 202 });
+  };
+  await forwardSanitizedErrorReport(
+    { ...validReport, message: "forbidden" },
+    {
+      webhookUrl: "https://api.manus.im/api/webhook/triggers/00000000-0000-0000-0000-000000000000",
       fetchImpl: mockFetch,
-    });
-    assert.equal(fetchCount, 0);
-  },
-);
+    },
+  );
+  await forwardSanitizedErrorReport(validReport, {
+    webhookUrl: "https://example.invalid/api/webhook/triggers/00000000-0000-0000-0000-000000000000",
+    fetchImpl: mockFetch,
+  });
+  assert.equal(fetchCount, 0);
+});
 
 test("server-side sliding window caps outbound reports", () => {
   let time = 0;
@@ -233,7 +222,6 @@ test("reporting code no longer relays raw diagnostics to Supabase or Lovable tel
   );
 });
 
-
 test("forwarder stops before transport when the server rate limiter denies a slot", async () => {
   let fetchCount = 0;
   const mockFetch: typeof fetch = async () => {
@@ -246,4 +234,9 @@ test("forwarder stops before transport when the server rate limiter denies a slo
     rateLimitCheck: () => false,
   });
   assert.equal(fetchCount, 0);
+});
+
+test("client passes only the sanitized payload in TanStack's data envelope", () => {
+  const client = readFileSync(new URL("../src/lib/error-reports.ts", import.meta.url), "utf8");
+  assert.match(client, /sendSanitizedErrorReport\(\{ data: sanitized \}\)/);
 });

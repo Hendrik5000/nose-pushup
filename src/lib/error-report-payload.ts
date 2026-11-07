@@ -1,10 +1,4 @@
-export const ERROR_REPORT_CATEGORIES = [
-  "network",
-  "auth",
-  "rendering",
-  "sync",
-  "other",
-] as const;
+export const ERROR_REPORT_CATEGORIES = ["network", "auth", "rendering", "sync", "other"] as const;
 export const ERROR_REPORT_SEVERITIES = ["warning", "error", "critical"] as const;
 export const ERROR_REPORT_SOURCES = ["window", "console", "api", "service_worker"] as const;
 export const ERROR_REPORT_ROUTE_KEYS = [
@@ -135,7 +129,11 @@ function mapSeverity(severity: unknown): ErrorReportSeverity {
 function mapRouteKey(pathname: unknown): ErrorReportRouteKey {
   if (typeof pathname !== "string") return "other";
   const pathOnly = pathname.split(/[?#]/, 1)[0] ?? "";
-  const firstSegment = pathOnly.replace(/^\/+|\/+$/g, "").split("/")[0]?.toLowerCase() ?? "";
+  const firstSegment =
+    pathOnly
+      .replace(/^\/+|\/+$/g, "")
+      .split("/")[0]
+      ?.toLowerCase() ?? "";
   switch (firstSegment) {
     case "":
     case "home":

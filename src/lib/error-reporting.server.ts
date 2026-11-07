@@ -54,10 +54,7 @@ export function createSlidingWindowReportLimiter(
   };
 }
 
-const allowForward = createSlidingWindowReportLimiter(
-  MAX_REPORTS_PER_WINDOW,
-  REPORT_WINDOW_MS,
-);
+const allowForward = createSlidingWindowReportLimiter(MAX_REPORTS_PER_WINDOW, REPORT_WINDOW_MS);
 
 /**
  * Send only the exact validated report object. No input or transport error is logged,
@@ -91,7 +88,7 @@ export async function forwardSanitizedErrorReport(
       headers: { "content-type": "application/json" },
       body,
       credentials: "omit",
-      redirect: "error",
+      redirect: "manual",
       signal: controller.signal,
     });
   } catch {

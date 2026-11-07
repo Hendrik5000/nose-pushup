@@ -127,7 +127,7 @@ export function reportError(
     source: context.source ?? "manual",
     severity: context.severity ?? "error",
   });
-  void sendSanitizedErrorReport(sanitized).catch(() => {
+  void sendSanitizedErrorReport({ data: sanitized }).catch(() => {
     // Reporting must never create a second client error or telemetry event.
   });
 }
