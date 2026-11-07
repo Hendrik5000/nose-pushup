@@ -16,6 +16,12 @@ import {
   setMiraMemoryEnabled,
 } from "@/lib/mira-memory";
 import { MiraMemoryPanel } from "@/components/MiraMemoryPanel";
+import {
+  buildMiraWorkbenchPrompt,
+  getMiraWorkbenchTool,
+  MIRA_WORKBENCH_TOOLS,
+  type MiraWorkbenchToolId,
+} from "@/lib/mira-workbench";
 
 export type MiraPowerAction =
   | { type: "debate"; question: string }
@@ -24,10 +30,12 @@ export type MiraPowerAction =
   | { type: "format"; text: string; format: FormatId }
   | { type: "simplify"; text: string }
   | { type: "workflow"; goal: string; stepIndex: number; prior: string }
-  | { type: "sandbox"; prompt: string };
+  | { type: "sandbox"; prompt: string }
+  | { type: "workbench"; toolId: MiraWorkbenchToolId; prompt: string };
 
 type Props = {
   userId?: string | null;
+  providerLabel?: string | null;
   loading: boolean;
   lastUserText?: string;
   lastAssistantText?: string;
@@ -37,6 +45,7 @@ type Props = {
 
 export function MiraPowerPanel({
   userId,
+  providerLabel,
   loading,
   lastUserText,
   lastAssistantText,
@@ -47,6 +56,16 @@ export function MiraPowerPanel({
   const [mix, setMix] = useState<PersonaMix>(() => loadPersonaMix(userId));
   const [memQuery, setMemQuery] = useState("");
   const [confirmMulti, setConfirmMulti] = useState<string | null>(null);
+  const [workbenchToolId, setWorkbenchToolId] = useState<MiraWorkbenchToolId>("decision_brief");
+  const [workbenchSourceId, setWorkbenchSourceId] = useState("");
+  const [targetLanguage, setTargetLanguage] = useState("Englisch");
+  const [preparedWorkbench, setPreparedWorkbench] = useState<{
+    toolId: MiraWorkbenchToolId;
+    sourceId: string;
+    sourceText: string;
+    targetLanguage: string;
+    prompt: string;
+  } | null>(null);
   const pendingRef = useRef<MiraPowerAction | null>(null);
 
   const notes = useMemo(() => {
@@ -55,10 +74,29 @@ export function MiraPowerPanel({
     const all = loadMiraMemoryNotes(userId);
     if (!q) return all.slice(0, 12);
     return all.filter((n) => n.text.toLowerCase().includes(q)).slice(0, 12);
-  }, [userId, memQuery, open]);
+  }, [userId, memQuery]);
 
   const question = (input.trim() || lastUserText || "").trim();
   const answer = (lastAssistantText || "").trim();
+  const workbenchSources = [
+    ...(input.trim() ? [{ id: "draft", label: "Offener Entwurf", text: input.trim() }] : []),
+    ...(lastUserText?.trim()
+      ? [{ id: "question", label: "Letzte Frage an Mira", text: lastUserText.trim() }]
+      : []),
+    ...(answer ? [{ id: "answer", label: "Letzte Mira-Antwort", text: answer }] : []),
+  ];
+  const selectedWorkbenchTool = getMiraWorkbenchTool(workbenchToolId) ?? MIRA_WORKBENCH_TOOLS[0];
+  const preferredSourceId = selectedWorkbenchTool.preferredSource === "answer" ? "answer" : "draft";
+  const selectedWorkbenchSource =
+    workbenchSources.find((source) => source.id === workbenchSourceId) ??
+    workbenchSources.find((source) => source.id === preferredSourceId) ??
+    workbenchSources[0];
+  const preparedWorkbenchIsCurrent =
+    !!preparedWorkbench &&
+    preparedWorkbench.toolId === workbenchToolId &&
+    preparedWorkbench.sourceId === selectedWorkbenchSource?.id &&
+    preparedWorkbench.sourceText === selectedWorkbenchSource?.text &&
+    (workbenchToolId !== "translation" || preparedWorkbench.targetLanguage === targetLanguage);
 
   const request = (action: MiraPowerAction, multiLabel?: string) => {
     if (multiLabel) {
@@ -73,15 +111,183 @@ export function MiraPowerPanel({
     <div className="rounded-2xl border border-border/80 bg-card/60">
       <button
         type="button"
-        className="flex w-full items-center justify-between px-3 py-2 text-left text-xs font-semibold"
+        className="flex min-h-11 w-full items-center justify-between px-3 py-2 text-left text-xs font-semibold"
         onClick={() => setOpen((v) => !v)}
       >
-        <span>Mira Power · 10 Funktionen</span>
+        <span>Mira-Werkzeuge</span>
         <span className="text-muted-foreground">{open ? "▲" : "▼"}</span>
       </button>
 
       {open && (
         <div className="space-y-3 border-t border-border/60 px-3 py-3">
+          <details className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+            <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold">
+              Neue Werkbank · 10 Aufgaben
+            </summary>
+            <div className="grid min-w-0 gap-3 border-t border-border/50 pt-3">
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Jede Aufgabe macht genau eine zusätzliche Anfrage. Wähle eine Quelle, prüfe den
+                vollständigen Prompt und bestätige ihn erst dann. Keine Chat-Historie, Anhänge,
+                Gym-/Gesundheitsdaten, Nexus-Räume oder internen Inhalte werden ergänzt.
+              </p>
+              <p className="text-[11px] font-medium">
+                Empfänger: {providerLabel || "Kein aktiver KI-Anbieter"}
+              </p>
+              <label className="grid min-w-0 gap-1.5 text-xs font-medium">
+                <span>Aufgabe</span>
+                <select
+                  aria-label="Mira-Werkbank-Aufgabe"
+                  className="min-h-11 min-w-0 rounded-xl border border-border bg-background px-3 text-base"
+                  value={workbenchToolId}
+                  disabled={loading}
+                  onChange={(event) => {
+                    setWorkbenchToolId(event.currentTarget.value as MiraWorkbenchToolId);
+                    setWorkbenchSourceId("");
+                    setPreparedWorkbench(null);
+                  }}
+                >
+                  {MIRA_WORKBENCH_TOOLS.map((tool) => (
+                    <option key={tool.id} value={tool.id}>
+                      {tool.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] font-normal text-muted-foreground">
+                  {selectedWorkbenchTool.description}
+                </span>
+              </label>
+
+              {selectedWorkbenchSource ? (
+                <>
+                  <label className="grid min-w-0 gap-1.5 text-xs font-medium">
+                    <span>Quelle für diese Anfrage</span>
+                    <select
+                      aria-label="Mira-Werkbank-Quelle"
+                      className="min-h-11 min-w-0 rounded-xl border border-border bg-background px-3 text-base"
+                      value={selectedWorkbenchSource.id}
+                      disabled={loading}
+                      onChange={(event) => {
+                        setWorkbenchSourceId(event.currentTarget.value);
+                        setPreparedWorkbench(null);
+                      }}
+                    >
+                      {workbenchSources.map((source) => (
+                        <option key={source.id} value={source.id}>
+                          {source.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {workbenchToolId === "translation" && (
+                    <label className="grid gap-1.5 text-xs font-medium">
+                      <span>Zielsprache</span>
+                      <input
+                        aria-label="Zielsprache für Mira-Übersetzung"
+                        className="min-h-11 rounded-xl border border-border bg-background px-3 text-base"
+                        value={targetLanguage}
+                        maxLength={64}
+                        disabled={loading}
+                        onChange={(event) => {
+                          setTargetLanguage(event.currentTarget.value);
+                          setPreparedWorkbench(null);
+                        }}
+                      />
+                    </label>
+                  )}
+                  <button
+                    type="button"
+                    className="min-h-11 rounded-xl border border-primary/40 px-3 text-xs font-semibold text-primary disabled:opacity-50"
+                    disabled={loading || !providerLabel}
+                    onClick={() => {
+                      const prompt = buildMiraWorkbenchPrompt(
+                        workbenchToolId,
+                        selectedWorkbenchSource.text,
+                        {
+                          targetLanguage,
+                        },
+                      );
+                      setPreparedWorkbench(
+                        prompt
+                          ? {
+                              toolId: workbenchToolId,
+                              sourceId: selectedWorkbenchSource.id,
+                              sourceText: selectedWorkbenchSource.text,
+                              targetLanguage,
+                              prompt,
+                            }
+                          : null,
+                      );
+                    }}
+                  >
+                    Exakten Prompt ansehen
+                  </button>
+                </>
+              ) : (
+                <p role="status" className="text-xs text-muted-foreground">
+                  Stelle zuerst eine Frage oder schreibe einen Entwurf im Chat.
+                </p>
+              )}
+
+              {preparedWorkbench && (
+                <section className="grid min-w-0 gap-2 rounded-xl border border-border/70 bg-background/70 p-3">
+                  <label className="grid min-w-0 gap-1.5 text-xs font-semibold">
+                    <span>Exakter Prompt an {providerLabel || "keinen Anbieter"}</span>
+                    <textarea
+                      aria-label="Exakten Mira-Werkbank-Prompt prüfen und bearbeiten"
+                      className="min-h-40 min-w-0 resize-y rounded-xl border border-border bg-background p-3 text-base leading-relaxed"
+                      value={preparedWorkbench.prompt}
+                      maxLength={10000}
+                      disabled={loading}
+                      onChange={(event) =>
+                        setPreparedWorkbench((current) =>
+                          current ? { ...current, prompt: event.currentTarget.value } : current,
+                        )
+                      }
+                    />
+                  </label>
+                  {!preparedWorkbenchIsCurrent && (
+                    <p role="status" className="text-[11px] text-amber-700 dark:text-amber-300">
+                      Quelle oder Zielsprache hat sich geändert. Bitte erst einen neuen Prompt
+                      erstellen.
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="min-h-11 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                      disabled={
+                        loading ||
+                        !providerLabel ||
+                        !preparedWorkbenchIsCurrent ||
+                        !preparedWorkbench.prompt.trim()
+                      }
+                      onClick={() => {
+                        const prepared = preparedWorkbench;
+                        if (!prepared || !preparedWorkbenchIsCurrent) return;
+                        setPreparedWorkbench(null);
+                        request({
+                          type: "workbench",
+                          toolId: prepared.toolId,
+                          prompt: prepared.prompt,
+                        });
+                      }}
+                    >
+                      An {providerLabel || "keinen Anbieter"} senden · 1 Anfrage
+                    </button>
+                    <button
+                      type="button"
+                      className="min-h-11 rounded-xl border border-border px-3 text-xs"
+                      disabled={loading}
+                      onClick={() => setPreparedWorkbench(null)}
+                    >
+                      Abbrechen
+                    </button>
+                  </div>
+                </section>
+              )}
+            </div>
+          </details>
+
           <p className="text-[11px] text-muted-foreground">
             Multi-KI-Aktionen starten nur nach deinem Klick und verbrauchen extra Anfragen.
             Routing-Hinweise siehst du unter jeder Antwort.
