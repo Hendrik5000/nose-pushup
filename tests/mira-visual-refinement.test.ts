@@ -9,6 +9,7 @@ const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.met
 const page = read("components/mira/SuperAiPage.tsx");
 const css = read("ai-reference.css");
 const chatDesign = read("mira-chat-design.css");
+const miraSketchDesign = read("mira-pr52-design.css");
 const replyActions = read("components/mira/MiraAnswerActions.tsx");
 
 test("Mira uses a decorative four-point spark with unique gradients, not a provider logo", () => {
@@ -72,6 +73,25 @@ test("empty welcome does not replace saved conversation messages", () => {
   );
   assert.match(page, /\{messages\.map\(\(m, i\) => \(/);
   assert.match(page, /loadSessions\(\)\[0\]\?\.messages \?\? \[\]/);
+});
+
+test("Mira conversation stages keep their scroll surface without an outer border", () => {
+  const classicStage = page.match(/className="(alo-classic-mira-messages[^"]*)"/)?.[1] ?? "";
+  const sportStage = page.match(/className="(sport-chat-stage[^"]*)"/)?.[1] ?? "";
+  const classicStageCss =
+    miraSketchDesign.match(
+      /\.alo-mira-sketch-page\s+\.alo-classic-mira-messages\s*\{([^}]*)\}/,
+    )?.[1] ?? "";
+  assert.ok(classicStage, "classic messages stage should remain present");
+  assert.ok(sportStage, "sport messages stage should remain present");
+  assert.ok(classicStageCss, "classic messages CSS should remain present");
+  assert.doesNotMatch(classicStageCss, /\bborder\s*:/);
+  for (const stageClasses of [classicStage, sportStage]) {
+    assert.doesNotMatch(stageClasses, /\bborder(?:-[^\s]+)?/);
+    assert.match(stageClasses, /\brounded-/);
+    assert.match(stageClasses, /\bbg-card/);
+    assert.match(stageClasses, /\boverflow-y-auto\b/);
+  }
 });
 
 test("Mira's chat start keeps its welcome mark while answers stay unframed", () => {
