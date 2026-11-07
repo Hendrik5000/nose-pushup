@@ -420,6 +420,10 @@ export function SuperAiPage({
   const providerPreview = selectProvider(loadProviders(userId), previewTask);
   const activeProvider = providerPreview.provider;
   const providerPreviewReason = describeProviderSelection(providerPreview, previewTask);
+  const workbenchProviderLabel =
+    loadProviders(userId).find(
+      (provider) => provider.enabled && (provider.id === "lovable" || provider.apiKey.trim()),
+    )?.label ?? null;
   const profileName =
     typeof appContext?.profile?.display_name === "string"
       ? appContext.profile.display_name.trim()
@@ -2482,6 +2486,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                   <MiraPowerPanel
                     key={userId ?? "guest"}
                     userId={userId}
+                    providerLabel={workbenchProviderLabel}
                     loading={loading}
                     input={input}
                     lastUserText={
