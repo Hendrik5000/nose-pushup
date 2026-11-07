@@ -1,8 +1,18 @@
 import { asRecord, asString, isUuid, type RpcError } from "./rpc";
 import { BackendNotReadyError, isBackendMissing } from "./rpc";
+import {
+  FEATURE_RELEASE_BODY_MAX,
+  FEATURE_RELEASE_TITLE_MAX,
+  isSafeFeatureDigestText,
+} from "../feature-release-digest";
 
 export type PostfachKind =
-  "friend_request" | "friend_accepted" | "battle_invitation" | "battle_accepted" | "missed_call";
+  | "friend_request"
+  | "friend_accepted"
+  | "battle_invitation"
+  | "battle_accepted"
+  | "missed_call"
+  | "feature_release";
 
 const KINDS: readonly PostfachKind[] = [
   "friend_request",
@@ -10,6 +20,7 @@ const KINDS: readonly PostfachKind[] = [
   "battle_invitation",
   "battle_accepted",
   "missed_call",
+  "feature_release",
 ];
 
 export type PostfachItem = {
@@ -32,6 +43,9 @@ export type PostfachItem = {
   battleId: string | null;
   /** missed_call */
   callKind: "audio" | "video" | null;
+  /** feature_release */
+  featureTitle: string | null;
+  featureBody: string | null;
 };
 
 function numberOrNull(value: unknown): number | null {
@@ -48,12 +62,21 @@ export function parsePostfachItem(row: unknown): PostfachItem | null {
   const payload = asRecord(r.payload);
   const callKind =
     payload.call_kind === "video" ? "video" : payload.call_kind === "audio" ? "audio" : null;
+  const rawFeatureTitle = payload.title;
+  const rawFeatureBody = payload.body;
+  const featureTitle = isSafeFeatureDigestText(rawFeatureTitle, FEATURE_RELEASE_TITLE_MAX)
+    ? rawFeatureTitle.trim()
+    : null;
+  const featureBody = isSafeFeatureDigestText(rawFeatureBody, FEATURE_RELEASE_BODY_MAX)
+    ? rawFeatureBody.trim()
+    : null;
+  if (kind === "feature_release" && (!featureTitle || !featureBody)) return null;
   return {
     id: r.id,
     kind,
     fromUserId: isUuid(r.from_user_id) ? r.from_user_id : null,
     refId: isUuid(r.ref_id) ? r.ref_id : null,
-    fromName: asString(payload.from_name) ?? "Freund",
+    fromName: kind === "feature_release" ? "Alo" : (asString(payload.from_name) ?? "Freund"),
     fromAvatarUrl: asString(payload.from_avatar_url),
     createdAt: asString(r.created_at) ?? "",
     readAt: asString(r.read_at),
@@ -65,6 +88,8 @@ export function parsePostfachItem(row: unknown): PostfachItem | null {
     expiresAt: asString(payload.expires_at),
     battleId: isUuid(payload.battle_id) ? payload.battle_id : null,
     callKind,
+    featureTitle: kind === "feature_release" ? featureTitle : null,
+    featureBody: kind === "feature_release" ? featureBody : null,
   };
 }
 
@@ -136,6 +161,11 @@ export function describePostfachItem(item: PostfachItem): { title: string; body:
             ? `${item.fromName} hat dich per Video angerufen.`
             : `${item.fromName} hat dich angerufen.`,
       };
+    case "feature_release":
+      return {
+        title: item.featureTitle ?? "Alo-Update",
+        body: item.featureBody ?? "Ein neues Alo-Feature ist verfügbar.",
+      };
   }
 }
 
@@ -177,6 +207,11 @@ export function findNewItems(
   next: readonly PostfachItem[],
 ): PostfachItem[] {
   return next.filter((item) => !previous.has(item.id) && !item.resolvedAt);
+}
+
+/** Feature digests stay in the inbox and do not create a second toast or push notification. */
+export function shouldAnnouncePostfachItem(item: PostfachItem): boolean {
+  return item.kind !== "feature_release";
 }
 
 export type PostfachGateway = {

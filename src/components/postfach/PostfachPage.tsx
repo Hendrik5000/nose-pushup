@@ -77,12 +77,12 @@ export function PostfachPage() {
         <div>
           <h1 className="text-2xl font-semibold">Postfach</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Freundschaftseinladungen, Battle-Anfragen und verpasste Anrufe.
+            Einladungen, Anrufe und Neuigkeiten zu Alo-Funktionen.
           </p>
         </div>
         <Link
           to="/profile"
-          className="shrink-0 rounded-full border border-border px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground"
+          className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-border px-3 py-2 text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground"
         >
           Freunde
         </Link>
@@ -161,7 +161,7 @@ export function PostfachPage() {
             <button
               type="button"
               onClick={() => void postfach.remove(rest.map((item) => item.id))}
-              className="rounded-full border border-border px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive"
+              className="inline-flex min-h-11 items-center rounded-full border border-border px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive"
             >
               Verlauf leeren
             </button>
@@ -245,13 +245,19 @@ function ItemCard({ item, children }: { item: PostfachItem; children?: React.Rea
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold">{title}</h3>
+          <div className="flex min-w-0 items-start gap-2">
+            <h3 className="min-w-0 flex-1 break-words [overflow-wrap:anywhere] text-sm font-semibold">
+              {title}
+            </h3>
             {unread && (
-              <span className="h-2 w-2 rounded-full bg-primary" role="img" aria-label="Neu" />
+              <span
+                className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary"
+                role="img"
+                aria-label="Neu"
+              />
             )}
           </div>
-          <p className="mt-0.5 text-sm text-muted-foreground">{body}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground [overflow-wrap:anywhere]">{body}</p>
           <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             {formatWhen(item.createdAt)}
             {(resolution || expired) && ` · ${expired ? "Abgelaufen" : resolution}`}
@@ -279,7 +285,7 @@ function SmallButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`min-h-9 rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.2em] disabled:opacity-50 ${
+      className={`min-h-11 rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.2em] disabled:opacity-50 ${
         danger
           ? "border-border text-muted-foreground hover:text-destructive"
           : "border-primary/40 text-primary hover:bg-primary/10"
