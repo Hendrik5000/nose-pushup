@@ -192,10 +192,25 @@ test("Home edit mode uses empty-area hold, direct icon drag, keyboard movement, 
   assert.match(hub, /onClickCapture=\{\(event\) => suppressLongPressClick\(event, tile\.id\)\}/);
   assert.match(hub, /window\.addEventListener\("pointerup", cancelOnPointerEnd, true\)/);
   assert.match(hub, /window\.addEventListener\("pointercancel", cancelOnPointerEnd, true\)/);
+  assert.match(
+    hub,
+    /window\.addEventListener\("lostpointercapture", cancelOnLostPointerCapture, true\)/,
+  );
+  assert.match(hub, /window\.addEventListener\("pointermove", startPendingHomeTileDrag, true\)/);
   assert.match(hub, /onContextMenu=\{/);
   assert.match(hub, /pendingHomeDragRef\.current = \{\s*appId: tile\.id/);
-  assert.match(hub, /pendingDrag\?\.pointerId === event\.pointerId/);
-  assert.match(hub, /beginHomeTileDrag\(event, pendingDrag\.appId\)/);
+  assert.match(hub, /pendingDrag\.pointerId !== event\.pointerId/);
+  assert.match(
+    hub,
+    /const startPendingHomeTileDrag = \(event: PointerEvent\) => \{[\s\S]*?hasHomeAppDragThreshold\(pendingDrag, event\.clientX, event\.clientY\)[\s\S]*?beginHomeTileDrag\(event, pendingDrag\.appId, pendingDrag\.element\)/,
+  );
+  assert.match(hub, /!isEditingHubRef\.current/);
+  assert.equal(hub.match(/setIsEditingHub\(/g)?.length, 1);
+  assert.match(hub, /setHomeEditingMode\(true\)/);
+  assert.match(hub, /onPointerMoveCapture=\{moveHomeTileDrag\}/);
+  const tilePointerDownStart = hub.indexOf("onPointerDown={(event) => {");
+  const tilePointerDownEnd = hub.indexOf("onPointerUp=", tilePointerDownStart);
+  assert.doesNotMatch(hub.slice(tilePointerDownStart, tilePointerDownEnd), /setPointerCapture/);
   assert.match(
     hub,
     /pendingHomeDragRef\.current = null;\s*\}\s*dragSourceAppIdRef\.current = null/,
@@ -203,16 +218,13 @@ test("Home edit mode uses empty-area hold, direct icon drag, keyboard movement, 
   const beginDragStart = hub.indexOf("const beginHomeTileDrag");
   const beginDragEnd = hub.indexOf("const moveHomeTileDrag", beginDragStart);
   const beginDrag = hub.slice(beginDragStart, beginDragEnd);
-  assert.match(beginDrag, /if \(!isEditingHub \|\| !event\.isPrimary\) return/);
+  assert.match(beginDrag, /if \(!event\.isPrimary\) return/);
   assert.doesNotMatch(beginDrag, /event\.button/);
+  assert.match(beginDrag, /sourceElement\.setPointerCapture\(event\.pointerId\)/);
+  assert.match(beginDrag, /Das App-Symbol konnte nicht verschoben werden/);
   assert.match(
     hub,
     /if \(isEditingHub && event\.isPrimary && event\.button === 0\)[\s\S]*?pendingHomeDragRef\.current =/,
-  );
-  assert.match(hub, /Math\.abs\(event\.clientX - pendingDrag\.x\) > 12/);
-  assert.match(
-    hub,
-    /if \(isEditingHub\) \{\s*const pendingDrag = pendingHomeDragRef\.current;[\s\S]*?moveHomeTileDrag\(event\);/,
   );
   assert.match(hub, /finishHomeTileDrag\(event\)/);
   assert.match(

@@ -8,8 +8,10 @@ import {
   HOME_BACKGROUND_MAX_UPLOAD_BYTES,
   HOME_BACKGROUND_PRESETS,
   HOME_DEFAULT_BACKGROUND,
+  HOME_APP_DRAG_THRESHOLD_PX,
   clearHomeAppName,
   forgetHomeAppPersonalization,
+  hasHomeAppDragThreshold,
   homeAppHubSettingsStorageKey,
   loadHomeAppHubSettings,
   moveHomeApp,
@@ -98,6 +100,15 @@ test("Home drag reordering is local, deterministic, and ignores missing drop tar
     moveHomeAppRelative(reordered, installedIds, "missing-app", "mira", "before"),
     reordered,
   );
+});
+
+test("Home drag ignores small pointer jitter and starts after horizontal or vertical movement", () => {
+  const start = { x: 100, y: 100 };
+  const threshold = HOME_APP_DRAG_THRESHOLD_PX;
+
+  assert.equal(hasHomeAppDragThreshold(start, 100 + threshold, 100 + threshold), false);
+  assert.equal(hasHomeAppDragThreshold(start, 100 + threshold + 1, 100), true);
+  assert.equal(hasHomeAppDragThreshold(start, 100, 100 - threshold - 1), true);
 });
 
 test("locally uninstalling a tile clears only that tile's name/order preferences", () => {
