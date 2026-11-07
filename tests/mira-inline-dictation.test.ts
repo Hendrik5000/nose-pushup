@@ -235,14 +235,14 @@ test("pointer movement or cancellation clears a pending press and cancels active
     scheduler,
   );
   press.pointerDown(1, 0, 0);
-  press.pointerMove(1, 20, 0);
+  assert.equal(press.pointerMove(1, 20, 0), true, "movement reports a canceled pending gesture");
   scheduler.advance(400);
   assert.equal(starts, 0);
   assert.equal(cancels, 0);
 
   press.pointerDown(2, 0, 0);
   scheduler.advance(300);
-  press.pointerMove(2, 20, 0);
+  assert.equal(press.pointerMove(2, 20, 0), true, "movement reports a canceled active gesture");
   assert.equal(starts, 1);
   assert.equal(cancels, 1);
 

@@ -10,8 +10,8 @@ const routeTree = read("routeTree.gen.ts");
 
 test("the Training/Gym app tile navigates to its own authenticated route, not a Home toggle", () => {
   assert.match(
-    home,
-    /<HubAppIcon to="\/training" title="Trainingsübersicht & Gym" artwork="training"/,
+    home.slice(home.indexOf("function buildHomeHubTiles"), home.indexOf("function HomeAppHub")),
+    /id: "training"[\s\S]*?to: "\/training"/,
   );
   assert.match(home, /<Link to=\{to\} aria-label=\{`\$\{title\} öffnen`\}/);
   assert.match(route, /createFileRoute\("\/_authenticated\/training"\)/);

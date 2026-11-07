@@ -17,6 +17,10 @@ const authoringComponent = readFileSync(
   `${root}/src/components/marketplace/MarketplaceCustomApps.tsx`,
   "utf8",
 );
+const appViewer = readFileSync(
+  `${root}/src/components/marketplace/MarketplacePublishedAppViewer.tsx`,
+  "utf8",
+);
 const miraChat = readFileSync(`${root}/src/components/mira/SuperAiPage.tsx`, "utf8");
 const draftPreview = readFileSync(
   `${root}/src/components/marketplace/MiraMarketplaceDraftPreview.tsx`,
@@ -112,7 +116,7 @@ test("publish and revoke request validators fail closed unless the Admin explici
   assert.match(draftPreview, /onConfirmPublish/);
   assert.match(draftPreview, /Ja, veröffentlichen/);
   assert.match(authoringComponent, /open=\{revokeConfirmationApp !== null\}/);
-  assert.match(authoringComponent, /pinned|unveränderlich/i);
+  assert.match(appViewer, /pinned|unveränderlich/i);
 });
 
 test("the migration enforces admin-only RLS and does not grant direct table writes", () => {
@@ -185,21 +189,25 @@ test("revocation blocks reads/launches for every version and version updates are
   assert.match(migration, /INSERT INTO public\.marketplace_app_versions/);
   assert.match(
     authoringComponent,
-    /getAppVersion\(\{\s*data:\s*\{\s*appId,\s*version:\s*installed\.version\s*\}\s*\}\)/,
-  );
-  assert.match(
-    authoringComponent,
     /getAppVersion\(\{\s*data:\s*\{\s*appId:\s*app\.appId,\s*version:\s*installed\.version/,
   );
   assert.match(
     authoringComponent,
-    /installMarketplacePublishedApp\(installState, checked\.appId, checked\.version\)/,
+    /installMarketplacePublishedApp\(installState, checked\.appId, checked\.version,\s*\{/,
   );
   assert.match(
     authoringComponent,
-    /updateMarketplacePublishedAppVersion\(installState, app\.appId, checked\.version\)/,
+    /updateMarketplacePublishedAppVersion\(installState,\s*app\.appId,\s*checked\.version,/,
   );
-  assert.match(authoringComponent, /Diese App wurde widerrufen oder ist nicht verfügbar/);
+  assert.match(appViewer, /Diese App ist nicht mehr aktiv/);
+  assert.match(authoringComponent, /<MarketplacePublishedAppViewer/);
+  assert.doesNotMatch(authoringComponent, /<MarketplaceManifestView/);
+  assert.match(appViewer, /isMarketplaceAdminAccessGranted\(access\)/);
+  assert.match(appViewer, /installed\.permissionsReviewVersion === installedVersion/);
+  assert.match(appViewer, /setMarketplacePublishedAppPermissions/);
+  assert.match(appViewer, /getAppVersion\(\{ data: \{ appId, version: installedVersion \} \}\)/);
+  assert.match(appViewer, /getMarketplaceAuthorAction\(actionId\)/);
+  assert.match(appViewer, /stillInstalled/);
 });
 
 test("SQL action and icon allowlists exactly match the compiled host registry", () => {
@@ -215,7 +223,7 @@ test("SQL action and icon allowlists exactly match the compiled host registry", 
 });
 
 test("only the fixed renderer is used: no dynamic imports, remote URLs, executable code or auto-generation side effects", () => {
-  for (const source of [serverFunctions, authoringComponent, manifestRenderer, route]) {
+  for (const source of [serverFunctions, authoringComponent, appViewer, manifestRenderer, route]) {
     assert.doesNotMatch(
       source,
       /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\beval\s*\(|\bFunction\s*\(|dangerouslySetInnerHTML|\bimport\s*\(/,

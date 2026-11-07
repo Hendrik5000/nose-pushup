@@ -14,10 +14,20 @@ const launcher = home.slice(launcherStart, launcherEnd);
 test("Home restores the historical bottom-center Mira launcher and voice dialog", () => {
   assert.notEqual(launcherStart, -1, "the historical launcher component should exist");
   assert.match(home, /<HomeAppHub[\s\S]*?<MiraOverlayLauncher \/>/);
-  assert.match(launcher, /aria-label="Mira öffnen und eine Frage stellen"/);
+  assert.match(launcher, /aria-label="Mira öffnen oder halten, um eine Frage zu diktieren"/);
   assert.match(launcher, /<MiraSpark \/>/);
   assert.match(launcher, /<MiraVoiceChatDialog/);
   assert.match(launcher, /createBrowserSpeechRecognitionFactory/);
+  assert.match(launcher, /new MiraComposerPressAndHold/);
+  assert.match(launcher, /pointerDown/);
+  assert.match(launcher, /pointerUp/);
+  assert.match(launcher, /pointerCancel/);
+  assert.match(launcher, /canceledPointerIdRef/);
+  assert.match(launcher, /if \(wasCanceled\) suppressNextClick\(\)/);
+  assert.match(launcher, /MiraInlineDictationController/);
+  assert.match(launcher, /interimTranscript/);
+  assert.match(launcher, /aria-describedby="home-mira-hold-disclosure"/);
+  assert.match(launcher, /holdTriggeredRef/);
   assert.match(styles, /position:\s*fixed/);
   assert.match(styles, /bottom:\s*calc\(env\(safe-area-inset-bottom/);
   assert.match(styles, /left:\s*50%/);
@@ -26,6 +36,8 @@ test("Home restores the historical bottom-center Mira launcher and voice dialog"
   assert.match(styles, /data-navigation-layout="bottom"/);
   assert.match(styles, /data-navigation-layout="floating"/);
   assert.match(styles, /bottom:\s*calc\(5rem \+ env\(safe-area-inset-bottom, 0px\) \+ 0\.75rem\)/);
+  assert.match(styles, /touch-action:\s*none/);
+  assert.match(styles, /\.alo-mira-home-live-transcript/);
 });
 
 test("Home voice handoff keeps the current explicit preview and never sends to Mira automatically", () => {
@@ -38,6 +50,8 @@ test("Home voice handoff keeps the current explicit preview and never sends to M
     voiceDialog,
     /onClick=\{\(\) => \(onContinue \? onContinue\(\) : onOpenChange\(false\)\)\}/,
   );
+  assert.match(voiceDialog, /Je nach Browser kann/);
+  assert.match(voiceDialog, /nichts wird automatisch\s+an Mira gesendet/);
   assert.match(voiceDialog, /Mira wird nicht automatisch kontaktiert/);
   assert.match(handoff, /Kein Versand beim Öffnen/);
   assert.match(handoff, /Kein automatisches Senden/);

@@ -33,8 +33,10 @@ export function MiraVoiceChatDialog({
       <DialogContent className={className}>
         <DialogTitle className="pr-8">Mit Mira sprechen</DialogTitle>
         <DialogDescription>
-          Sprich deinen Text ein, prüfe oder bearbeite die Erkennung und tippe danach im Chat selbst
-          auf „Senden“. Mira wird nicht automatisch kontaktiert.
+          Du kannst Mira per Halten-zum-Sprechen oder durch Antippen diktieren. Je nach Browser kann
+          die Spracherkennung über einen Browser-Dienst verarbeitet werden. Prüfe oder bearbeite den
+          erkannten Text und tippe danach selbst auf „Frage in Mira prüfen“; nichts wird automatisch
+          an Mira gesendet. Mira wird nicht automatisch kontaktiert.
         </DialogDescription>
         <p className="rounded-xl border border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
           Antworten kannst du einzeln über „Vorlesen“ anhören. Stimme und Tempo richten sich nach

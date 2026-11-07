@@ -34,8 +34,30 @@ html[data-navigation-visible="true"][data-navigation-expanded="true"]:is(
   box-shadow: 0 10px 32px color-mix(in srgb, #000 28%, transparent);
   font: inherit;
   cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
+}
+
+.alo-mira-home-live-transcript {
+  position: absolute;
+  bottom: calc(100% + 0.75rem);
+  left: 50%;
+  width: min(20rem, calc(100vw - 2rem));
+  max-height: min(35dvh, 12rem);
+  overflow-y: auto;
+  transform: translateX(-50%);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--card) 96%, var(--background));
+  padding: 0.75rem 1rem;
+  color: var(--foreground);
+  box-shadow: 0 10px 32px color-mix(in srgb, #000 28%, transparent);
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 
 .alo-mira-home-launcher-button > svg {

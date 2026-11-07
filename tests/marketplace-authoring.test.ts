@@ -17,6 +17,7 @@ import {
   parseMarketplacePublishedInstallState,
   removeMarketplacePublishedApp,
   saveMarketplacePublishedInstallState,
+  setMarketplacePublishedAppPermissions,
   setMarketplacePublishedAppEnabled,
   updateMarketplacePublishedAppVersion,
   validateMarketplaceAuthoredManifest,
@@ -459,4 +460,44 @@ test("published app local installs remain account/backend scoped, disabled by de
       }),
     /Installation/,
   );
+});
+
+test("installed apps retain only local display metadata and require fresh per-version action review", () => {
+  const app = validateMarketplaceAuthoredManifest(VALID_MANIFEST);
+  const installed = installMarketplacePublishedApp(
+    EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE,
+    APP_ID,
+    1,
+    { name: app.name, icon: app.icon },
+  );
+  assert.deepEqual(installed.installs[0], {
+    appId: APP_ID,
+    version: 1,
+    enabled: false,
+    manifestName: "Trainingsstart",
+    icon: "training",
+  });
+  assert.throws(
+    () => setMarketplacePublishedAppPermissions(installed, APP_ID, 1, app, ["route:/health"]),
+    /ausdrücklich ausgewählte|deklarierte/,
+  );
+  const reviewed = setMarketplacePublishedAppPermissions(installed, APP_ID, 1, app, [
+    "route:/programs",
+  ]);
+  assert.equal(reviewed.installs[0]?.permissionsReviewVersion, 1);
+  assert.deepEqual(reviewed.installs[0]?.grantedActionIds, ["route:/programs"]);
+
+  const updated = updateMarketplacePublishedAppVersion(reviewed, APP_ID, 2, {
+    name: "Neuer Schnellstart",
+    icon: "mira",
+  });
+  assert.deepEqual(updated.installs[0], {
+    appId: APP_ID,
+    version: 2,
+    enabled: false,
+    manifestName: "Neuer Schnellstart",
+    icon: "mira",
+  });
+  assert.equal(updated.installs[0]?.permissionsReviewVersion, undefined);
+  assert.equal(updated.installs[0]?.grantedActionIds, undefined);
 });

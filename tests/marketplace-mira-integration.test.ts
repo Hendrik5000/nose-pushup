@@ -7,6 +7,7 @@ const miraPage = read("components/mira/SuperAiPage.tsx");
 const draftPreview = read("components/marketplace/MiraMarketplaceDraftPreview.tsx");
 const appCatalog = read("components/marketplace/MarketplaceAppCatalog.tsx");
 const customApps = read("components/marketplace/MarketplaceCustomApps.tsx");
+const appViewer = read("components/marketplace/MarketplacePublishedAppViewer.tsx");
 const marketplaceRoute = read("routes/_authenticated/marketplace.tsx");
 const iconRegistry = read("components/marketplace/MarketplaceIcon.tsx");
 
@@ -59,14 +60,16 @@ test("curated Marketplace catalog uses icon-name tiles and full-screen detail pe
   assert.match(appCatalog, /onOpen\(selected\.id\)/);
 });
 
-test("published admin apps keep their icon grid and full-screen download/details flow", () => {
+test("published admin apps keep their icon grid and launch through the reviewed app viewer", () => {
   assert.match(customApps, /MarketplaceIcon\s+icon=\{app\.manifest\.icon\}/);
   assert.match(customApps, /grid-cols-3[\s\S]*lg:grid-cols-6/);
   assert.match(customApps, /setSelectedAppId\(app\.appId\)/);
   assert.match(customApps, /!h-\[100dvh\] !w-screen !max-w-none/);
   assert.match(customApps, /Herunterladen & installieren/);
   assert.match(customApps, /AuthoredPermissionList manifest=\{selectedApp\.manifest\}/);
-  assert.match(customApps, /MarketplaceManifestView/);
+  assert.match(customApps, /<MarketplacePublishedAppViewer/);
+  assert.match(customApps, /onInstallStateChange=\{persistInstallState\}/);
+  assert.match(appViewer, /<MarketplaceManifestView/);
 });
 
 test("the icon registry covers all approved Marketplace icon IDs", () => {

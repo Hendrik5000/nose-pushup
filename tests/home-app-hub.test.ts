@@ -9,25 +9,28 @@ const home = readFileSync(homePath, "utf8");
 const menusPath = resolve(root, "src/lib/home-app-menus.ts");
 const menus = readFileSync(menusPath, "utf8");
 const hubStart = home.indexOf("function HomeAppHub");
+const tileBuilderStart = home.indexOf("function buildHomeHubTiles");
 const artworkStart = home.indexOf("type HubArtworkKind");
 const dashboardStart = home.indexOf("function Dashboard", artworkStart);
 const hub = home.slice(hubStart, artworkStart);
+const tileBuilder = home.slice(tileBuilderStart, hubStart);
 
 test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.notEqual(hubStart, -1, "HomeAppHub should exist");
   assert.notEqual(artworkStart, -1, "Hub artwork helpers should follow HomeAppHub");
 
-  for (const [destination, routeFile, title, artwork] of [
-    ["/ai", "ai.tsx", "Mira", "mira"],
-    ["/chat", "chat.tsx", "Nexus Chat", "nexus"],
-    ["/exercises", "exercises.tsx", "Alo Health", "health"],
-    ["/profile", "profile.tsx", "Einstellungen", "settings"],
-    ["/training", "training.tsx", "Trainingsübersicht & Gym", "training"],
+  for (const [id, destination, routeFile] of [
+    ["mira", "/ai", "ai.tsx"],
+    ["nexus", "/chat", "chat.tsx"],
+    ["health", "/exercises", "exercises.tsx"],
+    ["settings", "/profile", "profile.tsx"],
+    ["training", "/training", "training.tsx"],
   ] as const) {
     assert.ok(existsSync(resolve(root, "src/routes/_authenticated", routeFile)));
-    assert.ok(
-      hub.includes(`<HubAppIcon to="${destination}" title="${title}" artwork="${artwork}"`),
-      `home icon should link directly to ${destination}`,
+    assert.match(
+      tileBuilder,
+      new RegExp(`id: "${id}"[\\s\\S]*?to: "${destination}"`),
+      `home tile should link directly to ${destination}`,
     );
   }
 
@@ -42,13 +45,13 @@ test("Home restores Areas, Training/Gym, Tools, and the curated Marketplace as a
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/areas.tsx")));
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/tools.tsx")));
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/marketplace.tsx")));
-  assert.match(hub, /to="\/areas"[\s\S]*?Weitere Bereiche/);
-  assert.match(
-    hub,
-    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/marketplace" title="Marketplace" artwork="marketplace" \/>/,
-  );
-  assert.doesNotMatch(hub, /^\s*<HubAppIcon to="\/marketplace"/m);
-  assert.match(hub, /to="\/tools"[\s\S]*?Alo-Werkzeuge/);
+  assert.match(tileBuilder, /id: "areas"[\s\S]*?to: "\/areas"/);
+  assert.match(tileBuilder, /id: "marketplace"[\s\S]*?to: "\/marketplace"/);
+  assert.match(hub, /tile\.to === "\/areas"/);
+  assert.match(hub, /tile\.to === "\/tools"/);
+  assert.match(tileBuilder, /id: "tools"[\s\S]*?to: "\/tools"/);
+  assert.match(hub, /MarketplacePublishedAppViewer/);
+  assert.match(tileBuilder, /if \(!install\.enabled\) continue/);
 
   const areaRoutes = [
     ["/health", "health.tsx"],
@@ -83,14 +86,9 @@ test("Home restores Areas, Training/Gym, Tools, and the curated Marketplace as a
 test("the Home game tiles require confirmed Admin access and open only protected games", () => {
   assert.match(hub, /getAdminAreaAccess\(\)/);
   assert.match(hub, /setCanSeeAdmin\(false\)/);
-  assert.match(
-    hub,
-    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/admin" title="Admin" artwork="admin" \/>/,
-  );
-  assert.match(
-    hub,
-    /canSeeAdmin\s*&&\s*\([\s\S]*HubGameAppIcon game="grid-defense" title="Grid Defense"[\s\S]*HubGameAppIcon game="kupferkern" title="Kupferkern"/,
-  );
+  assert.match(tileBuilder, /if \(canSeeAdmin\)[\s\S]*?id: "admin"[\s\S]*?to: "\/admin"/);
+  assert.match(tileBuilder, /id: "grid-defense"[\s\S]*?game: "grid-defense"/);
+  assert.match(tileBuilder, /id: "kupferkern"[\s\S]*?game: "kupferkern"/);
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/games.tsx")));
   assert.match(home, /to="\/games"[\s\S]*search=\{\{ game \}\}/);
   assert.doesNotMatch(hub, /grid-defense\.html|kupferkern\.html|srcDoc=/);
@@ -101,11 +99,8 @@ test("Home Admin-only Marketplace entry remounts immediately when the account ch
   assert.match(dashboard, /<HomeAppHub[\s\S]*?key=\{user\.id\}/);
   assert.match(hub, /const \{ user \} = Route\.useRouteContext\(\)/);
   assert.match(hub, /setCanSeeAdmin\(false\)/);
-  assert.match(hub, /getAdminAreaAccess\(\)[\s\S]*?if \(active && allowed === true\)/);
-  assert.match(
-    hub,
-    /canSeeAdmin\s*&&\s*<HubAppIcon to="\/marketplace" title="Marketplace" artwork="marketplace" \/>/,
-  );
+  assert.match(hub, /getAdminAreaAccess\(\)[\s\S]*?isMarketplaceAdminAccessGranted\(access\)/);
+  assert.match(tileBuilder, /if \(canSeeAdmin\)[\s\S]*?id: "marketplace"/);
 });
 
 test("app artwork is square and original, and training is no longer a collapsible Home card", () => {
