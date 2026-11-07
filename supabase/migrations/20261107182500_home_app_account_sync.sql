@@ -119,7 +119,7 @@ BEGIN
   END IF;
   IF NOT p_deleted AND (SELECT count(*) FROM public.home_app_sync_records AS r
     WHERE r.user_id = v_user AND r.kind = p_kind AND NOT r.deleted AND r.app_key <> p_app_key)
-      >= CASE WHEN p_kind = 'home_name' THEN 128 ELSE 100 END THEN
+      >= (CASE WHEN p_kind = 'home_name' THEN 128 ELSE 100 END) THEN
     RAISE EXCEPTION 'Active app preference limit reached' USING ERRCODE = '22023';
   END IF;
   IF v_exists THEN
