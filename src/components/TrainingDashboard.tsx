@@ -10,7 +10,12 @@ import {
   getSmartReminder,
   getWeeklyProgress,
 } from "@/lib/workout-plans";
-import { getTrainingWeekBounds, localDateKey, sumTrainingWeekReps } from "@/lib/training-dates";
+import {
+  countTrainingWeekSessions,
+  getTrainingWeekBounds,
+  localDateKey,
+  sumTrainingWeekReps,
+} from "@/lib/training-dates";
 import { AiCoachCard } from "@/components/AiCoachCard";
 import { WeekPlanCard } from "@/components/WeekPlanCard";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
@@ -80,6 +85,7 @@ export function TrainingDashboard({ user }: { user: User }) {
   const [workoutAvailable, setWorkoutAvailable] = useState(true);
   const [hasWorkoutData, setHasWorkoutData] = useState(false);
   const [weekReps, setWeekReps] = useState<number | null>(null);
+  const [weekSessions, setWeekSessions] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
   const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
@@ -95,6 +101,7 @@ export function TrainingDashboard({ user }: { user: User }) {
     setWorkoutAvailable(true);
     setHasWorkoutData(false);
     setWeekReps(null);
+    setWeekSessions(0);
     setLoading(true);
     (async () => {
       const now = new Date();
@@ -159,6 +166,7 @@ export function TrainingDashboard({ user }: { user: User }) {
       );
       if (he) setTodaySteps(he.steps ?? 0);
       setWeekReps(workouts.error ? null : sumTrainingWeekReps(workouts.data ?? [], now));
+      setWeekSessions(workouts.error ? 0 : countTrainingWeekSessions(workouts.data ?? [], now));
       setLoading(false);
     })();
     return () => {
@@ -261,6 +269,10 @@ export function TrainingDashboard({ user }: { user: User }) {
               </div>
               {weekReps != null && hasWorkoutData && (
                 <>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {weekSessions}{" "}
+                    {weekSessions === 1 ? "Liegestütz-Eintrag" : "Liegestütz-Einträge"} gespeichert
+                  </p>
                   <div
                     className="mt-2 h-2 overflow-hidden rounded-full bg-secondary"
                     role="meter"

@@ -6,7 +6,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getTrainingWeekBounds, localDateKey } from "@/lib/training-dates";
 import { readWorkoutMetadata } from "@/lib/workout-session";
-import { historyExercise, loadWorkoutHistory, type HistoryWorkout } from "@/lib/workout-history";
+import {
+  historyExercise,
+  loadWorkoutHistory,
+  summarizeWorkoutDays,
+  type HistoryWorkout,
+} from "@/lib/workout-history";
 
 const DAYS = 35; // 5 weeks
 
@@ -86,6 +91,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
   const loadError = history.ownerId === userId && history.status === "error";
   const recentWorkouts =
     history.ownerId === userId && history.status === "ready" ? history.rows : [];
+  const daySummaries = summarizeWorkoutDays(recentWorkouts);
   const stats = new Map<string, number>();
   for (const row of recentWorkouts) {
     if (row.exercise_id !== "pushup") continue;
@@ -204,19 +210,23 @@ export function WorkoutHistory({ userId }: { userId: string }) {
 
       {/* 5-week heatmap */}
       <div>
-        <div className="grid grid-cols-7 gap-[3px] text-[8px] text-muted-foreground mb-1">
+        <div className="grid grid-cols-7 gap-[3px] text-[10px] text-muted-foreground mb-1">
           {DAY_LABELS.map((l) => (
             <div key={l} className="text-center">
               {l}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-[3px]">
+        <div
+          className="grid grid-cols-7 gap-[3px]"
+          role="group"
+          aria-label="Trainingsaktivität nach Tag der letzten fünf Wochen"
+        >
           {/* padding before first day */}
           {Array(padBefore)
             .fill(null)
             .map((_, i) => (
-              <div key={`pad-${i}`} className="aspect-square" />
+              <div key={`pad-${i}`} className="aspect-square" aria-hidden="true" />
             ))}
           {days.map((d) => {
             const reps = stats.get(d) ?? 0;
@@ -226,6 +236,8 @@ export function WorkoutHistory({ userId }: { userId: string }) {
               <div
                 key={d}
                 title={reps > 0 ? `${d}: ${reps} Wiederholungen` : d}
+                role="img"
+                aria-label={`${d}: ${reps} Wiederholungen`}
                 className={`aspect-square rounded-[3px] ${CELL_COLORS[level]} ${
                   isToday ? "ring-1 ring-primary ring-offset-1 ring-offset-background" : ""
                 }`}
@@ -235,6 +247,38 @@ export function WorkoutHistory({ userId }: { userId: string }) {
         </div>
       </div>
 
+      {/* Daily summaries complement, but never replace, individual sessions. */}
+      {daySummaries.length > 0 && (
+        <section aria-label="Tageszusammenfassungen" className="space-y-2">
+          <h4 className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
+            Tageszusammenfassungen
+          </h4>
+          {daySummaries.map((summary) => (
+            <div
+              key={`${summary.day}-${summary.exerciseId}`}
+              className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground">{summary.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(`${summary.day}T12:00:00`).toLocaleDateString("de-DE", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })}{" "}
+                  · {summary.sessions} {summary.sessions === 1 ? "Session" : "Sessions"}
+                </p>
+              </div>
+              <p className="ml-3 shrink-0 text-xs font-semibold tabular-nums text-foreground">
+                {summary.total.toLocaleString("de-DE")}
+                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                  {summary.unit === "seconds" ? "Sek." : summary.unit === "reps" ? "Wdh." : ""}
+                </span>
+              </p>
+            </div>
+          ))}
+        </section>
+      )}
       {/* Recent sessions */}
       {recentWorkouts.length > 0 && (
         <div className="space-y-1.5 pt-1">

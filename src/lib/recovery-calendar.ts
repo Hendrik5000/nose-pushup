@@ -34,6 +34,63 @@ export type JointSummary = {
   label: string;
 };
 
+export type JointLoadTrend = {
+  consecutiveLoadDays: number;
+  direction: "steigend" | "gleich" | "abnehmend";
+};
+
+/** Describe the recent load sequence for a joint without changing its score. */
+export function summarizeJointLoadTrend(week: readonly DayLoad[], joint: Joint): JointLoadTrend {
+  const fallback: JointLoadTrend = { consecutiveLoadDays: 0, direction: "abnehmend" };
+  if (week.length === 0) return fallback;
+
+  const values: { day: string; load: number }[] = [];
+  for (const entry of week) {
+    const load = entry?.loads?.[joint];
+    if (
+      typeof entry?.day !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(entry.day) ||
+      !Number.isFinite(Date.parse(`${entry.day}T00:00:00Z`)) ||
+      typeof load !== "number" ||
+      !Number.isFinite(load) ||
+      load < 0
+    )
+      return fallback;
+    values.push({ day: entry.day, load });
+  }
+  // Require strict ordering; gaps are valid, but break the consecutive-day run.
+  for (let i = 1; i < values.length; i++) {
+    if (Date.parse(`${values[i].day}T00:00:00Z`) <= Date.parse(`${values[i - 1].day}T00:00:00Z`))
+      return fallback;
+  }
+
+  let consecutiveLoadDays = 0;
+  for (let i = values.length - 1; i >= 0; i--) {
+    if (
+      i < values.length - 1 &&
+      Date.parse(`${values[i + 1].day}T00:00:00Z`) - Date.parse(`${values[i].day}T00:00:00Z`) !==
+        86400000
+    )
+      break;
+    if (values[i].load <= 0) break;
+    consecutiveLoadDays++;
+  }
+
+  const latest = values[values.length - 1];
+  if (latest.load <= 0) return { consecutiveLoadDays: 0, direction: "abnehmend" };
+  const previous = values.length > 1 ? values[values.length - 2] : undefined;
+  const adjacent =
+    previous &&
+    Date.parse(`${latest.day}T00:00:00Z`) - Date.parse(`${previous.day}T00:00:00Z`) === 86400000;
+  const direction =
+    !adjacent || latest.load < (previous?.load ?? latest.load)
+      ? "abnehmend"
+      : latest.load > (previous?.load ?? latest.load)
+        ? "steigend"
+        : "gleich";
+  return { consecutiveLoadDays, direction };
+}
+
 const skillById = new Map(allSkills().map((s) => [s.id, s]));
 
 function stressForExercise(exerciseId: string): Joint[] {

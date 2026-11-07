@@ -11,13 +11,23 @@ export function restoreMiraComposerTextAfterFailure(options: {
   submittedSessionId: string;
   currentText: string;
   submittedText: string | null;
+  currentRevision?: number;
+  submittedRevision?: number;
 }): string | null {
-  const { activeSessionId, submittedSessionId, currentText, submittedText } = options;
+  const {
+    activeSessionId,
+    submittedSessionId,
+    currentText,
+    submittedText,
+    currentRevision,
+    submittedRevision,
+  } = options;
   if (
     submittedText === null ||
     submittedText === "" ||
     activeSessionId !== submittedSessionId ||
-    currentText !== ""
+    currentText !== "" ||
+    (submittedRevision !== undefined && currentRevision !== submittedRevision)
   )
     return null;
   return submittedText;

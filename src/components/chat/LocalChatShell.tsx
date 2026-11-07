@@ -1353,8 +1353,9 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
             </span>
             <button
               type="button"
+              aria-label="Antwort abbrechen"
               onClick={() => setReplyTo(null)}
-              className="text-muted-foreground"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               ×
             </button>

@@ -48,7 +48,7 @@ export function SmartRestTimer({ rpe, formScore, exerciseId, onDone, onSkip }: P
             setRunning(false);
             onSkip?.();
           }}
-          className="text-[11px] font-medium text-muted-foreground hover:text-foreground"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           Überspringen
         </button>
@@ -59,11 +59,16 @@ export function SmartRestTimer({ rpe, formScore, exerciseId, onDone, onSkip }: P
           {formatRest(left)}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">{suggestion.reason}</p>
+        {suggestion.usedDefaults && (
+          <p className="mt-1 text-xs text-muted-foreground" role="status">
+            Fehlender oder ungültiger RPE-/Formwert: Standardwerte verwendet.
+          </p>
+        )}
       </div>
 
       <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-secondary">
         <div
-          className="h-full rounded-full bg-primary transition-all duration-1000 linear"
+          className="h-full rounded-full bg-primary transition-all duration-1000 linear motion-reduce:transition-none"
           style={{ width: `${pct * 100}%` }}
         />
       </div>
@@ -72,14 +77,14 @@ export function SmartRestTimer({ rpe, formScore, exerciseId, onDone, onSkip }: P
         <button
           type="button"
           onClick={() => setRunning((r) => !r)}
-          className="flex-1 rounded-xl border border-border bg-secondary py-2.5 text-sm font-medium text-foreground"
+          className="min-h-11 flex-1 rounded-xl border border-border bg-secondary py-2.5 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           {running ? "Pause" : "Weiter"}
         </button>
         <button
           type="button"
           onClick={() => setLeft((s) => s + 15)}
-          className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-sm font-medium text-foreground"
+          className="min-h-11 min-w-11 rounded-xl border border-border bg-secondary px-3 py-2.5 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           +15s
         </button>
