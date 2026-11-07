@@ -1826,7 +1826,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           {/* Messages */}
           <div
             ref={scrollRef}
-            className="alo-classic-mira-messages mt-3 flex-1 space-y-3 overflow-y-auto rounded-3xl bg-card/30 p-3 backdrop-blur"
+            className="alo-classic-mira-messages mt-3 flex-1 space-y-3 overflow-y-auto p-3"
           >
             {messages.length === 0 &&
               !activePendingUserMessage &&
@@ -2604,7 +2604,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 </details>
                 <div
                   ref={scrollRef}
-                  className="sport-chat-stage flex min-h-[38vh] flex-1 flex-col gap-4 overflow-y-auto rounded-[2rem] bg-card/55 p-4 shadow-sm sm:p-6"
+                  className="sport-chat-stage flex min-h-[38vh] flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-6"
                 >
                   {messages.length === 0 && !activePendingUserMessage && (
                     <div className="mira-chat-welcome mx-auto my-auto max-w-lg py-8 text-center">
