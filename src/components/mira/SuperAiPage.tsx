@@ -975,7 +975,10 @@ export function SuperAiPage({
           });
           setMarketplacePublishConfirmationOpen(false);
           const assistantText =
-            `Ich habe eine lokale Vorschau für „${manifest.name}“ erstellt. Sag mir hier im Chat einfach, was ich daran ändern soll. Zum Veröffentlichen brauchst du anschließend noch eine ausdrückliche Bestätigung.` +
+            (manifest.game
+              ? `Ich habe das lokal spielbare Quiz „${manifest.name}“ erstellt. Du kannst es direkt in der Vorschau ausprobieren und mir hier im Chat Änderungen nennen.`
+              : `Ich habe eine lokale Vorschau für „${manifest.name}“ erstellt. Sag mir hier im Chat einfach, was ich daran ändern soll.`) +
+            " Zum Veröffentlichen brauchst du anschließend noch eine ausdrückliche Bestätigung." +
             (attachments.length
               ? "\n\nDeine angehängten Dateien habe ich für diesen Entwurf nicht gesendet; sie bleiben im Composer."
               : "");

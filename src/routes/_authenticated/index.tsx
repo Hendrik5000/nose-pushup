@@ -1,5 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import type { PrivateGameId } from "@/lib/private-game-policy";
 import { HOME_OTHER_AREAS } from "@/lib/home-app-menus";
@@ -18,7 +37,9 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  GripVertical,
   Mic,
+  MoreHorizontal,
   Pencil,
   Search,
   Trash2,
@@ -30,9 +51,11 @@ import {
   HOME_BACKGROUND_PRESETS,
   HOME_DEFAULT_BACKGROUND,
   clearHomeAppName,
+  forgetHomeAppPersonalization,
   loadHomeAppHubSettings,
   loadHomeBackgroundImage,
   moveHomeApp,
+  moveHomeAppRelative,
   orderHomeAppIds,
   prepareHomeBackgroundImage,
   removeHomeBackgroundImage,
@@ -47,6 +70,7 @@ import {
   loadMarketplacePublishedInstallState,
   marketplacePublishedInstallStorageKey,
   parseMarketplacePublishedInstallState,
+  removeMarketplacePublishedApp,
   saveMarketplacePublishedInstallState,
   type MarketplacePublishedInstall,
   type MarketplacePublishedInstallState,
@@ -195,8 +219,33 @@ function HomeAppHub({
   const [customBackgroundUrl, setCustomBackgroundUrl] = useState<string | null>(null);
   const [backgroundBusy, setBackgroundBusy] = useState(false);
   const [backgroundError, setBackgroundError] = useState("");
+  const [activeAppMenuId, setActiveAppMenuId] = useState<string | null>(null);
+  const [uninstallTargetAppId, setUninstallTargetAppId] = useState<string | null>(null);
+  const [isUninstallingApp, setIsUninstallingApp] = useState(false);
+  const [draggingAppId, setDraggingAppId] = useState<string | null>(null);
+  const [dropTargetAppId, setDropTargetAppId] = useState<string | null>(null);
+  const [dropTargetPlacement, setDropTargetPlacement] = useState<"before" | "after" | null>(null);
+  const longPressStartRef = useRef<{
+    appId: string;
+    pointerId: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredAppIdRef = useRef<string | null>(null);
+  const dragSourceAppIdRef = useRef<string | null>(null);
+  const dragPointerIdRef = useRef<number | null>(null);
+  const dropTargetAppIdRef = useRef<string | null>(null);
+  const dropTargetPlacementRef = useRef<"before" | "after">("before");
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
   const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
+
+  useEffect(
+    () => () => {
+      if (longPressTimerRef.current !== null) window.clearTimeout(longPressTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     let active = true;
@@ -284,6 +333,17 @@ function HomeAppHub({
     return tile ? [tile] : [];
   });
   const renamingTile = orderedTiles.find((tile) => tile.id === renamingAppId) ?? null;
+  const activeActionTile = orderedTiles.find((tile) => tile.id === activeAppMenuId) ?? null;
+  const activeActionTitle = activeActionTile
+    ? (settings.nameOverrides[activeActionTile.id] ?? activeActionTile.title)
+    : "";
+  const activeActionIndex = activeActionTile
+    ? orderedTiles.findIndex((tile) => tile.id === activeActionTile.id)
+    : -1;
+  const uninstallTargetTile = orderedTiles.find((tile) => tile.id === uninstallTargetAppId) ?? null;
+  const uninstallTargetTitle = uninstallTargetTile
+    ? (settings.nameOverrides[uninstallTargetTile.id] ?? uninstallTargetTile.title)
+    : "";
   const runningInstall = installState.installs.find(
     (entry) => entry.appId === runningMarketplaceAppId && entry.enabled,
   );
@@ -326,6 +386,140 @@ function HomeAppHub({
     }
   };
 
+  const cancelHomeLongPress = () => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    longPressStartRef.current = null;
+  };
+
+  useEffect(() => {
+    const cancelIfMoved = (event: PointerEvent) => {
+      const start = longPressStartRef.current;
+      if (
+        !start ||
+        start.pointerId !== event.pointerId ||
+        (Math.abs(event.clientX - start.x) <= 12 && Math.abs(event.clientY - start.y) <= 12)
+      ) {
+        return;
+      }
+      cancelHomeLongPress();
+    };
+    const cancelOnPointerEnd = (event: PointerEvent) => {
+      if (longPressStartRef.current?.pointerId === event.pointerId) cancelHomeLongPress();
+    };
+    window.addEventListener("pointermove", cancelIfMoved, true);
+    window.addEventListener("pointerup", cancelOnPointerEnd, true);
+    window.addEventListener("pointercancel", cancelOnPointerEnd, true);
+    return () => {
+      window.removeEventListener("pointermove", cancelIfMoved, true);
+      window.removeEventListener("pointerup", cancelOnPointerEnd, true);
+      window.removeEventListener("pointercancel", cancelOnPointerEnd, true);
+    };
+  }, []);
+
+  const startHomeLongPress = (event: ReactPointerEvent<HTMLDivElement>, appId: string) => {
+    if (
+      isEditingHub ||
+      (event.pointerType !== "touch" && event.pointerType !== "pen") ||
+      event.button !== 0
+    ) {
+      return;
+    }
+    cancelHomeLongPress();
+    const start = { appId, pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    longPressStartRef.current = start;
+    longPressTimerRef.current = window.setTimeout(() => {
+      if (longPressStartRef.current?.pointerId !== start.pointerId) return;
+      longPressTriggeredAppIdRef.current = appId;
+      setActiveAppMenuId(appId);
+    }, 560);
+  };
+
+  const moveHomeLongPress = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = longPressStartRef.current;
+    if (
+      start &&
+      start.pointerId === event.pointerId &&
+      (Math.abs(event.clientX - start.x) > 12 || Math.abs(event.clientY - start.y) > 12)
+    ) {
+      cancelHomeLongPress();
+    }
+  };
+
+  const suppressLongPressClick = (event: ReactMouseEvent<HTMLDivElement>, appId: string) => {
+    if (longPressTriggeredAppIdRef.current !== appId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    longPressTriggeredAppIdRef.current = null;
+  };
+
+  const getHomeTileDropTargetAtPoint = (x: number, y: number) => {
+    const element = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-home-app-id]");
+    const appId = element?.dataset.homeAppId;
+    if (!element || !appId) return null;
+    const rect = element.getBoundingClientRect();
+    return { appId, placement: x < rect.left + rect.width / 2 ? "before" : "after" } as const;
+  };
+
+  const beginHomeTileDrag = (event: ReactPointerEvent<HTMLButtonElement>, appId: string) => {
+    if (!isEditingHub || !event.isPrimary || event.button !== 0) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragSourceAppIdRef.current = appId;
+    dragPointerIdRef.current = event.pointerId;
+    dropTargetAppIdRef.current = appId;
+    dropTargetPlacementRef.current = "before";
+    setDraggingAppId(appId);
+    setDropTargetAppId(appId);
+    setDropTargetPlacement("before");
+  };
+
+  const moveHomeTileDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (dragPointerIdRef.current !== event.pointerId) return;
+    const target = getHomeTileDropTargetAtPoint(event.clientX, event.clientY);
+    if (!target || !visibleAppIds.includes(target.appId)) return;
+    dropTargetAppIdRef.current = target.appId;
+    dropTargetPlacementRef.current = target.placement;
+    setDropTargetAppId(target.appId);
+    setDropTargetPlacement(target.placement);
+  };
+
+  const clearHomeTileDrag = () => {
+    dragSourceAppIdRef.current = null;
+    dragPointerIdRef.current = null;
+    dropTargetAppIdRef.current = null;
+    dropTargetPlacementRef.current = "before";
+    setDraggingAppId(null);
+    setDropTargetAppId(null);
+    setDropTargetPlacement(null);
+  };
+
+  const finishHomeTileDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (dragPointerIdRef.current !== event.pointerId) return;
+    const sourceId = dragSourceAppIdRef.current;
+    const drop =
+      getHomeTileDropTargetAtPoint(event.clientX, event.clientY) ??
+      (dropTargetAppIdRef.current
+        ? { appId: dropTargetAppIdRef.current, placement: dropTargetPlacementRef.current }
+        : null);
+    clearHomeTileDrag();
+    if (!sourceId || !drop || sourceId === drop.appId) return;
+    try {
+      persistSettings(
+        moveHomeAppRelative(settings, visibleAppIds, sourceId, drop.appId, drop.placement),
+        "Home-App-Reihenfolge lokal gespeichert.",
+      );
+    } catch {
+      setSettingsError("Diese App konnte nicht verschoben werden.");
+    }
+  };
+
+  const cancelHomeTileDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (dragPointerIdRef.current === event.pointerId) clearHomeTileDrag();
+  };
+
   const saveRename = (event: ChangeEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!renamingAppId) return;
@@ -350,6 +544,39 @@ function HomeAppHub({
       }
     } catch {
       setSettingsError("Der Standardname konnte nicht wiederhergestellt werden.");
+    }
+  };
+
+  const uninstallMarketplaceAppFromHome = async () => {
+    if (!uninstallTargetTile || uninstallTargetTile.kind !== "marketplace" || isUninstallingApp) {
+      return;
+    }
+    const { appId } = uninstallTargetTile.install;
+    const status = `„${uninstallTargetTitle}“ wurde nur von diesem Gerät entfernt. Der Marketplace-Eintrag bleibt erhalten.`;
+    setIsUninstallingApp(true);
+    try {
+      const removed = await persistInstallState(
+        removeMarketplacePublishedApp(installState, appId),
+        status,
+      );
+      if (!removed) return;
+      try {
+        const nextSettings = forgetHomeAppPersonalization(settings, uninstallTargetTile.id);
+        saveHomeAppHubSettings(window.localStorage, user.id, nextSettings);
+        setSettings(nextSettings);
+        setSettingsError("");
+      } catch {
+        setSettingsError(
+          "Die Installation wurde entfernt; der gespeicherte App-Name konnte nicht bereinigt werden.",
+        );
+      }
+      setRunningMarketplaceAppId((current) => (current === appId ? null : current));
+      setHomeStatus(status);
+    } catch {
+      setHomeStatus("Die App konnte nicht lokal entfernt werden.");
+    } finally {
+      setIsUninstallingApp(false);
+      setUninstallTargetAppId(null);
     }
   };
 
@@ -534,67 +761,79 @@ function HomeAppHub({
               </button>
             </div>
           </header>
+          {isEditingHub && (
+            <p className="mb-4 max-w-xl text-xs leading-relaxed text-muted-foreground">
+              Ziehe Apps am Griff an eine neue Position. Marketplace-Apps kannst du hier lokal
+              entfernen; veröffentlichte Einträge bleiben erhalten.
+            </p>
+          )}
           <nav
             className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
             aria-label="Alo-Apps"
           >
-            {orderedTiles.map((tile, index) => {
+            {orderedTiles.map((tile) => {
               const title = settings.nameOverrides[tile.id] ?? tile.title;
               return (
-                <div key={tile.id} className="relative min-w-0">
+                <div
+                  key={tile.id}
+                  data-home-app-id={tile.id}
+                  data-drop-placement={
+                    dropTargetAppId === tile.id ? dropTargetPlacement : undefined
+                  }
+                  className={`relative min-w-0 select-none rounded-xl transition ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                  onPointerDown={(event) => startHomeLongPress(event, tile.id)}
+                  onPointerMove={moveHomeLongPress}
+                  onPointerUp={cancelHomeLongPress}
+                  onPointerCancel={cancelHomeLongPress}
+                  onClickCapture={(event) => suppressLongPressClick(event, tile.id)}
+                  onContextMenu={(event) => {
+                    if (isEditingHub) return;
+                    event.preventDefault();
+                    if (longPressStartRef.current?.appId === tile.id) {
+                      longPressTriggeredAppIdRef.current = tile.id;
+                    }
+                    setActiveAppMenuId(tile.id);
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      !isEditingHub &&
+                      (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10"))
+                    ) {
+                      event.preventDefault();
+                      setActiveAppMenuId(tile.id);
+                    }
+                  }}
+                >
                   {renderTile(tile, title)}
+                  {draggingAppId && dropTargetAppId === tile.id && dropTargetPlacement && (
+                    <span
+                      aria-hidden="true"
+                      className={`pointer-events-none absolute inset-y-0 z-20 w-1 rounded-full bg-primary ${dropTargetPlacement === "before" ? "left-0" : "right-0"}`}
+                    />
+                  )}
                   {isEditingHub && (
-                    <div className="mt-2 flex items-center justify-center gap-1">
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-1">
                       <button
                         type="button"
-                        aria-label={`${title} nach links verschieben`}
-                        title="Nach links verschieben"
-                        disabled={index === 0}
-                        onClick={() => {
-                          try {
-                            persistSettings(
-                              moveHomeApp(settings, visibleAppIds, tile.id, -1),
-                              "Home-App-Reihenfolge lokal gespeichert.",
-                            );
-                          } catch {
-                            setSettingsError("Diese App konnte nicht verschoben werden.");
-                          }
-                        }}
-                        className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card disabled:opacity-40"
+                        aria-label={`${title} ziehen und verschieben`}
+                        title="Ziehen, um zu verschieben"
+                        onPointerDown={(event) => beginHomeTileDrag(event, tile.id)}
+                        onPointerMove={moveHomeTileDrag}
+                        onPointerUp={finishHomeTileDrag}
+                        onPointerCancel={cancelHomeTileDrag}
+                        className="grid h-11 w-11 touch-none place-items-center rounded-full border border-border bg-card cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                       >
-                        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                        <GripVertical className="h-4 w-4" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
-                        aria-label={`${title} nach rechts verschieben`}
-                        title="Nach rechts verschieben"
-                        disabled={index === orderedTiles.length - 1}
-                        onClick={() => {
-                          try {
-                            persistSettings(
-                              moveHomeApp(settings, visibleAppIds, tile.id, 1),
-                              "Home-App-Reihenfolge lokal gespeichert.",
-                            );
-                          } catch {
-                            setSettingsError("Diese App konnte nicht verschoben werden.");
-                          }
-                        }}
-                        className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card disabled:opacity-40"
+                        aria-label={`${title} Aktionen`}
+                        aria-haspopup="dialog"
+                        title="App-Aktionen"
+                        onClick={() => setActiveAppMenuId(tile.id)}
+                        className="grid h-11 w-11 place-items-center rounded-full border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                       >
-                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`${title} umbenennen`}
-                        title="Umbenennen"
-                        onClick={() => {
-                          setRenamingAppId(tile.id);
-                          setRenameDraft(settings.nameOverrides[tile.id] ?? tile.title);
-                          setSettingsError("");
-                        }}
-                        className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card"
-                      >
-                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                        <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                       </button>
                     </div>
                   )}
@@ -742,6 +981,131 @@ function HomeAppHub({
           </p>
         </div>
       </section>
+      <Dialog
+        open={activeActionTile !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActiveAppMenuId(null);
+            longPressTriggeredAppIdRef.current = null;
+            cancelHomeLongPress();
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          {activeActionTile && (
+            <>
+              <DialogTitle>{activeActionTitle}</DialogTitle>
+              <DialogDescription>
+                {activeActionTile.kind === "marketplace"
+                  ? "Der Name ist nur auf diesem Gerät geändert. Deinstallieren entfernt nur diese lokale Installation."
+                  : "Der Name dieser Alo-App wird nur auf diesem Gerät geändert."}
+              </DialogDescription>
+              {isEditingHub && (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    aria-label={`${activeActionTitle} nach links verschieben`}
+                    disabled={activeActionIndex <= 0}
+                    onClick={() => {
+                      try {
+                        persistSettings(
+                          moveHomeApp(settings, visibleAppIds, activeActionTile.id, -1),
+                          "Home-App-Reihenfolge lokal gespeichert.",
+                        );
+                      } catch {
+                        setSettingsError("Diese App konnte nicht verschoben werden.");
+                      }
+                      setActiveAppMenuId(null);
+                    }}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                    Nach links
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`${activeActionTitle} nach rechts verschieben`}
+                    disabled={activeActionIndex < 0 || activeActionIndex >= orderedTiles.length - 1}
+                    onClick={() => {
+                      try {
+                        persistSettings(
+                          moveHomeApp(settings, visibleAppIds, activeActionTile.id, 1),
+                          "Home-App-Reihenfolge lokal gespeichert.",
+                        );
+                      } catch {
+                        setSettingsError("Diese App konnte nicht verschoben werden.");
+                      }
+                      setActiveAppMenuId(null);
+                    }}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40"
+                  >
+                    Nach rechts
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+              <div className={`${isEditingHub ? "mt-2" : "mt-4"} grid gap-2`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRenamingAppId(activeActionTile.id);
+                    setRenameDraft(
+                      settings.nameOverrides[activeActionTile.id] ?? activeActionTile.title,
+                    );
+                    setSettingsError("");
+                    setIsEditingHub(true);
+                    setActiveAppMenuId(null);
+                  }}
+                  className="min-h-12 rounded-xl border border-border px-4 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  Umbenennen
+                </button>
+                {activeActionTile.kind === "marketplace" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAppMenuId(null);
+                      setUninstallTargetAppId(activeActionTile.id);
+                    }}
+                    className="min-h-12 rounded-xl border border-destructive/40 px-4 text-left text-sm font-semibold text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  >
+                    Lokal deinstallieren
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      <AlertDialog
+        open={uninstallTargetTile !== null}
+        onOpenChange={(open) => {
+          if (!open && !isUninstallingApp) setUninstallTargetAppId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>„{uninstallTargetTitle}“ nur lokal deinstallieren?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Entfernt wird nur die Installation auf diesem Gerät. Der veröffentlichte Marketplace-
+              Eintrag und seine Version bleiben unverändert und können später erneut installiert
+              werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUninstallingApp}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isUninstallingApp}
+              onClick={(event) => {
+                event.preventDefault();
+                void uninstallMarketplaceAppFromHome();
+              }}
+            >
+              {isUninstallingApp ? "Entferne …" : "Lokal deinstallieren"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {runningInstall && (
         <MarketplacePublishedAppViewer
           userId={user.id}

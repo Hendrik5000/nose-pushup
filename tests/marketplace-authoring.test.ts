@@ -41,6 +41,38 @@ const VALID_MANIFEST = {
   ],
 };
 
+const VALID_GAME_MANIFEST = {
+  schemaVersion: 2,
+  name: "Wissensquiz",
+  description: "Ein kurzes lokales Quiz zum Mitspielen.",
+  icon: "game",
+  blocks: [],
+  game: {
+    type: "quiz",
+    title: "Wissensquiz",
+    instructions: "Wähle für jede Frage eine Antwort.",
+    questions: [
+      {
+        prompt: "Wie viel ist 2 + 2?",
+        choices: ["3", "4", "5"],
+        correctIndex: 1,
+        explanation: "Zwei plus zwei ergibt vier.",
+      },
+      {
+        prompt: "Welcher Planet wird der rote Planet genannt?",
+        choices: ["Mars", "Venus"],
+        correctIndex: 0,
+      },
+      {
+        prompt: "Wie viele Tage hat eine Woche?",
+        choices: ["7", "8"],
+        correctIndex: 0,
+      },
+    ],
+    completionMessage: "Gut gespielt!",
+  },
+};
+
 class MemoryStorage {
   readonly values = new Map<string, string>();
 
@@ -85,7 +117,7 @@ test("authored manifests accept only the versioned fixed UI schema and pre-regis
     );
   }
   assert.throws(
-    () => validateMarketplaceAuthoredManifest({ ...VALID_MANIFEST, schemaVersion: 2 }),
+    () => validateMarketplaceAuthoredManifest({ ...VALID_MANIFEST, schemaVersion: 3 }),
     /Manifestversion/,
   );
   assert.throws(
@@ -193,6 +225,97 @@ test("HTML, scriptable URLs, unsupported actions, extra block fields and duplica
   );
 });
 
+test("v2 quiz manifests are local, bounded, deeply frozen, and require no Alo actions", () => {
+  const parsed = validateMarketplaceAuthoredManifest(VALID_GAME_MANIFEST);
+  assert.equal(parsed.schemaVersion, 2);
+  assert.equal(parsed.game?.type, "quiz");
+  assert.equal(parsed.blocks.length, 0);
+  assert.ok(Object.isFrozen(parsed.game));
+  assert.ok(Object.isFrozen(parsed.game?.questions));
+  assert.ok(Object.isFrozen(parsed.game?.questions[0]));
+  assert.ok(Object.isFrozen(parsed.game?.questions[0].choices));
+  assert.deepEqual(describeMarketplaceAuthoredPermissions(parsed), []);
+
+  assert.throws(
+    () => validateMarketplaceAuthoredManifest({ ...VALID_GAME_MANIFEST, game: undefined }),
+    /Quiz-Spielmanifest/,
+  );
+  assert.throws(
+    () =>
+      validateMarketplaceAuthoredManifest({ ...VALID_MANIFEST, game: VALID_GAME_MANIFEST.game }),
+    /nicht unterstützte Felder/,
+  );
+  assert.throws(
+    () =>
+      validateMarketplaceAuthoredManifest({
+        ...VALID_GAME_MANIFEST,
+        game: { ...VALID_GAME_MANIFEST.game, type: "script" },
+      }),
+    /Quiz-Spielmanifest/,
+  );
+  assert.throws(
+    () =>
+      validateMarketplaceAuthoredManifest({
+        ...VALID_GAME_MANIFEST,
+        game: { ...VALID_GAME_MANIFEST.game, executable: "alert(1)" },
+      }),
+    /Quiz-Spielmanifest/,
+  );
+  assert.throws(
+    () =>
+      validateMarketplaceAuthoredManifest({
+        ...VALID_GAME_MANIFEST,
+        game: {
+          ...VALID_GAME_MANIFEST.game,
+          questions: [
+            { ...VALID_GAME_MANIFEST.game.questions[0], correctIndex: 3 },
+            ...VALID_GAME_MANIFEST.game.questions.slice(1),
+          ],
+        },
+      }),
+    /Lösungsindex/,
+  );
+  assert.throws(
+    () =>
+      validateMarketplaceAuthoredManifest({
+        ...VALID_GAME_MANIFEST,
+        game: {
+          ...VALID_GAME_MANIFEST.game,
+          questions: [
+            { ...VALID_GAME_MANIFEST.game.questions[0], choices: ["gleich", "Gleich"] },
+            ...VALID_GAME_MANIFEST.game.questions.slice(1),
+          ],
+        },
+      }),
+    /dürfen sich nicht wiederholen/,
+  );
+  assert.throws(
+    () =>
+      validateMarketplaceAuthoredManifest({
+        ...VALID_GAME_MANIFEST,
+        game: {
+          ...VALID_GAME_MANIFEST.game,
+          questions: [
+            { ...VALID_GAME_MANIFEST.game.questions[0], prompt: "javascript:alert(1)" },
+            ...VALID_GAME_MANIFEST.game.questions.slice(1),
+          ],
+        },
+      }),
+    /Quizfrage ist ungültig/,
+  );
+  assert.throws(
+    () =>
+      validateMarketplaceAuthoredManifest({
+        ...VALID_GAME_MANIFEST,
+        game: {
+          ...VALID_GAME_MANIFEST.game,
+          questions: VALID_GAME_MANIFEST.game.questions.slice(0, 2),
+        },
+      }),
+    /Quiz-Spielmanifest/,
+  );
+});
+
 test("the authoring action allowlist is derived from first-party entries and excludes recursive Marketplace access", () => {
   assert.equal(MARKETPLACE_AUTHOR_ACTIONS.length, 28);
   assert.ok(Object.isFrozen(MARKETPLACE_AUTHOR_ACTIONS));
@@ -222,6 +345,8 @@ test("Mira receives one explicit goal and fixed action list, without history, at
   assert.match(request.data.messages[0].content, /Schnellstartseite/);
   assert.equal(request.data.task, "general");
   assert.match(request.data.systemExtra, /Keine HTML-, JavaScript-/);
+  assert.match(request.data.systemExtra, /schemaVersion 2/);
+  assert.match(request.data.systemExtra, /type='quiz'/);
   assert.match(request.data.systemExtra, /route:\/programs/);
   assert.match(request.data.systemExtra, /tool:privacy/);
   assert.match(
@@ -317,6 +442,10 @@ test("ordinary German chat distinguishes app creation, local-draft edits, publis
   assert.equal(classifyMarketplaceChatIntent("Was kannst du mit Apps machen?"), null);
   assert.equal(classifyMarketplaceChatIntent("Mach mir eine App-Übersicht"), null);
   assert.equal(classifyMarketplaceChatIntent("Kannst du mir eine App bauen?"), "create");
+  assert.equal(classifyMarketplaceChatIntent("Erstelle mir ein Quiz zum Thema Planeten"), "create");
+  assert.equal(classifyMarketplaceChatIntent("Ich möchte ein Ratespiel"), "create");
+  assert.equal(classifyMarketplaceChatIntent("Wie erstelle ich ein Quiz?"), null);
+  assert.equal(classifyMarketplaceChatIntent("Mach ein Spiel daraus", true), "edit-draft");
 });
 
 test("published app matching is exact-name based and excludes other admins' apps", () => {
@@ -355,6 +484,10 @@ test("Mira response parser requires a complete JSON object and validates fenced 
   assert.deepEqual(
     parseMarketplaceMiraManifestReply(`\`\`\`json\n${JSON.stringify(VALID_MANIFEST)}\n\`\`\``),
     validateMarketplaceAuthoredManifest(VALID_MANIFEST),
+  );
+  assert.deepEqual(
+    parseMarketplaceMiraManifestReply(JSON.stringify(VALID_GAME_MANIFEST)),
+    validateMarketplaceAuthoredManifest(VALID_GAME_MANIFEST),
   );
   assert.throws(
     () => parseMarketplaceMiraManifestReply(`Hier ist die App: ${JSON.stringify(VALID_MANIFEST)}`),

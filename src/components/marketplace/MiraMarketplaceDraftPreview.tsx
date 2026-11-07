@@ -38,6 +38,7 @@ export function MiraMarketplaceDraftPreview({
 }: MiraMarketplaceDraftPreviewProps) {
   const { manifest, target } = draft;
   const nextVersion = target ? target.expectedVersion + 1 : 1;
+  const permissions = describeMarketplaceAuthoredPermissions(manifest);
 
   return (
     <section
@@ -71,11 +72,17 @@ export function MiraMarketplaceDraftPreview({
         aria-label={`Berechtigungen für ${manifest.name}`}
       >
         <h4 className="text-xs font-bold uppercase tracking-wide">Feste Aktionen</h4>
-        <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed text-muted-foreground">
-          {describeMarketplaceAuthoredPermissions(manifest).map((permission, index) => (
-            <li key={`${index}-${permission}`}>{permission}</li>
-          ))}
-        </ul>
+        {permissions.length > 0 ? (
+          <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed text-muted-foreground">
+            {permissions.map((permission, index) => (
+              <li key={`${index}-${permission}`}>{permission}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Dieses Quiz läuft lokal und benötigt keine zusätzlichen Alo-Berechtigungen.
+          </p>
+        )}
       </section>
       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
         Du kannst Mira im Chat einfach sagen, was sie an diesem Entwurf ändern soll. Die Vorschau

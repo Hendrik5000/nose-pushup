@@ -3,6 +3,8 @@ import type { MarketplacePublishedVersion } from "@/lib/marketplace-authoring";
 export type MarketplaceChatAuthoringIntent = "create" | "edit-draft" | "edit-published";
 
 const APP_WORD = /\b(?:alo\s*[- ]?\s*)?apps?\b/i;
+const GAME_WORD =
+  /\b(?:spiel(?:e|en)?|(?:rate|wort|denk|karten|memory|wissens|logik|brett|lern|mathe|zahlen|quiz)spiel(?:e|en)?|games?|quiz|puzzles?|rätsel|raetsel)\b/i;
 const CREATE_REQUEST =
   /\b(?:bau(?:e|en)?|erstell(?:e|en)?|entwerf(?:e|en)?|entwickl(?:e|en)?|gestalt(?:e|en)?|mach(?:e|en)?|create|build|design)\b/i;
 const EDIT_REQUEST =
@@ -10,7 +12,7 @@ const EDIT_REQUEST =
 const DIRECT_DRAFT_EDIT =
   /^(?:mira[,:\s]+)?(?:bitte\s+)?(?:änder(?:e|n)?|aender(?:e|n)?|bearbeit(?:e|en)|aktualisier(?:e|en)|verbesser(?:e|n)|überarbeit(?:e|n)|ueberarbeit(?:e|en)|pass(?:e|t)?\s+an|mach(?:e|en)?|füge|fuege|ergänz(?:e|en)|ergaenz(?:e|en)|entfern(?:e|en)|ersetz(?:e|en)|benenn(?:e|en)|setz(?:e|en)|kürz(?:e|n)|kuerz(?:e|n)|verlänger(?:e|en)|verlaenger(?:e|en)|gestalt(?:e|en)|edit|update|change|redesign|add|remove|replace)\b/i;
 const DRAFT_OBJECT =
-  /\b(?:app|entwurf|vorschau|button|schaltfläche|schaltflaeche|text|farbe|liste|überschrift|ueberschrift|aktion|layout|seite|block|absatz)\b/i;
+  /\b(?:app|entwurf|vorschau|spiel|quiz|button|schaltfläche|schaltflaeche|text|farbe|liste|überschrift|ueberschrift|aktion|layout|seite|block|absatz)\b/i;
 const EXPLICITLY_NEW = /\b(?:neue|weiter(?:e|en)?|ander(?:e|en))\s+(?:alo\s*[- ]?\s*)?apps?\b/i;
 const WANTS_APP =
   /\b(?:ich\s+(?:möchte|moechte|will|brauche|hätte\s+gern|haette\s+gern|wünsche\s+mir|wuensche\s+mir)|wir\s+(?:möchten|moechten|wollen|brauchen))\b/i;
@@ -56,6 +58,10 @@ export function classifyMarketplaceChatIntent(
     ) {
       return "edit-draft";
     }
+  }
+
+  if (GAME_WORD.test(message) && (CREATE_REQUEST.test(message) || WANTS_APP.test(message))) {
+    return "create";
   }
 
   if (APP_WORD.test(message) && EDIT_REQUEST.test(message)) return "edit-published";
