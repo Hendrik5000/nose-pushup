@@ -23,12 +23,12 @@
   background:
     radial-gradient(
       ellipse at 100% 0%,
-      color-mix(in srgb, var(--accent) 18%, transparent),
+      color-mix(in srgb, var(--menu-accent, var(--accent)) 18%, transparent),
       transparent 68%
     ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--background) 97%, var(--primary)),
+      color-mix(in srgb, var(--background) 97%, var(--menu-accent, var(--primary))),
       var(--background)
     );
   color: var(--foreground);
@@ -43,12 +43,12 @@
   background:
     radial-gradient(
       ellipse at 82% 7%,
-      color-mix(in srgb, var(--primary) 11%, transparent),
+      color-mix(in srgb, var(--menu-accent, var(--primary)) 11%, transparent),
       transparent 42%
     ),
     radial-gradient(
       ellipse at 12% 66%,
-      color-mix(in srgb, var(--accent) 10%, transparent),
+      color-mix(in srgb, var(--menu-accent, var(--accent)) 10%, transparent),
       transparent 42%
     );
 }
@@ -86,14 +86,14 @@
   height: 2.7rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--primary) 42%, transparent);
+  border: 1px solid color-mix(in srgb, var(--menu-accent, var(--primary)) 42%, transparent);
   border-radius: 0.95rem;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--primary) 24%, var(--card)),
-    color-mix(in srgb, var(--accent) 26%, var(--card))
+    color-mix(in srgb, var(--menu-accent, var(--primary)) 24%, var(--card)),
+    color-mix(in srgb, var(--menu-accent, var(--accent)) 26%, var(--card))
   );
-  box-shadow: 0 0 24px color-mix(in srgb, var(--primary) 18%, transparent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--menu-accent, var(--primary)) 18%, transparent);
   color: var(--foreground);
 }
 
@@ -168,45 +168,45 @@
 }
 
 .alo-page-sidebar .alo-page-sidebar-link:hover {
-  border-color: color-mix(in srgb, var(--primary) 24%, transparent);
-  background: color-mix(in srgb, var(--card) 84%, var(--primary));
+  border-color: color-mix(in srgb, var(--menu-accent, var(--primary)) 24%, transparent);
+  background: color-mix(in srgb, var(--card) 84%, var(--menu-accent, var(--primary)));
   color: var(--foreground);
 }
 
 .alo-page-sidebar .alo-page-sidebar-link[data-active="true"] {
-  border-color: color-mix(in srgb, var(--primary) 42%, var(--accent) 18%);
+  border-color: color-mix(in srgb, var(--menu-accent, var(--primary)) 42%, var(--menu-accent, var(--accent)) 18%);
   background: linear-gradient(
     110deg,
-    color-mix(in srgb, var(--primary) 20%, var(--card)),
-    color-mix(in srgb, var(--accent) 17%, var(--card))
+    color-mix(in srgb, var(--menu-accent, var(--primary)) 20%, var(--card)),
+    color-mix(in srgb, var(--menu-accent, var(--accent)) 17%, var(--card))
   );
   color: var(--foreground);
   box-shadow:
-    inset 0 0 18px color-mix(in srgb, var(--primary) 8%, transparent),
-    0 0 24px color-mix(in srgb, var(--accent) 10%, transparent);
+    inset 0 0 18px color-mix(in srgb, var(--menu-accent, var(--primary)) 8%, transparent),
+    0 0 24px color-mix(in srgb, var(--menu-accent, var(--accent)) 10%, transparent);
 }
 
 .alo-page-sidebar .alo-page-sidebar-link svg {
   width: 1.15rem;
   height: 1.15rem;
-  color: color-mix(in srgb, var(--primary) 75%, var(--foreground));
+  color: color-mix(in srgb, var(--menu-accent, var(--primary)) 75%, var(--foreground));
 }
 
 .alo-page-sidebar .alo-page-sidebar-quick-action {
   min-height: 50px;
-  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  border-color: color-mix(in srgb, var(--menu-accent, var(--primary)) 28%, var(--border));
   background: linear-gradient(
     115deg,
-    color-mix(in srgb, var(--primary) 14%, var(--card)),
-    color-mix(in srgb, var(--accent) 12%, var(--card))
+    color-mix(in srgb, var(--menu-accent, var(--primary)) 14%, var(--card)),
+    color-mix(in srgb, var(--menu-accent, var(--accent)) 12%, var(--card))
   );
   color: var(--foreground);
   font-weight: 650;
 }
 
 .alo-page-sidebar .alo-page-sidebar-quick-action:hover {
-  border-color: color-mix(in srgb, var(--primary) 46%, var(--accent));
-  box-shadow: 0 0 22px color-mix(in srgb, var(--primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--menu-accent, var(--primary)) 46%, var(--menu-accent, var(--accent)));
+  box-shadow: 0 0 22px color-mix(in srgb, var(--menu-accent, var(--primary)) 12%, transparent);
 }
 
 .alo-page-sidebar-footer {
@@ -232,7 +232,7 @@
 }
 
 .alo-page-sidebar-footer a:hover {
-  background: color-mix(in srgb, var(--card) 82%, var(--primary));
+  background: color-mix(in srgb, var(--card) 82%, var(--menu-accent, var(--primary)));
   color: var(--foreground);
 }
 
@@ -248,23 +248,23 @@
   height: 44px !important;
   min-height: 44px !important;
   flex: 0 0 auto;
-  border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--menu-accent, var(--foreground)) 24%, transparent) !important;
   border-radius: 0.9rem !important;
   background: linear-gradient(
     145deg,
-    color-mix(in srgb, var(--card) 95%, var(--primary)),
-    color-mix(in srgb, var(--background) 90%, var(--accent))
+    color-mix(in srgb, var(--card) 95%, var(--menu-accent, var(--primary))),
+    color-mix(in srgb, var(--background) 90%, var(--menu-accent, var(--accent)))
   ) !important;
   color: var(--foreground) !important;
   box-shadow: 0 6px 24px color-mix(in srgb, var(--foreground) 12%, transparent);
 }
 
 .alo-page-sidebar-trigger:hover {
-  border-color: color-mix(in srgb, var(--primary) 50%, var(--accent) 22%) !important;
+  border-color: color-mix(in srgb, var(--menu-accent, var(--primary)) 50%, var(--menu-accent, var(--accent)) 22%) !important;
   background: linear-gradient(
     145deg,
-    color-mix(in srgb, var(--primary) 14%, var(--card)),
-    color-mix(in srgb, var(--accent) 13%, var(--card))
+    color-mix(in srgb, var(--menu-accent, var(--primary)) 14%, var(--card)),
+    color-mix(in srgb, var(--menu-accent, var(--accent)) 13%, var(--card))
   ) !important;
 }
 

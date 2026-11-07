@@ -65,18 +65,21 @@ test("Diktat zeigt Live-Text oberhalb und ersetzt währenddessen die normalen Co
 
 test("Mikrofon- und Browser-Spracherkennungsdetails stehen in Mira-Einstellungen, nicht in einem Diktat-Modal", () => {
   const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
+  const settingsControls = readFileSync("src/components/mira/MiraAppSettingsControls.tsx", "utf8");
+  const speechSettings = readFileSync("src/components/mira/MiraSpeechPrivacySettings.tsx", "utf8");
   const homeVoiceDialog = readFileSync("src/components/mira/MiraVoiceChatDialog.tsx", "utf8");
   const conversationDialog = readFileSync(
     "src/components/mira/MiraVoiceConversationDialog.tsx",
     "utf8",
   );
-  assert.equal((page.match(/<MiraSpeechPrivacySettings \/>/g) ?? []).length, 2);
+  assert.equal((page.match(/<MiraAppSettingsControls\b/g) ?? []).length, 2);
+  assert.match(settingsControls, /<MiraSpeechPrivacySettings \/>/);
   assert.match(
-    page,
+    speechSettings,
     /Je nach Browser kann Audio an dessen Spracherkennungsdienst übertragen werden/,
   );
-  assert.match(page, /Mira erhält erkannten Text, keine rohe Mikrofonaufnahme/);
-  assert.match(page, /erst nach deinem normalen Tipp\s+auf „Senden“ an Mira übermittelt/);
+  assert.match(speechSettings, /Mira erhält erkannten Text, keine rohe Mikrofonaufnahme/);
+  assert.match(speechSettings, /erst nach deinem normalen Tipp\s+auf „Senden“ an Mira übermittelt/);
   assert.doesNotMatch(page, /MiraVoiceChatDialog|Entwurf im Chat ansehen/);
   assert.doesNotMatch(homeVoiceDialog, /Browser-Spracherkennungsdienst|Audio an dessen/);
   assert.doesNotMatch(conversationDialog, /mira-voice-info|Browser-Spracherkennungsdienst/);

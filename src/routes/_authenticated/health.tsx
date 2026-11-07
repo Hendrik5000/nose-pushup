@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { AloHomeLink } from "@/components/AloHomeLink";
+import { AppSettingsGear } from "@/components/settings/AppSettingsGear";
 import { AloPageSidebar, AloPageSidebarTrigger } from "@/components/alo/AloPageSidebar";
 import { SmartwatchPanel } from "@/components/SmartwatchPanel";
 import { HealthConnectPanel } from "@/components/HealthConnectPanel";
@@ -128,9 +129,12 @@ function HealthPage() {
                 <AloPageSidebarTrigger />
                 <AloHomeLink className="px-2 text-[10px]" />
               </div>
-              <span className="health-classic-brand-pill">
-                <HeartPulse aria-hidden="true" /> Alo Health
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="health-classic-brand-pill">
+                  <HeartPulse aria-hidden="true" /> Alo Health
+                </span>
+                <AppSettingsGear appId="health" />
+              </div>
             </div>
             <p className="health-classic-kicker">DEIN WOHLBEFINDEN</p>
             <h1>Gesundheit im Blick</h1>
@@ -367,6 +371,7 @@ function HealthPage() {
             >
               <AloPageSidebarTrigger />
               <AloHomeLink />
+              <AppSettingsGear appId="health" className="ml-auto" />
             </SportPageIntro>
           </div>
           <nav className="health-category-nav" aria-label="Gesundheitsbereiche">

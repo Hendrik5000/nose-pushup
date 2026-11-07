@@ -264,6 +264,8 @@ test("Integration behält bearbeitbares Diktat und sendet Sprachturns text-only 
   );
   const voiceStyles = readFileSync("src/mira-voice.css", "utf8");
   const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
+  const settingsControls = readFileSync("src/components/mira/MiraAppSettingsControls.tsx", "utf8");
+  const speechSettings = readFileSync("src/components/mira/MiraSpeechPrivacySettings.tsx", "utf8");
 
   assert.match(conversationDialog, /mira-voice-dialog fixed inset-0/);
   assert.match(conversationDialog, /mira-voice-orb/);
@@ -275,8 +277,9 @@ test("Integration behält bearbeitbares Diktat und sendet Sprachturns text-only 
   assert.match(page, /preserveComposer: true/);
   assert.match(page, /submitRef\.current\(transcript, messagesRef\.current/);
   assert.match(page, /<MiraVoiceConversationDialog/);
-  assert.equal((page.match(/<MiraSpeechPrivacySettings \/>/g) ?? []).length, 2);
-  assert.match(page, /Mira erhält erkannten Text, keine rohe Mikrofonaufnahme/);
+  assert.equal((page.match(/<MiraAppSettingsControls\b/g) ?? []).length, 2);
+  assert.match(settingsControls, /<MiraSpeechPrivacySettings \/>/);
+  assert.match(speechSettings, /Mira erhält erkannten Text, keine rohe Mikrofonaufnahme/);
   assert.doesNotMatch(conversationDialog, /mira-voice-info|Browser-Spracherkennungsdienst/);
   assert.match(conversationDialog, /onClick=\{\(\) => onOpenChange\(false\)\}/);
   assert.match(conversationDialog, /Sprachgespräch beenden und Mikrofon ausschalten/);

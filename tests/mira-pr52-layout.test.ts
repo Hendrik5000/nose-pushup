@@ -22,21 +22,26 @@ test("PR52 reference is an explicit Mira-route visual opt-in, not a global app r
   assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b/i);
 });
 
-test("reference header restores sidebar, topic, provider, profile and accessible privacy/settings toggle", () => {
+test("reference header restores sidebar, topic, provider, profile and accessible settings link", () => {
   const header = sport.slice(
     sport.indexOf('<header className="alo-mira-sketch-header">'),
     sport.indexOf("</header>"),
   );
+  const settingsGear = readFileSync("src/components/settings/AppSettingsGear.tsx", "utf8");
   for (const expected of [
     "<AloPageSidebarTrigger",
     "{activeTitle}",
     "activeProvider?.label",
     'to="/profile"',
-    'aria-controls="mira-chat-options"',
-    "aria-expanded={chatOptionsOpen}",
+    '<AppSettingsGear appId="mira"',
   ])
     assert.ok(header.includes(expected), expected);
-  assert.match(header, /onClick=\{\(\) => setChatOptionsOpen\(\(value\) => !value\)\}/);
+  assert.match(settingsGear, /to="\/settings\/apps\/\$appId"/);
+  assert.match(settingsGear, /aria-label=\{`\$\{app\.title\}-Einstellungen öffnen`\}/);
+  assert.doesNotMatch(
+    header,
+    /aria-controls="mira-chat-options"|aria-expanded=\{chatOptionsOpen\}/,
+  );
   assert.match(
     sport,
     /id="mira-chat-options"[\s\S]*?open=\{chatOptionsOpen\}[\s\S]*?onToggle=\{\(event\) => setChatOptionsOpen\(event.currentTarget.open\)\}/,

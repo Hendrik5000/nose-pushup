@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { House, Dumbbell, Sparkles, MessageCircle, UserRound } from "lucide-react";
+import { House, Dumbbell, Sparkles, MessageCircle, Settings2 } from "lucide-react";
 import {
   getStoredNavigationLayout,
   updateNavigationForScroll,
@@ -12,7 +12,7 @@ const ITEMS = [
   { to: "/ai", label: "Mira", icon: Sparkles },
   { to: "/chat", label: "Nexus Chat", icon: MessageCircle },
   { to: "/exercises", label: "Übungen", icon: Dumbbell },
-  { to: "/profile", label: "Profil", icon: UserRound },
+  { to: "/profile", label: "Einstellungen", icon: Settings2 },
 ] as const;
 /** Optional bottom navigation; the app-wide upper bar is intentionally absent. */
 export function AppNavigation() {
@@ -21,7 +21,8 @@ export function AppNavigation() {
     pathname.startsWith("/ai") ||
     pathname.startsWith("/exercises") ||
     pathname.startsWith("/chat") ||
-    pathname.startsWith("/profile");
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/settings");
   const [enabled, setEnabled] = useState(false);
   const [layout, setLayout] = useState<NavigationLayoutId>(getStoredNavigationLayout);
   const [scrollVisible, setScrollVisible] = useState(true);
