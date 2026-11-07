@@ -74,7 +74,7 @@ export function MiraPowerPanel({
     const all = loadMiraMemoryNotes(userId);
     if (!q) return all.slice(0, 12);
     return all.filter((n) => n.text.toLowerCase().includes(q)).slice(0, 12);
-  }, [userId, memQuery, open]);
+  }, [userId, memQuery]);
 
   const question = (input.trim() || lastUserText || "").trim();
   const answer = (lastAssistantText || "").trim();
