@@ -73,7 +73,11 @@ export function ContentActions({
   };
   const saveNote = () => {
     try {
-      addWorkoutNote(`${source}: ${text}`);
+      const saved = addWorkoutNote(`${source}: ${text}`);
+      if (!saved) {
+        setStatus("Speichern fehlgeschlagen. Gerätespeicher prüfen.");
+        return;
+      }
       setStatus("Als Trainingsnotiz gespeichert.");
     } catch {
       setStatus("Speichern fehlgeschlagen. Gerätespeicher prüfen.");
