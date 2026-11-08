@@ -10,8 +10,8 @@ import {
 
 const LEVELS: MoodLevel[] = [1, 2, 3, 4, 5];
 
-export function MoodCheckin() {
-  const [mood, setMoodState] = useState<MoodLevel | null>(() => getMood());
+export function MoodCheckin({ userId }: { userId: string }) {
+  const [mood, setMoodState] = useState<MoodLevel | null>(() => getMood(userId));
   const [status, setStatus] = useState("");
 
   return (
@@ -26,7 +26,7 @@ export function MoodCheckin() {
             type="button"
             aria-pressed={mood === level}
             onClick={() => {
-              const saved = setMood(level);
+              const saved = setMood(userId, level);
               if (saved) setMoodState(level);
               setStatus(
                 saved ? "Stimmung ausgewählt." : "Stimmung konnte nicht lokal gespeichert werden.",
@@ -48,7 +48,7 @@ export function MoodCheckin() {
           type="button"
           className="mt-2 min-h-11 rounded-lg px-2 text-xs text-muted-foreground underline underline-offset-2"
           onClick={() => {
-            const removed = clearMood();
+            const removed = clearMood(userId);
             if (removed) setMoodState(null);
             setStatus(
               removed

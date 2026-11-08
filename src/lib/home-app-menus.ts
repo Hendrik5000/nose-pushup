@@ -4,7 +4,6 @@ import {
   CalendarDays,
   Dumbbell,
   Footprints,
-  HeartPulse,
   Layers,
   Plus,
   Search,
@@ -17,10 +16,10 @@ import {
 
 export const HOME_OTHER_AREAS = [
   {
-    to: "/health",
-    label: "Gesundheit",
-    icon: HeartPulse,
-    description: "Gesundheit und Wohlbefinden",
+    to: "/exercises",
+    label: "Übungen",
+    icon: Dumbbell,
+    description: "Übungskatalog und Trainingsstart",
   },
   {
     to: "/programs",

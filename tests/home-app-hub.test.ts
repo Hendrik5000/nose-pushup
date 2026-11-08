@@ -20,7 +20,7 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   for (const [destination, routeFile, title, artwork] of [
     ["/ai", "ai.tsx", "Mira", "mira"],
     ["/chat", "chat.tsx", "Nexus Chat", "nexus"],
-    ["/exercises", "exercises.tsx", "Alo Health", "health"],
+    ["/health", "health.tsx", "Alo Health", "health"],
     ["/profile", "profile.tsx", "Einstellungen", "settings"],
   ] as const) {
     assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated", routeFile)));
@@ -221,7 +221,7 @@ test("every primary app offers a visible route back to the Alo home screen", () 
 
 test("home hub keeps every former shared-menu destination and workspace action reachable", () => {
   for (const [destination, routeFile] of [
-    ["/health", "health.tsx"],
+    ["/exercises", "exercises.tsx"],
     ["/programs", "programs.tsx"],
     ["/calisthenics", "calisthenics.tsx"],
     ["/run", "run.tsx"],

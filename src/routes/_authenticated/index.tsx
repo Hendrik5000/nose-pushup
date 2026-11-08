@@ -167,7 +167,7 @@ function HomeAppHub({
       >
         <HubAppIcon to="/ai" title="Mira" artwork="mira" />
         <HubAppIcon to="/chat" title="Nexus Chat" artwork="nexus" />
-        <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
+        <HubAppIcon to="/health" title="Alo Health" artwork="health" />
         <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
         {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
         {canSeeAdmin && (
@@ -365,7 +365,7 @@ function HubAppIcon({
   title,
   artwork,
 }: {
-  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin";
+  to: "/ai" | "/chat" | "/health" | "/profile" | "/admin";
   title: string;
   artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
 }) {
@@ -858,13 +858,23 @@ function Dashboard() {
       case "readiness":
         return wrap(<ReadinessSummary {...readinessData} />, size);
       case "briefing":
-        return wrap(<DailyBriefingCard streak={streak} todayReps={todayReps} goal={goal} />, size);
+        return userId
+          ? wrap(
+              <DailyBriefingCard
+                userId={userId}
+                streak={streak}
+                todayReps={todayReps}
+                goal={goal}
+              />,
+              size,
+            )
+          : null;
       case "quickActions":
         return wrap(<QuickActionsBar />, size);
       case "mood":
-        return wrap(<MoodCheckin />, size);
+        return userId ? wrap(<MoodCheckin key={userId} userId={userId} />, size) : null;
       case "water":
-        return wrap(<WaterTracker />, size);
+        return userId ? wrap(<WaterTracker key={userId} userId={userId} />, size) : null;
       case "notes":
         return wrap(<WorkoutNotesPanel />, size);
       case "microChallenge":

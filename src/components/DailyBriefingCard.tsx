@@ -3,18 +3,20 @@ import { getWatchSnapshot } from "@/lib/smartwatch";
 import { getHcCachedSummary } from "@/lib/health-connect";
 
 export function DailyBriefingCard({
+  userId,
   streak,
   todayReps,
   goal,
   readinessScore,
 }: {
+  userId: string;
   streak: number;
   todayReps: number;
   goal: number;
   readinessScore?: number;
 }) {
-  const mood = typeof window !== "undefined" ? getMood() : null;
-  const water = typeof window !== "undefined" ? getWaterMl() : 0;
+  const mood = typeof window !== "undefined" ? getMood(userId) : null;
+  const water = typeof window !== "undefined" ? getWaterMl(userId) : 0;
   const watch = typeof window !== "undefined" ? getWatchSnapshot() : null;
   const hc = typeof window !== "undefined" ? getHcCachedSummary() : null;
   const steps = hc?.steps ?? watch?.steps ?? 0;
