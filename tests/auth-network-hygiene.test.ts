@@ -18,9 +18,11 @@ test("authenticated route uses its persisted client session for the UI gate", ()
 test("sign-in redirect and optional root theme do not force auth user fetches", () => {
   assert.match(authRoute, /supabase\.auth\.getSession\(\)/);
   assert.doesNotMatch(authRoute, /supabase\.auth\.getUser\(\)/);
-  assert.match(rootRoute, /supabase\.auth\.getSession\(\)/);
+  assert.doesNotMatch(rootRoute, /supabase\.auth\.getSession\(\)/);
   assert.doesNotMatch(rootRoute, /supabase\.auth\.getUser\(\)/);
-  assert.match(rootRoute, /Theme loading is optional/);
+  assert.match(rootRoute, /onAuthStateChange\(\(event, session\)/);
+  assert.match(rootRoute, /event === "INITIAL_SESSION"/);
+  assert.match(rootRoute, /Profile theme is optional/);
 });
 
 test("background notifications reuse the authenticated user id and contain transient request failures", () => {

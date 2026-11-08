@@ -81,6 +81,8 @@ import {
   type ChatPrefs,
 } from "@/lib/chat-extras";
 import { validateNexusHandoffTarget } from "@/lib/mira-nexus-draft";
+import { copyTextToClipboard } from "@/lib/clipboard";
+import { nexusMessageElementId, nexusScrollBehavior } from "@/lib/nexus-message-navigation";
 
 type Target = { kind: "room" | "dm"; id: string };
 
@@ -93,6 +95,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
   const [dms, setDms] = useState<LocalDm[]>([]);
   const [active, setActive] = useState<Target | null>(null);
   const [messages, setMessages] = useState<LocalMessage[]>([]);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [reactions, setReactions] = useState<LocalReaction[]>([]);
   const [replyTo, setReplyTo] = useState<LocalMessage | null>(null);
   const [draft, setDraft] = useState("");
@@ -138,6 +141,32 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     setToast(t);
     window.setTimeout(() => setToast(null), 2200);
   }, []);
+
+  const jumpToMessage = useCallback(
+    (messageId: string) => {
+      const target = document.getElementById(nexusMessageElementId(messageId));
+      if (!target) {
+        flash("Die Ursprungsnachricht ist in diesem Verlauf nicht geladen.");
+        return;
+      }
+      const accountPrefersReducedMotion =
+        document.documentElement.dataset.aloReducedMotion === "true";
+      const devicePrefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      target.scrollIntoView({
+        behavior: nexusScrollBehavior(accountPrefersReducedMotion, devicePrefersReducedMotion),
+        block: "center",
+      });
+      target.focus({ preventScroll: true });
+      setHighlightedMessageId(messageId);
+      window.setTimeout(
+        () => setHighlightedMessageId((current) => (current === messageId ? null : current)),
+        1800,
+      );
+    },
+    [flash],
+  );
 
   const resolveCloudExtras = useCallback(async (uid: string, msgs: LocalMessage[]) => {
     const unknownAuthors = Array.from(
@@ -1204,8 +1233,9 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
             return (
               <div
                 key={m.id}
-                id={`msg-${m.id}`}
-                className={`flex flex-col gap-1 ${own ? "items-end" : "items-start"}`}
+                id={nexusMessageElementId(m.id)}
+                tabIndex={-1}
+                className={`flex flex-col gap-1 ${own ? "items-end" : "items-start"} ${highlightedMessageId === m.id ? "rounded-2xl ring-2 ring-primary/70 ring-offset-2 ring-offset-background" : ""}`}
               >
                 {showAuthor && (
                   <div className="flex items-center gap-2 px-1 text-[10px] text-muted-foreground">
@@ -1224,10 +1254,15 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                   } ${isPinned ? "ring-1 ring-primary/40" : ""}`}
                 >
                   {reply && (
-                    <div className="mb-1.5 rounded-lg border-l-2 border-primary/60 bg-background/20 px-2 py-1 text-xs opacity-80">
+                    <button
+                      type="button"
+                      onClick={() => jumpToMessage(reply.id)}
+                      aria-label="Zur beantworteten Nachricht springen"
+                      className="mb-1.5 block w-full rounded-lg border-l-2 border-primary/60 bg-background/20 px-2 py-1 text-left text-xs opacity-80"
+                    >
                       <div className="font-medium">Antwort</div>
                       <div className="truncate">{reply.content}</div>
-                    </div>
+                    </button>
                   )}
                   {m.attachment_url && (
                     <MessageImage
@@ -1292,6 +1327,22 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                         onClick={() => setPrefs(togglePinMessage(userId, m.id))}
                       >
                         {isPinned ? "Lösen" : "Pin"}
+                      </button>
+                    )}
+                    {m.content.trim() && (
+                      <button
+                        type="button"
+                        className="min-h-10 px-2 text-[10px] text-muted-foreground"
+                        aria-label="Nachrichtentext kopieren"
+                        onClick={() =>
+                          void copyTextToClipboard(m.content).then((copied) =>
+                            flash(
+                              copied ? "Nachrichtentext kopiert." : "Kopieren nicht verfügbar.",
+                            ),
+                          )
+                        }
+                      >
+                        Text kopieren
                       </button>
                     )}
                     {userId && (
