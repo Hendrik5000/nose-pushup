@@ -4,8 +4,10 @@ import { createECDH } from "node:crypto";
 import test from "node:test";
 import {
   decodeVapidPublicKey,
+  isVapidKeyRejectedByBrowser,
   isVapidPublicKeyConfigured,
   validateVapidPublicKey,
+  VAPID_KEY_REJECTED_BY_BROWSER_ERROR,
 } from "../src/lib/vapid";
 
 const INVALID_LEGACY_KEY =
@@ -14,6 +16,12 @@ const INVALID_LEGACY_KEY =
 test("rejects a missing or malformed VAPID key before subscription", () => {
   assert.equal(isVapidPublicKeyConfigured(""), false);
   assert.throws(() => decodeVapidPublicKey(INVALID_LEGACY_KEY), /VAPID-Public-Key/);
+});
+
+test("identifies a browser-rejected push key and leaves other failures distinct", () => {
+  assert.equal(isVapidKeyRejectedByBrowser({ name: "InvalidAccessError" }), true);
+  assert.equal(isVapidKeyRejectedByBrowser(new Error("network unavailable")), false);
+  assert.match(VAPID_KEY_REJECTED_BY_BROWSER_ERROR, /VAPID-Konfiguration/);
 });
 
 test("accepts and validates a real uncompressed P-256 public point", async () => {

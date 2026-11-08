@@ -13,6 +13,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { PwaUpdateNotice } from "@/components/PwaUpdateNotice";
 import { GlobalAlarmMonitor } from "@/components/AlarmMonitor";
 import appCss from "../styles.css?url";
 import sportCss from "../sport.css?url";
@@ -28,6 +29,10 @@ import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigati
 import { swipeScreenFromPath } from "@/lib/module-navigation";
 import { clearSensitiveClientStorage } from "@/lib/sensitive-storage";
 import { isDynamicImportFetchError } from "@/lib/module-load-error";
+import { installModuleLoadRecovery } from "@/lib/module-load-error";
+
+if (typeof window !== "undefined") installModuleLoadRecovery(window);
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -215,23 +220,6 @@ function RootComponent() {
     applyDesignStyle(getStoredDesignStyle());
     applyNavigationLayout(getStoredNavigationLayout());
     applyTheme(getStoredTheme());
-    (async () => {
-      try {
-        const { supabase } = await import("@/integrations/supabase/client");
-        const { data: sessionData } = await supabase.auth.getSession();
-        const uid = sessionData.session?.user.id;
-        if (!uid) return;
-        const { data } = await supabase
-          .from("profiles")
-          .select("theme")
-          .eq("id", uid)
-          .maybeSingle();
-        const t = data?.theme;
-        if (isThemeId(t)) applyTheme(t);
-      } catch {
-        // Theme loading is optional
-      }
-    })();
   }, []);
 
   useEffect(() => {
@@ -315,17 +303,46 @@ function RootComponent() {
 
   useEffect(() => {
     let unsub: { unsubscribe: () => void } | undefined;
+    let cancelled = false;
+    let activeThemeUserId: string | null = null;
     (async () => {
       const { supabase } = await import("@/integrations/supabase/client");
-      const { data } = supabase.auth.onAuthStateChange((event) => {
+      const loadProfileTheme = async (userId: string) => {
+        try {
+          const { data } = await supabase
+            .from("profiles")
+            .select("theme")
+            .eq("id", userId)
+            .maybeSingle();
+          if (!cancelled && activeThemeUserId === userId && isThemeId(data?.theme)) {
+            applyTheme(data.theme);
+          }
+        } catch {
+          // Profile theme is optional; the locally stored theme remains active.
+        }
+      };
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "USER_UPDATED") {
+          activeThemeUserId = session?.user.id ?? null;
+          if (activeThemeUserId) {
+            const userId = activeThemeUserId;
+            window.setTimeout(() => void loadProfileTheme(userId), 0);
+          }
+        }
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-        if (event === "SIGNED_OUT") clearSensitiveClientStorage();
+        if (event === "SIGNED_OUT") {
+          activeThemeUserId = null;
+          clearSensitiveClientStorage();
+        }
         router.invalidate();
         if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
       });
       unsub = data.subscription;
     })();
-    return () => unsub?.unsubscribe();
+    return () => {
+      cancelled = true;
+      unsub?.unsubscribe();
+    };
   }, [router, queryClient]);
 
   return (
@@ -369,6 +386,7 @@ function RootComponent() {
           </div>
         </aside>
       )}
+      <PwaUpdateNotice />
       <OfflineBanner />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>

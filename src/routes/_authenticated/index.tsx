@@ -36,6 +36,7 @@ import { MoodCheckin } from "@/components/MoodCheckin";
 import { WaterTracker } from "@/components/WaterTracker";
 import { WorkoutNotesPanel } from "@/components/WorkoutNotesPanel";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
+import { PersonalUtilityCard } from "@/components/dashboard/PersonalUtilityCard";
 import type { WidgetId, WidgetSize } from "@/lib/dashboard-layout";
 import { SportSectionLabel } from "@/components/SportPageIntro";
 import { MiraHandoff } from "@/components/alo/MiraHandoff";
@@ -1094,6 +1095,13 @@ function Dashboard() {
           </section>,
           size,
         );
+      case "habitTracker":
+      case "ifThenPlan":
+      case "checklistTemplates":
+      case "decisionPicker":
+      case "milestones":
+      case "worldClock":
+        return userId ? wrap(<PersonalUtilityCard kind={id} userId={userId} />, size) : null;
       default:
         return null;
     }
@@ -1399,7 +1407,7 @@ function Dashboard() {
             </details>
           </section>
 
-          <DashboardGrid renderWidget={renderWidget} />
+          <DashboardGrid userId={userId} renderWidget={renderWidget} />
         </div>
       </details>
       <BottomNav />

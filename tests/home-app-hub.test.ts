@@ -77,7 +77,10 @@ test("the Training & Gym app tile opens the existing training and partner overvi
   assert.match(home, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
   const trainingSection = home.slice(home.indexOf('id="training-overview"'));
   assert.match(trainingSection, /<GymPartnerPanel \/>/);
-  assert.match(trainingSection, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
+  assert.match(
+    trainingSection,
+    /<DashboardGrid userId=\{userId\} renderWidget=\{renderWidget\} \/>/,
+  );
 });
 
 test("Home Mira voice overlay hands an editable question to the existing Mira app", () => {
@@ -192,7 +195,10 @@ test("the icon artwork is square and original, and the training dashboard stays 
   const trainingSection = home.slice(home.indexOf('id="training-overview"'));
   assert.match(trainingSection, /<summary[\s\S]*?Trainingsübersicht & Gym-Partner/);
   assert.match(trainingSection, /<GymPartnerPanel \/>/);
-  assert.match(trainingSection, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
+  assert.match(
+    trainingSection,
+    /<DashboardGrid userId=\{userId\} renderWidget=\{renderWidget\} \/>/,
+  );
   assert.doesNotMatch(trainingSection.slice(0, trainingSection.indexOf(">")), /\bopen\b/);
 });
 
