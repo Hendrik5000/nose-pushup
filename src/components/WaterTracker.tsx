@@ -8,8 +8,8 @@ import {
   undoWaterMl,
 } from "@/lib/extra-features";
 
-export function WaterTracker() {
-  const [ml, setMl] = useState(() => getWaterMl());
+export function WaterTracker({ userId }: { userId: string }) {
+  const [ml, setMl] = useState(() => getWaterMl(userId));
   const [lastAdded, setLastAdded] = useState(0);
   const [customAmount, setCustomAmount] = useState("");
   const [status, setStatus] = useState("");
@@ -17,7 +17,7 @@ export function WaterTracker() {
   const remaining = Math.max(0, WATER_GOAL_ML - ml);
 
   const bump = (amount: number): boolean => {
-    const saved = addWaterMl(amount);
+    const saved = addWaterMl(userId, amount);
     if (saved === null) {
       setStatus("Wasserwert konnte lokal nicht gespeichert werden. Bitte erneut versuchen.");
       return false;
@@ -39,7 +39,7 @@ export function WaterTracker() {
 
   const undoLast = () => {
     if (lastAdded <= 0) return;
-    const saved = undoWaterMl(lastAdded);
+    const saved = undoWaterMl(userId, lastAdded);
     if (saved === null) {
       setStatus("Wasserwert konnte nicht geändert werden. Bitte erneut versuchen.");
       return;
@@ -122,7 +122,7 @@ export function WaterTracker() {
         <button
           type="button"
           onClick={() => {
-            const saved = setWaterMl(0);
+            const saved = setWaterMl(userId, 0);
             if (saved === null) {
               setStatus("Wasserwert konnte nicht zurückgesetzt werden. Bitte erneut versuchen.");
               return;

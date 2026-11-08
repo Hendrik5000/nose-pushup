@@ -78,7 +78,7 @@ test("the shared upper Alo header is absent and area navigation lives in the app
   assert.match(layout, /<AppNavigation\s*\/>/);
   assert.match(hub, /<HubAppIcon to="\/ai"/);
   assert.match(hub, /<HubAppIcon to="\/chat"/);
-  assert.match(hub, /<HubAppIcon to="\/exercises"/);
+  assert.match(hub, /<HubAppIcon to="\/health"/);
   assert.match(hub, /<HubAppIcon to="\/profile"/);
 });
 

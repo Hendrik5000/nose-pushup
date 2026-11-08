@@ -36,6 +36,7 @@ import {
 import { serializeQuickCaptureText } from "../src/lib/quick-capture-export.ts";
 
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+const TRACKER_USER = "tracker-test-user";
 
 function withStorage<T>(
   run: (data: Map<string, string>, failWrites: (fail: boolean) => void) => T,
@@ -207,20 +208,20 @@ test("10. custom water amounts accept only whole values from 10 to 2,000 ml", ()
 
 test("11. undo water removes only the last amount and never produces a negative total", () => {
   withStorage(() => {
-    setWaterMl(600, "2026-11-08");
-    assert.equal(undoWaterMl(250, "2026-11-08"), 350);
-    assert.equal(undoWaterMl(1000, "2026-11-08"), 0);
-    assert.equal(getWaterMl("2026-11-08"), 0);
+    setWaterMl(TRACKER_USER, 600, "2026-11-08");
+    assert.equal(undoWaterMl(TRACKER_USER, 250, "2026-11-08"), 350);
+    assert.equal(undoWaterMl(TRACKER_USER, 1000, "2026-11-08"), 0);
+    assert.equal(getWaterMl(TRACKER_USER, "2026-11-08"), 0);
   });
-  assert.match(source("../src/components/WaterTracker.tsx"), /undoWaterMl\(lastAdded\)/);
+  assert.match(source("../src/components/WaterTracker.tsx"), /undoWaterMl\(userId, lastAdded\)/);
 });
 
 test("failed water writes are not reported as saved and keep the custom input", () => {
   withStorage((data, failWrites) => {
-    data.set("np-water", JSON.stringify({ "2026-11-08": 500 }));
+    data.set("np-water:tracker-test-user", JSON.stringify({ "2026-11-08": 500 }));
     failWrites(true);
-    assert.equal(addWaterMl(250, "2026-11-08"), null);
-    assert.equal(getWaterMl("2026-11-08"), 500);
+    assert.equal(addWaterMl(TRACKER_USER, 250, "2026-11-08"), null);
+    assert.equal(getWaterMl(TRACKER_USER, "2026-11-08"), 500);
   });
   const ui = source("../src/components/WaterTracker.tsx");
   assert.match(ui, /saved === null/);
@@ -236,12 +237,12 @@ test("12. water tracker explains how much remains to reach the existing daily go
 
 test("13. mood check-in can remove only the requested local day's mood value", () => {
   withStorage(() => {
-    setMood(4, "2026-11-07");
-    setMood(2, "2026-11-08");
-    assert.equal(clearMood("2026-11-08"), true);
-    assert.equal(getMood("2026-11-08"), null);
-    assert.equal(getMood("2026-11-07"), 4);
-    assert.equal(clearMood("2026-11-08"), false);
+    setMood(TRACKER_USER, 4, "2026-11-07");
+    setMood(TRACKER_USER, 2, "2026-11-08");
+    assert.equal(clearMood(TRACKER_USER, "2026-11-08"), true);
+    assert.equal(getMood(TRACKER_USER, "2026-11-08"), null);
+    assert.equal(getMood(TRACKER_USER, "2026-11-07"), 4);
+    assert.equal(clearMood(TRACKER_USER, "2026-11-08"), false);
   });
   assert.match(source("../src/components/MoodCheckin.tsx"), /Heutigen Eintrag entfernen/);
 });

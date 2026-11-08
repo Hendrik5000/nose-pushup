@@ -9,6 +9,9 @@ const STEPS_GOAL_KEY = "np-steps-goal";
 const SEEN_PR_KEY = "np-seen-prs";
 
 const today = () => new Date().toISOString().slice(0, 10);
+// Older global keys cannot be safely attributed to one account, so never read them as a fallback.
+const trackerKey = (base: string, userId: string) =>
+  `${base}:${encodeURIComponent(userId || "unassigned")}`;
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -37,16 +40,17 @@ function writeJson(key: string, value: unknown): boolean {
 }
 
 // ——— Water ———
-export function getWaterMl(day = today()): number {
-  const all = readJson<Record<string, number>>(WATER_KEY, {});
+export function getWaterMl(userId: string, day = today()): number {
+  const all = readJson<Record<string, number>>(trackerKey(WATER_KEY, userId), {});
   return all[day] ?? 0;
 }
 
-export function addWaterMl(amount: number, day = today()): number | null {
+export function addWaterMl(userId: string, amount: number, day = today()): number | null {
   if (!Number.isFinite(amount)) return null;
-  const all = readJson<Record<string, number>>(WATER_KEY, {});
+  const key = trackerKey(WATER_KEY, userId);
+  const all = readJson<Record<string, number>>(key, {});
   all[day] = Math.max(0, (all[day] ?? 0) + amount);
-  return writeJson(WATER_KEY, all) ? all[day] : null;
+  return writeJson(key, all) ? all[day] : null;
 }
 
 export function parseWaterAmount(raw: string): number | null {
@@ -55,16 +59,17 @@ export function parseWaterAmount(raw: string): number | null {
   return Number.isSafeInteger(amount) && amount >= 10 && amount <= 2000 ? amount : null;
 }
 
-export function undoWaterMl(amount: number, day = today()): number | null {
+export function undoWaterMl(userId: string, amount: number, day = today()): number | null {
   if (!Number.isFinite(amount) || amount <= 0) return null;
-  return setWaterMl(getWaterMl(day) - amount, day);
+  return setWaterMl(userId, getWaterMl(userId, day) - amount, day);
 }
 
-export function setWaterMl(ml: number, day = today()): number | null {
+export function setWaterMl(userId: string, ml: number, day = today()): number | null {
   if (!Number.isFinite(ml)) return null;
-  const all = readJson<Record<string, number>>(WATER_KEY, {});
+  const key = trackerKey(WATER_KEY, userId);
+  const all = readJson<Record<string, number>>(key, {});
   all[day] = Math.max(0, ml);
-  return writeJson(WATER_KEY, all) ? all[day] : null;
+  return writeJson(key, all) ? all[day] : null;
 }
 
 export const WATER_GOAL_ML = 2500;
@@ -72,23 +77,25 @@ export const WATER_GOAL_ML = 2500;
 // ——— Mood ———
 export type MoodLevel = 1 | 2 | 3 | 4 | 5;
 
-export function getMood(day = today()): MoodLevel | null {
-  const all = readJson<Record<string, number>>(MOOD_KEY, {});
+export function getMood(userId: string, day = today()): MoodLevel | null {
+  const all = readJson<Record<string, number>>(trackerKey(MOOD_KEY, userId), {});
   const v = all[day];
   return v >= 1 && v <= 5 ? (v as MoodLevel) : null;
 }
 
-export function setMood(level: MoodLevel, day = today()): boolean {
-  const all = readJson<Record<string, number>>(MOOD_KEY, {});
+export function setMood(userId: string, level: MoodLevel, day = today()): boolean {
+  const key = trackerKey(MOOD_KEY, userId);
+  const all = readJson<Record<string, number>>(key, {});
   all[day] = level;
-  return writeJson(MOOD_KEY, all);
+  return writeJson(key, all);
 }
 
-export function clearMood(day = today()): boolean {
-  const all = readJson<Record<string, number>>(MOOD_KEY, {});
+export function clearMood(userId: string, day = today()): boolean {
+  const key = trackerKey(MOOD_KEY, userId);
+  const all = readJson<Record<string, number>>(key, {});
   if (!Object.hasOwn(all, day)) return false;
   delete all[day];
-  return writeJson(MOOD_KEY, all);
+  return writeJson(key, all);
 }
 
 export const MOOD_LABELS: Record<MoodLevel, string> = {
