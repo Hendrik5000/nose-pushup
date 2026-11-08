@@ -68,7 +68,10 @@ test("mobile Health navigation wraps all categories instead of hiding them in a 
 });
 
 test("Alo Health opens the Health hub while the exercise catalog remains separately reachable", () => {
-  assert.match(home, /<HubAppIcon to="\/health" title="Alo Health" artwork="health" \/>/);
+  assert.match(
+    home,
+    /id: "health", title: "Alo Health", artwork: "health", kind: "route", to: "\/health"/,
+  );
   assert.match(
     home,
     /case "briefing":[\s\S]*?return userId\s*\?[\s\S]*?<DailyBriefingCard\s+userId=\{userId\}/,
