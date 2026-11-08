@@ -42,6 +42,15 @@ import { SportSectionLabel } from "@/components/SportPageIntro";
 import { MiraHandoff } from "@/components/alo/MiraHandoff";
 import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
 import { MiraSpark } from "@/components/mira/MiraSpark";
+import { HomeAppCustomizationDialog } from "@/components/home/HomeAppCustomizationDialog";
+import {
+  EMPTY_HOME_APP_CUSTOMIZATION,
+  HOME_BACKGROUND_PRESETS,
+  loadHomeAppCustomization,
+  orderHomeAppIds,
+  saveHomeAppCustomization,
+  type HomeAppCustomizationSettings,
+} from "@/lib/home-app-customization";
 import {
   createBrowserSpeechRecognitionFactory,
   type MiraSpeechRecognitionLike,
@@ -58,6 +67,7 @@ import {
   HeartPulse,
   Search,
   ScanFace,
+  SlidersHorizontal,
   Target,
   Trophy,
   Users,
@@ -94,6 +104,29 @@ type Profile = {
 
 type PushMode = "nose" | "manual" | "camera";
 
+type HomeHubRoute = "/ai" | "/chat" | "/health" | "/profile" | "/admin" | "/areas" | "/tools";
+type HomeHubAppEntry =
+  | Readonly<{
+      id: string;
+      title: string;
+      artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
+      kind: "route";
+      to: HomeHubRoute;
+    }>
+  | Readonly<{
+      id: string;
+      title: string;
+      artwork: "gridDefense" | "kupferkern";
+      kind: "game";
+      game: PrivateGameId;
+    }>
+  | Readonly<{
+      id: "training";
+      title: "Trainingsübersicht & Gym";
+      artwork: "training";
+      kind: "training";
+    }>;
+
 const PROFILE_COLS =
   "id, display_name, avatar_url, best_count, personal_bests, xp, level, current_streak, longest_streak, last_workout_date, daily_goal";
 
@@ -108,6 +141,11 @@ function HomeAppHub({
 }) {
   const { user } = Route.useRouteContext();
   const [canSeeAdmin, setCanSeeAdmin] = useState(false);
+  const [customizationOpen, setCustomizationOpen] = useState(false);
+  const [customizationState, setCustomizationState] = useState<{
+    userId: string;
+    settings: HomeAppCustomizationSettings;
+  }>({ userId: "", settings: EMPTY_HOME_APP_CUSTOMIZATION });
   useEffect(() => {
     let active = true;
     setCanSeeAdmin(false);
@@ -120,14 +158,120 @@ function HomeAppHub({
       active = false;
     };
   }, [user.id]);
+  useEffect(() => {
+    let active = true;
+    setCustomizationState({ userId: user.id, settings: EMPTY_HOME_APP_CUSTOMIZATION });
+    try {
+      const settings = loadHomeAppCustomization(window.localStorage, user.id);
+      if (active) setCustomizationState({ userId: user.id, settings });
+    } catch {
+      // Home customization is optional; unavailable local storage keeps defaults.
+    }
+    return () => {
+      active = false;
+    };
+  }, [user.id]);
+
+  const homeApps = useMemo<HomeHubAppEntry[]>(
+    () => [
+      { id: "mira", title: "Mira", artwork: "mira", kind: "route", to: "/ai" },
+      { id: "nexus", title: "Nexus Chat", artwork: "nexus", kind: "route", to: "/chat" },
+      { id: "health", title: "Alo Health", artwork: "health", kind: "route", to: "/health" },
+      {
+        id: "settings",
+        title: "Einstellungen",
+        artwork: "settings",
+        kind: "route",
+        to: "/profile",
+      },
+      ...(canSeeAdmin
+        ? [
+            { id: "admin", title: "Admin", artwork: "admin", kind: "route", to: "/admin" } as const,
+            {
+              id: "grid-defense",
+              title: "Grid Defense",
+              artwork: "gridDefense",
+              kind: "game",
+              game: "grid-defense",
+            } as const,
+            {
+              id: "kupferkern",
+              title: "Kupferkern",
+              artwork: "kupferkern",
+              kind: "game",
+              game: "kupferkern",
+            } as const,
+          ]
+        : []),
+      {
+        id: "areas",
+        title: "Weitere Bereiche",
+        artwork: "more",
+        kind: "route",
+        to: "/areas",
+      },
+      { id: "training", title: "Trainingsübersicht & Gym", artwork: "training", kind: "training" },
+      { id: "tools", title: "Alo-Werkzeuge", artwork: "tools", kind: "route", to: "/tools" },
+    ],
+    [canSeeAdmin],
+  );
+  const activeCustomization =
+    customizationState.userId === user.id
+      ? customizationState.settings
+      : EMPTY_HOME_APP_CUSTOMIZATION;
+  const orderedHomeAppIds = orderHomeAppIds(
+    homeApps.map(({ id }) => id),
+    activeCustomization.order,
+  );
+  const homeAppBackground = HOME_BACKGROUND_PRESETS.find(
+    ({ id }) => id === activeCustomization.background,
+  );
+  const customizableApps = useMemo(
+    () => homeApps.map(({ id, title }) => ({ id, title })),
+    [homeApps],
+  );
+  const saveCustomization = (settings: HomeAppCustomizationSettings) => {
+    try {
+      const saved = saveHomeAppCustomization(window.localStorage, user.id, settings);
+      setCustomizationState({ userId: user.id, settings: saved });
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
 
   return (
-    <section className="alo-tablet-home-hub mb-8" aria-labelledby="app-hub-title">
+    <section
+      className={`alo-tablet-home-hub mb-8 ${homeAppBackground ? "rounded-3xl border border-border/50 p-4" : ""}`}
+      aria-labelledby="app-hub-title"
+      data-home-background={activeCustomization.background}
+      style={
+        homeAppBackground
+          ? {
+              backgroundImage: `linear-gradient(180deg, rgba(11, 15, 20, 0.46), rgba(11, 15, 20, 0.84)), ${homeAppBackground.background}`,
+              backgroundPosition: "center",
+              backgroundSize: "cover",
+            }
+          : undefined
+      }
+    >
       <header className="mb-7 flex items-center justify-between gap-3">
-        <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
-          Alo
-        </h1>
+        <div className="flex min-w-0 items-center gap-2">
+          <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
+            Alo
+          </h1>
+          <button
+            type="button"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label="Startseite anpassen"
+            aria-haspopup="dialog"
+            aria-expanded={customizationOpen}
+            onClick={() => setCustomizationOpen(true)}
+          >
+            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
@@ -165,40 +309,48 @@ function HomeAppHub({
         className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
         aria-label="Alo-Apps"
       >
-        <HubAppIcon to="/ai" title="Mira" artwork="mira" />
-        <HubAppIcon to="/chat" title="Nexus Chat" artwork="nexus" />
-        <HubAppIcon to="/health" title="Alo Health" artwork="health" />
-        <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
-        {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
-        {canSeeAdmin && (
-          <>
-            <HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" />
-            <HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" />
-          </>
-        )}
-        <Link
-          to="/areas"
-          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
-          aria-label={`Weitere Bereiche öffnen (${HOME_OTHER_AREAS.length})`}
-        >
-          <HubAppIconContents title="Weitere Bereiche" artwork="more" />
-        </Link>
-        <button
-          type="button"
-          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
-          aria-label="Trainingsübersicht & Gym öffnen"
-          onClick={onOpenTrainingOverview}
-        >
-          <HubAppIconContents title="Trainingsübersicht & Gym" artwork="training" />
-        </button>
-        <Link
-          to="/tools"
-          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
-          aria-label="Alo-Werkzeuge öffnen"
-        >
-          <HubAppIconContents title="Alo-Werkzeuge" artwork="tools" />
-        </Link>
+        {orderedHomeAppIds.map((appId) => {
+          const app = homeApps.find(({ id }) => id === appId);
+          if (!app) return null;
+          const title = activeCustomization.nameOverrides[app.id] ?? app.title;
+          if (app.kind === "game") {
+            return (
+              <HubGameAppIcon key={app.id} game={app.game} title={title} artwork={app.artwork} />
+            );
+          }
+          if (app.kind === "training") {
+            return (
+              <button
+                key={app.id}
+                type="button"
+                className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
+                aria-label={`${title} öffnen`}
+                onClick={onOpenTrainingOverview}
+              >
+                <HubAppIconContents title={title} artwork={app.artwork} />
+              </button>
+            );
+          }
+          return (
+            <HubAppIcon
+              key={app.id}
+              to={app.to}
+              title={title}
+              artwork={app.artwork}
+              ariaLabel={
+                app.id === "areas" ? `${title} öffnen (${HOME_OTHER_AREAS.length})` : undefined
+              }
+            />
+          );
+        })}
       </nav>
+      <HomeAppCustomizationDialog
+        open={customizationOpen}
+        onOpenChange={setCustomizationOpen}
+        apps={customizableApps}
+        settings={activeCustomization}
+        onSave={saveCustomization}
+      />
     </section>
   );
 }
@@ -364,13 +516,15 @@ function HubAppIcon({
   to,
   title,
   artwork,
+  ariaLabel,
 }: {
-  to: "/ai" | "/chat" | "/health" | "/profile" | "/admin";
+  to: HomeHubRoute;
   title: string;
   artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
+  ariaLabel?: string;
 }) {
   return (
-    <Link to={to} aria-label={`${title} öffnen`} className={HUB_APP_ICON_CLASS_NAME}>
+    <Link to={to} aria-label={ariaLabel ?? `${title} öffnen`} className={HUB_APP_ICON_CLASS_NAME}>
       <HubAppIconContents title={title} artwork={artwork} />
     </Link>
   );
