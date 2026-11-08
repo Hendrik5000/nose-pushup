@@ -1,10 +1,18 @@
 import { useState } from "react";
-import { MOOD_EMOJI, MOOD_LABELS, getMood, setMood, type MoodLevel } from "@/lib/extra-features";
+import {
+  clearMood,
+  MOOD_EMOJI,
+  MOOD_LABELS,
+  getMood,
+  setMood,
+  type MoodLevel,
+} from "@/lib/extra-features";
 
 const LEVELS: MoodLevel[] = [1, 2, 3, 4, 5];
 
 export function MoodCheckin() {
   const [mood, setMoodState] = useState<MoodLevel | null>(() => getMood());
+  const [status, setStatus] = useState("");
 
   return (
     <section className="mt-4 rounded-3xl border border-border bg-card/60 p-4 backdrop-blur">
@@ -12,23 +20,51 @@ export function MoodCheckin() {
         Stimmung heute
       </div>
       <div className="mt-3 flex justify-between gap-1">
-        {LEVELS.map((l) => (
+        {LEVELS.map((level) => (
           <button
-            key={l}
+            key={level}
             type="button"
+            aria-pressed={mood === level}
             onClick={() => {
-              setMood(l);
-              setMoodState(l);
+              const saved = setMood(level);
+              if (saved) setMoodState(level);
+              setStatus(
+                saved ? "Stimmung ausgewählt." : "Stimmung konnte nicht lokal gespeichert werden.",
+              );
             }}
-            className={`flex flex-1 flex-col items-center gap-1 rounded-xl border py-2 transition ${
-              mood === l ? "border-primary bg-primary/15" : "border-border bg-secondary/40"
+            className={`flex min-h-11 flex-1 flex-col items-center justify-center gap-1 rounded-xl border py-2 transition ${
+              mood === level ? "border-primary bg-primary/15" : "border-border bg-secondary/40"
             }`}
           >
-            <span className="text-xl leading-none">{MOOD_EMOJI[l]}</span>
-            <span className="text-[9px] text-muted-foreground">{MOOD_LABELS[l]}</span>
+            <span className="text-xl leading-none" aria-hidden="true">
+              {MOOD_EMOJI[level]}
+            </span>
+            <span className="text-[9px] text-muted-foreground">{MOOD_LABELS[level]}</span>
           </button>
         ))}
       </div>
+      {mood !== null && (
+        <button
+          type="button"
+          className="mt-2 min-h-11 rounded-lg px-2 text-xs text-muted-foreground underline underline-offset-2"
+          onClick={() => {
+            const removed = clearMood();
+            if (removed) setMoodState(null);
+            setStatus(
+              removed
+                ? "Heutiger Stimmungseintrag entfernt."
+                : "Eintrag konnte nicht entfernt werden.",
+            );
+          }}
+        >
+          Heutigen Eintrag entfernen
+        </button>
+      )}
+      {status && (
+        <p role="status" className="mt-1 text-xs text-muted-foreground">
+          {status}
+        </p>
+      )}
     </section>
   );
 }

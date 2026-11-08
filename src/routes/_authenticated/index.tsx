@@ -28,6 +28,8 @@ import { RecoveryCalendar } from "@/components/RecoveryCalendar";
 import { WeeklyReview } from "@/components/WeeklyReview";
 import { BottomNav } from "@/components/BottomNav";
 import { FavoriteStar } from "@/components/FavoriteStar";
+import { getFavoriteExercises } from "@/lib/extra-features";
+import { onlyFavoriteExercises } from "@/lib/exercise-catalog";
 import { DailyBriefingCard } from "@/components/DailyBriefingCard";
 import { QuickActionsBar } from "@/components/QuickActionsBar";
 import { MoodCheckin } from "@/components/MoodCheckin";
@@ -626,6 +628,10 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
 
 function Dashboard() {
   const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
+  const [favoriteExerciseIds, setFavoriteExerciseIds] = useState<string[]>(() =>
+    getFavoriteExercises(),
+  );
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
@@ -725,6 +731,11 @@ function Dashboard() {
   const goalPct = Math.min(1, todayReps / goal);
   const pushupBest = profile?.personal_bests?.pushup ?? profile?.best_count ?? 0;
   const otherExercises = exercises.filter((e) => e.id !== "pushup");
+  const visibleExercises = onlyFavoriteExercises(
+    otherExercises,
+    favoriteExerciseIds,
+    favoritesOnly,
+  );
   const quickStart = getQuickStartPlan({ best: pushupBest, todayReps, streak, goal });
   const pushupEx = exercises.find((e) => e.id === "pushup");
   const dateLabel = new Date().toLocaleDateString("de-DE", {
@@ -1035,16 +1046,26 @@ function Dashboard() {
       case "exercises":
         return wrap(
           <section>
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Weitere Übungen
-            </h2>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Weitere Übungen
+              </h2>
+              <button
+                type="button"
+                aria-pressed={favoritesOnly}
+                onClick={() => setFavoritesOnly((value) => !value)}
+                className="min-h-11 rounded-xl border border-border px-3 text-xs font-medium transition hover:border-primary/40"
+              >
+                {favoritesOnly ? "Alle Übungen" : "Nur Favoriten"}
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {loading && (
                 <div className="col-span-full rounded-2xl border border-border p-6 text-center text-sm text-muted-foreground">
                   Lade…
                 </div>
               )}
-              {otherExercises.map((ex) => {
+              {visibleExercises.map((ex) => {
                 const best = profile?.personal_bests?.[ex.id] ?? 0;
                 return (
                   <Link
@@ -1055,13 +1076,20 @@ function Dashboard() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-3xl">{ex.icon}</span>
-                      <FavoriteStar exerciseId={ex.id} />
+                      <FavoriteStar exerciseId={ex.id} onChange={setFavoriteExerciseIds} />
                     </div>
                     <span className="text-sm font-semibold">{ex.name}</span>
                     <span className="text-xs text-muted-foreground">Bestwert {best}</span>
                   </Link>
                 );
               })}
+              {!loading && visibleExercises.length === 0 && (
+                <p className="col-span-full rounded-2xl border border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+                  {favoritesOnly
+                    ? "Noch keine Übungen als Favorit markiert."
+                    : "Keine weiteren Übungen verfügbar."}
+                </p>
+              )}
             </div>
           </section>,
           size,

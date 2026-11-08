@@ -25,12 +25,14 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
-function writeJson(key: string, value: unknown) {
-  if (!canUseStorage()) return;
+function writeJson(key: string, value: unknown): boolean {
+  if (!canUseStorage()) return false;
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
     // quota / private mode
+    return false;
   }
 }
 
@@ -40,18 +42,29 @@ export function getWaterMl(day = today()): number {
   return all[day] ?? 0;
 }
 
-export function addWaterMl(amount: number, day = today()): number {
+export function addWaterMl(amount: number, day = today()): number | null {
+  if (!Number.isFinite(amount)) return null;
   const all = readJson<Record<string, number>>(WATER_KEY, {});
   all[day] = Math.max(0, (all[day] ?? 0) + amount);
-  writeJson(WATER_KEY, all);
-  return all[day];
+  return writeJson(WATER_KEY, all) ? all[day] : null;
 }
 
-export function setWaterMl(ml: number, day = today()): number {
+export function parseWaterAmount(raw: string): number | null {
+  if (!/^\d+$/.test(raw)) return null;
+  const amount = Number(raw);
+  return Number.isSafeInteger(amount) && amount >= 10 && amount <= 2000 ? amount : null;
+}
+
+export function undoWaterMl(amount: number, day = today()): number | null {
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return setWaterMl(getWaterMl(day) - amount, day);
+}
+
+export function setWaterMl(ml: number, day = today()): number | null {
+  if (!Number.isFinite(ml)) return null;
   const all = readJson<Record<string, number>>(WATER_KEY, {});
   all[day] = Math.max(0, ml);
-  writeJson(WATER_KEY, all);
-  return all[day];
+  return writeJson(WATER_KEY, all) ? all[day] : null;
 }
 
 export const WATER_GOAL_ML = 2500;
@@ -65,10 +78,17 @@ export function getMood(day = today()): MoodLevel | null {
   return v >= 1 && v <= 5 ? (v as MoodLevel) : null;
 }
 
-export function setMood(level: MoodLevel, day = today()) {
+export function setMood(level: MoodLevel, day = today()): boolean {
   const all = readJson<Record<string, number>>(MOOD_KEY, {});
   all[day] = level;
-  writeJson(MOOD_KEY, all);
+  return writeJson(MOOD_KEY, all);
+}
+
+export function clearMood(day = today()): boolean {
+  const all = readJson<Record<string, number>>(MOOD_KEY, {});
+  if (!Object.hasOwn(all, day)) return false;
+  delete all[day];
+  return writeJson(MOOD_KEY, all);
 }
 
 export const MOOD_LABELS: Record<MoodLevel, string> = {
@@ -93,11 +113,10 @@ export function getFavoriteExercises(): string[] {
   return Array.isArray(v) ? v : [];
 }
 
-export function toggleFavoriteExercise(id: string): string[] {
+export function toggleFavoriteExercise(id: string): string[] | null {
   const cur = getFavoriteExercises();
   const next = cur.includes(id) ? cur.filter((x) => x !== id) : [id, ...cur].slice(0, 12);
-  writeJson(FAV_KEY, next);
-  return next;
+  return writeJson(FAV_KEY, next) ? next : null;
 }
 
 export function isFavoriteExercise(id: string): boolean {
@@ -105,31 +124,51 @@ export function isFavoriteExercise(id: string): boolean {
 }
 
 // ——— Workout notes ———
-export type WorkoutNote = { id: string; text: string; ts: string; exerciseId?: string };
+export type WorkoutNote = {
+  id: string;
+  text: string;
+  ts: string;
+  exerciseId?: string;
+  updatedAt?: string;
+};
+export const MAX_WORKOUT_NOTE_LENGTH = 500;
+
+export function filterWorkoutNotes(notes: readonly WorkoutNote[], query: string): WorkoutNote[] {
+  const normalized = query.trim().toLocaleLowerCase("de-DE");
+  return normalized
+    ? notes.filter((note) => note.text.toLocaleLowerCase("de-DE").includes(normalized))
+    : [...notes];
+}
 
 export function getWorkoutNotes(): WorkoutNote[] {
   if (getAloOwner())
     return listAlo("note")
       .map((r) => r.body as unknown as WorkoutNote)
-      .sort((a, b) => b.ts.localeCompare(a.ts));
+      .sort((a, b) => (b.updatedAt ?? b.ts).localeCompare(a.updatedAt ?? a.ts));
   const v = readJson<WorkoutNote[]>(NOTES_KEY, []);
-  return Array.isArray(v) ? v : [];
+  return Array.isArray(v)
+    ? v.sort((a, b) => (b.updatedAt ?? b.ts).localeCompare(a.updatedAt ?? a.ts))
+    : [];
 }
 
-export function addWorkoutNote(text: string, exerciseId?: string): WorkoutNote {
+export function addWorkoutNote(text: string, exerciseId?: string): WorkoutNote | null {
   const note: WorkoutNote = {
     id: crypto.randomUUID(),
-    text: text.trim().slice(0, 500),
+    text: text.trim().slice(0, MAX_WORKOUT_NOTE_LENGTH),
     ts: new Date().toISOString(),
     exerciseId,
   };
-  if (getAloOwner()) {
-    putAlo("note", note as unknown as Record<string, unknown>, `note:${note.id}`);
-    return note;
+  const owner = getAloOwner();
+  if (owner) {
+    try {
+      putAlo("note", note as unknown as Record<string, unknown>, `note:${note.id}`, owner);
+      return note;
+    } catch {
+      return null;
+    }
   }
   const list = [note, ...getWorkoutNotes()].slice(0, 50);
-  writeJson(NOTES_KEY, list);
-  return note;
+  return writeJson(NOTES_KEY, list) ? note : null;
 }
 
 export function deleteWorkoutNote(id: string) {
@@ -140,6 +179,28 @@ export function deleteWorkoutNote(id: string) {
   writeJson(
     NOTES_KEY,
     getWorkoutNotes().filter((n) => n.id !== id),
+  );
+}
+
+export function updateWorkoutNote(id: string, text: string): boolean {
+  const normalized = text.trim();
+  if (!normalized || normalized.length > MAX_WORKOUT_NOTE_LENGTH) return false;
+  const notes = getWorkoutNotes();
+  const note = notes.find((entry) => entry.id === id);
+  if (!note) return false;
+  const updated = { ...note, text: normalized, updatedAt: new Date().toISOString() };
+  const owner = getAloOwner();
+  if (owner) {
+    try {
+      putAlo("note", updated as unknown as Record<string, unknown>, `note:${id}`, owner);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return writeJson(
+    NOTES_KEY,
+    notes.map((entry) => (entry.id === id ? updated : entry)),
   );
 }
 
