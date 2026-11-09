@@ -1,18 +1,7 @@
 export const VAPID_KEY_CONFIGURATION_ERROR =
   "Push ist nicht konfiguriert: Der VAPID-Public-Key fehlt oder ist kein gültiger P-256-Schlüssel.";
-export const VAPID_KEY_REJECTED_BY_BROWSER_ERROR =
-  "Der Browser hat den Push-Schlüssel abgelehnt. Bitte die VAPID-Konfiguration des veröffentlichten Builds prüfen; manche WebViews unterstützen Web-Push nicht vollständig.";
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+={0,2}$/;
-
-export function isVapidKeyRejectedByBrowser(error: unknown): boolean {
-  return (
-    error !== null &&
-    typeof error === "object" &&
-    "name" in error &&
-    error.name === "InvalidAccessError"
-  );
-}
 
 /** Decode and structurally validate the 65-byte uncompressed P-256 public key. */
 export function decodeVapidPublicKey(publicKey: string): Uint8Array<ArrayBuffer> {

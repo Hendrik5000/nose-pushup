@@ -20,7 +20,7 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   for (const [destination, routeFile, title, artwork] of [
     ["/ai", "ai.tsx", "Mira", "mira"],
     ["/chat", "chat.tsx", "Nexus Chat", "nexus"],
-    ["/health", "health.tsx", "Alo Health", "health"],
+    ["/exercises", "exercises.tsx", "Alo Health", "health"],
     ["/profile", "profile.tsx", "Einstellungen", "settings"],
   ] as const) {
     assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated", routeFile)));
@@ -77,10 +77,7 @@ test("the Training & Gym app tile opens the existing training and partner overvi
   assert.match(home, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
   const trainingSection = home.slice(home.indexOf('id="training-overview"'));
   assert.match(trainingSection, /<GymPartnerPanel \/>/);
-  assert.match(
-    trainingSection,
-    /<DashboardGrid userId=\{userId\} renderWidget=\{renderWidget\} \/>/,
-  );
+  assert.match(trainingSection, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
 });
 
 test("Home Mira voice overlay hands an editable question to the existing Mira app", () => {
@@ -195,10 +192,7 @@ test("the icon artwork is square and original, and the training dashboard stays 
   const trainingSection = home.slice(home.indexOf('id="training-overview"'));
   assert.match(trainingSection, /<summary[\s\S]*?Trainingsübersicht & Gym-Partner/);
   assert.match(trainingSection, /<GymPartnerPanel \/>/);
-  assert.match(
-    trainingSection,
-    /<DashboardGrid userId=\{userId\} renderWidget=\{renderWidget\} \/>/,
-  );
+  assert.match(trainingSection, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
   assert.doesNotMatch(trainingSection.slice(0, trainingSection.indexOf(">")), /\bopen\b/);
 });
 
@@ -221,7 +215,7 @@ test("every primary app offers a visible route back to the Alo home screen", () 
 
 test("home hub keeps every former shared-menu destination and workspace action reachable", () => {
   for (const [destination, routeFile] of [
-    ["/exercises", "exercises.tsx"],
+    ["/health", "health.tsx"],
     ["/programs", "programs.tsx"],
     ["/calisthenics", "calisthenics.tsx"],
     ["/run", "run.tsx"],
