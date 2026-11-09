@@ -553,6 +553,59 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_release_digest_deliveries: {
+        Row: {
+          delivered_at: string
+          release_id: string
+          user_id: string
+        }
+        Insert: {
+          delivered_at?: string
+          release_id: string
+          user_id: string
+        }
+        Update: {
+          delivered_at?: string
+          release_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_release_digest_deliveries_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "feature_release_digests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_release_digests: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          release_key: string
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          release_key: string
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          release_key?: string
+          title?: string
+        }
+        Relationships: []
+      }
       friend_battle_invitations: {
         Row: {
           battle_id: string | null
@@ -729,6 +782,107 @@ export type Database = {
           updated_at?: string
           user_id?: string
           weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      home_app_sync_records: {
+        Row: {
+          app_key: string
+          deleted: boolean
+          enabled: boolean | null
+          kind: string
+          name: string | null
+          revision: number
+          updated_at: string
+          user_id: string
+          version: number | null
+        }
+        Insert: {
+          app_key: string
+          deleted?: boolean
+          enabled?: boolean | null
+          kind: string
+          name?: string | null
+          revision?: number
+          updated_at?: string
+          user_id: string
+          version?: number | null
+        }
+        Update: {
+          app_key?: string
+          deleted?: boolean
+          enabled?: boolean | null
+          kind?: string
+          name?: string | null
+          revision?: number
+          updated_at?: string
+          user_id?: string
+          version?: number | null
+        }
+        Relationships: []
+      }
+      marketplace_app_versions: {
+        Row: {
+          app_id: string
+          created_at: string
+          created_by: string
+          manifest: Json
+          version: number
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          created_by?: string
+          manifest: Json
+          version: number
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          created_by?: string
+          manifest?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_app_versions_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_apps: {
+        Row: {
+          created_at: string
+          created_by: string
+          current_version: number
+          id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          current_version?: number
+          id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          current_version?: number
+          id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1896,6 +2050,17 @@ export type Database = {
           id: string
         }[]
       }
+      get_marketplace_app_version: {
+        Args: { p_app_id: string; p_version: number }
+        Returns: {
+          app_id: string
+          can_manage: boolean
+          created_at: string
+          current_version: number
+          manifest: Json
+          version: number
+        }[]
+      }
       get_my_dms: {
         Args: never
         Returns: {
@@ -1984,6 +2149,25 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_marketplace_current_apps: {
+        Args: never
+        Returns: {
+          app_id: string
+          can_manage: boolean
+          created_at: string
+          current_version: number
+          manifest: Json
+          version: number
+        }[]
+      }
+      marketplace_manifest_is_valid: {
+        Args: { p_manifest: Json }
+        Returns: boolean
+      }
+      marketplace_text_is_safe: {
+        Args: { p_max_chars: number; p_text: string }
+        Returns: boolean
+      }
       postfach_install_battle_bridge: { Args: never; Returns: string }
       postfach_push: {
         Args: {
@@ -2017,6 +2201,31 @@ export type Database = {
           xp: number
         }[]
       }
+      publish_feature_release_digest: {
+        Args: {
+          p_body: string
+          p_confirmed: boolean
+          p_release_key: string
+          p_title: string
+        }
+        Returns: {
+          recipient_count: number
+          release_id: string
+          was_created: boolean
+        }[]
+      }
+      publish_marketplace_app: {
+        Args: {
+          p_app_id?: string
+          p_confirmed: boolean
+          p_expected_version?: number
+          p_manifest: Json
+        }
+        Returns: {
+          app_id: string
+          version: number
+        }[]
+      }
       purchase_shop_item: { Args: { _item_id: string }; Returns: Json }
       regenerate_my_friend_code: { Args: never; Returns: string }
       respond_to_call: {
@@ -2037,6 +2246,10 @@ export type Database = {
       revoke_global_role: {
         Args: { p_role_name: string; p_user_id: string }
         Returns: undefined
+      }
+      revoke_marketplace_app: {
+        Args: { p_app_id: string; p_confirmed: boolean }
+        Returns: boolean
       }
       search_messages: {
         Args: { q: string }
@@ -2075,6 +2288,26 @@ export type Database = {
       withdraw_friend_request: {
         Args: { p_friendship_id: string }
         Returns: boolean
+      }
+      write_home_app_sync_record: {
+        Args: {
+          p_app_key: string
+          p_deleted: boolean
+          p_enabled: boolean
+          p_expected_revision: number
+          p_kind: string
+          p_name: string
+          p_version: number
+        }
+        Returns: {
+          app_key: string
+          deleted: boolean
+          enabled: boolean
+          kind: string
+          name: string
+          revision: number
+          version: number
+        }[]
       }
     }
     Enums: {
