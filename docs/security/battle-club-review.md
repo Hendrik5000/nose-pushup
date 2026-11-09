@@ -2,6 +2,8 @@
 
 **Noch nicht live.** Der Code und das SQL werden getrennt geprüft. Die Live-Datenbank wird erst nach Hendriks Bestätigung der endgültigen, unten verlinkten SQL-Datei geändert. Der bestehende Originalcheckout bleibt unangetastet.
 
+Der [separate Draft-PR #122](https://github.com/Hendrik5000/nose-pushup/pull/122) enthält den geprüften Feature-Code-Commit `e8e8893c7222b43ca86076742a0bd6b2b8fc53bb`, das vollständige SQL und die Tests. Der jeweils aktuelle GitHub-CI-Status steht dort; der PR bleibt vor der gesonderten DB-Freigabe unge-mergt.
+
 ## Was sich für dich ändert
 
 Private Battles und Clubs bekommen **32-stellige, kryptografisch zufällige Einladungscodes** statt kurzer, mit `Math.random()` erzeugter Codes. Die App zeigt sie in lesbaren Gruppen und bietet „Code kopieren“. Ein eingefügter Code darf Leerzeichen oder Bindestriche enthalten. Wer einen solchen Code bewusst erhält, kann weiterhin beitreten; es wird kein neuer Genehmigungs- oder Kontaktzwang eingeführt. Codes bleiben vertrauliche, weitergebbare Einladungen. Persönliche Freundes-Battle-Einladungen bleiben dagegen an ihren bisherigen Empfänger gebunden.
