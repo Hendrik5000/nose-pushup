@@ -50,9 +50,8 @@ test("swipe and bottom-navigation alternatives remain while exercises stay separ
   const areaMenus = read("lib/home-app-menus.ts");
   assert.match(layout, /installModuleSwipeGesture/);
   assert.match(swipe, /getSwipeDestination/);
-  assert.match(hub, /id: "tools", title: "Alo-Werkzeuge"[\s\S]*?to: "\/tools"/);
-  assert.match(hub, /to=\{app\.to\}/);
-  assert.match(hub, /aria-label=\{ariaLabel \?\? `\$\{title\} öffnen`\}/);
+  assert.match(hub, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(hub, /to="\/tools"/);
   assert.match(hub, /aria-label="Überall suchen"/);
   assert.match(hub, /detail: "search"/);
   for (const route of [

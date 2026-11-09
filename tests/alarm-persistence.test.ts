@@ -138,6 +138,6 @@ test("stable root owns the monitor; alarm saves in its app and Home retains its 
   assert.match(alarm, /Wecker speichern/);
   assert.match(alarm, /Gespeicherter Wecker/);
   assert.match(alarm, /noch nicht gespeichert/);
-  assert.match(home, /id: "areas",[\s\S]*?to: "\/areas"/);
+  assert.match(home, /to="\/areas"/);
   assert.match(areas, /to: "\/alarm"/);
 });

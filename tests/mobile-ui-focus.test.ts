@@ -126,10 +126,9 @@ test("Nexus keeps quick answers and message tools secondary and never invents a 
     new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(home, /id: "tools", title: "Alo-Werkzeuge"[\s\S]*?to: "\/tools"/);
+  assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
   assert.match(home, /aria-label="Überall suchen"/);
-  assert.match(home, /id: "areas",[\s\S]*?to: "\/areas"/);
-  assert.match(home, /ariaLabel=\{\s*app\.id === "areas"/);
+  assert.match(home, /Weitere Bereiche öffnen/);
 });
 
 test("Alo retains its supplied brand assets in the document metadata after header removal", () => {
@@ -181,6 +180,6 @@ test("the shared upper brand header is gone while app destinations remain in the
       home.includes(`"${route}"`) || homeMenus.includes(`"${route}"`),
       `home hub or areas app should retain ${route}`,
     );
-  assert.match(home, /id: "tools", title: "Alo-Werkzeuge"[\s\S]*?to: "\/tools"/);
+  assert.match(home, /Alo-Werkzeuge öffnen/);
   assert.match(home, /Überall suchen/);
 });
