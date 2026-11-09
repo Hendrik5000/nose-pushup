@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import {
   DEFAULT_LAYOUT,
-  dashboardLayoutStorageKey,
   loadLayout,
   resetLayout,
   saveLayout,
@@ -11,10 +10,9 @@ import {
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
 const originalLocalStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
-const USER_A = "user-a";
-const STORAGE_KEY = dashboardLayoutStorageKey(USER_A);
+const STORAGE_KEY = "np-dashboard-layout-v2";
 const DEFAULT = [{ id: "trainingProgress", size: "lg" }] as const;
-const EXPECTED_CATALOG_IDS = [
+const PREVIOUS_CATALOG_IDS = [
   "readiness",
   "briefing",
   "quickActions",
@@ -36,26 +34,15 @@ const EXPECTED_CATALOG_IDS = [
   "friends",
   "history",
   "exercises",
-  "habitTracker",
-  "ifThenPlan",
-  "checklistTemplates",
-  "decisionPicker",
-  "milestones",
-  "worldClock",
 ];
 
 function mockGlobals(
-  options: {
-    stored?: string | null;
-    blockedRead?: boolean;
-    blockedWrite?: boolean;
-    userId?: string;
-  } = {},
+  options: { stored?: string | null; blockedRead?: boolean; blockedWrite?: boolean } = {},
 ) {
   const storage = new Map<string, string>();
   const writes: Array<[string, string]> = [];
   if (options.stored !== undefined && options.stored !== null)
-    storage.set(dashboardLayoutStorageKey(options.userId ?? USER_A), options.stored);
+    storage.set(STORAGE_KEY, options.stored);
   const localStorage = {
     getItem(key: string) {
       if (options.blockedRead) throw new Error("blocked storage read");
@@ -94,7 +81,7 @@ test("catalog keeps every previous widget and defaults exactly to training progr
     WIDGET_CATALOG.map(({ id }) => id)
       .filter((id) => id !== "trainingProgress")
       .sort(),
-    [...EXPECTED_CATALOG_IDS].sort(),
+    [...PREVIOUS_CATALOG_IDS].sort(),
   );
   assert.equal(WIDGET_CATALOG.find(({ id }) => id === "trainingProgress")?.defaultSize, "lg");
   assert.equal(WIDGET_CATALOG.find(({ id }) => id === "statsRing")?.label, "Bestwerte & Level");
@@ -107,8 +94,8 @@ test("catalog keeps every previous widget and defaults exactly to training progr
 test("SSR defaults are fresh copies and a missing stored value defaults without writing", () => {
   restoreGlobal("window", undefined);
   restoreGlobal("localStorage", undefined);
-  const first = loadLayout(USER_A);
-  const second = loadLayout(USER_A);
+  const first = loadLayout();
+  const second = loadLayout();
   assert.deepEqual(first, DEFAULT);
   assert.notStrictEqual(first, DEFAULT_LAYOUT);
   assert.notStrictEqual(first[0], DEFAULT_LAYOUT[0]);
@@ -117,7 +104,7 @@ test("SSR defaults are fresh copies and a missing stored value defaults without 
   assert.deepEqual(DEFAULT_LAYOUT, DEFAULT);
 
   const { writes } = mockGlobals();
-  assert.deepEqual(loadLayout(USER_A), DEFAULT);
+  assert.deepEqual(loadLayout(), DEFAULT);
   assert.deepEqual(writes, []);
 });
 
@@ -128,7 +115,7 @@ test("personal saved arrays preserve order, sizes, and omitted default widgets w
     { id: "notes", size: "md" },
   ];
   const { writes } = mockGlobals({ stored: JSON.stringify(personal) });
-  assert.deepEqual(loadLayout(USER_A), personal);
+  assert.deepEqual(loadLayout(), personal);
   assert.deepEqual(writes, []);
 
   const oldDefault = [
@@ -137,23 +124,23 @@ test("personal saved arrays preserve order, sizes, and omitted default widgets w
     { id: "mood", size: "sm" },
   ];
   mockGlobals({ stored: JSON.stringify(oldDefault) });
-  assert.deepEqual(loadLayout(USER_A), oldDefault);
+  assert.deepEqual(loadLayout(), oldDefault);
 });
 
 test("an explicitly empty layout remains empty", () => {
   const { writes } = mockGlobals({ stored: "[]" });
-  assert.deepEqual(loadLayout(USER_A), []);
+  assert.deepEqual(loadLayout(), []);
   assert.deepEqual(writes, []);
 });
 
 test("invalid JSON, wrong top-level types, invalid items, and duplicates recover safely", () => {
   for (const stored of ["{", "null", "42", '"layout"', "{}", "true"]) {
     mockGlobals({ stored });
-    assert.deepEqual(loadLayout(USER_A), DEFAULT, `unexpected result for ${stored}`);
+    assert.deepEqual(loadLayout(), DEFAULT, `unexpected result for ${stored}`);
   }
 
   mockGlobals({ stored: JSON.stringify([null, 3, "mood", {}, { id: "unknown", size: "sm" }]) });
-  assert.deepEqual(loadLayout(USER_A), DEFAULT);
+  assert.deepEqual(loadLayout(), DEFAULT);
 
   mockGlobals({
     stored: JSON.stringify([
@@ -164,7 +151,7 @@ test("invalid JSON, wrong top-level types, invalid items, and duplicates recover
       { id: "notes", size: "md" },
     ]),
   });
-  assert.deepEqual(loadLayout(USER_A), [
+  assert.deepEqual(loadLayout(), [
     { id: "mood", size: "sm" },
     { id: "readiness", size: "lg" },
     { id: "notes", size: "md" },
@@ -177,13 +164,13 @@ test("save reloads the exact personal layout and reset persists the default", ()
     { id: "weekPlan", size: "sm" },
     { id: "trainingProgress", size: "md" },
   ];
-  saveLayout(personal, USER_A);
+  saveLayout(personal);
   assert.deepEqual(writes, [[STORAGE_KEY, JSON.stringify(personal)]]);
-  assert.deepEqual(loadLayout(USER_A), personal);
+  assert.deepEqual(loadLayout(), personal);
 
-  const reset = resetLayout(USER_A);
+  const reset = resetLayout();
   assert.deepEqual(reset, DEFAULT);
-  assert.deepEqual(loadLayout(USER_A), DEFAULT);
+  assert.deepEqual(loadLayout(), DEFAULT);
   assert.equal(storage.get(STORAGE_KEY), JSON.stringify(DEFAULT));
   assert.deepEqual(writes, [
     [STORAGE_KEY, JSON.stringify(personal)],
@@ -193,29 +180,11 @@ test("save reloads the exact personal layout and reset persists the default", ()
 
 test("blocked storage reads and writes do not crash", () => {
   mockGlobals({ blockedRead: true });
-  assert.doesNotThrow(() => assert.deepEqual(loadLayout(USER_A), DEFAULT));
+  assert.doesNotThrow(() => assert.deepEqual(loadLayout(), DEFAULT));
 
   const { storage, writes } = mockGlobals({ blockedWrite: true });
-  assert.doesNotThrow(() => saveLayout([{ id: "mood", size: "sm" }], USER_A));
+  assert.doesNotThrow(() => saveLayout([{ id: "mood", size: "sm" }]));
   assert.deepEqual(writes, []);
   assert.equal(storage.has(STORAGE_KEY), false);
-  assert.doesNotThrow(() => resetLayout(USER_A));
-});
-
-test("dashboard layouts are isolated per account in the same browser", () => {
-  const { storage } = mockGlobals();
-  const layoutA = [{ id: "habitTracker", size: "md" as const }];
-  const layoutB = [{ id: "milestones", size: "sm" as const }];
-
-  saveLayout(layoutA, "user-a");
-  assert.deepEqual(loadLayout("user-b"), DEFAULT);
-  saveLayout(layoutB, "user-b");
-
-  assert.deepEqual(loadLayout("user-a"), layoutA);
-  assert.deepEqual(loadLayout("user-b"), layoutB);
-  assert.equal(storage.has("np-dashboard-layout-v2"), false);
-  assert.deepEqual(loadLayout(null), DEFAULT);
-  saveLayout([{ id: "mood", size: "sm" }], null);
-  assert.equal(storage.has(dashboardLayoutStorageKey("user-a")), true);
-  assert.equal(storage.size, 2);
+  assert.doesNotThrow(() => resetLayout());
 });

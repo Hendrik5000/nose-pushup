@@ -1,14 +1,8 @@
 // Lokale Benachrichtigungen (Web Notifications API). Keine Server-Pushes nötig:
 // solange die App (auch als installierte Web-App) läuft, erinnert sie ans Training.
 
-import {
-  decodeVapidPublicKey,
-  isVapidKeyRejectedByBrowser,
-  isVapidPublicKeyConfigured,
-  validateVapidPublicKey,
-  VAPID_KEY_REJECTED_BY_BROWSER_ERROR,
-} from "./vapid";
-export { VAPID_KEY_CONFIGURATION_ERROR, VAPID_KEY_REJECTED_BY_BROWSER_ERROR } from "./vapid";
+import { decodeVapidPublicKey, isVapidPublicKeyConfigured, validateVapidPublicKey } from "./vapid";
+export { VAPID_KEY_CONFIGURATION_ERROR } from "./vapid";
 
 const ENABLED_KEY = "np-notify";
 const TIME_KEY = "np-notify-time";
@@ -80,17 +74,10 @@ export async function subscribeToPush() {
 
   const applicationServerKey = await validateVapidPublicKey(configuredVapidPublicKey());
   const registration = await navigator.serviceWorker.ready;
-  try {
-    return await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey,
-    });
-  } catch (error) {
-    if (isVapidKeyRejectedByBrowser(error)) {
-      throw new Error(VAPID_KEY_REJECTED_BY_BROWSER_ERROR);
-    }
-    throw error;
-  }
+  return registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey,
+  });
 }
 
 export async function showNotification(title: string, body: string, tag?: string, url?: string) {

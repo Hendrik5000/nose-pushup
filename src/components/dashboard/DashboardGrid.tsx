@@ -15,30 +15,24 @@ import {
 } from "@/lib/dashboard-layout";
 
 export function DashboardGrid({
-  userId,
   renderWidget,
 }: {
-  userId: string | null;
   renderWidget: (id: WidgetId, size: WidgetSize) => ReactNode;
 }) {
-  const [loadedLayout, setLayout] = useState<{ userId: string; layout: LayoutItem[] } | null>(null);
-  const layout = loadedLayout?.userId === userId ? loadedLayout.layout : [];
+  const [loadedLayout, setLayout] = useState<LayoutItem[] | null>(null);
+  const layout = loadedLayout ?? [];
   const [editing, setEditing] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [dragId, setDragId] = useState<WidgetId | null>(null);
 
   // Server and first client render match. Never persist defaults during hydration.
   useEffect(() => {
-    setLayout(userId ? { userId, layout: loadLayout(userId) } : null);
-    setEditing(false);
-    setAddOpen(false);
-    setDragId(null);
-  }, [userId]);
+    setLayout(loadLayout());
+  }, []);
 
   const commit = (next: LayoutItem[]) => {
-    if (!userId || loadedLayout?.userId !== userId) return;
-    setLayout({ userId, layout: next });
-    saveLayout(next, userId);
+    setLayout(next);
+    saveLayout(next);
   };
 
   const move = (id: WidgetId, dir: -1 | 1) => {
@@ -79,17 +73,16 @@ export function DashboardGrid({
     const [item] = next.splice(from, 1);
     if (!item) return;
     next.splice(to, 0, item);
-    if (!userId || loadedLayout?.userId !== userId) return;
-    setLayout({ userId, layout: next });
+    setLayout(next);
   };
   const onDragEnd = () => {
-    if (dragId && userId && loadedLayout?.userId === userId) saveLayout(layout, userId);
+    if (dragId) saveLayout(layout);
     setDragId(null);
   };
 
   const missing = WIDGET_CATALOG.filter((w) => !layout.some((l) => l.id === w.id));
 
-  if (!userId || loadedLayout?.userId !== userId) {
+  if (loadedLayout === null) {
     return (
       <p className="mt-4 text-xs text-muted-foreground" role="status">
         Übersicht wird geladen…
@@ -128,8 +121,7 @@ export function DashboardGrid({
             <button
               type="button"
               onClick={() => {
-                if (!userId) return;
-                setLayout({ userId, layout: resetLayout(userId) });
+                setLayout(resetLayout());
                 setAddOpen(false);
               }}
               className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground"

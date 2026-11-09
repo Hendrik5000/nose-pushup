@@ -31,7 +31,6 @@ import { BottomNav } from "@/components/BottomNav";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { PublicProfileSettings } from "@/components/PublicProfileSettings";
 import { SettingsSection } from "@/components/SettingsSection";
-import { AccessibilityControls } from "@/components/AccessibilityControls";
 import { restartWelcomeTour } from "@/components/WelcomeTour";
 import { SportPageIntro } from "@/components/SportPageIntro";
 
@@ -535,7 +534,6 @@ export function ProfilePage() {
                 <ToggleRow label="Vibration" on={hapticsOn} onToggle={toggleHaptics} />
                 <ToggleRow label="Aktivität teilen" on={shareActivity} onToggle={toggleShare} />
               </div>
-              <AccessibilityControls userId={profile?.id ?? null} />
             </SettingsSection>
             {profile && (
               <SettingsSection icon="🌐" title="Öffentliches Profil" subtitle="Teilen & Einladen">
@@ -958,7 +956,6 @@ export function ProfilePage() {
                   <ToggleRow label="Vibration" on={hapticsOn} onToggle={toggleHaptics} />
                   <ToggleRow label="Aktivität teilen" on={shareActivity} onToggle={toggleShare} />
                 </div>
-                <AccessibilityControls userId={profile?.id ?? null} />
               </SettingsSection>
               <SettingsSection icon="🔔" title="Benachrichtigungen" subtitle="Erinnerungen">
                 <NotificationSettings />

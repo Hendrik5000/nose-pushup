@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { fileToData, listAlo, putAlo, safeLink } from "@/lib/alo-store";
-import { serializeQuickCaptureText } from "@/lib/quick-capture-export";
 export function QuickCapture({ userId, onSaved }: { userId: string; onSaved?: () => void }) {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
@@ -127,21 +126,6 @@ export function QuickCapture({ userId, onSaved }: { userId: string; onSaved?: ()
       setStatus("Nicht gespeichert: Gerätespeicher voll oder gesperrt. Inhalt bleibt im Formular.");
     }
   };
-  const exportText = () => {
-    const content = serializeQuickCaptureText({ title, text, url });
-    if (!content) return;
-    const urlObject = URL.createObjectURL(
-      new Blob([content], { type: "text/plain;charset=utf-8" }),
-    );
-    const link = document.createElement("a");
-    link.href = urlObject;
-    link.download = "alo-schnellablage.txt";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(urlObject), 0);
-    setStatus("Textdatei lokal heruntergeladen.");
-  };
   return (
     <div className="space-y-3">
       <h2 className="text-xl font-semibold">Schnell speichern</h2>
@@ -220,14 +204,6 @@ export function QuickCapture({ userId, onSaved }: { userId: string; onSaved?: ()
       </label>
       <button type="button" className="alo-btn" disabled={busy} onClick={() => void voice()}>
         {recording ? "Aufnahme stoppen" : "Sprachnotiz aufnehmen"}
-      </button>
-      <button
-        type="button"
-        className="alo-btn"
-        disabled={busy || recording || !serializeQuickCaptureText({ title, text, url })}
-        onClick={exportText}
-      >
-        Entwurf als TXT herunterladen
       </button>
       {attachment && (
         <div className="alo-card">

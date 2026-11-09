@@ -382,32 +382,9 @@ html[data-design-style="performance"]
     .health-daily-hero,
     .health-energy-card,
     .health-activity-card,
-    .health-sleep-card,
-    #health-activity,
-    #health-nutrition,
-    #health-recovery,
-    #health-body,
-    #health-training,
-    #health-history,
-    #health-sources,
-    #health-entry
+    .health-sleep-card
   ) {
   scroll-margin-top: calc(var(--homebar-top-space) + 1rem);
-}
-
-@media (max-width: 767px) {
-  html[data-design-style="performance"] .sport-health-page .health-category-nav {
-    justify-content: flex-start;
-    gap: 0.25rem;
-    flex-wrap: wrap;
-    overflow: visible;
-  }
-
-  html[data-design-style="performance"] .sport-health-page .health-category-nav a {
-    flex: 1 0 auto;
-    min-width: 4.35rem;
-    padding-inline: 0.45rem;
-  }
 }
 
 @media (max-width: 420px) {
@@ -602,15 +579,19 @@ html:not([data-design-style="performance"]) .health-classic-header {
 html:not([data-design-style="performance"]) .health-classic-dashboard .health-classic-category-nav {
   display: flex;
   width: 100%;
-  flex-wrap: wrap;
   justify-content: stretch;
   gap: 0.25rem;
-  overflow-x: visible;
+  overflow-x: auto;
   border: 1px solid
     var(--health-classic-line, color-mix(in srgb, var(--foreground) 13%, transparent));
   border-radius: 1.15rem;
   background: var(--health-classic-panel, color-mix(in srgb, var(--card) 88%, transparent));
   padding: 0.3rem;
+  scrollbar-width: none;
+}
+
+.health-classic-category-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .health-classic-category-nav a {
@@ -835,7 +816,6 @@ html:not([data-design-style="performance"]) .health-classic-dashboard .health-cl
 }
 
 .health-classic-sources,
-.health-classic-section,
 .health-classic-dashboard > section:has(#health-entry) {
   border-color: var(--health-classic-line, var(--border));
   background: var(--health-classic-panel, color-mix(in srgb, var(--card) 88%, transparent));
@@ -843,8 +823,7 @@ html:not([data-design-style="performance"]) .health-classic-dashboard .health-cl
   scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
 }
 
-.health-classic-sources,
-.health-classic-section {
+.health-classic-sources {
   min-width: 0;
   border: 1px solid var(--health-classic-line, var(--border));
   border-radius: 1.5rem;
@@ -869,20 +848,6 @@ html:not([data-design-style="performance"]) .health-classic-dashboard .health-cl
   min-width: 0;
   border-color: var(--health-classic-line, var(--border));
   background: color-mix(in srgb, var(--background) 52%, var(--card));
-}
-
-html[data-design-style="performance"] .sport-health-page .health-hub-tools-grid > section,
-html[data-design-style="performance"] .sport-health-page .health-hub-tools-grid > div > section,
-html:not([data-design-style="performance"])
-  .health-classic-dashboard
-  .health-hub-tools-grid
-  > section,
-html:not([data-design-style="performance"])
-  .health-classic-dashboard
-  .health-hub-tools-grid
-  > div
-  > section {
-  margin-top: 0;
 }
 
 .health-classic-sources h3 {
@@ -926,11 +891,6 @@ html:not([data-design-style="performance"])
 .health-classic-dashboard #health-today,
 .health-classic-dashboard #health-activity,
 .health-classic-dashboard #health-sleep,
-.health-classic-dashboard #health-nutrition,
-.health-classic-dashboard #health-recovery,
-.health-classic-dashboard #health-body,
-.health-classic-dashboard #health-training,
-.health-classic-dashboard #health-history,
 .health-classic-dashboard #health-sources,
 .health-classic-dashboard #health-entry {
   scroll-margin-top: calc(var(--homebar-top-space, 0px) + 1rem);
