@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import { BattleFriendInvitationPanel } from "@/components/BattleFriendInvitationPanel";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Bot, Crosshair, Swords, Trophy } from "lucide-react";
+import { isValidInviteCode, normalizeInviteCode } from "@/lib/invite-code";
 import {
   createBattle,
   joinBattle,
@@ -54,6 +55,9 @@ function BattleLobby() {
   const [history, setHistory] = useState<BattleRow[]>([]);
   const [wins, setWins] = useState(0);
   const [losses, setLosses] = useState(0);
+  const queuedBattleId = useRef<string | null>(null);
+  const matchRequest = useRef<Promise<{ id: string; code: string; matched: boolean }> | null>(null);
+  const cancelRequested = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -109,31 +113,27 @@ function BattleLobby() {
     if (!searching) return;
     let stop = false;
     const tick = async () => {
-      if (stop) return;
+      if (stop || cancelRequested.current || matchRequest.current) return;
       try {
-        const res = await match({
+        const request = match({
           data: { mode, duration_s: mode === "timed" ? duration : modeDefaults(mode).duration_s },
         });
-        if (res.matched && res.id) {
+        matchRequest.current = request;
+        const res = await request;
+        queuedBattleId.current = res.id;
+        if (stop || cancelRequested.current) return;
+        if (res.matched) {
+          queuedBattleId.current = null;
           setSearching(false);
           navigate({ to: "/battle/$id", params: { id: res.id } });
-          return;
         }
-        const { data: u } = await supabase.auth.getUser();
-        if (u.user) {
-          const { data: q } = await supabase
-            .from("battle_queue" as never)
-            .select("battle_id")
-            .eq("user_id", u.user.id)
-            .maybeSingle();
-          const bid = (q as unknown as { battle_id: string | null } | null)?.battle_id;
-          if (bid) {
-            setSearching(false);
-            navigate({ to: "/battle/$id", params: { id: bid } });
-          }
+      } catch (e) {
+        if (!stop && !cancelRequested.current) {
+          setSearching(false);
+          setError(e instanceof Error ? e.message : "Die sichere Gegnersuche ist nicht verfügbar.");
         }
-      } catch {
-        /* weiter versuchen */
+      } finally {
+        matchRequest.current = null;
       }
     };
     void tick();
@@ -146,10 +146,31 @@ function BattleLobby() {
 
   const handleMatchmaking = async () => {
     if (searching) {
+      cancelRequested.current = true;
       setSearching(false);
-      await dequeue({});
+      setBusy("match");
+      try {
+        // Wait for a first still-running search before cancelling its actual battle ID.
+        const pending = matchRequest.current;
+        const latest = pending ? await pending : null;
+        const id = latest?.id ?? queuedBattleId.current;
+        if (latest?.matched) {
+          navigate({ to: "/battle/$id", params: { id: latest.id } });
+        } else if (id) {
+          const result = await dequeue({ data: { id } });
+          // A concurrently assigned opponent must not be deleted or silently abandoned.
+          if (result.matched) navigate({ to: "/battle/$id", params: { id: result.id } });
+        }
+        queuedBattleId.current = null;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Die Gegnersuche konnte nicht beendet werden.");
+      } finally {
+        setBusy(null);
+      }
       return;
     }
+    cancelRequested.current = false;
+    queuedBattleId.current = null;
     setError(null);
     setSearching(true);
   };
@@ -308,13 +329,17 @@ function BattleLobby() {
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="CODE"
-            maxLength={8}
-            className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-4 py-3 text-center font-mono text-lg tracking-[0.4em] uppercase text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none"
+            aria-label="Battle-Einladungscode"
+            placeholder="Einladungscode einfügen"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={64}
+            className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-4 py-3 text-center font-mono text-sm uppercase text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none"
           />
           <button
             onClick={handleJoin}
-            disabled={busy !== null || code.length < 4}
+            disabled={busy !== null || !isValidInviteCode(normalizeInviteCode(code))}
             className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.98] disabled:opacity-50"
           >
             {busy === "join" ? "…" : "Join"}
@@ -365,7 +390,7 @@ function BattleLobby() {
                   className="flex items-center justify-between rounded-2xl border border-border bg-card/50 px-4 py-3"
                 >
                   <div>
-                    <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                    <div className="break-all font-mono text-xs uppercase tracking-widest text-muted-foreground">
                       {b.code}{" "}
                       {b.is_bot && (
                         <>
