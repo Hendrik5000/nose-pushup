@@ -12,6 +12,15 @@ export type TrainingWeekBounds = {
   endExclusive: string;
 };
 
+export type TrainingWeekDay = {
+  /** Local calendar date, formatted YYYY-MM-DD. */
+  dateKey: string;
+  /** Sum of saved push-up reps for this local calendar day. */
+  reps: number;
+  isToday: boolean;
+  isFuture: boolean;
+};
+
 /** A calendar date key in the computer's current local timezone. */
 export function localDateKey(date: Date): string {
   const year = date.getFullYear();
@@ -38,6 +47,20 @@ export function getTrainingWeekBounds(now = new Date()): TrainingWeekBounds {
   };
 }
 
+function getValidTrainingRecord(record: TrainingRecord) {
+  const createdAt = record.created_at ? Date.parse(record.created_at) : Number.NaN;
+  const reps = record.count;
+  if (
+    !Number.isFinite(createdAt) ||
+    typeof reps !== "number" ||
+    !Number.isFinite(reps) ||
+    reps < 0
+  ) {
+    return null;
+  }
+  return { createdAt, reps };
+}
+
 /** Sums real workout reps by the saved created_at timestamp, not by streak or best. */
 export function sumTrainingWeekReps(records: readonly TrainingRecord[], now = new Date()): number {
   const { startInclusive, endExclusive } = getTrainingWeekBounds(now);
@@ -45,10 +68,46 @@ export function sumTrainingWeekReps(records: readonly TrainingRecord[], now = ne
   const end = Date.parse(endExclusive);
 
   return records.reduce((total, record) => {
-    const createdAt = record.created_at ? Date.parse(record.created_at) : Number.NaN;
-    const count = record.count;
-    if (!Number.isFinite(createdAt) || createdAt < start || createdAt >= end) return total;
-    if (typeof count !== "number" || !Number.isFinite(count) || count < 0) return total;
-    return total + count;
+    const validRecord = getValidTrainingRecord(record);
+    if (!validRecord || validRecord.createdAt < start || validRecord.createdAt >= end) return total;
+    return total + validRecord.reps;
   }, 0);
+}
+
+/** Buckets saved reps into Monday–Sunday local calendar days for the current week. */
+export function getTrainingWeekDailyReps(
+  records: readonly TrainingRecord[],
+  now = new Date(),
+): TrainingWeekDay[] {
+  const bounds = getTrainingWeekBounds(now);
+  const weekStart = new Date(bounds.startInclusive);
+  const weekEnd = Date.parse(bounds.endExclusive);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  today.setHours(0, 0, 0, 0);
+  const todayKey = localDateKey(today);
+  const repsByDay = new Map<string, number>();
+
+  for (const record of records) {
+    const validRecord = getValidTrainingRecord(record);
+    if (
+      !validRecord ||
+      validRecord.createdAt < weekStart.getTime() ||
+      validRecord.createdAt >= weekEnd
+    )
+      continue;
+    const dayKey = localDateKey(new Date(validRecord.createdAt));
+    repsByDay.set(dayKey, (repsByDay.get(dayKey) ?? 0) + validRecord.reps);
+  }
+
+  return Array.from({ length: 7 }, (_, offset) => {
+    const day = new Date(weekStart);
+    day.setDate(weekStart.getDate() + offset);
+    const dateKey = localDateKey(day);
+    return {
+      dateKey,
+      reps: repsByDay.get(dateKey) ?? 0,
+      isToday: dateKey === todayKey,
+      isFuture: dateKey > todayKey,
+    };
+  });
 }
