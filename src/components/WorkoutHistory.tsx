@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getTrainingWeekBounds, localDateKey } from "@/lib/training-dates";
 import { readWorkoutMetadata } from "@/lib/workout-session";
+import { compareWorkoutWeeks } from "@/lib/workout-week-comparison";
 import {
   filterWorkoutHistory,
   formatWorkoutDaySummary,
@@ -100,6 +101,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
   const recentWorkouts =
     history.ownerId === userId && history.status === "ready" ? history.rows : [];
   const filteredSessions = filterWorkoutHistory(recentWorkouts, exerciseFilter);
+  const weekComparisons = compareWorkoutWeeks(filteredSessions);
   const daySummaries = summarizeWorkoutDays(filteredSessions);
   const stats = new Map<string, number>();
   for (const row of recentWorkouts) {
@@ -376,6 +378,65 @@ export function WorkoutHistory({ userId }: { userId: string }) {
               </button>
             </div>
           </div>
+          <section
+            aria-label="Wochenvergleich pro Übung"
+            className="rounded-xl border border-border/60 bg-background/40 p-3"
+          >
+            <div>
+              <h4 className="text-xs font-semibold">Vergleich bis heute</h4>
+              <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                Diese Woche bis heute · verglichen mit denselben Wochentagen der Vorwoche.
+              </p>
+            </div>
+            {weekComparisons.length > 0 ? (
+              <ul className="mt-3 space-y-2">
+                {weekComparisons.map((comparison) => {
+                  const unitLabel =
+                    comparison.unit === "seconds"
+                      ? "Sek."
+                      : comparison.unit === "reps"
+                        ? "Wdh."
+                        : "Einheiten";
+                  const changeLabel =
+                    comparison.change > 0
+                      ? `+${comparison.change.toLocaleString("de-DE")}`
+                      : comparison.change < 0
+                        ? `−${Math.abs(comparison.change).toLocaleString("de-DE")}`
+                        : "±0";
+                  return (
+                    <li
+                      key={comparison.exerciseId}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/60 px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium">{comparison.name}</p>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">
+                          Diese Woche: {comparison.current.toLocaleString("de-DE")} {unitLabel} ·
+                          Vorwoche: {comparison.previous.toLocaleString("de-DE")} {unitLabel}
+                        </p>
+                      </div>
+                      <span
+                        aria-label={`${comparison.name}: ${changeLabel} ${unitLabel} gegenüber der Vorwoche`}
+                        className={`shrink-0 text-sm font-semibold tabular-nums ${
+                          comparison.change > 0
+                            ? "text-primary"
+                            : comparison.change < 0
+                              ? "text-destructive"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        {changeLabel} {unitLabel}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="mt-3 rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground">
+                Keine Einheiten an diesen Wochentagen in den letzten zwei Wochen.
+              </p>
+            )}
+          </section>
           {filteredSessions.length === 0 && (
             <p className="rounded-xl border border-border/60 px-3 py-2 text-xs text-muted-foreground">
               Für diese Übung wurden im Zeitraum keine Einheiten gefunden.
