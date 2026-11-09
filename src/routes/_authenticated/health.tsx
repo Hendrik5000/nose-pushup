@@ -1,7 +1,20 @@
-import { ArrowRight, Flame, Footprints, HeartPulse, Moon, Plus, Watch } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  CalendarDays,
+  Dumbbell,
+  Flame,
+  Footprints,
+  HeartPulse,
+  Moon,
+  Plus,
+  Scale,
+  Utensils,
+  Watch,
+} from "lucide-react";
 import { DesignView } from "@/components/DesignView";
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { AloHomeLink } from "@/components/AloHomeLink";
@@ -12,20 +25,27 @@ import { WeightTrendCard } from "@/components/WeightTrendCard";
 import { MealPhotoCard } from "@/components/MealPhotoCard";
 import { SleepDebtCard } from "@/components/SleepDebtCard";
 import { WeeklyStepsGoal } from "@/components/WeeklyStepsGoal";
+import { MoodCheckin } from "@/components/MoodCheckin";
+import { WaterTracker } from "@/components/WaterTracker";
+import { ReadinessCard } from "@/components/ReadinessCard";
+import { RecoveryCalendar } from "@/components/RecoveryCalendar";
+import { WorkoutHistory } from "@/components/WorkoutHistory";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { averageMeasuredHealthValue, measuredHealthValue } from "@/lib/health-glance";
 
 export const Route = createFileRoute("/_authenticated/health")({
   head: () => ({
     meta: [
-      { title: "Health Connect — Alo" },
+      { title: "Alo Health — Gesundheit & Training" },
       {
         name: "description",
-        content:
-          "Google Health Connect, Smartwatch und Gesundheitsdaten mit dem Training verbinden.",
+        content: "Gesundheit, Ernährung, Erholung und Training – deine Werte an einem Ort.",
       },
-      { property: "og:title", content: "Health Connect — Alo" },
-      { property: "og:description", content: "Schritte, Schlaf und Aktivität synchronisieren." },
+      { property: "og:title", content: "Alo Health — Gesundheit & Training" },
+      {
+        property: "og:description",
+        content: "Gesundheit, Ernährung, Erholung und Training an einem Ort.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -45,7 +65,9 @@ type Entry = {
 const today = () => new Date().toISOString().slice(0, 10);
 
 function HealthPage() {
+  const { user } = Route.useRouteContext();
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [day, setDay] = useState(today());
   const [steps, setSteps] = useState("");
   const [kcal, setKcal] = useState("");
@@ -54,18 +76,22 @@ function HealthPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
-    const { data } = await supabase
-      .from("health_entries")
-      .select("day, steps, active_kcal, weight_kg, sleep_min, source")
-      .order("day", { ascending: false })
-      .limit(14);
-    setEntries((data ?? []) as Entry[]);
-  };
+  const load = useCallback(async () => {
+    const [healthResult, profileResult] = await Promise.all([
+      supabase
+        .from("health_entries")
+        .select("day, steps, active_kcal, weight_kg, sleep_min, source")
+        .order("day", { ascending: false })
+        .limit(14),
+      supabase.from("profiles").select("current_streak").eq("id", user.id).maybeSingle(),
+    ]);
+    setEntries((healthResult.data ?? []) as Entry[]);
+    setCurrentStreak(profileResult.data?.current_streak ?? 0);
+  }, [user.id]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const save = async () => {
     setBusy(true);
@@ -105,6 +131,7 @@ function HealthPage() {
     (entry) => entry.day >= weekStart.toISOString().slice(0, 10) && entry.day <= today(),
   );
   const avgSteps = averageMeasuredHealthValue(week.map((entry) => entry.steps));
+  const avgKcal = averageMeasuredHealthValue(week.map((entry) => entry.active_kcal));
   const avgSleep = averageMeasuredHealthValue(week.map((entry) => entry.sleep_min));
   const todayEntry = entries.find((e) => e.day === today());
   const glanceSteps = measuredHealthValue(todayEntry?.steps);
@@ -146,12 +173,28 @@ function HealthPage() {
               <span>Heute</span>
             </a>
             <a href="#health-activity">
-              <Footprints aria-hidden="true" />
-              <span>Aktivität</span>
+              <Activity aria-hidden="true" />
+              <span>Bewegung</span>
             </a>
-            <a href="#health-sleep">
+            <a href="#health-nutrition">
+              <Utensils aria-hidden="true" />
+              <span>Ernährung</span>
+            </a>
+            <a href="#health-recovery">
               <Moon aria-hidden="true" />
-              <span>Schlaf</span>
+              <span>Erholung</span>
+            </a>
+            <a href="#health-body">
+              <Scale aria-hidden="true" />
+              <span>Körper</span>
+            </a>
+            <a href="#health-training">
+              <Dumbbell aria-hidden="true" />
+              <span>Training</span>
+            </a>
+            <a href="#health-history">
+              <CalendarDays aria-hidden="true" />
+              <span>Verlauf</span>
             </a>
             <a href="#health-sources">
               <Watch aria-hidden="true" />
@@ -213,6 +256,7 @@ function HealthPage() {
             className="health-classic-activity"
             aria-label="Aktivität und Wochenübersicht"
           >
+            <h2 className="health-classic-section-heading">Bewegung &amp; Aktivität</h2>
             <div className="health-classic-metrics-grid">
               <Card
                 label="Ø Schritte (7T)"
@@ -223,8 +267,12 @@ function HealthPage() {
                 }
               />
               <Card
-                label="Ø Schlaf (7T)"
-                value={avgSleep.average === null ? "—" : `${(avgSleep.average / 60).toFixed(1)} h`}
+                label="Ø aktive kcal (7T)"
+                value={
+                  avgKcal.average === null
+                    ? "—"
+                    : Math.round(avgKcal.average).toLocaleString("de-DE")
+                }
               />
               <Card
                 label="Aktive kcal heute"
@@ -235,21 +283,71 @@ function HealthPage() {
               <div className="health-classic-widget-card">
                 <WeeklyStepsGoal todaySteps={glanceSteps} />
               </div>
-              <div
-                id="health-sleep"
-                tabIndex={-1}
-                className="health-classic-widget-card health-classic-sleep-widget"
-              >
+            </div>
+          </section>
+
+          <section id="health-nutrition" tabIndex={-1} className="health-classic-section">
+            <HealthSectionHeading
+              title="Ernährung & Trinken"
+              description="Mahlzeiten erfassen und deine tägliche Trinkmenge im Blick behalten."
+            />
+            <div className="health-hub-tools-grid grid gap-4 md:grid-cols-2">
+              <MealPhotoCard />
+              <WaterTracker key={user.id} userId={user.id} />
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Wasser wird lokal getrennt pro Alo-Konto auf diesem Gerät gespeichert; Mahlzeiten
+              bleiben in deinem Alo-Konto.
+            </p>
+          </section>
+
+          <section id="health-recovery" tabIndex={-1} className="health-classic-section">
+            <HealthSectionHeading
+              title="Erholung & Tagesform"
+              description="Schlaf und Trainingsbelastung als Orientierung – keine medizinische Messung."
+            />
+            <div className="health-classic-metrics-grid">
+              <Card
+                label="Ø Schlaf (7T)"
+                value={avgSleep.average === null ? "—" : `${(avgSleep.average / 60).toFixed(1)} h`}
+              />
+              <Card label="Erfasste Nächte (7T)" value={avgSleep.count.toLocaleString("de-DE")} />
+            </div>
+            <div className="health-hub-tools-grid grid gap-4 md:grid-cols-2">
+              <div id="health-sleep" tabIndex={-1}>
                 <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
-                <MealPhotoCard />
               </div>
-              <div className="health-classic-widget-card">
-                <WeightTrendCard
-                  points={entries
-                    .filter((e) => e.weight_kg != null)
-                    .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
-                />
+              <ReadinessCard streak={currentStreak} />
+              <RecoveryCalendar userId={user.id} />
+              <div>
+                <MoodCheckin key={user.id} userId={user.id} />
+                <p className="mt-2 px-4 text-xs text-muted-foreground">
+                  Stimmung bleibt lokal und ist von anderen Alo-Konten auf diesem Gerät getrennt.
+                </p>
               </div>
+            </div>
+          </section>
+
+          <section id="health-body" tabIndex={-1} className="health-classic-section">
+            <HealthSectionHeading
+              title="Körper & Trends"
+              description="Sieh deine gespeicherten Gewichtsverläufe zusammen mit den manuellen Einträgen."
+            />
+            <WeightTrendCard
+              points={entries
+                .filter((e) => e.weight_kg != null)
+                .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
+            />
+          </section>
+
+          <section id="health-training" tabIndex={-1} className="health-classic-section">
+            <HealthSectionHeading
+              title="Training & Verlauf"
+              description="Starte über die passenden Alo-Bereiche oder sieh dir deine Einheiten hier an."
+            />
+            <HealthTrainingLinks />
+            <div className="mt-4">
+              <WorkoutHistory userId={user.id} />
             </div>
           </section>
 
@@ -320,7 +418,7 @@ function HealthPage() {
             </button>
           </section>
 
-          <section className="health-classic-history">
+          <section id="health-history" tabIndex={-1} className="health-classic-history">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Verlauf
             </h2>
@@ -377,12 +475,28 @@ function HealthPage() {
               <span>Heute</span>
             </a>
             <a href="#health-activity">
-              <Footprints aria-hidden="true" />
-              <span>Aktivität</span>
+              <Activity aria-hidden="true" />
+              <span>Bewegung</span>
             </a>
-            <a href="#health-sleep">
+            <a href="#health-nutrition">
+              <Utensils aria-hidden="true" />
+              <span>Ernährung</span>
+            </a>
+            <a href="#health-recovery">
               <Moon aria-hidden="true" />
-              <span>Schlaf</span>
+              <span>Erholung</span>
+            </a>
+            <a href="#health-body">
+              <Scale aria-hidden="true" />
+              <span>Körper</span>
+            </a>
+            <a href="#health-training">
+              <Dumbbell aria-hidden="true" />
+              <span>Training</span>
+            </a>
+            <a href="#health-history">
+              <CalendarDays aria-hidden="true" />
+              <span>Verlauf</span>
             </a>
             <a href="#health-sources">
               <Watch aria-hidden="true" />
@@ -442,93 +556,136 @@ function HealthPage() {
               </a>
             </div>
           </section>
-          <section
-            id="health-activity"
-            tabIndex={-1}
-            className="health-bento-grid grid grid-cols-2 gap-3"
-          >
-            <div className="health-energy-card">
-              <div className="health-card-heading">
-                <Flame aria-hidden="true" />
-                <span>Energie &amp; Schritte</span>
+          <section id="health-activity" tabIndex={-1} className="space-y-4">
+            <SportSectionLabel number="01">Bewegung</SportSectionLabel>
+            <div className="health-bento-grid grid grid-cols-2 gap-3">
+              <div className="health-energy-card">
+                <div className="health-card-heading">
+                  <Flame aria-hidden="true" />
+                  <span>Energie &amp; Schritte</span>
+                </div>
+                <div className="health-energy-values">
+                  <div>
+                    <strong>
+                      {glanceKcal !== null ? glanceKcal.toLocaleString("de-DE") : "—"}
+                    </strong>
+                    <span>
+                      {glanceKcal !== null ? "Aktive kcal" : "Aktive kcal · nicht erfasst"}
+                    </span>
+                  </div>
+                  <div>
+                    <strong>
+                      {glanceSteps !== null ? glanceSteps.toLocaleString("de-DE") : "—"}
+                    </strong>
+                    <span>{glanceSteps !== null ? "Schritte" : "Schritte · nicht erfasst"}</span>
+                  </div>
+                </div>
+                <p>
+                  {hasTodayGlanceData
+                    ? "Mindestens ein Wert heute erfasst"
+                    : "Noch keine Messwerte"}
+                </p>
               </div>
-              <div className="health-energy-values">
-                <div>
-                  <strong>{glanceKcal !== null ? glanceKcal.toLocaleString("de-DE") : "—"}</strong>
-                  <span>{glanceKcal !== null ? "Aktive kcal" : "Aktive kcal · nicht erfasst"}</span>
+              <div className="health-activity-card">
+                <div className="health-card-heading">
+                  <Footprints aria-hidden="true" />
+                  <span>Schritte · letzte 7 Tage</span>
                 </div>
-                <div>
-                  <strong>
-                    {glanceSteps !== null ? glanceSteps.toLocaleString("de-DE") : "—"}
-                  </strong>
-                  <span>{glanceSteps !== null ? "Schritte" : "Schritte · nicht erfasst"}</span>
-                </div>
+                {weeklySteps.average === null ? (
+                  <div className="health-week-empty">
+                    <p>Noch keine Schrittwerte erfasst.</p>
+                    <a href="#health-entry">
+                      Wert erfassen <ArrowRight aria-hidden="true" />
+                    </a>
+                  </div>
+                ) : (
+                  <div className="health-week-value">
+                    <strong>{Math.round(weeklySteps.average).toLocaleString("de-DE")}</strong>
+                    <span>Schritte pro erfasstem Tag</span>
+                    <p>
+                      {weeklySteps.count} {weeklySteps.count === 1 ? "Tag" : "Tage"} mit Messwert
+                    </p>
+                  </div>
+                )}
               </div>
-              <p>
-                {hasTodayGlanceData ? "Mindestens ein Wert heute erfasst" : "Noch keine Messwerte"}
-              </p>
             </div>
-            <div className="health-activity-card">
-              <div className="health-card-heading">
-                <Footprints aria-hidden="true" />
-                <span>Schritte · letzte 7 Tage</span>
-              </div>
-              {weeklySteps.average === null ? (
-                <div className="health-week-empty">
-                  <p>Noch keine Schrittwerte erfasst.</p>
-                  <a href="#health-entry">
-                    Wert erfassen <ArrowRight aria-hidden="true" />
-                  </a>
-                </div>
-              ) : (
-                <div className="health-week-value">
-                  <strong>{Math.round(weeklySteps.average).toLocaleString("de-DE")}</strong>
-                  <span>Schritte pro erfasstem Tag</span>
-                  <p>
-                    {weeklySteps.count} {weeklySteps.count === 1 ? "Tag" : "Tage"} mit Messwert
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-          <section className="health-sleep-card" aria-labelledby="health-sleep-title">
-            <div className="health-sleep-icon">
-              <Moon aria-hidden="true" />
-            </div>
-            <div>
-              <p className="health-sleep-label">Erholung</p>
-              <h2 id="health-sleep-title">Schlaf</h2>
-              <p className="health-sleep-detail">
-                {measuredSleep == null
-                  ? "Noch keine Schlafdaten erfasst"
-                  : `Ø ${measuredSleep.toFixed(1)} h · ${sleepEntries.length} ${sleepEntries.length === 1 ? "Nacht" : "Nächte"} erfasst`}
-              </p>
-              {measuredSleep == null && (
-                <a className="health-sleep-action" href="#health-entry">
-                  Schlaf erfassen
-                </a>
-              )}
-            </div>
-            {measuredSleep != null && (
-              <strong>
-                {measuredSleep.toFixed(1)}
-                <span> h</span>
-              </strong>
-            )}
-          </section>
-          <div id="health-sleep" tabIndex={-1} className="grid gap-5 lg:grid-cols-2">
-            <div className="space-y-5">
+            <div className="health-hub-tools-grid grid gap-4 md:grid-cols-2">
               <WeeklyStepsGoal todaySteps={glanceSteps} />
-              <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
-              <MealPhotoCard />
             </div>
+          </section>
+          <section id="health-nutrition" tabIndex={-1} className="space-y-4">
+            <SportSectionLabel number="02">Ernährung &amp; Trinken</SportSectionLabel>
+            <div className="health-hub-tools-grid grid gap-4 md:grid-cols-2">
+              <MealPhotoCard />
+              <WaterTracker key={user.id} userId={user.id} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Wasser wird lokal getrennt pro Alo-Konto auf diesem Gerät gespeichert; Mahlzeiten
+              bleiben in deinem Alo-Konto.
+            </p>
+          </section>
+
+          <section id="health-recovery" tabIndex={-1} className="space-y-4">
+            <SportSectionLabel number="03">Erholung &amp; Tagesform</SportSectionLabel>
+            <section
+              id="health-sleep"
+              tabIndex={-1}
+              className="health-sleep-card"
+              aria-labelledby="health-sleep-title"
+            >
+              <div className="health-sleep-icon">
+                <Moon aria-hidden="true" />
+              </div>
+              <div>
+                <p className="health-sleep-label">Erholung</p>
+                <h2 id="health-sleep-title">Schlaf</h2>
+                <p className="health-sleep-detail">
+                  {measuredSleep == null
+                    ? "Noch keine Schlafdaten erfasst"
+                    : `Ø ${measuredSleep.toFixed(1)} h · ${sleepEntries.length} ${sleepEntries.length === 1 ? "Nacht" : "Nächte"} erfasst`}
+                </p>
+                {measuredSleep == null && (
+                  <a className="health-sleep-action" href="#health-entry">
+                    Schlaf erfassen
+                  </a>
+                )}
+              </div>
+              {measuredSleep != null && (
+                <strong>
+                  {measuredSleep.toFixed(1)}
+                  <span> h</span>
+                </strong>
+              )}
+            </section>
+            <div className="health-hub-tools-grid grid gap-4 md:grid-cols-2">
+              <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
+              <ReadinessCard streak={currentStreak} />
+              <RecoveryCalendar userId={user.id} />
+              <div>
+                <MoodCheckin key={user.id} userId={user.id} />
+                <p className="mt-2 px-4 text-xs text-muted-foreground">
+                  Stimmung bleibt lokal und ist von anderen Alo-Konten auf diesem Gerät getrennt.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section id="health-body" tabIndex={-1} className="space-y-4">
+            <SportSectionLabel number="04">Körper &amp; Trends</SportSectionLabel>
             <WeightTrendCard
               points={entries
                 .filter((e) => e.weight_kg != null)
                 .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
             />
-          </div>
-          <SportSectionLabel number="01">Verbundene Datenquellen</SportSectionLabel>
+          </section>
+
+          <section id="health-training" tabIndex={-1} className="space-y-4">
+            <SportSectionLabel number="05">Training &amp; Verlauf</SportSectionLabel>
+            <HealthTrainingLinks />
+            <WorkoutHistory userId={user.id} />
+          </section>
+
+          <SportSectionLabel number="06">Verbundene Datenquellen</SportSectionLabel>
           <div id="health-sources" tabIndex={-1} className="grid gap-4 md:grid-cols-2">
             <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
               <h2 className="mb-4 text-lg font-bold">Google Health Connect</h2>
@@ -539,7 +696,7 @@ function HealthPage() {
               <SmartwatchPanel />
             </section>
           </div>
-          <SportSectionLabel number="02">Eintrag erfassen</SportSectionLabel>
+          <SportSectionLabel number="07">Eintrag erfassen</SportSectionLabel>
           <section
             id="health-entry"
             tabIndex={-1}
@@ -595,50 +752,101 @@ function HealthPage() {
               {busy ? "Speichere…" : "Werte speichern"}
             </button>
           </section>
-          <SportSectionLabel number="03">Verlauf · letzte 14 Tage</SportSectionLabel>
-          {entries.length === 0 ? (
-            <p className="rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
-              Noch keine Gesundheitsdaten.
-            </p>
-          ) : (
-            <ul className="grid gap-3 md:grid-cols-2">
-              {entries.map((e) => (
-                <li
-                  key={e.day}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card/60 p-4"
-                >
-                  <div>
-                    <div className="font-semibold">
-                      {new Date(e.day).toLocaleDateString("de-DE")}
-                      {(e.source === "health_connect" ||
-                        e.source === "watch" ||
-                        e.source?.startsWith("watch")) && (
-                        <span className="ml-2 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                          {e.source === "health_connect" ? "HC" : "⌚"}
-                        </span>
-                      )}
+          <section id="health-history" tabIndex={-1} className="space-y-3">
+            <SportSectionLabel number="08">Gesundheitsverlauf · letzte 14 Tage</SportSectionLabel>
+            {entries.length === 0 ? (
+              <p className="rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
+                Noch keine Gesundheitsdaten.
+              </p>
+            ) : (
+              <ul className="grid gap-3 md:grid-cols-2">
+                {entries.map((e) => (
+                  <li
+                    key={e.day}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card/60 p-4"
+                  >
+                    <div>
+                      <div className="font-semibold">
+                        {new Date(e.day).toLocaleDateString("de-DE")}
+                        {(e.source === "health_connect" ||
+                          e.source === "watch" ||
+                          e.source?.startsWith("watch")) && (
+                          <span className="ml-2 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                            {e.source === "health_connect" ? "HC" : "⌚"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {e.steps > 0
+                          ? `${e.steps.toLocaleString("de-DE")} Schritte`
+                          : "Schritte nicht erfasst"}
+                      </div>
                     </div>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {e.steps > 0
-                        ? `${e.steps.toLocaleString("de-DE")} Schritte`
-                        : "Schritte nicht erfasst"}
+                    <div className="text-right text-xs tabular-nums text-muted-foreground">
+                      {e.active_kcal > 0 ? `${e.active_kcal} kcal` : "kcal nicht erfasst"}
+                      <br />
+                      {e.sleep_min > 0
+                        ? `${(e.sleep_min / 60).toFixed(1)} h Schlaf`
+                        : "Schlaf nicht erfasst"}
                     </div>
-                  </div>
-                  <div className="text-right text-xs tabular-nums text-muted-foreground">
-                    {e.active_kcal > 0 ? `${e.active_kcal} kcal` : "kcal nicht erfasst"}
-                    <br />
-                    {e.sleep_min > 0
-                      ? `${(e.sleep_min / 60).toFixed(1)} h Schlaf`
-                      : "Schlaf nicht erfasst"}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
           <BottomNav />
         </main>
       </DesignView>
     </AloPageSidebar>
+  );
+}
+
+function HealthSectionHeading({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="mb-4">
+      <h2 className="text-base font-bold tracking-tight text-foreground">{title}</h2>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+const HEALTH_TRAINING_LINKS = [
+  { to: "/exercises", label: "Übungen", description: "Übungskatalog", icon: Dumbbell },
+  { to: "/programs", label: "Programme", description: "Pläne und Routinen", icon: CalendarDays },
+  {
+    to: "/calisthenics",
+    label: "Calisthenics",
+    description: "Kraft mit dem eigenen Körper",
+    icon: Activity,
+  },
+  { to: "/run", label: "Laufen", description: "Ausdauer und Lauftraining", icon: Footprints },
+] as const;
+
+function HealthTrainingLinks() {
+  return (
+    <nav aria-label="Trainingsbereiche öffnen" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      {HEALTH_TRAINING_LINKS.map(({ to, label, description, icon: Icon }) => (
+        <Link
+          key={to}
+          to={to}
+          className="group flex min-h-16 min-w-0 items-center gap-3 rounded-2xl border border-border bg-card/60 p-3 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Icon className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-foreground">{label}</span>
+            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
+              {description}
+            </span>
+          </span>
+          <ArrowRight
+            className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary"
+            aria-hidden="true"
+          />
+        </Link>
+      ))}
+    </nav>
   );
 }
 

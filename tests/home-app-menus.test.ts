@@ -17,11 +17,11 @@ const workspace = readFileSync(
   "utf8",
 );
 
-test("the dedicated Further Areas app keeps all ten original routes", () => {
+test("the dedicated Further Areas app keeps ten routes including the separate exercise library", () => {
   assert.deepEqual(
     HOME_OTHER_AREAS.map(({ to }) => to),
     [
-      "/health",
+      "/exercises",
       "/programs",
       "/calisthenics",
       "/run",

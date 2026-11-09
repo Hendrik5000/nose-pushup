@@ -43,19 +43,20 @@ test("authenticated content starts below the body safe area without a reserved h
   assert.doesNotMatch(css, /alo-header-first|alo-top-module-offset/);
 });
 
-test("swipe and bottom-navigation alternatives remain while all former header destinations move into the hub", () => {
+test("swipe and bottom-navigation alternatives remain while exercises stay separately reachable", () => {
   const layout = read("routes/_authenticated/route.tsx");
   const hub = read("routes/_authenticated/index.tsx");
   const swipe = read("lib/module-swipe-gesture.ts");
   const areaMenus = read("lib/home-app-menus.ts");
   assert.match(layout, /installModuleSwipeGesture/);
   assert.match(swipe, /getSwipeDestination/);
-  assert.match(hub, /aria-label="Alo-Werkzeuge öffnen"/);
-  assert.match(hub, /to="\/tools"/);
+  assert.match(hub, /id: "tools", title: "Alo-Werkzeuge"[\s\S]*?to: "\/tools"/);
+  assert.match(hub, /to=\{app\.to\}/);
+  assert.match(hub, /aria-label=\{ariaLabel \?\? `\$\{title\} öffnen`\}/);
   assert.match(hub, /aria-label="Überall suchen"/);
   assert.match(hub, /detail: "search"/);
   for (const route of [
-    "/health",
+    "/exercises",
     "/programs",
     "/calisthenics",
     "/run",

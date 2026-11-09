@@ -46,11 +46,11 @@ test("home hub exposes accessible tools, search and area navigation without the 
     new URL("../src/routes/_authenticated/areas.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(home, /id: "tools", title: "Alo-Werkzeuge"[\s\S]*?to: "\/tools"/);
   assert.match(home, /aria-label="Überall suchen"/);
-  assert.match(home, /<Link\s+to="\/areas"/);
-  assert.match(home, /Weitere Bereiche öffnen/);
-  assert.match(home, /<Link\s+to="\/tools"/);
+  assert.match(home, /id: "areas",[\s\S]*?to: "\/areas"/);
+  assert.match(home, /ariaLabel=\{\s*app\.id === "areas"/);
+  assert.match(home, /aria-label=\{ariaLabel \?\? `\$\{title\} öffnen`\}/);
   assert.match(areas, /aria-label="Alle weiteren Alo-Bereiche"/);
   assert.match(areas, /HOME_OTHER_AREAS\.map/);
   assert.match(areas, /<Link[\s\S]*?to=\{to\}/);

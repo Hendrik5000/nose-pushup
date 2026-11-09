@@ -24,7 +24,13 @@ export type WidgetId =
   | "challenges"
   | "friends"
   | "history"
-  | "exercises";
+  | "exercises"
+  | "habitTracker"
+  | "ifThenPlan"
+  | "checklistTemplates"
+  | "decisionPicker"
+  | "milestones"
+  | "worldClock";
 
 export type LayoutItem = {
   id: WidgetId;
@@ -86,11 +92,51 @@ export const WIDGET_CATALOG: WidgetMeta[] = [
   { id: "friends", label: "Freunde", description: "Aktivität", defaultSize: "md" },
   { id: "history", label: "Verlauf", description: "Letzte Workouts", defaultSize: "md" },
   { id: "exercises", label: "Weitere Übungen", description: "Bibliothek", defaultSize: "lg" },
+  {
+    id: "habitTracker",
+    label: "Alltagsrituale",
+    description: "Eigene Routinen mit Wochenüberblick",
+    defaultSize: "md",
+  },
+  {
+    id: "ifThenPlan",
+    label: "Wenn–dann-Plan",
+    description: "Ein Auslöser und ein kleiner nächster Schritt",
+    defaultSize: "md",
+  },
+  {
+    id: "checklistTemplates",
+    label: "Checklisten-Vorlagen",
+    description: "Wiederverwendbare Abhaklisten",
+    defaultSize: "md",
+  },
+  {
+    id: "decisionPicker",
+    label: "Entscheidungshilfe",
+    description: "Zufällige Auswahl aus deiner eigenen Liste",
+    defaultSize: "md",
+  },
+  {
+    id: "milestones",
+    label: "Meilensteine",
+    description: "Persönliche Datumszähler",
+    defaultSize: "sm",
+  },
+  {
+    id: "worldClock",
+    label: "Weltuhr",
+    description: "Mehrere lokale Zeiten nebeneinander",
+    defaultSize: "sm",
+  },
 ];
 
 export const DEFAULT_LAYOUT: LayoutItem[] = [{ id: "trainingProgress", size: "lg" }];
 
-const STORAGE_KEY = "np-dashboard-layout-v2";
+const STORAGE_KEY_PREFIX = "np-dashboard-layout-v2";
+
+export function dashboardLayoutStorageKey(userId: string) {
+  return `${STORAGE_KEY_PREFIX}:${encodeURIComponent(userId)}`;
+}
 
 function isWidgetId(v: unknown): v is WidgetId {
   return typeof v === "string" && WIDGET_CATALOG.some((w) => w.id === v);
@@ -100,10 +146,10 @@ function isSize(v: unknown): v is WidgetSize {
   return v === "sm" || v === "md" || v === "lg";
 }
 
-export function loadLayout(): LayoutItem[] {
-  if (typeof window === "undefined") return DEFAULT_LAYOUT.map((x) => ({ ...x }));
+export function loadLayout(userId: string | null): LayoutItem[] {
+  if (!userId || typeof window === "undefined") return DEFAULT_LAYOUT.map((x) => ({ ...x }));
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(dashboardLayoutStorageKey(userId));
     if (!raw) return DEFAULT_LAYOUT.map((x) => ({ ...x }));
     const parsed = JSON.parse(raw) as LayoutItem[];
     if (!Array.isArray(parsed)) return DEFAULT_LAYOUT.map((x) => ({ ...x }));
@@ -125,18 +171,18 @@ export function loadLayout(): LayoutItem[] {
   }
 }
 
-export function saveLayout(layout: LayoutItem[]) {
-  if (typeof window === "undefined") return;
+export function saveLayout(layout: LayoutItem[], userId: string | null) {
+  if (!userId || typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+    window.localStorage.setItem(dashboardLayoutStorageKey(userId), JSON.stringify(layout));
   } catch {
     // Editing still works for this session when browser storage is unavailable.
   }
 }
 
-export function resetLayout(): LayoutItem[] {
+export function resetLayout(userId: string | null): LayoutItem[] {
   const next = DEFAULT_LAYOUT.map((x) => ({ ...x }));
-  saveLayout(next);
+  saveLayout(next, userId);
   return next;
 }
 

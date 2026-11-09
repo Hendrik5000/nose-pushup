@@ -5,6 +5,7 @@ import { WaterTracker } from "@/components/WaterTracker";
 import { WorkoutNotesPanel } from "@/components/WorkoutNotesPanel";
 
 export function DashboardExtras(props: {
+  userId: string;
   streak: number;
   todayReps: number;
   goal: number;
@@ -13,14 +14,15 @@ export function DashboardExtras(props: {
   return (
     <>
       <DailyBriefingCard
+        userId={props.userId}
         streak={props.streak}
         todayReps={props.todayReps}
         goal={props.goal}
         readinessScore={props.readinessScore}
       />
       <QuickActionsBar />
-      <MoodCheckin />
-      <WaterTracker />
+      <MoodCheckin key={props.userId} userId={props.userId} />
+      <WaterTracker key={props.userId} userId={props.userId} />
       <WorkoutNotesPanel />
     </>
   );
