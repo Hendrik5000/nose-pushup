@@ -15,6 +15,7 @@ import {
   subscribeToPush,
   validateConfiguredPushVapidKey,
   VAPID_KEY_CONFIGURATION_ERROR,
+  VAPID_KEY_REJECTED_BY_BROWSER_ERROR,
 } from "@/lib/notifications";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -106,7 +107,10 @@ export function NotificationSettings() {
         toast.success("Push-Benachrichtigungen aktiviert!");
       }
     } catch (error) {
-      if (error instanceof Error && error.message === VAPID_KEY_CONFIGURATION_ERROR) {
+      if (
+        error instanceof Error &&
+        [VAPID_KEY_CONFIGURATION_ERROR, VAPID_KEY_REJECTED_BY_BROWSER_ERROR].includes(error.message)
+      ) {
         toast.error(error.message);
       } else if (error instanceof Error && error.message === "Permission not granted") {
         toast.error("Push-Berechtigung fehlt");

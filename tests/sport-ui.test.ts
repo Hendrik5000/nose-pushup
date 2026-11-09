@@ -208,8 +208,9 @@ test("home hub exposes every existing feature group formerly listed in the share
   ]) {
     assert.ok(menu.includes(route) || areaMenus.includes(route), `missing ${route}`);
   }
-  assert.match(menu, /Weitere Bereiche öffnen/);
-  assert.match(menu, /Alo-Werkzeuge öffnen/);
+  assert.match(menu, /id: "areas",[\s\S]*?to: "\/areas"/);
+  assert.match(menu, /id: "tools", title: "Alo-Werkzeuge"[\s\S]*?to: "\/tools"/);
+  assert.match(menu, /ariaLabel=\{\s*app\.id === "areas"/);
   assert.match(menu, /Überall suchen/);
   assert.match(appNavigation, /layout === "bottom" \|\| layout === "floating"/);
 });

@@ -12,15 +12,16 @@ const accessHook = readFileSync(resolve(root, "src/lib/use-private-game-access.t
 
 test("Home surfaces the game hub only after a server-confirmed Admin check", () => {
   assert.match(home, /getAdminAreaAccess\(\)/);
-  const gatedGameIcons = home.match(/\{canSeeAdmin\s*&&\s*\([\s\S]*?\)\}/)?.[0] ?? "";
-  assert.match(
-    gatedGameIcons,
-    /<HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" \/>/,
+  const appEntries = home.slice(
+    home.indexOf("const homeApps ="),
+    home.indexOf("const activeCustomization"),
   );
   assert.match(
-    gatedGameIcons,
-    /<HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" \/>/,
+    appEntries,
+    /\.\.\.\(canSeeAdmin[\s\S]*?id: "grid-defense"[\s\S]*?game: "grid-defense"/,
   );
+  assert.match(appEntries, /\.\.\.\(canSeeAdmin[\s\S]*?id: "kupferkern"[\s\S]*?game: "kupferkern"/);
+  assert.match(home, /app\.kind === "game"[\s\S]*?<HubGameAppIcon[^>]*game=\{app\.game\}/);
   assert.match(home, /function HubGameAppIcon[\s\S]*?to="\/games"[\s\S]*?search=\{\{ game \}\}/);
   assert.doesNotMatch(home, /title="Admin-Spiele"/);
   assert.match(home, /setCanSeeAdmin\(false\)/);
