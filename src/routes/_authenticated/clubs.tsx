@@ -7,8 +7,6 @@ import { createClub, joinClubByCode } from "@/lib/club.functions";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Flag, Users, Trophy, Send, LogOut } from "lucide-react";
-import { InviteCode } from "@/components/InviteCode";
-import { isValidInviteCode, normalizeInviteCode } from "@/lib/invite-code";
 
 export const Route = createFileRoute("/_authenticated/clubs")({
   head: () => ({
@@ -280,9 +278,11 @@ function ClubsPage() {
               )}
             </div>
 
-            <div className="mt-4 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              <div className="mb-2">Einladungscode</div>
-              <InviteCode code={club.code} label="Club-Einladungscode" />
+            <div className="mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              <span>Einladungscode</span>
+              <span className="font-mono text-sm tracking-[0.3em] text-foreground">
+                {club.code}
+              </span>
             </div>
           </section>
 
@@ -457,17 +457,13 @@ function ClubsPage() {
               <input
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                aria-label="Club-Einladungscode"
-                placeholder="Einladungscode einfügen"
-                autoCapitalize="characters"
-                autoCorrect="off"
-                spellCheck={false}
-                maxLength={64}
-                className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-4 py-3 text-center font-mono text-sm uppercase focus:border-primary focus:outline-none"
+                placeholder="CODE"
+                maxLength={8}
+                className="min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-4 py-3 text-center font-mono text-lg uppercase tracking-[0.4em] focus:border-primary focus:outline-none"
               />
               <button
                 onClick={handleJoin}
-                disabled={busy !== null || !isValidInviteCode(normalizeInviteCode(code))}
+                disabled={busy !== null || code.length < 4}
                 className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
                 Join

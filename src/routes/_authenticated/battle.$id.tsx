@@ -6,8 +6,8 @@ import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import { Bot, Swords, Trophy } from "lucide-react";
 import { createBattle, finishBattle, startBattle } from "@/lib/battle.functions";
-import { InviteCode } from "@/components/InviteCode";
 import { feedbackRep, feedbackWin, feedbackLose, feedbackSuccess } from "@/lib/feedback";
+
 export const Route = createFileRoute("/_authenticated/battle/$id")({
   head: () => ({
     meta: [{ title: "Wettkampf — Alo" }],
@@ -261,8 +261,10 @@ function BattleArena() {
         </div>
         <section className="mt-8 rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/15 to-card/60 p-6 text-center backdrop-blur">
           <div className="text-[10px] uppercase tracking-[0.25em] text-primary">Battle Code</div>
-          <div className="mt-3 min-w-0">
-            <InviteCode code={battle.code} label="Battle-Einladungscode" />
+          <div className="mt-3 flex justify-center">
+            <span className="inline-block pl-[0.35em] font-mono text-6xl font-bold tracking-[0.35em] tabular-nums">
+              {battle.code}
+            </span>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
             {battle.is_bot ? (
