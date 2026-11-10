@@ -1,8 +1,8 @@
 # Sicherheitsfix für Battles und Clubs
 
-**Noch nicht live.** Der Code und das SQL werden getrennt geprüft. Die Live-Datenbank wird erst nach Hendriks Bestätigung der endgültigen, unten verlinkten SQL-Datei geändert. Der bestehende Originalcheckout bleibt unangetastet.
+**Vercel-Produktionscode deployed; Live-Datenbankstatus unbekannt; Lovable-Publish nicht erfolgt.** Hendrik autorisierte am 2026-11-10 ausdrücklich Merge und Veröffentlichung trotz fehlenden Live-Datenbanknachweises. Das bestätigt keine Datenbankmigration und ersetzt keinen Live-DB-Nachweis. In diesem Auftrag wurde kein SQL ausgeführt; der Remote-DB-Status bleibt ungeprüft.
 
-Der [separate Draft-PR #122](https://github.com/Hendrik5000/nose-pushup/pull/122) enthält den geprüften Feature-Code-Commit `e8e8893c7222b43ca86076742a0bd6b2b8fc53bb`, das vollständige SQL und die Tests. Der jeweils aktuelle GitHub-CI-Status steht dort; der PR bleibt vor der gesonderten DB-Freigabe unge-mergt.
+PR #122 (https://github.com/Hendrik5000/nose-pushup/pull/122) wurde regulär als Merge-Commit `080fbb3bc49c0374d42118bd31e8bb5c7a61ccb8` auf `main` übernommen; PR-Head war `f75d8b41721f676a620554b777e083695de019a3`. Beide verbundenen Vercel-Produktionsprojekte `nose-pushup-c7wl` und `nose-pushup` meldeten `READY` exakt für diesen Commit. Lovable-Projekt-ID/Repo/Branch laut Übergabe: `40995ef3-9b15-4ba7-9ebb-89713e15105b` / `Hendrik5000/nose-pushup` / `main`; ein verlässlicher Projekt-/Publish-Kanal war hier nicht verfügbar, daher wurden Sync-SHA und Build nicht verifiziert und kein Lovable-Publish ausgeführt.
 
 ## Was sich für dich ändert
 
@@ -55,11 +55,11 @@ Der unabhängige erste Gesamtreview fand eine Gastkonto-Lücke im Entwurf; sie w
 
 ## Freigabe und sicherer Ablauf
 
-1. Code, vollständiges SQL-Artefakt, Tests und genauer Diff kommen in **einen eigenen Security-PR**. Keine Responsive- oder Spielefreigabe darin.
-2. Erst nach lokalem SQL-Nachweis, unabhängigem Review und grünen GitHub-Prüfungen wird Hendrik **dieser konkrete endgültige Payload mit Datei-Prüfsumme** zur einmaligen Live-Freigabe vorgelegt. Diese Fassung ist noch nicht freigegeben.
-3. Nur Lovable darf daraus die append-only Migration anlegen und den bestätigten Payload anwenden. Bei abweichendem Projekt, Repository, Commit, SQL-Hash oder Vorabprüfung stoppen; keine automatische Anpassung des freigegebenen Payloads.
-4. Abhängiger App-Code wird erst zusammen mit der bestätigten DB-Umstellung regulär gemergt. Der akzeptierte automatische Vercel-Produktionsdeploy wird am exakten Merge-Commit überprüft. Beim Wechsel können alte Clients kurzzeitig nicht mehr mit den alten Codes beitreten; sie müssen die aktualisierte App laden.
-5. Lovable-Publish bleibt gesperrt, bis Projekt/Repo/`main`/Commit exakt stimmen und keine ungelösten Sicherheitshinweise mehr vorliegen. Kein „Fix all“ und kein ungeprüfter Publish.
+1. Der Code, das vollständige SQL-Artefakt, die Tests und der Diff wurden in **einem eigenen Security-PR** geprüft; PR #122 ist regulär gemergt. Responsive- oder Spielefreigaben waren nicht enthalten.
+2. Hendrik autorisierte am 2026-11-10 ausdrücklich Merge und Veröffentlichung trotz fehlendem Live-Datenbanknachweis. Diese Entscheidung gilt für Merge/Release, nicht als Bestätigung einer angewandten Datenbankmigration. SQL-Freigabe oder Ausführung wurde in diesem Auftrag nicht vorgenommen.
+3. Vor einer gesonderten Live-Migration müssen Zielprojekt, Schema, vollständiger Payload und Hash neu geprüft sowie ein sicherer atomarer Ablauf belegt werden. Dieses Review-Artefakt ist keine angewandte Migration; keine automatische Anpassung des Payloads.
+4. Der App-Code ist bereits mit normalem Merge-Commit `080fbb3bc49c0374d42118bd31e8bb5c7a61ccb8` gemergt; die automatischen Vercel-Produktionen `nose-pushup-c7wl` und `nose-pushup` waren für exakt diesen SHA `READY`. Das sagt nichts über den Zustand der Live-Datenbank aus.
+5. Hendrik autorisierte auch den Lovable-Publish trotz fehlendem DB-Nachweis; er wurde hier mangels verlässlichem Lovable-Projekt-/Publish-Zugriff nicht ausgeführt. Projekt-Sync/Build wurden nicht geprüft. Daher kein Lovable-Livegang behaupten und keinen „Fix all“/ungeprüften Publish ausführen.
 
 Falls die SQL-Transaktion vor ihrem Commit scheitert, bleiben ihre Änderungen vollständig aus. Nach erfolgreichem Commit wird **kein unsicherer Zustand wiederhergestellt**: alte kurze Codes, die alte Guest-Policy oder der ungeschützte Club-Endpunkt werden nicht reaktiviert. Bei Problemen bleiben Beitritte lieber vorübergehend gesperrt; korrigierter Code beziehungsweise eine gesondert geprüfte Vorwärtsmigration stellen die Funktion wieder her. Bereits rotierte Codes werden nicht zurückgedreht.
 
