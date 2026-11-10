@@ -12,16 +12,9 @@ import {
   getSmartReminder,
   getWeeklyProgress,
 } from "@/lib/workout-plans";
-import {
-  getTrainingWeekBounds,
-  getTrainingWeekDailyReps,
-  localDateKey,
-  sumTrainingWeekReps,
-  type TrainingWeekDay,
-} from "@/lib/training-dates";
+import { getTrainingWeekBounds, localDateKey, sumTrainingWeekReps } from "@/lib/training-dates";
 import { AiCoachCard } from "@/components/AiCoachCard";
 import { WeekPlanCard } from "@/components/WeekPlanCard";
-import { TrainingWeekActivity } from "@/components/TrainingWeekActivity";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
@@ -802,7 +795,6 @@ function Dashboard() {
   const [workoutAvailable, setWorkoutAvailable] = useState(true);
   const [hasWorkoutData, setHasWorkoutData] = useState(false);
   const [weekReps, setWeekReps] = useState<number | null>(null);
-  const [weekActivity, setWeekActivity] = useState<TrainingWeekDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
   const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
@@ -881,7 +873,6 @@ function Dashboard() {
       );
       if (he) setTodaySteps(he.steps ?? 0);
       setWeekReps(workouts.error ? null : sumTrainingWeekReps(workouts.data ?? [], now));
-      setWeekActivity(workouts.error ? [] : getTrainingWeekDailyReps(workouts.data ?? [], now));
       setLoading(false);
     })();
   }, []);
@@ -1004,7 +995,6 @@ function Dashboard() {
                   <p className="mt-2 text-xs text-muted-foreground">{weeklyProgress?.message}</p>
                 </>
               )}
-              {weekReps != null && <TrainingWeekActivity days={weekActivity} dailyGoal={goal} />}
               <details className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                 <summary className="cursor-pointer">So wird gezählt</summary>
                 <p className="mt-1">
