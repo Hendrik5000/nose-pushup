@@ -12,16 +12,9 @@ import {
   getSmartReminder,
   getWeeklyProgress,
 } from "@/lib/workout-plans";
-import {
-  getTrainingWeekBounds,
-  getTrainingWeekDailyReps,
-  localDateKey,
-  sumTrainingWeekReps,
-  type TrainingWeekDay,
-} from "@/lib/training-dates";
+import { getTrainingWeekBounds, localDateKey, sumTrainingWeekReps } from "@/lib/training-dates";
 import { AiCoachCard } from "@/components/AiCoachCard";
 import { WeekPlanCard } from "@/components/WeekPlanCard";
-import { TrainingWeekActivity } from "@/components/TrainingWeekActivity";
 import { ChallengesPanel } from "@/components/ChallengesPanel";
 import { FriendActivity } from "@/components/FriendActivity";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
@@ -35,29 +28,17 @@ import { RecoveryCalendar } from "@/components/RecoveryCalendar";
 import { WeeklyReview } from "@/components/WeeklyReview";
 import { BottomNav } from "@/components/BottomNav";
 import { FavoriteStar } from "@/components/FavoriteStar";
-import { getFavoriteExercises } from "@/lib/extra-features";
-import { onlyFavoriteExercises } from "@/lib/exercise-catalog";
 import { DailyBriefingCard } from "@/components/DailyBriefingCard";
 import { QuickActionsBar } from "@/components/QuickActionsBar";
 import { MoodCheckin } from "@/components/MoodCheckin";
 import { WaterTracker } from "@/components/WaterTracker";
 import { WorkoutNotesPanel } from "@/components/WorkoutNotesPanel";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
-import { PersonalUtilityCard } from "@/components/dashboard/PersonalUtilityCard";
 import type { WidgetId, WidgetSize } from "@/lib/dashboard-layout";
 import { SportSectionLabel } from "@/components/SportPageIntro";
 import { MiraHandoff } from "@/components/alo/MiraHandoff";
 import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
 import { MiraSpark } from "@/components/mira/MiraSpark";
-import { HomeAppCustomizationDialog } from "@/components/home/HomeAppCustomizationDialog";
-import {
-  EMPTY_HOME_APP_CUSTOMIZATION,
-  HOME_BACKGROUND_PRESETS,
-  loadHomeAppCustomization,
-  orderHomeAppIds,
-  saveHomeAppCustomization,
-  type HomeAppCustomizationSettings,
-} from "@/lib/home-app-customization";
 import {
   createBrowserSpeechRecognitionFactory,
   type MiraSpeechRecognitionLike,
@@ -74,7 +55,6 @@ import {
   HeartPulse,
   Search,
   ScanFace,
-  SlidersHorizontal,
   Target,
   Trophy,
   Users,
@@ -111,29 +91,6 @@ type Profile = {
 
 type PushMode = "nose" | "manual" | "camera";
 
-type HomeHubRoute = "/ai" | "/chat" | "/health" | "/profile" | "/admin" | "/areas" | "/tools";
-type HomeHubAppEntry =
-  | Readonly<{
-      id: string;
-      title: string;
-      artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
-      kind: "route";
-      to: HomeHubRoute;
-    }>
-  | Readonly<{
-      id: string;
-      title: string;
-      artwork: "gridDefense" | "kupferkern";
-      kind: "game";
-      game: PrivateGameId;
-    }>
-  | Readonly<{
-      id: "training";
-      title: "Trainingsübersicht & Gym";
-      artwork: "training";
-      kind: "training";
-    }>;
-
 const PROFILE_COLS =
   "id, display_name, avatar_url, best_count, personal_bests, xp, level, current_streak, longest_streak, last_workout_date, daily_goal";
 
@@ -148,11 +105,6 @@ function HomeAppHub({
 }) {
   const { user } = Route.useRouteContext();
   const [canSeeAdmin, setCanSeeAdmin] = useState(false);
-  const [customizationOpen, setCustomizationOpen] = useState(false);
-  const [customizationState, setCustomizationState] = useState<{
-    userId: string;
-    settings: HomeAppCustomizationSettings;
-  }>({ userId: "", settings: EMPTY_HOME_APP_CUSTOMIZATION });
   useEffect(() => {
     let active = true;
     setCanSeeAdmin(false);
@@ -165,120 +117,14 @@ function HomeAppHub({
       active = false;
     };
   }, [user.id]);
-  useEffect(() => {
-    let active = true;
-    setCustomizationState({ userId: user.id, settings: EMPTY_HOME_APP_CUSTOMIZATION });
-    try {
-      const settings = loadHomeAppCustomization(window.localStorage, user.id);
-      if (active) setCustomizationState({ userId: user.id, settings });
-    } catch {
-      // Home customization is optional; unavailable local storage keeps defaults.
-    }
-    return () => {
-      active = false;
-    };
-  }, [user.id]);
-
-  const homeApps = useMemo<HomeHubAppEntry[]>(
-    () => [
-      { id: "mira", title: "Mira", artwork: "mira", kind: "route", to: "/ai" },
-      { id: "nexus", title: "Nexus Chat", artwork: "nexus", kind: "route", to: "/chat" },
-      { id: "health", title: "Alo Health", artwork: "health", kind: "route", to: "/health" },
-      {
-        id: "settings",
-        title: "Einstellungen",
-        artwork: "settings",
-        kind: "route",
-        to: "/profile",
-      },
-      ...(canSeeAdmin
-        ? [
-            { id: "admin", title: "Admin", artwork: "admin", kind: "route", to: "/admin" } as const,
-            {
-              id: "grid-defense",
-              title: "Grid Defense",
-              artwork: "gridDefense",
-              kind: "game",
-              game: "grid-defense",
-            } as const,
-            {
-              id: "kupferkern",
-              title: "Kupferkern",
-              artwork: "kupferkern",
-              kind: "game",
-              game: "kupferkern",
-            } as const,
-          ]
-        : []),
-      {
-        id: "areas",
-        title: "Weitere Bereiche",
-        artwork: "more",
-        kind: "route",
-        to: "/areas",
-      },
-      { id: "training", title: "Trainingsübersicht & Gym", artwork: "training", kind: "training" },
-      { id: "tools", title: "Alo-Werkzeuge", artwork: "tools", kind: "route", to: "/tools" },
-    ],
-    [canSeeAdmin],
-  );
-  const activeCustomization =
-    customizationState.userId === user.id
-      ? customizationState.settings
-      : EMPTY_HOME_APP_CUSTOMIZATION;
-  const orderedHomeAppIds = orderHomeAppIds(
-    homeApps.map(({ id }) => id),
-    activeCustomization.order,
-  );
-  const homeAppBackground = HOME_BACKGROUND_PRESETS.find(
-    ({ id }) => id === activeCustomization.background,
-  );
-  const customizableApps = useMemo(
-    () => homeApps.map(({ id, title }) => ({ id, title })),
-    [homeApps],
-  );
-  const saveCustomization = (settings: HomeAppCustomizationSettings) => {
-    try {
-      const saved = saveHomeAppCustomization(window.localStorage, user.id, settings);
-      setCustomizationState({ userId: user.id, settings: saved });
-      return true;
-    } catch {
-      return false;
-    }
-  };
   const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
 
   return (
-    <section
-      className={`alo-tablet-home-hub mb-8 ${homeAppBackground ? "rounded-3xl border border-border/50 p-4" : ""}`}
-      aria-labelledby="app-hub-title"
-      data-home-background={activeCustomization.background}
-      style={
-        homeAppBackground
-          ? {
-              backgroundImage: `linear-gradient(180deg, rgba(11, 15, 20, 0.46), rgba(11, 15, 20, 0.84)), ${homeAppBackground.background}`,
-              backgroundPosition: "center",
-              backgroundSize: "cover",
-            }
-          : undefined
-      }
-    >
+    <section className="alo-tablet-home-hub mb-8" aria-labelledby="app-hub-title">
       <header className="mb-7 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
-            Alo
-          </h1>
-          <button
-            type="button"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label="Startseite anpassen"
-            aria-haspopup="dialog"
-            aria-expanded={customizationOpen}
-            onClick={() => setCustomizationOpen(true)}
-          >
-            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </div>
+        <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
+          Alo
+        </h1>
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
@@ -316,48 +162,40 @@ function HomeAppHub({
         className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
         aria-label="Alo-Apps"
       >
-        {orderedHomeAppIds.map((appId) => {
-          const app = homeApps.find(({ id }) => id === appId);
-          if (!app) return null;
-          const title = activeCustomization.nameOverrides[app.id] ?? app.title;
-          if (app.kind === "game") {
-            return (
-              <HubGameAppIcon key={app.id} game={app.game} title={title} artwork={app.artwork} />
-            );
-          }
-          if (app.kind === "training") {
-            return (
-              <button
-                key={app.id}
-                type="button"
-                className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
-                aria-label={`${title} öffnen`}
-                onClick={onOpenTrainingOverview}
-              >
-                <HubAppIconContents title={title} artwork={app.artwork} />
-              </button>
-            );
-          }
-          return (
-            <HubAppIcon
-              key={app.id}
-              to={app.to}
-              title={title}
-              artwork={app.artwork}
-              ariaLabel={
-                app.id === "areas" ? `${title} öffnen (${HOME_OTHER_AREAS.length})` : undefined
-              }
-            />
-          );
-        })}
+        <HubAppIcon to="/ai" title="Mira" artwork="mira" />
+        <HubAppIcon to="/chat" title="Nexus Chat" artwork="nexus" />
+        <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
+        <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
+        {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
+        {canSeeAdmin && (
+          <>
+            <HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" />
+            <HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" />
+          </>
+        )}
+        <Link
+          to="/areas"
+          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
+          aria-label={`Weitere Bereiche öffnen (${HOME_OTHER_AREAS.length})`}
+        >
+          <HubAppIconContents title="Weitere Bereiche" artwork="more" />
+        </Link>
+        <button
+          type="button"
+          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
+          aria-label="Trainingsübersicht & Gym öffnen"
+          onClick={onOpenTrainingOverview}
+        >
+          <HubAppIconContents title="Trainingsübersicht & Gym" artwork="training" />
+        </button>
+        <Link
+          to="/tools"
+          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
+          aria-label="Alo-Werkzeuge öffnen"
+        >
+          <HubAppIconContents title="Alo-Werkzeuge" artwork="tools" />
+        </Link>
       </nav>
-      <HomeAppCustomizationDialog
-        open={customizationOpen}
-        onOpenChange={setCustomizationOpen}
-        apps={customizableApps}
-        settings={activeCustomization}
-        onSave={saveCustomization}
-      />
     </section>
   );
 }
@@ -523,15 +361,13 @@ function HubAppIcon({
   to,
   title,
   artwork,
-  ariaLabel,
 }: {
-  to: HomeHubRoute;
+  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin";
   title: string;
   artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
-  ariaLabel?: string;
 }) {
   return (
-    <Link to={to} aria-label={ariaLabel ?? `${title} öffnen`} className={HUB_APP_ICON_CLASS_NAME}>
+    <Link to={to} aria-label={`${title} öffnen`} className={HUB_APP_ICON_CLASS_NAME}>
       <HubAppIconContents title={title} artwork={artwork} />
     </Link>
   );
@@ -790,10 +626,6 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
 
 function Dashboard() {
   const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
-  const [favoriteExerciseIds, setFavoriteExerciseIds] = useState<string[]>(() =>
-    getFavoriteExercises(),
-  );
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
@@ -802,7 +634,6 @@ function Dashboard() {
   const [workoutAvailable, setWorkoutAvailable] = useState(true);
   const [hasWorkoutData, setHasWorkoutData] = useState(false);
   const [weekReps, setWeekReps] = useState<number | null>(null);
-  const [weekActivity, setWeekActivity] = useState<TrainingWeekDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<PushMode>("nose");
   const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
@@ -881,7 +712,6 @@ function Dashboard() {
       );
       if (he) setTodaySteps(he.steps ?? 0);
       setWeekReps(workouts.error ? null : sumTrainingWeekReps(workouts.data ?? [], now));
-      setWeekActivity(workouts.error ? [] : getTrainingWeekDailyReps(workouts.data ?? [], now));
       setLoading(false);
     })();
   }, []);
@@ -895,11 +725,6 @@ function Dashboard() {
   const goalPct = Math.min(1, todayReps / goal);
   const pushupBest = profile?.personal_bests?.pushup ?? profile?.best_count ?? 0;
   const otherExercises = exercises.filter((e) => e.id !== "pushup");
-  const visibleExercises = onlyFavoriteExercises(
-    otherExercises,
-    favoriteExerciseIds,
-    favoritesOnly,
-  );
   const quickStart = getQuickStartPlan({ best: pushupBest, todayReps, streak, goal });
   const pushupEx = exercises.find((e) => e.id === "pushup");
   const dateLabel = new Date().toLocaleDateString("de-DE", {
@@ -1004,7 +829,6 @@ function Dashboard() {
                   <p className="mt-2 text-xs text-muted-foreground">{weeklyProgress?.message}</p>
                 </>
               )}
-              {weekReps != null && <TrainingWeekActivity days={weekActivity} dailyGoal={goal} />}
               <details className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                 <summary className="cursor-pointer">So wird gezählt</summary>
                 <p className="mt-1">
@@ -1022,23 +846,13 @@ function Dashboard() {
       case "readiness":
         return wrap(<ReadinessSummary {...readinessData} />, size);
       case "briefing":
-        return userId
-          ? wrap(
-              <DailyBriefingCard
-                userId={userId}
-                streak={streak}
-                todayReps={todayReps}
-                goal={goal}
-              />,
-              size,
-            )
-          : null;
+        return wrap(<DailyBriefingCard streak={streak} todayReps={todayReps} goal={goal} />, size);
       case "quickActions":
         return wrap(<QuickActionsBar />, size);
       case "mood":
-        return userId ? wrap(<MoodCheckin key={userId} userId={userId} />, size) : null;
+        return wrap(<MoodCheckin />, size);
       case "water":
-        return userId ? wrap(<WaterTracker key={userId} userId={userId} />, size) : null;
+        return wrap(<WaterTracker />, size);
       case "notes":
         return wrap(<WorkoutNotesPanel />, size);
       case "microChallenge":
@@ -1221,26 +1035,16 @@ function Dashboard() {
       case "exercises":
         return wrap(
           <section>
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                Weitere Übungen
-              </h2>
-              <button
-                type="button"
-                aria-pressed={favoritesOnly}
-                onClick={() => setFavoritesOnly((value) => !value)}
-                className="min-h-11 rounded-xl border border-border px-3 text-xs font-medium transition hover:border-primary/40"
-              >
-                {favoritesOnly ? "Alle Übungen" : "Nur Favoriten"}
-              </button>
-            </div>
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Weitere Übungen
+            </h2>
             <div className="grid grid-cols-2 gap-3">
               {loading && (
                 <div className="col-span-full rounded-2xl border border-border p-6 text-center text-sm text-muted-foreground">
                   Lade…
                 </div>
               )}
-              {visibleExercises.map((ex) => {
+              {otherExercises.map((ex) => {
                 const best = profile?.personal_bests?.[ex.id] ?? 0;
                 return (
                   <Link
@@ -1251,31 +1055,17 @@ function Dashboard() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-3xl">{ex.icon}</span>
-                      <FavoriteStar exerciseId={ex.id} onChange={setFavoriteExerciseIds} />
+                      <FavoriteStar exerciseId={ex.id} />
                     </div>
                     <span className="text-sm font-semibold">{ex.name}</span>
                     <span className="text-xs text-muted-foreground">Bestwert {best}</span>
                   </Link>
                 );
               })}
-              {!loading && visibleExercises.length === 0 && (
-                <p className="col-span-full rounded-2xl border border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
-                  {favoritesOnly
-                    ? "Noch keine Übungen als Favorit markiert."
-                    : "Keine weiteren Übungen verfügbar."}
-                </p>
-              )}
             </div>
           </section>,
           size,
         );
-      case "habitTracker":
-      case "ifThenPlan":
-      case "checklistTemplates":
-      case "decisionPicker":
-      case "milestones":
-      case "worldClock":
-        return userId ? wrap(<PersonalUtilityCard kind={id} userId={userId} />, size) : null;
       default:
         return null;
     }
@@ -1581,7 +1371,7 @@ function Dashboard() {
             </details>
           </section>
 
-          <DashboardGrid userId={userId} renderWidget={renderWidget} />
+          <DashboardGrid renderWidget={renderWidget} />
         </div>
       </details>
       <BottomNav />

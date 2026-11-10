@@ -120,10 +120,9 @@ test("history component resets on account changes, ignores stale responses and o
   assert.match(source, /history\.ownerId === userId && history\.status === "ready"/);
   assert.match(source, /if \(!cancelled && rows !== null\)/);
   assert.match(source, /cancelled = true/);
-  assert.match(source, /\[userId, attempt, rangeDays\]/);
+  assert.match(source, /\[userId, attempt\]/);
   assert.match(source, /Erneut versuchen/);
-  assert.match(source, /In den letzten \{rangeDays\} Tagen/);
-  assert.match(source, /<option value=\{90\}>90 Tage<\/option>/);
+  assert.match(source, /In den letzten 35 Tagen/);
   assert.doesNotMatch(source, /Speichere dein erstes Training/);
   assert.doesNotMatch(source, /exercise_id\.startsWith\("cali_"\) \|\|/);
 });

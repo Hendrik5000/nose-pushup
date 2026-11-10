@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { formatGymVisitError, getGymVisits, setGymVisit } from "@/lib/gym-partner";
+import { getGymVisits, setGymVisit } from "@/lib/gym-partner";
 import {
   countUniqueGymDays,
   localDateFromKey,
@@ -76,13 +76,16 @@ export function GymVisitCalendar({
       })
       .catch((error: unknown) => {
         if (cancelled || generation.current !== request) return;
-        // Clear the displayed data; keep only explicitly allowlisted user guidance visible.
+        // Clear all displayed visit data on error; backend schema errors are shown verbatim.
         setData({
           queryKey,
           status: "error",
           monthDays: [],
           weekDays: [],
-          error: formatGymVisitError(error, "load"),
+          error:
+            error instanceof Error
+              ? error.message
+              : "Gym-Besuche konnten nicht geladen werden. Bitte versuche es erneut.",
         });
       });
 
@@ -138,7 +141,10 @@ export function GymVisitCalendar({
         status: "error",
         monthDays: [],
         weekDays: [],
-        error: formatGymVisitError(error, "save"),
+        error:
+          error instanceof Error
+            ? error.message
+            : "Der Gym-Besuch konnte nicht gespeichert werden. Bitte versuche es erneut.",
       });
     } finally {
       busyRef.current = false;

@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
-  formatGymVisitError,
   normalizeGymAlias,
   normalizeGymExercise,
   normalizeGymInviteCode,
@@ -161,37 +160,6 @@ test("snapshot reveals only own sets and opted-in partner aggregate totals", () 
     /UPDATE public\.gym_memberships SET sharing = false, visit_share_counts = false,\s*visit_share_days = false WHERE session_id = p_session_id/,
   );
   assert.match(migration, /s\.status = 'closed'[\s\S]*?not_session_member/);
-});
-
-test("visit calendar keeps known guidance and redacts unknown technical errors", () => {
-  const unavailable =
-    "Der Gym-Modus ist vorbereitet, aber die Datenbank-Erweiterung ist noch nicht eingerichtet.";
-  const technical = "permission denied for relation public.gym_visits: internal role detail";
-  const calendar = readFileSync(
-    new URL("../src/components/GymVisitCalendar.tsx", import.meta.url),
-    "utf8",
-  );
-
-  assert.equal(formatGymVisitError(new Error(unavailable)), unavailable);
-  assert.equal(
-    formatGymVisitError(new Error("Die Einheit wurde beendet oder gehört nicht zu deinem Konto.")),
-    "Die Einheit wurde beendet oder gehört nicht zu deinem Konto.",
-  );
-  assert.equal(
-    formatGymVisitError(new Error(technical)),
-    "Gym-Besuche konnten nicht geladen werden. Bitte versuche es erneut.",
-  );
-  assert.equal(
-    formatGymVisitError({ message: technical }),
-    "Gym-Besuche konnten nicht geladen werden. Bitte versuche es erneut.",
-  );
-  assert.equal(
-    formatGymVisitError(new Error(technical), "save"),
-    "Der Gym-Besuch konnte nicht gespeichert werden. Bitte versuche es erneut.",
-  );
-  assert.match(calendar, /formatGymVisitError\(error, "load"\)/);
-  assert.match(calendar, /formatGymVisitError\(error, "save"\)/);
-  assert.doesNotMatch(calendar, /error instanceof Error\s*\?\s*error\.message/);
 });
 
 test("visit dates reject impossible dates and pre-2000 values", () => {

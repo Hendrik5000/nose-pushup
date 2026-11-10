@@ -19,7 +19,6 @@ import {
   workoutContextToken,
 } from "@/lib/workout-save";
 import { DesignView } from "@/components/DesignView";
-import { WorkoutCompanionTools } from "@/components/WorkoutCompanionTools";
 import { createFileRoute, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -1880,12 +1879,6 @@ function WorkoutScreen() {
           data-training-focus={focused}
         >
           {focusControls}
-          <WorkoutCompanionTools
-            userId={userId}
-            exerciseId={exerciseId}
-            exerciseName={isPushup ? "Liegestütze" : exercise.name}
-            active={active}
-          />
           <SportPageIntro
             eyebrow={isPlanned ? "WORKOUT · GEPLANTE SESSION" : "WORKOUT · LIVE-TRACKING"}
             title={isPushup ? "Liegestütze" : "" + exercise.name}
@@ -2265,12 +2258,6 @@ function WorkoutScreen() {
           data-training-focus={focused}
         >
           {focusControls}
-          <WorkoutCompanionTools
-            userId={userId}
-            exerciseId={exerciseId}
-            exerciseName={isPushup ? "Liegestütze" : exercise.name}
-            active={active}
-          />
           <header className="flex items-center justify-between">
             <AloHomeLink className="px-2 text-xs" />
             <div className="flex items-center gap-2">

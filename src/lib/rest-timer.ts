@@ -58,20 +58,3 @@ export function formatRest(seconds: number): string {
   if (m <= 0) return `${s}s`;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
-
-export function adjustRestSeconds(current: number, delta: number): number {
-  const safeCurrent = Number.isFinite(current) ? Math.max(0, Math.floor(current)) : 0;
-  const safeDelta = Number.isFinite(delta) ? Math.trunc(delta) : 0;
-  return Math.max(0, safeCurrent + safeDelta);
-}
-
-export function resetRestSeconds(suggestedSeconds: number): number {
-  return Number.isFinite(suggestedSeconds) ? Math.max(0, Math.floor(suggestedSeconds)) : 0;
-}
-
-export function runRestCompletionOnce(guard: { current: boolean }, complete: () => void): boolean {
-  if (guard.current) return false;
-  guard.current = true;
-  complete();
-  return true;
-}

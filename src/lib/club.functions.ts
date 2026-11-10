@@ -1,7 +1,28 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { generateInviteCode, isValidInviteCode, normalizeInviteCode } from "./invite-code";
-import { inviteRpcUnavailable, parseClubInviteResponse } from "./invite-join-response";
+
+/** Per-user join rate limit to slow code guessing. */
+const joinRateBuckets = new Map<string, number[]>();
+const JOIN_RATE_WINDOW_MS = 60_000;
+const JOIN_RATE_MAX = 8;
+
+function checkJoinRateLimit(userId: string) {
+  const now = Date.now();
+  const prev = joinRateBuckets.get(userId) ?? [];
+  const recent = prev.filter((t) => now - t < JOIN_RATE_WINDOW_MS);
+  if (recent.length >= JOIN_RATE_MAX) {
+    throw new Error("Zu viele Beitrittsversuche — bitte eine Minute warten.");
+  }
+  recent.push(now);
+  joinRateBuckets.set(userId, recent);
+}
+
+function makeCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
 
 /** Club gründen: erzeugt Code, Club und Owner-Mitgliedschaft in einem Schritt. */
 export const createClub = createServerFn({ method: "POST" })
@@ -27,7 +48,7 @@ export const createClub = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     for (let attempt = 0; attempt < 5; attempt++) {
-      const code = generateInviteCode();
+      const code = makeCode();
       const { data: club, error } = await supabase
         .from("clubs")
         .insert({ ...data, code, owner_id: userId })
@@ -52,19 +73,21 @@ export const createClub = createServerFn({ method: "POST" })
 export const joinClubByCode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => {
-    const code = normalizeInviteCode((input as { code?: unknown })?.code);
-    if (!isValidInviteCode(code))
-      throw new Error("Bitte den vollständigen Einladungscode einfügen.");
+    const code = String((input as { code?: string })?.code ?? "")
+      .trim()
+      .toUpperCase();
+    if (!/^[A-Z0-9]{4,8}$/.test(code)) throw new Error("Ungültiger Code");
     return { code };
   })
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { data: result, error } = await supabase.rpc(
-      "join_club_by_invite_code" as never,
+    const { supabase, userId } = context;
+    checkJoinRateLimit(userId);
+    const { data: id, error } = await supabase.rpc(
+      "join_club_by_code" as never,
       {
-        p_code: data.code,
+        _code: data.code,
       } as never,
     );
-    if (error) throw inviteRpcUnavailable();
-    return parseClubInviteResponse(result);
+    if (error) throw new Error(error.message);
+    return { id: id as unknown as string };
   });

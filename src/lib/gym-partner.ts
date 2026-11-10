@@ -122,38 +122,6 @@ function localGymDay(date = new Date()): string {
   return validateGymDay(`${year}-${month}-${day}`);
 }
 
-const GYM_DATABASE_EXTENSION_ERROR =
-  "Der Gym-Modus ist vorbereitet, aber die Datenbank-Erweiterung ist noch nicht eingerichtet.";
-
-const GYM_RPC_ERROR_MESSAGES: Record<string, string> = {
-  real_account_required: "Für den Gym-Modus ist ein registriertes Konto nötig.",
-  active_session_exists:
-    "Du hast bereits eine offene Einheit. Bitte aktualisieren oder zuerst beenden.",
-  invite_unavailable: "Der Einladungscode ist abgelaufen, bereits verwendet oder ungültig.",
-  host_cannot_join_own_session:
-    "Du kannst deiner eigenen Einheit nicht als zweites Konto beitreten.",
-  session_full: "Diese Einheit hat bereits zwei Teilnehmer.",
-  session_set_limit: "Pro Person sind maximal 500 Sätze je Einheit möglich.",
-  not_active_session_member:
-    "Die Einheit ist noch nicht aktiv oder wurde bereits beendet. Bitte aktualisieren.",
-  not_open_session_member: "Die Einheit wurde beendet oder gehört nicht zu deinem Konto.",
-  not_session_member: "Du kannst nur deine eigenen Daten einer offenen Einheit ändern.",
-};
-
-const KNOWN_GYM_USER_MESSAGES = new Set([
-  GYM_DATABASE_EXTENSION_ERROR,
-  ...Object.values(GYM_RPC_ERROR_MESSAGES),
-]);
-
-/** Keep expected Gym guidance, but never expose an unknown technical error in the visit calendar. */
-export function formatGymVisitError(error: unknown, action: "load" | "save" = "load"): string {
-  const message = error instanceof Error ? error.message : "";
-  if (KNOWN_GYM_USER_MESSAGES.has(message)) return message;
-  return action === "save"
-    ? "Der Gym-Besuch konnte nicht gespeichert werden. Bitte versuche es erneut."
-    : "Gym-Besuche konnten nicht geladen werden. Bitte versuche es erneut.";
-}
-
 async function callRpc<T>(name: string, args?: Record<string, unknown>): Promise<T> {
   // Lazy import allows the pure domain validators to run in Node tests without
   // initializing the browser Supabase client or generated Database type.
@@ -162,9 +130,25 @@ async function callRpc<T>(name: string, args?: Record<string, unknown>): Promise
   const { data, error } = await rpcClient.rpc(name, args);
   if (error) {
     if (error.code === "PGRST202" || error.code === "42883") {
-      throw new Error(GYM_DATABASE_EXTENSION_ERROR);
+      throw new Error(
+        "Der Gym-Modus ist vorbereitet, aber die Datenbank-Erweiterung ist noch nicht eingerichtet.",
+      );
     }
-    throw new Error(GYM_RPC_ERROR_MESSAGES[error.message] ?? error.message);
+    const messages: Record<string, string> = {
+      real_account_required: "Für den Gym-Modus ist ein registriertes Konto nötig.",
+      active_session_exists:
+        "Du hast bereits eine offene Einheit. Bitte aktualisieren oder zuerst beenden.",
+      invite_unavailable: "Der Einladungscode ist abgelaufen, bereits verwendet oder ungültig.",
+      host_cannot_join_own_session:
+        "Du kannst deiner eigenen Einheit nicht als zweites Konto beitreten.",
+      session_full: "Diese Einheit hat bereits zwei Teilnehmer.",
+      session_set_limit: "Pro Person sind maximal 500 Sätze je Einheit möglich.",
+      not_active_session_member:
+        "Die Einheit ist noch nicht aktiv oder wurde bereits beendet. Bitte aktualisieren.",
+      not_open_session_member: "Die Einheit wurde beendet oder gehört nicht zu deinem Konto.",
+      not_session_member: "Du kannst nur deine eigenen Daten einer offenen Einheit ändern.",
+    };
+    throw new Error(messages[error.message] ?? error.message);
   }
   return data as T;
 }
