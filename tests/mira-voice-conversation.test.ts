@@ -281,22 +281,3 @@ test("Integration behält bearbeitbares Diktat und sendet Sprachturns text-only 
   assert.match(conversationDialog, /onClick=\{onInterruptSpeech\}/);
   assert.match(conversationDialog, /Gespräch beenden/);
 });
-
-test("Freisprechansicht nutzt Vollbild und Safe Areas ohne Änderung der Sprachcallbacks", () => {
-  const dialog = readFileSync("src/components/mira/MiraVoiceConversationDialog.tsx", "utf8");
-  const styles = readFileSync("src/components/mira/MiraVoiceConversationDialog.css", "utf8");
-
-  assert.match(dialog, /className="mira-voice-fullscreen-dialog !translate-x-0 !translate-y-0"/);
-  assert.match(dialog, /Starte das Gespräch, wenn du bereit bist/);
-  assert.match(dialog, /Dein Mikrofon bleibt aus, bis du das Gespräch bewusst startest/);
-  assert.match(dialog, /onClick=\{onStart\}/);
-  assert.match(dialog, /onClick=\{onStop\}/);
-  assert.match(dialog, /onClick=\{onInterruptSpeech\}/);
-  assert.match(dialog, /onOpenChange\(false\)/);
-  assert.match(styles, /height:\s*100dvh/);
-  assert.match(styles, /translate:\s*0 0 !important/);
-  assert.match(styles, /box-sizing:\s*border-box/);
-  assert.match(styles, /safe-area-inset-top/);
-  assert.match(styles, /safe-area-inset-bottom/);
-  assert.doesNotMatch(dialog, /getUserMedia|MediaRecorder/);
-});

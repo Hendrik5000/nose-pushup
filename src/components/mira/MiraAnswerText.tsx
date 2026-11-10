@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { parseMiraAnswer } from "@/lib/mira-answer-markdown";
-import { MiraCodeBlock } from "@/components/mira/MiraCodeBlock";
 
 function renderInline(text: string): ReactNode[] {
   const parts: ReactNode[] = [];
@@ -96,7 +95,14 @@ export function MiraAnswerText({ text }: { text: string }) {
           );
         }
         if (block.type === "code") {
-          return <MiraCodeBlock key={index} text={block.text} />;
+          return (
+            <pre
+              key={index}
+              className="max-w-full overflow-x-auto rounded-xl bg-secondary/70 p-3 text-xs"
+            >
+              <code>{block.text}</code>
+            </pre>
+          );
         }
         if (block.type === "table") {
           return (

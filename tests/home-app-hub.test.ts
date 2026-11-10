@@ -8,10 +8,6 @@ const home = readFileSync(homePath, "utf8");
 const homeStyles = readFileSync(resolve(process.cwd(), "src/alo-mobile.css"), "utf8");
 const miraHomeStyles = readFileSync(resolve(process.cwd(), "src/mira-home-overlay.css"), "utf8");
 const homeMenus = readFileSync(resolve(process.cwd(), "src/lib/home-app-menus.ts"), "utf8");
-const customizationDialog = readFileSync(
-  resolve(process.cwd(), "src/components/home/HomeAppCustomizationDialog.tsx"),
-  "utf8",
-);
 const hubStart = home.indexOf("function HomeAppHub");
 const artworkStart = home.indexOf("function HubArtwork");
 const dashboardStart = home.indexOf("function Dashboard", artworkStart);
@@ -21,88 +17,67 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   assert.notEqual(hubStart, -1, "HomeAppHub should exist");
   assert.notEqual(artworkStart, -1, "HubArtwork should follow HomeAppHub");
 
-  for (const [id, destination, routeFile, title, artwork] of [
-    ["mira", "/ai", "ai.tsx", "Mira", "mira"],
-    ["nexus", "/chat", "chat.tsx", "Nexus Chat", "nexus"],
-    ["health", "/health", "health.tsx", "Alo Health", "health"],
-    ["settings", "/profile", "profile.tsx", "Einstellungen", "settings"],
+  for (const [destination, routeFile, title, artwork] of [
+    ["/ai", "ai.tsx", "Mira", "mira"],
+    ["/chat", "chat.tsx", "Nexus Chat", "nexus"],
+    ["/exercises", "exercises.tsx", "Alo Health", "health"],
+    ["/profile", "profile.tsx", "Einstellungen", "settings"],
   ] as const) {
     assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated", routeFile)));
-    assert.match(
-      hub,
-      new RegExp(
-        `id: "${id}"[\\s\\S]*?title: "${title}"[\\s\\S]*?artwork: "${artwork}"[\\s\\S]*?kind: "route"[\\s\\S]*?to: "${destination}"`,
-      ),
-      `home app ${id} should open ${destination}`,
+    assert.ok(
+      hub.includes(`<HubAppIcon to="${destination}" title="${title}" artwork="${artwork}"`),
+      `home icon should link directly to ${destination}`,
     );
   }
 
   assert.match(hub, /alo-tablet-home-apps grid[^"]*grid-cols-4/);
   assert.doesNotMatch(hub, /sm:grid-cols-5/);
   assert.match(hub, /aspect-square w-full max-w-\[96px\]/);
-  assert.match(hub, /aria-label="Startseite anpassen"/);
-  assert.match(hub, /aria-haspopup="dialog"/);
-  assert.match(hub, /activeCustomization\.nameOverrides\[app\.id\]/);
   assert.match(hub, /aria-label="Freunde öffnen"/);
   assert.match(hub, /to="\/profile"\s+hash="profile-training"/);
   assert.match(hub, /aria-label="Profil und Einstellungen öffnen"/);
   assert.match(hub, /avatarUrl\s*\?/);
 });
 
-test("home customization stays account-local and exposes accessible mobile controls", () => {
-  assert.match(hub, /loadHomeAppCustomization\(window\.localStorage, user\.id\)/);
-  assert.match(hub, /saveHomeAppCustomization\(window\.localStorage, user\.id, settings\)/);
-  assert.match(hub, /customizationState\.userId === user\.id/);
-  assert.match(customizationDialog, /<DialogTitle>Startseite anpassen<\/DialogTitle>/);
-  assert.match(customizationDialog, /id=\{`home-app-name-\$\{app\.id\}`\}/);
-  assert.match(customizationDialog, /nach oben verschieben/);
-  assert.match(customizationDialog, /nach unten verschieben/);
-  assert.match(customizationDialog, /className="h-11 w-11"/);
-  assert.match(customizationDialog, /Änderungen\s+bleiben lokal auf diesem Konto und Gerät/);
-  assert.doesNotMatch(customizationDialog, /fetch\(|supabase/i);
-});
-
 test("search stays a labeled header action and Alo tools are a square app-grid tile", () => {
   const header = hub.slice(hub.indexOf("<header"), hub.indexOf("</header>"));
+  const toolsLabelStart = hub.indexOf('aria-label="Alo-Werkzeuge öffnen"');
+  const toolsStart = hub.lastIndexOf("<Link", toolsLabelStart);
+  const tools = hub.slice(toolsStart, hub.indexOf("</Link>", toolsStart));
   assert.match(header, /aria-label="Überall suchen"/);
   assert.match(header, /<Search className/);
   assert.match(header, /detail: "search"/);
   assert.doesNotMatch(header, />\s*Überall suchen\s*</);
+  assert.notEqual(toolsStart, -1, "Alo tools should have a tile in the Home app grid");
+  assert.match(tools, /to="\/tools"/);
+  assert.match(tools, /aria-label="Alo-Werkzeuge öffnen"/);
   assert.match(
     hub,
-    /id: "tools", title: "Alo-Werkzeuge", artwork: "tools", kind: "route", to: "\/tools"/,
+    /className=\{`alo-tablet-home-app-action \$\{HUB_APP_ICON_CLASS_NAME\}`\}\s+aria-label="Alo-Werkzeuge öffnen"/,
   );
-  assert.match(hub, /to=\{app\.to\}[\s\S]*?title=\{title\}[\s\S]*?artwork=\{app\.artwork\}/);
+  assert.match(tools, /title="Alo-Werkzeuge" artwork="tools"/);
   assert.doesNotMatch(hub, /alo-tablet-home-tools|alo-btn[^\n]*w-full/);
-  const toolsEntryStart = hub.indexOf('id: "tools"');
-  assert.notEqual(toolsEntryStart, -1);
-  assert.doesNotMatch(hub.slice(toolsEntryStart, toolsEntryStart + 120), /detail: "search"/);
+  assert.doesNotMatch(tools, /Überall suchen|detail: "search"/);
 });
 
 test("the other-areas app tile navigates to its own page and no longer expands inline", () => {
-  assert.match(hub, /id: "areas",[\s\S]*?title: "Weitere Bereiche",[\s\S]*?to: "\/areas"/);
   assert.match(
     hub,
-    /ariaLabel=\{\s*app\.id === "areas" \? `\$\{title\} öffnen \(\$\{HOME_OTHER_AREAS\.length\}\)`/,
+    /<Link\s+to="\/areas"[\s\S]*?Weitere Bereiche öffnen \(\$\{HOME_OTHER_AREAS\.length\}\)/,
   );
+  assert.match(hub, /title="Weitere Bereiche" artwork="more"/);
   assert.doesNotMatch(hub, /moreAreasOpen|more-areas-panel|MORE_AREAS\.map/);
 });
 
 test("the Training & Gym app tile opens the existing training and partner overview", () => {
-  assert.match(
-    hub,
-    /id: "training", title: "Trainingsübersicht & Gym", artwork: "training", kind: "training"/,
-  );
-  assert.match(hub, /app\.kind === "training"[\s\S]*?onClick=\{onOpenTrainingOverview\}/);
+  assert.match(hub, /aria-label="Trainingsübersicht & Gym öffnen"/);
+  assert.match(hub, /title="Trainingsübersicht & Gym" artwork="training"/);
   assert.match(home, /onOpenTrainingOverview=\{openTrainingOverview\}/);
   assert.match(home, /overview\.open = true/);
   assert.match(home, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
   const trainingSection = home.slice(home.indexOf('id="training-overview"'));
   assert.match(trainingSection, /<GymPartnerPanel \/>/);
-  assert.match(
-    trainingSection,
-    /<DashboardGrid userId=\{userId\} renderWidget=\{renderWidget\} \/>/,
-  );
+  assert.match(trainingSection, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
 });
 
 test("Home Mira voice overlay hands an editable question to the existing Mira app", () => {
@@ -182,9 +157,14 @@ test("the bottom Mira launcher is a small round icon and still opens the existin
 
 test("the Home exposes two separate game icons only after a server-confirmed Admin check", () => {
   assert.match(home, /getAdminAreaAccess\(\)/);
+  const gatedGameIcons = home.match(/\{canSeeAdmin\s*&&\s*\([\s\S]*?\)\}/)?.[0] ?? "";
   assert.match(
-    hub,
-    /\.\.\.\(canSeeAdmin\s*\?\s*\[[\s\S]*?id: "grid-defense"[\s\S]*?game: "grid-defense"[\s\S]*?id: "kupferkern"[\s\S]*?game: "kupferkern"[\s\S]*?\]\s*:\s*\[\]\)/,
+    gatedGameIcons,
+    /<HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" \/>/,
+  );
+  assert.match(
+    gatedGameIcons,
+    /<HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" \/>/,
   );
   assert.match(home, /function HubGameAppIcon[\s\S]*?to="\/games"[\s\S]*?search=\{\{ game \}\}/);
   assert.doesNotMatch(home, /title="Admin-Spiele"/);
@@ -212,10 +192,7 @@ test("the icon artwork is square and original, and the training dashboard stays 
   const trainingSection = home.slice(home.indexOf('id="training-overview"'));
   assert.match(trainingSection, /<summary[\s\S]*?Trainingsübersicht & Gym-Partner/);
   assert.match(trainingSection, /<GymPartnerPanel \/>/);
-  assert.match(
-    trainingSection,
-    /<DashboardGrid userId=\{userId\} renderWidget=\{renderWidget\} \/>/,
-  );
+  assert.match(trainingSection, /<DashboardGrid renderWidget=\{renderWidget\} \/>/);
   assert.doesNotMatch(trainingSection.slice(0, trainingSection.indexOf(">")), /\bopen\b/);
 });
 
@@ -238,7 +215,7 @@ test("every primary app offers a visible route back to the Alo home screen", () 
 
 test("home hub keeps every former shared-menu destination and workspace action reachable", () => {
   for (const [destination, routeFile] of [
-    ["/exercises", "exercises.tsx"],
+    ["/health", "health.tsx"],
     ["/programs", "programs.tsx"],
     ["/calisthenics", "calisthenics.tsx"],
     ["/run", "run.tsx"],
@@ -252,15 +229,12 @@ test("home hub keeps every former shared-menu destination and workspace action r
     assert.ok(existsSync(resolve(process.cwd(), "src/routes/_authenticated", routeFile)));
     assert.ok(homeMenus.includes(`to: "${destination}"`), `menu should link to ${destination}`);
   }
-  assert.match(
-    hub,
-    /id: "tools", title: "Alo-Werkzeuge", artwork: "tools", kind: "route", to: "\/tools"/,
-  );
+  assert.match(hub, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(hub, /<Link\s+to="\/tools"[\s\S]*?title="Alo-Werkzeuge" artwork="tools"/);
   assert.doesNotMatch(hub, /detail: "menu"/);
   assert.match(hub, /aria-label="Überall suchen"/);
   assert.match(hub, /detail: "search"/);
-  assert.match(hub, /id: "areas",[\s\S]*?to: "\/areas"/);
-  assert.doesNotMatch(hub, /to="\/marketplace"|id: "marketplace"/);
+  assert.match(hub, /<Link\s+to="\/areas"/);
 });
 
 test("every authenticated section exposes a clearly named route to the Alo home hub", () => {

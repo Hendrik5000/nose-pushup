@@ -36,10 +36,8 @@ self.addEventListener("notificationclick", function (event) {
   );
 });
 
-self.addEventListener("message", (event) => {
-  if (event.data?.type === "ALO_ACTIVATE_WAITING_WORKER") {
-    event.waitUntil(self.skipWaiting());
-  }
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {

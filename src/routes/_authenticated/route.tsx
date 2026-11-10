@@ -15,11 +15,6 @@ import { PostfachProvider } from "@/components/postfach/PostfachProvider";
 import { CallProvider } from "@/components/calls/CallProvider";
 import { AppNavigation } from "@/components/TopNav";
 import { applyNavigationVisibility, getNavigationVisible } from "@/lib/navigation-layout";
-import {
-  applyAccessibilityPreferences,
-  DEFAULT_ACCESSIBILITY_PREFERENCES,
-  readAccessibilityPreferences,
-} from "@/lib/accessibility-preferences";
 import { installModuleSwipeGesture } from "@/lib/module-swipe-gesture";
 import "@/module-swipe.css";
 import "@/alo-mobile.css";
@@ -60,11 +55,6 @@ function AuthenticatedLayout() {
   }, []);
 
   useEffect(() => {
-    applyAccessibilityPreferences(readAccessibilityPreferences(user.id));
-    return () => applyAccessibilityPreferences(DEFAULT_ACCESSIBILITY_PREFERENCES);
-  }, [user.id]);
-
-  useEffect(() => {
     if (!surface.current) return;
     return installModuleSwipeGesture(surface.current, {
       getPathname: () => currentPath.current,
@@ -76,11 +66,8 @@ function AuthenticatedLayout() {
     <PostfachProvider userId={user.id} isGuest={isGuest}>
       <CallProvider userId={user.id} isGuest={isGuest}>
         <div className="authenticated-shell alo-no-global-header min-h-[100dvh]">
-          <a className="alo-skip-link" href="#alo-main-content">
-            Zum Inhalt springen
-          </a>
           <AppNavigation />
-          <div ref={surface} id="alo-main-content" tabIndex={-1} className="alo-module-surface">
+          <div ref={surface} className="alo-module-surface">
             <Outlet />
           </div>
           <AloWorkspace userId={user.id} />
