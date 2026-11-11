@@ -75,10 +75,8 @@ test("Lovable is identified as the gateway, not as a known downstream model back
 });
 
 test("the next-request provider is explicitly a preview, while each reply carries its own choice and reason", () => {
-  assert.match(
-    route,
-    /alo-mira-sketch-provider[\s\S]*?Vorschau für die nächste Anfrage:[\s\S]*?activeProvider\?\.label/,
-  );
+  assert.match(route, /Anbietervorschau für die nächste Anfrage/);
+  assert.match(route, /Vorschau nächste Anfrage:/);
   assert.match(
     route,
     /provider: res\.provider,[\s\S]*?routingReason: describeProviderSelection\(selection, task\)/,

@@ -37,7 +37,7 @@ test("Admin tile is rendered only after the server-side access function returns 
   assert.match(home, /canSeeAdmin\s*&&\s*<HubAppIcon to="\/admin" title="Admin" artwork="admin"/);
   assert.match(
     home,
-    /type HubArtworkKind =\s*[\s\S]*?"admin"[\s\S]*?"gridDefense"[\s\S]*?"kupferkern"/,
+    /artwork:\s*"mira"\s*\|\s*"nexus"\s*\|\s*"health"\s*\|\s*"settings"\s*\|\s*"admin"/,
   );
   assert.match(route, /beforeLoad:[\s\S]*?getAdminAreaAccess\(\)[\s\S]*?redirect\(\{\s*to:\s*"\/"/);
 });

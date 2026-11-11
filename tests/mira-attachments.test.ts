@@ -189,12 +189,6 @@ test("camera is retained separately from library/device pickers, with accessible
     "Noch nicht gesendet",
   ])
     assert.ok(picker.includes(label));
-  assert.match(picker, /Paperclip/);
-  const css = read("mira-attachments.css");
-  assert.match(
-    css,
-    /html\[data-design-style\] \.mira-attachment-picker > summary::before\s*\{\s*content: none;/,
-  );
   assert.match(picker, /URL.createObjectURL/);
   assert.match(picker, /URL.revokeObjectURL/);
   assert.doesNotMatch(

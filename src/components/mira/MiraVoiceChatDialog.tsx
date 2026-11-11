@@ -10,9 +10,6 @@ type MiraVoiceChatDialogProps = {
   onStartListening: () => void;
   onStopListening: () => void;
   error: string | null;
-  onContinue?: () => void;
-  continueLabel?: string;
-  className?: string;
 };
 
 export function MiraVoiceChatDialog({
@@ -24,13 +21,10 @@ export function MiraVoiceChatDialog({
   onStartListening,
   onStopListening,
   error,
-  onContinue,
-  continueLabel = "Entwurf im Chat ansehen",
-  className = "alo-dialog max-h-[88dvh] overflow-y-auto sm:max-w-md",
 }: MiraVoiceChatDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={className}>
+      <DialogContent className="alo-dialog max-h-[88dvh] overflow-y-auto sm:max-w-md">
         <DialogTitle className="pr-8">Mit Mira sprechen</DialogTitle>
         <DialogDescription>
           Sprich deinen Text ein, prüfe oder bearbeite die Erkennung und tippe danach im Chat selbst
@@ -114,12 +108,11 @@ export function MiraVoiceChatDialog({
           )}
           <button
             type="button"
-            onClick={() => (onContinue ? onContinue() : onOpenChange(false))}
-            disabled={Boolean(onContinue && !transcript.trim())}
+            onClick={() => onOpenChange(false)}
             className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
             <Check className="h-4 w-4" aria-hidden="true" />
-            {continueLabel}
+            Entwurf im Chat ansehen
           </button>
         </div>
       </DialogContent>

@@ -672,27 +672,6 @@ export type Database = {
         }
         Relationships: []
       }
-      global_role_assignments: {
-        Row: {
-          granted_at: string
-          granted_by: string
-          role_name: string
-          user_id: string
-        }
-        Insert: {
-          granted_at?: string
-          granted_by: string
-          role_name: string
-          user_id: string
-        }
-        Update: {
-          granted_at?: string
-          granted_by?: string
-          role_name?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       health_entries: {
         Row: {
           active_kcal: number
@@ -729,39 +708,6 @@ export type Database = {
           updated_at?: string
           user_id?: string
           weight_kg?: number | null
-        }
-        Relationships: []
-      }
-      meal_logs: {
-        Row: {
-          created_at: string
-          day: string
-          id: string
-          kcal: number
-          protein_g: number
-          tip: string | null
-          title: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          day?: string
-          id?: string
-          kcal?: number
-          protein_g?: number
-          tip?: string | null
-          title?: string
-          user_id?: string
-        }
-        Update: {
-          created_at?: string
-          day?: string
-          id?: string
-          kcal?: number
-          protein_g?: number
-          tip?: string | null
-          title?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -1958,15 +1904,10 @@ export type Database = {
         }[]
       }
       get_or_create_dm: { Args: { p_other: string }; Returns: string }
-      grant_global_role: {
-        Args: { p_role_name: string; p_user_id: string }
-        Returns: undefined
-      }
       grant_referral_bonus: {
         Args: { _invited_id: string }
         Returns: undefined
       }
-      has_global_role: { Args: { p_role_name: string }; Returns: boolean }
       is_club_member: {
         Args: { _club_id: string; _user_id: string }
         Returns: boolean
@@ -1977,13 +1918,6 @@ export type Database = {
       }
       is_registered_user: { Args: never; Returns: boolean }
       join_club_by_code: { Args: { _code: string }; Returns: string }
-      list_admin_role_assignments: {
-        Args: never
-        Returns: {
-          granted_at: string
-          user_id: string
-        }[]
-      }
       postfach_install_battle_bridge: { Args: never; Returns: string }
       postfach_push: {
         Args: {
@@ -2033,10 +1967,6 @@ export type Database = {
       respond_to_friend_request: {
         Args: { p_accept: boolean; p_friendship_id: string }
         Returns: string
-      }
-      revoke_global_role: {
-        Args: { p_role_name: string; p_user_id: string }
-        Returns: undefined
       }
       search_messages: {
         Args: { q: string }

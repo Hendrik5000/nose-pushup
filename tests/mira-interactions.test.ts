@@ -169,14 +169,8 @@ test("Mira keeps the Markdown and Nexus paths separate; card changes remain loca
     new URL("../src/components/mira/MiraInteractiveCard.tsx", import.meta.url),
     "utf8",
   );
-  const progressive = readFileSync(
-    new URL("../src/components/mira/MiraProgressiveAnswer.tsx", import.meta.url),
-    "utf8",
-  );
   assert.equal((page.match(/<MiraInteractiveCard/g) ?? []).length, 2);
-  assert.match(page, /<MiraProgressiveAnswer[\s\S]*?text=\{m\.content\}/);
-  assert.match(progressive, /MiraAnswerText text=\{text\} \/>/);
-  assert.match(progressive, /MiraAnswerText text=\{text\.slice\(0, current\.visibleLength\)\}/);
+  assert.ok(page.includes("<MiraAnswerText text={m.content} />"));
   assert.ok(page.includes('enableNexusDraft={m.role === "assistant"}'));
   assert.match(
     page,

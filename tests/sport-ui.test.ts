@@ -188,7 +188,6 @@ test("sport page components render semantic content and permit real data actions
 
 test("home hub exposes every existing feature group formerly listed in the shared menu", () => {
   const menu = read("routes/_authenticated/index.tsx");
-  const areaMenus = read("lib/home-app-menus.ts");
   const appNavigation = read("components/TopNav.tsx");
   for (const route of [
     "/exercises",
@@ -204,11 +203,10 @@ test("home hub exposes every existing feature group formerly listed in the share
     "/clubs",
     "/chat",
     "/profile",
-    "/alarm",
   ]) {
-    assert.ok(menu.includes(route) || areaMenus.includes(route), `missing ${route}`);
+    assert.ok(menu.includes(route), `missing ${route}`);
   }
-  assert.match(menu, /Weitere Bereiche öffnen/);
+  assert.match(menu, /aria-label="Weitere Alo-Bereiche"/);
   assert.match(menu, /Alo-Werkzeuge öffnen/);
   assert.match(menu, /Überall suchen/);
   assert.match(appNavigation, /layout === "bottom" \|\| layout === "floating"/);
