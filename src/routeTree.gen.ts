@@ -19,14 +19,12 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAlarmRouteImport } from './routes/_authenticated/alarm'
-import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
 import { Route as AuthenticatedBattleLeagueRouteImport } from './routes/_authenticated/battle-league'
 import { Route as AuthenticatedCalisthenicsRouteImport } from './routes/_authenticated/calisthenics'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedClubsRouteImport } from './routes/_authenticated/clubs'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedExercisesRouteImport } from './routes/_authenticated/exercises'
-import { Route as AuthenticatedGamesRouteImport } from './routes/_authenticated/games'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedPostfachRouteImport } from './routes/_authenticated/postfach'
@@ -34,7 +32,6 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedProgramsRouteImport } from './routes/_authenticated/programs'
 import { Route as AuthenticatedRunRouteImport } from './routes/_authenticated/run'
 import { Route as AuthenticatedSeasonRouteImport } from './routes/_authenticated/season'
-import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated/tools'
 import { Route as USlugRouteImport } from './routes/u.$slug'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -95,11 +92,6 @@ const AuthenticatedAlarmRoute = AuthenticatedAlarmRouteImport.update({
   path: '/alarm',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAreasRoute = AuthenticatedAreasRouteImport.update({
-  id: '/areas',
-  path: '/areas',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedBattleLeagueRoute =
   AuthenticatedBattleLeagueRouteImport.update({
     id: '/battle-league',
@@ -130,11 +122,6 @@ const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
 const AuthenticatedExercisesRoute = AuthenticatedExercisesRouteImport.update({
   id: '/exercises',
   path: '/exercises',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedGamesRoute = AuthenticatedGamesRouteImport.update({
-  id: '/games',
-  path: '/games',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHealthRoute = AuthenticatedHealthRouteImport.update({
@@ -171,11 +158,6 @@ const AuthenticatedRunRoute = AuthenticatedRunRouteImport.update({
 const AuthenticatedSeasonRoute = AuthenticatedSeasonRouteImport.update({
   id: '/season',
   path: '/season',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedToolsRoute = AuthenticatedToolsRouteImport.update({
-  id: '/tools',
-  path: '/tools',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const USlugRoute = USlugRouteImport.update({
@@ -228,14 +210,12 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/alarm': typeof AuthenticatedAlarmRoute
-  '/areas': typeof AuthenticatedAreasRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/exercises': typeof AuthenticatedExercisesRoute
-  '/games': typeof AuthenticatedGamesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/postfach': typeof AuthenticatedPostfachRoute
@@ -243,7 +223,6 @@ export interface FileRoutesByFullPath {
   '/programs': typeof AuthenticatedProgramsRoute
   '/run': typeof AuthenticatedRunRoute
   '/season': typeof AuthenticatedSeasonRoute
-  '/tools': typeof AuthenticatedToolsRoute
   '/u/$slug': typeof USlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -261,14 +240,12 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
   '/alarm': typeof AuthenticatedAlarmRoute
-  '/areas': typeof AuthenticatedAreasRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/exercises': typeof AuthenticatedExercisesRoute
-  '/games': typeof AuthenticatedGamesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/postfach': typeof AuthenticatedPostfachRoute
@@ -276,7 +253,6 @@ export interface FileRoutesByTo {
   '/programs': typeof AuthenticatedProgramsRoute
   '/run': typeof AuthenticatedRunRoute
   '/season': typeof AuthenticatedSeasonRoute
-  '/tools': typeof AuthenticatedToolsRoute
   '/u/$slug': typeof USlugRoute
   '/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -297,14 +273,12 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/alarm': typeof AuthenticatedAlarmRoute
-  '/_authenticated/areas': typeof AuthenticatedAreasRoute
   '/_authenticated/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/_authenticated/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/clubs': typeof AuthenticatedClubsRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/exercises': typeof AuthenticatedExercisesRoute
-  '/_authenticated/games': typeof AuthenticatedGamesRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/postfach': typeof AuthenticatedPostfachRoute
@@ -312,7 +286,6 @@ export interface FileRoutesById {
   '/_authenticated/programs': typeof AuthenticatedProgramsRoute
   '/_authenticated/run': typeof AuthenticatedRunRoute
   '/_authenticated/season': typeof AuthenticatedSeasonRoute
-  '/_authenticated/tools': typeof AuthenticatedToolsRoute
   '/u/$slug': typeof USlugRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -334,14 +307,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ai'
     | '/alarm'
-    | '/areas'
     | '/battle-league'
     | '/calisthenics'
     | '/chat'
     | '/clubs'
     | '/coach'
     | '/exercises'
-    | '/games'
     | '/health'
     | '/leaderboard'
     | '/postfach'
@@ -349,7 +320,6 @@ export interface FileRouteTypes {
     | '/programs'
     | '/run'
     | '/season'
-    | '/tools'
     | '/u/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -367,14 +337,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ai'
     | '/alarm'
-    | '/areas'
     | '/battle-league'
     | '/calisthenics'
     | '/chat'
     | '/clubs'
     | '/coach'
     | '/exercises'
-    | '/games'
     | '/health'
     | '/leaderboard'
     | '/postfach'
@@ -382,7 +350,6 @@ export interface FileRouteTypes {
     | '/programs'
     | '/run'
     | '/season'
-    | '/tools'
     | '/u/$slug'
     | '/'
     | '/.lovable/oauth/consent'
@@ -402,14 +369,12 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/ai'
     | '/_authenticated/alarm'
-    | '/_authenticated/areas'
     | '/_authenticated/battle-league'
     | '/_authenticated/calisthenics'
     | '/_authenticated/chat'
     | '/_authenticated/clubs'
     | '/_authenticated/coach'
     | '/_authenticated/exercises'
-    | '/_authenticated/games'
     | '/_authenticated/health'
     | '/_authenticated/leaderboard'
     | '/_authenticated/postfach'
@@ -417,7 +382,6 @@ export interface FileRouteTypes {
     | '/_authenticated/programs'
     | '/_authenticated/run'
     | '/_authenticated/season'
-    | '/_authenticated/tools'
     | '/u/$slug'
     | '/_authenticated/'
     | '/.lovable/oauth/consent'
@@ -512,13 +476,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAlarmRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/areas': {
-      id: '/_authenticated/areas'
-      path: '/areas'
-      fullPath: '/areas'
-      preLoaderRoute: typeof AuthenticatedAreasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/battle-league': {
       id: '/_authenticated/battle-league'
       path: '/battle-league'
@@ -559,13 +516,6 @@ declare module '@tanstack/react-router' {
       path: '/exercises'
       fullPath: '/exercises'
       preLoaderRoute: typeof AuthenticatedExercisesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/games': {
-      id: '/_authenticated/games'
-      path: '/games'
-      fullPath: '/games'
-      preLoaderRoute: typeof AuthenticatedGamesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/health': {
@@ -615,13 +565,6 @@ declare module '@tanstack/react-router' {
       path: '/season'
       fullPath: '/season'
       preLoaderRoute: typeof AuthenticatedSeasonRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/tools': {
-      id: '/_authenticated/tools'
-      path: '/tools'
-      fullPath: '/tools'
-      preLoaderRoute: typeof AuthenticatedToolsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/u/$slug': {
@@ -680,14 +623,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedAlarmRoute: typeof AuthenticatedAlarmRoute
-  AuthenticatedAreasRoute: typeof AuthenticatedAreasRoute
   AuthenticatedBattleLeagueRoute: typeof AuthenticatedBattleLeagueRoute
   AuthenticatedCalisthenicsRoute: typeof AuthenticatedCalisthenicsRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedClubsRoute: typeof AuthenticatedClubsRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedExercisesRoute: typeof AuthenticatedExercisesRoute
-  AuthenticatedGamesRoute: typeof AuthenticatedGamesRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedPostfachRoute: typeof AuthenticatedPostfachRoute
@@ -695,7 +636,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProgramsRoute: typeof AuthenticatedProgramsRoute
   AuthenticatedRunRoute: typeof AuthenticatedRunRoute
   AuthenticatedSeasonRoute: typeof AuthenticatedSeasonRoute
-  AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
   AuthenticatedCaliWorkoutSkillIdRoute: typeof AuthenticatedCaliWorkoutSkillIdRoute
@@ -707,14 +647,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedAlarmRoute: AuthenticatedAlarmRoute,
-  AuthenticatedAreasRoute: AuthenticatedAreasRoute,
   AuthenticatedBattleLeagueRoute: AuthenticatedBattleLeagueRoute,
   AuthenticatedCalisthenicsRoute: AuthenticatedCalisthenicsRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedClubsRoute: AuthenticatedClubsRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedExercisesRoute: AuthenticatedExercisesRoute,
-  AuthenticatedGamesRoute: AuthenticatedGamesRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedPostfachRoute: AuthenticatedPostfachRoute,
@@ -722,7 +660,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProgramsRoute: AuthenticatedProgramsRoute,
   AuthenticatedRunRoute: AuthenticatedRunRoute,
   AuthenticatedSeasonRoute: AuthenticatedSeasonRoute,
-  AuthenticatedToolsRoute: AuthenticatedToolsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
   AuthenticatedCaliWorkoutSkillIdRoute: AuthenticatedCaliWorkoutSkillIdRoute,

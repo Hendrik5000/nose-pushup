@@ -246,14 +246,9 @@ test("both Mira chat views pass optional visuals to the fixed component only", (
     new URL("../src/components/mira/MiraVisualAnswerCard.tsx", import.meta.url),
     "utf8",
   );
-  const progressive = readFileSync(
-    new URL("../src/components/mira/MiraProgressiveAnswer.tsx", import.meta.url),
-    "utf8",
-  );
   assert.equal((page.match(/<MiraVisualAnswerCard/g) ?? []).length, 2);
   assert.match(page, /\.\.\.\(parsed\.visual \? \{ visual: parsed\.visual \} : \{\}\)/);
-  assert.match(page, /<MiraProgressiveAnswer[\s\S]*?text=\{m\.content\}/);
-  assert.match(progressive, /MiraAnswerText text=\{text\} \/>/);
+  assert.ok(page.includes("<MiraAnswerText text={m.content} />"));
   assert.match(card, /validateMiraVisualAnswer\(visual\)/);
   assert.doesNotMatch(card, /dangerouslySetInnerHTML|<iframe|<script|href=|fetch\(/i);
 });
