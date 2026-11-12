@@ -1,5 +1,6 @@
 import { MarketplaceIcon } from "@/components/marketplace/MarketplaceIcon";
 import { MarketplaceManifestView } from "@/components/marketplace/MarketplaceManifestView";
+import { describeMarketplaceFunctionality } from "@/lib/marketplace-runtime";
 import {
   describeMarketplaceAuthoredPermissions,
   type MarketplaceAuthoredManifest,
@@ -66,6 +67,17 @@ export function MiraMarketplaceDraftPreview({
         </button>
       </header>
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{manifest.description}</p>
+      <aside
+        className="mt-3 rounded-xl border border-border/60 bg-muted/20 p-3"
+        aria-label="Tatsächlicher Funktionsumfang"
+      >
+        <h4 className="text-sm font-semibold">
+          {describeMarketplaceFunctionality(manifest).label}
+        </h4>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          {describeMarketplaceFunctionality(manifest).detail}
+        </p>
+      </aside>
       <MarketplaceManifestView manifest={manifest} preview />
       <section
         className="mt-3 rounded-xl border border-border/60 bg-background/50 p-3"

@@ -996,7 +996,7 @@ export function SuperAiPage({
           const assistantText =
             (manifest.game
               ? `Ich habe das lokal spielbare Quiz „${manifest.name}“ erstellt. Du kannst es direkt in der Vorschau ausprobieren und mir hier im Chat Änderungen nennen.`
-              : `Ich habe eine lokale Vorschau für „${manifest.name}“ erstellt. Sag mir hier im Chat einfach, was ich daran ändern soll.`) +
+              : `Ich habe einen Alo-Schnellzugriff für „${manifest.name}“ entworfen. Seine Aktionen öffnen vorhandene Alo-Funktionen; eigene Formulare, Speicherung oder Live-Daten sind darin nicht enthalten. Sag mir hier im Chat einfach, was ich am Entwurf ändern soll.`) +
             " Zum Veröffentlichen brauchst du anschließend noch eine ausdrückliche Bestätigung." +
             (attachments.length
               ? "\n\nDeine angehängten Dateien habe ich für diesen Entwurf nicht gesendet; sie bleiben im Composer."
