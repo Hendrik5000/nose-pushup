@@ -10,6 +10,9 @@ type MiraVoiceChatDialogProps = {
   onStartListening: () => void;
   onStopListening: () => void;
   error: string | null;
+  onContinue?: () => void;
+  continueLabel?: string;
+  className?: string;
 };
 
 export function MiraVoiceChatDialog({
@@ -21,27 +24,24 @@ export function MiraVoiceChatDialog({
   onStartListening,
   onStopListening,
   error,
+  onContinue,
+  continueLabel = "Übernehmen",
+  className = "alo-dialog max-h-[88dvh] overflow-y-auto sm:max-w-md",
 }: MiraVoiceChatDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="alo-dialog max-h-[88dvh] overflow-y-auto sm:max-w-md">
+      <DialogContent className={className}>
         <DialogTitle className="pr-8">Mit Mira sprechen</DialogTitle>
         <DialogDescription>
-          Sprich deinen Text ein, prüfe oder bearbeite die Erkennung und tippe danach im Chat selbst
-          auf „Senden“. Mira wird nicht automatisch kontaktiert.
+          Du kannst Mira per Halten-zum-Sprechen oder durch Antippen diktieren. Je nach Browser kann
+          die Spracherkennung über einen Browser-Dienst verarbeitet werden. Prüfe oder bearbeite den
+          erkannten Text und tippe danach selbst auf „Frage in Mira prüfen“; nichts wird automatisch
+          an Mira gesendet. Mira wird nicht automatisch kontaktiert.
         </DialogDescription>
-
-        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm">
-          <p>
-            Die Spracherkennung läuft über den Browser. Je nach Browser kann Audio an dessen
-            Spracherkennungsdienst übertragen werden. Mira erhält erst den Text, den du anschließend
-            im Chat sendest.
-          </p>
-          <p className="mt-2 text-muted-foreground">
-            Antworten kannst du einzeln über „Vorlesen“ anhören. Tempo und Stimme richten sich nach
-            den Möglichkeiten deines Geräts.
-          </p>
-        </div>
+        <p className="rounded-xl border border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
+          Antworten kannst du einzeln über „Vorlesen“ anhören. Stimme und Tempo richten sich nach
+          den Möglichkeiten deines Geräts.
+        </p>
 
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-border/70 bg-background/60 p-5 text-center">
           <button
@@ -108,11 +108,12 @@ export function MiraVoiceChatDialog({
           )}
           <button
             type="button"
-            onClick={() => onOpenChange(false)}
+            onClick={() => (onContinue ? onContinue() : onOpenChange(false))}
+            disabled={Boolean(onContinue && !transcript.trim())}
             className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
             <Check className="h-4 w-4" aria-hidden="true" />
-            Entwurf im Chat ansehen
+            {continueLabel}
           </button>
         </div>
       </DialogContent>

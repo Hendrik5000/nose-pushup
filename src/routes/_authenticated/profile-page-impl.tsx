@@ -1,24 +1,20 @@
-import { workoutBest } from "@/lib/workout-ui";
-import { DesignView } from "@/components/DesignView";
+import { ArrowLeft } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { readWorkoutMetadata } from "@/lib/workout-session";
 import { historyExercise } from "@/lib/workout-history";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { supabase } from "@/integrations/supabase/client";
 import { levelProgress } from "@/lib/level";
 import { setSoundEnabled, setHapticsEnabled, feedbackSuccess } from "@/lib/feedback";
-
+import { DesignView } from "@/components/DesignView";
 import { CoachPanel } from "@/components/CoachPanel";
 import { FriendsPanel } from "@/components/FriendsPanel";
 import { BadgeGallery } from "@/components/BadgeGallery";
@@ -30,26 +26,27 @@ import { AloWebAppGuide } from "@/components/AloWebAppGuide";
 import { BottomNav } from "@/components/BottomNav";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { PublicProfileSettings } from "@/components/PublicProfileSettings";
-import { SettingsSection } from "@/components/SettingsSection";
+import { AppsSettingsList } from "@/components/settings/AppsSettingsList";
+import { MenuAccentPicker } from "@/components/settings/MenuAccentPicker";
+import { SettingsCategoryRow } from "@/components/settings/SettingsCategoryRow";
 import { restartWelcomeTour } from "@/components/WelcomeTour";
-import { SportPageIntro } from "@/components/SportPageIntro";
+import {
+  getProfileSettingsCategory,
+  PROFILE_SETTINGS_GROUPS,
+  type ProfileSettingsCategoryId,
+} from "@/lib/profile-settings";
+import { AloPageSidebarTrigger, useAloPageSidebarCommands } from "@/components/alo/AloPageSidebar";
 
 type Profile = {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
-  best_count: number;
   xp: number;
-  level: number;
   current_streak: number;
-  longest_streak: number;
+  longest_streak?: number;
+  best_count?: number;
   last_workout_date: string | null;
-  streak_freezes: number;
-  birth_year: number | null;
-  height_cm: number | null;
-  weight_kg: number | null;
-  sex: string | null;
-  daily_goal: number;
+  streak_freezes?: number;
   share_activity: boolean;
   theme: string | null;
   sound_enabled: boolean;
@@ -64,27 +61,23 @@ type Workout = {
   exercise_id: string | null;
 };
 
-const PROFILE_COLS =
-  "id, display_name, avatar_url, best_count, xp, level, current_streak, longest_streak, last_workout_date, streak_freezes, birth_year, height_cm, weight_kg, sex, daily_goal, share_activity, theme, sound_enabled, haptics_enabled";
+const PROFILE_SETTINGS_COLS =
+  "id, display_name, avatar_url, xp, current_streak, last_workout_date, share_activity, theme, sound_enabled, haptics_enabled";
+const PROFILE_TRAINING_COLS =
+  "id, display_name, avatar_url, xp, current_streak, last_workout_date, share_activity, theme, sound_enabled, haptics_enabled, best_count, longest_streak, streak_freezes";
 
-export function ProfilePage() {
+export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategoryId } = {}) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [email, setEmail] = useState<string>("");
+  const [email, setEmail] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [profileLoading, setProfileLoading] = useState(true);
   const [workoutsLoading, setWorkoutsLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
   const [workoutsError, setWorkoutsError] = useState(false);
-  const [sectionRevealRequest, setSectionRevealRequest] = useState(0);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [birthYear, setBirthYear] = useState("");
-  const [heightCm, setHeightCm] = useState("");
-  const [weightKg, setWeightKg] = useState("");
-  const [sex, setSex] = useState("");
-  const [dailyGoal, setDailyGoal] = useState("50");
   const [shareActivity, setShareActivity] = useState(true);
   const [soundOn, setSoundOn] = useState(true);
   const [hapticsOn, setHapticsOn] = useState(true);
@@ -94,47 +87,67 @@ export function ProfilePage() {
   const [upgradePassword, setUpgradePassword] = useState("");
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeMsg, setUpgradeMsg] = useState<string | null>(null);
+  const sidebarCommands = useMemo(() => ({}), []);
+  useAloPageSidebarCommands(sidebarCommands, sectionId ? undefined : "settings-home");
+  const needsWorkouts = sectionId === "training" || sectionId === "history";
 
-  const applyProfile = (prof: Profile) => {
+  const applyProfile = useCallback((prof: Profile) => {
     setProfile(prof);
     setDisplayName(prof.display_name ?? "");
     setAvatarUrl(prof.avatar_url ?? "");
-    setBirthYear(prof.birth_year ? String(prof.birth_year) : "");
-    setHeightCm(prof.height_cm ? String(prof.height_cm) : "");
-    setWeightKg(prof.weight_kg ? String(prof.weight_kg) : "");
-    setSex(prof.sex ?? "");
-    setDailyGoal(String(prof.daily_goal ?? 50));
-    setShareActivity(prof.share_activity ?? true);
     const sound = prof.sound_enabled ?? true;
     const haptics = prof.haptics_enabled ?? true;
+    setShareActivity(prof.share_activity ?? true);
     setSoundOn(sound);
     setHapticsOn(haptics);
     setSoundEnabled(sound);
     setHapticsEnabled(haptics);
-  };
+  }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    setProfileLoading(true);
+    setProfileError(false);
+    setWorkoutsError(false);
+    if (needsWorkouts) setWorkoutsLoading(true);
+    else {
+      setWorkouts([]);
+      setWorkoutsLoading(false);
+    }
     (async () => {
       try {
-        const { data: u, error: authError } = await supabase.auth.getUser();
-        if (authError || !u.user) {
+        const { data: auth, error: authError } = await supabase.auth.getUser();
+        if (cancelled) return;
+        if (authError || !auth.user) {
           setProfileError(true);
           setWorkoutsError(true);
           return;
         }
-        setEmail(u.user.email ?? "");
-        setIsAnonymous(!!u.user.is_anonymous);
-        const [profileResult, workoutResult] = await Promise.all([
-          supabase.from("profiles").select(PROFILE_COLS).eq("id", u.user.id).maybeSingle(),
-          supabase
-            .from("workouts")
-            .select("id, count, duration_ms, created_at, exercise_id")
-            .order("created_at", { ascending: false })
-            .limit(20),
-        ]);
+        setEmail(auth.user.email ?? "");
+        setIsAnonymous(!!auth.user.is_anonymous);
+        const profileRequest = needsWorkouts
+          ? supabase
+              .from("profiles")
+              .select(PROFILE_TRAINING_COLS)
+              .eq("id", auth.user.id)
+              .maybeSingle()
+          : supabase
+              .from("profiles")
+              .select(PROFILE_SETTINGS_COLS)
+              .eq("id", auth.user.id)
+              .maybeSingle();
+        const workoutRequest = needsWorkouts
+          ? supabase
+              .from("workouts")
+              .select("id, count, duration_ms, created_at, exercise_id")
+              .order("created_at", { ascending: false })
+              .limit(20)
+          : Promise.resolve(null);
+        const [profileResult, workoutResult] = await Promise.all([profileRequest, workoutRequest]);
+        if (cancelled) return;
 
-        if (workoutResult.error) setWorkoutsError(true);
-        else setWorkouts((workoutResult.data ?? []) as Workout[]);
+        if (workoutResult?.error) setWorkoutsError(true);
+        else if (workoutResult) setWorkouts((workoutResult.data ?? []) as Workout[]);
         setWorkoutsLoading(false);
 
         if (profileResult.error) {
@@ -146,11 +159,14 @@ export function ProfilePage() {
           const { data: created, error: createError } = await supabase
             .from("profiles")
             .insert({
-              id: u.user.id,
-              display_name: u.user.is_anonymous ? "Gast" : (u.user.email?.split("@")[0] ?? null),
+              id: auth.user.id,
+              display_name: auth.user.is_anonymous
+                ? "Gast"
+                : (auth.user.email?.split("@")[0] ?? null),
             })
-            .select(PROFILE_COLS)
+            .select(PROFILE_SETTINGS_COLS)
             .maybeSingle();
+          if (cancelled) return;
           if (createError) {
             setProfileError(true);
             return;
@@ -160,29 +176,21 @@ export function ProfilePage() {
         if (prof) applyProfile(prof as Profile);
         else setProfileError(true);
       } catch {
-        setProfileError(true);
-        setWorkoutsError(true);
+        if (!cancelled) {
+          setProfileError(true);
+          setWorkoutsError(true);
+        }
       } finally {
-        setProfileLoading(false);
-        setWorkoutsLoading(false);
+        if (!cancelled) {
+          setProfileLoading(false);
+          setWorkoutsLoading(false);
+        }
       }
     })();
-  }, []);
-
-  const numOrNull = (v: string, min: number, max: number) => {
-    const cleaned = v.replace(",", ".").replace(/[^0-9.]/g, "");
-    const n = Number(cleaned);
-    if (!cleaned || Number.isNaN(n)) return null;
-    return Math.max(min, Math.min(max, n));
-  };
-
-  const heightOrNull = (v: string) => {
-    const cleaned = v.replace(",", ".").replace(/[^0-9.]/g, "");
-    let n = Number(cleaned);
-    if (!cleaned || Number.isNaN(n) || n <= 0) return null;
-    if (n < 3) n = n * 100;
-    return Math.round(Math.max(80, Math.min(250, n)));
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [applyProfile, needsWorkouts]);
 
   const save = async () => {
     if (!profile) return;
@@ -193,17 +201,9 @@ export function ProfilePage() {
       .update({
         display_name: displayName.trim() || null,
         avatar_url: avatarUrl.trim() || null,
-        birth_year: numOrNull(birthYear, 1920, new Date().getFullYear()),
-        height_cm: heightOrNull(heightCm),
-        weight_kg: numOrNull(weightKg, 25, 400),
-        sex: sex || null,
-        daily_goal: numOrNull(dailyGoal, 5, 2000) ?? 50,
-        share_activity: shareActivity,
-        sound_enabled: soundOn,
-        haptics_enabled: hapticsOn,
       })
       .eq("id", profile.id)
-      .select(PROFILE_COLS)
+      .select(PROFILE_SETTINGS_COLS)
       .single();
     setSaving(false);
     if (error) setMsg("Speichern fehlgeschlagen");
@@ -244,7 +244,7 @@ export function ProfilePage() {
 
   const deleteWorkout = async (id: string) => {
     await supabase.from("workouts").delete().eq("id", id);
-    setWorkouts((w) => w.filter((x) => x.id !== id));
+    setWorkouts((current) => current.filter((workout) => workout.id !== id));
   };
 
   const signOut = async () => {
@@ -252,8 +252,8 @@ export function ProfilePage() {
     navigate({ to: "/auth", replace: true });
   };
 
-  const upgradeAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const upgradeAccount = async (event: FormEvent) => {
+    event.preventDefault();
     setUpgradeMsg(null);
     if (!upgradeEmail.includes("@") || upgradePassword.length < 6) {
       setUpgradeMsg("E-Mail und Passwort (min. 6 Zeichen) erforderlich");
@@ -273,13 +273,6 @@ export function ProfilePage() {
     }
   };
 
-  const pushupHistory = workouts.filter((w) => !w.exercise_id || w.exercise_id === "pushup");
-  const profileBest = workoutBest(
-    "pushup",
-    null,
-    profile?.best_count,
-    pushupHistory.length > 0 ? Math.max(...pushupHistory.map((w) => w.count)) : null,
-  );
   const lp = levelProgress(profile?.xp ?? 0);
   const streak = profile?.current_streak ?? 0;
   const streakActive = (() => {
@@ -288,762 +281,653 @@ export function ProfilePage() {
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     return profile.last_workout_date === today || profile.last_workout_date === yesterday;
   })();
-  const sectionRevealKey = `${profile?.id ?? "unloaded"}:${sectionRevealRequest}`;
-  const profileBestLabel = profileBest === null ? "Noch kein Bestwert" : profileBest;
-  const workoutCountLabel = workouts.length > 0 ? workouts.length : "Noch keine Erfassung";
+  const category = sectionId ? getProfileSettingsCategory(sectionId) : null;
+
+  const categoryContent = sectionId ? (
+    <SettingsCategoryContent
+      categoryId={sectionId}
+      profile={profile}
+      profileLoading={profileLoading}
+      profileError={profileError}
+      workouts={workouts}
+      workoutsLoading={workoutsLoading}
+      workoutsError={workoutsError}
+      displayName={displayName}
+      setDisplayName={setDisplayName}
+      avatarUrl={avatarUrl}
+      setAvatarUrl={setAvatarUrl}
+      saving={saving}
+      message={msg}
+      onSave={save}
+      isAnonymous={isAnonymous}
+      upgradeEmail={upgradeEmail}
+      setUpgradeEmail={setUpgradeEmail}
+      upgradePassword={upgradePassword}
+      setUpgradePassword={setUpgradePassword}
+      upgrading={upgrading}
+      upgradeMessage={upgradeMsg}
+      onUpgrade={upgradeAccount}
+      onSignOut={() => void signOut()}
+      shareActivity={shareActivity}
+      onToggleShare={() => void toggleShare()}
+      soundOn={soundOn}
+      onToggleSound={() => void toggleSound()}
+      hapticsOn={hapticsOn}
+      onToggleHaptics={() => void toggleHaptics()}
+      onDeleteWorkout={(id) => void deleteWorkout(id)}
+      onRestartTour={() => {
+        if (profile) restartWelcomeTour(profile.id);
+      }}
+    />
+  ) : null;
 
   return (
     <>
       <DesignView variant="classic">
-        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
-          <button
-            type="button"
-            className="alo-btn mb-3"
-            onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "privacy" }))}
-          >
-            Daten & Datenschutz · Auf allen Geräten
-          </button>
-          <header className="flex items-center justify-between">
-            <Link
-              to="/"
-              className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
-            >
-              ← Startseite
-            </Link>
-            <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-              Einstellungen
-            </span>
-            <button
-              onClick={signOut}
-              className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-destructive transition"
-            >
-              Abmelden
-            </button>
-          </header>
-
-          <section className="mt-6 flex items-center gap-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-xl font-semibold">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-              ) : (
-                (profile?.display_name || "?").slice(0, 1).toUpperCase()
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-base font-semibold">
-                {profile?.display_name || "Ohne Namen"}
-                {isAnonymous && (
-                  <span className="ml-2 rounded-full border border-border bg-secondary px-2 py-0.5 align-middle text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Gast
-                  </span>
-                )}
-              </div>
-              <div className="truncate text-xs text-muted-foreground">
-                {isAnonymous ? "Kein Konto verknüpft" : email}
-              </div>
-            </div>
-          </section>
-
-          {isAnonymous && (
-            <section className="mt-4 rounded-3xl border border-primary/40 bg-primary/5 p-5 backdrop-blur">
-              <h2 className="text-sm font-semibold text-primary">🔒 Fortschritt sichern</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Erstelle ein Konto, um XP, Trainingsserien und Bestwerte zu behalten.
-              </p>
-              <form onSubmit={upgradeAccount} className="mt-3 space-y-2">
-                <input
-                  type="email"
-                  value={upgradeEmail}
-                  onChange={(e) => setUpgradeEmail(e.target.value)}
-                  placeholder="E-Mail"
-                  className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary"
-                />
-                <input
-                  type="password"
-                  value={upgradePassword}
-                  onChange={(e) => setUpgradePassword(e.target.value)}
-                  placeholder="Passwort (min. 6 Zeichen)"
-                  className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary"
-                />
-                {upgradeMsg && <p className="text-xs text-muted-foreground">{upgradeMsg}</p>}
-                <button
-                  type="submit"
-                  disabled={upgrading}
-                  className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
-                >
-                  {upgrading ? "Erstelle…" : "Konto erstellen"}
-                </button>
-              </form>
-            </section>
-          )}
-
-          <section className="mt-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-                  Level {lp.level} · {lp.title}
-                </div>
-                <div className="mt-1 text-2xl font-semibold tabular-nums">
-                  {lp.xp.toLocaleString("de-DE")} XP
-                </div>
-              </div>
-              <div
-                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${
-                  streakActive && streak > 0
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border bg-secondary text-muted-foreground"
-                }`}
-              >
-                <span className="text-lg leading-none">
-                  {streak > 0 && streakActive ? "🔥" : "❄️"}
-                </span>
-                <span className="tabular-nums">{streak}</span>
-              </div>
-            </div>
-            <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-secondary">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${lp.progress * 100}%` }}
+        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col gap-4 px-4 pt-5 pb-28 sm:px-8">
+          <SettingsPageHeader
+            sectionId={sectionId}
+            title={category?.title ?? "Einstellungen"}
+            profile={profile}
+          />
+          {sectionId && category ? (
+            <SettingsCategoryScreen subtitle={category.subtitle}>
+              {categoryContent}
+            </SettingsCategoryScreen>
+          ) : (
+            <>
+              <ProfileSummaryCard
+                variant="classic"
+                profile={profile}
+                email={email}
+                isAnonymous={isAnonymous}
+                loading={profileLoading}
+                profileError={profileError}
+                workoutsLoading={workoutsLoading}
+                workoutsError={workoutsError}
+                lp={lp}
+                streak={streak}
+                streakActive={streakActive}
               />
-            </div>
-          </section>
-
-          <p className="mt-4 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Schnellzugriff
-          </p>
-          <nav
-            aria-label="Profilbereiche"
-            className="mt-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
-          >
-            {[
-              ["Training", "#profile-training"],
-              ["Darstellung", "#appearance"],
-              ["App & Datenschutz", "#profile-app"],
-              ["Verlauf", "#profile-history"],
-            ].map(([label, href]) => (
-              <a
-                key={href}
-                href={href}
-                onClick={() => setSectionRevealRequest((request) => request + 1)}
-                className="min-h-11 shrink-0 snap-start rounded-full border border-border bg-card/70 px-4 py-3 text-xs font-semibold text-foreground transition hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-          <p className="mt-1 px-1 text-xs text-muted-foreground">
-            Tippe auf eine Rubrik, um direkt zu springen; die Bereiche darunter lassen sich einzeln
-            öffnen.
-          </p>
-
-          <div className="mt-4 space-y-3">
-            <SettingsSection
-              icon="🧠"
-              title="Smart Coach"
-              subtitle="Trainingsplan & Serien-Tipps"
-              id="profile-training"
-              revealKey={sectionRevealKey}
-            >
-              {profile ? (
-                <CoachPanel profile={profile} workouts={workouts} />
-              ) : (
-                <p role="status" className="text-sm text-muted-foreground">
-                  {profileLoading ? "Profil wird geladen…" : "Coach ist nicht verfügbar."}
-                </p>
-              )}
-            </SettingsSection>
-            {profile && (
-              <SettingsSection icon="🤝" title="Freunde" subtitle="Einladen & zusammen trainieren">
-                <FriendsPanel userId={profile.id} />
-              </SettingsSection>
-            )}
-            <SettingsSection
-              icon="🎨"
-              title="Design"
-              subtitle="Stil, Schrift, Layout & Farben"
-              id="appearance"
-              revealKey={sectionRevealKey}
-              profileAppearance
-            >
-              <button
-                type="button"
-                className="profile-appearance-back mb-3 min-h-11 text-sm font-medium text-primary"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              >
-                ← Zurück zu Einstellungen
-              </button>
-              <h3 className="mb-2 text-base font-semibold">Designstil</h3>
-              <DesignStylePicker />
-              <div className="mt-6 border-t border-border pt-5">
-                <h3 className="mb-2 text-base font-semibold">Homebar & Navigation</h3>
-                <NavigationLayoutPicker />
-              </div>
-              <div className="mt-6 border-t border-border pt-5">
-                <h3 className="mb-2 text-base font-semibold">Farbwelt</h3>
-                <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
-              </div>
-            </SettingsSection>
-            <SettingsSection
-              icon="🐞"
-              title="Fehlerberichte"
-              subtitle="Automatisch erfasst · ansehen & manuell kopieren"
-            >
-              <ErrorReportsPanel />
-            </SettingsSection>
-            <SettingsSection icon="🏅" title="Badges" subtitle="Erfolge">
-              <BadgeGallery />
-            </SettingsSection>
-            <SettingsSection
-              icon="✏️"
-              title="Profil bearbeiten"
-              subtitle={profile?.display_name || "Ohne Namen"}
-            >
-              <div className="space-y-3">
-                <Field
-                  label="Anzeigename"
-                  value={displayName}
-                  onChange={setDisplayName}
-                  maxLength={60}
-                />
-                <Field
-                  label="Avatar-URL"
-                  value={avatarUrl}
-                  onChange={setAvatarUrl}
-                  placeholder="https://…"
-                  maxLength={500}
-                />
-                {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
-                <button
-                  onClick={save}
-                  disabled={saving || !profile}
-                  className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
-                >
-                  {saving ? "Speichere…" : "Speichern"}
-                </button>
-              </div>
-            </SettingsSection>
-            <SettingsSection
-              icon="⚙️"
-              title="Bedienung"
-              subtitle="Sound, Vibration, Teilen"
-              id="profile-app"
-              revealKey={sectionRevealKey}
-            >
-              <div className="space-y-3">
-                <ToggleRow label="Sound" on={soundOn} onToggle={toggleSound} />
-                <ToggleRow label="Vibration" on={hapticsOn} onToggle={toggleHaptics} />
-                <ToggleRow label="Aktivität teilen" on={shareActivity} onToggle={toggleShare} />
-              </div>
-            </SettingsSection>
-            {profile && (
-              <SettingsSection icon="🌐" title="Öffentliches Profil" subtitle="Teilen & Einladen">
-                <PublicProfileSettings />
-              </SettingsSection>
-            )}
-            <SettingsSection icon="🔔" title="Benachrichtigungen" subtitle="Erinnerungen">
-              <NotificationSettings />
-            </SettingsSection>
-            <SettingsSection icon="❓" title="Hilfe" subtitle="Kurzanleitung & Tour">
-              <button
-                type="button"
-                onClick={() => {
-                  if (profile) restartWelcomeTour(profile.id);
-                }}
-                className="w-full rounded-xl border border-border px-4 py-3 text-sm font-medium"
-              >
-                Willkommenstour starten
-              </button>
-              <div className="mt-3">
-                <AloWebAppGuide />
-              </div>
-            </SettingsSection>
-            <SettingsSection
-              icon="📋"
-              title="Letzte Trainings"
-              subtitle={
-                workoutsLoading
-                  ? "Trainings werden geladen…"
-                  : workoutsError
-                    ? "Verlauf nicht verfügbar"
-                    : `${workouts.length} Einträge`
-              }
-              id="profile-history"
-              revealKey={sectionRevealKey}
-            >
-              {workoutsLoading ? (
-                <p role="status" className="text-sm text-muted-foreground">
-                  Trainings werden geladen…
-                </p>
-              ) : workoutsError ? (
-                <p role="alert" className="text-sm text-muted-foreground">
-                  Trainingsverlauf konnte nicht geladen werden.
-                </p>
-              ) : workouts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Noch keine Trainings erfasst.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {workouts.slice(0, 8).map((w) => (
-                    <li
-                      key={w.id}
-                      className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-xs"
-                    >
-                      <span>
-                        {w.count}{" "}
-                        {historyExercise(w.exercise_id)?.unit === "seconds"
-                          ? "Sekunden"
-                          : historyExercise(w.exercise_id)?.unit === "reps"
-                            ? "Wiederholungen"
-                            : ""}{" "}
-                        · {new Date(w.created_at).toLocaleDateString("de-DE")}
-                        {profile && readWorkoutMetadata(localStorage, profile.id, w.id)?.partial
-                          ? " · Teiltraining"
-                          : ""}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => deleteWorkout(w.id)}
-                        className="text-muted-foreground"
-                      >
-                        Löschen
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </SettingsSection>
-          </div>
+              <SettingsCategoryGroups />
+            </>
+          )}
           <BottomNav />
         </main>
       </DesignView>
       <DesignView variant="sport">
-        <main className="sport-only sport-profile-page mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-6 px-5 py-6 pb-28 sm:px-8">
-          <SportPageIntro
-            eyebrow="DEIN TRAININGSPROFIL"
-            title="Dein Trainingsprofil"
-            description="Identität, Leistung und persönliche App-Einstellungen – übersichtlich gebündelt."
-          >
-            <Link
-              to="/"
-              className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold"
-            >
-              ← Startseite
-            </Link>
-            <button
-              onClick={signOut}
-              className="rounded-2xl border border-border/70 px-4 py-3 text-sm font-semibold text-muted-foreground transition hover:text-destructive"
-            >
-              Abmelden
-            </button>
-          </SportPageIntro>
-          <button
-            type="button"
-            className="alo-btn"
-            onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "privacy" }))}
-          >
-            Daten & Datenschutz · Auf allen Geräten
-          </button>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Schnellzugriff
-          </p>
-          <nav aria-label="Profilbereiche" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            {[
-              ["Konto", "#profile-account"],
-              ["Training", "#profile-training"],
-              ["Darstellung", "#appearance"],
-              ["App & Datenschutz", "#profile-app"],
-              ["Verlauf", "#profile-history"],
-            ].map(([label, href]) => (
-              <a
-                key={href}
-                href={href}
-                onClick={() => setSectionRevealRequest((request) => request + 1)}
-                className="min-h-11 shrink-0 rounded-full border border-border bg-card/70 px-4 py-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Rubrik wählen, direkt springen und darunter nur den gewünschten Bereich öffnen.
-          </p>
-          <SettingsSection
-            icon="👤"
-            title="Konto & Fortschritt"
-            subtitle={profile?.display_name || "Dein Konto"}
-            id="profile-account"
-            revealKey={sectionRevealKey}
-          >
-            <section className="sport-identity-card relative overflow-hidden rounded-[2rem] border border-primary/25 bg-gradient-to-br from-primary/15 via-card/85 to-background p-6 shadow-sm sm:p-8">
-              <div className="absolute right-0 top-0 h-48 w-48 translate-x-1/4 -translate-y-1/4 rounded-full border border-primary/15" />
-              <div className="absolute right-8 top-8 h-28 w-28 rounded-full border border-primary/15" />
-              <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-primary/30 bg-background/70 text-3xl font-bold shadow-inner">
-                  {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    (profile?.display_name || "?").slice(0, 1).toUpperCase()
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                    Athlet{isAnonymous ? " · Gastzugang" : "enprofil"}
-                  </p>
-                  <h2 className="mt-2 truncate text-3xl font-bold tracking-tight">
-                    {profile?.display_name || "Ohne Namen"}
-                  </h2>
-                  <p className="mt-1 truncate text-sm text-muted-foreground">
-                    {isAnonymous ? "Kein Konto verknüpft" : email}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold">
-                      {profileLoading
-                        ? "Profil wird geladen…"
-                        : profileError
-                          ? "Profil nicht verfügbar"
-                          : `Level ${lp.level} · ${lp.title}`}
-                    </span>
-                    <span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold">
-                      {profileLoading
-                        ? "Lädt…"
-                        : profileError
-                          ? "—"
-                          : `${lp.xp.toLocaleString("de-DE")} XP`}
-                    </span>
-                    <span
-                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${streakActive && streak > 0 ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-background/60 text-muted-foreground"}`}
-                    >
-                      {workoutsLoading
-                        ? "Trainings werden geladen…"
-                        : workoutsError
-                          ? "Serie nicht verfügbar"
-                          : workouts.length > 0
-                            ? `${streak} Tage Serie`
-                            : "Noch keine Trainingsserie"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="relative mt-6">
-                <div className="mb-2 flex justify-between text-xs text-muted-foreground">
-                  <span>Fortschritt zum nächsten Level</span>
-                  <span>{Math.round(lp.progress * 100)}%</span>
-                </div>
-                <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${lp.progress * 100}%` }}
-                  />
-                </div>
-              </div>
-            </section>
-            {isAnonymous && (
-              <section className="rounded-[1.75rem] border border-primary/35 bg-primary/5 p-6">
-                <h2 className="text-lg font-bold text-primary">🔒 Fortschritt sichern</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Erstelle ein Konto, um XP, Trainingsserien und Bestwerte zu behalten.
-                </p>
-                <form onSubmit={upgradeAccount} className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <input
-                    type="email"
-                    value={upgradeEmail}
-                    onChange={(e) => setUpgradeEmail(e.target.value)}
-                    placeholder="E-Mail"
-                    className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
-                  />
-                  <input
-                    type="password"
-                    value={upgradePassword}
-                    onChange={(e) => setUpgradePassword(e.target.value)}
-                    placeholder="Passwort (min. 6 Zeichen)"
-                    className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
-                  />
-                  {upgradeMsg && (
-                    <p className="self-center text-xs text-muted-foreground sm:col-span-2">
-                      {upgradeMsg}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={upgrading}
-                    className="rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
-                  >
-                    {upgrading ? "Erstelle…" : "Konto erstellen"}
-                  </button>
-                </form>
-              </section>
-            )}
-            <section className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
-                <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Bestwert
-                </div>
-                <div className="mt-2 break-words text-xl font-bold tabular-nums sm:text-3xl">
-                  {workoutsLoading
-                    ? "Lädt…"
-                    : workoutsError || profileError
-                      ? "Nicht verfügbar"
-                      : profileBestLabel}
-                </div>
-                {!workoutsLoading && !workoutsError && workouts.length > 0 && (
-                  <div className="text-xs text-muted-foreground">Liegestütze</div>
-                )}
-              </div>
-              <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
-                <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Längste Serie
-                </div>
-                <div className="mt-2 break-words text-xl font-bold tabular-nums sm:text-3xl">
-                  {workoutsLoading
-                    ? "Lädt…"
-                    : workoutsError || profileError
-                      ? "Nicht verfügbar"
-                      : workouts.length > 0
-                        ? (profile?.longest_streak ?? 0)
-                        : "Noch keine Serie"}
-                </div>
-                <div className="text-xs text-muted-foreground">Tage am Stück</div>
-              </div>
-              <div className="rounded-2xl border border-border/70 bg-card/70 p-5">
-                <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Trainings
-                </div>
-                <div className="mt-2 break-words text-xl font-bold tabular-nums sm:text-3xl">
-                  {workoutsLoading
-                    ? "Lädt…"
-                    : workoutsError
-                      ? "Nicht verfügbar"
-                      : workoutCountLabel}
-                </div>
-                {!workoutsLoading && !workoutsError && workouts.length > 0 && (
-                  <div className="text-xs text-muted-foreground">letzte Einträge</div>
-                )}
-              </div>
-            </section>
-          </SettingsSection>
-          <SettingsSection
-            icon="💪"
-            title="Training & Kontakte"
-            subtitle="Coach, Freunde, Abzeichen & öffentliches Profil"
-            id="profile-training"
-            revealKey={sectionRevealKey}
-          >
-            <nav className="mb-4 flex flex-wrap gap-3" aria-label="Weitere Trainingsbereiche">
-              <Link to="/ai" className="alo-btn min-h-11">
-                KI-Coach öffnen
-              </Link>
-              <Link to="/health" className="alo-btn min-h-11">
-                Gesundheitsdaten
-              </Link>
-            </nav>
-            <div className="grid gap-4 lg:grid-cols-2">
-              {!profile && (
-                <p
-                  role={profileError ? "alert" : "status"}
-                  className="text-sm text-muted-foreground"
-                >
-                  {profileLoading
-                    ? "Profil wird geladen…"
-                    : "Trainingsprofil konnte nicht geladen werden."}
-                </p>
-              )}
-              {profile && (
-                <SettingsSection
-                  icon="🧠"
-                  title="Smart Coach"
-                  subtitle="Trainingsplan & Serien-Tipps"
-                >
-                  <CoachPanel profile={profile} workouts={workouts} />
-                </SettingsSection>
-              )}
-              {profile && (
-                <SettingsSection
-                  icon="🤝"
-                  title="Freunde"
-                  subtitle="Einladen & zusammen trainieren"
-                >
-                  <FriendsPanel userId={profile.id} />
-                </SettingsSection>
-              )}
-              <SettingsSection icon="🏅" title="Badges" subtitle="Deine Erfolge">
-                <BadgeGallery />
-              </SettingsSection>
-              {profile && (
-                <SettingsSection icon="🌐" title="Öffentliches Profil" subtitle="Teilen & Einladen">
-                  <PublicProfileSettings />
-                </SettingsSection>
-              )}
-            </div>
-          </SettingsSection>
-          <SettingsSection
-            icon="🎨"
-            title="Profil & Darstellung"
-            subtitle="Persönliche Daten, 6 Stile, 13 Farben & Navigation"
-            id="appearance"
-            revealKey={sectionRevealKey}
-          >
-            <div className="grid gap-4 lg:grid-cols-2">
-              <SettingsSection
-                icon="✏️"
-                title="Profil bearbeiten"
-                subtitle={profile?.display_name || "Ohne Namen"}
-              >
-                <div className="space-y-3">
-                  <Field
-                    label="Anzeigename"
-                    value={displayName}
-                    onChange={setDisplayName}
-                    maxLength={60}
-                  />
-                  <Field
-                    label="Avatar-URL"
-                    value={avatarUrl}
-                    onChange={setAvatarUrl}
-                    placeholder="https://…"
-                    maxLength={500}
-                  />
-                  {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
-                  <button
-                    onClick={save}
-                    disabled={saving || !profile}
-                    className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
-                  >
-                    {saving ? "Speichere…" : "Profil speichern"}
-                  </button>
-                </div>
-              </SettingsSection>
-              <SettingsSection
-                icon="🎨"
-                title="Design & Navigation"
-                subtitle="Stil, Schrift, Layout & Farben"
-                profileAppearance
-                revealKey={sectionRevealKey}
-              >
-                <button
-                  type="button"
-                  className="profile-appearance-back mb-3 min-h-11 text-sm font-semibold text-primary"
-                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                >
-                  ← Zurück zu Einstellungen
-                </button>
-                <h3 className="mb-2 text-sm font-bold">Designstil</h3>
-                <DesignStylePicker />
-                <div className="mt-5 border-t border-border pt-5">
-                  <h3 className="mb-2 text-sm font-bold">Homebar & Navigation</h3>
-                  <NavigationLayoutPicker />
-                </div>
-                <div className="mt-5 border-t border-border pt-5">
-                  <h3 className="mb-2 text-sm font-bold">Farbwelt</h3>
-                  <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
-                </div>
-              </SettingsSection>
-            </div>
-          </SettingsSection>
-          <SettingsSection
-            icon="⚙️"
-            title="App & Datenschutz"
-            subtitle="Bedienung, Benachrichtigungen, Fehlerberichte & Hilfe"
-            id="profile-app"
-            revealKey={sectionRevealKey}
-          >
-            <div className="grid gap-4 lg:grid-cols-2">
-              <SettingsSection
-                icon="⚙️"
-                title="Bedienung & Teilen"
-                subtitle="Sound, Vibration, Aktivität"
-              >
-                <div className="space-y-3">
-                  <ToggleRow label="Sound" on={soundOn} onToggle={toggleSound} />
-                  <ToggleRow label="Vibration" on={hapticsOn} onToggle={toggleHaptics} />
-                  <ToggleRow label="Aktivität teilen" on={shareActivity} onToggle={toggleShare} />
-                </div>
-              </SettingsSection>
-              <SettingsSection icon="🔔" title="Benachrichtigungen" subtitle="Erinnerungen">
-                <NotificationSettings />
-              </SettingsSection>
-              <SettingsSection
-                icon="🐞"
-                title="Fehlerberichte"
-                subtitle="Automatisch erfasst · ansehen & manuell kopieren"
-              >
-                <ErrorReportsPanel />
-              </SettingsSection>
-              <SettingsSection icon="❓" title="Hilfe" subtitle="Kurzanleitung & Tour">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (profile) restartWelcomeTour(profile.id);
-                  }}
-                  className="w-full rounded-2xl border border-border px-4 py-3 text-sm font-semibold"
-                >
-                  Willkommenstour starten
-                </button>
-                <div className="mt-3">
-                  <AloWebAppGuide />
-                </div>
-              </SettingsSection>
-            </div>
-          </SettingsSection>
-          <SettingsSection
-            icon="📋"
-            title="Trainingsverlauf"
-            subtitle={
-              workoutsLoading
-                ? "Trainings werden geladen…"
-                : workoutsError
-                  ? "Verlauf nicht verfügbar"
-                  : workouts.length > 0
-                    ? `${workouts.length} Einträge`
-                    : "Noch keine Erfassung"
-            }
-            id="profile-history"
-            revealKey={sectionRevealKey}
-          >
-            {workoutsLoading ? (
-              <p role="status" className="text-sm text-muted-foreground">
-                Trainings werden geladen…
-              </p>
-            ) : workoutsError ? (
-              <p role="alert" className="text-sm text-muted-foreground">
-                Trainingsverlauf konnte nicht geladen werden.
-              </p>
-            ) : workouts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Noch keine Trainings erfasst.</p>
-            ) : (
-              <ul className="space-y-2">
-                {workouts.slice(0, 8).map((w) => (
-                  <li
-                    key={w.id}
-                    className="flex items-center justify-between rounded-xl border border-border px-3 py-3 text-sm"
-                  >
-                    <span>
-                      {w.count}{" "}
-                      {historyExercise(w.exercise_id)?.unit === "seconds"
-                        ? "Sekunden"
-                        : historyExercise(w.exercise_id)?.unit === "reps"
-                          ? "Wiederholungen"
-                          : ""}{" "}
-                      · {new Date(w.created_at).toLocaleDateString("de-DE")}
-                      {profile && readWorkoutMetadata(localStorage, profile.id, w.id)?.partial
-                        ? " · Teiltraining"
-                        : ""}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => deleteWorkout(w.id)}
-                      className="text-xs text-muted-foreground"
-                    >
-                      Löschen
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SettingsSection>
+        <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-4xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8">
+          <SettingsPageHeader
+            sectionId={sectionId}
+            title={category?.title ?? "Einstellungen"}
+            profile={profile}
+            sport
+          />
+          {sectionId && category ? (
+            <SettingsCategoryScreen subtitle={category.subtitle}>
+              {categoryContent}
+            </SettingsCategoryScreen>
+          ) : (
+            <>
+              <ProfileSummaryCard
+                variant="sport"
+                profile={profile}
+                email={email}
+                isAnonymous={isAnonymous}
+                loading={profileLoading}
+                profileError={profileError}
+                workoutsLoading={workoutsLoading}
+                workoutsError={workoutsError}
+                lp={lp}
+                streak={streak}
+                streakActive={streakActive}
+              />
+              <SettingsCategoryGroups />
+            </>
+          )}
           <BottomNav />
         </main>
       </DesignView>
     </>
   );
+}
+
+function SettingsPageHeader({
+  sectionId,
+  title,
+  profile,
+  sport = false,
+}: {
+  sectionId?: ProfileSettingsCategoryId;
+  title: string;
+  profile: Profile | null;
+  sport?: boolean;
+}) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (sectionId) titleRef.current?.focus();
+  }, [sectionId, title]);
+
+  return (
+    <header
+      className={`settings-page-header flex min-h-12 items-center justify-between gap-3 ${sport ? "settings-page-header-sport" : ""}`}
+      data-settings-page-header="true"
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        {sectionId ? (
+          <Link
+            to="/profile"
+            aria-label="Zurück zu Einstellungen"
+            className="settings-header-back inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-card/70 text-foreground transition hover:border-[var(--menu-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--menu-accent)]"
+          >
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+          </Link>
+        ) : (
+          <AloPageSidebarTrigger />
+        )}
+        <h1
+          ref={titleRef}
+          tabIndex={sectionId ? -1 : undefined}
+          className="truncate text-xl font-bold tracking-tight focus:outline-none sm:text-2xl"
+        >
+          {title}
+        </h1>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <Link
+          to="/"
+          aria-label="Zur Alo-Startseite"
+          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border/70 bg-card/70 px-2 text-xs font-semibold text-foreground transition hover:border-[var(--menu-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--menu-accent)] sm:px-3 sm:text-sm"
+        >
+          ← Startseite
+        </Link>
+        <Link
+          to="/settings/$category"
+          params={{ category: "profile" }}
+          aria-label="Profil & Konto öffnen"
+          title="Profil & Konto"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--menu-accent-border)] bg-[var(--menu-accent-soft)] text-sm font-bold text-[var(--menu-accent)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--menu-accent)]"
+        >
+          <ProfileAvatar profile={profile} />
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+function ProfileAvatar({ profile }: { profile: Profile | null }) {
+  if (profile?.avatar_url) {
+    return <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />;
+  }
+  return <span aria-hidden="true">{(profile?.display_name || "?").slice(0, 1).toUpperCase()}</span>;
+}
+
+function ProfileSummaryCard({
+  variant,
+  profile,
+  email,
+  isAnonymous,
+  loading,
+  profileError,
+  workoutsLoading,
+  workoutsError,
+  lp,
+  streak,
+  streakActive,
+}: {
+  variant: "classic" | "sport";
+  profile: Profile | null;
+  email: string;
+  isAnonymous: boolean;
+  loading: boolean;
+  profileError: boolean;
+  workoutsLoading: boolean;
+  workoutsError: boolean;
+  lp: ReturnType<typeof levelProgress>;
+  streak: number;
+  streakActive: boolean;
+}) {
+  const sport = variant === "sport";
+  return (
+    <section
+      className={
+        sport
+          ? "sport-identity-card relative overflow-hidden rounded-[2rem] border border-primary/25 bg-gradient-to-br from-primary/15 via-card/85 to-background p-5 shadow-sm sm:p-8"
+          : "settings-profile-card relative overflow-hidden rounded-3xl border border-border bg-card/70 p-5 backdrop-blur sm:p-6"
+      }
+      aria-label="Athletenprofil"
+      data-profile-summary-card="true"
+    >
+      {sport && (
+        <>
+          <div className="absolute right-0 top-0 h-48 w-48 translate-x-1/4 -translate-y-1/4 rounded-full border border-primary/15" />
+          <div className="absolute right-8 top-8 h-28 w-28 rounded-full border border-primary/15" />
+        </>
+      )}
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div
+          className={`flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.5rem] border border-primary/30 bg-background/70 text-3xl font-bold ${sport ? "shadow-inner" : ""}`}
+        >
+          <ProfileAvatar profile={profile} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+            Athlet{isAnonymous ? " · Gastzugang" : "enprofil"}
+          </p>
+          <h2 className="mt-2 truncate text-2xl font-bold tracking-tight sm:text-3xl">
+            {profile?.display_name || (loading ? "Profil wird geladen…" : "Ohne Namen")}
+          </h2>
+          <p className="mt-1 break-words text-sm text-muted-foreground">
+            {isAnonymous ? "Kein Konto verknüpft" : email}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold">
+              {loading
+                ? "Profil wird geladen…"
+                : profileError
+                  ? "Profil nicht verfügbar"
+                  : `Level ${lp.level} · ${lp.title}`}
+            </span>
+            <span className="rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-semibold">
+              {loading ? "Lädt…" : profileError ? "—" : `${lp.xp.toLocaleString("de-DE")} XP`}
+            </span>
+            <span
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${streakActive && streak > 0 ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-background/60 text-muted-foreground"}`}
+            >
+              {workoutsLoading
+                ? "Trainings werden geladen…"
+                : workoutsError
+                  ? "Serie nicht verfügbar"
+                  : streak > 0 && streakActive
+                    ? `${streak} Tage Serie`
+                    : "Noch keine Trainingsserie"}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="relative mt-6">
+        <div className="mb-2 flex justify-between gap-3 text-xs text-muted-foreground">
+          <span>Fortschritt zum nächsten Level</span>
+          <span>{profileError ? "—" : `${Math.round(lp.progress * 100)}%`}</span>
+        </div>
+        <div
+          className="h-3 w-full overflow-hidden rounded-full bg-secondary"
+          role="progressbar"
+          aria-label="Fortschritt zum nächsten Level"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={profileError ? 0 : Math.round(lp.progress * 100)}
+        >
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: profileError ? "0%" : `${lp.progress * 100}%` }}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SettingsCategoryGroups() {
+  return (
+    <nav aria-label="Einstellungsbereiche" className="space-y-5" data-settings-category-list="true">
+      {PROFILE_SETTINGS_GROUPS.map((group, index) => {
+        const headingId = `settings-group-${index}`;
+        return (
+          <section key={group.title} aria-labelledby={headingId}>
+            <h2
+              id={headingId}
+              className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              {group.title}
+            </h2>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {group.categories.map((categoryId) => (
+                <SettingsCategoryRow key={categoryId} categoryId={categoryId} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </nav>
+  );
+}
+
+function SettingsCategoryScreen({ subtitle, children }: { subtitle: string; children: ReactNode }) {
+  return (
+    <div className="settings-category-screen space-y-4" data-settings-category-screen="true">
+      <section className="rounded-2xl border border-border/70 bg-card/60 p-4 sm:p-5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--menu-accent)]">
+          Alo · Einstellungen
+        </p>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
+      </section>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
+
+function SettingsBlock({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-border/70 bg-card/60 p-4 sm:p-5">
+      <h2 className="text-sm font-bold">{title}</h2>
+      <div className="mt-3 space-y-3">{children}</div>
+    </section>
+  );
+}
+
+type SettingsCategoryContentProps = {
+  categoryId: ProfileSettingsCategoryId;
+  profile: Profile | null;
+  profileLoading: boolean;
+  profileError: boolean;
+  workouts: Workout[];
+  workoutsLoading: boolean;
+  workoutsError: boolean;
+  displayName: string;
+  setDisplayName: (value: string) => void;
+  avatarUrl: string;
+  setAvatarUrl: (value: string) => void;
+  saving: boolean;
+  message: string | null;
+  onSave: () => void;
+  isAnonymous: boolean;
+  upgradeEmail: string;
+  setUpgradeEmail: (value: string) => void;
+  upgradePassword: string;
+  setUpgradePassword: (value: string) => void;
+  upgrading: boolean;
+  upgradeMessage: string | null;
+  onUpgrade: (event: FormEvent) => void;
+  onSignOut: () => void;
+  shareActivity: boolean;
+  onToggleShare: () => void;
+  soundOn: boolean;
+  onToggleSound: () => void;
+  hapticsOn: boolean;
+  onToggleHaptics: () => void;
+  onDeleteWorkout: (id: string) => void;
+  onRestartTour: () => void;
+};
+
+function SettingsCategoryContent(props: SettingsCategoryContentProps) {
+  const {
+    categoryId,
+    profile,
+    profileLoading,
+    profileError,
+    workouts,
+    workoutsLoading,
+    workoutsError,
+  } = props;
+
+  switch (categoryId) {
+    case "profile":
+      return (
+        <>
+          <SettingsBlock title="Profil bearbeiten">
+            <Field
+              label="Anzeigename"
+              value={props.displayName}
+              onChange={props.setDisplayName}
+              maxLength={60}
+            />
+            <Field
+              label="Avatar-URL"
+              value={props.avatarUrl}
+              onChange={props.setAvatarUrl}
+              placeholder="https://…"
+              maxLength={500}
+            />
+            {props.message && (
+              <p role="status" className="text-sm text-muted-foreground">
+                {props.message}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={props.onSave}
+              disabled={props.saving || !profile}
+              className="min-h-11 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            >
+              {props.saving ? "Speichere…" : "Profil speichern"}
+            </button>
+          </SettingsBlock>
+          {props.isAnonymous && (
+            <SettingsBlock title="Fortschritt sichern">
+              <p className="text-sm text-muted-foreground">
+                Erstelle ein Konto, um XP, Trainingsserien und Bestwerte zu behalten.
+              </p>
+              <form onSubmit={props.onUpgrade} className="space-y-3">
+                <Field
+                  label="E-Mail"
+                  value={props.upgradeEmail}
+                  onChange={props.setUpgradeEmail}
+                  placeholder="name@example.com"
+                />
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-muted-foreground">
+                    Passwort
+                  </span>
+                  <input
+                    type="password"
+                    value={props.upgradePassword}
+                    onChange={(event) => props.setUpgradePassword(event.target.value)}
+                    placeholder="Mindestens 6 Zeichen"
+                    className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-base outline-none focus:border-primary"
+                  />
+                </label>
+                {props.upgradeMessage && (
+                  <p role="status" className="text-sm text-muted-foreground">
+                    {props.upgradeMessage}
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={props.upgrading}
+                  className="min-h-11 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                >
+                  {props.upgrading ? "Erstelle…" : "Konto erstellen"}
+                </button>
+              </form>
+            </SettingsBlock>
+          )}
+          <SettingsBlock title="Konto">
+            <p className="text-sm text-muted-foreground">
+              {props.isAnonymous ? "Gastzugang" : "Angemeldet"} ·{" "}
+              {props.isAnonymous
+                ? "Kein Konto verknüpft"
+                : "Dein Fortschritt bleibt deinem Konto zugeordnet."}
+            </p>
+            <button
+              type="button"
+              onClick={props.onSignOut}
+              className="min-h-11 w-full rounded-xl border border-border px-4 py-3 text-left text-sm font-semibold text-muted-foreground transition hover:text-destructive"
+            >
+              Abmelden
+            </button>
+          </SettingsBlock>
+        </>
+      );
+    case "apps":
+      return (
+        <SettingsBlock title="Apps mit eigenen Einstellungen">
+          <AppsSettingsList />
+        </SettingsBlock>
+      );
+    case "appearance":
+      return (
+        <>
+          <SettingsBlock title="Menüfarbe">
+            <MenuAccentPicker />
+          </SettingsBlock>
+          <SettingsBlock title="Farbwelt">
+            <ThemePicker profileId={profile?.id} initialTheme={profile?.theme ?? null} />
+          </SettingsBlock>
+          <SettingsBlock title="Designstil">
+            <DesignStylePicker />
+          </SettingsBlock>
+          <SettingsBlock title="Homebar & Navigation">
+            <NavigationLayoutPicker />
+          </SettingsBlock>
+        </>
+      );
+    case "training":
+      return (
+        <SettingsBlock title="Smart Coach">
+          {profile ? (
+            <CoachPanel
+              profile={{
+                ...profile,
+                best_count: profile.best_count ?? 0,
+                longest_streak: profile.longest_streak ?? 0,
+                streak_freezes: profile.streak_freezes ?? 0,
+              }}
+              workouts={workouts}
+            />
+          ) : (
+            <p role={profileError ? "alert" : "status"} className="text-sm text-muted-foreground">
+              {profileLoading ? "Profil wird geladen…" : "Coach ist nicht verfügbar."}
+            </p>
+          )}
+        </SettingsBlock>
+      );
+    case "community":
+      return (
+        <>
+          {profile && (
+            <SettingsBlock title="Freunde">
+              <FriendsPanel userId={profile.id} />
+            </SettingsBlock>
+          )}
+          <SettingsBlock title="Badges">
+            <BadgeGallery />
+          </SettingsBlock>
+          {profile && (
+            <SettingsBlock title="Öffentliches Profil">
+              <PublicProfileSettings />
+            </SettingsBlock>
+          )}
+        </>
+      );
+    case "notifications":
+      return (
+        <SettingsBlock title="Erinnerungen">
+          <NotificationSettings />
+        </SettingsBlock>
+      );
+    case "controls":
+      return (
+        <SettingsBlock title="Bedienung">
+          <ToggleRow label="Sound" on={props.soundOn} onToggle={props.onToggleSound} />
+          <ToggleRow label="Vibration" on={props.hapticsOn} onToggle={props.onToggleHaptics} />
+        </SettingsBlock>
+      );
+    case "privacy":
+      return (
+        <>
+          <SettingsBlock title="Aktivität teilen">
+            <ToggleRow
+              label="Aktivität mit anderen teilen"
+              on={props.shareActivity}
+              onToggle={props.onToggleShare}
+            />
+          </SettingsBlock>
+          <SettingsBlock title="Daten & Datenschutz">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Öffne die geräteübergreifenden Datenschutzoptionen oder verwalte Mira-Datenfreigaben
+              getrennt in den Einstellungen der Mira-App.
+            </p>
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(new CustomEvent("alo-open", { detail: "privacy" }))
+              }
+              className="min-h-11 w-full rounded-xl border border-border px-4 py-3 text-left text-sm font-semibold transition hover:border-[var(--menu-accent)]"
+            >
+              Daten & Datenschutz · Auf allen Geräten
+            </button>
+            <Link
+              to="/settings/apps/$appId"
+              params={{ appId: "mira" }}
+              search={{ from: "/ai" }}
+              className="inline-flex min-h-11 w-full items-center rounded-xl border border-border px-4 py-3 text-sm font-semibold transition hover:border-[var(--menu-accent)]"
+            >
+              Mira-Datenfreigaben öffnen
+            </Link>
+          </SettingsBlock>
+        </>
+      );
+    case "history":
+      return (
+        <SettingsBlock title="Letzte Trainings">
+          {workoutsLoading ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              Trainings werden geladen…
+            </p>
+          ) : workoutsError ? (
+            <p role="alert" className="text-sm text-muted-foreground">
+              Trainingsverlauf konnte nicht geladen werden.
+            </p>
+          ) : workouts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Noch keine Trainings erfasst.</p>
+          ) : (
+            <ul className="space-y-2">
+              {workouts.slice(0, 8).map((workout) => (
+                <li
+                  key={workout.id}
+                  className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-border px-3 py-2 text-sm"
+                >
+                  <span className="min-w-0 break-words">
+                    {workout.count}{" "}
+                    {historyExercise(workout.exercise_id)?.unit === "seconds"
+                      ? "Sekunden"
+                      : historyExercise(workout.exercise_id)?.unit === "reps"
+                        ? "Wiederholungen"
+                        : ""}{" "}
+                    · {new Date(workout.created_at).toLocaleDateString("de-DE")}
+                    {profile && readWorkoutMetadata(localStorage, profile.id, workout.id)?.partial
+                      ? " · Teiltraining"
+                      : ""}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => props.onDeleteWorkout(workout.id)}
+                    className="min-h-11 shrink-0 px-2 text-xs font-semibold text-muted-foreground hover:text-destructive"
+                    aria-label={`Training vom ${new Date(workout.created_at).toLocaleDateString("de-DE")} löschen`}
+                  >
+                    Löschen
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SettingsBlock>
+      );
+    case "support":
+      return (
+        <>
+          <SettingsBlock title="Willkommenstour">
+            <p className="text-sm text-muted-foreground">
+              Die kurze Tour kannst du jederzeit erneut starten.
+            </p>
+            <button
+              type="button"
+              onClick={props.onRestartTour}
+              className="min-h-11 w-full rounded-xl border border-border px-4 py-3 text-left text-sm font-semibold hover:border-[var(--menu-accent)]"
+            >
+              Willkommenstour starten
+            </button>
+          </SettingsBlock>
+          <SettingsBlock title="Kurzanleitung">
+            <AloWebAppGuide />
+          </SettingsBlock>
+          <SettingsBlock title="Fehlerberichte">
+            <ErrorReportsPanel />
+          </SettingsBlock>
+        </>
+      );
+  }
 }
 
 function Field({
@@ -1052,27 +936,22 @@ function Field({
   onChange,
   placeholder,
   maxLength,
-  numeric,
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string) => void;
   placeholder?: string;
   maxLength?: number;
-  numeric?: boolean;
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        {label}
-      </span>
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
-        inputMode={numeric ? "decimal" : undefined}
-        className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary"
+        className="w-full rounded-xl border border-border bg-background/60 px-3 py-2.5 text-base outline-none focus:border-primary"
       />
     </label>
   );
@@ -1082,12 +961,15 @@ function ToggleRow({ label, on, onToggle }: { label: string; on: boolean; onTogg
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={on}
       onClick={onToggle}
-      className="flex w-full items-center justify-between rounded-xl border border-border px-3 py-3 text-sm"
+      className="flex min-h-11 w-full items-center justify-between gap-4 rounded-xl border border-border px-3 py-3 text-left text-sm"
     >
       <span>{label}</span>
       <span
-        className={`flex h-6 w-11 items-center rounded-full p-0.5 transition ${on ? "bg-primary" : "bg-secondary"}`}
+        aria-hidden="true"
+        className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${on ? "bg-primary" : "bg-secondary"}`}
       >
         <span
           className={`h-5 w-5 rounded-full bg-background transition ${on ? "translate-x-5" : ""}`}

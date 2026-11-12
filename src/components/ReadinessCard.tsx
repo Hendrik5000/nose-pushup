@@ -2,6 +2,7 @@ import { useReadiness } from "@/hooks/useReadiness";
 import type { Readiness } from "@/lib/readiness";
 
 export function ReadinessCard(props: {
+  userId: string;
   streak: number;
   onReadinessChange?: (readiness: Readiness) => void;
 }) {

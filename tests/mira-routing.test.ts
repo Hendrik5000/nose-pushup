@@ -12,6 +12,10 @@ const route = readFileSync(
   new URL("../src/components/mira/SuperAiPage.tsx", import.meta.url),
   "utf8",
 );
+const replyActions = readFileSync(
+  new URL("../src/components/mira/MiraAnswerActions.tsx", import.meta.url),
+  "utf8",
+);
 
 function disabledProviders() {
   return structuredClone(DEFAULT_PROVIDERS).map((provider) => ({
@@ -69,9 +73,12 @@ test("no enabled providers is reported as no selection", () => {
 
 test("Lovable is identified as the gateway, not as a known downstream model backend", () => {
   assert.equal(providerLabel("lovable"), "Lovable Gateway");
-  assert.match(route, /Lovable Gateway; das interne Backend ist nicht ausgewiesen\./);
-  assert.match(route, /Anbieter für diese Antwort:[\s\S]{0,100}providerLabel\(m\.meta\.provider/);
-  assert.match(route, /Modellkennung: \{m\.meta\.model\}/);
+  assert.match(replyActions, /Lovable Gateway; das interne Backend ist nicht ausgewiesen\./);
+  assert.match(
+    replyActions,
+    /Anbieter für diese Antwort:[\s\S]{0,100}providerLabel\(meta\.provider/,
+  );
+  assert.match(replyActions, /Modellkennung: \{meta\.model\}/);
 });
 
 test("the next-request provider is explicitly a preview, while each reply carries its own choice and reason", () => {
@@ -81,6 +88,7 @@ test("the next-request provider is explicitly a preview, while each reply carrie
     route,
     /provider: res\.provider,[\s\S]*?routingReason: describeProviderSelection\(selection, task\)/,
   );
-  assert.match(route, /Auswahlregel: \{m\.meta\.routingReason\}/);
-  assert.equal((route.match(/\bsend\(\{/g) ?? []).length, 1);
+  assert.match(replyActions, /Auswahlregel: \{meta\.routingReason\}/);
+  assert.equal((route.match(/meta=\{m\.meta\}/g) ?? []).length, 2);
+  assert.equal((route.match(/\bsend\(\{/g) ?? []).length, 2);
 });

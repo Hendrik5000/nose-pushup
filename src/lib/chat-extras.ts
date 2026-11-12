@@ -98,6 +98,27 @@ export function countUnread(
   return messages.filter((m) => m.user_id !== myId && m.created_at > since).length;
 }
 
+export function aggregateUnread<
+  T extends {
+    kind: "room" | "dm";
+    id: string;
+    messages: Array<{ created_at: string; user_id: string }>;
+  },
+>(
+  prefs: ChatPrefs,
+  targets: T[],
+  myId: string,
+): { total: number; targets: Array<T & { unread: number }> } {
+  const unreadTargets = targets.map((target) => ({
+    ...target,
+    unread: countUnread(prefs, target.kind, target.id, target.messages, myId),
+  }));
+  return {
+    total: unreadTargets.reduce((sum, target) => sum + target.unread, 0),
+    targets: unreadTargets,
+  };
+}
+
 export function loadDrafts(userId: string): Record<string, string> {
   const legacy = readJson<Record<string, string>>(DRAFTS_KEY(userId), {});
   for (const row of readRecords(userId).filter((r) => r.kind === "draft")) {

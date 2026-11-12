@@ -1,5 +1,12 @@
-import { useEffect, useState } from "react";
-import { formatRest, suggestRest, type RestSuggestion } from "@/lib/rest-timer";
+import { useEffect, useRef, useState } from "react";
+import {
+  adjustRestSeconds,
+  formatRest,
+  resetRestSeconds,
+  runRestCompletionOnce,
+  suggestRest,
+  type RestSuggestion,
+} from "@/lib/rest-timer";
 import { speak } from "@/lib/voice";
 import { feedbackRep } from "@/lib/feedback";
 
@@ -13,28 +20,41 @@ type Props = {
 
 export function SmartRestTimer({ rpe, formScore, exerciseId, onDone, onSkip }: Props) {
   const suggestion: RestSuggestion = suggestRest({ rpe, formScore, exerciseId });
-  const [left, setLeft] = useState(suggestion.seconds);
+  const suggestedSeconds = resetRestSeconds(suggestion.seconds);
+  const [left, setLeft] = useState(suggestedSeconds);
   const [running, setRunning] = useState(true);
+  const completionCalled = useRef(false);
+  const onDoneRef = useRef(onDone);
+
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
 
   useEffect(() => {
     if (!running || left <= 0) return;
-    const id = window.setInterval(() => {
-      setLeft((s) => {
-        if (s <= 1) {
-          window.clearInterval(id);
+    const id = window.setTimeout(() => {
+      if (left <= 1) {
+        setLeft(0);
+        setRunning(false);
+        runRestCompletionOnce(completionCalled, () => {
           feedbackRep();
           speak("Pause vorbei");
-          onDone?.();
-          return 0;
-        }
-        if (s === 4) speak("Noch drei");
-        return s - 1;
-      });
+          onDoneRef.current?.();
+        });
+        return;
+      }
+      if (left === 4) speak("Noch drei");
+      setLeft((current) => Math.max(0, current - 1));
     }, 1000);
-    return () => window.clearInterval(id);
-  }, [running, left, onDone]);
+    return () => window.clearTimeout(id);
+  }, [running, left]);
 
-  const pct = Math.max(0, Math.min(1, left / suggestion.seconds));
+  const pct = suggestedSeconds > 0 ? Math.max(0, Math.min(1, left / suggestedSeconds)) : 0;
+  const extend = (seconds: number) => {
+    const next = adjustRestSeconds(left, seconds);
+    if (left <= 0 && next > 0) completionCalled.current = false;
+    setLeft(next);
+  };
 
   return (
     <div className="rounded-3xl border border-border bg-card/70 p-5 backdrop-blur">
@@ -48,7 +68,7 @@ export function SmartRestTimer({ rpe, formScore, exerciseId, onDone, onSkip }: P
             setRunning(false);
             onSkip?.();
           }}
-          className="text-[11px] font-medium text-muted-foreground hover:text-foreground"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           Überspringen
         </button>
@@ -59,29 +79,63 @@ export function SmartRestTimer({ rpe, formScore, exerciseId, onDone, onSkip }: P
           {formatRest(left)}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">{suggestion.reason}</p>
+        {suggestion.usedDefaults && (
+          <p className="mt-1 text-xs text-muted-foreground" role="status">
+            Fehlender oder ungültiger RPE-/Formwert: Standardwerte verwendet.
+          </p>
+        )}
+        {left === 0 && (
+          <p
+            className="mt-1 text-xs font-medium text-primary"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            Pause beendet.
+          </p>
+        )}
       </div>
 
       <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-secondary">
         <div
-          className="h-full rounded-full bg-primary transition-all duration-1000 linear"
+          className="h-full rounded-full bg-primary transition-all duration-1000 linear motion-reduce:transition-none"
           style={{ width: `${pct * 100}%` }}
         />
       </div>
 
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => setRunning((r) => !r)}
-          className="flex-1 rounded-xl border border-border bg-secondary py-2.5 text-sm font-medium text-foreground"
+          disabled={left === 0}
+          onClick={() => setRunning((value) => !value)}
+          className="min-h-11 flex-1 rounded-xl border border-border bg-secondary px-3 py-2.5 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
         >
           {running ? "Pause" : "Weiter"}
         </button>
         <button
           type="button"
-          onClick={() => setLeft((s) => s + 15)}
-          className="rounded-xl border border-border bg-secondary px-3 py-2.5 text-sm font-medium text-foreground"
+          onClick={() => extend(15)}
+          className="min-h-11 rounded-xl border border-border bg-secondary px-3 py-2.5 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           +15s
+        </button>
+        <button
+          type="button"
+          onClick={() => extend(30)}
+          className="min-h-11 rounded-xl border border-border bg-secondary px-3 py-2.5 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          +30s
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            completionCalled.current = false;
+            setLeft(suggestedSeconds);
+            setRunning(true);
+          }}
+          className="min-h-11 rounded-xl border border-border bg-secondary px-3 py-2.5 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          Empfehlung
         </button>
       </div>
     </div>

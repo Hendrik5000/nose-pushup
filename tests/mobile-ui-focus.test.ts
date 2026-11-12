@@ -128,7 +128,8 @@ test("Nexus keeps quick answers and message tools secondary and never invents a 
   );
   assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
   assert.match(home, /aria-label="Überall suchen"/);
-  assert.match(home, /aria-label="Weitere Alo-Bereiche"/);
+  assert.match(home, /to="\/areas"/);
+  assert.match(home, /to="\/tools"/);
 });
 
 test("Alo retains its supplied brand assets in the document metadata after header removal", () => {
@@ -151,20 +152,21 @@ test("mobile review fixes preserve skill routing and constrain narrow controls w
     /design-style-picker \[role="group"\][\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
   );
   const settings = read("routes/_authenticated/profile-page-impl.tsx");
-  assert.equal((settings.match(/profileAppearance/g) ?? []).length, 2);
+  assert.match(settings, /SettingsCategoryGroups/);
+  assert.match(settings, /settings-page-header/);
   assert.doesNotMatch(settings, /heading\.click\(\)/);
 });
 
-test("appearance deep links open idempotently and scroll only the visible design variant", () => {
-  const section = read("components/SettingsSection.tsx");
-  assert.match(section, /profileAppearance \? "appearance" : id/);
-  assert.match(section, /setOpen\(true\)/);
-  assert.match(section, /section\.getClientRects\(\)\.length > 0/);
-  assert.match(section, /section\.scrollIntoView/);
-  assert.doesNotMatch(
-    read("alo-mobile.css"),
-    /\[data-profile-appearance\] > div > div\s*\{\s*overflow: visible/,
-  );
+test("appearance settings use an allowlisted full-screen route with destination focus", () => {
+  const settings = read("routes/_authenticated/profile-page-impl.tsx");
+  const row = read("components/settings/SettingsCategoryRow.tsx");
+  const route = read("routes/_authenticated/settings.$category.tsx");
+  const registry = read("lib/profile-settings.ts");
+  assert.match(registry, /id: "appearance"/);
+  assert.match(row, /to="\/settings\/\$category"/);
+  assert.match(route, /isProfileSettingsCategory\(params\.category\)/);
+  assert.match(settings, /titleRef\.current\?\.focus\(\)/);
+  assert.doesNotMatch(settings, /heading\.click\(\)/);
 });
 
 test("the shared upper brand header is gone while app destinations remain in the home hub", () => {
@@ -174,8 +176,11 @@ test("the shared upper brand header is gone while app destinations remain in the
   assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
   assert.match(layout, /<AppNavigation\s*\/>/);
   assert.doesNotMatch(navigation, /alo-module-switcher/);
-  for (const route of ["/ai", "/chat", "/exercises", "/profile", "/health", "/programs", "/clubs"])
+  const areaMenus = read("lib/home-app-menus.ts");
+  for (const route of ["/ai", "/chat", "/exercises", "/profile", "/areas", "/tools"])
     assert.ok(home.includes(`"${route}"`), `home hub should retain ${route}`);
+  for (const route of ["/health", "/programs", "/clubs"])
+    assert.ok(areaMenus.includes(`to: "${route}"`), `Areas should retain ${route}`);
   assert.match(home, /Alo-Werkzeuge öffnen/);
   assert.match(home, /Überall suchen/);
 });

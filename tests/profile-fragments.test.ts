@@ -2,48 +2,57 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-const profile = readFileSync(
-  new URL("../src/routes/_authenticated/profile-page-impl.tsx", import.meta.url),
-  "utf8",
-);
-const settingsSection = readFileSync(
-  new URL("../src/components/SettingsSection.tsx", import.meta.url),
-  "utf8",
-);
+const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
+const profile = read("routes/_authenticated/profile-page-impl.tsx");
+const categoryRoute = read("routes/_authenticated/settings.$category.tsx");
+const categoryRegistry = read("lib/profile-settings.ts");
 
-test("profile shortcut fragments have targets in both rendered design variants", () => {
-  for (const id of ["profile-training", "appearance", "profile-app", "profile-history"]) {
-    assert.ok(profile.includes(`id="${id}"`), `missing fragment target: ${id}`);
-  }
-  assert.match(profile, /\["Training", "#profile-training"\]/);
-  assert.match(profile, /\["Darstellung", "#appearance"\]/);
-  assert.match(profile, /\["App & Datenschutz", "#profile-app"\]/);
-  assert.match(profile, /\["Verlauf", "#profile-history"\]/);
-  assert.match(settingsSection, /getClientRects\(\)\.length > 0/);
-  assert.match(settingsSection, /target !== section/);
+test("category routes accept only declared settings pages and return safely to the hub", () => {
+  assert.match(categoryRoute, /beforeLoad:[\s\S]*?isProfileSettingsCategory\(params\.category\)/);
+  assert.match(categoryRoute, /throw redirect\(\{ to: "\/profile" \}\)/);
+  assert.match(categoryRoute, /return <ProfilePage sectionId=\{category\} \/>/);
+  assert.match(categoryRegistry, /value === "string"[\s\S]*?PROFILE_SETTINGS_CATEGORIES\.some/);
+  assert.match(profile, /to="\/profile"[\s\S]*?aria-label="Zurück zu Einstellungen"/);
 });
 
-test("appearance fragments open the target, its collapsed ancestors, and nested design controls", () => {
-  assert.match(settingsSection, /profile-section-reveal/);
-  assert.match(settingsSection, /profile-appearance-reveal/);
-  assert.match(settingsSection, /target\.contains\(section\)/);
+test("training records are fetched only for Training and Trainingsverlauf", () => {
   assert.match(
-    settingsSection,
-    /section\.dispatchEvent\(new CustomEvent\("profile-section-reveal", \{ bubbles: true \}\)\)/,
+    profile,
+    /const needsWorkouts = sectionId === "training" \|\| sectionId === "history"/,
   );
+  assert.match(
+    profile,
+    /const profileRequest = needsWorkouts[\s\S]*?select\(PROFILE_TRAINING_COLS\)[\s\S]*?select\(PROFILE_SETTINGS_COLS\)/,
+  );
+  assert.match(profile, /const workoutRequest = needsWorkouts[\s\S]*?from\("workouts"\)/);
+  assert.match(profile, /case "training":[\s\S]*?<CoachPanel[\s\S]*?workouts=\{workouts\}/);
+  assert.match(profile, /case "history":[\s\S]*?Letzte Trainings/);
 });
 
 test("failed or pending workout reads are not presented as an empty history", () => {
   assert.match(profile, /const \[workoutsLoading, setWorkoutsLoading\] = useState\(true\)/);
   assert.match(profile, /const \[workoutsError, setWorkoutsError\] = useState\(false\)/);
-  assert.match(profile, /workoutResult\.error\) setWorkoutsError\(true\)/);
+  assert.match(profile, /workoutResult\?\.error/);
   assert.match(profile, /workoutsLoading \? \([\s\S]*?Trainings werden geladen/);
   assert.ok(profile.includes("Trainingsverlauf konnte nicht geladen werden."));
   assert.match(profile, /workouts\.length === 0 \? \([\s\S]*?Noch keine Trainings erfasst/);
 });
 
-test("profile history labels known units and leaves unknown units neutral", () => {
-  assert.match(profile, /historyExercise\(w\.exercise_id\)\?\.unit === "seconds"/);
-  assert.match(profile, /historyExercise\(w\.exercise_id\)\?\.unit === "reps"/);
-  assert.equal((profile.match(/historyExercise\(w\.exercise_id\)/g) ?? []).length, 4);
+test("settings profile queries do not load unrelated health and body-measurement fields", () => {
+  assert.match(
+    profile,
+    /const PROFILE_SETTINGS_COLS =\s*"id, display_name, avatar_url, xp, current_streak, last_workout_date, share_activity, theme, sound_enabled, haptics_enabled"/,
+  );
+  assert.match(
+    profile,
+    /const PROFILE_TRAINING_COLS =\s*"id, display_name, avatar_url, xp, current_streak, last_workout_date, share_activity, theme, sound_enabled, haptics_enabled, best_count, longest_streak, streak_freezes"/,
+  );
+  assert.doesNotMatch(profile, /birth_year|height_cm|weight_kg|daily_goal/);
+});
+
+test("history labels known units and still deletes only the selected workout", () => {
+  assert.match(profile, /historyExercise\(workout\.exercise_id\)\?\.unit === "seconds"/);
+  assert.match(profile, /historyExercise\(workout\.exercise_id\)\?\.unit === "reps"/);
+  assert.match(profile, /onClick=\{\(\) => props\.onDeleteWorkout\(workout\.id\)\}/);
+  assert.match(profile, /aria-label=\{`Training vom/);
 });

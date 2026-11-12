@@ -15,6 +15,10 @@ export type MiraMemoryNote = {
   source: "manual" | "suggested";
 };
 
+function normalizeNoteText(text: string): string {
+  return text.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 function scoped(key: string, userId?: string | null) {
   return userId ? `${key}:${userId}` : key;
 }
@@ -52,13 +56,17 @@ export function addMiraMemoryNote(
 ): MiraMemoryNote | null {
   const cleaned = text.trim().replace(/\s+/g, " ").slice(0, MAX_NOTE_LEN);
   if (!cleaned) return null;
+  const existingNotes = loadMiraMemoryNotes(userId);
+  if (existingNotes.some((note) => normalizeNoteText(note.text) === normalizeNoteText(cleaned))) {
+    return null;
+  }
   const note: MiraMemoryNote = {
     id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     text: cleaned,
     createdAt: new Date().toISOString(),
     source,
   };
-  const next = [note, ...loadMiraMemoryNotes(userId)].slice(0, MAX_NOTES);
+  const next = [note, ...existingNotes].slice(0, MAX_NOTES);
   saveNotes(next, userId);
   return note;
 }

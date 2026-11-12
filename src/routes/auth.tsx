@@ -5,11 +5,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
-
-function safeNext(raw: unknown): string {
-  if (typeof raw !== "string" || !raw.startsWith("/") || raw.startsWith("//")) return "/";
-  return raw;
-}
+import { safeNext } from "@/lib/safe-next";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,

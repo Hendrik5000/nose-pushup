@@ -10,6 +10,7 @@ import {
   isActionable,
   parsePostfachItem,
   parsePostfachItems,
+  shouldAnnouncePostfachItem,
   type PostfachGateway,
 } from "../src/lib/friends/postfach";
 import { BackendNotReadyError } from "../src/lib/friends/rpc";
@@ -39,6 +40,49 @@ test("parsing rejects unknown kinds and malformed ids", () => {
   assert.equal(parsePostfachItem(row({ id: "x" })), null);
   assert.equal(parsePostfachItem(null), null);
   assert.equal(parsePostfachItem(row({}))?.fromName, "Mia");
+});
+
+test("feature release is one safe, unread inbox digest without a second notification", () => {
+  const digest = parsePostfachItem(
+    row({
+      kind: "feature_release",
+      from_user_id: null,
+      payload: { title: "Mira-Werkbank", body: "Zehn neue Aufgaben sind im Mira-Chat verfügbar." },
+    }),
+  )!;
+  assert.equal(digest.fromName, "Alo");
+  assert.deepEqual(describePostfachItem(digest), {
+    title: "Mira-Werkbank",
+    body: "Zehn neue Aufgaben sind im Mira-Chat verfügbar.",
+  });
+  assert.equal(isActionable(digest, NOW), false);
+  assert.equal(countUnread([digest], NOW), 1);
+  assert.equal(shouldAnnouncePostfachItem(digest), false);
+});
+
+test("feature release parsing rejects missing, unsafe, or oversized digest text", () => {
+  assert.equal(
+    parsePostfachItem(row({ kind: "feature_release", payload: { title: "Neu" } })),
+    null,
+  );
+  assert.equal(
+    parsePostfachItem(
+      row({ kind: "feature_release", payload: { title: "<b>Neu</b>", body: "Kurz" } }),
+    ),
+    null,
+  );
+  assert.equal(
+    parsePostfachItem(
+      row({ kind: "feature_release", payload: { title: "Neu", body: `https://example.test` } }),
+    ),
+    null,
+  );
+  assert.equal(
+    parsePostfachItem(
+      row({ kind: "feature_release", payload: { title: "Neu", body: "x".repeat(321) } }),
+    ),
+    null,
+  );
 });
 
 test("items are sorted newest first", () => {

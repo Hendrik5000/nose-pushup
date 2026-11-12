@@ -1,0 +1,543 @@
+/* Reintroduced Mira sketchLayout: isolated to pages carrying the opt-in class. */
+html:root[data-design-style] .alo-mira-sketch-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 32rem !important;
+  height: var(--app-viewport-height, 100dvh);
+  min-height: 0 !important;
+  margin-inline: auto;
+  gap: 0.55rem;
+  overflow: hidden;
+  padding: 0.65rem 0.85rem max(0.65rem, env(safe-area-inset-bottom, 0px)) !important;
+  color: var(--foreground);
+}
+
+html:root[data-design-style] .alo-mira-sketch-page.alo-classic-mira,
+html:root[data-design-style] .alo-mira-sketch-page.sport-ai-chat-mode {
+  display: flex;
+  flex-direction: column;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-header {
+  display: grid;
+  width: 100%;
+  min-height: 3rem;
+  grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  align-self: stretch;
+  order: 0;
+  margin: 0 0 0.15rem;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-header > :first-child,
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-control {
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--foreground) 15%, var(--border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  color: var(--foreground);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-header > :first-child {
+  border-radius: 1rem;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-header > :first-child svg,
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-control svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-meta {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  overflow: hidden;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: clamp(1.2rem, 7.2vw, 1.85rem);
+  font-weight: 750;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-provider {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-control:hover,
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-header > :first-child:hover {
+  background: color-mix(in srgb, var(--primary) 9%, var(--card));
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  :is(.alo-mira-sketch-control, .alo-mira-sketch-header > :first-child):focus-visible,
+html:root[data-design-style] .alo-mira-sketch-page :is(button, a, summary, textarea):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  :is(details.sport-ai-chat-options, details.alo-classic-mira-options):not([open]) {
+  display: none !important;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  :is(details.sport-ai-chat-options, details.alo-classic-mira-options) {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: 45dvh;
+  flex: 0 1 auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.45rem 0.65rem;
+  background: color-mix(in srgb, var(--card) 96%, var(--background));
+  color: var(--foreground);
+  scrollbar-width: thin;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  :is(details.sport-ai-chat-options, details.alo-classic-mira-options)
+  > summary {
+  display: none !important;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .sport-ai-chat-grid {
+  display: flex !important;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .sport-ai-chat-main {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.55rem;
+  overflow: hidden;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .sport-chat-stage {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  order: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.5rem clamp(0.25rem, 2vw, 0.75rem);
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  scrollbar-width: thin;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .sport-chat-stage:has(.mira-chat-welcome) {
+  min-height: 0 !important;
+  max-height: none !important;
+  flex: 1 1 0 !important;
+  justify-content: center;
+  overflow: visible;
+  padding-block: 0;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .sport-chat-stage:has(.mira-chat-welcome)
+  .mira-chat-welcome {
+  margin: 0 auto !important;
+  padding-block: 0.5rem !important;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .mira-chat-welcome {
+  display: flex !important;
+  width: min(100%, 32rem) !important;
+  max-width: 32rem !important;
+  min-height: 0;
+  flex: 0 0 auto;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.65rem;
+  margin: 1.75rem auto auto !important;
+  padding: 0.65rem 0.25rem !important;
+  text-align: center;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .mira-chat-welcome-mark {
+  display: grid;
+  width: 3.5rem !important;
+  height: 3.5rem !important;
+  flex: 0 0 auto;
+  place-items: center;
+  margin: 0 0 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
+  color: var(--primary);
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .mira-chat-welcome-mark svg {
+  width: 2.9rem !important;
+  height: 2.9rem !important;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .mira-chat-welcome h3 {
+  max-width: 26ch;
+  margin: 0.25rem 0 0;
+  color: var(--foreground);
+  font-size: clamp(1.15rem, 4.8vw, 1.6rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .mira-chat-welcome
+  :is(
+    .mira-chat-welcome-label,
+    .mira-chat-welcome-copy,
+    .mira-chat-suggestions,
+    .mira-chat-suggestion-hint
+  ) {
+  display: none !important;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .sport-chat-composer.alo-mira-capsule-composer,
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .mira-classic-composer-form.alo-mira-capsule-composer {
+  position: static !important;
+  display: flex !important;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 3.5rem;
+  flex: 0 0 auto;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 0.2rem !important;
+  overflow: visible;
+  margin-top: auto;
+  padding: 0.25rem 0.35rem !important;
+  border: 1px solid color-mix(in srgb, var(--foreground) 16%, var(--border)) !important;
+  border-radius: 9999px !important;
+  background: color-mix(in srgb, var(--card) 96%, var(--background)) !important;
+  box-shadow: 0 0.5rem 1.5rem color-mix(in srgb, var(--background) 18%, transparent) !important;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .sport-chat-composer.alo-mira-capsule-composer
+  textarea,
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .mira-classic-composer-form.alo-mira-capsule-composer
+  textarea {
+  box-sizing: border-box;
+  width: auto !important;
+  min-width: 3rem !important;
+  min-height: 2.75rem !important;
+  max-height: 7rem;
+  flex: 1 1 3rem !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  margin: 0;
+  padding: 0.5rem 0.15rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 16px !important;
+  line-height: 1.35;
+  resize: none;
+  overflow-y: auto;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .sport-chat-composer.alo-mira-capsule-composer
+  .mira-attachment-picker,
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .mira-classic-composer-form.alo-mira-capsule-composer
+  .mira-attachment-picker {
+  position: relative;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  grid-column: auto !important;
+  grid-row: auto !important;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-mira-capsule-composer
+  .mira-attachment-picker
+  > summary,
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-capsule-composer > button {
+  display: grid;
+  box-sizing: border-box;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex: 0 0 44px;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--foreground) 14%, var(--border));
+  border-radius: 50%;
+  background: transparent;
+  color: var(--foreground);
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-mira-capsule-composer
+  .mira-attachment-picker
+  > summary::marker {
+  content: "";
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-mira-capsule-composer
+  .mira-attachment-picker
+  > summary::before,
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-mira-capsule-composer
+  .mira-attachment-picker
+  > summary::after {
+  content: none !important;
+  display: none !important;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-mira-capsule-composer
+  .mira-attachment-picker
+  > summary
+  > .alo-mira-attachment-icon {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-mira-capsule-composer
+  .alo-mira-composer-action
+  svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .sport-chat-composer.alo-mira-capsule-composer
+  > button[type="submit"],
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .mira-classic-composer-form.alo-mira-capsule-composer
+  > button[type="submit"] {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-composer-wrap {
+  display: flex;
+  min-width: 0;
+  order: 10;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .mira-attachment-preview {
+  max-height: 6rem;
+  overflow-y: auto;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .mira-chat-bottom-row {
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .mira-chat-live-status {
+  min-width: 0;
+  flex: 1 1 100%;
+}
+
+@media (max-height: 700px) {
+  html:root[data-design-style] .alo-mira-sketch-page .mira-chat-welcome {
+    margin-top: 0.5rem !important;
+    padding-block: 0.3rem !important;
+  }
+
+  html:root[data-design-style]
+    .alo-mira-sketch-page
+    :is(details.sport-ai-chat-options, details.alo-classic-mira-options) {
+    max-height: 45dvh;
+  }
+}
+
+@media (max-width: 360px) {
+  html:root[data-design-style] .alo-mira-sketch-page {
+    padding-inline: 0.55rem !important;
+  }
+
+  html:root[data-design-style] .alo-mira-sketch-page .alo-mira-sketch-header {
+    grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+    gap: 0.12rem;
+  }
+
+  html:root[data-design-style] .alo-mira-sketch-page .sport-chat-composer.alo-mira-capsule-composer,
+  html:root[data-design-style]
+    .alo-mira-sketch-page
+    .mira-classic-composer-form.alo-mira-capsule-composer {
+    gap: 0.1rem !important;
+    padding-inline: 0.2rem !important;
+  }
+
+  html:root[data-design-style]
+    .alo-mira-sketch-page
+    .sport-chat-composer.alo-mira-capsule-composer
+    textarea,
+  html:root[data-design-style]
+    .alo-mira-sketch-page
+    .mira-classic-composer-form.alo-mira-capsule-composer
+    textarea {
+    min-width: 3rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:root[data-design-style] .alo-mira-sketch-page :is(button, a, summary) {
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+  }
+}
+
+/* Provider/model settings sit outside the chat grid; keep them scrollable without
+   consuming the viewport needed by the conversation and composer. */
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  :is(.sport-ai-settings-card, #mira-settings-panel) {
+  min-height: 0;
+  max-height: 45dvh;
+  flex: 0 1 auto;
+  overflow: auto;
+}
+
+html:root[data-design-style] .alo-mira-sketch-page .mira-file-help {
+  flex: 0 0 auto;
+  max-height: 20dvh;
+  overflow-y: auto;
+}
+
+@media (max-height: 500px) {
+  html:root[data-design-style] .alo-mira-sketch-page {
+    overflow-y: auto;
+  }
+
+  html:root[data-design-style] .alo-mira-sketch-page :is(.sport-ai-chat-grid, .sport-ai-chat-main) {
+    flex: 1 0 auto;
+    overflow: visible;
+  }
+
+  html:root[data-design-style]
+    .alo-mira-sketch-page
+    :is(.sport-chat-stage:not(:has(.mira-chat-welcome)), .alo-classic-mira-messages) {
+    min-height: 5rem !important;
+    flex: 1 0 5rem !important;
+  }
+}
+
+/* Keep classic messages scrollable while letting answers sit on the page canvas. */
+html:root[data-design-style] .alo-mira-sketch-page .alo-classic-mira-messages {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  order: 5;
+  flex: 1 1 0;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.75rem clamp(0.75rem, 4vw, 1.4rem);
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  scrollbar-width: thin;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-classic-mira-messages:has(.mira-chat-welcome) {
+  justify-content: center;
+}
+
+html:root[data-design-style]
+  .alo-mira-sketch-page
+  .alo-classic-mira-messages:has(.mira-chat-welcome)
+  .mira-chat-welcome {
+  margin: 0 auto !important;
+}

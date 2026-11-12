@@ -23,6 +23,7 @@ import aiResponsiveCss from "../ai-responsive.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
+import { applyMenuAccent, getStoredMenuAccent, MENU_ACCENT_STORAGE_KEY } from "@/lib/menu-accent";
 import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
 import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
 import { swipeScreenFromPath } from "@/lib/module-navigation";
@@ -190,12 +191,21 @@ function RootComponent() {
 
   useEffect(() => {
     installGlobalErrorReporting();
+    const syncMenuAccent = () => applyMenuAccent(getStoredMenuAccent(), getStoredTheme(), false);
     const onStorage = (event: StorageEvent) => {
       if (event.key === "np-theme" && event.newValue && isThemeId(event.newValue))
         applyTheme(event.newValue);
+      if (event.key === MENU_ACCENT_STORAGE_KEY) syncMenuAccent();
     };
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener("np-theme-change", syncMenuAccent);
+    window.addEventListener("alo-menu-accent-change", syncMenuAccent);
+    syncMenuAccent();
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("np-theme-change", syncMenuAccent);
+      window.removeEventListener("alo-menu-accent-change", syncMenuAccent);
+    };
   }, []);
 
   useEffect(() => {

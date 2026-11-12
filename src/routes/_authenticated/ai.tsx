@@ -17,9 +17,10 @@ export const Route = createFileRoute("/_authenticated/ai")({
 });
 
 function MiraPage() {
+  const { user } = Route.useRouteContext();
   return (
     <AloPageSidebar active="mira">
-      <SuperAiPage />
+      <SuperAiPage sketchLayout userId={user.id} />
     </AloPageSidebar>
   );
 }

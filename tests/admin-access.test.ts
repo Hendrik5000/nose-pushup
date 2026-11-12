@@ -10,7 +10,15 @@ import {
 
 const root = process.cwd();
 const home = readFileSync(resolve(root, "src/routes/_authenticated/index.tsx"), "utf8");
+const homeTileBuilder = home.slice(
+  home.indexOf("function buildHomeHubTiles"),
+  home.indexOf("function HomeAppHub"),
+);
 const route = readFileSync(resolve(root, "src/routes/_authenticated/admin.tsx"), "utf8");
+const marketplaceRoute = readFileSync(
+  resolve(root, "src/routes/_authenticated/marketplace.tsx"),
+  "utf8",
+);
 const functions = readFileSync(resolve(root, "src/lib/admin.functions.ts"), "utf8");
 const migrations = readdirSync(resolve(root, "supabase/migrations"));
 const schemaPath = migrations.find((name) => name.endsWith("_global_admin_roles.sql"));
@@ -34,12 +42,39 @@ test("only the server-verified owner identity may manage global roles", () => {
 
 test("Admin tile is rendered only after the server-side access function returns true", () => {
   assert.match(home, /getAdminAreaAccess\(\)/);
-  assert.match(home, /canSeeAdmin\s*&&\s*<HubAppIcon to="\/admin" title="Admin" artwork="admin"/);
+  assert.match(homeTileBuilder, /if \(canSeeAdmin\)[\s\S]*?id: "admin"[\s\S]*?to: "\/admin"/);
+  assert.match(
+    homeTileBuilder,
+    /if \(canSeeAdmin\)[\s\S]*?id: "marketplace"[\s\S]*?to: "\/marketplace"/,
+  );
   assert.match(
     home,
-    /artwork:\s*"mira"\s*\|\s*"nexus"\s*\|\s*"health"\s*\|\s*"settings"\s*\|\s*"admin"/,
+    /type HubArtworkKind =[\s\S]*?"admin"[\s\S]*?"gridDefense"[\s\S]*?"kupferkern"/,
   );
   assert.match(route, /beforeLoad:[\s\S]*?getAdminAreaAccess\(\)[\s\S]*?redirect\(\{\s*to:\s*"\/"/);
+  assert.match(
+    marketplaceRoute,
+    /beforeLoad:[\s\S]*?getAdminAreaAccess\(\)[\s\S]*?redirect\(\{\s*to:\s*"\/"/,
+  );
+  assert.doesNotMatch(
+    marketplaceRoute,
+    /ADMIN_ROLE_MANAGER_USER_ID|canManageGlobalRoles|grantAdminAccess|revokeAdminAccess|Hendrik|Jan/i,
+  );
+});
+
+test("Marketplace reuses the read-only generic Admin role RPC, not role-management authority", () => {
+  const accessCheckStart = functions.indexOf("export const getAdminAreaAccess");
+  const accessCheckEnd = functions.indexOf("export const getAdminRoleManagement");
+  assert.ok(accessCheckStart >= 0 && accessCheckEnd > accessCheckStart);
+  const accessCheck = functions.slice(accessCheckStart, accessCheckEnd);
+  assert.match(accessCheck, /requireSupabaseAuth/);
+  assert.match(accessCheck, /has_global_role/);
+  assert.match(accessCheck, /p_role_name:\s*"admin"/);
+  assert.match(accessCheck, /!error\s*&&\s*data\s*===\s*true/);
+  assert.doesNotMatch(
+    accessCheck,
+    /grant_global_role|revoke_global_role|list_admin_role_assignments/,
+  );
 });
 
 test("only the role manager receives the role list and sees management controls", () => {

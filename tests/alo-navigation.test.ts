@@ -61,9 +61,11 @@ test("onboarding, swipe, hidden-by-default bottom navigation, and optional conte
   assert.match(nav, /layout === "bottom" \|\| layout === "floating"/);
   assert.match(nav, /hidden=\{!barVisible\}\s+inert=\{!barVisible\}/);
   const home = read("routes/_authenticated/index.tsx");
-  assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(home, /to="\/tools"/);
   assert.match(home, /aria-label="Überall suchen"/);
-  assert.match(home, /aria-label="Weitere Alo-Bereiche"/);
+  assert.match(home, /to="\/areas"/);
+  assert.match(read("routes/_authenticated/areas.tsx"), /aria-label="Alle weiteren Alo-Bereiche"/);
+  assert.match(read("routes/_authenticated/tools.tsx"), /aria-label="Alo-Werkzeuge"/);
   const ai = read("components/mira/SuperAiPage.tsx");
   assert.match(ai, /MIRA_CONTEXT_KEY/);
   assert.match(ai, /MiraContextControls/);
@@ -74,12 +76,16 @@ test("onboarding, swipe, hidden-by-default bottom navigation, and optional conte
 test("the shared upper Alo header is absent and area navigation lives in the app hub", () => {
   const layout = read("routes/_authenticated/route.tsx");
   const hub = read("routes/_authenticated/index.tsx");
+  const tileBuilder = hub.slice(
+    hub.indexOf("function buildHomeHubTiles"),
+    hub.indexOf("function HomeAppHub"),
+  );
   assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
   assert.match(layout, /<AppNavigation\s*\/>/);
-  assert.match(hub, /<HubAppIcon to="\/ai"/);
-  assert.match(hub, /<HubAppIcon to="\/chat"/);
-  assert.match(hub, /<HubAppIcon to="\/exercises"/);
-  assert.match(hub, /<HubAppIcon to="\/profile"/);
+  assert.match(tileBuilder, /id: "mira"[\s\S]*?to: "\/ai"/);
+  assert.match(tileBuilder, /id: "nexus"[\s\S]*?to: "\/chat"/);
+  assert.match(tileBuilder, /id: "health"[\s\S]*?to: "\/exercises"/);
+  assert.match(tileBuilder, /id: "settings"[\s\S]*?to: "\/profile"/);
 });
 
 // General defaults must not remove the original optional training helpers.

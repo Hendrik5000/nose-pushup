@@ -26,6 +26,7 @@ import {
   countUnread,
   describePostfachItem,
   isActionable,
+  shouldAnnouncePostfachItem,
   type PostfachItem,
 } from "@/lib/friends/postfach";
 import { BackendNotReadyError } from "@/lib/friends/rpc";
@@ -103,6 +104,7 @@ export function PostfachProvider({
 
   const announce = useCallback(
     (item: PostfachItem, first: boolean) => {
+      if (!shouldAnnouncePostfachItem(item)) return;
       const { title, body } = describePostfachItem(item);
       if (item.kind === "battle_invitation") {
         if (!popupSeen.current.has(item.id) && isActionable(item) && !item.readAt) {

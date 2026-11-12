@@ -53,13 +53,26 @@ test("new page structures are shared across training, health, community, account
     const source = read(
       page === "_authenticated/ai.tsx" ? "components/mira/SuperAiPage.tsx" : `routes/${page}`,
     );
-    assert.match(source, /SportPageIntro/, `${page}: must use the new structural introduction`);
+    if (page === "_authenticated/profile-page-impl.tsx") {
+      assert.match(
+        source,
+        /settings-page-header/,
+        `${page}: must keep its dedicated settings header`,
+      );
+      assert.match(
+        source,
+        /settings-page-header-sport/,
+        `${page}: must keep the Performance header`,
+      );
+    } else {
+      assert.match(source, /SportPageIntro/, `${page}: must use the new structural introduction`);
+    }
     assert.match(source, /classic-only/, `${page}: must preserve the original presentation`);
   }
   assert.match(read("components/chat/LocalChatShell.tsx"), /sport-/);
-  assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage \/>/);
-  assert.match(read("routes/_authenticated/index.tsx"), /training-progress/);
-  assert.match(read("routes/_authenticated/index.tsx"), /sport-shortcuts/);
+  assert.match(read("routes/_authenticated/coach.tsx"), /<SuperAiPage userId=\{user\.id\} \/>/);
+  assert.match(read("components/TrainingDashboard.tsx"), /training-progress/);
+  assert.match(read("components/TrainingDashboard.tsx"), /sport-shortcuts/);
 });
 
 test("new and old markup are mutually exclusive without rewriting saved appearance or widget choices", () => {
@@ -83,8 +96,8 @@ test("new and old markup are mutually exclusive without rewriting saved appearan
   assert.ok(root.indexOf("href: sportCss") > root.indexOf("href: appCss"));
 });
 
-test("performance home puts today's workout before status metrics and keeps widget sizing responsive", () => {
-  const home = read("routes/_authenticated/index.tsx");
+test("performance training app puts today's workout before status metrics and keeps widget sizing responsive", () => {
+  const home = read("components/TrainingDashboard.tsx");
   assert.match(home, /sport-dashboard-title">Heute trainieren/);
   assert.equal((home.match(/<PlanGoalNote/g) ?? []).length, 2);
   assert.match(
@@ -141,6 +154,7 @@ test("performance home puts today's workout before status metrics and keeps widg
 
 test("performance AI coach has focused subviews, task-first entry points and keeps the classic view", () => {
   const ai = read("components/mira/SuperAiPage.tsx");
+  const settingsControls = read("components/mira/MiraAppSettingsControls.tsx");
   assert.match(ai, /<DesignView variant="classic">/);
   assert.match(ai, /<DesignView variant="sport">/);
   assert.match(ai, /Mira-Bereiche/);
@@ -152,7 +166,11 @@ test("performance AI coach has focused subviews, task-first entry points and kee
   assert.match(ai, /Chats durchsuchen/);
   assert.match(ai, /Mit Trainingsplan/);
   assert.match(ai, /filteredSessions\.map/);
-  assert.match(ai, /AiProviderSettings\s+onSaved=/);
+  assert.match(ai, /onProviderSaved=\{\(\) => refreshProviderStatus/);
+  assert.match(
+    settingsControls,
+    /<AiProviderSettings userId=\{userId\} onSaved=\{onProviderSaved\} \/>/,
+  );
   assert.match(ai, /sport-chat-stage/);
   assert.match(ai, /sport-chat-composer/);
   assert.match(ai, /sport-ai-chat-mode/);
@@ -188,6 +206,9 @@ test("sport page components render semantic content and permit real data actions
 
 test("home hub exposes every existing feature group formerly listed in the shared menu", () => {
   const menu = read("routes/_authenticated/index.tsx");
+  const areas = read("routes/_authenticated/areas.tsx");
+  const tools = read("routes/_authenticated/tools.tsx");
+  const areaData = read("lib/home-app-menus.ts");
   const appNavigation = read("components/TopNav.tsx");
   for (const route of [
     "/exercises",
@@ -204,10 +225,12 @@ test("home hub exposes every existing feature group formerly listed in the share
     "/chat",
     "/profile",
   ]) {
-    assert.ok(menu.includes(route), `missing ${route}`);
+    assert.ok(menu.includes(route) || areaData.includes(`to: "${route}"`), `missing ${route}`);
   }
-  assert.match(menu, /aria-label="Weitere Alo-Bereiche"/);
-  assert.match(menu, /Alo-Werkzeuge öffnen/);
+  assert.match(menu, /to="\/areas"/);
+  assert.match(areas, /HOME_OTHER_AREAS\.map/);
+  assert.match(menu, /to="\/tools"/);
+  assert.match(tools, /ALO_WORKSPACE_TOOLS/);
   assert.match(menu, /Überall suchen/);
   assert.match(appNavigation, /layout === "bottom" \|\| layout === "floating"/);
 });

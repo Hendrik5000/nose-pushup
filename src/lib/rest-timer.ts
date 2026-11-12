@@ -5,6 +5,7 @@ export type RestSuggestion = {
   seconds: number;
   label: string;
   reason: string;
+  usedDefaults: boolean;
 };
 
 /**
@@ -18,8 +19,21 @@ export function suggestRest(opts: {
   formScore?: number | null;
   exerciseId?: string;
 }): RestSuggestion {
-  const rpe = opts.rpe ?? 6;
-  const form = opts.formScore ?? 3.5;
+  const rpeValue = opts.rpe;
+  const formValue = opts.formScore;
+  const usedDefaults =
+    typeof rpeValue !== "number" ||
+    !Number.isFinite(rpeValue) ||
+    typeof formValue !== "number" ||
+    !Number.isFinite(formValue);
+  const rpe =
+    typeof rpeValue === "number" && Number.isFinite(rpeValue)
+      ? Math.min(10, Math.max(1, rpeValue))
+      : 6;
+  const form =
+    typeof formValue === "number" && Number.isFinite(formValue)
+      ? Math.min(5, Math.max(1, formValue))
+      : 3.5;
 
   let base = 45;
   if (rpe >= 9) base = 120;
@@ -49,7 +63,7 @@ export function suggestRest(opts: {
         ? "Form war wackelig — erhole dich kurz extra."
         : "Passt zu deiner letzten Leistung.";
 
-  return { seconds: base, label, reason };
+  return { seconds: base, label, reason, usedDefaults };
 }
 
 export function formatRest(seconds: number): string {
@@ -57,4 +71,21 @@ export function formatRest(seconds: number): string {
   const s = seconds % 60;
   if (m <= 0) return `${s}s`;
   return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+export function adjustRestSeconds(current: number, delta: number): number {
+  const safeCurrent = Number.isFinite(current) ? Math.max(0, Math.floor(current)) : 0;
+  const safeDelta = Number.isFinite(delta) ? Math.trunc(delta) : 0;
+  return Math.max(0, safeCurrent + safeDelta);
+}
+
+export function resetRestSeconds(suggestedSeconds: number): number {
+  return Number.isFinite(suggestedSeconds) ? Math.max(0, Math.floor(suggestedSeconds)) : 0;
+}
+
+export function runRestCompletionOnce(guard: { current: boolean }, complete: () => void): boolean {
+  if (guard.current) return false;
+  guard.current = true;
+  complete();
+  return true;
 }

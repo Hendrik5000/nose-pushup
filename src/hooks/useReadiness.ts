@@ -9,9 +9,11 @@ import {
 } from "@/lib/readiness";
 
 export function useReadiness({
+  userId,
   streak,
   onReadinessChange,
 }: {
+  userId: string;
   streak: number;
   onReadinessChange?: (readiness: Readiness) => void;
 }) {
@@ -22,21 +24,23 @@ export function useReadiness({
   useEffect(() => {
     let active = true;
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user || !active) return;
+      setReadiness(null);
+      setHistory(readinessHistory(userId));
+      setAsOf(null);
+      if (!active) return;
       const now = new Date();
       const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
       const [{ data: he, error: healthError }, workouts] = await Promise.all([
         supabase
           .from("health_entries")
           .select("sleep_min, steps")
-          .eq("user_id", u.user.id)
+          .eq("user_id", userId)
           .eq("day", localDateKey(now))
           .maybeSingle(),
         supabase
           .from("workouts")
           .select("id", { count: "exact", head: true })
-          .eq("user_id", u.user.id)
+          .eq("user_id", userId)
           .gte("created_at", sevenDaysAgo)
           .lte("created_at", now.toISOString()),
       ]);
@@ -59,10 +63,10 @@ export function useReadiness({
         streak,
       });
       if (result.available) {
-        recordReadiness(result.score, u.user.id);
-        setHistory(readinessHistory(u.user.id));
+        recordReadiness(result.score, userId);
+        setHistory(readinessHistory(userId));
       } else {
-        setHistory(readinessHistory(u.user.id));
+        setHistory(readinessHistory(userId));
       }
       setReadiness(result);
       onReadinessChange?.(result);
@@ -71,7 +75,7 @@ export function useReadiness({
     return () => {
       active = false;
     };
-  }, [streak, onReadinessChange]);
+  }, [userId, streak, onReadinessChange]);
 
   return { readiness, history, asOf };
 }
