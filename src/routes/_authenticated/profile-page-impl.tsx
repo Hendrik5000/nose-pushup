@@ -27,6 +27,7 @@ import { DesignStylePicker } from "@/components/DesignStylePicker";
 import { NavigationLayoutPicker } from "@/components/NavigationLayoutPicker";
 import { ErrorReportsPanel } from "@/components/ErrorReportsPanel";
 import { AloWebAppGuide } from "@/components/AloWebAppGuide";
+import { AloAppVersion } from "@/components/AloAppVersion";
 import { BottomNav } from "@/components/BottomNav";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { PublicProfileSettings } from "@/components/PublicProfileSettings";
@@ -612,6 +613,7 @@ export function ProfilePage() {
               )}
             </SettingsSection>
           </div>
+          <AloAppVersion />
           <BottomNav />
         </main>
       </DesignView>
@@ -1039,6 +1041,7 @@ export function ProfilePage() {
               </ul>
             )}
           </SettingsSection>
+          <AloAppVersion />
           <BottomNav />
         </main>
       </DesignView>
