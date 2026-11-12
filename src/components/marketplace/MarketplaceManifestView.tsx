@@ -9,6 +9,7 @@ type MarketplaceManifestViewProps = {
   allowedActionIds?: readonly string[];
   pendingActionId?: string | null;
   onAction?: (actionId: string) => void;
+  onRequestPermission?: (actionId: string) => void;
 };
 
 export function MarketplaceManifestView({
@@ -18,11 +19,12 @@ export function MarketplaceManifestView({
   allowedActionIds,
   pendingActionId = null,
   onAction,
+  onRequestPermission,
 }: MarketplaceManifestViewProps) {
   return (
     <section
       aria-label={preview ? `Vorschau: ${manifest.name}` : `App-Inhalt: ${manifest.name}`}
-      className="mt-4 space-y-3 rounded-xl border border-border/60 bg-background/50 p-3"
+      className="mt-5 space-y-3 rounded-2xl border border-border/60 bg-card/60 p-3 sm:p-4"
     >
       {manifest.blocks.map((block, index) => {
         if (block.type === "heading") {
@@ -50,8 +52,10 @@ export function MarketplaceManifestView({
         }
         const registered = getMarketplaceAuthorAction(block.actionId);
         const hostAction: MarketplaceHostAction | null = registered?.action ?? null;
+        const needsPermission =
+          allowedActionIds !== undefined && !allowedActionIds.includes(block.actionId);
         return (
-          <div key={`action-${index}`} className="flex flex-wrap items-center gap-2">
+          <div key={`action-${index}`}>
             <button
               type="button"
               disabled={
@@ -59,21 +63,30 @@ export function MarketplaceManifestView({
                 !canRunActions ||
                 !hostAction ||
                 !onAction ||
-                (allowedActionIds !== undefined && !allowedActionIds.includes(block.actionId)) ||
+                (needsPermission && !onRequestPermission) ||
                 pendingActionId !== null
               }
-              onClick={() => onAction?.(block.actionId)}
-              className="min-h-11 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() =>
+                needsPermission ? onRequestPermission?.(block.actionId) : onAction?.(block.actionId)
+              }
+              className="flex min-h-16 w-full items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/70 px-4 py-3 text-left transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {pendingActionId === block.actionId ? "Wird geöffnet …" : block.label}
-            </button>
-            {registered && (
-              <span className="text-xs text-muted-foreground">
-                {allowedActionIds !== undefined && !allowedActionIds.includes(block.actionId)
-                  ? "Nicht freigegeben"
-                  : `Öffnet ${registered.label} erst nach deinem Tippen`}
+              <span className="min-w-0">
+                <span className="block break-words text-sm font-semibold">
+                  {pendingActionId === block.actionId ? "Wird geöffnet …" : block.label}
+                </span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {preview
+                    ? "Vorschau · nach Installation nutzbar"
+                    : needsPermission
+                      ? "Nicht freigegeben · Zugriff auswählen"
+                      : registered?.label}
+                </span>
               </span>
-            )}
+              <span aria-hidden="true" className="shrink-0 text-lg text-primary">
+                {needsPermission ? "+" : "↗"}
+              </span>
+            </button>
           </div>
         );
       })}

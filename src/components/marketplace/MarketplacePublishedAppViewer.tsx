@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -15,10 +15,15 @@ import {
   type MarketplacePublishedInstall,
 } from "@/lib/marketplace-authoring";
 import {
-  getMarketplaceAuthorAction,
   isMarketplaceAdminAccessGranted,
-  type MarketplaceHostAction,
+  type MarketplaceRouteTarget,
+  type MarketplaceGameTarget,
 } from "@/lib/marketplace";
+import {
+  executeMarketplaceAppAction,
+  dispatchMarketplaceHostAction,
+  describeMarketplaceFunctionality,
+} from "@/lib/marketplace-runtime";
 import { getMarketplaceAppVersion } from "@/lib/marketplace.functions";
 
 function messageFrom(error: unknown, fallback: string) {
@@ -65,6 +70,16 @@ export function MarketplacePublishedAppViewer({
   const [reviewingPermissions, setReviewingPermissions] = useState(false);
   const [selectedActionIds, setSelectedActionIds] = useState<ReadonlySet<string>>(new Set());
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
+  const [savingPermissions, setSavingPermissions] = useState(false);
+  const [loadedScope, setLoadedScope] = useState("");
+  const [reload, setReload] = useState(0);
+  const scope = JSON.stringify([userId, appId, installedVersion, isAdmin, open]);
+  const currentScope = useRef(scope);
+  currentScope.current = scope;
+  const launchSequence = useRef(0);
+  const actionInFlight = useRef(false);
+  const ready = Boolean(userId && open && isAdmin && loadedScope === scope && !loading);
   const declaredActions = useMemo(
     () => (manifest ? getMarketplaceAuthoredActions(manifest) : []),
     [manifest],
@@ -75,10 +90,17 @@ export function MarketplacePublishedAppViewer({
   );
 
   useEffect(() => {
+    launchSequence.current += 1;
+    actionInFlight.current = false;
+    setPendingActionId(null);
+    setActionError("");
+    setSavingPermissions(false);
+    setLoadedScope("");
     if (!open) {
       setManifest(null);
       setPinnedInstall(null);
       setError("");
+      setLoading(false);
       setReviewingPermissions(false);
       setSelectedActionIds(new Set());
       return;
@@ -89,8 +111,9 @@ export function MarketplacePublishedAppViewer({
     setPinnedInstall(null);
     setError("");
     void (async () => {
-      if (!isAdmin) throw new Error("Admin-Zugriff ist nicht bestätigt.");
+      if (!isAdmin || !userId) throw new Error("Admin-Zugriff ist nicht bestätigt.");
       const access = await getAdminAreaAccess();
+      if (!active || currentScope.current !== scope) return;
       if (!isMarketplaceAdminAccessGranted(access)) {
         throw new Error("Admin-Zugriff ist nicht mehr bestätigt. Der App-Start wurde blockiert.");
       }
@@ -107,7 +130,8 @@ export function MarketplacePublishedAppViewer({
           "Der veröffentlichte App-Inhalt stimmt nicht mit der installierten Version überein.",
         );
       }
-      if (!active) return;
+      if (!active || currentScope.current !== scope) return;
+      setLoadedScope(scope);
       setPinnedInstall(installed);
       setManifest(checked.manifest);
       const alreadyReviewed = installed.permissionsReviewVersion === installedVersion;
@@ -127,30 +151,21 @@ export function MarketplacePublishedAppViewer({
       );
     })()
       .catch((cause: unknown) => {
-        if (active)
+        if (active && currentScope.current === scope)
           setError(messageFrom(cause, "Die installierte Alo-App konnte nicht geöffnet werden."));
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active && currentScope.current === scope) setLoading(false);
       });
     return () => {
       active = false;
     };
-  }, [appId, getAppVersion, installedVersion, isAdmin, open, userId]);
-
-  const performHostAction = (action: MarketplaceHostAction) => {
-    onOpenChange(false);
-    if (action.type === "navigate") {
-      void navigate({ to: action.to });
-    } else if (action.type === "open-game") {
-      void navigate({ to: "/games", search: { game: action.gameId } });
-    } else {
-      window.dispatchEvent(new CustomEvent("alo-open", { detail: action.toolId }));
-    }
-  };
+  }, [appId, getAppVersion, installedVersion, isAdmin, open, userId, scope, reload]);
 
   const savePermissions = async () => {
-    if (!manifest || !pinnedInstall || !isAdmin) return;
+    if (!manifest || !pinnedInstall || !ready || savingPermissions) return;
+    setSavingPermissions(true);
+    setActionError("");
     try {
       const latest = loadMarketplacePublishedInstallState(window.localStorage, userId);
       const next = setMarketplacePublishedAppPermissions(
@@ -164,65 +179,84 @@ export function MarketplacePublishedAppViewer({
         next,
         `Berechtigungen für „${displayName}“ Version ${installedVersion} gespeichert.`,
       );
-      if (!saved) return;
+      if (!saved || currentScope.current !== scope) return;
       const refreshed = parseMarketplacePublishedInstallState(next);
       const updated = refreshed.installs.find((entry) => entry.appId === appId) ?? null;
       setPinnedInstall(updated);
       setReviewingPermissions(false);
       onStatus?.("Berechtigungen lokal gespeichert. Keine Aktion wurde automatisch ausgeführt.");
     } catch (cause) {
-      setError(messageFrom(cause, "Die App-Berechtigungen konnten nicht gespeichert werden."));
+      if (currentScope.current === scope)
+        setActionError(
+          messageFrom(cause, "Die App-Berechtigungen konnten nicht gespeichert werden."),
+        );
+    } finally {
+      if (currentScope.current === scope) setSavingPermissions(false);
     }
   };
 
-  const openPermissionReview = () => {
-    if (!manifest || !pinnedInstall || getMarketplaceAuthoredActions(manifest).length === 0) return;
-    setSelectedActionIds(new Set(pinnedInstall.grantedActionIds ?? []));
+  const openPermissionReview = (requestedActionId?: string) => {
+    if (
+      !manifest ||
+      !pinnedInstall ||
+      !ready ||
+      getMarketplaceAuthoredActions(manifest).length === 0
+    )
+      return;
+    setSelectedActionIds(
+      new Set([
+        ...(pinnedInstall.grantedActionIds ?? []),
+        ...(requestedActionId ? [requestedActionId] : []),
+      ]),
+    );
     setReviewingPermissions(true);
-    setError("");
+    setActionError("");
   };
 
   const runAction = async (actionId: string) => {
-    if (!manifest || !pinnedInstall || !isAdmin || pendingActionId) return;
+    if (!manifest || !pinnedInstall || !ready || actionInFlight.current) return;
+    actionInFlight.current = true;
+    const sequence = ++launchSequence.current;
+    const isCurrent = () => currentScope.current === scope && launchSequence.current === sequence;
     setPendingActionId(actionId);
-    setError("");
+    setActionError("");
     try {
-      const access = await getAdminAreaAccess();
-      if (!isMarketplaceAdminAccessGranted(access)) {
-        throw new Error("Admin-Zugriff ist nicht mehr bestätigt. Die Aktion wurde blockiert.");
-      }
-      const latest = loadMarketplacePublishedInstallState(window.localStorage, userId);
-      const stillInstalled = latest.installs.find(
-        (entry) =>
-          entry.appId === appId &&
-          entry.version === installedVersion &&
-          entry.enabled &&
-          entry.permissionsReviewVersion === installedVersion &&
-          entry.grantedActionIds?.includes(actionId),
+      await executeMarketplaceAppAction(
+        { appId, version: installedVersion, actionId },
+        {
+          isCurrent,
+          checkAdmin: getAdminAreaAccess,
+          loadInstalls: () => loadMarketplacePublishedInstallState(window.localStorage, userId),
+          getVersion: () => getAppVersion({ data: { appId, version: installedVersion } }),
+          execute: (action) =>
+            dispatchMarketplaceHostAction(action, {
+              navigate: (to, gameId) =>
+                gameId
+                  ? navigate({ to: "/games", search: { game: gameId as MarketplaceGameTarget } })
+                  : navigate({ to: to as MarketplaceRouteTarget }),
+              openTool: (toolId) =>
+                window.dispatchEvent(new CustomEvent("alo-open", { detail: toolId })),
+              close: () => onOpenChange(false),
+            }),
+        },
       );
-      if (!stillInstalled) throw new Error("Diese Aktion ist lokal nicht freigegeben.");
-      const checked = await getAppVersion({ data: { appId, version: installedVersion } });
-      if (!isExpectedVersion(checked, appId, installedVersion)) {
-        throw new Error("Diese App-Version ist nicht mehr verfügbar.");
-      }
-      const isDeclared = checked.manifest.blocks.some(
-        (block) => block.type === "action" && block.actionId === actionId,
-      );
-      const registered = getMarketplaceAuthorAction(actionId);
-      if (!isDeclared || !registered)
-        throw new Error("Die Aktion ist nicht im Alo-Host registriert.");
-      performHostAction(registered.action);
     } catch (cause) {
-      setError(messageFrom(cause, "Die App-Aktion wurde aus Sicherheitsgründen blockiert."));
+      if (isCurrent())
+        setActionError(
+          messageFrom(cause, "Die App-Aktion wurde aus Sicherheitsgründen blockiert."),
+        );
     } finally {
-      setPendingActionId(null);
+      if (isCurrent()) {
+        actionInFlight.current = false;
+        setPendingActionId(null);
+      }
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!fixed !inset-0 !z-[70] !m-0 !flex !h-[100dvh] !w-screen !max-w-none !translate-x-0 !translate-y-0 !flex-col !gap-0 !overflow-y-auto !rounded-none !border-0 !p-0 !shadow-none">
-        <main className="mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-1 flex-col px-5 pb-10 pt-16 sm:px-8 sm:pt-20">
+        <main className="mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-1 flex-col px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[max(4rem,calc(env(safe-area-inset-top)+1.5rem))] sm:px-8 sm:pt-20">
           <header className="flex items-start gap-4">
             {icon && (
               <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-16 sm:w-16">
@@ -248,13 +282,36 @@ export function MarketplacePublishedAppViewer({
               className="mt-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
             >
               {error}
+              <button
+                type="button"
+                onClick={() => setReload((value) => value + 1)}
+                className="mt-3 block min-h-11 rounded-lg border border-border px-3 font-semibold"
+              >
+                Erneut prüfen
+              </button>
             </p>
           )}
-          {manifest && !loading && !error && (
+          {actionError && (
+            <p
+              role="alert"
+              className="mt-5 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
+            >
+              {actionError} Deine App und Freigaben bleiben erhalten.
+            </p>
+          )}
+          {manifest && ready && !error && (
             <>
               <DialogDescription className="mt-6 text-base leading-relaxed text-foreground">
                 {manifest.description}
               </DialogDescription>
+              <details className="mt-4 rounded-2xl border border-border/60 bg-muted/20 px-4 py-1">
+                <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">
+                  {describeMarketplaceFunctionality(manifest).label} · Funktionsumfang
+                </summary>
+                <p className="pb-4 text-sm leading-relaxed text-muted-foreground">
+                  {describeMarketplaceFunctionality(manifest).detail}
+                </p>
+              </details>
 
               {reviewingPermissions ? (
                 <section className="mt-6 space-y-4 rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:p-6">
@@ -270,7 +327,7 @@ export function MarketplacePublishedAppViewer({
                       Für ein späteres Ändern kannst du die Berechtigungen jederzeit erneut prüfen.
                     </p>
                   </div>
-                  <fieldset className="space-y-3">
+                  <fieldset disabled={savingPermissions} className="space-y-3 disabled:opacity-60">
                     <legend className="sr-only">Freigegebene App-Aktionen</legend>
                     {declaredActions.map((action, index) => (
                       <label
@@ -303,13 +360,17 @@ export function MarketplacePublishedAppViewer({
                     <button
                       type="button"
                       onClick={() => void savePermissions()}
+                      disabled={!ready || savingPermissions}
                       className="min-h-11 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
                     >
-                      Berechtigungen speichern und App öffnen
+                      {savingPermissions
+                        ? "Wird gespeichert …"
+                        : "Berechtigungen speichern und App öffnen"}
                     </button>
                     <button
                       type="button"
                       onClick={() => onOpenChange(false)}
+                      disabled={savingPermissions}
                       className="min-h-11 rounded-xl border border-border px-4 py-2 text-sm font-semibold"
                     >
                       Später
@@ -320,15 +381,17 @@ export function MarketplacePublishedAppViewer({
                 <>
                   <MarketplaceManifestView
                     manifest={manifest}
-                    canRunActions={Boolean(pinnedInstall?.enabled)}
+                    canRunActions={Boolean(ready && pinnedInstall?.enabled)}
                     allowedActionIds={pinnedInstall?.grantedActionIds ?? []}
                     pendingActionId={pendingActionId}
                     onAction={(actionId) => void runAction(actionId)}
+                    onRequestPermission={openPermissionReview}
                   />
                   {declaredActions.length > 0 ? (
                     <button
                       type="button"
-                      onClick={openPermissionReview}
+                      onClick={() => openPermissionReview()}
+                      disabled={!ready || pendingActionId !== null}
                       className="mt-4 min-h-11 self-start rounded-xl border border-border px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     >
                       Berechtigungen erneut prüfen

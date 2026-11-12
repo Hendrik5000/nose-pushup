@@ -23,6 +23,7 @@ const appViewer = readFileSync(
   `${root}/src/components/marketplace/MarketplacePublishedAppViewer.tsx`,
   "utf8",
 );
+const appRuntime = readFileSync(`${root}/src/lib/marketplace-runtime.ts`, "utf8");
 const miraChat = readFileSync(`${root}/src/components/mira/SuperAiPage.tsx`, "utf8");
 const draftPreview = readFileSync(
   `${root}/src/components/marketplace/MiraMarketplaceDraftPreview.tsx`,
@@ -208,8 +209,10 @@ test("revocation blocks reads/launches for every version and version updates are
   assert.match(appViewer, /installed\.permissionsReviewVersion === installedVersion/);
   assert.match(appViewer, /setMarketplacePublishedAppPermissions/);
   assert.match(appViewer, /getAppVersion\(\{ data: \{ appId, version: installedVersion \} \}\)/);
-  assert.match(appViewer, /getMarketplaceAuthorAction\(actionId\)/);
-  assert.match(appViewer, /stillInstalled/);
+  assert.match(appViewer, /executeMarketplaceAppAction/);
+  assert.match(appRuntime, /getMarketplaceAuthorAction\(request\.actionId\)/);
+  assert.match(appRuntime, /findGrantedInstall/);
+  assert.match(appRuntime, /assertCurrent\(\)/);
 });
 
 test("SQL action and icon allowlists exactly match the compiled host registry", () => {

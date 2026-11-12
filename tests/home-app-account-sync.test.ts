@@ -426,7 +426,9 @@ test("Home and Marketplace use guarded event-driven reconciliation, not polling 
     "utf8",
   );
   assert.match(viewer, /permissionsReviewVersion === installedVersion/);
-  assert.match(viewer, /grantedActionIds\?\.includes\(actionId\)/);
+  assert.match(viewer, /executeMarketplaceAppAction/);
+  const runtime = readFileSync("src/lib/marketplace-runtime.ts", "utf8");
+  assert.match(runtime, /grantedActionIds\?\.includes\(request\.actionId\)/);
 });
 
 test("simultaneous first imports converge on the first accepted account value without revision-zero DB rows", async () => {
