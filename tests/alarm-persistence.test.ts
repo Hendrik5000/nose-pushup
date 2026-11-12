@@ -120,13 +120,14 @@ test("validation and storage-write failures cannot claim a successful save", () 
   }
 });
 
-test("stable root owns the monitor; saved summary and explicit save remain on alarm and home", () => {
+test("stable root owns the monitor; alarm saves in its app and Home retains its route", () => {
   const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
   const root = read("routes/__root.tsx");
   const layout = read("routes/_authenticated/route.tsx");
   const monitor = read("components/AlarmMonitor.tsx");
   const alarm = read("routes/_authenticated/alarm.tsx");
   const home = read("routes/_authenticated/index.tsx");
+  const areas = read("lib/home-app-menus.ts");
   assert.match(root, /<Outlet \/>\s*<\/div>\s*<GlobalAlarmMonitor \/>/);
   assert.doesNotMatch(layout, /<AlarmMonitor/);
   assert.match(monitor, /match.routeId === "\/_authenticated"/);
@@ -137,6 +138,6 @@ test("stable root owns the monitor; saved summary and explicit save remain on al
   assert.match(alarm, /Wecker speichern/);
   assert.match(alarm, /Gespeicherter Wecker/);
   assert.match(alarm, /noch nicht gespeichert/);
-  assert.match(home, /readSavedAlarmSettings\(user.id\)/);
-  assert.match(home, /Täglich \{savedAlarm.time\}/);
+  assert.match(home, /to="\/areas"/);
+  assert.match(areas, /to: "\/alarm"/);
 });

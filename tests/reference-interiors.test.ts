@@ -126,7 +126,7 @@ test("community and appearance remain reachable from the hub without a fixed upp
   const nav = read("components/TopNav.tsx");
   assert.match(home, /to="\/chat"/);
   assert.match(home, /to="\/profile"/);
-  assert.match(home, /aria-label="Weitere Alo-Bereiche"/);
+  assert.match(home, /Weitere Bereiche öffnen/);
   assert.doesNotMatch(nav, /alo-module-switcher/);
   assert.match(nav, /layout === "bottom" \|\| layout === "floating"/);
   assert.match(read("components/SettingsSection.tsx"), /hashchange/);

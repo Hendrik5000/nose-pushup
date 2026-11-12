@@ -42,11 +42,18 @@ test("home hub exposes accessible tools, search and area navigation without the 
     new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
     "utf8",
   );
+  const areas = readFileSync(
+    new URL("../src/routes/_authenticated/areas.tsx", import.meta.url),
+    "utf8",
+  );
   assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
   assert.match(home, /aria-label="Überall suchen"/);
-  assert.match(home, /<nav[^>]*aria-label="Weitere Alo-Bereiche"/);
-  assert.match(home, /min-h-11[^>]*aria-label="Alo-Werkzeuge öffnen"/);
-  assert.match(home, /<Link[\s\S]*?to=\{area\.to\}/);
+  assert.match(home, /<Link\s+to="\/areas"/);
+  assert.match(home, /Weitere Bereiche öffnen/);
+  assert.match(home, /<Link\s+to="\/tools"/);
+  assert.match(areas, /aria-label="Alle weiteren Alo-Bereiche"/);
+  assert.match(areas, /HOME_OTHER_AREAS\.map/);
+  assert.match(areas, /<Link[\s\S]*?to=\{to\}/);
 });
 
 test("message submission only clears an unchanged draft after a successful post", () => {

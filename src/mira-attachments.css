@@ -70,6 +70,9 @@ html:root[data-design-style] .sport-ai-chat-mode .sport-chat-composer > button[t
   color: var(--foreground);
   background: var(--secondary);
 }
+html[data-design-style] .mira-attachment-picker > summary::before {
+  content: none;
+}
 .mira-attachment-picker > summary::-webkit-details-marker {
   display: none;
 }

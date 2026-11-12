@@ -2,18 +2,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 const read = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
-test("empty performance coach offers editable starter tasks without sending immediately", () => {
+test("Mira removes welcome starters while separate Workspace prompts remain editable", () => {
   const ai = read("components/mira/SuperAiPage.tsx");
-  const start = ai.indexOf('aria-label="Mit einer Aufgabe starten"');
-  assert.ok(start > 0);
-  const cards = ai.slice(start, ai.indexOf("{messages.map", start));
-  for (const id of ["ideas", "draft", "explain"]) assert.ok(cards.includes(id));
-  assert.match(cards, /setInput\(tool.prompt\)/);
-  assert.doesNotMatch(cards, /void submit/);
+  assert.doesNotMatch(ai, /aria-label="Mit einer Aufgabe starten"|ai-starter-grid|ai-starter-card/);
+  assert.match(ai, /toolsExpanded \? SUPER_TOOLS : SUPER_TOOLS\.slice\(0, 3\)/);
+  assert.match(ai, /setInput\(t\.prompt\)/);
 });
-test("prompt grid overrides the old welcome icon container and keeps intrinsic height", () => {
+
+test("Mira mobile safe-area spacing remains after welcome starters are removed", () => {
   const css = read("ai-reference.css");
-  assert.match(css, /\.ai-welcome > \.ai-starter-grid\s*\{[^}]*height: auto;[^}]*flex-shrink: 0;/);
   assert.match(css, /padding-bottom: max\(1rem, calc\(env\(safe-area-inset-bottom\)/);
 });
 test("community keeps account outside a shrinking scroll region and wraps quick actions", () => {
