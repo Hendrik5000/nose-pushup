@@ -17,6 +17,7 @@ import {
   type HistoryWorkout,
   type WorkoutHistoryRange,
 } from "@/lib/workout-history";
+import { TrainingStudio } from "./TrainingStudio";
 
 const DAYS = 35; // 5 weeks
 
@@ -147,6 +148,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
       >
         <option value={35}>35 Tage</option>
         <option value={90}>90 Tage</option>
+        <option value={180}>180 Tage</option>
       </select>
     </label>
   );
@@ -205,17 +207,20 @@ export function WorkoutHistory({ userId }: { userId: string }) {
           In den letzten {rangeDays} Tagen wurden keine Einheiten gefunden. Hier erscheinen deine
           letzten Trainings und dein Fortschritt.
         </p>
+        <div className="mt-3">
+          <TrainingStudio userId={userId} rows={recentWorkouts} rangeDays={rangeDays} />
+        </div>
       </section>
     );
   return (
     <div className="rounded-2xl border border-border bg-card/50 p-4 backdrop-blur space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
           Verlauf
         </h3>
         {rangeControl}
-        <div className="flex gap-3 text-[10px] text-muted-foreground">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
           <span>
             <span className="font-semibold text-foreground">{trainedDays}</span> Tage mit
             Liegestützen
@@ -427,6 +432,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
           })}
         </div>
       )}
+      <TrainingStudio userId={userId} rows={recentWorkouts} rangeDays={rangeDays} />
     </div>
   );
 }

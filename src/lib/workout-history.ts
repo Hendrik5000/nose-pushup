@@ -8,7 +8,7 @@ export type HistoryWorkout = {
   count: number;
 };
 
-export const WORKOUT_HISTORY_RANGES = [35, 90] as const;
+export const WORKOUT_HISTORY_RANGES = [35, 90, 180] as const;
 export type WorkoutHistoryRange = (typeof WORKOUT_HISTORY_RANGES)[number];
 
 export function workoutHistoryStartDay(days: WorkoutHistoryRange, now = new Date()): string {
