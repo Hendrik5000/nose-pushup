@@ -1,4 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ALARM_SETTINGS_EVENT, readSavedAlarmSettings, type AlarmSettings } from "@/lib/alarm";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
 import { HOME_OTHER_AREAS } from "@/lib/home-app-menus";
 
@@ -13,6 +15,19 @@ export const Route = createFileRoute("/_authenticated/areas")({
 });
 
 function MoreAreasPage() {
+  const { user } = Route.useRouteContext();
+  const [savedAlarm, setSavedAlarm] = useState<AlarmSettings | null>(null);
+  useEffect(() => {
+    const loadAlarm = () => setSavedAlarm(readSavedAlarmSettings(user.id));
+    loadAlarm();
+    window.addEventListener(ALARM_SETTINGS_EVENT, loadAlarm);
+    window.addEventListener("storage", loadAlarm);
+    return () => {
+      window.removeEventListener(ALARM_SETTINGS_EVENT, loadAlarm);
+      window.removeEventListener("storage", loadAlarm);
+    };
+  }, [user.id]);
+
   return (
     <HomeAppMenuLayout
       eyebrow="ALO · APPS"
@@ -36,7 +51,9 @@ function MoreAreasPage() {
             <span className="mt-4 block">
               <span className="block text-sm font-bold leading-tight">{label}</span>
               <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                {description}
+                {to === "/alarm" && savedAlarm
+                  ? `${description} · Täglich ${savedAlarm.time} · ${savedAlarm.enabled ? "Ein" : "Aus"}`
+                  : description}
               </span>
             </span>
           </Link>

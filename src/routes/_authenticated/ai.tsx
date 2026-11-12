@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SuperAiPage } from "@/components/mira/SuperAiPage";
 import { AloPageSidebar } from "@/components/alo/AloPageSidebar";
-import "@/mira-home-overlay.css";
 
 export const Route = createFileRoute("/_authenticated/ai")({
   head: () => ({
@@ -18,9 +17,10 @@ export const Route = createFileRoute("/_authenticated/ai")({
 });
 
 function MiraPage() {
+  const { user } = Route.useRouteContext();
   return (
     <AloPageSidebar active="mira">
-      <SuperAiPage sketchLayout />
+      <SuperAiPage sketchLayout userId={user.id} />
     </AloPageSidebar>
   );
 }

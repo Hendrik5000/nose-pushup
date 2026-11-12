@@ -46,14 +46,18 @@ test("authenticated content starts below the body safe area without a reserved h
 test("swipe and bottom-navigation alternatives remain while all former header destinations move into the hub", () => {
   const layout = read("routes/_authenticated/route.tsx");
   const hub = read("routes/_authenticated/index.tsx");
+  const areas = read("routes/_authenticated/areas.tsx");
+  const tools = read("routes/_authenticated/tools.tsx");
+  const menus = read("lib/home-app-menus.ts");
   const swipe = read("lib/module-swipe-gesture.ts");
-  const areaMenus = read("lib/home-app-menus.ts");
   assert.match(layout, /installModuleSwipeGesture/);
   assert.match(swipe, /getSwipeDestination/);
-  assert.match(hub, /aria-label="Alo-Werkzeuge öffnen"/);
   assert.match(hub, /to="\/tools"/);
+  assert.match(tools, /ALO_WORKSPACE_MENU_ORDER/);
   assert.match(hub, /aria-label="Überall suchen"/);
   assert.match(hub, /detail: "search"/);
+  assert.match(hub, /to="\/areas"/);
+  assert.match(areas, /HOME_OTHER_AREAS\.map/);
   for (const route of [
     "/health",
     "/programs",
@@ -64,9 +68,8 @@ test("swipe and bottom-navigation alternatives remain while all former header de
     "/battle-league",
     "/leaderboard",
     "/clubs",
-    "/alarm",
   ]) {
-    assert.ok(areaMenus.includes(`to: "${route}"`), `areas app should link to ${route}`);
+    assert.ok(menus.includes(`to: "${route}"`), `Areas should link to ${route}`);
   }
   assert.match(read("components/TopNav.tsx"), /\{ to: "\/ai", label: "Mira"/);
   assert.match(read("components/TopNav.tsx"), /\{ to: "\/chat", label: "Nexus Chat"/);

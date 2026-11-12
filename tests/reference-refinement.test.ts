@@ -13,11 +13,13 @@ test("reference refinements load after the shared style sheets", () => {
 
 test("reference interiors keep contextual navigation and move global tools into the home hub", () => {
   const home = read("routes/_authenticated/index.tsx");
+  const areas = read("routes/_authenticated/areas.tsx");
   const layout = read("routes/_authenticated/route.tsx");
-  assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
+  assert.match(home, /to="\/tools"/);
   assert.match(home, /aria-label="Überall suchen"/);
   assert.match(home, /to="\/profile"/);
-  assert.match(home, /Weitere Bereiche öffnen/);
+  assert.match(home, /to="\/areas"/);
+  assert.match(areas, /aria-label="Alle weiteren Alo-Bereiche"/);
   assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
   assert.match(layout, /className="authenticated-shell alo-no-global-header/);
 });

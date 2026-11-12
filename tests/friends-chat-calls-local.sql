@@ -440,7 +440,102 @@ BEGIN
   PERFORM t.logout();
 END $$;
 
--- 10. get_friend_public_profiles only returns accepted friends ----------------
+-- 10. Feature digests are Admin-confirmed, recipient-scoped and idempotent -----
+DO $$
+DECLARE
+  a1 uuid := '00000000-0000-4000-8000-0000000000a1';
+  a2 uuid := '00000000-0000-4000-8000-0000000000a2';
+  a7 uuid := '00000000-0000-4000-8000-0000000000a7';
+  digest_id uuid;
+  a1_item uuid;
+  result record;
+BEGIN
+  INSERT INTO public.global_role_assignments (user_id, role_name, granted_by)
+  VALUES (a1, 'admin', a1)
+  ON CONFLICT (user_id, role_name) DO NOTHING;
+
+  PERFORM t.login(a2);
+  PERFORM t.must_fail(
+    $q$SELECT * FROM public.publish_feature_release_digest('2026-11-mira', 'Mira-Werkbank', 'Neue Aufgaben.', true)$q$,
+    'non-admin cannot publish feature digest');
+  PERFORM t.must_fail(
+    $q$INSERT INTO public.postfach_items (user_id, kind, ref_id, payload) VALUES (auth.uid(), 'feature_release', gen_random_uuid(), '{}'::jsonb)$q$,
+    'authenticated client cannot insert feature digest');
+  PERFORM t.must_fail('SELECT * FROM public.feature_release_digests', 'client cannot read release ledger');
+  PERFORM t.must_fail('SELECT * FROM public.feature_release_digest_deliveries', 'client cannot read delivery ledger');
+  PERFORM t.must_fail(
+    $q$INSERT INTO public.feature_release_digest_deliveries (release_id, user_id) VALUES (gen_random_uuid(), auth.uid())$q$,
+    'authenticated client cannot write delivery ledger');
+  PERFORM t.logout();
+
+  PERFORM t.login(a7, true);
+  PERFORM t.must_fail(
+    $q$SELECT * FROM public.publish_feature_release_digest('2026-11-guest', 'Mira-Werkbank', 'Neue Aufgaben.', true)$q$,
+    'anonymous account cannot publish digest');
+  PERFORM t.logout();
+
+  PERFORM t.login(a1);
+  PERFORM t.must_fail(
+    $q$SELECT * FROM public.publish_feature_release_digest('2026-11-unconfirmed', 'Mira-Werkbank', 'Neue Aufgaben.', false)$q$,
+    'Admin must explicitly confirm');
+  SELECT * INTO result
+    FROM public.publish_feature_release_digest(
+      '2026-11-mira', 'Mira-Werkbank', 'Zehn neue Aufgaben sind im Mira-Chat verfügbar.', true);
+  PERFORM t.eq(result.was_created, true, 'first release creates a digest');
+  PERFORM t.eq(result.recipient_count, 5, 'one item is created for each registered non-anonymous account');
+  digest_id := result.release_id;
+  PERFORM set_config('t.feature_digest', digest_id::text, false);
+  PERFORM t.eq(
+    t.n(format('SELECT count(*) FROM public.feature_release_digest_deliveries WHERE release_id = %L', digest_id)),
+    5::bigint, 'delivery ledger records each recipient once');
+  PERFORM t.eq(
+    t.n(format('SELECT count(*) FROM public.feature_release_digest_deliveries WHERE release_id = %L AND user_id = %L', digest_id, a7)),
+    0::bigint, 'anonymous account is excluded');
+  PERFORM t.eq(
+    t.n(format('SELECT count(*) FROM public.postfach_items WHERE kind = ''feature_release'' AND ref_id = %L', digest_id)),
+    5::bigint, 'the Postfach contains individual rows, not a shared item');
+  SELECT id INTO a1_item
+    FROM public.postfach_items
+   WHERE user_id = a1 AND kind = 'feature_release' AND ref_id = digest_id;
+  PERFORM set_config('t.feature_digest_a1_item', a1_item::text, false);
+  PERFORM t.logout();
+
+  PERFORM t.login(a2);
+  PERFORM t.eq(
+    (SELECT count(*) FROM public.postfach_items WHERE kind = 'feature_release' AND ref_id = digest_id),
+    1::bigint, 'recipient sees their own digest');
+  PERFORM t.eq(
+    (SELECT count(*) FROM public.postfach_items WHERE user_id = a1 AND kind = 'feature_release' AND ref_id = digest_id),
+    0::bigint, 'recipient cannot read another account’s digest');
+  UPDATE public.postfach_items SET read_at = now()
+   WHERE id = current_setting('t.feature_digest_a1_item')::uuid;
+  DELETE FROM public.postfach_items
+   WHERE kind = 'feature_release' AND ref_id = digest_id;
+  PERFORM t.logout();
+
+  PERFORM t.eq(
+    (SELECT read_at IS NULL FROM public.postfach_items WHERE id = a1_item),
+    true, 'recipient cannot update another account’s digest');
+  PERFORM t.eq(
+    t.n(format('SELECT count(*) FROM public.postfach_items WHERE kind = ''feature_release'' AND ref_id = %L', digest_id)),
+    4::bigint, 'recipient may delete only their own inbox copy');
+
+  PERFORM t.login(a1);
+  SELECT * INTO result
+    FROM public.publish_feature_release_digest(
+      '2026-11-mira', 'Mira-Werkbank', 'Zehn neue Aufgaben sind im Mira-Chat verfügbar.', true);
+  PERFORM t.eq(result.was_created, false, 'repeated release key is a no-op');
+  PERFORM t.eq(result.recipient_count, 0, 'repeated release key never resends');
+  PERFORM t.must_fail(
+    $q$SELECT * FROM public.publish_feature_release_digest('2026-11-mira', 'Anderer Titel', 'Geänderter Text.', true)$q$,
+    'release key cannot be reused for different content');
+  PERFORM t.logout();
+  PERFORM t.eq(
+    t.n(format('SELECT count(*) FROM public.postfach_items WHERE kind = ''feature_release'' AND ref_id = %L', digest_id)),
+    4::bigint, 'deleting one inbox copy does not make a retry resend it');
+END $$;
+
+-- 11. get_friend_public_profiles only returns accepted friends ----------------
 DO $$
 DECLARE
   a1 uuid := '00000000-0000-4000-8000-0000000000a1';

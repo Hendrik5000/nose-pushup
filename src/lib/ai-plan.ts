@@ -40,7 +40,10 @@ const EXERCISES = new Set<AiWorkoutPlan["exercise_id"]>([
 ]);
 
 /** Prose is never mined for numbers; an optional interaction is accepted only by allowlist. */
-export function parseAiResponse(raw: string): {
+export function parseAiResponse(
+  raw: string,
+  options: { preserveCode?: boolean } = {},
+): {
   reply: string;
   plan: AiWorkoutPlan | null;
   interaction?: MiraInteraction;
@@ -48,13 +51,13 @@ export function parseAiResponse(raw: string): {
 } {
   const text = raw.trim();
   const jsonText = unwrapJsonFence(text);
-  if (!jsonText) return { reply: text, plan: null };
+  if (!jsonText) return extractTrailingVisualAnswer(text, options) ?? { reply: text, plan: null };
 
   let value: unknown;
   try {
     value = JSON.parse(jsonText);
   } catch {
-    return { reply: text, plan: null };
+    return extractTrailingVisualAnswer(text, options) ?? { reply: text, plan: null };
   }
 
   if (!isRecord(value)) return { reply: text, plan: null };
@@ -80,6 +83,79 @@ export function parseAiResponse(raw: string): {
     };
   }
   return { reply: text, plan: null };
+}
+
+function extractTrailingVisualAnswer(
+  text: string,
+  options: { preserveCode?: boolean },
+): { reply: string; plan: null; visual: MiraVisualAnswer } | null {
+  if (options.preserveCode || text.includes("```") || text.length > 20_000) return null;
+  const marker = /,\s*"visual"\s*:\s*/g;
+  let match: RegExpExecArray | null;
+  let lastMatch: RegExpExecArray | null = null;
+  while ((match = marker.exec(text)) !== null) lastMatch = match;
+  if (!lastMatch) return null;
+
+  const prefix = text.slice(0, lastMatch.index).trimEnd();
+  if (!prefix.endsWith('"')) return null;
+  const parsedTail = parseJsonObjectAt(text, lastMatch.index + lastMatch[0].length);
+  if (!parsedTail) return null;
+  const trailingText = text.slice(parsedTail.end).trim();
+  if (trailingText && trailingText !== "}") return null;
+  const visual = validateMiraVisualAnswer(parsedTail.value);
+  if (!visual) return null;
+
+  let encodedReply = prefix.slice(0, -1).trim();
+  const replyField = /^\s*\{?\s*"reply"\s*:\s*"/i.exec(encodedReply);
+  if (replyField) encodedReply = encodedReply.slice(replyField[0].length);
+  encodedReply = encodedReply.replace(/[,\s]+$/, "");
+  const reply = decodeEscapedReplyText(encodedReply).trim();
+  if (!reply) return null;
+  return { reply, plan: null, visual };
+}
+
+function parseJsonObjectAt(text: string, startAt: number): { value: unknown; end: number } | null {
+  let start = startAt;
+  while (/\s/.test(text[start] ?? "")) start += 1;
+  if (text[start] !== "{") return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < text.length; index += 1) {
+    const character = text[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+    if (character === '"') inString = true;
+    else if (character === "{") depth += 1;
+    else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        try {
+          return { value: JSON.parse(text.slice(start, index + 1)) as unknown, end: index + 1 };
+        } catch {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function decodeEscapedReplyText(value: string): string {
+  try {
+    return JSON.parse(`"${value}"`) as string;
+  } catch {
+    return value
+      .replace(/\\r/g, "\r")
+      .replace(/\\n/g, "\n")
+      .replace(/\\t/g, "\t")
+      .replace(/\\"/g, '"');
+  }
 }
 
 export function validateAiWorkoutPlan(value: unknown): AiWorkoutPlan | null {

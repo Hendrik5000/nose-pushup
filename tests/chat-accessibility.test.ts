@@ -46,14 +46,19 @@ test("home hub exposes accessible tools, search and area navigation without the 
     new URL("../src/routes/_authenticated/areas.tsx", import.meta.url),
     "utf8",
   );
+  const tools = readFileSync(
+    new URL("../src/routes/_authenticated/tools.tsx", import.meta.url),
+    "utf8",
+  );
   assert.match(home, /aria-label="Alo-Werkzeuge öffnen"/);
   assert.match(home, /aria-label="Überall suchen"/);
-  assert.match(home, /<Link\s+to="\/areas"/);
-  assert.match(home, /Weitere Bereiche öffnen/);
-  assert.match(home, /<Link\s+to="\/tools"/);
-  assert.match(areas, /aria-label="Alle weiteren Alo-Bereiche"/);
-  assert.match(areas, /HOME_OTHER_AREAS\.map/);
+  assert.match(home, /to="\/tools"/);
+  assert.match(home, /to="\/areas"/);
+  assert.match(areas, /<nav[^>]*aria-label="Alle weiteren Alo-Bereiche"/);
   assert.match(areas, /<Link[\s\S]*?to=\{to\}/);
+  assert.match(tools, /<nav[^>]*aria-label="Alo-Werkzeuge"/);
+  assert.match(tools, /aria-label=\{`\$\{label\} öffnen`\}/);
+  assert.match(tools, /className="group flex min-h-24/);
 });
 
 test("message submission only clears an unchanged draft after a successful post", () => {

@@ -5,6 +5,31 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MiraProgressiveAnswer } from "../src/components/mira/MiraProgressiveAnswer.tsx";
 import { createMiraRevealPlan } from "../src/lib/mira-reveal-plan.ts";
 
+test("reduced-motion preference renders the complete formatted answer immediately", () => {
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {
+      matchMedia: (query: string) => ({ matches: query === "(prefers-reduced-motion: reduce)" }),
+    },
+  });
+
+  try {
+    const markup = renderToStaticMarkup(
+      createElement(MiraProgressiveAnswer, {
+        text: "**Sofort sichtbar** und vollständig.",
+        animate: true,
+      }),
+    );
+    assert.match(markup, /<strong>Sofort sichtbar<\/strong>/);
+    assert.doesNotMatch(markup, /aria-hidden="true"[^>]*inert/);
+    assert.doesNotMatch(markup, /role="status"/);
+  } finally {
+    if (originalWindow) Object.defineProperty(globalThis, "window", originalWindow);
+    else Reflect.deleteProperty(globalThis, "window");
+  }
+});
+
 test("progressive Mira reveals use word boundaries and end at the exact full response length", () => {
   const text = "Mira schreibt schrittweise.\n\nDie ganze Antwort bleibt erhalten.";
   const plan = createMiraRevealPlan(text);

@@ -1,41 +1,39 @@
-import { progressState } from "@/lib/alo-ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import type { PrivateGameId } from "@/lib/private-game-policy";
-import { supabase } from "@/integrations/supabase/client";
-import type { ExerciseMeta } from "@/lib/exercises";
-import { levelProgress } from "@/lib/level";
+import { HOME_OTHER_AREAS } from "@/lib/home-app-menus";
+import { useHomeAppAccountSync } from "@/hooks/use-home-app-account-sync";
 import {
-  getQuickStartPlan,
-  getDashboardRecommendation,
-  getSmartReminder,
-  getWeeklyProgress,
-} from "@/lib/workout-plans";
-import { getTrainingWeekBounds, localDateKey, sumTrainingWeekReps } from "@/lib/training-dates";
-import { AiCoachCard } from "@/components/AiCoachCard";
-import { WeekPlanCard } from "@/components/WeekPlanCard";
-import { ChallengesPanel } from "@/components/ChallengesPanel";
-import { FriendActivity } from "@/components/FriendActivity";
+  HOME_APP_SYNC_APPLIED,
+  mergeHomeAppLocalEdit,
+  mergeMarketplaceLocalEdit,
+  requestHomeAppAccountSync,
+} from "@/lib/home-app-account-sync";
+import { supabase } from "@/integrations/supabase/client";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
-import { WorkoutHistory } from "@/components/WorkoutHistory";
-import { ReadinessSummary } from "@/components/ReadinessCard";
-import { GymPartnerPanel } from "@/components/GymPartnerPanel";
-import { useReadiness } from "@/hooks/useReadiness";
-import { MicroChallengeCard } from "@/components/MicroChallengeCard";
-import { StreakFreezeCard } from "@/components/StreakFreezeCard";
-import { RecoveryCalendar } from "@/components/RecoveryCalendar";
-import { WeeklyReview } from "@/components/WeeklyReview";
-import { BottomNav } from "@/components/BottomNav";
-import { FavoriteStar } from "@/components/FavoriteStar";
-import { DailyBriefingCard } from "@/components/DailyBriefingCard";
-import { QuickActionsBar } from "@/components/QuickActionsBar";
-import { MoodCheckin } from "@/components/MoodCheckin";
-import { WaterTracker } from "@/components/WaterTracker";
-import { WorkoutNotesPanel } from "@/components/WorkoutNotesPanel";
-import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
-import type { WidgetId, WidgetSize } from "@/lib/dashboard-layout";
-import { SportSectionLabel } from "@/components/SportPageIntro";
+import { MarketplaceIcon } from "@/components/marketplace/MarketplaceIcon";
+import { MarketplacePublishedAppViewer } from "@/components/marketplace/MarketplacePublishedAppViewer";
 import { MiraHandoff } from "@/components/alo/MiraHandoff";
 import { MiraVoiceChatDialog } from "@/components/mira/MiraVoiceChatDialog";
 import { MiraSpark } from "@/components/mira/MiraSpark";
@@ -43,24 +41,44 @@ import {
   createBrowserSpeechRecognitionFactory,
   type MiraSpeechRecognitionLike,
 } from "@/lib/mira-voice-conversation";
-import "@/mira-home-overlay.css";
+import { ChevronLeft, ChevronRight, Mic, Search, Trash2, Users, X } from "lucide-react";
 import {
-  Activity,
-  ArrowUpRight,
-  Camera,
-  Dumbbell,
-  Flame,
-  Footprints,
-  Hand,
-  HeartPulse,
-  Search,
-  ScanFace,
-  Target,
-  Trophy,
-  Users,
-  Zap,
-} from "lucide-react";
-import { HOME_OTHER_AREAS } from "@/lib/home-app-menus";
+  EMPTY_HOME_APP_HUB_SETTINGS,
+  HOME_BACKGROUND_PRESETS,
+  HOME_DEFAULT_BACKGROUND,
+  hasHomeAppDragThreshold,
+  clearHomeAppName,
+  forgetHomeAppPersonalization,
+  homeAppHubSettingsStorageKey,
+  loadHomeAppHubSettings,
+  loadHomeBackgroundImage,
+  moveHomeApp,
+  moveHomeAppRelative,
+  orderHomeAppIds,
+  prepareHomeBackgroundImage,
+  removeHomeBackgroundImage,
+  saveHomeAppHubSettings,
+  saveHomeBackgroundImage,
+  setHomeAppName,
+  setHomeBackground,
+  type HomeAppHubSettings,
+} from "@/lib/home-app-hub";
+import {
+  EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE,
+  loadMarketplacePublishedInstallState,
+  marketplacePublishedInstallStorageKey,
+  parseMarketplacePublishedInstallState,
+  removeMarketplacePublishedApp,
+  saveMarketplacePublishedInstallState,
+  type MarketplacePublishedInstall,
+  type MarketplacePublishedInstallState,
+} from "@/lib/marketplace-authoring";
+import { isMarketplaceAdminAccessGranted } from "@/lib/marketplace";
+import {
+  MiraComposerPressAndHold,
+  MiraInlineDictationController,
+} from "@/lib/mira-inline-dictation";
+import "@/mira-home-overlay.css";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -75,267 +93,1263 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
 });
 
-type Profile = {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  best_count: number;
-  personal_bests: Record<string, number>;
-  xp: number;
-  level: number;
-  current_streak: number;
-  longest_streak: number;
-  last_workout_date: string | null;
-  daily_goal: number;
-};
+type HubAppRoute =
+  | "/ai"
+  | "/chat"
+  | "/exercises"
+  | "/profile"
+  | "/admin"
+  | "/marketplace"
+  | "/training"
+  | "/areas"
+  | "/tools";
 
-type PushMode = "nose" | "manual" | "camera";
+type HomeHubTile =
+  | {
+      kind: "standard";
+      id: string;
+      title: string;
+      artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
+      to: HubAppRoute;
+    }
+  | {
+      kind: "game";
+      id: string;
+      title: string;
+      artwork: "gridDefense" | "kupferkern";
+      game: PrivateGameId;
+    }
+  | { kind: "marketplace"; id: string; title: string; install: MarketplacePublishedInstall };
 
-const PROFILE_COLS =
-  "id, display_name, avatar_url, best_count, personal_bests, xp, level, current_streak, longest_streak, last_workout_date, daily_goal";
+function buildHomeHubTiles(
+  canSeeAdmin: boolean,
+  installs: readonly MarketplacePublishedInstall[],
+): HomeHubTile[] {
+  const tiles: HomeHubTile[] = [
+    { kind: "standard", id: "mira", title: "Mira", artwork: "mira", to: "/ai" },
+    { kind: "standard", id: "nexus", title: "Nexus Chat", artwork: "nexus", to: "/chat" },
+    { kind: "standard", id: "health", title: "Alo Health", artwork: "health", to: "/exercises" },
+    {
+      kind: "standard",
+      id: "settings",
+      title: "Einstellungen",
+      artwork: "settings",
+      to: "/profile",
+    },
+  ];
+  if (canSeeAdmin) {
+    tiles.push(
+      { kind: "standard", id: "admin", title: "Admin", artwork: "admin", to: "/admin" },
+      {
+        kind: "standard",
+        id: "marketplace",
+        title: "Marketplace",
+        artwork: "marketplace",
+        to: "/marketplace",
+      },
+      {
+        kind: "game",
+        id: "grid-defense",
+        title: "Grid Defense",
+        artwork: "gridDefense",
+        game: "grid-defense",
+      },
+      {
+        kind: "game",
+        id: "kupferkern",
+        title: "Kupferkern",
+        artwork: "kupferkern",
+        game: "kupferkern",
+      },
+    );
+  }
+  tiles.push(
+    {
+      kind: "standard",
+      id: "areas",
+      title: "Weitere Bereiche",
+      artwork: "more",
+      to: "/areas",
+    },
+    {
+      kind: "standard",
+      id: "training",
+      title: "Trainingsübersicht & Gym",
+      artwork: "training",
+      to: "/training",
+    },
+    { kind: "standard", id: "tools", title: "Alo-Werkzeuge", artwork: "tools", to: "/tools" },
+  );
+  if (canSeeAdmin) {
+    for (const install of installs) {
+      if (!install.enabled) continue;
+      tiles.push({
+        kind: "marketplace",
+        id: `marketplace:${install.appId}`,
+        title: install.manifestName ?? `Alo-App ${install.appId.slice(0, 8)}`,
+        install,
+      });
+    }
+  }
+  return tiles;
+}
 
 function HomeAppHub({
   displayName,
   avatarUrl,
-  onOpenTrainingOverview,
 }: {
   displayName: string | null | undefined;
   avatarUrl: string | null | undefined;
-  onOpenTrainingOverview: () => void;
 }) {
   const { user } = Route.useRouteContext();
+  useHomeAppAccountSync(user.id);
+  const activeUserIdRef = useRef<string | null>(user.id);
+  activeUserIdRef.current = user.id;
+  useEffect(() => {
+    activeUserIdRef.current = user.id;
+    return () => {
+      activeUserIdRef.current = null;
+    };
+  }, [user.id]);
   const [canSeeAdmin, setCanSeeAdmin] = useState(false);
+  const [installState, setInstallState] = useState<MarketplacePublishedInstallState>(
+    EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE,
+  );
+  const [marketplaceStorageError, setMarketplaceStorageError] = useState("");
+  const [settings, setSettings] = useState<HomeAppHubSettings>(EMPTY_HOME_APP_HUB_SETTINGS);
+  const [settingsError, setSettingsError] = useState("");
+  const [isEditingHub, setIsEditingHub] = useState(false);
+  const isEditingHubRef = useRef(isEditingHub);
+  const [renamingAppId, setRenamingAppId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [homeStatus, setHomeStatus] = useState("");
+  const [runningMarketplaceAppId, setRunningMarketplaceAppId] = useState<string | null>(null);
+  const [customBackgroundUrl, setCustomBackgroundUrl] = useState<string | null>(null);
+  const [backgroundBusy, setBackgroundBusy] = useState(false);
+  const [backgroundError, setBackgroundError] = useState("");
+  const [activeAppMenuId, setActiveAppMenuId] = useState<string | null>(null);
+  const [uninstallTargetAppId, setUninstallTargetAppId] = useState<string | null>(null);
+  const [isUninstallingApp, setIsUninstallingApp] = useState(false);
+  const [draggingAppId, setDraggingAppId] = useState<string | null>(null);
+  const [dropTargetAppId, setDropTargetAppId] = useState<string | null>(null);
+  const [dropTargetPlacement, setDropTargetPlacement] = useState<"before" | "after" | null>(null);
+  const [keyboardGrabbedAppId, setKeyboardGrabbedAppId] = useState<string | null>(null);
+  const longPressStartRef = useRef<
+    | { kind: "app"; appId: string; pointerId: number; x: number; y: number }
+    | { kind: "empty"; pointerId: number; x: number; y: number }
+    | null
+  >(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredAppIdRef = useRef<string | null>(null);
+  const pendingHomeDragRef = useRef<{
+    appId: string;
+    pointerId: number;
+    x: number;
+    y: number;
+    element: HTMLDivElement;
+  } | null>(null);
+  const dragSourceAppIdRef = useRef<string | null>(null);
+  const dragPointerIdRef = useRef<number | null>(null);
+  const dropTargetAppIdRef = useRef<string | null>(null);
+  const dropTargetPlacementRef = useRef<"before" | "after">("before");
+  const backgroundInputRef = useRef<HTMLInputElement | null>(null);
+  const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
+  const setHomeEditingMode = (next: boolean) => {
+    isEditingHubRef.current = next;
+    setIsEditingHub(next);
+  };
+
+  useEffect(
+    () => () => {
+      if (longPressTimerRef.current !== null) window.clearTimeout(longPressTimerRef.current);
+    },
+    [],
+  );
+
   useEffect(() => {
     let active = true;
     setCanSeeAdmin(false);
     void getAdminAreaAccess()
-      .then((allowed) => {
-        if (active && allowed === true) setCanSeeAdmin(true);
+      .then((access) => {
+        if (active) setCanSeeAdmin(isMarketplaceAdminAccessGranted(access));
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (active) setCanSeeAdmin(false);
+      });
     return () => {
       active = false;
     };
   }, [user.id]);
-  const initials = displayName?.trim().slice(0, 1).toUpperCase() || "?";
 
-  return (
-    <section className="alo-tablet-home-hub mb-8" aria-labelledby="app-hub-title">
-      <header className="mb-7 flex items-center justify-between gap-3">
-        <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
-          Alo
-        </h1>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label="Überall suchen"
-            onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" }))}
-          >
-            <Search className="h-5 w-5" aria-hidden="true" />
-          </button>
-          <PostfachBell />
-          <Link
-            to="/profile"
-            hash="profile-training"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label="Freunde öffnen"
-            title="Freunde"
-          >
-            <Users className="h-5 w-5" aria-hidden="true" />
-          </Link>
-          <Link
-            to="/profile"
-            className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-foreground shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label="Profil und Einstellungen öffnen"
-            title="Profil und Einstellungen"
-          >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              initials
-            )}
-          </Link>
+  useEffect(() => {
+    const load = () => {
+      try {
+        setSettings(loadHomeAppHubSettings(window.localStorage, user.id));
+        setSettingsError("");
+      } catch {
+        setSettings(EMPTY_HOME_APP_HUB_SETTINGS);
+        setSettingsError("Home-Einstellungen sind in diesem Browser nicht verfügbar.");
+      }
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === homeAppHubSettingsStorageKey(user.id)) load();
+    };
+    const onApplied = (event: Event) => {
+      if ((event as CustomEvent<{ userId?: string }>).detail?.userId === user.id) load();
+    };
+    load();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(HOME_APP_SYNC_APPLIED, onApplied);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(HOME_APP_SYNC_APPLIED, onApplied);
+    };
+  }, [user.id]);
+
+  useEffect(() => {
+    if (!canSeeAdmin) {
+      setInstallState(EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE);
+      setMarketplaceStorageError("");
+      return;
+    }
+    const load = () => {
+      try {
+        setInstallState(loadMarketplacePublishedInstallState(window.localStorage, user.id));
+        setMarketplaceStorageError("");
+      } catch {
+        setInstallState(EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE);
+        setMarketplaceStorageError("Installierte Apps sind in diesem Browser nicht verfügbar.");
+      }
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === marketplacePublishedInstallStorageKey(user.id)) load();
+    };
+    const onApplied = (event: Event) => {
+      if ((event as CustomEvent<{ userId?: string }>).detail?.userId === user.id) load();
+    };
+    load();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(HOME_APP_SYNC_APPLIED, onApplied);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(HOME_APP_SYNC_APPLIED, onApplied);
+    };
+  }, [canSeeAdmin, user.id]);
+
+  const backgroundPreference = settings.background;
+  const backgroundLoadKey =
+    backgroundPreference.kind === "preset"
+      ? `preset:${backgroundPreference.presetId}`
+      : backgroundPreference.kind;
+
+  useEffect(() => {
+    let active = true;
+    let createdUrl: string | null = null;
+    setCustomBackgroundUrl(null);
+    if (backgroundLoadKey !== "custom") return;
+    void loadHomeBackgroundImage(user.id)
+      .then((blob) => {
+        if (!active) return;
+        if (!blob) {
+          setBackgroundError("Eigenes Hintergrundbild ist nicht mehr lokal vorhanden.");
+          return;
+        }
+        createdUrl = URL.createObjectURL(blob);
+        setCustomBackgroundUrl(createdUrl);
+        setBackgroundError("");
+      })
+      .catch(() => {
+        if (active) setBackgroundError("Eigenes Hintergrundbild konnte nicht geladen werden.");
+      });
+    return () => {
+      active = false;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [backgroundLoadKey, user.id]);
+
+  const tiles = buildHomeHubTiles(canSeeAdmin, installState.installs);
+  const visibleAppIds = tiles.map((tile) => tile.id);
+  const orderedTiles = orderHomeAppIds(visibleAppIds, settings.order).flatMap((appId) => {
+    const tile = tiles.find((candidate) => candidate.id === appId);
+    return tile ? [tile] : [];
+  });
+  const renamingTile = orderedTiles.find((tile) => tile.id === renamingAppId) ?? null;
+  const activeActionTile = orderedTiles.find((tile) => tile.id === activeAppMenuId) ?? null;
+  const activeActionTitle = activeActionTile
+    ? (settings.nameOverrides[activeActionTile.id] ?? activeActionTile.title)
+    : "";
+  const activeActionIndex = activeActionTile
+    ? orderedTiles.findIndex((tile) => tile.id === activeActionTile.id)
+    : -1;
+  const uninstallTargetTile = orderedTiles.find((tile) => tile.id === uninstallTargetAppId) ?? null;
+  const uninstallTargetTitle = uninstallTargetTile
+    ? (settings.nameOverrides[uninstallTargetTile.id] ?? uninstallTargetTile.title)
+    : "";
+  const runningInstall = installState.installs.find(
+    (entry) => entry.appId === runningMarketplaceAppId && entry.enabled,
+  );
+  const backgroundUrl =
+    backgroundPreference.kind === "preset"
+      ? (HOME_BACKGROUND_PRESETS.find(({ id }) => id === backgroundPreference.presetId)?.src ??
+        null)
+      : backgroundPreference.kind === "custom"
+        ? customBackgroundUrl
+        : null;
+
+  const persistSettings = (next: HomeAppHubSettings, status: string) => {
+    try {
+      if (activeUserIdRef.current !== user.id) return false;
+      const merged = mergeHomeAppLocalEdit(
+        settings,
+        next,
+        loadHomeAppHubSettings(window.localStorage, user.id),
+      );
+      saveHomeAppHubSettings(window.localStorage, user.id, merged);
+      setSettings(merged);
+      setSettingsError("");
+      setHomeStatus(status);
+      if (JSON.stringify(settings.nameOverrides) !== JSON.stringify(next.nameOverrides))
+        requestHomeAppAccountSync(user.id);
+      return true;
+    } catch {
+      setSettingsError("Die Änderung konnte nicht lokal gespeichert werden.");
+      return false;
+    }
+  };
+
+  const persistInstallState = async (nextInput: unknown, status: string) => {
+    try {
+      const access = await getAdminAreaAccess();
+      if (activeUserIdRef.current !== user.id) return false;
+      if (!isMarketplaceAdminAccessGranted(access)) {
+        setHomeStatus("Admin-Zugriff ist nicht mehr bestätigt. Die Änderung wurde blockiert.");
+        return false;
+      }
+      const next = mergeMarketplaceLocalEdit(
+        installState,
+        parseMarketplacePublishedInstallState(nextInput),
+        loadMarketplacePublishedInstallState(window.localStorage, user.id),
+      );
+      saveMarketplacePublishedInstallState(window.localStorage, user.id, next);
+      setInstallState(next);
+      setMarketplaceStorageError("");
+      setHomeStatus(status);
+      requestHomeAppAccountSync(user.id);
+      return true;
+    } catch {
+      if (activeUserIdRef.current === user.id)
+        setMarketplaceStorageError(
+          "Die App-Änderung konnte nicht gespeichert werden. Bitte erneut versuchen.",
+        );
+      return false;
+    }
+  };
+
+  const cancelHomeLongPress = () => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    longPressStartRef.current = null;
+  };
+
+  useEffect(() => {
+    const cancelIfMoved = (event: PointerEvent) => {
+      const start = longPressStartRef.current;
+      if (
+        !start ||
+        start.pointerId !== event.pointerId ||
+        !hasHomeAppDragThreshold(start, event.clientX, event.clientY)
+      ) {
+        return;
+      }
+      cancelHomeLongPress();
+    };
+    const startPendingHomeTileDrag = (event: PointerEvent) => {
+      const pendingDrag = pendingHomeDragRef.current;
+      if (
+        !isEditingHubRef.current ||
+        !pendingDrag ||
+        pendingDrag.pointerId !== event.pointerId ||
+        !hasHomeAppDragThreshold(pendingDrag, event.clientX, event.clientY)
+      ) {
+        return;
+      }
+      pendingHomeDragRef.current = null;
+      cancelHomeLongPress();
+      beginHomeTileDrag(event, pendingDrag.appId, pendingDrag.element);
+    };
+    const cancelOnPointerEnd = (event: PointerEvent) => {
+      if (longPressStartRef.current?.pointerId === event.pointerId) cancelHomeLongPress();
+      if (pendingHomeDragRef.current?.pointerId === event.pointerId) {
+        pendingHomeDragRef.current = null;
+      }
+      if (event.type === "pointercancel" && dragPointerIdRef.current === event.pointerId) {
+        clearHomeTileDrag();
+      }
+    };
+    const cancelOnLostPointerCapture = (event: PointerEvent) => {
+      if (dragPointerIdRef.current === event.pointerId) clearHomeTileDrag();
+    };
+    const cancelOnAdditionalTouch = (event: PointerEvent) => {
+      if (event.pointerType !== "touch" || event.isPrimary) return;
+      cancelHomeLongPress();
+      clearHomeTileDrag();
+    };
+    window.addEventListener("pointerdown", cancelOnAdditionalTouch, true);
+    window.addEventListener("pointermove", cancelIfMoved, true);
+    window.addEventListener("pointermove", startPendingHomeTileDrag, true);
+    window.addEventListener("pointerup", cancelOnPointerEnd, true);
+    window.addEventListener("pointercancel", cancelOnPointerEnd, true);
+    window.addEventListener("lostpointercapture", cancelOnLostPointerCapture, true);
+    return () => {
+      window.removeEventListener("pointerdown", cancelOnAdditionalTouch, true);
+      window.removeEventListener("pointermove", cancelIfMoved, true);
+      window.removeEventListener("pointermove", startPendingHomeTileDrag, true);
+      window.removeEventListener("pointerup", cancelOnPointerEnd, true);
+      window.removeEventListener("pointercancel", cancelOnPointerEnd, true);
+      window.removeEventListener("lostpointercapture", cancelOnLostPointerCapture, true);
+    };
+  }, []);
+
+  const startHomeLongPress = (event: ReactPointerEvent<HTMLDivElement>, appId: string) => {
+    if (
+      !event.isPrimary ||
+      (event.pointerType !== "touch" && event.pointerType !== "pen") ||
+      event.button !== 0
+    ) {
+      return;
+    }
+    cancelHomeLongPress();
+    const start = {
+      kind: "app" as const,
+      appId,
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    longPressStartRef.current = start;
+    longPressTimerRef.current = window.setTimeout(() => {
+      if (
+        longPressStartRef.current?.kind !== "app" ||
+        longPressStartRef.current.pointerId !== start.pointerId
+      )
+        return;
+      longPressTriggeredAppIdRef.current = appId;
+      if (pendingHomeDragRef.current?.pointerId === start.pointerId) {
+        pendingHomeDragRef.current = null;
+      }
+      dragSourceAppIdRef.current = null;
+      dragPointerIdRef.current = null;
+      dropTargetAppIdRef.current = null;
+      setDraggingAppId(null);
+      setDropTargetAppId(null);
+      setDropTargetPlacement(null);
+      setActiveAppMenuId(appId);
+      setHomeStatus("App-Aktionen geöffnet.");
+    }, 560);
+  };
+
+  const startEmptyHomeLongPress = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!event.isPrimary || event.button !== 0) return;
+    const target = event.target;
+    if (
+      !(target instanceof Element) ||
+      target.closest(
+        'button, a, input, textarea, select, [role="button"], [contenteditable="true"], [data-home-app-id], [data-home-press-ignore]',
+      )
+    ) {
+      return;
+    }
+    cancelHomeLongPress();
+    const start = {
+      kind: "empty" as const,
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    longPressStartRef.current = start;
+    longPressTimerRef.current = window.setTimeout(() => {
+      if (
+        longPressStartRef.current?.kind !== "empty" ||
+        longPressStartRef.current.pointerId !== start.pointerId
+      )
+        return;
+      setRenamingAppId(null);
+      setKeyboardGrabbedAppId(null);
+      setHomeEditingMode(!isEditingHub);
+      setHomeStatus(
+        isEditingHub
+          ? "Home-Bearbeitung beendet."
+          : "Home-Bearbeitung gestartet. Ziehe ein App-Symbol an die gewünschte Position.",
+      );
+    }, 560);
+  };
+
+  const suppressLongPressClick = (event: ReactMouseEvent<HTMLDivElement>, appId: string) => {
+    if (longPressTriggeredAppIdRef.current !== appId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    longPressTriggeredAppIdRef.current = null;
+  };
+
+  const getHomeTileDropTargetAtPoint = (x: number, y: number) => {
+    const element = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-home-app-id]");
+    const appId = element?.dataset.homeAppId;
+    if (!element || !appId) return null;
+    const rect = element.getBoundingClientRect();
+    return { appId, placement: x < rect.left + rect.width / 2 ? "before" : "after" } as const;
+  };
+
+  const beginHomeTileDrag = (
+    event: Pick<PointerEvent, "pointerId" | "isPrimary" | "preventDefault">,
+    appId: string,
+    sourceElement: HTMLDivElement,
+  ) => {
+    // The primary left-button is validated on pointerdown; on pointermove, button may be -1.
+    if (!event.isPrimary) return;
+    event.preventDefault();
+    try {
+      sourceElement.setPointerCapture(event.pointerId);
+    } catch {
+      setHomeStatus("Das App-Symbol konnte nicht verschoben werden. Bitte erneut versuchen.");
+      return;
+    }
+    dragSourceAppIdRef.current = appId;
+    dragPointerIdRef.current = event.pointerId;
+    dropTargetAppIdRef.current = appId;
+    dropTargetPlacementRef.current = "before";
+    setDraggingAppId(appId);
+    setDropTargetAppId(appId);
+    setDropTargetPlacement("before");
+  };
+
+  const moveHomeTileDrag = (event: ReactPointerEvent<HTMLElement>) => {
+    if (dragPointerIdRef.current !== event.pointerId) return;
+    const target = getHomeTileDropTargetAtPoint(event.clientX, event.clientY);
+    if (!target || !visibleAppIds.includes(target.appId)) return;
+    dropTargetAppIdRef.current = target.appId;
+    dropTargetPlacementRef.current = target.placement;
+    setDropTargetAppId(target.appId);
+    setDropTargetPlacement(target.placement);
+  };
+
+  const clearHomeTileDrag = () => {
+    pendingHomeDragRef.current = null;
+    dragSourceAppIdRef.current = null;
+    dragPointerIdRef.current = null;
+    dropTargetAppIdRef.current = null;
+    dropTargetPlacementRef.current = "before";
+    setDraggingAppId(null);
+    setDropTargetAppId(null);
+    setDropTargetPlacement(null);
+  };
+
+  const finishHomeTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragPointerIdRef.current !== event.pointerId) return;
+    const sourceId = dragSourceAppIdRef.current;
+    const drop =
+      getHomeTileDropTargetAtPoint(event.clientX, event.clientY) ??
+      (dropTargetAppIdRef.current
+        ? { appId: dropTargetAppIdRef.current, placement: dropTargetPlacementRef.current }
+        : null);
+    clearHomeTileDrag();
+    if (!sourceId || !drop || sourceId === drop.appId) return;
+    try {
+      persistSettings(
+        moveHomeAppRelative(settings, visibleAppIds, sourceId, drop.appId, drop.placement),
+        "Home-App-Reihenfolge lokal gespeichert.",
+      );
+    } catch {
+      setSettingsError("Diese App konnte nicht verschoben werden.");
+    }
+  };
+
+  const cancelHomeTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragPointerIdRef.current === event.pointerId) clearHomeTileDrag();
+  };
+
+  const toggleHomeEditing = () => {
+    const next = !isEditingHub;
+    cancelHomeLongPress();
+    clearHomeTileDrag();
+    setRenamingAppId(null);
+    setKeyboardGrabbedAppId(null);
+    setHomeEditingMode(next);
+    setHomeStatus(
+      next
+        ? "Home-Bearbeitung gestartet. Ziehe ein App-Symbol an die gewünschte Position."
+        : "Home-Bearbeitung beendet.",
+    );
+  };
+
+  const handleHomeHubKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.target !== event.currentTarget || (event.key !== " " && event.key !== "Enter"))
+      return;
+    event.preventDefault();
+    toggleHomeEditing();
+  };
+
+  const handleHomeTileKeyDown = (
+    event: ReactKeyboardEvent<HTMLDivElement>,
+    appId: string,
+    title: string,
+  ) => {
+    if (
+      event.key === "ContextMenu" ||
+      (event.shiftKey && event.key === "F10") ||
+      event.key === "F2"
+    ) {
+      event.preventDefault();
+      setActiveAppMenuId(appId);
+      return;
+    }
+    if (!isEditingHub) return;
+
+    if (keyboardGrabbedAppId === appId) {
+      if (event.key === "Escape" || event.key === " " || event.key === "Enter") {
+        event.preventDefault();
+        setKeyboardGrabbedAppId(null);
+        setHomeStatus(`${title} abgelegt. Die lokale Reihenfolge bleibt gespeichert.`);
+        return;
+      }
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      const delta = event.key === "ArrowLeft" ? -1 : 1;
+      const index = orderedTiles.findIndex((tile) => tile.id === appId);
+      if (index < 0 || index + delta < 0 || index + delta >= orderedTiles.length) {
+        setHomeStatus(`${title} kann in diese Richtung nicht weiter verschoben werden.`);
+        return;
+      }
+      try {
+        persistSettings(
+          moveHomeApp(settings, visibleAppIds, appId, delta),
+          `${title} wurde lokal verschoben. Mit den Pfeiltasten weiterbewegen oder Enter ablegen.`,
+        );
+        setKeyboardGrabbedAppId(appId);
+      } catch {
+        setSettingsError("Diese App konnte nicht verschoben werden.");
+      }
+      return;
+    }
+
+    if (event.key === " " || event.key === "Enter") {
+      event.preventDefault();
+      setKeyboardGrabbedAppId(appId);
+      setHomeStatus(`${title} aufgenommen. Mit links oder rechts verschieben, Enter ablegen.`);
+    }
+  };
+
+  const saveRename = (event: ChangeEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!renamingAppId) return;
+    try {
+      const next = setHomeAppName(settings, renamingAppId, renameDraft);
+      if (persistSettings(next, "App-Name gespeichert. Kontoabgleich folgt.")) {
+        setRenamingAppId(null);
+        setRenameDraft("");
+      }
+    } catch (error) {
+      setSettingsError(error instanceof Error ? error.message : "Ungültiger App-Name.");
+    }
+  };
+
+  const resetRename = () => {
+    if (!renamingAppId) return;
+    try {
+      const next = clearHomeAppName(settings, renamingAppId);
+      if (persistSettings(next, "Standardname wiederhergestellt.")) {
+        setRenamingAppId(null);
+        setRenameDraft("");
+      }
+    } catch {
+      setSettingsError("Der Standardname konnte nicht wiederhergestellt werden.");
+    }
+  };
+
+  const uninstallMarketplaceAppFromHome = async () => {
+    if (!uninstallTargetTile || uninstallTargetTile.kind !== "marketplace" || isUninstallingApp) {
+      return;
+    }
+    const { appId } = uninstallTargetTile.install;
+    const status = `„${uninstallTargetTitle}“ wurde entfernt. Eigene Apps werden im Konto abgeglichen; der Marketplace-Eintrag bleibt erhalten.`;
+    setIsUninstallingApp(true);
+    try {
+      const removed = await persistInstallState(
+        removeMarketplacePublishedApp(installState, appId),
+        status,
+      );
+      if (!removed) return;
+      try {
+        const nextSettings = mergeHomeAppLocalEdit(
+          settings,
+          forgetHomeAppPersonalization(settings, uninstallTargetTile.id),
+          loadHomeAppHubSettings(window.localStorage, user.id),
+        );
+        saveHomeAppHubSettings(window.localStorage, user.id, nextSettings);
+        setSettings(nextSettings);
+        setSettingsError("");
+        requestHomeAppAccountSync(user.id);
+      } catch {
+        setSettingsError(
+          "Die Installation wurde entfernt; der gespeicherte App-Name konnte nicht bereinigt werden.",
+        );
+      }
+      setRunningMarketplaceAppId((current) => (current === appId ? null : current));
+      setHomeStatus(status);
+    } catch {
+      setHomeStatus("Die App konnte nicht lokal entfernt werden.");
+    } finally {
+      setIsUninstallingApp(false);
+      setUninstallTargetAppId(null);
+    }
+  };
+
+  const uploadBackground = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    setBackgroundBusy(true);
+    setBackgroundError("");
+    try {
+      const image = await prepareHomeBackgroundImage(file);
+      await saveHomeBackgroundImage(user.id, image);
+      const next = setHomeBackground(settings, { kind: "custom" });
+      if (
+        persistSettings(next, "Eigenes Hintergrundbild wurde verkleinert und nur hier gespeichert.")
+      ) {
+        setBackgroundError("");
+      }
+    } catch (error) {
+      setBackgroundError(
+        error instanceof Error ? error.message : "Bild konnte nicht verarbeitet werden.",
+      );
+    } finally {
+      setBackgroundBusy(false);
+    }
+  };
+
+  const removeCustomBackground = async () => {
+    try {
+      await removeHomeBackgroundImage(user.id);
+      if (
+        persistSettings(
+          setHomeBackground(settings, HOME_DEFAULT_BACKGROUND),
+          "Eigenes Hintergrundbild lokal entfernt.",
+        )
+      ) {
+        setBackgroundError("");
+      }
+    } catch {
+      setBackgroundError("Eigenes Hintergrundbild konnte nicht entfernt werden.");
+    }
+  };
+
+  const renderTile = (tile: HomeHubTile, title: string) => {
+    if (tile.kind === "marketplace") {
+      const contents = (
+        <>
+          <span className="relative grid aspect-square w-full max-w-[96px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md">
+            <MarketplaceIcon icon={tile.install.icon ?? "hub"} className="h-8 w-8 text-primary" />
+          </span>
+          <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
+            {title}
+          </span>
+        </>
+      );
+      return isEditingHub ? (
+        <div className={HUB_APP_ICON_CLASS_NAME} aria-label={`${title}, Marketplace-App`}>
+          {contents}
         </div>
-      </header>
-      <nav
-        className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
-        aria-label="Alo-Apps"
-      >
-        <HubAppIcon to="/ai" title="Mira" artwork="mira" />
-        <HubAppIcon to="/chat" title="Nexus Chat" artwork="nexus" />
-        <HubAppIcon to="/exercises" title="Alo Health" artwork="health" />
-        <HubAppIcon to="/profile" title="Einstellungen" artwork="settings" />
-        {canSeeAdmin && <HubAppIcon to="/admin" title="Admin" artwork="admin" />}
-        {canSeeAdmin && (
-          <>
-            <HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" />
-            <HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" />
-          </>
-        )}
+      ) : (
+        <button
+          type="button"
+          className={HUB_APP_ICON_CLASS_NAME}
+          aria-label={`${title} öffnen`}
+          onClick={() => setRunningMarketplaceAppId(tile.install.appId)}
+        >
+          {contents}
+        </button>
+      );
+    }
+    if (isEditingHub) {
+      return (
+        <div className={HUB_APP_ICON_CLASS_NAME} aria-label={`${title}, Home-App`}>
+          <HubAppIconContents title={title} artwork={tile.artwork} />
+        </div>
+      );
+    }
+    if (tile.kind === "game") {
+      return <HubGameAppIcon game={tile.game} title={title} artwork={tile.artwork} />;
+    }
+    if (tile.to === "/areas") {
+      return (
         <Link
           to="/areas"
           className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
           aria-label={`Weitere Bereiche öffnen (${HOME_OTHER_AREAS.length})`}
         >
-          <HubAppIconContents title="Weitere Bereiche" artwork="more" />
+          <HubAppIconContents title={title} artwork={tile.artwork} />
         </Link>
-        <button
-          type="button"
-          className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
-          aria-label="Trainingsübersicht & Gym öffnen"
-          onClick={onOpenTrainingOverview}
-        >
-          <HubAppIconContents title="Trainingsübersicht & Gym" artwork="training" />
-        </button>
+      );
+    }
+    if (tile.to === "/tools") {
+      return (
         <Link
           to="/tools"
           className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
           aria-label="Alo-Werkzeuge öffnen"
         >
-          <HubAppIconContents title="Alo-Werkzeuge" artwork="tools" />
+          <HubAppIconContents title={title} artwork={tile.artwork} />
         </Link>
-      </nav>
-    </section>
-  );
-}
-
-function MiraOverlayLauncher() {
-  const { user } = Route.useRouteContext();
-  const [open, setOpen] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [listening, setListening] = useState(false);
-  const [voiceError, setVoiceError] = useState<string | null>(null);
-  const [handoffRequest, setHandoffRequest] = useState<{ id: number; text: string } | null>(null);
-  const recognitionRef = useRef<MiraSpeechRecognitionLike | null>(null);
-  const handoffIdRef = useRef(0);
-
-  const stopListening = () => {
-    const recognition = recognitionRef.current;
-    recognitionRef.current = null;
-    if (recognition) {
-      try {
-        recognition.stop();
-      } catch {
-        // Recognition may already have ended.
-      }
-    }
-    setListening(false);
-  };
-
-  const startListening = () => {
-    const recognitionFactory = createBrowserSpeechRecognitionFactory();
-    const recognition = recognitionFactory?.();
-    if (!recognition) {
-      setVoiceError("Spracherkennung wird in diesem Browser nicht unterstützt.");
-      return;
-    }
-
-    setVoiceError(null);
-    recognition.lang = "de-DE";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.onresult = (event) => {
-      const recognized = event.results[0]?.[0]?.transcript?.trim() ?? "";
-      if (recognized)
-        setTranscript((previous) => (previous ? `${previous} ${recognized}` : recognized));
-    };
-    recognition.onerror = (event) => {
-      const message =
-        event?.error === "not-allowed" || event?.error === "service-not-allowed"
-          ? "Mikrofonzugriff wurde nicht erlaubt. Prüfe die Browser-Berechtigung und tippe erneut."
-          : event?.error === "audio-capture"
-            ? "Kein verwendbares Mikrofon gefunden. Prüfe dein Gerät und versuche es erneut."
-            : event?.error === "no-speech"
-              ? "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut."
-              : "Spracherkennung fehlgeschlagen. Versuche es erneut oder nutze den Textbereich.";
-      setVoiceError(message);
-      setListening(false);
-    };
-    recognition.onend = () => {
-      if (recognitionRef.current === recognition) recognitionRef.current = null;
-      setListening(false);
-    };
-    recognitionRef.current = recognition;
-    setListening(true);
-    try {
-      recognition.start();
-    } catch {
-      recognitionRef.current = null;
-      setListening(false);
-      setVoiceError(
-        "Das Mikrofon konnte nicht gestartet werden. Prüfe die Berechtigung und versuche es erneut.",
       );
     }
+    return <HubAppIcon to={tile.to} title={title} artwork={tile.artwork} />;
   };
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) stopListening();
-    else setVoiceError(null);
-    setOpen(nextOpen);
-  };
-
-  const continueToMira = () => {
-    const text = transcript.trim();
-    if (!text) return;
-    stopListening();
-    setOpen(false);
-    handoffIdRef.current += 1;
-    setHandoffRequest({ id: handoffIdRef.current, text });
-  };
-
-  useEffect(
-    () => () => {
-      try {
-        recognitionRef.current?.stop();
-      } catch {
-        // Recognition may already have ended.
-      }
-      recognitionRef.current = null;
-    },
-    [],
-  );
 
   return (
     <>
-      <div className="alo-mira-home-launcher">
-        <button
-          type="button"
-          className="alo-mira-home-launcher-button"
-          aria-label="Mira öffnen und eine Frage stellen"
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          onClick={() => handleOpenChange(true)}
-        >
-          <MiraSpark />
-        </button>
-      </div>
-      <MiraVoiceChatDialog
-        open={open}
-        onOpenChange={handleOpenChange}
-        transcript={transcript}
-        onTranscriptChange={setTranscript}
-        listening={listening}
-        onStartListening={startListening}
-        onStopListening={stopListening}
-        error={voiceError}
-        onContinue={continueToMira}
-        continueLabel="Frage in Mira prüfen"
-        className="alo-dialog alo-mira-voice-entry-dialog max-h-[88dvh] overflow-y-auto sm:max-w-md"
-      />
-      {handoffRequest && (
-        <MiraHandoff
-          key={handoffRequest.id}
+      <section
+        className={`alo-tablet-home-hub mb-8${backgroundUrl ? " relative isolate overflow-hidden rounded-3xl border border-border/40 p-4 sm:p-6" : ""}`}
+        aria-labelledby="app-hub-title"
+        aria-describedby="home-hub-edit-help"
+        tabIndex={0}
+        onPointerDown={startEmptyHomeLongPress}
+        onKeyDown={handleHomeHubKeyDown}
+        style={
+          backgroundUrl
+            ? {
+                backgroundImage: `url("${backgroundUrl}")`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : undefined
+        }
+      >
+        {backgroundUrl && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-[inherit] bg-background/65 backdrop-blur-[2px]"
+          />
+        )}
+        <div className="relative z-10">
+          <p id="home-hub-edit-help" className="sr-only">
+            Auf Touchgeräten eine freie Stelle lange drücken, um Apps zu bearbeiten oder die
+            Bearbeitung zu beenden. Mit der Tastatur diesen Startseitenbereich fokussieren und Enter
+            oder Leertaste drücken. Im Bearbeitungsmodus ein App-Symbol fokussieren, Leertaste zum
+            Aufnehmen und links oder rechts zum Verschieben; Enter legt ab. Für App-Aktionen lange
+            drücken oder Umschalt+F10 verwenden.
+          </p>
+          <p id="home-app-edit-help" className="sr-only">
+            Leertaste nimmt die App auf. Pfeil links oder rechts verschiebt sie lokal. Enter legt
+            ab; Escape beendet das Verschieben. Umschalt+F10 oder F2 öffnet Umbenennen und lokale
+            Deinstallation.
+          </p>
+          <header
+            className="mb-7 flex items-center justify-between gap-3"
+            data-home-press-ignore="true"
+          >
+            <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
+              Alo
+            </h1>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                aria-label="Überall suchen"
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" }))
+                }
+              >
+                <Search className="h-5 w-5" aria-hidden="true" />
+              </button>
+              <PostfachBell />
+              <Link
+                to="/profile"
+                hash="profile-training"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                aria-label="Freunde öffnen"
+                title="Freunde"
+              >
+                <Users className="h-5 w-5" aria-hidden="true" />
+              </Link>
+              <Link
+                to="/profile"
+                className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-foreground shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                aria-label="Profil und Einstellungen öffnen"
+                title="Profil und Einstellungen"
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  initials
+                )}
+              </Link>
+            </div>
+          </header>
+          {isEditingHub && (
+            <p className="mb-4 max-w-xl text-xs leading-relaxed text-muted-foreground">
+              Ziehe die App-Symbole direkt an eine neue Position. Halte eine App lange gedrückt oder
+              wähle Umschalt+F10 für Aktionen. Halte eine freie Stelle erneut, um die Bearbeitung zu
+              beenden.
+            </p>
+          )}
+          <nav
+            className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
+            aria-label="Alo-Apps"
+            onPointerMoveCapture={moveHomeTileDrag}
+          >
+            {orderedTiles.map((tile) => {
+              const title = settings.nameOverrides[tile.id] ?? tile.title;
+              return (
+                <div
+                  key={tile.id}
+                  data-home-app-id={tile.id}
+                  data-drop-placement={
+                    dropTargetAppId === tile.id ? dropTargetPlacement : undefined
+                  }
+                  role={isEditingHub ? "button" : undefined}
+                  tabIndex={isEditingHub ? 0 : undefined}
+                  aria-label={
+                    isEditingHub
+                      ? `${title}. Leertaste zum Aufnehmen, Pfeiltasten zum Verschieben; lange drücken oder Umschalt+F10 für Aktionen.`
+                      : undefined
+                  }
+                  aria-pressed={isEditingHub ? keyboardGrabbedAppId === tile.id : undefined}
+                  aria-haspopup={isEditingHub ? "dialog" : undefined}
+                  aria-describedby={isEditingHub ? "home-app-edit-help" : undefined}
+                  className={`relative min-w-0 select-none rounded-xl transition ${isEditingHub ? "touch-none cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:cursor-grabbing" : ""} ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                  onPointerDown={(event) => {
+                    startHomeLongPress(event, tile.id);
+                    if (isEditingHub && event.isPrimary && event.button === 0) {
+                      pendingHomeDragRef.current = {
+                        appId: tile.id,
+                        pointerId: event.pointerId,
+                        x: event.clientX,
+                        y: event.clientY,
+                        element: event.currentTarget,
+                      };
+                    }
+                  }}
+                  onPointerUp={(event) => {
+                    pendingHomeDragRef.current = null;
+                    cancelHomeLongPress();
+                    if (isEditingHub) finishHomeTileDrag(event);
+                  }}
+                  onPointerCancel={(event) => {
+                    pendingHomeDragRef.current = null;
+                    cancelHomeLongPress();
+                    if (isEditingHub) cancelHomeTileDrag(event);
+                  }}
+                  onClickCapture={(event) => suppressLongPressClick(event, tile.id)}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    if (
+                      longPressStartRef.current?.kind === "app" &&
+                      longPressStartRef.current.appId === tile.id
+                    ) {
+                      longPressTriggeredAppIdRef.current = tile.id;
+                    }
+                    setActiveAppMenuId(tile.id);
+                  }}
+                  onKeyDown={(event) => handleHomeTileKeyDown(event, tile.id, title)}
+                >
+                  {renderTile(tile, title)}
+                  {draggingAppId && dropTargetAppId === tile.id && dropTargetPlacement && (
+                    <span
+                      aria-hidden="true"
+                      className={`pointer-events-none absolute inset-y-0 z-20 w-1 rounded-full bg-primary ${dropTargetPlacement === "before" ? "left-0" : "right-0"}`}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+
+          {isEditingHub && (
+            <div className="mt-6 max-w-xl space-y-5" data-home-press-ignore="true">
+              {renamingTile && (
+                <form
+                  onSubmit={saveRename}
+                  className="space-y-3 rounded-2xl border border-border/70 bg-card/80 p-4"
+                >
+                  <label className="block space-y-2 text-sm font-semibold" htmlFor="home-app-name">
+                    <span>{renamingTile.title} – eigener Name</span>
+                    <input
+                      id="home-app-name"
+                      value={renameDraft}
+                      maxLength={48}
+                      onChange={(event) => setRenameDraft(event.target.value)}
+                      className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-normal"
+                    />
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="submit"
+                      className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                    >
+                      Name speichern
+                    </button>
+                    {settings.nameOverrides[renamingTile.id] && (
+                      <button
+                        type="button"
+                        onClick={resetRename}
+                        className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold"
+                      >
+                        Standardname
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setRenamingAppId(null)}
+                      className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold"
+                    >
+                      Abbrechen
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              <section
+                className="space-y-3 rounded-2xl border border-border/70 bg-card/80 p-4"
+                aria-label="Home-Hintergrund wählen"
+              >
+                <div>
+                  <h2 className="text-sm font-bold">Home-Hintergrund</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Presets oder ein eigenes Bild. Eigene Bilder werden verkleinert und
+                    ausschließlich lokal in diesem Browser gespeichert.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    aria-pressed={settings.background.kind === "none"}
+                    onClick={() =>
+                      persistSettings(
+                        setHomeBackground(settings, HOME_DEFAULT_BACKGROUND),
+                        "Kein Home-Hintergrundbild ausgewählt.",
+                      )
+                    }
+                    className="min-h-20 rounded-xl border border-border bg-background p-3 text-xs font-semibold"
+                  >
+                    Kein Bild
+                  </button>
+                  {HOME_BACKGROUND_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      aria-pressed={
+                        settings.background.kind === "preset" &&
+                        settings.background.presetId === preset.id
+                      }
+                      onClick={() =>
+                        persistSettings(
+                          setHomeBackground(settings, { kind: "preset", presetId: preset.id }),
+                          `${preset.label} als Home-Hintergrund gewählt.`,
+                        )
+                      }
+                      style={{
+                        backgroundImage: `linear-gradient(0deg, rgba(8,12,20,.68), rgba(8,12,20,.12)), url("${preset.src}")`,
+                      }}
+                      className="min-h-20 rounded-xl border border-border bg-cover bg-center p-3 text-left text-xs font-semibold text-white shadow-sm"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                  <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-primary/50 bg-primary/5 p-3 text-center text-xs font-semibold">
+                    <input
+                      ref={backgroundInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={(event) => void uploadBackground(event)}
+                    />
+                    <span>
+                      {backgroundBusy ? "Bild wird verarbeitet …" : "Eigenes Bild hochladen"}
+                    </span>
+                    <span className="text-[10px] font-normal text-muted-foreground">
+                      JPEG, PNG oder WebP · max. 10 MB
+                    </span>
+                  </label>
+                </div>
+                {settings.background.kind === "custom" && (
+                  <button
+                    type="button"
+                    onClick={() => void removeCustomBackground()}
+                    className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-semibold text-muted-foreground underline underline-offset-4"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    Eigenes Bild entfernen
+                  </button>
+                )}
+                {backgroundError && (
+                  <p role="alert" className="text-xs text-destructive">
+                    {backgroundError}
+                  </p>
+                )}
+              </section>
+            </div>
+          )}
+
+          {(settingsError || marketplaceStorageError) && (
+            <p
+              role="alert"
+              className="mt-4 max-w-xl rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm"
+            >
+              {settingsError || marketplaceStorageError}
+            </p>
+          )}
+          <p className="sr-only" role="status" aria-live="polite">
+            {homeStatus}
+          </p>
+        </div>
+      </section>
+      <Dialog
+        open={activeActionTile !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActiveAppMenuId(null);
+            longPressTriggeredAppIdRef.current = null;
+            cancelHomeLongPress();
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          {activeActionTile && (
+            <>
+              <DialogTitle>{activeActionTitle}</DialogTitle>
+              <DialogDescription>
+                {activeActionTile.kind === "marketplace"
+                  ? "Name und Installation eigener veröffentlichter Apps werden mit deinem Konto abgeglichen. Fremde Marketplace-Apps bleiben lokal. Aktionsfreigaben gelten nur auf diesem Gerät."
+                  : "Der Name dieser Alo-App wird mit deinem Konto abgeglichen. Reihenfolge und Hintergrund bleiben auf diesem Gerät."}
+              </DialogDescription>
+              {isEditingHub && (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    aria-label={`${activeActionTitle} nach links verschieben`}
+                    disabled={activeActionIndex <= 0}
+                    onClick={() => {
+                      try {
+                        persistSettings(
+                          moveHomeApp(settings, visibleAppIds, activeActionTile.id, -1),
+                          "Home-App-Reihenfolge lokal gespeichert.",
+                        );
+                      } catch {
+                        setSettingsError("Diese App konnte nicht verschoben werden.");
+                      }
+                      setActiveAppMenuId(null);
+                    }}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                    Nach links
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`${activeActionTitle} nach rechts verschieben`}
+                    disabled={activeActionIndex < 0 || activeActionIndex >= orderedTiles.length - 1}
+                    onClick={() => {
+                      try {
+                        persistSettings(
+                          moveHomeApp(settings, visibleAppIds, activeActionTile.id, 1),
+                          "Home-App-Reihenfolge lokal gespeichert.",
+                        );
+                      } catch {
+                        setSettingsError("Diese App konnte nicht verschoben werden.");
+                      }
+                      setActiveAppMenuId(null);
+                    }}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40"
+                  >
+                    Nach rechts
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+              <div className={`${isEditingHub ? "mt-2" : "mt-4"} grid gap-2`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRenamingAppId(activeActionTile.id);
+                    setRenameDraft(
+                      settings.nameOverrides[activeActionTile.id] ?? activeActionTile.title,
+                    );
+                    setSettingsError("");
+                    setHomeEditingMode(true);
+                    setActiveAppMenuId(null);
+                  }}
+                  className="min-h-12 rounded-xl border border-border px-4 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  Umbenennen
+                </button>
+                {activeActionTile.kind === "marketplace" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAppMenuId(null);
+                      setUninstallTargetAppId(activeActionTile.id);
+                    }}
+                    className="min-h-12 rounded-xl border border-destructive/40 px-4 text-left text-sm font-semibold text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  >
+                    Deinstallieren
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      <AlertDialog
+        open={uninstallTargetTile !== null}
+        onOpenChange={(open) => {
+          if (!open && !isUninstallingApp) setUninstallTargetAppId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>„{uninstallTargetTitle}“ deinstallieren?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bei eigenen veröffentlichten Apps wird das Entfernen mit allen angemeldeten Geräten
+              abgeglichen; fremde Apps werden nur hier entfernt. Der Marketplace-Eintrag bleibt
+              unverändert. Aktionsfreigaben müssen bei einer erneuten Installation auf jedem Gerät
+              neu bestätigt werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUninstallingApp}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isUninstallingApp}
+              onClick={(event) => {
+                event.preventDefault();
+                void uninstallMarketplaceAppFromHome();
+              }}
+            >
+              {isUninstallingApp ? "Entferne …" : "Deinstallieren"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {runningInstall && (
+        <MarketplacePublishedAppViewer
           userId={user.id}
-          text={handoffRequest.text}
-          source="deine eingesprochene Frage"
-          label="Eingesprochene Frage an Mira übergeben"
-          className="hidden"
-          openOnMount
-          onNavigate={() => {
-            setHandoffRequest(null);
-            setTranscript("");
+          appId={runningInstall.appId}
+          installedVersion={runningInstall.version}
+          displayName={
+            settings.nameOverrides[`marketplace:${runningInstall.appId}`] ??
+            runningInstall.manifestName ??
+            `Alo-App ${runningInstall.appId.slice(0, 8)}`
+          }
+          icon={runningInstall.icon ?? "hub"}
+          isAdmin={canSeeAdmin}
+          open={runningMarketplaceAppId !== null}
+          onOpenChange={(open) => {
+            if (!open) setRunningMarketplaceAppId(null);
           }}
+          onInstallStateChange={persistInstallState}
+          onStatus={setHomeStatus}
         />
       )}
     </>
@@ -352,7 +1366,8 @@ type HubArtworkKind =
   | "kupferkern"
   | "more"
   | "training"
-  | "tools";
+  | "tools"
+  | "marketplace";
 
 const HUB_APP_ICON_CLASS_NAME =
   "group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
@@ -362,7 +1377,7 @@ function HubAppIcon({
   title,
   artwork,
 }: {
-  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin";
+  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin" | "/training" | "/marketplace";
   title: string;
   artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
 }) {
@@ -419,6 +1434,7 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
     more: { bg: "#172735", accent: "#67e8f9", glow: "#0ea5e9" },
     training: { bg: "#30291d", accent: "#fcd34d", glow: "#f59e0b" },
     tools: { bg: "#25233a", accent: "#c4b5fd", glow: "#8b5cf6" },
+    marketplace: { bg: "#32261c", accent: "#fdba74", glow: "#ea580c" },
   } as const;
   const palette = palettes[kind];
 
@@ -619,862 +1635,372 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
           <circle cx="184" cy="37" r="4" fill="#fff" opacity=".9" />
         </>
       )}
+      {kind === "marketplace" && (
+        <>
+          <circle cx="140" cy="68" r="45" fill={palette.glow} opacity=".24" />
+          <path d="M108 53h64l6 57h-76l6-57Z" fill={palette.accent} />
+          <path
+            d="M126 53v-9a14 14 0 0 1 28 0v9"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="6"
+            strokeLinecap="round"
+          />
+          <path d="M124 78h32" stroke={palette.bg} strokeWidth="5" strokeLinecap="round" />
+          <circle cx="140" cy="92" r="7" fill={palette.glow} />
+        </>
+      )}
       <path d="M18 18h22" stroke="#fff" strokeOpacity=".22" strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
 }
 
-function Dashboard() {
-  const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [todayReps, setTodayReps] = useState(0);
-  const [todaySteps, setTodaySteps] = useState(0);
-  const [hasTodayData, setHasTodayData] = useState(false);
-  const [workoutAvailable, setWorkoutAvailable] = useState(true);
-  const [hasWorkoutData, setHasWorkoutData] = useState(false);
-  const [weekReps, setWeekReps] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState<PushMode>("nose");
-  const [routineMode, setRoutineMode] = useState<"push" | "strength" | "mobility">("push");
+function MiraOverlayLauncher() {
+  const { user } = Route.useRouteContext();
+  const [open, setOpen] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [interimTranscript, setInterimTranscript] = useState("");
+  const [listening, setListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [handoffRequest, setHandoffRequest] = useState<{ id: number; text: string } | null>(null);
+  const recognitionRef = useRef<MiraSpeechRecognitionLike | null>(null);
+  const inlineDictationRef = useRef<MiraInlineDictationController | null>(null);
+  const pressAndHoldRef = useRef<MiraComposerPressAndHold | null>(null);
+  const holdTriggeredRef = useRef(false);
+  const canceledPointerIdRef = useRef<number | null>(null);
+  const suppressClickRef = useRef(false);
+  const suppressClickTimerRef = useRef<number | null>(null);
+  const handoffIdRef = useRef(0);
 
-  const openTrainingOverview = () => {
-    const overview = document.getElementById("training-overview");
-    if (!(overview instanceof HTMLDetailsElement)) return;
-    overview.open = true;
-    window.requestAnimationFrame(() =>
-      overview.scrollIntoView({ behavior: "smooth", block: "start" }),
-    );
-  };
-
-  useEffect(() => {
-    (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      setUserId(u.user.id);
-      const now = new Date();
-      const today = localDateKey(now);
-      const week = getTrainingWeekBounds(now);
-      const [{ data: ex }, { data: p }, { data: he }, workouts] = await Promise.all([
-        supabase.from("exercises").select("*").order("sort_order"),
-        supabase.from("profiles").select(PROFILE_COLS).eq("id", u.user.id).maybeSingle(),
-        supabase
-          .from("health_entries")
-          .select("steps")
-          .eq("user_id", u.user.id)
-          .eq("day", today)
-          .maybeSingle(),
-        supabase
-          .from("workouts")
-          .select("count, created_at")
-          .eq("user_id", u.user.id)
-          .eq("exercise_id", "pushup")
-          .gte("created_at", week.startInclusive)
-          .lt("created_at", week.endExclusive),
-      ]);
-      if (ex) setExercises(ex as ExerciseMeta[]);
-      let prof = p;
-      if (!prof) {
-        const { data: created } = await supabase
-          .from("profiles")
-          .insert({
-            id: u.user.id,
-            display_name:
-              (u.user.user_metadata?.display_name as string | undefined) ??
-              (u.user.is_anonymous ? "Gast" : (u.user.email?.split("@")[0] ?? null)),
-          })
-          .select(PROFILE_COLS)
-          .maybeSingle();
-        prof = created;
-      }
-      if (prof) {
-        const raw = prof as unknown as Omit<Profile, "personal_bests"> & {
-          personal_bests: Record<string, number> | null;
-        };
-        setProfile({ ...raw, personal_bests: raw.personal_bests ?? {} });
-      }
-      setWorkoutAvailable(!workouts.error);
-      setHasTodayData(
-        !workouts.error &&
-          (workouts.data ?? []).some(
-            (row) => !!row.created_at && localDateKey(new Date(row.created_at)) === today,
-          ),
-      );
-      setHasWorkoutData(!workouts.error && (workouts.data?.length ?? 0) > 0);
-      setTodayReps(
-        (workouts.data ?? []).reduce(
-          (sum, row) =>
-            row.created_at && localDateKey(new Date(row.created_at)) === today
-              ? sum + (row.count ?? 0)
-              : sum,
-          0,
-        ),
-      );
-      if (he) setTodaySteps(he.steps ?? 0);
-      setWeekReps(workouts.error ? null : sumTrainingWeekReps(workouts.data ?? [], now));
-      setLoading(false);
-    })();
+  const suppressNextClick = useCallback(() => {
+    suppressClickRef.current = true;
+    if (suppressClickTimerRef.current !== null) {
+      window.clearTimeout(suppressClickTimerRef.current);
+    }
+    suppressClickTimerRef.current = window.setTimeout(() => {
+      suppressClickRef.current = false;
+      suppressClickTimerRef.current = null;
+    }, 0);
   }, []);
 
-  const lp = useMemo(() => levelProgress(profile?.xp ?? 0), [profile?.xp]);
-  const streak = profile?.current_streak ?? 0;
-  const readinessData = useReadiness({ streak });
-  const { readiness } = readinessData;
-  const goal = profile?.daily_goal || 50;
-  const todayProgress = progressState(loading, workoutAvailable, hasTodayData, todayReps);
-  const goalPct = Math.min(1, todayReps / goal);
-  const pushupBest = profile?.personal_bests?.pushup ?? profile?.best_count ?? 0;
-  const otherExercises = exercises.filter((e) => e.id !== "pushup");
-  const quickStart = getQuickStartPlan({ best: pushupBest, todayReps, streak, goal });
-  const pushupEx = exercises.find((e) => e.id === "pushup");
-  const dateLabel = new Date().toLocaleDateString("de-DE", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-  const weeklyTarget = goal * 7;
-  const weeklyProgress =
-    weekReps == null ? null : getWeeklyProgress({ weekReps, target: weeklyTarget });
-  const recommendation = getDashboardRecommendation({
-    plan: quickStart,
-    readinessAvailable: readiness?.available ?? false,
-    readinessLabel: readiness?.label,
-    readinessLevel: readiness?.level,
-  });
-  const reminder = getSmartReminder({ todayReps, goal, streak });
-  const routineConfig = {
-    push: {
-      label: "Drücktraining für den Oberkörper",
-      sets: quickStart.sets,
-      reps: quickStart.reps,
-      rest: quickStart.rest_s,
-    },
-    strength: { label: "Ganzkörper-Krafttraining", sets: 3, reps: 12, rest: 50 },
-    mobility: { label: "Mobilitätstraining", sets: 2, reps: 30, rest: 35 },
-  } as const;
-  const routine = routineConfig[routineMode];
+  const stopListening = () => {
+    const recognition = recognitionRef.current;
+    recognitionRef.current = null;
+    if (recognition) {
+      try {
+        recognition.stop();
+      } catch {
+        // Recognition may already have ended.
+      }
+    }
+    setListening(false);
+  };
 
-  const wrap = (node: ReactNode, size: WidgetSize) => (
-    <div className={size === "sm" ? "[&>section]:mt-0 [&>div]:mt-0" : "[&>section]:mt-0"}>
-      {node}
-    </div>
-  );
+  const startListening = () => {
+    const recognitionFactory = createBrowserSpeechRecognitionFactory();
+    const recognition = recognitionFactory?.();
+    if (!recognition) {
+      setVoiceError("Spracherkennung wird in diesem Browser nicht unterstützt.");
+      return;
+    }
 
-  const renderWidget = (id: WidgetId, size: WidgetSize): ReactNode => {
-    switch (id) {
-      case "trainingProgress":
-        return wrap(
-          <section
-            className="training-progress rounded-3xl border border-border bg-card/60 p-4"
-            aria-label="Trainingsfortschritt"
-          >
-            <h2 className="text-sm font-semibold">Dein Fortschritt</h2>
-            <dl className="mt-3 grid grid-cols-2 gap-3">
-              <div>
-                <dt className="text-xs text-muted-foreground">Tagesziel · Liegestütze</dt>
-                <dd className="mt-1 text-xl font-bold tabular-nums">
-                  {todayProgress.measured ? `${todayReps} / ${goal}` : todayProgress.label}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">Trainingsserie</dt>
-                <dd className="mt-1 text-xl font-bold tabular-nums">
-                  {loading ? "—" : `${streak} ${streak === 1 ? "Tag" : "Tage"}`}
-                </dd>
-              </div>
-            </dl>
-            {todayProgress.measured && (
-              <div
-                className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"
-                role="meter"
-                aria-label="Tagesziel-Fortschritt"
-                aria-valuemin={0}
-                aria-valuemax={goal}
-                aria-valuenow={Math.min(todayReps, goal)}
-              >
-                <div
-                  className="h-full rounded-full bg-primary"
-                  style={{ width: `${goalPct * 100}%` }}
-                />
-              </div>
-            )}
-            <div className="mt-4 border-t border-border pt-4" aria-live="polite">
-              <div className="flex items-baseline justify-between gap-2">
-                <h3 className="text-sm font-semibold">Diese Woche</h3>
-                <span className="text-xs font-medium tabular-nums">
-                  {weekReps == null
-                    ? "Daten nicht verfügbar"
-                    : !hasWorkoutData
-                      ? "Noch keine Daten"
-                      : `${weekReps} / ${weeklyTarget} Wiederholungen`}
-                </span>
-              </div>
-              {weekReps != null && hasWorkoutData && (
-                <>
-                  <div
-                    className="mt-2 h-2 overflow-hidden rounded-full bg-secondary"
-                    role="meter"
-                    aria-label="Wochenziel-Fortschritt"
-                    aria-valuemin={0}
-                    aria-valuemax={weeklyTarget}
-                    aria-valuenow={Math.min(weekReps, weeklyTarget)}
-                  >
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{
-                        width: `${Math.min(100, Math.round((weekReps / Math.max(weeklyTarget, 1)) * 100))}%`,
-                      }}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">{weeklyProgress?.message}</p>
-                </>
-              )}
-              <details className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                <summary className="cursor-pointer">So wird gezählt</summary>
-                <p className="mt-1">
-                  Gezählt werden gespeicherte Liegestütz-Wiederholungen ab Montag 00:00 deiner
-                  lokalen Zeitzone. Maßgeblich ist der Zeitpunkt des Trainingsspeicherns; offline
-                  vorgemerkt behält dieses Datum. Das Wochenziel entspricht 7 × Tagesziel:{" "}
-                  {weeklyTarget} Wiederholungen.
-                </p>
-              </details>
-            </div>
-          </section>,
-          size,
-        );
-
-      case "readiness":
-        return wrap(<ReadinessSummary {...readinessData} />, size);
-      case "briefing":
-        return wrap(<DailyBriefingCard streak={streak} todayReps={todayReps} goal={goal} />, size);
-      case "quickActions":
-        return wrap(<QuickActionsBar />, size);
-      case "mood":
-        return wrap(<MoodCheckin />, size);
-      case "water":
-        return wrap(<WaterTracker />, size);
-      case "notes":
-        return wrap(<WorkoutNotesPanel />, size);
-      case "microChallenge":
-        return wrap(
-          <MicroChallengeCard
-            userId={userId}
-            pushupBest={pushupBest}
-            dailyGoal={goal}
-            todayReps={todayReps}
-            streak={streak}
-            readinessLevel={readiness?.available ? readiness.level : "yellow"}
-            plankBest={profile?.personal_bests?.plank}
-          />,
-          size,
-        );
-      case "streakFreeze":
-        return wrap(<StreakFreezeCard streak={streak} />, size);
-      case "recoveryCal":
-        return wrap(<RecoveryCalendar userId={userId} />, size);
-      case "statsRing":
-        return wrap(
-          <section className="rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
-            <details className="alo-stat-details">
-              <summary>Bestwert, Schritte & Level · Details öffnen</summary>
-              <div className="mt-3 space-y-2.5">
-                <RingRow icon="🏆" label="Bestwert" value={`${pushupBest}`} />
-                <RingRow
-                  icon="👟"
-                  label="Schritte"
-                  value={todaySteps ? todaySteps.toLocaleString("de-DE") : "—"}
-                />
-              </div>
-
-              <div className="mt-5 border-t border-border pt-4">
-                <div className="flex items-baseline justify-between text-xs">
-                  <span className="font-semibold">
-                    Level {lp.level} · {lp.title}
-                  </span>
-                  <span className="tabular-nums text-muted-foreground">
-                    {lp.xp.toLocaleString("de-DE")} XP
-                  </span>
-                </div>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${lp.progress * 100}%` }}
-                  />
-                </div>
-              </div>
-            </details>
-          </section>,
-          size,
-        );
-      case "reminder":
-        return wrap(
-          <section className="rounded-3xl border border-border bg-card/60 p-4">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Trainingshinweis
-            </div>
-            <div className="mt-2 text-sm font-semibold">{reminder.title}</div>
-            <p className="mt-1 text-xs text-muted-foreground">{reminder.text}</p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {weeklyProgress
-                ? `Woche: ${weeklyProgress.weekReps} / ${weeklyProgress.target} Wiederholungen (${weeklyProgress.percent} %)`
-                : "Wochenfortschritt noch nicht verfügbar."}
-            </p>
-          </section>,
-          size,
-        );
-      case "miniBlock":
-        return wrap(
-          <section className="rounded-3xl border border-border bg-card/60 p-4">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Mini-Block · {routine.label}
-            </div>
-            <div className="mt-2 flex gap-2">
-              {(["push", "strength", "mobility"] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  aria-pressed={routineMode === type}
-                  onClick={() => setRoutineMode(type)}
-                  className={`flex-1 rounded-xl border px-2 py-2 text-[10px] font-medium uppercase ${
-                    routineMode === type ? "border-primary bg-primary/15" : "border-border"
-                  }`}
-                >
-                  {type === "push"
-                    ? "Drücken"
-                    : type === "strength"
-                      ? "Krafttraining"
-                      : "Mobilität"}
-                  {routineMode === type ? " · gewählt" : ""}
-                </button>
-              ))}
-            </div>
-            <Link
-              to="/workout/$exerciseId"
-              params={{ exerciseId: "pushup" }}
-              search={{
-                mode,
-                sets: routine.sets,
-                reps: routine.reps,
-                rest_s: routine.rest,
-                title: routine.label,
-              }}
-              className="mt-3 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
-            >
-              Mini-Block starten →
-            </Link>
-          </section>,
-          size,
-        );
-      case "tiles":
-        return wrap(
-          <section className="grid grid-cols-3 gap-2">
-            <Tile to="/chat" icon="💬" label="Chat" />
-            <Tile to="/health" icon="💚" label="Gesundheit" />
-            <Tile to="/ai" icon="✦" label="Super-KI" />
-            <Tile to="/programs" icon="📋" label="Programme" />
-            <Tile to="/battle" icon="⚔️" label="Wettkampf" />
-            <Tile to="/calisthenics" icon="🤸" label="Calisthenics" />
-          </section>,
-          size,
-        );
-      case "pushupHero":
-        return wrap(
-          <section className="rounded-3xl border border-border bg-card/50 p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.25em] text-primary">
-                  Haupt-Übung
-                </div>
-                <h2 className="mt-1 text-3xl font-bold">Liegestütze</h2>
-              </div>
-              <span className="text-5xl">{pushupEx?.icon ?? "💪"}</span>
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <ModeChip
-                active={mode === "nose"}
-                onClick={() => setMode("nose")}
-                icon="👃"
-                label="Nase"
-              />
-              <ModeChip
-                active={mode === "manual"}
-                onClick={() => setMode("manual")}
-                icon="👆"
-                label="Manuell"
-              />
-              <ModeChip
-                active={mode === "camera"}
-                onClick={() => setMode("camera")}
-                icon="📷"
-                label="Kamera"
-              />
-            </div>
-            <Link
-              to="/workout/$exerciseId"
-              params={{ exerciseId: "pushup" }}
-              search={{ mode }}
-              className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground"
-            >
-              Workout starten →
-            </Link>
-          </section>,
-          size,
-        );
-      case "weekPlan":
-        return wrap(<WeekPlanCard />, size);
-      case "weeklyReview":
-        return wrap(<WeeklyReview userId={userId} streak={streak} />, size);
-      case "aiCoach":
-        return wrap(<AiCoachCard />, size);
-      case "challenges":
-        return userId ? wrap(<ChallengesPanel userId={userId} />, size) : null;
-      case "friends":
-        return userId ? wrap(<FriendActivity userId={userId} />, size) : null;
-      case "history":
-        return userId ? wrap(<WorkoutHistory userId={userId} />, size) : null;
-      case "exercises":
-        return wrap(
-          <section>
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Weitere Übungen
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {loading && (
-                <div className="col-span-full rounded-2xl border border-border p-6 text-center text-sm text-muted-foreground">
-                  Lade…
-                </div>
-              )}
-              {otherExercises.map((ex) => {
-                const best = profile?.personal_bests?.[ex.id] ?? 0;
-                return (
-                  <Link
-                    key={ex.id}
-                    to="/workout/$exerciseId"
-                    params={{ exerciseId: ex.id }}
-                    className="flex flex-col gap-1 rounded-2xl border border-border bg-card/50 p-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-3xl">{ex.icon}</span>
-                      <FavoriteStar exerciseId={ex.id} />
-                    </div>
-                    <span className="text-sm font-semibold">{ex.name}</span>
-                    <span className="text-xs text-muted-foreground">Bestwert {best}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>,
-          size,
-        );
-      default:
-        return null;
+    setVoiceError(null);
+    recognition.lang = "de-DE";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const recognized = event.results[0]?.[0]?.transcript?.trim() ?? "";
+      if (recognized)
+        setTranscript((previous) => (previous ? `${previous} ${recognized}` : recognized));
+    };
+    recognition.onerror = (event) => {
+      const message =
+        event?.error === "not-allowed" || event?.error === "service-not-allowed"
+          ? "Mikrofonzugriff wurde nicht erlaubt. Prüfe die Browser-Berechtigung und tippe erneut."
+          : event?.error === "audio-capture"
+            ? "Kein verwendbares Mikrofon gefunden. Prüfe dein Gerät und versuche es erneut."
+            : event?.error === "no-speech"
+              ? "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut."
+              : "Spracherkennung fehlgeschlagen. Versuche es erneut oder nutze den Textbereich.";
+      setVoiceError(message);
+      setListening(false);
+    };
+    recognition.onend = () => {
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
+      setListening(false);
+    };
+    recognitionRef.current = recognition;
+    setListening(true);
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setListening(false);
+      setVoiceError(
+        "Das Mikrofon konnte nicht gestartet werden. Prüfe die Berechtigung und versuche es erneut.",
+      );
     }
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      stopListening();
+      inlineDictationRef.current?.cancel();
+      setInterimTranscript("");
+    } else setVoiceError(null);
+    setOpen(nextOpen);
+  };
+
+  const continueToMira = () => {
+    if (listening) {
+      stopListening();
+      inlineDictationRef.current?.stop();
+      setVoiceError(
+        "Diktat beendet. Prüfe den erkannten Text und tippe danach erneut auf die Übergabe.",
+      );
+      return;
+    }
+    const text = transcript.trim();
+    if (!text) return;
+    stopListening();
+    inlineDictationRef.current?.cancel();
+    setOpen(false);
+    handoffIdRef.current += 1;
+    setHandoffRequest({ id: handoffIdRef.current, text });
+  };
+
+  useEffect(() => {
+    const recognitionFactory = createBrowserSpeechRecognitionFactory();
+    const inlineDictation = new MiraInlineDictationController({
+      createRecognition: () => recognitionFactory?.() ?? null,
+      onTranscript: (recognized) =>
+        setTranscript((previous) => (previous ? `${previous} ${recognized}` : recognized)),
+      onInterimTranscript: setInterimTranscript,
+      onListeningChange: setListening,
+      onError: setVoiceError,
+    });
+    inlineDictationRef.current = inlineDictation;
+    const pressAndHold = new MiraComposerPressAndHold(
+      () => {
+        holdTriggeredRef.current = true;
+        setVoiceError(null);
+        setTranscript("");
+        setInterimTranscript("");
+        inlineDictation.start();
+      },
+      () => {
+        if (!holdTriggeredRef.current) return;
+        holdTriggeredRef.current = false;
+        inlineDictation.stop();
+        setInterimTranscript("");
+        setOpen(true);
+        suppressNextClick();
+      },
+      () => {
+        if (!holdTriggeredRef.current) return;
+        holdTriggeredRef.current = false;
+        inlineDictation.cancel();
+        setInterimTranscript("");
+        setVoiceError(null);
+        suppressNextClick();
+      },
+    );
+    pressAndHoldRef.current = pressAndHold;
+    return () => {
+      pressAndHold.reset();
+      canceledPointerIdRef.current = null;
+      inlineDictation.dispose();
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        // Recognition may already have ended.
+      }
+      recognitionRef.current = null;
+      inlineDictationRef.current = null;
+      pressAndHoldRef.current = null;
+      if (suppressClickTimerRef.current !== null) {
+        window.clearTimeout(suppressClickTimerRef.current);
+        suppressClickTimerRef.current = null;
+      }
+    };
+  }, [suppressNextClick]);
+
   return (
-    <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-[32rem] flex-col px-5 pt-6 pb-24">
+    <>
+      <div className={`alo-mira-home-launcher${handoffRequest ? " has-handoff" : ""}`}>
+        <p id="home-mira-hold-disclosure" className="sr-only">
+          Halte die Mira-Schaltfläche, um zu diktieren; loslassen beendet die Aufnahme. Je nach
+          Browser kann Sprache über einen Browser-Dienst erkannt werden. Der Text wird erst nach
+          deiner Prüfung und einem eigenen Tipp an Mira übergeben.
+        </p>
+        {(listening || interimTranscript) && (
+          <div className="alo-mira-home-live-transcript" role="status" aria-live="polite">
+            <span className="flex items-center gap-2 font-semibold">
+              <Mic className="h-4 w-4" aria-hidden="true" />
+              {listening ? "Sprich jetzt · loslassen beendet" : "Erkannt"}
+            </span>
+            {(transcript || interimTranscript) && (
+              <span className="mt-1 block font-normal">
+                {transcript}
+                {transcript && interimTranscript ? " " : ""}
+                <span className="text-muted-foreground">{interimTranscript}</span>
+              </span>
+            )}
+          </div>
+        )}
+        {handoffRequest ? (
+          <div className="alo-mira-home-handoff-actions">
+            <MiraHandoff
+              key={handoffRequest.id}
+              userId={user.id}
+              text={handoffRequest.text}
+              source="deine eingesprochene Frage"
+              label="Frage in Mira prüfen"
+              className="alo-mira-home-handoff-button"
+              onNavigate={() => {
+                setHandoffRequest(null);
+                setTranscript("");
+              }}
+            />
+            <button
+              type="button"
+              className="alo-mira-home-handoff-dismiss"
+              aria-label="Diktierte Frage verwerfen"
+              onClick={() => {
+                setHandoffRequest(null);
+                setTranscript("");
+              }}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="alo-mira-home-launcher-button"
+            aria-label="Mira öffnen oder halten, um eine Frage zu diktieren"
+            aria-describedby="home-mira-hold-disclosure"
+            title="Tippen öffnet den Diktierdialog. Halten startet die Aufnahme; loslassen beendet sie."
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            onPointerDown={(event) => {
+              if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) return;
+              canceledPointerIdRef.current = null;
+              try {
+                event.currentTarget.setPointerCapture(event.pointerId);
+              } catch {
+                // Pointer capture is not supported in every browser.
+              }
+              pressAndHoldRef.current?.pointerDown(
+                event.pointerId,
+                event.clientX,
+                event.clientY,
+                event.isPrimary,
+              );
+            }}
+            onPointerMove={(event) => {
+              if (
+                pressAndHoldRef.current?.pointerMove(event.pointerId, event.clientX, event.clientY)
+              ) {
+                canceledPointerIdRef.current = event.pointerId;
+              }
+            }}
+            onPointerUp={(event) => {
+              const wasCanceled = canceledPointerIdRef.current === event.pointerId;
+              canceledPointerIdRef.current = null;
+              pressAndHoldRef.current?.pointerUp(event.pointerId);
+              if (wasCanceled) suppressNextClick();
+            }}
+            onPointerCancel={(event) => {
+              if (pressAndHoldRef.current?.pointerCancel(event.pointerId)) {
+                canceledPointerIdRef.current = event.pointerId;
+                suppressNextClick();
+              }
+            }}
+            onLostPointerCapture={(event) => {
+              if (pressAndHoldRef.current?.pointerCancel(event.pointerId)) {
+                canceledPointerIdRef.current = event.pointerId;
+                suppressNextClick();
+              }
+            }}
+            onContextMenu={(event) => event.preventDefault()}
+            onClick={() => {
+              if (suppressClickRef.current) {
+                suppressClickRef.current = false;
+                if (suppressClickTimerRef.current !== null) {
+                  window.clearTimeout(suppressClickTimerRef.current);
+                  suppressClickTimerRef.current = null;
+                }
+                return;
+              }
+              handleOpenChange(true);
+            }}
+          >
+            <MiraSpark />
+          </button>
+        )}
+      </div>
+      <MiraVoiceChatDialog
+        open={open}
+        onOpenChange={handleOpenChange}
+        transcript={transcript}
+        onTranscriptChange={setTranscript}
+        listening={listening}
+        onStartListening={startListening}
+        onStopListening={stopListening}
+        error={voiceError}
+        onContinue={continueToMira}
+        continueLabel="Frage in Mira prüfen"
+        className="alo-dialog alo-mira-voice-entry-dialog max-h-[88dvh] overflow-y-auto sm:max-w-md"
+      />
+    </>
+  );
+}
+
+type HomeProfile = { display_name: string | null; avatar_url: string | null };
+
+function Dashboard() {
+  const { user } = Route.useRouteContext();
+  const [profile, setProfile] = useState<HomeProfile | null>(null);
+  useEffect(() => {
+    let active = true;
+    setProfile(null);
+    void (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!active) return;
+      let current = data;
+      if (!current) {
+        const { data: created } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            display_name:
+              (user.user_metadata?.display_name as string | undefined) ??
+              (user.is_anonymous ? "Gast" : (user.email?.split("@")[0] ?? null)),
+          })
+          .select("display_name, avatar_url")
+          .maybeSingle();
+        if (!active) return;
+        current = created;
+      }
+      setProfile(current);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [user]);
+  return (
+    <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
       <HomeAppHub
+        key={user.id}
         displayName={profile?.display_name}
         avatarUrl={profile?.avatar_url}
-        onOpenTrainingOverview={openTrainingOverview}
       />
       <MiraOverlayLauncher />
-      <details className="group" id="training-overview">
-        <summary className="sr-only focus:not-sr-only focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
-          Trainingsübersicht & Gym-Partner öffnen. Dein Plan, dein Fortschritt und deine privaten
-          Trainingsverläufe
-        </summary>
-        <div className="border-t border-border px-3 pb-4 pt-4 sm:px-5">
-          <p className="mb-4 text-xs text-muted-foreground">
-            Die bisherigen Trainingsfunktionen bleiben erhalten. Partnerdaten und dein eigener
-            Verlauf bleiben getrennt.
-          </p>
-          <GymPartnerPanel />
-          <header className="classic-only dashboard-header flex items-center justify-between">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-                {dateLabel}
-              </div>
-              <h1 className="mt-0.5 text-xl font-bold tracking-tight">
-                Hallo {profile?.display_name || "Athlet"} 👋
-              </h1>
-            </div>
-          </header>
-
-          <div className="sport-only sport-dashboard-welcome">
-            <div>
-              <div className="sport-eyebrow">
-                <span aria-hidden="true" />
-                {dateLabel}
-              </div>
-              <h1 className="sport-dashboard-title">Heute trainieren</h1>
-              <p className="sport-dashboard-subtitle">
-                Hallo {profile?.display_name || "Athlet"}. Dein Plan und dein Fortschritt auf einen
-                Blick.
-              </p>
-            </div>
-          </div>
-          <SportSectionLabel number="01">Dein Plan heute</SportSectionLabel>
-          <section
-            className="sport-only training-hero rounded-3xl border border-border bg-card p-5"
-            aria-labelledby="sport-today-plan-title"
-          >
-            <div className="sport-hero-heading">
-              <div className="sport-hero-mark">
-                <Dumbbell aria-hidden="true" />
-                {recommendation.title}
-              </div>
-              <h2 id="sport-today-plan-title">{recommendation.headline}</h2>
-              <p>
-                Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter
-                Fortschritt.
-              </p>
-            </div>
-            <div className="training-plan-metrics grid grid-cols-3 gap-2 text-center">
-              <PlanMetric label="Sätze" value={recommendation.sets} />
-              <PlanMetric label="Wdh. je Satz" value={recommendation.reps} />
-              <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
-            </div>
-            <PlanGoalNote
-              sets={recommendation.sets}
-              reps={recommendation.reps}
-              plannedReps={recommendation.plannedReps}
-              goal={goal}
-            />
-            <label className="alo-counting-select">
-              <span>Zählen</span>
-              <select
-                aria-label="Zählmethode auswählen"
-                value={mode}
-                onChange={(e) => setMode(e.target.value as typeof mode)}
-              >
-                <option value="nose">Nase</option>
-                <option value="manual">Manuell</option>
-                <option value="camera">Kamera</option>
-              </select>
-            </label>
-            <div className="sport-counting-group" role="group" aria-label="Zählmethode">
-              <ModeChip
-                active={mode === "nose"}
-                onClick={() => setMode("nose")}
-                icon="👃"
-                label="Nase"
-              />
-              <ModeChip
-                active={mode === "manual"}
-                onClick={() => setMode("manual")}
-                icon="✍️"
-                label="Manuell"
-              />
-              <ModeChip
-                active={mode === "camera"}
-                onClick={() => setMode("camera")}
-                icon="📷"
-                label="Kamera"
-              />
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell
-              erfasst du selbst.
-            </p>
-            <Link
-              to="/workout/$exerciseId"
-              params={{ exerciseId: "pushup" }}
-              search={{
-                mode,
-                sets: recommendation.sets,
-                reps: recommendation.reps,
-                rest_s: recommendation.rest_s,
-                title: recommendation.title,
-              }}
-              className="flex rounded-2xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground"
-            >
-              <Zap className="h-4 w-4" aria-hidden="true" />
-              {recommendation.recoveryDay ? "Leichte Einheit starten" : "Training starten"}
-              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-            <p className="text-xs text-muted-foreground">{recommendation.readinessNote}</p>
-            <details className="text-xs text-muted-foreground">
-              <summary className="cursor-pointer">Warum dieser Plan?</summary>
-              <p className="mt-2 leading-relaxed">{recommendation.detail}</p>
-              <p className="alo-mobile-plan-context mt-2">
-                Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter
-                Fortschritt.
-              </p>
-              {weekReps === 0 && todayReps === 0 && (
-                <p className="mt-2">Starte entspannt – saubere Technik geht vor Tempo.</p>
-              )}
-            </details>
-          </section>
-          <SportSectionLabel number="02">Finde deinen Fokus</SportSectionLabel>
-          <nav className="sport-only sport-shortcuts" aria-label="Trainingsbereiche">
-            <Link to="/exercises" className="sport-shortcut">
-              <Dumbbell aria-hidden="true" />
-              <span>
-                Alle Übungen
-                <ArrowUpRight aria-hidden="true" />
-              </span>
-            </Link>
-            <Link to="/programs" className="sport-shortcut">
-              <Target aria-hidden="true" />
-              <span>
-                Programme
-                <ArrowUpRight aria-hidden="true" />
-              </span>
-            </Link>
-            <Link to="/calisthenics" className="sport-shortcut">
-              <Activity aria-hidden="true" />
-              <span>
-                Calisthenics
-                <ArrowUpRight aria-hidden="true" />
-              </span>
-            </Link>
-            <Link to="/health" className="sport-shortcut">
-              <HeartPulse aria-hidden="true" />
-              <span>
-                Gesundheit
-                <ArrowUpRight aria-hidden="true" />
-              </span>
-            </Link>
-          </nav>
-          <section
-            className="classic-only training-hero mt-6 rounded-3xl border border-primary/25 bg-primary/5 p-5"
-            aria-labelledby="today-plan-title"
-          >
-            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
-              Dein Start heute · {recommendation.title}
-            </div>
-            <h2 id="today-plan-title" className="mt-2 text-2xl font-bold">
-              {recommendation.headline}
-            </h2>
-            <div className="training-plan-metrics mt-4 grid grid-cols-3 gap-2 text-center">
-              <PlanMetric label="Sätze" value={recommendation.sets} />
-              <PlanMetric label="Wiederholungen je Satz" value={recommendation.reps} />
-              <PlanMetric label="Pause" value={`${recommendation.rest_s} s`} />
-            </div>
-            <PlanGoalNote
-              sets={recommendation.sets}
-              reps={recommendation.reps}
-              plannedReps={recommendation.plannedReps}
-              goal={goal}
-            />
-            <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Zählmethode">
-              <ModeChip
-                active={mode === "nose"}
-                onClick={() => setMode("nose")}
-                icon="👃"
-                label="Nase"
-              />
-              <ModeChip
-                active={mode === "manual"}
-                onClick={() => setMode("manual")}
-                icon="✍️"
-                label="Manuell"
-              />
-              <ModeChip
-                active={mode === "camera"}
-                onClick={() => setMode("camera")}
-                icon="📷"
-                label="Kamera"
-              />
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell
-              erfasst du selbst.
-            </p>
-            <Link
-              to="/workout/$exerciseId"
-              params={{ exerciseId: "pushup" }}
-              search={{
-                mode,
-                sets: recommendation.sets,
-                reps: recommendation.reps,
-                rest_s: recommendation.rest_s,
-                title: recommendation.title,
-              }}
-              className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground"
-            >
-              {recommendation.recoveryDay
-                ? "Leichte Einheit (optional) →"
-                : "Training nach Plan starten →"}
-            </Link>
-            <p className="mt-3 text-xs text-muted-foreground">{recommendation.readinessNote}</p>
-            <details className="mt-3 text-xs text-muted-foreground">
-              <summary className="cursor-pointer">Warum dieser Plan?</summary>
-              <p className="mt-2 leading-relaxed">{recommendation.detail}</p>
-              {weekReps === 0 && todayReps === 0 && (
-                <p className="mt-2">Starte entspannt – saubere Technik geht vor Tempo.</p>
-              )}
-            </details>
-          </section>
-
-          <section className="alo-home-intro" aria-label="Deine Alo-Bereiche">
-            <button
-              className="alo-text-action"
-              onClick={() => window.dispatchEvent(new CustomEvent("alo-open", { detail: "today" }))}
-            >
-              Deinen Tag überblicken →
-            </button>
-            <details className="alo-home-areas">
-              <summary>Mira, Nexus & Training öffnen</summary>
-              <div className="alo-home-portals">
-                <Link
-                  to="/workout/$exerciseId"
-                  params={{ exerciseId: "pushup" }}
-                  search={{
-                    mode: "nose",
-                    sets: 3,
-                    reps: 8,
-                    rest_s: 60,
-                    title: "Liegestütztraining",
-                  }}
-                  className="rounded-2xl border border-primary/40 bg-primary/10 p-4 transition hover:bg-primary/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                    01 · Training
-                  </span>
-                  <h2 className="mt-1 text-lg font-bold">Liegestütztraining</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Liegestütze erfassen: Nase tippt den Zähler, alternativ Kamera oder manuell.
-                  </p>
-                  <span className="mt-3 inline-block text-sm font-semibold">
-                    Training starten →
-                  </span>
-                </Link>
-                <Link
-                  to="/ai"
-                  className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                    02 · Allgemeine KI
-                  </span>
-                  <h2 className="mt-1 text-lg font-bold">Mira</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Wissen, Schreiben, Ideen, Alltag – deine vielseitige KI.
-                  </p>
-                  <span className="mt-3 inline-block text-sm font-semibold">Mira fragen →</span>
-                </Link>
-                <Link
-                  to="/chat"
-                  className="rounded-2xl border border-border bg-card/70 p-4 transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                    03 · Gemeinsam
-                  </span>
-                  <h2 className="mt-1 text-lg font-bold">Nexus Chat</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Deine Gespräche bleiben lokal auf diesem Gerät.
-                  </p>
-                  <span className="mt-3 inline-block text-sm font-semibold">Nexus öffnen →</span>
-                </Link>
-              </div>
-            </details>
-          </section>
-
-          <DashboardGrid renderWidget={renderWidget} />
-        </div>
-      </details>
-      <BottomNav />
     </main>
-  );
-}
-
-function RingRow({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-xl bg-background/40 px-3 py-2">
-      <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
-        <span className="classic-only text-base">{icon}</span>
-        <span className="sport-only">
-          {label === "Bestwert" ? (
-            <Trophy className="h-4 w-4 text-primary" aria-hidden="true" />
-          ) : label === "Trainingsserie" ? (
-            <Flame className="h-4 w-4 text-primary" aria-hidden="true" />
-          ) : (
-            <Footprints className="h-4 w-4 text-primary" aria-hidden="true" />
-          )}
-        </span>
-        {label}
-      </span>
-      <span className="text-sm font-semibold tabular-nums">{value}</span>
-    </div>
-  );
-}
-
-function Tile({ to, icon, label }: { to: string; icon: string; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card/50 py-3 text-[10px] font-medium text-muted-foreground"
-    >
-      <span className="text-2xl">{icon}</span>
-      {label}
-    </Link>
-  );
-}
-
-function ModeChip({
-  active,
-  onClick,
-  icon,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: string;
-  label: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      type="button"
-      aria-pressed={active}
-      className={`counting-mode flex min-w-0 flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs font-medium ${
-        active
-          ? "border-primary bg-primary/15"
-          : "border-border bg-secondary/60 text-muted-foreground"
-      }`}
-    >
-      <span className="classic-only text-lg">{icon}</span>
-      <span className="sport-only" aria-hidden="true">
-        {label === "Kamera" ? (
-          <Camera className="h-4 w-4" />
-        ) : label === "Manuell" ? (
-          <Hand className="h-4 w-4" />
-        ) : (
-          <ScanFace className="h-4 w-4" />
-        )}
-      </span>
-      <span className="text-center">{label}</span>
-      {active && <span className="text-[10px] leading-tight">Ausgewählt</span>}
-    </button>
-  );
-}
-
-function PlanMetric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="plan-metric rounded-xl border border-border bg-card px-2 py-3">
-      <div className="plan-metric-value text-lg font-semibold">{value}</div>
-      <div className="mt-1 text-xs text-muted-foreground">{label}</div>
-    </div>
-  );
-}
-
-function PlanGoalNote({
-  sets,
-  reps,
-  plannedReps,
-  goal,
-}: {
-  sets: number;
-  reps: number;
-  plannedReps: number;
-  goal: number;
-}) {
-  return (
-    <p className="text-xs leading-relaxed text-muted-foreground">
-      Dieser Startplan: {sets} × {reps} = {plannedReps} Wiederholungen – ein Schritt zum Tagesziel
-      von {goal}. Das Ziel gilt für den Tag, nicht für eine einzelne Einheit. Steigere nur, wenn es
-      sich gut anfühlt.
-    </p>
   );
 }

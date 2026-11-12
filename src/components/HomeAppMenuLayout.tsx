@@ -23,10 +23,11 @@ function MenuFrame({
     <main
       className={`relative mx-auto flex min-h-[100dvh] w-full max-w-4xl flex-col gap-6 ${frameClass}`}
       aria-labelledby="home-app-menu-title"
+      data-alo-menu-surface="true"
     >
       <header className="flex items-start justify-between gap-4 border-b border-border/60 pb-5">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--menu-accent)]">
             {eyebrow}
           </p>
           <h1

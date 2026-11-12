@@ -29,19 +29,23 @@ import { Route as AuthenticatedExercisesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedGamesRouteImport } from './routes/_authenticated/games'
 import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated/health'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
+import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated/marketplace'
 import { Route as AuthenticatedPostfachRouteImport } from './routes/_authenticated/postfach'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProgramsRouteImport } from './routes/_authenticated/programs'
 import { Route as AuthenticatedRunRouteImport } from './routes/_authenticated/run'
 import { Route as AuthenticatedSeasonRouteImport } from './routes/_authenticated/season'
 import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated/tools'
+import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
 import { Route as USlugRouteImport } from './routes/u.$slug'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AuthenticatedBattleIndexRouteImport } from './routes/_authenticated/battle.index'
 import { Route as AuthenticatedBattleIdRouteImport } from './routes/_authenticated/battle.$id'
 import { Route as AuthenticatedCaliWorkoutSkillIdRouteImport } from './routes/_authenticated/cali-workout.$skillId'
+import { Route as AuthenticatedSettingsCategoryRouteImport } from './routes/_authenticated/settings.$category'
 import { Route as AuthenticatedWorkoutExerciseIdRouteImport } from './routes/_authenticated/workout.$exerciseId'
+import { Route as AuthenticatedSettingsAppsAppIdRouteImport } from './routes/_authenticated/settings.apps.$appId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -148,6 +152,12 @@ const AuthenticatedLeaderboardRoute =
     path: '/leaderboard',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMarketplaceRoute =
+  AuthenticatedMarketplaceRouteImport.update({
+    id: '/marketplace',
+    path: '/marketplace',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPostfachRoute = AuthenticatedPostfachRouteImport.update({
   id: '/postfach',
   path: '/postfach',
@@ -176,6 +186,11 @@ const AuthenticatedSeasonRoute = AuthenticatedSeasonRouteImport.update({
 const AuthenticatedToolsRoute = AuthenticatedToolsRouteImport.update({
   id: '/tools',
   path: '/tools',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const USlugRoute = USlugRouteImport.update({
@@ -211,10 +226,22 @@ const AuthenticatedCaliWorkoutSkillIdRoute =
     path: '/cali-workout/$skillId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSettingsCategoryRoute =
+  AuthenticatedSettingsCategoryRouteImport.update({
+    id: '/settings/$category',
+    path: '/settings/$category',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedWorkoutExerciseIdRoute =
   AuthenticatedWorkoutExerciseIdRouteImport.update({
     id: '/workout/$exerciseId',
     path: '/workout/$exerciseId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsAppsAppIdRoute =
+  AuthenticatedSettingsAppsAppIdRouteImport.update({
+    id: '/settings/apps/$appId',
+    path: '/settings/apps/$appId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -238,19 +265,23 @@ export interface FileRoutesByFullPath {
   '/games': typeof AuthenticatedGamesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/postfach': typeof AuthenticatedPostfachRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/programs': typeof AuthenticatedProgramsRoute
   '/run': typeof AuthenticatedRunRoute
   '/season': typeof AuthenticatedSeasonRoute
   '/tools': typeof AuthenticatedToolsRoute
+  '/training': typeof AuthenticatedTrainingRoute
   '/u/$slug': typeof USlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
   '/cali-workout/$skillId': typeof AuthenticatedCaliWorkoutSkillIdRoute
+  '/settings/$category': typeof AuthenticatedSettingsCategoryRoute
   '/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
   '/battle/': typeof AuthenticatedBattleIndexRoute
+  '/settings/apps/$appId': typeof AuthenticatedSettingsAppsAppIdRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -271,20 +302,24 @@ export interface FileRoutesByTo {
   '/games': typeof AuthenticatedGamesRoute
   '/health': typeof AuthenticatedHealthRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/marketplace': typeof AuthenticatedMarketplaceRoute
   '/postfach': typeof AuthenticatedPostfachRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/programs': typeof AuthenticatedProgramsRoute
   '/run': typeof AuthenticatedRunRoute
   '/season': typeof AuthenticatedSeasonRoute
   '/tools': typeof AuthenticatedToolsRoute
+  '/training': typeof AuthenticatedTrainingRoute
   '/u/$slug': typeof USlugRoute
   '/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
   '/cali-workout/$skillId': typeof AuthenticatedCaliWorkoutSkillIdRoute
+  '/settings/$category': typeof AuthenticatedSettingsCategoryRoute
   '/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
   '/battle': typeof AuthenticatedBattleIndexRoute
+  '/settings/apps/$appId': typeof AuthenticatedSettingsAppsAppIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -307,20 +342,24 @@ export interface FileRoutesById {
   '/_authenticated/games': typeof AuthenticatedGamesRoute
   '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRoute
   '/_authenticated/postfach': typeof AuthenticatedPostfachRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/programs': typeof AuthenticatedProgramsRoute
   '/_authenticated/run': typeof AuthenticatedRunRoute
   '/_authenticated/season': typeof AuthenticatedSeasonRoute
   '/_authenticated/tools': typeof AuthenticatedToolsRoute
+  '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/u/$slug': typeof USlugRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/battle/$id': typeof AuthenticatedBattleIdRoute
   '/_authenticated/cali-workout/$skillId': typeof AuthenticatedCaliWorkoutSkillIdRoute
+  '/_authenticated/settings/$category': typeof AuthenticatedSettingsCategoryRoute
   '/_authenticated/workout/$exerciseId': typeof AuthenticatedWorkoutExerciseIdRoute
   '/_authenticated/battle/': typeof AuthenticatedBattleIndexRoute
+  '/_authenticated/settings/apps/$appId': typeof AuthenticatedSettingsAppsAppIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -344,19 +383,23 @@ export interface FileRouteTypes {
     | '/games'
     | '/health'
     | '/leaderboard'
+    | '/marketplace'
     | '/postfach'
     | '/profile'
     | '/programs'
     | '/run'
     | '/season'
     | '/tools'
+    | '/training'
     | '/u/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/battle/$id'
     | '/cali-workout/$skillId'
+    | '/settings/$category'
     | '/workout/$exerciseId'
     | '/battle/'
+    | '/settings/apps/$appId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -377,20 +420,24 @@ export interface FileRouteTypes {
     | '/games'
     | '/health'
     | '/leaderboard'
+    | '/marketplace'
     | '/postfach'
     | '/profile'
     | '/programs'
     | '/run'
     | '/season'
     | '/tools'
+    | '/training'
     | '/u/$slug'
     | '/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/battle/$id'
     | '/cali-workout/$skillId'
+    | '/settings/$category'
     | '/workout/$exerciseId'
     | '/battle'
+    | '/settings/apps/$appId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -412,20 +459,24 @@ export interface FileRouteTypes {
     | '/_authenticated/games'
     | '/_authenticated/health'
     | '/_authenticated/leaderboard'
+    | '/_authenticated/marketplace'
     | '/_authenticated/postfach'
     | '/_authenticated/profile'
     | '/_authenticated/programs'
     | '/_authenticated/run'
     | '/_authenticated/season'
     | '/_authenticated/tools'
+    | '/_authenticated/training'
     | '/u/$slug'
     | '/_authenticated/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/battle/$id'
     | '/_authenticated/cali-workout/$skillId'
+    | '/_authenticated/settings/$category'
     | '/_authenticated/workout/$exerciseId'
     | '/_authenticated/battle/'
+    | '/_authenticated/settings/apps/$appId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -582,6 +633,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/marketplace': {
+      id: '/_authenticated/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof AuthenticatedMarketplaceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/postfach': {
       id: '/_authenticated/postfach'
       path: '/postfach'
@@ -622,6 +680,13 @@ declare module '@tanstack/react-router' {
       path: '/tools'
       fullPath: '/tools'
       preLoaderRoute: typeof AuthenticatedToolsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/training': {
+      id: '/_authenticated/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof AuthenticatedTrainingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/u/$slug': {
@@ -666,11 +731,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCaliWorkoutSkillIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings/$category': {
+      id: '/_authenticated/settings/$category'
+      path: '/settings/$category'
+      fullPath: '/settings/$category'
+      preLoaderRoute: typeof AuthenticatedSettingsCategoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/workout/$exerciseId': {
       id: '/_authenticated/workout/$exerciseId'
       path: '/workout/$exerciseId'
       fullPath: '/workout/$exerciseId'
       preLoaderRoute: typeof AuthenticatedWorkoutExerciseIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/apps/$appId': {
+      id: '/_authenticated/settings/apps/$appId'
+      path: '/settings/apps/$appId'
+      fullPath: '/settings/apps/$appId'
+      preLoaderRoute: typeof AuthenticatedSettingsAppsAppIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -690,17 +769,21 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGamesRoute: typeof AuthenticatedGamesRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
+  AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRoute
   AuthenticatedPostfachRoute: typeof AuthenticatedPostfachRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedProgramsRoute: typeof AuthenticatedProgramsRoute
   AuthenticatedRunRoute: typeof AuthenticatedRunRoute
   AuthenticatedSeasonRoute: typeof AuthenticatedSeasonRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
+  AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBattleIdRoute: typeof AuthenticatedBattleIdRoute
   AuthenticatedCaliWorkoutSkillIdRoute: typeof AuthenticatedCaliWorkoutSkillIdRoute
+  AuthenticatedSettingsCategoryRoute: typeof AuthenticatedSettingsCategoryRoute
   AuthenticatedWorkoutExerciseIdRoute: typeof AuthenticatedWorkoutExerciseIdRoute
   AuthenticatedBattleIndexRoute: typeof AuthenticatedBattleIndexRoute
+  AuthenticatedSettingsAppsAppIdRoute: typeof AuthenticatedSettingsAppsAppIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -717,17 +800,21 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGamesRoute: AuthenticatedGamesRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
+  AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRoute,
   AuthenticatedPostfachRoute: AuthenticatedPostfachRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedProgramsRoute: AuthenticatedProgramsRoute,
   AuthenticatedRunRoute: AuthenticatedRunRoute,
   AuthenticatedSeasonRoute: AuthenticatedSeasonRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
+  AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
   AuthenticatedCaliWorkoutSkillIdRoute: AuthenticatedCaliWorkoutSkillIdRoute,
+  AuthenticatedSettingsCategoryRoute: AuthenticatedSettingsCategoryRoute,
   AuthenticatedWorkoutExerciseIdRoute: AuthenticatedWorkoutExerciseIdRoute,
   AuthenticatedBattleIndexRoute: AuthenticatedBattleIndexRoute,
+  AuthenticatedSettingsAppsAppIdRoute: AuthenticatedSettingsAppsAppIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

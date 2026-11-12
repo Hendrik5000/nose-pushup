@@ -2,27 +2,32 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const profile = readFileSync(
-  new URL("../src/routes/_authenticated/profile-page-impl.tsx", import.meta.url),
-  "utf8",
-);
+const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
+const profile = read("routes/_authenticated/profile-page-impl.tsx");
+const profileRoute = read("routes/_authenticated/profile.tsx");
+const sidebar = read("components/alo/AloPageSidebar.tsx");
+const topNav = read("components/TopNav.tsx");
 
-test("both profile designs explain the quick-access shortcuts and retain existing settings targets", () => {
-  assert.equal((profile.match(/Schnellzugriff/g) ?? []).length, 2);
-  assert.equal((profile.match(/aria-label="Profilbereiche"/g) ?? []).length, 2);
-  for (const target of [
-    '"#profile-training"',
-    '"#appearance"',
-    '"#profile-app"',
-    '"#profile-history"',
+test("settings hub has a top-left menu and the shared Alo sidebar includes direct app destinations", () => {
+  assert.match(profile, /<AloPageSidebarTrigger \/>/);
+  assert.match(profileRoute, /<AloPageSidebar active="settings">/);
+  assert.match(sidebar, /export type AloPageSection = "mira" \| "nexus" \| "health" \| "settings"/);
+  assert.match(sidebar, /settings:\s*\{[\s\S]*?Persönliche Einstellungen/);
+  for (const [label, href] of [
+    ["Einstellungen", "/profile"],
+    ["Apps", "/settings/apps"],
+    ["Mira", "/ai"],
+    ["Nexus Chat", "/chat"],
+    ["Alo Health", "/health"],
   ]) {
-    assert.ok(profile.includes(target), `missing settings shortcut target ${target}`);
+    assert.ok(sidebar.includes(`label: "${label}"`), `missing sidebar destination: ${label}`);
+    assert.ok(sidebar.includes(`href: "${href}"`), `missing direct path: ${href}`);
   }
-  assert.match(profile, /<AloWebAppGuide \/>/);
-  assert.match(profile, /subtitle="Kurzanleitung & Tour"/);
-  assert.doesNotMatch(profile, /className="-mt-4 text-xs text-muted-foreground"/);
-  assert.match(
-    profile,
-    /Rubrik wählen, direkt springen und darunter nur den gewünschten Bereich öffnen\./,
-  );
+});
+
+test("shared navigation labels the destination Einstellungen and hides duplicate global chrome on settings pages", () => {
+  assert.match(topNav, /label: "Einstellungen", icon: Settings2/);
+  assert.match(topNav, /pathname\.startsWith\("\/settings"\)/);
+  assert.match(topNav, /pathname\.startsWith\("\/profile"\)/);
+  assert.match(profile, /aria-label="Einstellungsbereiche"/);
 });

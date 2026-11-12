@@ -188,6 +188,41 @@ test("Mira keeps reply text when visuals are missing, unknown or invalid", () =>
   }
 });
 
+test("Mira extracts only a validated trailing visual from the broken escaped response shown by the user", () => {
+  const screenshotVisual: MiraVisualAnswer = {
+    type: "metricGrid",
+    schemaVersion: 1,
+    title: "Social-Features Aktiviert",
+    items: [
+      { label: "Nexus-Anbindung", value: "Aktiv", detail: "Challenge-Versand" },
+      { label: "Rangliste", value: "Freunde", detail: "Top 10 Vergleich" },
+      { label: "Multiplayer", value: "Asynchron", detail: "Zeitversetztes Duell" },
+    ],
+  };
+  const malformed =
+    `Highscores deiner Kontakte auflistet.\\n\\nDas Routing für diese Funktionen läuft über die ` +
+    "gesicherten Alo-Schnittstellen (`src/lib/`), sodass deine Spieldaten nur für deine Freunde " +
+    `sichtbar sind. Möchtest du, dass man auch 'Team-Challenges' spielen kann, bei denen die ` +
+    `Punkte von zwei Personen addiert werden?",\n"visual": ${JSON.stringify(screenshotVisual)}`;
+
+  assert.deepEqual(parseAiResponse(malformed), {
+    reply:
+      "Highscores deiner Kontakte auflistet.\n\nDas Routing für diese Funktionen läuft über die " +
+      "gesicherten Alo-Schnittstellen (`src/lib/`), sodass deine Spieldaten nur für deine Freunde " +
+      "sichtbar sind. Möchtest du, dass man auch 'Team-Challenges' spielen kann, bei denen die " +
+      "Punkte von zwei Personen addiert werden?",
+    plan: null,
+    visual: screenshotVisual,
+  });
+  assert.deepEqual(parseAiResponse(malformed, { preserveCode: true }), {
+    reply: malformed,
+    plan: null,
+  });
+
+  const requestedCode = "```typescript\nconst visual = { type: 'metricGrid' };\n```";
+  assert.deepEqual(parseAiResponse(requestedCode), { reply: requestedCode, plan: null });
+});
+
 test("fixed card renders metric and chart shapes without interpreting model text as markup", () => {
   const metricsMarkup = renderToStaticMarkup(
     createElement(MiraVisualAnswerCard, { visual: metricGrid }),
@@ -246,14 +281,13 @@ test("both Mira chat views pass optional visuals to the fixed component only", (
     new URL("../src/components/mira/MiraVisualAnswerCard.tsx", import.meta.url),
     "utf8",
   );
-  const progressive = readFileSync(
-    new URL("../src/components/mira/MiraProgressiveAnswer.tsx", import.meta.url),
-    "utf8",
-  );
   assert.equal((page.match(/<MiraVisualAnswerCard/g) ?? []).length, 2);
   assert.match(page, /\.\.\.\(parsed\.visual \? \{ visual: parsed\.visual \} : \{\}\)/);
-  assert.match(page, /<MiraProgressiveAnswer[\s\S]*?text=\{m\.content\}/);
-  assert.match(progressive, /MiraAnswerText text=\{text\} \/>/);
+  assert.match(
+    page,
+    /parseAiResponse\(res\.reply,\s*\{\s*preserveCode: isExplicitMiraCodeRequest\(text\)/,
+  );
+  assert.equal((page.match(/<MiraProgressiveAnswer/g) ?? []).length, 2);
   assert.match(card, /validateMiraVisualAnswer\(visual\)/);
   assert.doesNotMatch(card, /dangerouslySetInnerHTML|<iframe|<script|href=|fetch\(/i);
 });

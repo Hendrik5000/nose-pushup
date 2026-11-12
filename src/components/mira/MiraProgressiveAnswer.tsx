@@ -8,6 +8,13 @@ type MiraRevealState = {
   animating: boolean;
 };
 
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+  );
+}
+
 export function MiraProgressiveAnswer({
   text,
   animate,
@@ -18,11 +25,14 @@ export function MiraProgressiveAnswer({
   className?: string;
 }) {
   const plan = useMemo(() => createMiraRevealPlan(text), [text]);
-  const [reveal, setReveal] = useState<MiraRevealState>(() => ({
-    text,
-    visibleLength: animate ? 0 : text.length,
-    animating: animate && text.length > 0,
-  }));
+  const [reveal, setReveal] = useState<MiraRevealState>(() => {
+    const shouldAnimate = animate && text.length > 0 && !prefersReducedMotion();
+    return {
+      text,
+      visibleLength: shouldAnimate ? 0 : text.length,
+      animating: shouldAnimate,
+    };
+  });
 
   useEffect(() => {
     if (!animate || !text.length) {
@@ -30,7 +40,7 @@ export function MiraProgressiveAnswer({
       return;
     }
 
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    if (prefersReducedMotion()) {
       setReveal({ text, visibleLength: text.length, animating: false });
       return;
     }
@@ -41,9 +51,16 @@ export function MiraProgressiveAnswer({
     setReveal({ text, visibleLength: 0, animating: true });
 
     const step = (now: number) => {
-      const progress = Math.min(1, (now - startedAt) / plan.durationMs);
-      const boundaryCount =
-        progress >= 1 ? plan.boundaries.length : Math.floor(progress * plan.boundaries.length);
+      const elapsedMs = now - startedAt;
+      const progress = Math.min(1, elapsedMs / plan.durationMs);
+      let boundaryCount = 0;
+      while (
+        boundaryCount < plan.boundaryTimesMs.length &&
+        elapsedMs >= plan.boundaryTimesMs[boundaryCount]
+      ) {
+        boundaryCount += 1;
+      }
+      if (progress >= 1) boundaryCount = plan.boundaries.length;
       if (boundaryCount !== lastBoundary) {
         lastBoundary = boundaryCount;
         const visibleLength = plan.boundaries[boundaryCount - 1] ?? 0;
@@ -60,10 +77,11 @@ export function MiraProgressiveAnswer({
     return () => window.cancelAnimationFrame(frame);
   }, [animate, plan, text]);
 
+  const shouldAnimate = animate && text.length > 0 && !prefersReducedMotion();
   const current =
     reveal.text === text
       ? reveal
-      : { text, visibleLength: animate ? 0 : text.length, animating: animate && text.length > 0 };
+      : { text, visibleLength: shouldAnimate ? 0 : text.length, animating: shouldAnimate };
   const wrapperClassName = [className, "min-w-0 max-w-full"].filter(Boolean).join(" ");
 
   if (!current.animating) {

@@ -941,6 +941,7 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
   text-overflow: ellipsis;
 }
 
+
 /* Targeted mobile review fixes: preserve the existing layouts and give content room to wrap. */
 @media (max-width: 767px) {
   html[data-design-style] .alo-area-sheet {
@@ -1148,6 +1149,7 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
   }
 }
 
+
 @media (max-width: 767px) {
   html[data-design-style] .alo-area-sheet .sport-area-menu {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1224,10 +1226,6 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
     max-width: 80rem;
   }
 
-  html[data-design-style] main.alo-tablet-home-page {
-    max-width: 32rem;
-  }
-
   html[data-design-style] main.classic-only.alo-tablet-mira {
     max-width: 56rem;
   }
@@ -1283,13 +1281,17 @@ html[data-design-style] .alo-chat-quick-options .community-quick-replies button:
     white-space: normal;
   }
 
-  html[data-design-style] .alo-tablet-home-more > nav {
+  html[data-design-style] .alo-tablet-home-tools {
+    max-width: 42rem;
+  }
+
+  html[data-design-style] .alo-tablet-home-hub details > nav {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   html[data-design-style] .alo-tablet-home-page #training-overview {
     width: 100%;
-    max-width: 32rem;
+    max-width: 76rem;
     margin-inline: auto;
   }
 

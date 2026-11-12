@@ -258,26 +258,29 @@ test("Echo-Heuristik erlaubt ausdrückliche kurze Unterbrechungen", () => {
 });
 
 test("Integration behält bearbeitbares Diktat und sendet Sprachturns text-only über submit", () => {
-  const dialog = readFileSync("src/components/mira/MiraVoiceChatDialog.tsx", "utf8");
   const conversationDialog = readFileSync(
     "src/components/mira/MiraVoiceConversationDialog.tsx",
     "utf8",
   );
+  const voiceStyles = readFileSync("src/mira-voice.css", "utf8");
   const page = readFileSync("src/components/mira/SuperAiPage.tsx", "utf8");
+  const settingsControls = readFileSync("src/components/mira/MiraAppSettingsControls.tsx", "utf8");
+  const speechSettings = readFileSync("src/components/mira/MiraSpeechPrivacySettings.tsx", "utf8");
 
-  assert.match(dialog, /Erkannten Text bearbeiten/);
-  assert.match(dialog, /Mira wird nicht automatisch kontaktiert/);
+  assert.match(conversationDialog, /mira-voice-dialog fixed inset-0/);
+  assert.match(conversationDialog, /mira-voice-orb/);
+  assert.doesNotMatch(conversationDialog, /ChatGPT/);
+  assert.match(conversationDialog, /onClick=\{micAction\}/);
+  assert.match(conversationDialog, /phase === "speaking" \? onInterruptSpeech/);
+  assert.match(voiceStyles, /prefers-reduced-motion/);
   assert.match(page, /includeAttachments: false/);
   assert.match(page, /preserveComposer: true/);
   assert.match(page, /submitRef\.current\(transcript, messagesRef\.current/);
   assert.match(page, /<MiraVoiceConversationDialog/);
-  assert.match(
-    conversationDialog,
-    /Mira erhält nur den erkannten Text, keine rohe Mikrofonaufnahme/,
-  );
-  assert.match(conversationDialog, /Je nach Browser kann dafür Audio/);
-  assert.match(conversationDialog, /Bereits gesendete Anfragen lassen sich hier nicht zurückholen/);
-  assert.match(conversationDialog, /wird nach dem Beenden aber nicht mehr vorgelesen/);
-  assert.match(conversationDialog, /onClick=\{onInterruptSpeech\}/);
-  assert.match(conversationDialog, /Gespräch beenden/);
+  assert.equal((page.match(/<MiraAppSettingsControls\b/g) ?? []).length, 2);
+  assert.match(settingsControls, /<MiraSpeechPrivacySettings \/>/);
+  assert.match(speechSettings, /Mira erhält erkannten Text, keine rohe Mikrofonaufnahme/);
+  assert.doesNotMatch(conversationDialog, /mira-voice-info|Browser-Spracherkennungsdienst/);
+  assert.match(conversationDialog, /onClick=\{\(\) => onOpenChange\(false\)\}/);
+  assert.match(conversationDialog, /Sprachgespräch beenden und Mikrofon ausschalten/);
 });

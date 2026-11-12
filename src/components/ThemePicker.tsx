@@ -90,14 +90,14 @@ export function ThemePicker({
           >
             <span className="block text-sm font-semibold">Klassischer Gesamtlook</span>
             <span className="mt-1 block text-xs text-muted-foreground">
-              Bisheriger Soft-Stil · Health-Orange · Homebar oben
+              Vertraute Soft-Karten · warmes Orange · klassisches Layout
             </span>
           </button>
         </div>
       </div>
       <p className="mb-3 text-sm text-muted-foreground">
-        {THEMES.length} Farbwelten – von hell und ruhig bis dunkel und kontrastreich. Deine Auswahl
-        verändert die gesamte App sofort.
+        {THEMES.length} Farbwelten für den appweiten Farblook. Die Auswahl wirkt sofort; Stil,
+        Navigation und Menü-Akzentfarbe bleiben separat.
       </p>
       <div
         role="group"

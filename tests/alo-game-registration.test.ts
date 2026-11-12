@@ -5,6 +5,10 @@ import { test } from "node:test";
 
 const root = process.cwd();
 const home = readFileSync(resolve(root, "src/routes/_authenticated/index.tsx"), "utf8");
+const homeTileBuilder = home.slice(
+  home.indexOf("function buildHomeHubTiles"),
+  home.indexOf("function HomeAppHub"),
+);
 const route = readFileSync(resolve(root, "src/routes/_authenticated/games.tsx"), "utf8");
 const adminFunctions = readFileSync(resolve(root, "src/lib/admin.functions.ts"), "utf8");
 const gameServerFunction = readFileSync(resolve(root, "src/lib/private-game.functions.ts"), "utf8");
@@ -12,17 +16,10 @@ const accessHook = readFileSync(resolve(root, "src/lib/use-private-game-access.t
 
 test("Home surfaces the game hub only after a server-confirmed Admin check", () => {
   assert.match(home, /getAdminAreaAccess\(\)/);
-  const gatedGameIcons = home.match(/\{canSeeAdmin\s*&&\s*\([\s\S]*?\)\}/)?.[0] ?? "";
   assert.match(
-    gatedGameIcons,
-    /<HubGameAppIcon game="grid-defense" title="Grid Defense" artwork="gridDefense" \/>/,
+    homeTileBuilder,
+    /if \(canSeeAdmin\)[\s\S]*?id: "grid-defense"[\s\S]*?game: "grid-defense"[\s\S]*?id: "kupferkern"[\s\S]*?game: "kupferkern"/,
   );
-  assert.match(
-    gatedGameIcons,
-    /<HubGameAppIcon game="kupferkern" title="Kupferkern" artwork="kupferkern" \/>/,
-  );
-  assert.match(home, /function HubGameAppIcon[\s\S]*?to="\/games"[\s\S]*?search=\{\{ game \}\}/);
-  assert.doesNotMatch(home, /title="Admin-Spiele"/);
   assert.match(home, /setCanSeeAdmin\(false\)/);
   assert.match(home, /\}, \[user\.id\]\)/);
   assert.match(

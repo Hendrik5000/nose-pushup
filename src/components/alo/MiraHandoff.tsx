@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { MessageCircle } from "lucide-react";
+import { ContentActionButton } from "./ContentActionButton";
 import { useNavigate } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -16,7 +18,7 @@ export function MiraHandoff({
   label = "Mit Mira besprechen",
   onNavigate,
   className = "text-xs font-semibold text-primary",
-  openOnMount = false,
+  iconOnly = false,
 }: {
   userId: string;
   text: string;
@@ -24,7 +26,7 @@ export function MiraHandoff({
   label?: string;
   onNavigate?: () => void;
   className?: string;
-  openOnMount?: boolean;
+  iconOnly?: boolean;
 }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -33,8 +35,7 @@ export function MiraHandoff({
   const [sessionId, setSessionId] = useState("");
   const [choice, setChoice] = useState<MiraDraftChoice>("append");
   const [status, setStatus] = useState("");
-  const autoOpenHandled = useRef(false);
-  const begin = useCallback(() => {
+  const begin = () => {
     try {
       const id = currentMiraSession();
       setSessionId(id);
@@ -46,16 +47,7 @@ export function MiraHandoff({
     } catch {
       setStatus("Mira-Entwurf konnte nicht gelesen werden. Es wurde nichts geändert.");
     }
-  }, [text]);
-  useEffect(() => {
-    if (!openOnMount) {
-      autoOpenHandled.current = false;
-      return;
-    }
-    if (autoOpenHandled.current) return;
-    autoOpenHandled.current = true;
-    begin();
-  }, [begin, openOnMount]);
+  };
   const preview = previewMiraDraft(existing, incoming, choice);
   const confirm = () => {
     try {
@@ -69,9 +61,13 @@ export function MiraHandoff({
   };
   return (
     <>
-      <button type="button" className={className} onClick={begin}>
-        {label}
-      </button>
+      <ContentActionButton
+        label={label}
+        icon={MessageCircle}
+        iconOnly={iconOnly}
+        className={className}
+        onClick={begin}
+      />
       {!open && status && (
         <p role="status" className="text-xs">
           {status}

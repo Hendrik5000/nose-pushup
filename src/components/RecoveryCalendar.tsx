@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   buildRecoveryWeek,
   summarizeJoints,
+  summarizeJointLoadTrend,
   JOINT_ICONS,
   JOINT_LABELS,
   type DayLoad,
@@ -73,7 +74,7 @@ export function RecoveryCalendar({ userId }: { userId: string | null }) {
         </p>
       ) : (
         <>
-          <div className="mt-3 grid grid-cols-4 gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {summary.map((j) => (
               <div
                 key={j.joint}
@@ -86,10 +87,21 @@ export function RecoveryCalendar({ userId }: { userId: string | null }) {
                 }`}
               >
                 <div className="text-lg leading-none">{JOINT_ICONS[j.joint]}</div>
-                <div className="mt-1 text-[10px] font-medium text-foreground">
+                <div className="mt-1 text-xs font-medium text-foreground">
                   {JOINT_LABELS[j.joint]}
                 </div>
-                <div className="mt-0.5 text-[9px] text-muted-foreground">{j.label}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{j.label}</div>
+                <div className="mt-1 text-xs leading-snug text-muted-foreground">
+                  {(() => {
+                    const trend = summarizeJointLoadTrend(week, j.joint);
+                    return (
+                      <>
+                        <span className="block">{trend.consecutiveLoadDays} Tage in Folge</span>
+                        <span className="block">Trend: {trend.direction}</span>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             ))}
           </div>
@@ -99,13 +111,18 @@ export function RecoveryCalendar({ userId }: { userId: string | null }) {
               <span>7 Tage</span>
               <span>Belastung</span>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1" role="list" aria-label="Belastung der letzten sieben Tage">
               {week.map((d) => {
                 const total = d.loads.wrist + d.loads.shoulder + d.loads.elbow + d.loads.core;
                 const intensity = Math.min(1, total / 8);
                 const dayLabel = d.day.slice(8);
                 return (
-                  <div key={d.day} className="flex flex-1 flex-col items-center gap-1">
+                  <div
+                    key={d.day}
+                    className="flex flex-1 flex-col items-center gap-1"
+                    role="listitem"
+                    aria-label={`${d.day}: ${total} Belastungseinheiten`}
+                  >
                     <div
                       className="w-full rounded-md bg-primary/20"
                       style={{

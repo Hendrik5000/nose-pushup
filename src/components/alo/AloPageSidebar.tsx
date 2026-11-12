@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/sidebar";
 import "@/alo-page-sidebar.css";
 
-export type AloPageSection = "mira" | "nexus" | "health";
+export type AloPageSection = "mira" | "nexus" | "health" | "settings";
 
 type AloSidebarCommand =
   | "mira-new-chat"
@@ -173,6 +173,22 @@ const appMenus: Record<AloPageSection, AppMenu> = {
       { id: "health-activity", label: "Aktivität", Icon: Activity, href: "#health-activity" },
       { id: "health-sleep", label: "Schlaf & Erholung", Icon: Moon, href: "#health-sleep" },
       { id: "health-sources", label: "Datenquellen", Icon: Watch, href: "#health-sources" },
+    ],
+  },
+  settings: {
+    name: "Alo",
+    subtitle: "Persönliche Einstellungen",
+    groupLabel: "Einstellungen & Apps",
+    Icon: Settings2,
+    quickActions: [
+      { id: "settings-quick-apps", label: "Apps öffnen", Icon: Activity, href: "/settings/apps" },
+    ],
+    items: [
+      { id: "settings-home", label: "Einstellungen", Icon: Settings2, href: "/profile" },
+      { id: "settings-apps", label: "Apps", Icon: Activity, href: "/settings/apps" },
+      { id: "settings-mira", label: "Mira", Icon: Bot, href: "/ai" },
+      { id: "settings-nexus", label: "Nexus Chat", Icon: MessageCircle, href: "/chat" },
+      { id: "settings-health", label: "Alo Health", Icon: HeartPulse, href: "/health" },
     ],
   },
 };

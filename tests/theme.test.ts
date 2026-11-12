@@ -82,6 +82,24 @@ test("catalog contains each existing and new theme ID exactly once", () => {
     THEMES.map((theme) => theme.id),
     expected,
   );
+  assert.deepEqual(
+    THEMES.map((theme) => theme.label),
+    [
+      "Orange",
+      "Feuerrot",
+      "Cyan",
+      "Grün",
+      "Violett",
+      "Monochrom",
+      "Tageslicht",
+      "Sand",
+      "Waldgrün",
+      "Mitternacht",
+      "Rosé",
+      "Kontrast",
+      "Eisblau",
+    ],
+  );
   for (const id of expected) assert.equal(isThemeId(id), true);
   assert.equal(isThemeId("not-a-theme"), false);
   assert.equal(isThemeId(null), false);
@@ -98,6 +116,16 @@ test("catalog contains each existing and new theme ID exactly once", () => {
     assert.match(theme.foreground, /^#[\da-f]{6}$/i);
     assert.equal(theme.swatch.length, 2);
   }
+});
+
+test("theme picker uses current palette copy and keeps the menu accent separate", () => {
+  const picker = readFileSync(
+    new URL("../src/components/ThemePicker.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(picker, /Farbwelten für den appweiten Farblook/);
+  assert.match(picker, /Menü-Akzentfarbe bleiben separat/);
+  assert.doesNotMatch(picker, /Bisheriger Soft-Stil|Health-Orange|Homebar oben/);
 });
 
 test("stored theme falls back for SSR, missing and invalid values, and blocked storage", () => {

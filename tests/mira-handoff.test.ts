@@ -105,5 +105,5 @@ test("handoff UI is explicit and editable; ordinary search has no AI call", () =
   const search = readFileSync("src/components/alo/GlobalSearch.tsx", "utf8");
   assert.doesNotMatch(search, /superAiChat|toPayload|pickProvider/);
   const actions = readFileSync("src/components/alo/ContentActions.tsx", "utf8");
-  assert.match(actions, /<MiraHandoff userId={userId} text={text}/);
+  assert.match(actions, /<MiraHandoff\s+userId={userId}\s+text={text}/);
 });

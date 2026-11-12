@@ -2,7 +2,7 @@ import { priorityTasks } from "@/lib/alo-ui";
 import { readAttachment } from "@/lib/alo-attachments";
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ALO_WORKSPACE_TOOLS as TABS } from "@/lib/home-app-menus";
+import { Search, Layers, Plus, CalendarDays, ShieldCheck, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   ALO_EVENT,
@@ -18,7 +18,7 @@ import {
 } from "@/lib/alo-store";
 import { getSyncState, SYNC_EVENT, syncAlo } from "@/lib/alo-sync";
 import { loadRoomsForUser, loadMessages, type LocalRoom } from "@/lib/chat-backend";
-import { loadChatPrefs, countUnread } from "@/lib/chat-extras";
+import { aggregateUnread, loadChatPrefs } from "@/lib/chat-extras";
 import { GlobalSearch } from "./GlobalSearch";
 import { QuickCapture } from "./QuickCapture";
 import { AloPrivacy } from "./AloPrivacy";
@@ -31,7 +31,15 @@ const AREA_LABELS: Record<string, string> = {
   mira: "Mira",
   nexus: "Nexus",
 };
-type Tab = "menu" | (typeof TABS)[number]["id"];
+type Tab = "menu" | "today" | "search" | "capture" | "collections" | "shortcuts" | "privacy";
+const TABS = [
+  { id: "today", label: "Tagesübersicht", icon: CalendarDays },
+  { id: "search", label: "Überall suchen", icon: Search },
+  { id: "capture", label: "Schnell speichern", icon: Plus },
+  { id: "collections", label: "Sammlungen", icon: Layers },
+  { id: "shortcuts", label: "Schnellaktionen", icon: Zap },
+  { id: "privacy", label: "Daten & Datenschutz", icon: ShieldCheck },
+] as const;
 const MENU_LABELS: Record<(typeof TABS)[number]["id"], string> = {
   today: "Heute",
   search: "Suchen",
@@ -224,7 +232,14 @@ function Today({
   const [status, setStatus] = useState("");
   const [chatState, setChatState] = useState<"loading" | "ready" | "error">("loading");
   const [important, setImportant] = useState<
-    Array<{ room: LocalRoom; unread: number; text: string }>
+    Array<{
+      room: LocalRoom;
+      kind: "room";
+      id: string;
+      messages: Array<{ created_at: string; user_id: string; content: string }>;
+      unread: number;
+      text: string;
+    }>
   >([]);
   const taskDetails = useRef<HTMLDetailsElement>(null);
   const [now, setNow] = useState(Date.now());
@@ -249,13 +264,15 @@ function Today({
           if (!available) throw new Error("Raum derzeit nicht verfügbar");
           return {
             room,
-            unread: countUnread(prefs, "room", room.id, messages, userId),
+            kind: "room" as const,
+            id: room.id,
+            messages,
             text: messages.at(-1)?.content ?? "Noch keine Nachrichten",
           };
         }),
       );
       if (active) {
-        setImportant(results);
+        setImportant(aggregateUnread(prefs, results, userId).targets);
         setChatState("ready");
         setStatus(
           rooms.length
@@ -357,7 +374,7 @@ function Today({
               : chatState === "error"
                 ? "Chat-Status nicht verfügbar"
                 : important.length
-                  ? `${important.reduce((sum, r) => sum + r.unread, 0)} ungelesen in Favoriten`
+                  ? `${important.reduce((sum, r) => sum + r.unread, 0)} ungelesen in Favoriten (lokal geladene Nachrichten)`
                   : "Noch keine Favoriten"}
           </p>
           <h3 className="font-semibold">
@@ -368,6 +385,18 @@ function Today({
             {[...important].sort((a, b) => b.unread - a.unread)[0]?.text ??
               "Öffne Nexus und markiere einen Raum als Favoriten."}
           </p>
+          {chatState === "ready" && important.length > 0 && (
+            <ul
+              aria-label="Ungelesene Nachrichten pro favorisiertem Nexus-Raum"
+              className="space-y-1 text-sm"
+            >
+              {important.map(({ room, unread }) => (
+                <li key={room.id}>
+                  {room.name}: {unread} ungelesen
+                </li>
+              ))}
+            </ul>
+          )}
           <Link
             className="alo-text-action"
             to="/chat"

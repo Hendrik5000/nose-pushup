@@ -30,20 +30,14 @@ test("an untouched Calisthenics check-in cannot save default or unreported healt
 
 test("Mira exposes technical model identifiers only through secondary details", () => {
   const ai = read("components/mira/SuperAiPage.tsx");
-  const headerStart = ai.indexOf('sketchLayout ? "alo-mira-sketch-header"');
-  const header = ai.slice(headerStart, ai.indexOf("<MiraGithubRepository />", headerStart));
-  const settingsStart = ai.indexOf('id="mira-settings-panel"');
-  const settings = ai.slice(settingsStart, ai.indexOf("</section>", settingsStart));
-  assert.match(header, /alo-mira-sketch-title">\{activeTitle\}/);
-  assert.match(header, /alo-mira-sketch-provider[\s\S]*?activeProvider\?\.label/);
-  assert.doesNotMatch(header, /activeProvider\.model/);
-  assert.match(
-    settings,
-    /<summary className="cursor-pointer">Technische Details<\/summary>[\s\S]*?activeProvider\.model/,
-  );
+  const replyActions = read("components/mira/MiraAnswerActions.tsx");
   assert.match(
     ai,
-    /<details className="text-\[10px\] text-muted-foreground">[\s\S]*?m\.meta\.task[\s\S]*?m\.meta\.provider[\s\S]*?m\.meta\.model[\s\S]*?<\/details>/,
+    /<strong>\{activeTitle\}<\/strong>[\s\S]*?<summary className="cursor-pointer">Technische Details<\/summary>[\s\S]*?activeProvider\.model/,
+  );
+  assert.match(
+    replyActions,
+    /<details[^>]*>[\s\S]*?aria-label="Technische Details"[\s\S]*?meta\.task[\s\S]*?meta\.provider[\s\S]*?meta\.model[\s\S]*?<\/details>/,
   );
   assert.doesNotMatch(ai, /<span>\{activeProvider\?\.model/);
 });

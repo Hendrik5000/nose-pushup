@@ -1236,7 +1236,9 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                       onOpen={(url, name) => setLightbox({ url, name })}
                     />
                   )}
-                  {m.content && <div className="whitespace-pre-wrap break-words">{m.content}</div>}
+                  {m.content && (
+                    <div className="whitespace-pre-wrap break-words select-text">{m.content}</div>
+                  )}
                   {m.edited_at && <div className="mt-0.5 text-[10px] opacity-60">(bearbeitet)</div>}
                 </div>
 
@@ -1353,8 +1355,9 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
             </span>
             <button
               type="button"
+              aria-label="Antwort abbrechen"
               onClick={() => setReplyTo(null)}
-              className="text-muted-foreground"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               ×
             </button>

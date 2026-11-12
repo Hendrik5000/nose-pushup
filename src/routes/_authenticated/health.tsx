@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { AloHomeLink } from "@/components/AloHomeLink";
+import { AppSettingsGear } from "@/components/settings/AppSettingsGear";
 import { AloPageSidebar, AloPageSidebarTrigger } from "@/components/alo/AloPageSidebar";
 import { SmartwatchPanel } from "@/components/SmartwatchPanel";
 import { HealthConnectPanel } from "@/components/HealthConnectPanel";
 import { WeightTrendCard } from "@/components/WeightTrendCard";
-import { MealPhotoCard } from "@/components/MealPhotoCard";
 import { SleepDebtCard } from "@/components/SleepDebtCard";
 import { WeeklyStepsGoal } from "@/components/WeeklyStepsGoal";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
@@ -52,15 +52,26 @@ function HealthPage() {
   const [weight, setWeight] = useState("");
   const [sleepH, setSleepH] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase
-      .from("health_entries")
-      .select("day, steps, active_kcal, weight_kg, sleep_min, source")
-      .order("day", { ascending: false })
-      .limit(14);
-    setEntries((data ?? []) as Entry[]);
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const { data, error } = await supabase
+        .from("health_entries")
+        .select("day, steps, active_kcal, weight_kg, sleep_min, source")
+        .order("day", { ascending: false })
+        .limit(14);
+      if (error) throw error;
+      setEntries((data ?? []) as Entry[]);
+    } catch {
+      setHistoryError("Der Verlauf konnte nicht geladen werden.");
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -129,9 +140,12 @@ function HealthPage() {
                 <AloPageSidebarTrigger />
                 <AloHomeLink className="px-2 text-[10px]" />
               </div>
-              <span className="health-classic-brand-pill">
-                <HeartPulse aria-hidden="true" /> Alo Health
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="health-classic-brand-pill">
+                  <HeartPulse aria-hidden="true" /> Alo Health
+                </span>
+                <AppSettingsGear appId="health" />
+              </div>
             </div>
             <p className="health-classic-kicker">DEIN WOHLBEFINDEN</p>
             <h1>Gesundheit im Blick</h1>
@@ -241,7 +255,6 @@ function HealthPage() {
                 className="health-classic-widget-card health-classic-sleep-widget"
               >
                 <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
-                <MealPhotoCard />
               </div>
               <div className="health-classic-widget-card">
                 <WeightTrendCard
@@ -324,10 +337,13 @@ function HealthPage() {
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Verlauf
             </h2>
-            {entries.length === 0 ? (
-              <p className="rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground">
-                Noch keine Gesundheitsdaten.
-              </p>
+            {historyLoading || historyError || entries.length === 0 ? (
+              <HistoryNotice
+                loading={historyLoading}
+                error={historyError}
+                onRetry={() => void load()}
+                className="rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground"
+              />
             ) : (
               <ul className="health-classic-history-list">
                 {entries.map((e) => (
@@ -369,6 +385,7 @@ function HealthPage() {
             >
               <AloPageSidebarTrigger />
               <AloHomeLink />
+              <AppSettingsGear appId="health" className="ml-auto" />
             </SportPageIntro>
           </div>
           <nav className="health-category-nav" aria-label="Gesundheitsbereiche">
@@ -520,7 +537,6 @@ function HealthPage() {
             <div className="space-y-5">
               <WeeklyStepsGoal todaySteps={glanceSteps} />
               <SleepDebtCard sleepMinutes={week.map((e) => e.sleep_min)} />
-              <MealPhotoCard />
             </div>
             <WeightTrendCard
               points={entries
@@ -596,10 +612,13 @@ function HealthPage() {
             </button>
           </section>
           <SportSectionLabel number="03">Verlauf · letzte 14 Tage</SportSectionLabel>
-          {entries.length === 0 ? (
-            <p className="rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground">
-              Noch keine Gesundheitsdaten.
-            </p>
+          {historyLoading || historyError || entries.length === 0 ? (
+            <HistoryNotice
+              loading={historyLoading}
+              error={historyError}
+              onRetry={() => void load()}
+              className="rounded-2xl border border-border/70 bg-card/60 p-5 text-sm text-muted-foreground"
+            />
           ) : (
             <ul className="grid gap-3 md:grid-cols-2">
               {entries.map((e) => (
@@ -639,6 +658,39 @@ function HealthPage() {
         </main>
       </DesignView>
     </AloPageSidebar>
+  );
+}
+
+function HistoryNotice({
+  loading,
+  error,
+  onRetry,
+  className,
+}: {
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  className: string;
+}) {
+  if (loading)
+    return (
+      <p role="status" className={className}>
+        Lade Gesundheitsdaten…
+      </p>
+    );
+  if (!error) return <p className={className}>Noch keine Gesundheitsdaten.</p>;
+
+  return (
+    <div role="alert" className={className}>
+      <p>{error}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-3 min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-foreground hover:border-primary/50"
+      >
+        Erneut versuchen
+      </button>
+    </div>
   );
 }
 

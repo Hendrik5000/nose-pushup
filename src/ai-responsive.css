@@ -159,8 +159,7 @@ html[data-design-style="performance"] .sport-chat-composer {
   html[data-design-style="performance"] .sport-chat-composer,
   html[data-design-style="performance"] .sport-ai-chat-mode .sport-ai-chat-options,
   html[data-design-style="performance"] .alo-classic-mira-options,
-  html[data-design-style="performance"] .alo-classic-composer,
-  html[data-design-style="performance"] .alo-classic-mira-messages {
+  html[data-design-style="performance"] .alo-classic-composer {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     background: var(--card) !important;

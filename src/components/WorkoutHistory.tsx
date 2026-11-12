@@ -6,7 +6,17 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getTrainingWeekBounds, localDateKey } from "@/lib/training-dates";
 import { readWorkoutMetadata } from "@/lib/workout-session";
-import { historyExercise, loadWorkoutHistory, type HistoryWorkout } from "@/lib/workout-history";
+import {
+  filterWorkoutHistory,
+  formatWorkoutDaySummary,
+  historyExercise,
+  loadWorkoutHistory,
+  serializeWorkoutHistoryCsv,
+  summarizeWorkoutDays,
+  workoutHistoryStartDay,
+  type HistoryWorkout,
+  type WorkoutHistoryRange,
+} from "@/lib/workout-history";
 
 const DAYS = 35; // 5 weeks
 
@@ -44,6 +54,9 @@ const WEEKDAY_ABBR = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 export function WorkoutHistory({ userId }: { userId: string }) {
   const [attempt, setAttempt] = useState(0);
+  const [rangeDays, setRangeDays] = useState<WorkoutHistoryRange>(35);
+  const [exerciseFilter, setExerciseFilter] = useState("all");
+  const [copyStatus, setCopyStatus] = useState("");
   const [history, setHistory] = useState<{
     ownerId: string;
     status: "loading" | "ready" | "error";
@@ -55,7 +68,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
     setHistory({ ownerId: userId, status: "loading", rows: [] });
     if (!userId) return;
     void (async () => {
-      const fromDate = dateStr(DAYS - 1);
+      const fromDate = workoutHistoryStartDay(rangeDays);
       const until = new Date().toISOString();
       try {
         const rows = await loadWorkoutHistory(
@@ -79,19 +92,25 @@ export function WorkoutHistory({ userId }: { userId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [userId, attempt]);
+  }, [userId, attempt, rangeDays]);
 
   // Ownership is checked during render, before a changed user's effect runs.
   const loading = history.ownerId !== userId || history.status === "loading";
   const loadError = history.ownerId === userId && history.status === "error";
   const recentWorkouts =
     history.ownerId === userId && history.status === "ready" ? history.rows : [];
+  const filteredSessions = filterWorkoutHistory(recentWorkouts, exerciseFilter);
+  const daySummaries = summarizeWorkoutDays(filteredSessions);
   const stats = new Map<string, number>();
   for (const row of recentWorkouts) {
     if (row.exercise_id !== "pushup") continue;
     const day = localDateKey(new Date(row.created_at));
+    if (day < dateStr(DAYS - 1)) continue;
     stats.set(day, (stats.get(day) ?? 0) + row.count);
   }
+  const exerciseOptions = [...new Set(recentWorkouts.map((row) => row.exercise_id))].sort((a, b) =>
+    historyExercise(a).name.localeCompare(historyExercise(b).name, "de"),
+  );
 
   // Build 5-week grid (35 cells, oldest first)
   const days: string[] = [];
@@ -117,10 +136,47 @@ export function WorkoutHistory({ userId }: { userId: string }) {
     0,
   );
   const trainedDays = days.filter((d) => (stats.get(d) ?? 0) > 0).length;
+  const rangeControl = (
+    <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground">
+      Einheiten
+      <select
+        aria-label="Zeitraum für Trainingsverlauf"
+        value={rangeDays}
+        onChange={(event) => setRangeDays(Number(event.target.value) as WorkoutHistoryRange)}
+        className="min-h-11 rounded-lg border border-border bg-background px-2 text-foreground"
+      >
+        <option value={35}>35 Tage</option>
+        <option value={90}>90 Tage</option>
+      </select>
+    </label>
+  );
+  const copySummary = async (summary: (typeof daySummaries)[number]) => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(formatWorkoutDaySummary(summary));
+      setCopyStatus("Tageszusammenfassung kopiert.");
+    } catch {
+      setCopyStatus("Kopieren ist in diesem Browser nicht verfügbar.");
+    }
+  };
+  const downloadCsv = () => {
+    const blob = new Blob(["\uFEFF", serializeWorkoutHistoryCsv(filteredSessions)], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `alo-trainingsverlauf-${rangeDays}-tage.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
 
   if (loading) {
     return (
       <div className="rounded-2xl border border-border bg-card/50 p-4 text-center text-xs text-muted-foreground backdrop-blur">
+        <div className="mb-2 flex justify-center">{rangeControl}</div>
         Lade Verlauf…
       </div>
     );
@@ -130,6 +186,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
     return (
       <div role="alert" className="rounded-2xl border border-border p-4 text-sm">
         <p>Verlauf konnte nicht vollständig geladen werden.</p>
+        <div className="mt-2">{rangeControl}</div>
         <button
           type="button"
           className="mt-2 min-h-11 font-medium text-primary"
@@ -142,10 +199,11 @@ export function WorkoutHistory({ userId }: { userId: string }) {
   if (!recentWorkouts.length)
     return (
       <section className="rounded-2xl border border-border bg-card p-4">
+        <div className="mb-2">{rangeControl}</div>
         <h3 className="font-semibold">Noch keine Daten</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          In den letzten 35 Tagen wurden keine Einheiten gefunden. Hier erscheinen deine letzten
-          Trainings und dein Fortschritt.
+          In den letzten {rangeDays} Tagen wurden keine Einheiten gefunden. Hier erscheinen deine
+          letzten Trainings und dein Fortschritt.
         </p>
       </section>
     );
@@ -156,6 +214,7 @@ export function WorkoutHistory({ userId }: { userId: string }) {
         <h3 className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
           Verlauf
         </h3>
+        {rangeControl}
         <div className="flex gap-3 text-[10px] text-muted-foreground">
           <span>
             <span className="font-semibold text-foreground">{trainedDays}</span> Tage mit
@@ -169,6 +228,11 @@ export function WorkoutHistory({ userId }: { userId: string }) {
           </span>
         </div>
       </div>
+      {copyStatus && (
+        <p role="status" className="text-xs text-muted-foreground">
+          {copyStatus}
+        </p>
+      )}
 
       <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-foreground">
         <span className="font-semibold">Momentum:</span>{" "}
@@ -204,19 +268,23 @@ export function WorkoutHistory({ userId }: { userId: string }) {
 
       {/* 5-week heatmap */}
       <div>
-        <div className="grid grid-cols-7 gap-[3px] text-[8px] text-muted-foreground mb-1">
+        <div className="grid grid-cols-7 gap-[3px] text-[10px] text-muted-foreground mb-1">
           {DAY_LABELS.map((l) => (
             <div key={l} className="text-center">
               {l}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-[3px]">
+        <div
+          className="grid grid-cols-7 gap-[3px]"
+          role="group"
+          aria-label="Trainingsaktivität nach Tag der letzten fünf Wochen"
+        >
           {/* padding before first day */}
           {Array(padBefore)
             .fill(null)
             .map((_, i) => (
-              <div key={`pad-${i}`} className="aspect-square" />
+              <div key={`pad-${i}`} className="aspect-square" aria-hidden="true" />
             ))}
           {days.map((d) => {
             const reps = stats.get(d) ?? 0;
@@ -226,6 +294,8 @@ export function WorkoutHistory({ userId }: { userId: string }) {
               <div
                 key={d}
                 title={reps > 0 ? `${d}: ${reps} Wiederholungen` : d}
+                role="img"
+                aria-label={`${d}: ${reps} Wiederholungen`}
                 className={`aspect-square rounded-[3px] ${CELL_COLORS[level]} ${
                   isToday ? "ring-1 ring-primary ring-offset-1 ring-offset-background" : ""
                 }`}
@@ -235,13 +305,89 @@ export function WorkoutHistory({ userId }: { userId: string }) {
         </div>
       </div>
 
+      {/* Daily summaries complement, but never replace, individual sessions. */}
+      {daySummaries.length > 0 && (
+        <section aria-label="Tageszusammenfassungen" className="space-y-2">
+          <h4 className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
+            Tageszusammenfassungen
+          </h4>
+          {daySummaries.map((summary) => (
+            <div
+              key={`${summary.day}-${summary.exerciseId}`}
+              className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground">{summary.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(`${summary.day}T12:00:00`).toLocaleDateString("de-DE", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })}{" "}
+                  · {summary.sessions} {summary.sessions === 1 ? "Session" : "Sessions"}
+                </p>
+              </div>
+              <div className="ml-3 flex shrink-0 items-center gap-2">
+                <p className="text-xs font-semibold tabular-nums text-foreground">
+                  {summary.total.toLocaleString("de-DE")}
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    {summary.unit === "seconds" ? "Sek." : summary.unit === "reps" ? "Wdh." : ""}
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  aria-label={`Tageszusammenfassung kopieren: ${summary.name}`}
+                  className="min-h-11 rounded-lg px-2 text-xs text-primary"
+                  onClick={() => void copySummary(summary)}
+                >
+                  Kopieren
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
       {/* Recent sessions */}
       {recentWorkouts.length > 0 && (
         <div className="space-y-1.5 pt-1">
-          <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Letzte Trainings
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Letzte Trainings
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="sr-only" htmlFor="alo-history-exercise-filter">
+                Trainings nach Übung filtern
+              </label>
+              <select
+                id="alo-history-exercise-filter"
+                aria-label="Trainings nach Übung filtern"
+                value={exerciseFilter}
+                onChange={(event) => setExerciseFilter(event.target.value)}
+                className="min-h-11 rounded-lg border border-border bg-background px-2 text-xs"
+              >
+                <option value="all">Alle Übungen</option>
+                {exerciseOptions.map((id) => (
+                  <option key={id} value={id}>
+                    {historyExercise(id).name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={filteredSessions.length === 0}
+                onClick={downloadCsv}
+                className="min-h-11 rounded-lg border border-border px-3 text-xs font-medium disabled:opacity-50"
+              >
+                CSV herunterladen
+              </button>
+            </div>
           </div>
-          {recentWorkouts.slice(0, 6).map((w) => {
+          {filteredSessions.length === 0 && (
+            <p className="rounded-xl border border-border/60 px-3 py-2 text-xs text-muted-foreground">
+              Für diese Übung wurden im Zeitraum keine Einheiten gefunden.
+            </p>
+          )}
+          {filteredSessions.slice(0, 6).map((w) => {
             let meta = null;
             try {
               meta = readWorkoutMetadata(window.localStorage, userId, w.id);
