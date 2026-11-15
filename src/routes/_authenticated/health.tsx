@@ -20,6 +20,7 @@ import { WaterTracker } from "@/components/WaterTracker";
 import { MoodCheckin } from "@/components/MoodCheckin";
 import { GymVisitCalendar } from "@/components/GymVisitCalendar";
 import { SmartRestTimer } from "@/components/SmartRestTimer";
+import { HealthToolbox } from "@/components/HealthToolbox";
 
 export const Route = createFileRoute("/_authenticated/health")({
   head: () => ({
@@ -354,6 +355,13 @@ function HealthPage() {
             </div>
           </section>
 
+          <section className="health-classic-toolbox" aria-labelledby="health-toolbox-title">
+            <h2 className="health-classic-section-heading" id="health-toolbox-title">
+              Werkzeuge &amp; Einblicke
+            </h2>
+            <HealthToolbox entries={entries} />
+          </section>
+
           <section id="health-sources" tabIndex={-1} className="health-classic-sources">
             <h2 className="health-classic-section-heading">Verbundene Datenquellen</h2>
             <div className="health-classic-sources-grid">
@@ -661,7 +669,11 @@ function HealthPage() {
               </button>
             )}
           </section>
-          <SportSectionLabel number="02">Verbundene Datenquellen</SportSectionLabel>
+          <SportSectionLabel number="02">Werkzeuge &amp; Einblicke</SportSectionLabel>
+          <section aria-label="Werkzeuge und Einblicke">
+            <HealthToolbox entries={entries} />
+          </section>
+          <SportSectionLabel number="03">Verbundene Datenquellen</SportSectionLabel>
           <div id="health-sources" tabIndex={-1} className="grid gap-4 md:grid-cols-2">
             <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
               <h2 className="mb-4 text-lg font-bold">Google Health Connect</h2>
@@ -672,7 +684,7 @@ function HealthPage() {
               <SmartwatchPanel />
             </section>
           </div>
-          <SportSectionLabel number="03">Eintrag erfassen</SportSectionLabel>
+          <SportSectionLabel number="04">Eintrag erfassen</SportSectionLabel>
           <section
             id="health-entry"
             tabIndex={-1}
@@ -728,7 +740,7 @@ function HealthPage() {
               {busy ? "Speichere…" : "Werte speichern"}
             </button>
           </section>
-          <SportSectionLabel number="04">Verlauf · letzte 14 Tage</SportSectionLabel>
+          <SportSectionLabel number="05">Verlauf · letzte 14 Tage</SportSectionLabel>
           {historyLoading || historyError || entries.length === 0 ? (
             <HistoryNotice
               loading={historyLoading}
