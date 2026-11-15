@@ -203,7 +203,7 @@ const BUNDLED_MARKETPLACE_CATALOG = [
     version: "1.0.0",
     publisher: "Alo",
     category: "app",
-    description: "Öffnet das vorhandene, Admin-geschützte Grid-Defense-Spiel.",
+    description: "Öffnet das vorhandene Grid-Defense-Spiel – auch ohne Anmeldung spielbar.",
     icon: "game",
     permissions: ["alo.navigate"],
     action: { type: "open-game", gameId: "grid-defense" },
@@ -214,7 +214,7 @@ const BUNDLED_MARKETPLACE_CATALOG = [
     version: "1.0.0",
     publisher: "Alo",
     category: "app",
-    description: "Öffnet das vorhandene, Admin-geschützte Spiel Kupferkern.",
+    description: "Öffnet das vorhandene Kupferkern-Spiel – auch ohne Anmeldung spielbar.",
     icon: "game",
     permissions: ["alo.navigate"],
     action: { type: "open-game", gameId: "kupferkern" },
@@ -591,7 +591,7 @@ export function describeMarketplacePermissions(manifestInput: unknown): readonly
     }
     if (permission === "alo.navigate" && action.type === "open-game") {
       const name = nameForGame(action.gameId) ?? action.gameId;
-      return `Öffnet nur das vorhandene Alo-Spiel „${name}“ nach deinem Tippen. Der bestehende Admin-Schutz gilt weiter; das Plugin führt keinen eigenen Code aus.`;
+      return `Öffnet nur das vorhandene Alo-Spiel „${name}“ nach deinem Tippen. Das Spiel läuft isoliert in einer abgesicherten Ansicht; das Plugin führt keinen eigenen Code aus.`;
     }
     if (permission === "alo.open-existing-tool" && action.type === "open-tool") {
       const name =
@@ -750,3 +750,4 @@ export function saveMarketplaceInstallState(
   const state = parseMarketplaceInstallState(stateInput);
   storage.setItem(marketplaceInstallStorageKey(userId), JSON.stringify(state));
 }
+

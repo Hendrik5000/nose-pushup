@@ -343,7 +343,7 @@ test("Marketplace Admin access is bound to the current account during either swi
 test("Marketplace implementation has no executable plugin or network primitives", () => {
   const library = readFileSync(new URL("../src/lib/marketplace.ts", import.meta.url), "utf8");
   const route = readFileSync(
-    new URL("../src/routes/_authenticated/marketplace.tsx", import.meta.url),
+    new URL("../src/routes/marketplace.tsx", import.meta.url),
     "utf8",
   );
   const catalog = readFileSync(
@@ -358,26 +358,19 @@ test("Marketplace implementation has no executable plugin or network primitives"
     );
   }
   assert.doesNotMatch(route, /srcDoc|<script\b/i);
-  assert.match(
-    route,
-    /beforeLoad:[\s\S]*?getAdminAreaAccess\(\)[\s\S]*?isMarketplaceAdminAccessGranted\([\s\S]*?redirect/,
-  );
-  assert.match(route, /if \(!isMarketplaceAdmin\) return null/);
-  assert.match(route, /getAdminAreaAccess\(\)[\s\S]*?setAdminAccess\(\{ userId, isAdmin:/);
-  assert.match(route, /isMarketplaceAdminForUser\(adminAccess, userId\)/);
-  assert.match(route, /roleCheckComplete && !isMarketplaceAdmin/);
-  for (const handler of ["onInstall", "onToggle", "onRemove", "onOpenPlugin"]) {
-    assert.match(
-      route,
-      new RegExp(`const ${handler} = [\\s\\S]*?runMarketplaceAdminAction\\(isMarketplaceAdmin`),
-    );
-  }
+  assert.match(route, /createFileRoute\("\/marketplace"\)/);
   assert.doesNotMatch(
     route,
-    /\.rpc\s*\(|grantAdminAccess|revokeAdminAccess|grant_global_role|revoke_global_role|list_admin_role_assignments/,
+    /beforeLoad|redirect\(|requireSupabaseAuth|runMarketplaceAdminAction/,
   );
-  assert.match(route, /<MarketplaceContent key=\{user\.id\} userId=\{user\.id\}/);
+  assert.match(route, /supabase\.auth\.getSession\(\)/);
+  assert.match(route, /onAuthStateChange/);
+  assert.match(route, /getAdminAreaAccess\(\)[\s\S]*?setAdminAccess\(\{ userId, isAdmin:/);
+  assert.match(route, /isMarketplaceAdminForUser\(adminAccess, userId\)/);
+  assert.match(route, /isMarketplaceAdmin && <MarketplaceCustomApps/);
+  assert.match(route, /<MarketplaceContent key=\{userId\} userId=\{userId\}/);
   assert.match(route, /saveMarketplaceInstallState\(window\.localStorage, userId, next\)/);
   assert.match(route, /Änderung nicht gespeichert/);
   assert.ok(MARKETPLACE_CATALOG.every((plugin) => typeof plugin.action !== "function"));
 });
+

@@ -138,31 +138,37 @@ function buildHomeHubTiles(
     },
   ];
   if (canSeeAdmin) {
-    tiles.push(
-      { kind: "standard", id: "admin", title: "Admin", artwork: "admin", to: "/admin" },
-      {
-        kind: "standard",
-        id: "marketplace",
-        title: "Marketplace",
-        artwork: "marketplace",
-        to: "/marketplace",
-      },
-      {
-        kind: "game",
-        id: "grid-defense",
-        title: "Grid Defense",
-        artwork: "gridDefense",
-        game: "grid-defense",
-      },
-      {
-        kind: "game",
-        id: "kupferkern",
-        title: "Kupferkern",
-        artwork: "kupferkern",
-        game: "kupferkern",
-      },
-    );
+    tiles.push({
+      kind: "standard",
+      id: "admin",
+      title: "Admin",
+      artwork: "admin",
+      to: "/admin",
+    });
   }
+  tiles.push({
+    kind: "standard",
+    id: "marketplace",
+    title: "Marketplace",
+    artwork: "marketplace",
+    to: "/marketplace",
+  });
+  tiles.push(
+    {
+      kind: "game",
+      id: "grid-defense",
+      title: "Grid Defense",
+      artwork: "gridDefense",
+      game: "grid-defense",
+    },
+    {
+      kind: "game",
+      id: "kupferkern",
+      title: "Kupferkern",
+      artwork: "kupferkern",
+      game: "kupferkern",
+    },
+  );
   tiles.push(
     {
       kind: "standard",
@@ -2004,3 +2010,4 @@ function Dashboard() {
     </main>
   );
 }
+

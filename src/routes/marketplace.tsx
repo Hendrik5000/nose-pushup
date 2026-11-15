@@ -1,9 +1,10 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
 import { MarketplaceAppCatalog } from "@/components/marketplace/MarketplaceAppCatalog";
 import { MarketplaceCustomApps } from "@/components/marketplace/MarketplaceCustomApps";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
+import { supabase } from "@/integrations/supabase/client";
 import {
   disableMarketplacePlugin,
   EMPTY_MARKETPLACE_INSTALL_STATE,
@@ -16,30 +17,21 @@ import {
   MARKETPLACE_CATALOG,
   marketplaceInstallStorageKey,
   removeMarketplacePlugin,
-  runMarketplaceAdminAction,
   saveMarketplaceInstallState,
   type MarketplaceInstallState,
 } from "@/lib/marketplace";
 
-export const Route = createFileRoute("/_authenticated/marketplace")({
+export const Route = createFileRoute("/marketplace")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Marketplace — Alo" },
       {
         name: "description",
-        content: "Kuratierte, lokal installierbare Alo-Erweiterungen.",
+        content: "Kuratierte, lokal installierbare Alo-Erweiterungen – Katalog auch ohne Anmeldung.",
       },
     ],
   }),
-  beforeLoad: async () => {
-    let roleAccess = false;
-    try {
-      roleAccess = await getAdminAreaAccess();
-    } catch {
-      roleAccess = false;
-    }
-    if (!isMarketplaceAdminAccessGranted(roleAccess)) throw redirect({ to: "/" });
-  },
   component: MarketplacePage,
 });
 
@@ -49,21 +41,83 @@ type AccountMarketplaceState = {
 };
 
 function MarketplacePage() {
-  const { user } = Route.useRouteContext();
-  return <MarketplaceContent key={user.id} userId={user.id} />;
+  const [userId, setUserId] = useState<string | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        setUserId(data.session?.user?.id ?? null);
+        setSessionChecked(true);
+      })
+      .catch(() => {
+        if (active) setSessionChecked(true);
+      });
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+      setSessionChecked(true);
+    });
+    return () => {
+      active = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (!userId) {
+    return <MarketplaceGuestView sessionChecked={sessionChecked} />;
+  }
+  return <MarketplaceContent key={userId} userId={userId} />;
+}
+
+function MarketplaceGuestView({ sessionChecked }: { sessionChecked: boolean }) {
+  return (
+    <HomeAppMenuLayout
+      eyebrow="ALO · KURATIERT"
+      title="Marketplace"
+      description="Alle kuratierten Alo-Apps, Bereiche und Werkzeuge – auch ohne Anmeldung ansehen."
+    >
+      <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
+        Du siehst den öffentlichen Marketplace-Katalog. Zum Installieren und Öffnen der Apps melde
+        dich mit deinem Alo-Konto an.{" "}
+        <Link
+          to="/auth"
+          className="font-semibold text-primary underline-offset-4 hover:underline"
+        >
+          Zur Anmeldung
+        </Link>
+      </aside>
+      {sessionChecked ? (
+        <MarketplaceAppCatalog
+          plugins={MARKETPLACE_CATALOG}
+          installState={EMPTY_MARKETPLACE_INSTALL_STATE}
+          ready={false}
+          onInstall={() => {}}
+          onToggle={() => {}}
+          onRemove={() => {}}
+          onOpen={() => {}}
+        />
+      ) : (
+        <p className="text-center text-xs text-muted-foreground" role="status">
+          Marketplace wird geladen …
+        </p>
+      )}
+    </HomeAppMenuLayout>
+  );
 }
 
 function MarketplaceContent({ userId }: { userId: string }) {
   const navigate = useNavigate();
   const [adminAccess, setAdminAccess] = useState<{ userId: string; isAdmin: boolean } | null>(null);
-  const roleCheckComplete = adminAccess?.userId === userId;
   const isMarketplaceAdmin = isMarketplaceAdminForUser(adminAccess, userId);
   const [accountState, setAccountState] = useState<AccountMarketplaceState | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const state =
     accountState?.userId === userId ? accountState.state : EMPTY_MARKETPLACE_INSTALL_STATE;
-  const ready = isMarketplaceAdmin && accountState?.userId === userId && !storageError;
+  const ready = accountState?.userId === userId && !storageError;
 
   useEffect(() => {
     let active = true;
@@ -80,11 +134,6 @@ function MarketplaceContent({ userId }: { userId: string }) {
   }, [userId]);
 
   useEffect(() => {
-    if (roleCheckComplete && !isMarketplaceAdmin) void navigate({ to: "/", replace: true });
-  }, [isMarketplaceAdmin, navigate, roleCheckComplete]);
-
-  useEffect(() => {
-    if (!isMarketplaceAdmin) return;
     const load = () => {
       try {
         setAccountState({
@@ -104,85 +153,73 @@ function MarketplaceContent({ userId }: { userId: string }) {
     load();
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, [userId, isMarketplaceAdmin]);
+  }, [userId]);
 
   const persist = (next: MarketplaceInstallState, message: string) => {
-    runMarketplaceAdminAction(isMarketplaceAdmin, () => {
-      try {
-        saveMarketplaceInstallState(window.localStorage, userId, next);
-        setAccountState({ userId, state: next });
-        setStorageError(null);
-        setStatus(message);
-      } catch {
-        setStorageError("Änderung nicht gespeichert. Bitte prüfe den lokalen Browserspeicher.");
-        setStatus("");
-      }
-    });
+    try {
+      saveMarketplaceInstallState(window.localStorage, userId, next);
+      setAccountState({ userId, state: next });
+      setStorageError(null);
+      setStatus(message);
+    } catch {
+      setStorageError("Änderung nicht gespeichert. Bitte prüfe den lokalen Browserspeicher.");
+      setStatus("");
+    }
   };
 
   const onInstall = (pluginId: string, name: string) => {
-    runMarketplaceAdminAction(isMarketplaceAdmin, () => {
-      try {
-        persist(installMarketplacePlugin(state, pluginId), `${name} wurde lokal installiert.`);
-      } catch {
-        setStatus("Dieses Alo-Plugin kann nicht installiert werden.");
-      }
-    });
+    try {
+      persist(installMarketplacePlugin(state, pluginId), `${name} wurde lokal installiert.`);
+    } catch {
+      setStatus("Dieses Alo-Plugin kann nicht installiert werden.");
+    }
   };
 
   const onToggle = (pluginId: string, name: string, enabled: boolean) => {
-    runMarketplaceAdminAction(isMarketplaceAdmin, () => {
-      try {
-        const next = enabled
-          ? disableMarketplacePlugin(state, pluginId)
-          : enableMarketplacePlugin(state, pluginId);
-        persist(next, `${name} wurde ${enabled ? "deaktiviert" : "aktiviert"}.`);
-      } catch {
-        setStatus("Diese Plugin-Änderung ist nicht verfügbar.");
-      }
-    });
+    try {
+      const next = enabled
+        ? disableMarketplacePlugin(state, pluginId)
+        : enableMarketplacePlugin(state, pluginId);
+      persist(next, `${name} wurde ${enabled ? "deaktiviert" : "aktiviert"}.`);
+    } catch {
+      setStatus("Diese Plugin-Änderung ist nicht verfügbar.");
+    }
   };
 
   const onRemove = (pluginId: string, name: string) => {
-    runMarketplaceAdminAction(isMarketplaceAdmin, () => {
-      try {
-        persist(
-          removeMarketplacePlugin(state, pluginId),
-          `${name} wurde von diesem Gerät entfernt.`,
-        );
-      } catch {
-        setStatus("Dieses Alo-Plugin kann nicht entfernt werden.");
-      }
-    });
+    try {
+      persist(
+        removeMarketplacePlugin(state, pluginId),
+        `${name} wurde von diesem Gerät entfernt.`,
+      );
+    } catch {
+      setStatus("Dieses Alo-Plugin kann nicht entfernt werden.");
+    }
   };
 
   const onOpenPlugin = (pluginId: string) => {
-    runMarketplaceAdminAction(isMarketplaceAdmin, () => {
-      const action = getEnabledMarketplaceAction(state, pluginId);
-      if (!action) return;
-      if (action.type === "navigate") {
-        void navigate({ to: action.to });
-      } else if (action.type === "open-game") {
-        void navigate({ to: "/games", search: { game: action.gameId } });
-      } else {
-        window.dispatchEvent(new CustomEvent("alo-open", { detail: action.toolId }));
-      }
-    });
+    const action = getEnabledMarketplaceAction(state, pluginId);
+    if (!action) return;
+    if (action.type === "navigate") {
+      void navigate({ to: action.to });
+    } else if (action.type === "open-game") {
+      void navigate({ to: "/games", search: { game: action.gameId } });
+    } else {
+      window.dispatchEvent(new CustomEvent("alo-open", { detail: action.toolId }));
+    }
   };
-
-  if (!isMarketplaceAdmin) return null;
 
   return (
     <HomeAppMenuLayout
       eyebrow="ALO · KURATIERT"
       title="Marketplace"
-      description="Installiere vorhandene Alo-Apps, Bereiche und Werkzeuge oder entwirf mit Mira eine deklarative Admin-App. Nur ausdrücklich bestätigte Manifeste werden mit den bestehenden Alo-Admins geteilt; ausführbare Plugins gibt es nicht."
+      description="Installiere vorhandene Alo-Apps, Bereiche und Werkzeuge. Mit einem Admin-Konto kannst du zusätzlich mit Mira deklarative Apps entwerfen. Nur ausdrücklich bestätigte Manifeste werden veröffentlicht; ausführbare Plugins gibt es nicht."
     >
       <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
         Persönliche Installationen, Aktivierungen und Versions-Pins werden nur in diesem Browser auf
         diesem Gerät und getrennt nach deinem Alo-Konto gespeichert. Sie werden nicht
         synchronisiert. Ein selbst erstelltes Manifest wird erst nach deiner ausdrücklichen
-        Bestätigung im gemeinsamen Admin-Marketplace veröffentlicht.
+        Bestätigung veröffentlicht.
       </aside>
 
       {isMarketplaceAdmin && <MarketplaceCustomApps userId={userId} isAdmin={isMarketplaceAdmin} />}
