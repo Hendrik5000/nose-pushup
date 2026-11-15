@@ -1,4 +1,4 @@
-import { ArrowRight, Flame, Footprints, HeartPulse, Moon, Plus, Watch } from "lucide-react";
+import { Activity, ArrowRight, Dumbbell, Flame, Footprints, HeartPulse, Moon, Plus, Watch } from "lucide-react";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -14,6 +14,12 @@ import { SleepDebtCard } from "@/components/SleepDebtCard";
 import { WeeklyStepsGoal } from "@/components/WeeklyStepsGoal";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { averageMeasuredHealthValue, measuredHealthValue } from "@/lib/health-glance";
+import { ReadinessCard } from "@/components/ReadinessCard";
+import { RecoveryCalendar } from "@/components/RecoveryCalendar";
+import { WaterTracker } from "@/components/WaterTracker";
+import { MoodCheckin } from "@/components/MoodCheckin";
+import { GymVisitCalendar } from "@/components/GymVisitCalendar";
+import { SmartRestTimer } from "@/components/SmartRestTimer";
 
 export const Route = createFileRoute("/_authenticated/health")({
   head: () => ({
@@ -76,6 +82,32 @@ function HealthPage() {
 
   useEffect(() => {
     void load();
+  }, []);
+
+  // Konto + Streak nur lesend laden (keine DB-Änderung)
+  const [userId, setUserId] = useState<string | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [showRestTimer, setShowRestTimer] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const id = u.user?.id ?? null;
+      if (!active) return;
+      setUserId(id);
+      if (!id) return;
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("current_streak")
+        .eq("id", id)
+        .maybeSingle();
+      if (active && p) {
+        setStreak((p as { current_streak: number | null }).current_streak ?? 0);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const save = async () => {
@@ -166,6 +198,10 @@ function HealthPage() {
             <a href="#health-sleep">
               <Moon aria-hidden="true" />
               <span>Schlaf</span>
+            </a>
+            <a href="#health-fitness">
+              <Dumbbell aria-hidden="true" />
+              <span>Fitness</span>
             </a>
             <a href="#health-sources">
               <Watch aria-hidden="true" />
@@ -262,6 +298,58 @@ function HealthPage() {
                     .filter((e) => e.weight_kg != null)
                     .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
                 />
+              </div>
+            </div>
+          </section>
+
+          <section
+            id="health-fitness"
+            tabIndex={-1}
+            className="health-classic-fitness"
+            aria-labelledby="health-fitness-title"
+          >
+            <h2 className="health-classic-section-heading" id="health-fitness-title">
+              Fitness &amp; Erholung
+            </h2>
+            <p className="health-classic-section-sub">
+              Readiness, Gelenk-Belastung, Wasser, Stimmung, Gym-Besuche und Pausen-Timer –
+              gebündelt an einem Ort.
+            </p>
+            <div className="health-classic-widgets-grid">
+              {userId && (
+                <div className="health-classic-widget-card">
+                  <ReadinessCard userId={userId} streak={streak} />
+                </div>
+              )}
+              {userId && (
+                <div className="health-classic-widget-card">
+                  <RecoveryCalendar userId={userId} />
+                </div>
+              )}
+              <div className="health-classic-widget-card">
+                <WaterTracker />
+              </div>
+              <div className="health-classic-widget-card">
+                <MoodCheckin />
+              </div>
+              {userId && (
+                <div className="health-classic-widget-card">
+                  <GymVisitCalendar userId={userId} />
+                </div>
+              )}
+              <div className="health-classic-widget-card">
+                {showRestTimer ? (
+                  <SmartRestTimer />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowRestTimer(true)}
+                    className="min-h-11 w-full rounded-xl border border-border bg-secondary/50 px-3 text-xs font-semibold"
+                  >
+                    <Activity aria-hidden="true" className="mr-1 inline h-4 w-4" /> Smart
+                    Pausen-Timer starten
+                  </button>
+                )}
               </div>
             </div>
           </section>
@@ -400,6 +488,10 @@ function HealthPage() {
             <a href="#health-sleep">
               <Moon aria-hidden="true" />
               <span>Schlaf</span>
+            </a>
+            <a href="#health-fitness">
+              <Dumbbell aria-hidden="true" />
+              <span>Fitness</span>
             </a>
             <a href="#health-sources">
               <Watch aria-hidden="true" />
@@ -544,7 +636,32 @@ function HealthPage() {
                 .map((e) => ({ day: e.day, weight_kg: e.weight_kg as number }))}
             />
           </div>
-          <SportSectionLabel number="01">Verbundene Datenquellen</SportSectionLabel>
+          <SportSectionLabel number="01">Fitness &amp; Erholung</SportSectionLabel>
+          <section
+            id="health-fitness"
+            tabIndex={-1}
+            className="grid gap-4 md:grid-cols-2"
+            aria-label="Fitness und Erholung gebündelt"
+          >
+            {userId && <ReadinessCard userId={userId} streak={streak} />}
+            {userId && <RecoveryCalendar userId={userId} />}
+            <WaterTracker />
+            <MoodCheckin />
+            {userId && <GymVisitCalendar userId={userId} />}
+            {showRestTimer ? (
+              <SmartRestTimer />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowRestTimer(true)}
+                className="min-h-11 rounded-2xl border border-border/70 bg-card/75 px-4 text-sm font-semibold"
+              >
+                <Activity aria-hidden="true" className="mr-1 inline h-4 w-4" /> Smart Pausen-Timer
+                starten
+              </button>
+            )}
+          </section>
+          <SportSectionLabel number="02">Verbundene Datenquellen</SportSectionLabel>
           <div id="health-sources" tabIndex={-1} className="grid gap-4 md:grid-cols-2">
             <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
               <h2 className="mb-4 text-lg font-bold">Google Health Connect</h2>
@@ -555,7 +672,7 @@ function HealthPage() {
               <SmartwatchPanel />
             </section>
           </div>
-          <SportSectionLabel number="02">Eintrag erfassen</SportSectionLabel>
+          <SportSectionLabel number="03">Eintrag erfassen</SportSectionLabel>
           <section
             id="health-entry"
             tabIndex={-1}
@@ -611,7 +728,7 @@ function HealthPage() {
               {busy ? "Speichere…" : "Werte speichern"}
             </button>
           </section>
-          <SportSectionLabel number="03">Verlauf · letzte 14 Tage</SportSectionLabel>
+          <SportSectionLabel number="04">Verlauf · letzte 14 Tage</SportSectionLabel>
           {historyLoading || historyError || entries.length === 0 ? (
             <HistoryNotice
               loading={historyLoading}
