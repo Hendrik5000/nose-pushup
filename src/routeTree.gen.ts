@@ -23,6 +23,7 @@ import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedBattleLeagueRouteImport } from './routes/_authenticated/battle-league'
 import { Route as AuthenticatedCalisthenicsRouteImport } from './routes/_authenticated/calisthenics'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedBrowserRouteImport } from './routes/_authenticated/browser'
 import { Route as AuthenticatedClubsRouteImport } from './routes/_authenticated/clubs'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedExercisesRouteImport } from './routes/_authenticated/exercises'
@@ -119,6 +120,11 @@ const AuthenticatedCalisthenicsRoute =
 const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBrowserRoute = AuthenticatedBrowserRouteImport.update({
+  id: '/browser',
+  path: '/browser',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedClubsRoute = AuthenticatedClubsRouteImport.update({
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/browser': typeof AuthenticatedBrowserRoute
   '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/exercises': typeof AuthenticatedExercisesRoute
@@ -297,6 +304,7 @@ export interface FileRoutesByTo {
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/browser': typeof AuthenticatedBrowserRoute
   '/clubs': typeof AuthenticatedClubsRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/exercises': typeof AuthenticatedExercisesRoute
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/_authenticated/battle-league': typeof AuthenticatedBattleLeagueRoute
   '/_authenticated/calisthenics': typeof AuthenticatedCalisthenicsRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
+  '/_authenticated/browser': typeof AuthenticatedBrowserRoute
   '/_authenticated/clubs': typeof AuthenticatedClubsRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/exercises': typeof AuthenticatedExercisesRoute
@@ -378,6 +387,7 @@ export interface FileRouteTypes {
     | '/battle-league'
     | '/calisthenics'
     | '/chat'
+    | '/browser'
     | '/clubs'
     | '/coach'
     | '/exercises'
@@ -415,6 +425,7 @@ export interface FileRouteTypes {
     | '/battle-league'
     | '/calisthenics'
     | '/chat'
+    | '/browser'
     | '/clubs'
     | '/coach'
     | '/exercises'
@@ -454,6 +465,7 @@ export interface FileRouteTypes {
     | '/_authenticated/battle-league'
     | '/_authenticated/calisthenics'
     | '/_authenticated/chat'
+    | '/_authenticated/browser'
     | '/_authenticated/clubs'
     | '/_authenticated/coach'
     | '/_authenticated/exercises'
@@ -591,6 +603,13 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof AuthenticatedChatRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/browser': {
+      id: '/_authenticated/browser'
+      path: '/browser'
+      fullPath: '/browser'
+      preLoaderRoute: typeof AuthenticatedBrowserRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clubs': {
@@ -765,6 +784,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBattleLeagueRoute: typeof AuthenticatedBattleLeagueRoute
   AuthenticatedCalisthenicsRoute: typeof AuthenticatedCalisthenicsRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
+  AuthenticatedBrowserRoute: typeof AuthenticatedBrowserRoute
   AuthenticatedClubsRoute: typeof AuthenticatedClubsRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedExercisesRoute: typeof AuthenticatedExercisesRoute
@@ -794,6 +814,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBattleLeagueRoute: AuthenticatedBattleLeagueRoute,
   AuthenticatedCalisthenicsRoute: AuthenticatedCalisthenicsRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
+  AuthenticatedBrowserRoute: AuthenticatedBrowserRoute,
   AuthenticatedClubsRoute: AuthenticatedClubsRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedExercisesRoute: AuthenticatedExercisesRoute,
@@ -846,4 +867,5 @@ declare module '@tanstack/react-start' {
     config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }
+
 
