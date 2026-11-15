@@ -82,6 +82,8 @@ import {
 } from "@/lib/chat-extras";
 import { validateNexusHandoffTarget } from "@/lib/mira-nexus-draft";
 
+import { MessageLinkEmbeds } from "@/components/chat/MessageLinkEmbeds";
+
 type Target = { kind: "room" | "dm"; id: string };
 
 export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
@@ -1239,6 +1241,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                   {m.content && (
                     <div className="whitespace-pre-wrap break-words select-text">{m.content}</div>
                   )}
+                  <MessageLinkEmbeds content={m.content} />
                   {m.edited_at && <div className="mt-0.5 text-[10px] opacity-60">(bearbeitet)</div>}
                 </div>
 
@@ -1589,3 +1592,4 @@ function HeadBtn({
     </button>
   );
 }
+
