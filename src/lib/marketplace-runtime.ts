@@ -94,14 +94,24 @@ export function describeMarketplaceFunctionality(manifest: {
   blocks: readonly { type: string }[];
 }) {
   const actions = manifest.blocks.filter((block) => block.type === "action").length;
-  return manifest.game
-    ? {
-        label: "Spielbares Quiz",
-        detail:
-          "Antworten, Auswertung und Ergebnis laufen direkt in dieser App. Zusätzliche Alo-Ziele öffnen sich nur nach deinem Tippen.",
-      }
-    : {
-        label: "Alo-Schnellzugriff",
-        detail: `${actions} verknüpfte Alo-Ziele. Die Aktionen öffnen vorhandene Funktionen; dieser App-Typ enthält keine eigenen Formulare, Datenspeicher oder Live-Daten.`,
-      };
+  const hasLocalInteractiveBlocks = manifest.blocks.some(
+    (block) => block.type === "stats" || block.type === "checklist",
+  );
+  if (manifest.game) {
+    return {
+      label: "Spielbares Quiz",
+      detail:
+        "Antworten, Auswertung und Ergebnis laufen direkt in dieser App. Zusätzliche Alo-Ziele öffnen sich nur nach deinem Tippen.",
+    };
+  }
+  if (hasLocalInteractiveBlocks) {
+    return {
+      label: "Deklarative Alo-App",
+      detail: `${actions} verknüpfte Alo-Ziele. Statistiken zeigen nur feste Werte und Checklisten bleiben lokal auf diesem Gerät; eigene Formulare, Datenspeicher oder Live-Daten sind nicht enthalten.`,
+    };
+  }
+  return {
+    label: "Alo-Schnellzugriff",
+    detail: `${actions} verknüpfte Alo-Ziele. Die Aktionen öffnen vorhandene Funktionen; dieser App-Typ enthält keine eigenen Formulare, Datenspeicher oder Live-Daten.`,
+  };
 }

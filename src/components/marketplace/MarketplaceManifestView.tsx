@@ -50,6 +50,35 @@ export function MarketplaceManifestView({
             </ul>
           );
         }
+        if (block.type === "stats") {
+          return (
+            <dl key={`stats-${index}`} className="grid grid-cols-2 gap-2">
+              {block.items.map((item, itemIndex) => (
+                <div
+                  key={`stats-${index}-item-${itemIndex}`}
+                  className="rounded-lg border border-border/60 bg-background/60 px-3 py-2"
+                >
+                  <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {item.label}
+                  </dt>
+                  <dd className="mt-0.5 break-words text-sm font-bold">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+          );
+        }
+        if (block.type === "checklist") {
+          return (
+            <MarketplaceChecklistView
+              key={`checklist-${index}`}
+              title={block.title}
+              items={block.items}
+            />
+          );
+        }
+        if (block.type === "divider") {
+          return <hr key={`divider-${index}`} className="border-border/60" />;
+        }
         const registered = getMarketplaceAuthorAction(block.actionId);
         const hostAction: MarketplaceHostAction | null = registered?.action ?? null;
         const needsPermission =
@@ -93,6 +122,54 @@ export function MarketplaceManifestView({
       {manifest.game && (
         <MarketplaceQuizGameView key={JSON.stringify(manifest.game)} game={manifest.game} />
       )}
+    </section>
+  );
+}
+
+function MarketplaceChecklistView({
+  title,
+  items,
+}: {
+  title: string;
+  items: readonly string[];
+}) {
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  const done = items.filter((_, itemIndex) => checked[itemIndex]).length;
+
+  return (
+    <section
+      aria-label={title}
+      className="rounded-xl border border-border/60 bg-background/60 p-3"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-sm font-bold">{title}</h4>
+        <span className="text-[10px] text-muted-foreground" role="status" aria-live="polite">
+          {done} von {items.length} erledigt
+        </span>
+      </div>
+      <ul className="mt-2 space-y-1">
+        {items.map((item, itemIndex) => (
+          <li key={`checklist-${itemIndex}`}>
+            <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-1 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4 shrink-0 accent-primary"
+                checked={Boolean(checked[itemIndex])}
+                onChange={(event) =>
+                  setChecked((current) => ({
+                    ...current,
+                    [itemIndex]: event.target.checked,
+                  }))
+                }
+              />
+              <span className={checked[itemIndex] ? "line-through opacity-60" : ""}>{item}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-[10px] text-muted-foreground">
+        Abhaken bleiben lokal auf diesem Gerät und werden nicht gespeichert.
+      </p>
     </section>
   );
 }
