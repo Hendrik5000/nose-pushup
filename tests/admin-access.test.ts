@@ -16,7 +16,7 @@ const homeTileBuilder = home.slice(
 );
 const route = readFileSync(resolve(root, "src/routes/_authenticated/admin.tsx"), "utf8");
 const marketplaceRoute = readFileSync(
-  resolve(root, "src/routes/_authenticated/marketplace.tsx"),
+  resolve(root, "src/routes/marketplace.tsx"),
   "utf8",
 );
 const functions = readFileSync(resolve(root, "src/lib/admin.functions.ts"), "utf8");
@@ -31,6 +31,21 @@ const schema = readFileSync(resolve(root, "supabase/migrations", schemaPath), "u
 const seed = readFileSync(resolve(root, "supabase/migrations", seedPath), "utf8");
 const listing = readFileSync(resolve(root, "supabase/migrations", listingPath), "utf8");
 
+function adminGateBlock(source: string): string {
+  const start = source.indexOf("if (canSeeAdmin)");
+  assert.ok(start >= 0, "the canSeeAdmin gate should exist");
+  const open = source.indexOf("{", start);
+  let depth = 0;
+  for (let i = open; i < source.length; i += 1) {
+    if (source[i] === "{") depth += 1;
+    else if (source[i] === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(start, i + 1);
+    }
+  }
+  return source.slice(start);
+}
+
 test("only the server-verified owner identity may manage global roles", () => {
   assert.equal(ADMIN_ROLE_MANAGER_USER_ID, "fb92aeaf-8e01-4aa5-b1ce-2ffb6915e78c");
   assert.equal(canManageGlobalRoles(ADMIN_ROLE_MANAGER_USER_ID, false), true);
@@ -43,19 +58,14 @@ test("only the server-verified owner identity may manage global roles", () => {
 test("Admin tile is rendered only after the server-side access function returns true", () => {
   assert.match(home, /getAdminAreaAccess\(\)/);
   assert.match(homeTileBuilder, /if \(canSeeAdmin\)[\s\S]*?id: "admin"[\s\S]*?to: "\/admin"/);
-  assert.match(
-    homeTileBuilder,
-    /if \(canSeeAdmin\)[\s\S]*?id: "marketplace"[\s\S]*?to: "\/marketplace"/,
-  );
+  assert.match(homeTileBuilder, /id: "marketplace"[\s\S]*?to: "\/marketplace"/);
+  assert.doesNotMatch(adminGateBlock(homeTileBuilder), /id: "marketplace"/);
   assert.match(
     home,
     /type HubArtworkKind =[\s\S]*?"admin"[\s\S]*?"gridDefense"[\s\S]*?"kupferkern"/,
   );
   assert.match(route, /beforeLoad:[\s\S]*?getAdminAreaAccess\(\)[\s\S]*?redirect\(\{\s*to:\s*"\/"/);
-  assert.match(
-    marketplaceRoute,
-    /beforeLoad:[\s\S]*?getAdminAreaAccess\(\)[\s\S]*?redirect\(\{\s*to:\s*"\/"/,
-  );
+  assert.doesNotMatch(marketplaceRoute, /beforeLoad|redirect\(/);
   assert.doesNotMatch(
     marketplaceRoute,
     /ADMIN_ROLE_MANAGER_USER_ID|canManageGlobalRoles|grantAdminAccess|revokeAdminAccess|Hendrik|Jan/i,

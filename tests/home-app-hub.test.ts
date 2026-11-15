@@ -52,7 +52,7 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
 test("Home restores Areas, Training/Gym, Tools, and the curated Marketplace as app tiles", () => {
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/areas.tsx")));
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/tools.tsx")));
-  assert.ok(existsSync(resolve(root, "src/routes/_authenticated/marketplace.tsx")));
+  assert.ok(existsSync(resolve(root, "src/routes/marketplace.tsx")));
   assert.match(tileBuilder, /id: "areas"[\s\S]*?to: "\/areas"/);
   assert.match(tileBuilder, /id: "marketplace"[\s\S]*?to: "\/marketplace"/);
   assert.match(hub, /tile\.to === "\/areas"/);
@@ -91,24 +91,41 @@ test("Home restores Areas, Training/Gym, Tools, and the curated Marketplace as a
   assert.match(areasPage, /to=\{to\}/);
 });
 
-test("the Home game tiles require confirmed Admin access and open only protected games", () => {
+function adminGateBlock(source: string): string {
+  const start = source.indexOf("if (canSeeAdmin)");
+  assert.ok(start >= 0, "the canSeeAdmin gate should exist");
+  const open = source.indexOf("{", start);
+  let depth = 0;
+  for (let i = open; i < source.length; i += 1) {
+    if (source[i] === "{") depth += 1;
+    else if (source[i] === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(start, i + 1);
+    }
+  }
+  return source.slice(start);
+}
+
+test("the Home game tiles are public and the Admin tile stays server-gated", () => {
   assert.match(hub, /getAdminAreaAccess\(\)/);
   assert.match(hub, /setCanSeeAdmin\(false\)/);
   assert.match(tileBuilder, /if \(canSeeAdmin\)[\s\S]*?id: "admin"[\s\S]*?to: "\/admin"/);
+  const gate = adminGateBlock(tileBuilder);
+  assert.doesNotMatch(gate, /grid-defense|kupferkern|marketplace/);
   assert.match(tileBuilder, /id: "grid-defense"[\s\S]*?game: "grid-defense"/);
   assert.match(tileBuilder, /id: "kupferkern"[\s\S]*?game: "kupferkern"/);
-  assert.ok(existsSync(resolve(root, "src/routes/_authenticated/games.tsx")));
+  assert.ok(existsSync(resolve(root, "src/routes/games.tsx")));
   assert.match(home, /to="\/games"[\s\S]*search=\{\{ game \}\}/);
   assert.doesNotMatch(hub, /grid-defense\.html|kupferkern\.html|srcDoc=/);
 });
 
-test("Home Admin-only Marketplace entry remounts immediately when the account changes", () => {
+test("Home Marketplace entry is available to every signed-in account and remounts on account change", () => {
   const dashboard = home.slice(dashboardStart);
   assert.match(dashboard, /<HomeAppHub[\s\S]*?key=\{user\.id\}/);
   assert.match(hub, /const \{ user \} = Route\.useRouteContext\(\)/);
   assert.match(hub, /setCanSeeAdmin\(false\)/);
-  assert.match(hub, /getAdminAreaAccess\(\)[\s\S]*?isMarketplaceAdminAccessGranted\(access\)/);
-  assert.match(tileBuilder, /if \(canSeeAdmin\)[\s\S]*?id: "marketplace"/);
+  assert.match(tileBuilder, /id: "marketplace"[\s\S]*?to: "\/marketplace"/);
+  assert.doesNotMatch(adminGateBlock(tileBuilder), /id: "marketplace"/);
 });
 
 test("app artwork is square and original, and training is no longer a collapsible Home card", () => {
@@ -298,3 +315,4 @@ test("secondary-section Home actions remain available in both visual variants", 
     );
   }
 });
+

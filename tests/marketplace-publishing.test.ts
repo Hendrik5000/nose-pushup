@@ -33,7 +33,7 @@ const manifestRenderer = readFileSync(
   `${root}/src/components/marketplace/MarketplaceManifestView.tsx`,
   "utf8",
 );
-const route = readFileSync(`${root}/src/routes/_authenticated/marketplace.tsx`, "utf8");
+const route = readFileSync(`${root}/src/routes/marketplace.tsx`, "utf8");
 
 const VALID_MANIFEST = {
   schemaVersion: 1,
@@ -288,5 +288,5 @@ test("only the fixed renderer is used: no dynamic imports, remote URLs, executab
   assert.ok(effectBodies.some((effect) => effect.includes("listApps()")));
   assert.ok(effectBodies.every((effect) => !effect.includes("generateMarketplaceManifestDraft")));
   assert.match(route, /<MarketplaceCustomApps userId=\{userId\} isAdmin=\{isMarketplaceAdmin\}/);
-  assert.match(route, /if \(!isMarketplaceAdmin\) return null/);
+  assert.doesNotMatch(route, /beforeLoad|redirect\(|runMarketplaceAdminAction/);
 });
