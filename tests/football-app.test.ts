@@ -8,10 +8,14 @@ import {
   currentFootballSeason,
   footballApiUrl,
   formatKickOff,
+  isLiveStatus,
+  matchStatusLabel,
   nationalApiUrl,
   parseFootballMatches,
   parseFootballTable,
   parseNationalEvents,
+  parseSportsDbTable,
+  sportsDbSeason,
 } from "../src/lib/football";
 
 test("currentFootballSeason follows the Bundesliga season turn in August", () => {
@@ -211,6 +215,101 @@ test("parseNationalEvents stays honest without scores or payloads", () => {
   assert.equal(matches[0].kickOffUtc, null);
   assert.deepEqual(parseNationalEvents(null), []);
   assert.deepEqual(parseNationalEvents({ error: "x" }), []);
+});
+
+test("sportsDbSeason follows the European season turn in August", () => {
+  assert.equal(sportsDbSeason(new Date("2026-11-16T12:00:00Z")), "2026-2027");
+  assert.equal(sportsDbSeason(new Date("2026-08-01T00:00:00Z")), "2026-2027");
+  assert.equal(sportsDbSeason(new Date("2026-07-31T23:59:00Z")), "2025-2026");
+});
+
+test("parseSportsDbTable reads string ranks and sorts by position", () => {
+  const table = parseSportsDbTable({
+    table: [
+      {
+        intRank: "3",
+        strTeam: "SSC Napoli",
+        intPlayed: "11",
+        intWin: "7",
+        intDraw: "2",
+        intLoss: "2",
+        intGoalsFor: "21",
+        intGoalsAgainst: "10",
+        intPoints: "23",
+        strForm: "WWLDW",
+      },
+      {
+        intRank: "1",
+        strTeam: "Arsenal",
+        intPlayed: "11",
+        intWin: "9",
+        intDraw: "1",
+        intLoss: "1",
+        intGoalsFor: "24",
+        intGoalsAgainst: "8",
+        intPoints: "28",
+        strForm: "WWWWD",
+      },
+      { intRank: "2", strTeam: "" },
+      null,
+    ],
+  });
+  assert.deepEqual(
+    table.map(({ name }) => name),
+    ["Arsenal", "SSC Napoli"],
+  );
+  assert.equal(table[0].position, 1);
+  assert.equal(table[0].points, 28);
+  assert.equal(table[1].matches, 11);
+});
+
+test("parseSportsDbTable rejects non-array payloads", () => {
+  assert.deepEqual(parseSportsDbTable(null), []);
+  assert.deepEqual(parseSportsDbTable({ error: "x" }), []);
+});
+
+test("isLiveStatus and matchStatusLabel map TheSportsDB statuses honestly", () => {
+  assert.equal(isLiveStatus("1H"), true);
+  assert.equal(isLiveStatus("HT"), true);
+  assert.equal(isLiveStatus("2H"), true);
+  assert.equal(isLiveStatus("ET"), true);
+  assert.equal(isLiveStatus("P"), true);
+  assert.equal(isLiveStatus("NS"), false);
+  assert.equal(isLiveStatus(""), false);
+  assert.equal(isLiveStatus("FT"), false);
+  assert.equal(isLiveStatus("Postponed"), false);
+  assert.equal(isLiveStatus(null), false);
+  assert.equal(matchStatusLabel("1H"), "1. Halbzeit");
+  assert.equal(matchStatusLabel("HT"), "Halbzeitpause");
+  assert.equal(matchStatusLabel("2H"), "2. Halbzeit");
+  assert.equal(matchStatusLabel("ET"), "Verl\u00e4ngerung");
+  assert.equal(matchStatusLabel("P"), "Elfmeterschie\u00dfen");
+  assert.equal(matchStatusLabel("FT"), "Beendet");
+  assert.equal(matchStatusLabel("Postponed"), "Verschoben");
+  assert.equal(matchStatusLabel("NS"), "Angesetzt");
+});
+
+test("parseNationalEvents keeps status, venue and round for league matches", () => {
+  const matches = parseNationalEvents({
+    events: [
+      {
+        idEvent: "2443001",
+        strTimestamp: "2026-11-22T16:30:00",
+        strHomeTeam: "Arsenal",
+        strAwayTeam: "Manchester City",
+        intHomeScore: "1",
+        intAwayScore: "1",
+        strStatus: "2H",
+        strLeague: "Premier League",
+        strVenue: "Emirates Stadium",
+        intRound: "12",
+      },
+    ],
+  });
+  assert.equal(matches.length, 1);
+  assert.equal(matches[0].status, "2H");
+  assert.equal(matches[0].venue, "Emirates Stadium");
+  assert.equal(matches[0].round, "12");
 });
 
 test("formatKickOff formats German kick-off times and stays honest without data", () => {
