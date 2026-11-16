@@ -36,6 +36,7 @@ import {
   type ProfileSettingsCategoryId,
 } from "@/lib/profile-settings";
 import { AloPageSidebarTrigger, useAloPageSidebarCommands } from "@/components/alo/AloPageSidebar";
+import { formatAloVersionLabel } from "@/lib/alo-version";
 
 type Profile = {
   id: string;
@@ -589,6 +590,9 @@ function SettingsCategoryGroups() {
           </section>
         );
       })}
+      <p className="px-1 text-xs text-muted-foreground" data-alo-version="true">
+        {formatAloVersionLabel()}
+      </p>
     </nav>
   );
 }
@@ -924,6 +928,14 @@ function SettingsCategoryContent(props: SettingsCategoryContentProps) {
           </SettingsBlock>
           <SettingsBlock title="Fehlerberichte">
             <ErrorReportsPanel />
+          </SettingsBlock>
+          <SettingsBlock title="Alo-Version">
+            <p className="text-sm text-muted-foreground" data-alo-version-support="true">
+              {formatAloVersionLabel()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Bitte gib diese Version an, wenn du einen Fehler meldest.
+            </p>
           </SettingsBlock>
         </>
       );
