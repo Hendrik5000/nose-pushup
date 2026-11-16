@@ -4,13 +4,16 @@ import { Activity, ArrowUpRight, CircleDot, Flame, Trophy } from "lucide-react";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
 import {
   FOOTBALL_LEAGUES,
+  NATIONAL_TEAM_ID,
   currentFootballSeason,
   footballApiUrl,
   footballMatchesPath,
   footballTablePath,
   formatKickOff,
+  nationalApiUrl,
   parseFootballMatches,
   parseFootballTable,
+  parseNationalEvents,
   type FootballLeague,
   type FootballMatch,
   type FootballTableRow,
@@ -66,27 +69,42 @@ function SportsPage() {
     setError("");
     const activeLeague =
       FOOTBALL_LEAGUES.find((entry) => entry.id === leagueId) ?? FOOTBALL_LEAGUES[0];
-    const requests = [
+    const isNational = activeLeague.id === "deutschland";
+    const requests: [Promise<unknown>, Promise<unknown>] = [
       activeLeague.hasTable
         ? fetch(footballApiUrl(footballTablePath(leagueId, season)))
             .then((response) => (response.ok ? response.json() : null))
             .catch(() => null)
         : Promise.resolve(null),
-      fetch(footballApiUrl(footballMatchesPath(leagueId, season)))
-        .then((response) => (response.ok ? response.json() : null))
-        .catch(() => null),
+      isNational
+        ? Promise.all([
+            fetch(nationalApiUrl(`eventsnext.php?id=${NATIONAL_TEAM_ID}`))
+              .then((response) => (response.ok ? response.json() : null))
+              .catch(() => null),
+            fetch(nationalApiUrl(`eventslast.php?id=${NATIONAL_TEAM_ID}`))
+              .then((response) => (response.ok ? response.json() : null))
+              .catch(() => null),
+          ]).then(([nextValue, lastValue]) => [
+            ...parseNationalEvents(nextValue),
+            ...parseNationalEvents(lastValue),
+          ])
+        : fetch(footballApiUrl(footballMatchesPath(leagueId, season)))
+            .then((response) => (response.ok ? response.json() : null))
+            .catch(() => null),
     ];
     void Promise.all(requests).then(([tableValue, matchValue]) => {
       if (!active) return;
       const parsedTable = parseFootballTable(tableValue);
-      const parsedMatches = parseFootballMatches(matchValue);
+      const parsedMatches = Array.isArray(matchValue)
+        ? (matchValue as FootballMatch[])
+        : parseFootballMatches(matchValue);
       setTable(parsedTable);
       setMatches(parsedMatches);
       if (parsedMatches.length === 0 && (!activeLeague.hasTable || parsedTable.length === 0)) {
         setError(
           activeLeague.hasTable
             ? "Die Bundesliga-Daten sind gerade nicht erreichbar. Bitte versuche es später erneut."
-            : `Für ${activeLeague.name} sind aktuell keine Spiele in OpenLigaDB eingetragen.`,
+            : `Für ${activeLeague.name} sind aktuell keine Spiele in TheSportsDB eingetragen.`,
         );
       }
       setLoading(false);
@@ -137,7 +155,7 @@ function SportsPage() {
           </Link>
         </div>
       }
-      description={`${league.name} der Saison ${season}/${String(season + 1).slice(2)} — live von OpenLigaDB.`}
+      description={`${league.name} der Saison ${season}/${String(season + 1).slice(2)} — ${league.id === "deutschland" ? "live von TheSportsDB" : "live von OpenLigaDB"}.`}
     >
       <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Ligaauswahl">
         {FOOTBALL_LEAGUES.map((entry: FootballLeague) => (
@@ -245,8 +263,8 @@ function SportsPage() {
             )}
           </section>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            {league.hasTable && (
+          {league.hasTable && (
+            <div className="grid gap-4 lg:grid-cols-2">
               <section
                 className="rounded-2xl border border-border/70 bg-card/70 p-5"
                 aria-labelledby="table-title"
@@ -282,38 +300,38 @@ function SportsPage() {
                   </Link>
                 )}
               </section>
-            )}
-            <section
-              className="rounded-2xl border border-border/70 bg-card/70 p-5"
-              aria-labelledby="stats-title"
-            >
-              <div className="flex items-center justify-between">
-                <h2 id="stats-title" className="font-bold">
-                  Spieltag-Statistik
-                </h2>
-                <Flame className="h-5 w-5 text-orange-400" />
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-primary/10 p-3">
-                  <strong className="block text-2xl">{goalsCount}</strong>
-                  <span className="text-xs text-muted-foreground">Tore am Spieltag</span>
+              <section
+                className="rounded-2xl border border-border/70 bg-card/70 p-5"
+                aria-labelledby="stats-title"
+              >
+                <div className="flex items-center justify-between">
+                  <h2 id="stats-title" className="font-bold">
+                    Spieltag-Statistik
+                  </h2>
+                  <Flame className="h-5 w-5 text-orange-400" />
                 </div>
-                <div className="rounded-xl bg-primary/10 p-3">
-                  <strong className="block text-2xl">
-                    {finishedCount}/{matchdayMatches.length}
-                  </strong>
-                  <span className="text-xs text-muted-foreground">Spiele beendet</span>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-primary/10 p-3">
+                    <strong className="block text-2xl">{goalsCount}</strong>
+                    <span className="text-xs text-muted-foreground">Tore am Spieltag</span>
+                  </div>
+                  <div className="rounded-xl bg-primary/10 p-3">
+                    <strong className="block text-2xl">
+                      {finishedCount}/{matchdayMatches.length}
+                    </strong>
+                    <span className="text-xs text-muted-foreground">Spiele beendet</span>
+                  </div>
                 </div>
-              </div>
-            </section>
-          </div>
+              </section>
+            </div>
+          )}
         </>
       )}
 
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Diese Seite zeigt echte Fußball-Daten von OpenLigaDB. Live-Spielminuten oder Zwischenstände
-        während laufender Spiele bietet die Quelle nicht an; angezeigt werden Ergebnisse beendeter
-        Spiele und die aktuellen Ansetzungen.
+        Diese Seite zeigt echte Fußball-Daten von OpenLigaDB und TheSportsDB. Live-Spielminuten oder
+        Zwischenstände während laufender Spiele bieten die Quellen nicht an; angezeigt werden
+        Ergebnisse beendeter Spiele und die aktuellen Ansetzungen.
       </p>
       <Link to="/marketplace" className="text-sm font-semibold text-primary hover:underline">
         Zurück zum Marketplace
