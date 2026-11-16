@@ -15,12 +15,21 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
-type ProviderId = "openai" | "anthropic" | "google" | "lovable" | "custom";
+type ProviderId =
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "lovable"
+  | "custom"
+  | "openrouter"
+  | "cerebras"
+  | "cloudflare";
 
 type ProviderPayload = {
   id: ProviderId;
   apiKey: string;
   baseUrl?: string;
+  accountId?: string;
   model: string;
 };
 
@@ -57,6 +66,13 @@ const MODEL_ALLOW: Record<Exclude<ProviderId, "custom">, string[]> = {
     "google/gemini-2.5-flash",
     "openai/gpt-5-mini",
     "openai/gpt-5",
+  ],
+  openrouter: ["openrouter/free"],
+  cerebras: ["gpt-oss-120b"],
+  cloudflare: [
+    "@cf/zai-org/glm-4.7-flash",
+    "@cf/google/gemma-4-26b-a4b-it",
+    "@cf/nvidia/nemotron-3-120b-a12b",
   ],
 };
 
@@ -344,6 +360,7 @@ export const superAiChat = createServerFn({ method: "POST" })
       id: raw.provider.id,
       apiKey: String(raw.provider.apiKey ?? "").slice(0, 500),
       baseUrl: raw.provider.baseUrl ? String(raw.provider.baseUrl).slice(0, 300) : undefined,
+      accountId: raw.provider.accountId ? String(raw.provider.accountId).slice(0, 32) : undefined,
       model: String(raw.provider.model ?? "").slice(0, 80),
     };
     return {
@@ -361,10 +378,16 @@ export const superAiChat = createServerFn({ method: "POST" })
     if (p.id === "lovable" && !p.model) p.model = "google/gemini-3-flash-preview";
     assertModelAllowed(p.id, p.model);
 
-    assertMiraAttachmentProvider(
-      p.id,
-      data.messages.flatMap((m) => m.attachments ?? []),
-    );
+    const attachments = data.messages.flatMap((m) => m.attachments ?? []);
+    if (
+      ["openrouter", "cerebras", "cloudflare"].includes(p.id) &&
+      attachments.some((item) => item.mime.startsWith("image/"))
+    ) {
+      throw new Error(
+        "Dieser Anbieter ist in Alo derzeit nur für Text und Textdateien freigeschaltet. Es wurde kein Bild gesendet.",
+      );
+    }
+    assertMiraAttachmentProvider(p.id, attachments);
 
     const providerMessages = includeMiraTextAttachments(data.messages);
     const system = buildMiraSystemPrompt(data.systemExtra ?? "");
@@ -391,6 +414,18 @@ export const superAiChat = createServerFn({ method: "POST" })
         system,
         providerMessages,
       );
+    } else if (["openrouter", "cerebras", "cloudflare"].includes(p.id)) {
+      if (!p.apiKey) throw new Error(`${p.id} API-Key fehlt`);
+      let base: string;
+      if (p.id === "openrouter") base = "https://openrouter.ai/api/v1";
+      else if (p.id === "cerebras") base = "https://api.cerebras.ai/v1";
+      else {
+        if (!p.accountId || !/^[a-f0-9]{32}$/i.test(p.accountId)) {
+          throw new Error("Cloudflare: gültige Account ID (32 Hex-Zeichen) erforderlich.");
+        }
+        base = `https://api.cloudflare.com/client/v4/accounts/${p.accountId}/ai/v1`;
+      }
+      reply = await callOpenAICompat(base, p.apiKey, p.model, system, providerMessages);
     } else if (p.id === "custom") {
       if (!p.apiKey || !p.baseUrl) throw new Error("Custom: API-Key und Base-URL nötig");
       const safeBase = await assertSafeCustomBaseUrl(p.baseUrl);
