@@ -23,9 +23,16 @@ export type FootballMatch = {
 };
 
 const OPENLIGADB_BASE = "https://api.openligadb.de";
+const SPORTSDB_BASE = "https://www.thesportsdb.com/api/v1/json/123";
+
+export const NATIONAL_TEAM_ID = "133907";
 
 export function footballApiUrl(path: string): string {
   return `${OPENLIGADB_BASE}/${path.replace(/^\/+/, "")}`;
+}
+
+export function nationalApiUrl(path: string): string {
+  return `${SPORTSDB_BASE}/${path.replace(/^\/+/, "")}`;
 }
 
 export function currentFootballSeason(now = new Date()): number {
@@ -136,6 +143,52 @@ export function parseFootballMatches(value: unknown): FootballMatch[] {
         },
       ];
     })
+    .sort((a, b) => {
+      const aTime = a.kickOffUtc ? new Date(a.kickOffUtc).getTime() : Number.MAX_SAFE_INTEGER;
+      const bTime = b.kickOffUtc ? new Date(b.kickOffUtc).getTime() : Number.MAX_SAFE_INTEGER;
+      return aTime - bTime;
+    });
+}
+
+function scoreOf(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+export function parseNationalEvents(value: unknown): FootballMatch[] {
+  const container = asRecord(value);
+  const events = Array.isArray(container.events) ? container.events : [];
+  return events
+    .map((raw) => {
+      const entry = asRecord(raw);
+      const home = typeof entry.strHomeTeam === "string" ? entry.strHomeTeam : "";
+      const away = typeof entry.strAwayTeam === "string" ? entry.strAwayTeam : "";
+      if (!home || !away) return null;
+      const status = typeof entry.strStatus === "string" ? entry.strStatus : "";
+      const timestamp =
+        typeof entry.strTimestamp === "string" && entry.strTimestamp.trim().length > 0
+          ? entry.strTimestamp
+          : null;
+      return {
+        id:
+          typeof entry.idEvent === "string" || typeof entry.idEvent === "number"
+            ? entry.idEvent
+            : `${home}-${away}`,
+        home,
+        away,
+        kickOffUtc: timestamp ? `${timestamp}Z` : null,
+        finished: status === "FT" || status === "Match Finished",
+        homeGoals: scoreOf(entry.intHomeScore),
+        awayGoals: scoreOf(entry.intAwayScore),
+        groupName: typeof entry.strLeague === "string" ? entry.strLeague : "",
+        groupOrder: 0,
+      } satisfies FootballMatch;
+    })
+    .filter((match): match is FootballMatch => match !== null)
     .sort((a, b) => {
       const aTime = a.kickOffUtc ? new Date(a.kickOffUtc).getTime() : Number.MAX_SAFE_INTEGER;
       const bTime = b.kickOffUtc ? new Date(b.kickOffUtc).getTime() : Number.MAX_SAFE_INTEGER;

@@ -4,11 +4,14 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  NATIONAL_TEAM_ID,
   currentFootballSeason,
   footballApiUrl,
   formatKickOff,
+  nationalApiUrl,
   parseFootballMatches,
   parseFootballTable,
+  parseNationalEvents,
 } from "../src/lib/football";
 
 test("currentFootballSeason follows the Bundesliga season turn in August", () => {
@@ -135,6 +138,79 @@ test("parseFootballMatches falls back to the last reported result", () => {
   ]);
   assert.equal(matches[0].homeGoals, 0);
   assert.equal(matches[0].awayGoals, 3);
+});
+
+test("nationalApiUrl targets the TheSportsDB test endpoint", () => {
+  assert.equal(
+    nationalApiUrl(`eventsnext.php?id=${NATIONAL_TEAM_ID}`),
+    "https://www.thesportsdb.com/api/v1/json/123/eventsnext.php?id=133907",
+  );
+  assert.equal(NATIONAL_TEAM_ID, "133907");
+});
+
+test("parseNationalEvents maps TheSportsDB events and treats the timestamp as UTC", () => {
+  const matches = parseNationalEvents({
+    events: [
+      {
+        idEvent: "2442781",
+        strEvent: "Germany vs Serbia",
+        strTimestamp: "2026-10-01T18:45:00",
+        strHomeTeam: "Germany",
+        strAwayTeam: "Serbia",
+        intHomeScore: "2",
+        intAwayScore: "0",
+        strStatus: "FT",
+        strLeague: "UEFA Nations League",
+      },
+      {
+        idEvent: "2442854",
+        strTimestamp: "2026-11-16T19:45:00",
+        strHomeTeam: "Germany",
+        strAwayTeam: "Netherlands",
+        intHomeScore: "0",
+        intAwayScore: "0",
+        strStatus: "1H",
+        strLeague: "UEFA Nations League",
+      },
+      { strHomeTeam: "", strAwayTeam: "Ohne Gegner" },
+    ],
+  });
+  assert.equal(matches.length, 2);
+  assert.equal(matches[0].id, "2442781");
+  assert.equal(matches[0].home, "Germany");
+  assert.equal(matches[0].away, "Serbia");
+  assert.equal(matches[0].kickOffUtc, "2026-10-01T18:45:00Z");
+  assert.equal(matches[0].finished, true);
+  assert.equal(matches[0].homeGoals, 2);
+  assert.equal(matches[0].awayGoals, 0);
+  assert.equal(matches[0].groupName, "UEFA Nations League");
+  assert.equal(matches[1].finished, false);
+  assert.equal(matches[1].homeGoals, 0);
+  assert.equal(matches[1].awayGoals, 0);
+  assert.match(formatKickOff(matches[1].kickOffUtc), /16\.11\./);
+});
+
+test("parseNationalEvents stays honest without scores or payloads", () => {
+  const matches = parseNationalEvents({
+    events: [
+      {
+        idEvent: "1",
+        strHomeTeam: "Germany",
+        strAwayTeam: "France",
+        intHomeScore: null,
+        intAwayScore: null,
+        strStatus: "NS",
+      },
+      { strHomeTeam: "Germany", strAwayTeam: "Italy", strTimestamp: "" },
+    ],
+  });
+  assert.equal(matches.length, 2);
+  assert.equal(matches[0].homeGoals, null);
+  assert.equal(matches[0].awayGoals, null);
+  assert.equal(matches[0].finished, false);
+  assert.equal(matches[0].kickOffUtc, null);
+  assert.deepEqual(parseNationalEvents(null), []);
+  assert.deepEqual(parseNationalEvents({ error: "x" }), []);
 });
 
 test("formatKickOff formats German kick-off times and stays honest without data", () => {
