@@ -9,6 +9,9 @@ test("free API provider catalog contains only the four explicitly supported inte
     ["openrouter", "cerebras", "cloudflare"],
   );
   assert.ok(FREE_PROVIDER_CATALOG.every((entry) => entry.models.length > 0));
+  const cloudflare = FREE_PROVIDER_CATALOG.find((entry) => entry.id === "cloudflare")!;
+  assert.ok(cloudflare.models.includes("@cf/qwen/qwen3.8-27b"));
+  assert.ok(!cloudflare.models.includes("@cf/nvidia/nemotron-3-120b-a12b"));
   assert.ok(FREE_PROVIDER_CATALOG.every((entry) => entry.supportsImages === false));
 });
 
