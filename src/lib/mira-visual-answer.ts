@@ -144,3 +144,12 @@ function hasExactKeys(
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
+export const MIRA_VISUAL_INSTRUCTIONS = [
+  "Visualisierung (optional, nur wenn sie die Antwort tatsächlich klarer macht): Wenn du visualisierst, antworte als JSON-Objekt mit dem vollständigen normalen reply und genau einem visual-Objekt.",
+  'Erlaubte Formen: {"reply":"...","visual":{"type":"metricGrid","schemaVersion":1,"title":"...","items":[{"label":"...","value":"..."},{"label":"...","value":"..."}]}} oder {"reply":"...","visual":{"type":"barChart","schemaVersion":1,"title":"...","unit":"km","items":[{"label":"...","value":2.5},{"label":"...","value":5}]}}.',
+  "metricGrid hat 2–6 items mit nur label, value und optional detail (Text); barChart hat 2–6 items mit nur label und value, optional unit ausschließlich aus %, €, km, m, cm, kg, g, kcal, h, min, s, W, °C, Punkte. Keine weiteren Felder.",
+  "Zahlen im barChart müssen aus der Nutzereingabe oder ausdrücklich freigegebenem Kontext stammen; einfache Rechnungen daraus sind nur erlaubt, wenn du sie im reply nachvollziehbar erklärst.",
+  "Erfinde keine Messwerte, persönlichen Daten, Vergleiche oder Live-Daten. Fehlen belegte Zahlen oder hilft ein Bild nicht, antworte im normalen Textformat und lasse visual weg.",
+  "Keine URLs, HTML, JavaScript, Iframes, Einbettungen oder ausführbaren Inhalte; die Visuals werden ausschließlich als feste Alo-Karten gerendert.",
+].join(" ");

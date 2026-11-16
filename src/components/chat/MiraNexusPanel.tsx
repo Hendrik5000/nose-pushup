@@ -3,6 +3,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { superAiChat } from "@/lib/super-ai.functions";
 import { classifyTask, loadProviders, selectProvider, toPayload } from "@/lib/ai-providers";
+import { parseAiResponse } from "@/lib/ai-plan";
+import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
+import { MIRA_VISUAL_INSTRUCTIONS } from "@/lib/mira-visual-answer";
 import {
   buildMiraNexusHistory,
   loadMiraNexusThread,
@@ -52,6 +55,7 @@ export function MiraNexusPanel({ userId, onBack }: Props) {
     setDraft("");
     setBusy(true);
     let reply: string;
+    let visual: MiraNexusMessage["visual"];
     try {
       const selection = selectProvider(loadProviders(userId), classifyTask(text));
       if (!selection.provider) {
@@ -62,9 +66,12 @@ export function MiraNexusPanel({ userId, onBack }: Props) {
             messages: buildMiraNexusHistory(history),
             provider: toPayload(selection.provider),
             task: classifyTask(text),
+            systemExtra: MIRA_VISUAL_INSTRUCTIONS,
           },
         });
-        reply = res.reply?.trim() || "Mira hat eine leere Antwort zurückgegeben.";
+        const parsed = parseAiResponse(res.reply, { preserveCode: false });
+        reply = parsed.reply?.trim() || "Mira hat eine leere Antwort zurückgegeben.";
+        visual = parsed.visual;
       }
     } catch {
       reply = miraNexusErrorText();
@@ -74,6 +81,7 @@ export function MiraNexusPanel({ userId, onBack }: Props) {
       role: "assistant",
       content: reply,
       at: new Date().toISOString(),
+      ...(visual ? { visual } : {}),
     };
     const next = [...history, assistantMessage];
     setMessages(next);
@@ -123,6 +131,7 @@ export function MiraNexusPanel({ userId, onBack }: Props) {
               }`}
             >
               <p className="whitespace-pre-wrap break-words">{m.content}</p>
+              {m.role === "assistant" && m.visual && <MiraVisualAnswerCard visual={m.visual} />}
               <p className="mt-1 text-[10px] opacity-70">{formatTime(m.at)}</p>
             </div>
             {m.role === "user" && (
