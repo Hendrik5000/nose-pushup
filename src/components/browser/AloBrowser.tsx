@@ -6,6 +6,7 @@
  * externe KI-/Proxy-Endpunkte sind frei zugängliche Dienste ohne Schlüssel.
  */
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { loadBrowserPageInParallel } from "@/lib/browser-page-loading";
 import {
   Globe,
   Search,
@@ -157,7 +158,10 @@ async function fetchSmartAI(
     if (lines.length > 0) {
       return (
         "📌 **Wichtigste Auszüge der geöffneten Seite:**\n\n" +
-        lines.slice(0, 5).map((l) => `• ${l.slice(0, 220)}`).join("\n\n")
+        lines
+          .slice(0, 5)
+          .map((l) => `• ${l.slice(0, 220)}`)
+          .join("\n\n")
       );
     }
   }
@@ -243,7 +247,7 @@ export default function AloBrowser() {
           parent.postMessage({ type: 'ALO_NAVIGATE', url: a.href }, '*');
         }
       }, true);
-    <\/script>
+    </script>
   `;
     if (/<head[^>]*>/i.test(cleaned)) {
       return cleaned.replace(/<head[^>]*>/i, (m) => `${m}${injected}`);
@@ -346,11 +350,20 @@ export default function AloBrowser() {
       return "";
     };
 
-    const [rawHtml, readerTxt] = await Promise.all([fetchProxy(), fetchReader()]);
+    const { html: rawHtml, reader: readerTxt } = await loadBrowserPageInParallel(
+      fetchProxy,
+      fetchReader,
+      (html) =>
+        updateTab(tabId, {
+          htmlDoc: buildSafeSrcDoc(html, targetUrl),
+          mode: "web",
+          loading: false,
+        }),
+      (reader) => updateTab(tabId, { readerText: reader, loading: false }),
+    );
 
     if (rawHtml) {
       updateTab(tabId, {
-        htmlDoc: buildSafeSrcDoc(rawHtml, targetUrl),
         readerText: readerTxt || "Kein separater Reader-Text gefunden.",
         mode: "web",
         loading: false,
@@ -413,13 +426,11 @@ export default function AloBrowser() {
           `https://de.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=6&format=json&origin=*`,
         );
         const w = await wikiRes.json();
-        return (w[1] || []).map(
-          (title: string, i: number) => ({
-            title,
-            snippet: w[2]?.[i] || "Wikipedia-Artikel im Alo-Browser lesen",
-            url: w[3]?.[i] || `https://de.m.wikipedia.org/wiki/${encodeURIComponent(title)}`,
-          }),
-        );
+        return (w[1] || []).map((title: string, i: number) => ({
+          title,
+          snippet: w[2]?.[i] || "Wikipedia-Artikel im Alo-Browser lesen",
+          url: w[3]?.[i] || `https://de.m.wikipedia.org/wiki/${encodeURIComponent(title)}`,
+        }));
       } catch (_) {
         return [];
       }
@@ -449,7 +460,9 @@ export default function AloBrowser() {
 
     // 1. "Öffne Google" / "Geh zu Google"
     if (
-      /(öffne|oeffne|starte|geh auf|gehe auf|zeig|open)\s+(mir\s+)?(bitte\s+)?google/i.test(lower) ||
+      /(öffne|oeffne|starte|geh auf|gehe auf|zeig|open)\s+(mir\s+)?(bitte\s+)?google/i.test(
+        lower,
+      ) ||
       lower === "google"
     ) {
       openGoogleMode(activeTab.id);
@@ -612,12 +625,18 @@ export default function AloBrowser() {
           >
             <Globe className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
             <span className="truncate">{tab.title}</span>
-            <button onClick={(e) => closeTab(tab.id, e)} className="rounded p-0.5 hover:bg-zinc-800">
+            <button
+              onClick={(e) => closeTab(tab.id, e)}
+              className="rounded p-0.5 hover:bg-zinc-800"
+            >
               <X className="h-3 w-3" />
             </button>
           </div>
         ))}
-        <button onClick={addTab} className="shrink-0 rounded-lg p-1.5 text-zinc-400 hover:text-white">
+        <button
+          onClick={addTab}
+          className="shrink-0 rounded-lg p-1.5 text-zinc-400 hover:text-white"
+        >
           <Plus className="h-4 w-4" />
         </button>
       </div>
@@ -635,7 +654,9 @@ export default function AloBrowser() {
           }
           className="shrink-0 rounded-lg p-2 text-zinc-400 hover:text-white"
         >
-          <RotateCw className={`h-4 w-4 ${activeTab.loading ? "animate-spin text-emerald-400" : ""}`} />
+          <RotateCw
+            className={`h-4 w-4 ${activeTab.loading ? "animate-spin text-emerald-400" : ""}`}
+          />
         </button>
 
         <form
@@ -733,9 +754,13 @@ export default function AloBrowser() {
                 <span className="text-blue-400">g</span>
                 <span className="text-emerald-400">l</span>
                 <span className="text-red-400">e</span>
-                <span className="ml-2 align-middle text-xs font-semibold text-zinc-400">via Alo</span>
+                <span className="ml-2 align-middle text-xs font-semibold text-zinc-400">
+                  via Alo
+                </span>
               </div>
-              <p className="mb-6 text-xs text-zinc-400">Ungesperrte Web-Suche mit KI-Zusammenfassung</p>
+              <p className="mb-6 text-xs text-zinc-400">
+                Ungesperrte Web-Suche mit KI-Zusammenfassung
+              </p>
 
               <form
                 onSubmit={(e) => {
@@ -903,9 +928,14 @@ export default function AloBrowser() {
                 <div className="text-xs font-bold uppercase tracking-wider text-emerald-400">
                   MIRA · BROWSER-AGENT
                 </div>
-                <div className="text-xs text-zinc-400">Steuert Web, Suche &amp; Zusammenfassungen</div>
+                <div className="text-xs text-zinc-400">
+                  Steuert Web, Suche &amp; Zusammenfassungen
+                </div>
               </div>
-              <button onClick={() => setAiOpen(false)} className="rounded-lg bg-zinc-800 p-1.5 text-zinc-200">
+              <button
+                onClick={() => setAiOpen(false)}
+                className="rounded-lg bg-zinc-800 p-1.5 text-zinc-200"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
