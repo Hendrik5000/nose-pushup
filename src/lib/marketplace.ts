@@ -776,4 +776,3 @@ export function saveMarketplaceInstallState(
   const state = parseMarketplaceInstallState(stateInput);
   storage.setItem(marketplaceInstallStorageKey(userId), JSON.stringify(state));
 }
-

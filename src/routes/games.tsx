@@ -57,26 +57,34 @@ function GamesHub() {
   }, [selectedGame]);
 
   return (
-    <main className={selectedGame ? "min-h-dvh bg-slate-950 text-foreground" : "min-h-screen bg-background px-3 pb-12 pt-4 text-foreground sm:px-6"}>
-      {!selectedGame && <header className="mx-auto mb-5 flex max-w-5xl items-center justify-between gap-4">
-        <Link
-          to="/games"
-          search={{}}
-          className="rounded-lg text-sm font-semibold uppercase tracking-[0.16em] text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-          aria-label="Zur Alo-Spielauswahl"
-        >
-          Alo · Spiele
-        </Link>
-        {selectedGame && (
+    <main
+      className={
+        selectedGame
+          ? "min-h-dvh bg-slate-950 text-foreground"
+          : "min-h-screen bg-background px-3 pb-12 pt-4 text-foreground sm:px-6"
+      }
+    >
+      {!selectedGame && (
+        <header className="mx-auto mb-5 flex max-w-5xl items-center justify-between gap-4">
           <Link
             to="/games"
             search={{}}
-            className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="rounded-lg text-sm font-semibold uppercase tracking-[0.16em] text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label="Zur Alo-Spielauswahl"
           >
-            Spielauswahl
+            Alo · Spiele
           </Link>
-        )}
-      </header>}
+          {selectedGame && (
+            <Link
+              to="/games"
+              search={{}}
+              className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              Spielauswahl
+            </Link>
+          )}
+        </header>
+      )}
 
       <div className={selectedGame ? "min-h-dvh" : "mx-auto max-w-5xl"}>
         {!selectedGame ? (
@@ -102,11 +110,13 @@ function GamesHub() {
           </p>
         )}
 
-        {!selectedGame && <p className="mx-auto mt-6 max-w-3xl rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
-          Diese Neufassungen sind keine rechtliche Freigabe. Vor einer Weitergabe oder
-          Veröffentlichung sind eigenständige Rechte-, Marken-, Text- und Gestaltungsprüfungen
-          erforderlich.
-        </p>}
+        {!selectedGame && (
+          <p className="mx-auto mt-6 max-w-3xl rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+            Diese Neufassungen sind keine rechtliche Freigabe. Vor einer Weitergabe oder
+            Veröffentlichung sind eigenständige Rechte-, Marken-, Text- und Gestaltungsprüfungen
+            erforderlich.
+          </p>
+        )}
       </div>
     </main>
   );
@@ -199,7 +209,14 @@ function GameChoice({
             <circle cx="27" cy="21" r="2" fill="currentColor" />
           </svg>
         ) : (
-          <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none"><path d="m16 4 3.7 7.5 8.3 1.2-6 5.8 1.4 8.2-7.4-3.9-7.4 3.9L10.6 18l-6-5.8 8.3-1.2L16 4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
+          <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none">
+            <path
+              d="m16 4 3.7 7.5 8.3 1.2-6 5.8 1.4 8.2-7.4-3.9-7.4 3.9L10.6 18l-6-5.8 8.3-1.2L16 4Z"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+          </svg>
         )}
       </span>
       <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
@@ -212,7 +229,12 @@ function GameChoice({
 }
 
 function GameFrame({ game, gameDocument }: { game: PublicGameId; gameDocument: string }) {
-  const title = game === "grid-defense" ? "Grid Defense" : game === "kupferkern" ? "Kupferkern" : "Neon Starfighter";
+  const title =
+    game === "grid-defense"
+      ? "Grid Defense"
+      : game === "kupferkern"
+        ? "Kupferkern"
+        : "Neon Starfighter";
 
   return (
     <section className="fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950">

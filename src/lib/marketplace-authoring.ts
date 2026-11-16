@@ -956,4 +956,3 @@ export function saveMarketplacePublishedInstallState(
   }
   storage.setItem(marketplacePublishedInstallStorageKey(userId), serialized);
 }
-

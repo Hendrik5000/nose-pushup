@@ -126,21 +126,12 @@ export function MarketplaceManifestView({
   );
 }
 
-function MarketplaceChecklistView({
-  title,
-  items,
-}: {
-  title: string;
-  items: readonly string[];
-}) {
+function MarketplaceChecklistView({ title, items }: { title: string; items: readonly string[] }) {
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const done = items.filter((_, itemIndex) => checked[itemIndex]).length;
 
   return (
-    <section
-      aria-label={title}
-      className="rounded-xl border border-border/60 bg-background/60 p-3"
-    >
+    <section aria-label={title} className="rounded-xl border border-border/60 bg-background/60 p-3">
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-bold">{title}</h4>
         <span className="text-[10px] text-muted-foreground" role="status" aria-live="polite">
