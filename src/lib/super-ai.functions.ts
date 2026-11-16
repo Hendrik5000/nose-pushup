@@ -72,7 +72,7 @@ const MODEL_ALLOW: Record<Exclude<ProviderId, "custom">, string[]> = {
   cloudflare: [
     "@cf/zai-org/glm-4.7-flash",
     "@cf/google/gemma-4-26b-a4b-it",
-    "@cf/nvidia/nemotron-3-120b-a12b",
+    "@cf/qwen/qwen3.8-27b",
   ],
 };
 
@@ -383,9 +383,7 @@ export const superAiChat = createServerFn({ method: "POST" })
       ["openrouter", "cerebras", "cloudflare"].includes(p.id) &&
       attachments.some((item) => item.mime.startsWith("image/"))
     ) {
-      throw new Error(
-        "Dieser Anbieter ist in Alo derzeit nur für Text und Textdateien freigeschaltet. Es wurde kein Bild gesendet.",
-      );
+      throw new Error("Dieser Anbieter ist in Alo derzeit nur für Text und Textdateien freigeschaltet. Es wurde kein Bild gesendet.");
     }
     assertMiraAttachmentProvider(p.id, attachments);
 

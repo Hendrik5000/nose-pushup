@@ -63,7 +63,7 @@ export const FREE_PROVIDER_CATALOG: ProviderCatalogEntry[] = [
   {
     id: "cerebras",
     summary: "Sehr schnelle Inferenz für ausgewählte Open-Weight-Modelle.",
-    freeAccess: "5 USD Startguthaben; danach können API-Anfragen kostenpflichtig sein.",
+    freeAccess: "Einmalig 5 USD Promo-Guthaben nur mit gültiger Zahlungsmethode; 30 Tage gültig. Keine automatische kostenpflichtige Nutzung: Nach Ablauf oder Verbrauch pausiert die API, bis separat PayGo-Guthaben gekauft wird.",
     models: ["gpt-oss-120b"],
     keyUrl: "https://cloud.cerebras.ai/",
     docsUrl: "https://inference-docs.cerebras.ai/",
@@ -76,7 +76,7 @@ export const FREE_PROVIDER_CATALOG: ProviderCatalogEntry[] = [
     models: [
       "@cf/zai-org/glm-4.7-flash",
       "@cf/google/gemma-4-26b-a4b-it",
-      "@cf/nvidia/nemotron-3-120b-a12b",
+      "@cf/qwen/qwen3.8-27b",
     ],
     keyUrl: "https://dash.cloudflare.com/profile/api-tokens",
     docsUrl: "https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/",
