@@ -128,6 +128,23 @@ test("Home Marketplace entry is available to every signed-in account and remount
   assert.doesNotMatch(adminGateBlock(tileBuilder), /id: "marketplace"/);
 });
 
+test("installed Marketplace catalog apps become Home tiles for every account (Alo 1.151)", () => {
+  assert.match(tileBuilder, /pluginState: MarketplaceInstallState/);
+  assert.match(tileBuilder, /kind: "plugin"/);
+  assert.match(tileBuilder, /id: `plugin:\$\{plugin\.id\}`/);
+  assert.match(tileBuilder, /installedPluginIds\.includes\(plugin\.id\)/);
+  assert.match(tileBuilder, /enabledPluginIds\.includes\(plugin\.id\)/);
+  assert.match(tileBuilder, /standardRoutes\.has\(plugin\.action\.to\)\) continue/);
+  assert.doesNotMatch(adminGateBlock(tileBuilder), /MARKETPLACE_CATALOG/);
+  assert.match(hub, /loadMarketplaceInstallState\(window\.localStorage, user\.id\)/);
+  assert.match(hub, /marketplaceInstallStorageKey\(user\.id\)/);
+  assert.match(hub, /openPluginAction\(tile\.action\)/);
+  assert.match(hub, /navigate\(\{ to: "\/games", search: \{ game: action\.gameId \} \}\)/);
+  assert.match(hub, /new CustomEvent\("alo-open", \{ detail: action\.toolId \}\)/);
+  assert.match(hub, /removeMarketplacePlugin\(pluginState, pluginId\)/);
+  assert.match(hub, /saveMarketplaceInstallState\(window\.localStorage, user\.id, next\)/);
+});
+
 test("app artwork is square and original, and training is no longer a collapsible Home card", () => {
   const artwork = home.slice(artworkStart, dashboardStart);
   assert.notEqual(dashboardStart, -1);
