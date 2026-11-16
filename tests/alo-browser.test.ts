@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 
 /**
  * Alo-Browser (integriert aus Monicas Entwurf, Notion 15.11.2026):
@@ -10,50 +10,50 @@ import { resolve } from "node:path";
  * - Route /browser ist im authentifizierten Layout registriert
  */
 
-const componentPath = resolve(__dirname, "../src/components/browser/AloBrowser.tsx");
-const routePath = resolve(__dirname, "../src/routes/_authenticated/browser.tsx");
-const routeTreePath = resolve(__dirname, "../src/routeTree.gen.ts");
+const component = readFileSync(
+  new URL("../src/components/browser/AloBrowser.tsx", import.meta.url),
+  "utf8",
+);
+const route = readFileSync(
+  new URL("../src/routes/_authenticated/browser.tsx", import.meta.url),
+  "utf8",
+);
+const routeTree = readFileSync(new URL("../src/routeTree.gen.ts", import.meta.url), "utf8");
 
-const component = readFileSync(componentPath, "utf8");
-const route = readFileSync(routePath, "utf8");
-const routeTree = readFileSync(routeTreePath, "utf8");
+test("Alo-Browser: Komponente existiert und exportiert AloBrowser als Default", () => {
+  assert.match(component, /export default function AloBrowser/);
+  assert.match(component, /type ViewMode/);
+});
 
-describe("Alo-Browser (Monica-Integration)", () => {
-  it("Komponente existiert und exportiert AloBrowser als Default", () => {
-    expect(component).toContain("export default function AloBrowser");
-    expect(component).toContain("type ViewMode");
-  });
+test("Alo-Browser: enthält keine Secrets, Keys oder Passwörter", () => {
+  const secretPatterns = [
+    /sk-[a-zA-Z0-9]{16,}/,
+    /api[_-]?key\s*[:=]\s*["'][^"']{8,}["']/i,
+    /password\s*[:=]\s*["'][^"']+["']/i,
+    /secret\s*[:=]\s*["'][^"']{8,}["']/i,
+    /Bearer\s+[a-zA-Z0-9._-]{16,}/,
+    /ghp_[a-zA-Z0-9]{20,}/,
+    /AKIA[0-9A-Z]{16}/,
+  ];
+  for (const pattern of secretPatterns) {
+    assert.equal(component.match(pattern), null);
+  }
+});
 
-  it("enthält keine Secrets, Keys oder Passwörter", () => {
-    const secretPatterns = [
-      /sk-[a-zA-Z0-9]{16,}/,
-      /api[_-]?key\s*[:=]\s*["'][^"']{8,}["']/i,
-      /password\s*[:=]\s*["'][^"']+["']/i,
-      /secret\s*[:=]\s*["'][^"']{8,}["']/i,
-      /Bearer\s+[a-zA-Z0-9._-]{16,}/,
-      /ghp_[a-zA-Z0-9]{20,}/,
-      /AKIA[0-9A-Z]{16}/,
-    ];
-    for (const pattern of secretPatterns) {
-      expect(component.match(pattern)).toBeNull();
-    }
-  });
+test("Alo-Browser: rendert Webseiten in einem sandboxed iframe ohne allow-same-origin", () => {
+  assert.match(component, /sandbox="allow-scripts allow-forms allow-popups"/);
+  assert.doesNotMatch(component, /sandbox="[^"]*allow-same-origin/);
+});
 
-  it("rendert Webseiten in einem sandboxed iframe ohne allow-same-origin", () => {
-    expect(component).toContain('sandbox="allow-scripts allow-forms allow-popups"');
-    expect(component).not.toContain("allow-same-origin");
-  });
+test("Alo-Browser: führt Quick-Links und bekannte Sprachbefehle-Ziele", () => {
+  assert.match(component, /QUICK_LINKS/);
+  assert.match(component, /KNOWN_SITES/);
+  assert.match(component, /https:\/\/www\.tagesschau\.de/);
+});
 
-  it("führt Quick-Links und bekannte Sprachbefehle-Ziele", () => {
-    expect(component).toContain("QUICK_LINKS");
-    expect(component).toContain("KNOWN_SITES");
-    expect(component).toContain("https://www.tagesschau.de");
-  });
-
-  it("Route /browser ist im authentifizierten Layout registriert", () => {
-    expect(route).toContain('createFileRoute("/_authenticated/browser")');
-    expect(route).toContain("AloBrowser");
-    expect(routeTree).toContain("AuthenticatedBrowserRouteImport");
-    expect(routeTree).toContain("'/_authenticated/browser'");
-  });
+test("Alo-Browser: Route /browser ist im authentifizierten Layout registriert", () => {
+  assert.match(route, /createFileRoute\("\/_authenticated\/browser"\)/);
+  assert.match(route, /AloBrowser/);
+  assert.match(routeTree, /AuthenticatedBrowserRouteImport/);
+  assert.match(routeTree, /'\/_authenticated\/browser'/);
 });

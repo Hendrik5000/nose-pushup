@@ -36,7 +36,7 @@ class MemoryStorage {
 
 test("bundled Marketplace manifests are canonical, declarative and host-registered", () => {
   assert.equal(new Set(MARKETPLACE_CATALOG.map(({ id }) => id)).size, MARKETPLACE_CATALOG.length);
-  assert.equal(MARKETPLACE_CATALOG.length, 29);
+  assert.equal(MARKETPLACE_CATALOG.length, 31);
 
   assert.ok(Object.isFrozen(MARKETPLACE_CATALOG));
   for (const manifest of MARKETPLACE_CATALOG) {
@@ -68,7 +68,7 @@ test("bundled Marketplace manifests are canonical, declarative and host-register
   assert.match(describeMarketplacePermissions(toolManifest)[0], /erst nach deinem Tippen/);
   const gameManifest = MARKETPLACE_CATALOG.find(({ action }) => action.type === "open-game");
   assert.ok(gameManifest);
-  assert.match(describeMarketplacePermissions(gameManifest)[0], /Admin-Schutz gilt weiter/);
+  assert.match(describeMarketplacePermissions(gameManifest)[0], /abgesicherten Ansicht/);
 });
 
 test("Marketplace covers all existing first-party app, area, tool and game registrations", () => {
@@ -139,7 +139,7 @@ test("Marketplace covers all existing first-party app, area, tool and game regis
     );
   }
 
-  assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "app").length, 13);
+  assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "app").length, 15);
   assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "area").length, 10);
   assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "tool").length, 6);
 });
@@ -357,7 +357,7 @@ test("Marketplace implementation has no executable plugin or network primitives"
   assert.doesNotMatch(route, /srcDoc|<script\b/i);
   assert.match(route, /createFileRoute\("\/marketplace"\)/);
   assert.doesNotMatch(route, /beforeLoad|redirect\(|requireSupabaseAuth|runMarketplaceAdminAction/);
-  assert.match(route, /supabase\.auth\.getSession\(\)/);
+  assert.match(route, /supabase\.auth\s*\.\s*getSession\(\)/);
   assert.match(route, /onAuthStateChange/);
   assert.match(route, /getAdminAreaAccess\(\)[\s\S]*?setAdminAccess\(\{ userId, isAdmin:/);
   assert.match(route, /isMarketplaceAdminForUser\(adminAccess, userId\)/);

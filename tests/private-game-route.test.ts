@@ -48,8 +48,8 @@ test("the public content endpoint uses a strict two-game allowlist and no auth o
 
 test("game documents only run in a sandboxed srcDoc without same-origin or public URLs", () => {
   assert.match(route, /getPublicGameDocument\(\{ data: \{ game: requestGame \} \}\)/);
-  assert.match(route, /<GameFrame game=\{selectedGame\} document=\{currentDocument\} \/>/);
-  assert.match(route, /srcDoc=\{document\}/);
+  assert.match(route, /<GameFrame game=\{selectedGame\} gameDocument=\{currentDocument\} \/>/);
+  assert.match(route, /srcDoc=\{gameDocument\}/);
   assert.match(route, /sandbox="allow-scripts"/);
   assert.doesNotMatch(route, /allow-same-origin|VITE_PRIVATE_GAME_PREVIEW_URL|127\.0\.0\.1/);
   assert.doesNotMatch(route, /src=\{(?:frameUrl|gameUrl)\}/);
@@ -73,4 +73,3 @@ test("game documents are not standalone static files under the public directory"
   assert.match(gridDefense, /grid-defense-server-only-v1/);
   assert.match(kupferkern, /kupferkern-server-only-v1/);
 });
-

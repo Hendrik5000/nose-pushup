@@ -172,7 +172,7 @@ BEGIN
     'mira', 'nexus', 'health', 'settings', 'training', 'admin', 'hub', 'coach',
     'inbox', 'game', 'programs', 'calisthenics', 'run', 'season', 'battle',
     'league', 'leaderboard', 'clubs', 'alarm', 'today', 'search', 'capture',
-    'collections', 'shortcuts', 'privacy'
+    'collections', 'shortcuts', 'privacy', 'sports'
   ) THEN
     RETURN FALSE;
   END IF;
@@ -240,7 +240,8 @@ BEGIN
         'route:/coach', 'route:/postfach', 'route:/health', 'route:/programs',
         'route:/calisthenics', 'route:/run', 'route:/season', 'route:/battle',
         'route:/battle-league', 'route:/leaderboard', 'route:/clubs', 'route:/alarm',
-        'game:grid-defense', 'game:kupferkern', 'tool:today', 'tool:search',
+        'game:grid-defense', 'game:kupferkern', 'game:neon-starfighter',
+        'route:/sports', 'tool:today', 'tool:search',
         'tool:capture', 'tool:collections', 'tool:shortcuts', 'tool:privacy'
       ) OR action_id = ANY(action_ids) THEN
         RETURN FALSE;

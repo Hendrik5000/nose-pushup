@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
+import {
+  getMarketplaceCollectionPlugins,
+  type MarketplaceCollectionId,
+} from "@/lib/marketplace-collections";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { MARKETPLACE_ICON_COMPONENTS } from "@/components/marketplace/MarketplaceIcon";
 import {
@@ -35,19 +39,9 @@ export function MarketplaceAppCatalog({
   onOpen,
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [collection, setCollection] = useState<"recommended" | "new" | "official" | "friends">(
-    "recommended",
-  );
+  const [activeCollection, setActiveCollection] = useState<MarketplaceCollectionId>("official");
+  const visiblePlugins = getMarketplaceCollectionPlugins(plugins, activeCollection);
   const selected = plugins.find((plugin) => plugin.id === selectedId) ?? null;
-  const collectionIds =
-    collection === "new"
-      ? ["alo-sports", "alo-neon-starfighter"]
-      : collection === "recommended"
-        ? ["alo-sports", "alo-health-app", "alo-training"]
-        : collection === "friends"
-          ? []
-          : plugins.map((plugin) => plugin.id);
-  const visiblePlugins = plugins.filter((plugin) => collectionIds.includes(plugin.id));
   const CompactCard = ({ plugin }: { plugin: MarketplacePluginManifest }) => {
     const Icon = MARKETPLACE_ICON_COMPONENTS[plugin.icon];
     return (
@@ -71,29 +65,33 @@ export function MarketplaceAppCatalog({
 
   return (
     <>
+      <nav
+        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-3"
+        aria-label="Marketplace-Kategorien"
+      >
+        {(
+          [
+            ["official", "Offiziell"],
+            ["recommended", "Empfohlen"],
+            ["new", "Neu"],
+            ["friends", "Von Freunden"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={activeCollection === id}
+            onClick={() => setActiveCollection(id)}
+            className={`min-h-10 shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeCollection === id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card/70 text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
       <section
         className="space-y-4 rounded-3xl border border-border/70 bg-card/40 p-4 sm:p-6"
         aria-label="Marketplace-Startseite"
       >
-        <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Marketplace-Kategorien">
-          {(
-            [
-              ["recommended", "Empfohlen"],
-              ["new", "Neu"],
-              ["official", "Offiziell"],
-              ["friends", "Von Freunden"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setCollection(id)}
-              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${collection === id ? "bg-primary text-primary-foreground" : "border border-border/70 bg-background/60 text-muted-foreground hover:text-foreground"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
         <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(120deg,#153a37,#182346)] p-5 text-white sm:p-7">
           <div className="relative z-10 max-w-md">
             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
@@ -106,7 +104,7 @@ export function MarketplaceAppCatalog({
             </p>
             <button
               type="button"
-              onClick={() => setCollection("new")}
+              onClick={() => setActiveCollection("new")}
               className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-900"
             >
               Neu entdecken <ArrowRight className="h-4 w-4" />
@@ -119,7 +117,7 @@ export function MarketplaceAppCatalog({
             <h2 className="text-lg font-bold">Vorschläge für dich</h2>
             <button
               type="button"
-              onClick={() => setCollection("recommended")}
+              onClick={() => setActiveCollection("recommended")}
               className="rounded-full p-2 text-muted-foreground hover:bg-background hover:text-foreground"
               aria-label="Empfehlungen anzeigen"
             >
@@ -150,42 +148,48 @@ export function MarketplaceAppCatalog({
           </div>
         </div>
       </section>
-      {collection === "friends" && (
-        <p className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
-          Noch keine Apps von Freunden veröffentlicht. Hier erscheinen nur ausdrücklich freigegebene
-          Apps.
-        </p>
-      )}
-      <section
-        className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6"
-        aria-label="Kuratierte Alo-Apps, Bereiche und Werkzeuge"
-      >
-        {visiblePlugins.map((plugin) => {
-          const Icon = MARKETPLACE_ICON_COMPONENTS[plugin.icon];
-          const isInstalled = installState.installedPluginIds.includes(plugin.id);
-          return (
-            <button
-              key={plugin.id}
-              type="button"
-              aria-label={`${plugin.name}${isInstalled ? ", auf diesem Gerät installiert" : ""}. Details öffnen`}
-              onClick={() => setSelectedId(plugin.id)}
-              className="flex min-h-32 min-w-0 flex-col items-center justify-center gap-3 rounded-2xl border border-border/70 bg-card/75 p-3 text-center shadow-sm transition hover:border-primary/45 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-h-36 sm:p-4"
-            >
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-14 sm:w-14">
-                <Icon className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" />
-              </span>
-              <span className="line-clamp-2 text-xs font-semibold leading-tight sm:text-sm">
-                {plugin.name}
-              </span>
-              {isInstalled && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                  Installiert
+      {visiblePlugins.length > 0 ? (
+        <section
+          className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6"
+          aria-label="Kuratierte Alo-Apps, Bereiche und Werkzeuge"
+        >
+          {visiblePlugins.map((plugin) => {
+            const Icon = MARKETPLACE_ICON_COMPONENTS[plugin.icon];
+            const isInstalled = installState.installedPluginIds.includes(plugin.id);
+            return (
+              <button
+                key={plugin.id}
+                type="button"
+                aria-label={`${plugin.name}${isInstalled ? ", auf diesem Gerät installiert" : ""}. Details öffnen`}
+                onClick={() => setSelectedId(plugin.id)}
+                className="flex min-h-32 min-w-0 flex-col items-center justify-center gap-3 rounded-2xl border border-border/70 bg-card/75 p-3 text-center shadow-sm transition hover:border-primary/45 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-h-36 sm:p-4"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-14 sm:w-14">
+                  <Icon className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" />
                 </span>
-              )}
-            </button>
-          );
-        })}
-      </section>
+                <span className="line-clamp-2 text-xs font-semibold leading-tight sm:text-sm">
+                  {plugin.name}
+                </span>
+                {isInstalled && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                    Installiert
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </section>
+      ) : (
+        <section
+          className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-10 text-center"
+          aria-live="polite"
+        >
+          <p className="text-base font-semibold">Noch keine Apps von Freunden</p>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Hier erscheinen Apps, sobald Freunde etwas für den Alo-Marketplace freigeben.
+          </p>
+        </section>
+      )}
 
       <Dialog
         open={selected !== null}

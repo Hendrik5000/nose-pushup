@@ -381,6 +381,7 @@ export function MarketplacePublishedAppViewer({
                 <>
                   <MarketplaceManifestView
                     manifest={manifest}
+                    checklistStorageScope={JSON.stringify([userId, appId, installedVersion])}
                     canRunActions={Boolean(ready && pinnedInstall?.enabled)}
                     allowedActionIds={pinnedInstall?.grantedActionIds ?? []}
                     pendingActionId={pendingActionId}
