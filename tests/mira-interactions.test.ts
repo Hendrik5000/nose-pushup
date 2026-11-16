@@ -200,3 +200,17 @@ test("Mira keeps the Markdown and Nexus paths separate; card changes remain loca
     /superAiChat|useServerFn|fetch\(|postMessage|onSend|dangerouslySetInnerHTML|<iframe|<script/i,
   );
 });
+
+test("Mira opens with a fresh chat instead of restoring the most recent session", () => {
+  const page = readFileSync(
+    new URL("../src/components/mira/SuperAiPage.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    page,
+    /const \[activeId, setActiveIdState\] = useState<string>\(\(\) => newSessionId\(\)\)/,
+  );
+  assert.match(page, /const \[messages, setMessages\] = useState<Msg\[\]>\(\[\]\)/);
+  assert.doesNotMatch(page, /useState<string>\(\(\) => \{\s*const list = loadSessions\(\)/);
+  assert.doesNotMatch(page, /useState<Msg\[\]>\(\(\) => loadSessions\(\)\[0\]/);
+});

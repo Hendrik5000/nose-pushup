@@ -321,16 +321,13 @@ export function SuperAiPage({
   const listMarketplaceApps = useServerFn(listMarketplaceCurrentApps);
   const publishMarketplaceAppFn = useServerFn(publishMarketplaceApp);
   const [sessions, setSessions] = useState<AiSession[]>(() => loadSessions());
-  const [activeId, setActiveIdState] = useState<string>(() => {
-    const list = loadSessions();
-    return list[0]?.id ?? newSessionId();
-  });
+  const [activeId, setActiveIdState] = useState<string>(() => newSessionId());
   const activeIdRef = useRef(activeId);
   const setActiveId = (id: string) => {
     activeIdRef.current = id;
     setActiveIdState(id);
   };
-  const [messages, setMessages] = useState<Msg[]>(() => loadSessions()[0]?.messages ?? []);
+  const [messages, setMessages] = useState<Msg[]>([]);
   const displayMessages = useMemo<
     Array<Msg & { marketplaceManifest?: MarketplaceAuthoredManifest }>
   >(() => {
@@ -349,7 +346,7 @@ export function SuperAiPage({
     });
   }, [messages]);
   const [marketplaceProgress, setMarketplaceProgress] = useState<string | null>(null);
-  const [input, setInputState] = useState(() => readMiraDraft(loadSessions()[0]?.id ?? ""));
+  const [input, setInputState] = useState(() => readMiraDraft(""));
   const inputRef = useRef(input);
   const inputRevisionRef = useRef(0);
   const setInput = (value: string | ((previous: string) => string)) => {
