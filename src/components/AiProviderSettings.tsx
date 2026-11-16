@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   DEFAULT_PROVIDERS,
+  FREE_PROVIDER_CATALOG,
   loadProviders,
   saveProviders,
   type ProviderConfig,
@@ -35,8 +36,8 @@ export function AiProviderSettings({
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
         Keys sind kontogebunden auf diesem Gerät (localStorage) und werden beim Abmelden gelöscht.
-        Super-AI wählt je nach Aufgabe den passenden Provider. Custom-URL: nur HTTPS, serverseitig
-        gegen interne Netze gesperrt.
+        Super-AI wählt je nach Aufgabe einen aktivierten Anbieter. Es gibt keinen automatischen Wechsel
+        zu kostenpflichtigen Modellen. API-Keys werden wie bisher kontogebunden auf diesem Gerät gespeichert.
       </p>
       {list.map((p) => (
         <div key={p.id} className="rounded-2xl border border-border bg-background/40 p-3 space-y-2">
@@ -61,6 +62,15 @@ export function AiProviderSettings({
               className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
             />
           )}
+          {p.id === "cloudflare" && (
+            <input
+              value={p.accountId ?? ""}
+              onChange={(e) => update(p.id, { accountId: e.target.value.trim().slice(0, 32) })}
+              placeholder="Cloudflare Account ID (32 Zeichen)"
+              autoComplete="off"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
+            />
+          )}
           {p.id === "custom" && (
             <input
               value={p.baseUrl ?? ""}
@@ -75,6 +85,24 @@ export function AiProviderSettings({
             placeholder="Modell"
             className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
           />
+          {FREE_PROVIDER_CATALOG.some((entry) => entry.id === p.id) && (
+            <div className="space-y-1 rounded-xl bg-muted/40 p-2 text-[10px] text-muted-foreground">
+              {(() => {
+                const entry = FREE_PROVIDER_CATALOG.find((item) => item.id === p.id)!;
+                return (
+                  <>
+                    <p>{entry.summary}</p>
+                    <p>{entry.freeAccess}</p>
+                    <p>Freigegebene Modelle: {entry.models.join(", ")}</p>
+                    <div className="flex gap-3 text-primary">
+                      <a href={entry.keyUrl} target="_blank" rel="noreferrer">API-Key holen</a>
+                      <a href={entry.docsUrl} target="_blank" rel="noreferrer">API-Doku</a>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
           <div className="text-[10px] text-muted-foreground">Aufgaben: {p.tasks.join(", ")}</div>
         </div>
       ))}

@@ -2,7 +2,16 @@
 
 import { providersStorageKey } from "@/lib/sensitive-storage";
 
-export type ProviderId = "openai" | "anthropic" | "google" | "lovable" | "custom";
+export type ProviderId =
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "lovable"
+  | "custom"
+  | "groq"
+  | "openrouter"
+  | "cerebras"
+  | "cloudflare";
 
 export type AiTask =
   | "general"
@@ -24,11 +33,62 @@ export type ProviderConfig = {
   enabled: boolean;
   apiKey: string;
   baseUrl?: string;
+  accountId?: string;
   model: string;
   tasks: AiTask[];
 };
 
 const STORAGE_KEY = "super-ai-providers-v1";
+
+export type ProviderCatalogEntry = {
+  id: Exclude<ProviderId, "openai" | "anthropic" | "google" | "lovable" | "custom">;
+  summary: string;
+  freeAccess: string;
+  models: string[];
+  keyUrl: string;
+  docsUrl: string;
+  supportsImages: false;
+};
+
+/** Free access is provider-controlled and can change; no paid fallback is configured. */
+export const FREE_PROVIDER_CATALOG: ProviderCatalogEntry[] = [
+  {
+    id: "groq",
+    summary: "Sehr schnelle Inferenz mit OpenAI-kompatibler Chat-API.",
+    freeAccess: "Kostenloser Developer-Zugang mit Limits; aktuelle Kontingente beim Anbieter prüfen.",
+    models: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
+    keyUrl: "https://console.groq.com/keys",
+    docsUrl: "https://console.groq.com/docs/openai",
+    supportsImages: false,
+  },
+  {
+    id: "openrouter",
+    summary: "Ein Zugang zu vielen Modellfamilien; der Free-Router wählt nur kostenlose Modelle.",
+    freeAccess: "Free-Modelle; der Free-Plan ist begrenzt (derzeit 50 Anfragen/Tag laut Anbieter).",
+    models: ["openrouter/free"],
+    keyUrl: "https://openrouter.ai/keys",
+    docsUrl: "https://openrouter.ai/docs/quickstart",
+    supportsImages: false,
+  },
+  {
+    id: "cerebras",
+    summary: "Sehr schnelle Inferenz für ausgewählte Open-Weight-Modelle.",
+    freeAccess: "5 USD Startguthaben; danach können API-Anfragen kostenpflichtig sein.",
+    models: ["gpt-oss-120b"],
+    keyUrl: "https://cloud.cerebras.ai/",
+    docsUrl: "https://inference-docs.cerebras.ai/",
+    supportsImages: false,
+  },
+  {
+    id: "cloudflare",
+    summary: "Workers AI mit mehreren Open-Weight-Modellen und festem Cloudflare-Endpunkt.",
+    freeAccess: "10.000 Neurons pro Tag im Free-Plan; einzelne Modelle benötigen einen Paid-Plan.",
+    models: ["@cf/zai-org/glm-4.7-flash", "@cf/google/gemma-4-26b-a4b-it", "@cf/nvidia/nemotron-3-120b-a12b"],
+    keyUrl: "https://dash.cloudflare.com/profile/api-tokens",
+    docsUrl: "https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/",
+    supportsImages: false,
+  },
+];
 
 export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   {
@@ -72,6 +132,39 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     model: "my-model",
     tasks: ["general"],
   },
+  {
+    id: "groq",
+    label: "Groq (Free Developer)",
+    enabled: false,
+    apiKey: "",
+    model: "openai/gpt-oss-20b",
+    tasks: ["general", "coding", "science", "creative", "chat_summary"],
+  },
+  {
+    id: "openrouter",
+    label: "OpenRouter (Free Models)",
+    enabled: false,
+    apiKey: "",
+    model: "openrouter/free",
+    tasks: ["general", "coding", "science", "creative", "chat_summary"],
+  },
+  {
+    id: "cerebras",
+    label: "Cerebras (Startguthaben)",
+    enabled: false,
+    apiKey: "",
+    model: "gpt-oss-120b",
+    tasks: ["general", "coding", "science", "creative"],
+  },
+  {
+    id: "cloudflare",
+    label: "Cloudflare Workers AI",
+    enabled: false,
+    apiKey: "",
+    accountId: "",
+    model: "@cf/zai-org/glm-4.7-flash",
+    tasks: ["general", "coding", "science", "creative"],
+  },
 ];
 
 export function loadProviders(userId?: string | null): ProviderConfig[] {
@@ -101,6 +194,9 @@ export function saveProviders(list: ProviderConfig[], userId?: string | null) {
   const sanitized = list.map((p) => ({
     ...p,
     apiKey: typeof p.apiKey === "string" ? p.apiKey : "",
+    ...(p.id === "cloudflare"
+      ? { accountId: typeof p.accountId === "string" ? p.accountId.trim().slice(0, 32) : "" }
+      : {}),
   }));
   localStorage.setItem(providersStorageKey(userId), JSON.stringify(sanitized));
 }
@@ -180,6 +276,7 @@ export function toPayload(p: ProviderConfig) {
     id: p.id,
     apiKey: p.apiKey,
     baseUrl: p.baseUrl,
+    accountId: p.id === "cloudflare" ? p.accountId : undefined,
     model: p.model,
   };
 }
