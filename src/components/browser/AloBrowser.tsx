@@ -426,13 +426,11 @@ export default function AloBrowser() {
           `https://de.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=6&format=json&origin=*`,
         );
         const w = await wikiRes.json();
-        return (w[1] || []).map(
-          (title: string, i: number) => ({
-            title,
-            snippet: w[2]?.[i] || "Wikipedia-Artikel im Alo-Browser lesen",
-            url: w[3]?.[i] || `https://de.m.wikipedia.org/wiki/${encodeURIComponent(title)}`,
-          }),
-        );
+        return (w[1] || []).map((title: string, i: number) => ({
+          title,
+          snippet: w[2]?.[i] || "Wikipedia-Artikel im Alo-Browser lesen",
+          url: w[3]?.[i] || `https://de.m.wikipedia.org/wiki/${encodeURIComponent(title)}`,
+        }));
       } catch (_) {
         return [];
       }
