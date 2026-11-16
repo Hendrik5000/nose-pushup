@@ -383,7 +383,9 @@ export const superAiChat = createServerFn({ method: "POST" })
       ["openrouter", "cerebras", "cloudflare"].includes(p.id) &&
       attachments.some((item) => item.mime.startsWith("image/"))
     ) {
-      throw new Error("Dieser Anbieter ist in Alo derzeit nur für Text und Textdateien freigeschaltet. Es wurde kein Bild gesendet.");
+      throw new Error(
+        "Dieser Anbieter ist in Alo derzeit nur für Text und Textdateien freigeschaltet. Es wurde kein Bild gesendet.",
+      );
     }
     assertMiraAttachmentProvider(p.id, attachments);
 

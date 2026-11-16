@@ -73,7 +73,11 @@ export const FREE_PROVIDER_CATALOG: ProviderCatalogEntry[] = [
     id: "cloudflare",
     summary: "Workers AI mit mehreren Open-Weight-Modellen und festem Cloudflare-Endpunkt.",
     freeAccess: "10.000 Neurons pro Tag im Free-Plan; einzelne Modelle benötigen einen Paid-Plan.",
-    models: ["@cf/zai-org/glm-4.7-flash", "@cf/google/gemma-4-26b-a4b-it", "@cf/nvidia/nemotron-3-120b-a12b"],
+    models: [
+      "@cf/zai-org/glm-4.7-flash",
+      "@cf/google/gemma-4-26b-a4b-it",
+      "@cf/nvidia/nemotron-3-120b-a12b",
+    ],
     keyUrl: "https://dash.cloudflare.com/profile/api-tokens",
     docsUrl: "https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/",
     supportsImages: false,
