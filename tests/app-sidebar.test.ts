@@ -43,3 +43,14 @@ test("Areas and Tools pages offer app-specific sidebar actions", () => {
   assert.match(tools, /to="\/areas"/);
   assert.match(tools, /to="\/marketplace"/);
 });
+
+test("Alo Health offers app-specific sidebar actions in both design views", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/_authenticated/health.tsx"), "utf8");
+  assert.equal((route.match(/aria-label="App-Aktionen"/g) ?? []).length, 2);
+  assert.match(route, /function HealthActionsSidebar/);
+  assert.match(route, /href="#health-today"/);
+  assert.match(route, /to="\/sports"/);
+  assert.match(route, /to="\/football"/);
+  assert.match(route, /Sport verbinden/);
+});
