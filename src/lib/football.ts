@@ -32,6 +32,29 @@ export function currentFootballSeason(now = new Date()): number {
   return now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
 }
 
+export type FootballLeague = {
+  id: string;
+  name: string;
+  hasTable: boolean;
+};
+
+export const FOOTBALL_LEAGUES: FootballLeague[] = [
+  { id: "bl1", name: "Bundesliga", hasTable: true },
+  { id: "bl2", name: "2. Bundesliga", hasTable: true },
+  { id: "bl3", name: "3. Liga", hasTable: true },
+  { id: "deutschland", name: "Nationalmannschaft", hasTable: false },
+];
+
+export function footballMatchesPath(leagueId: string, season: number): string {
+  return leagueId === "deutschland"
+    ? "getmatchdata/deutschland"
+    : `getmatchdata/${leagueId}/${season}`;
+}
+
+export function footballTablePath(leagueId: string, season: number): string {
+  return `getbltable/${leagueId}/${season}`;
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
 }
