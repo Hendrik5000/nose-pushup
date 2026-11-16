@@ -73,7 +73,7 @@ test("empty welcome does not replace saved conversation messages", () => {
     /messages\.length === 0 &&\s*!activePendingUserMessage && \([\s\S]*?<div className="mira-chat-welcome/,
   );
   assert.match(page, /\{displayMessages\.map\(\(m, i\) => \(/);
-  assert.match(page, /loadSessions\(\)\[0\]\?\.messages \?\? \[\]/);
+  assert.doesNotMatch(page, /useState<Msg\[\]>\(\(\) => loadSessions\(\)\[0\]/);
 });
 
 test("Mira conversation stages stay frameless while keeping scrolling and user bubbles", () => {
