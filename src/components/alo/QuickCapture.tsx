@@ -144,91 +144,97 @@ export function QuickCapture({ userId, onSaved }: { userId: string; onSaved?: ()
   };
   return (
     <div className="space-y-3">
-      <h2 className="text-xl font-semibold">Schnell speichern</h2>
-      <p className="text-xs text-muted-foreground">
-        Privat für dein Konto. Keine automatische Übergabe an Mira oder Nexus. Dateien bis 1 MB;
-        größere Dateien bitte als Link ablegen.
-      </p>
-      <label>
-        Titel
+      <div className="rounded-2xl border border-border/50 bg-card/40 p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Schnell speichern
+        </p>
         <input
           aria-label="Ablage Titel"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           maxLength={200}
+          placeholder="Unbenannt"
+          className="mt-3 w-full border-0 bg-transparent px-0 text-2xl font-bold text-foreground shadow-none outline-none placeholder:text-muted-foreground/40 focus:outline-none focus-visible:outline-none focus-visible:ring-0"
         />
-      </label>
-      <label>
-        Text
         <textarea
           aria-label="Ablage Text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={3}
+          rows={6}
           maxLength={20000}
+          placeholder="Notiz schreiben …"
+          className="mt-2 w-full resize-y border-0 bg-transparent px-0 text-sm leading-relaxed text-foreground shadow-none outline-none placeholder:text-muted-foreground/40 focus:outline-none focus-visible:outline-none focus-visible:ring-0"
         />
-      </label>
-      <label>
-        Link
-        <input
-          type="url"
-          aria-label="Ablage Link"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://…"
-        />
-      </label>
-      <div className="grid grid-cols-2 gap-3">
-        <label>
-          Bereich
-          <select
-            aria-label="Ablage Bereich"
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-          >
-            <option value="all">Alo · Allgemein</option>
-            <option value="nose">Training</option>
-            <option value="mira">Mira</option>
-            <option value="nexus">Nexus</option>
-          </select>
-        </label>
-        <label>
-          Sammlung
-          <select
-            aria-label="Ablage Sammlung"
-            value={collection}
-            onChange={(e) => setCollection(e.target.value)}
-          >
-            <option value="">Ohne Sammlung</option>
-            {collections.map((c) => (
-              <option key={c.id} value={c.id}>
-                {String(c.body.title)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <p className="mt-3 border-t border-border/40 pt-3 text-xs text-muted-foreground">
+          Privat für dein Konto. Keine automatische Übergabe an Mira oder Nexus. Dateien bis 1 MB;
+          größere Dateien bitte als Link ablegen.
+        </p>
       </div>
-      <label>
-        Foto, Audio oder Datei
-        <input
-          aria-label="Datei zur Schnellablage"
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif,audio/*,application/pdf,text/plain"
-          disabled={busy || recording}
-          onChange={(e) => void attach(e.target.files?.[0])}
-        />
-      </label>
-      <button type="button" className="alo-btn" disabled={busy} onClick={() => void voice()}>
-        {recording ? "Aufnahme stoppen" : "Sprachnotiz aufnehmen"}
-      </button>
-      <button
-        type="button"
-        className="alo-btn"
-        disabled={busy || recording || !serializeQuickCaptureText({ title, text, url })}
-        onClick={exportText}
-      >
-        Entwurf als TXT herunterladen
-      </button>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="text-xs text-muted-foreground">
+          Link
+          <input
+            type="url"
+            aria-label="Ablage Link"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://…"
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-xs text-muted-foreground">
+            Bereich
+            <select
+              aria-label="Ablage Bereich"
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+            >
+              <option value="all">Alo · Allgemein</option>
+              <option value="nose">Training</option>
+              <option value="mira">Mira</option>
+              <option value="nexus">Nexus</option>
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Sammlung
+            <select
+              aria-label="Ablage Sammlung"
+              value={collection}
+              onChange={(e) => setCollection(e.target.value)}
+            >
+              <option value="">Ohne Sammlung</option>
+              {collections.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {String(c.body.title)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <label className="alo-btn cursor-pointer text-xs">
+          Foto, Audio oder Datei
+          <input
+            aria-label="Datei zur Schnellablage"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif,audio/*,application/pdf,text/plain"
+            disabled={busy || recording}
+            onChange={(e) => void attach(e.target.files?.[0])}
+          />
+        </label>
+        <button type="button" className="alo-btn" disabled={busy} onClick={() => void voice()}>
+          {recording ? "Aufnahme stoppen" : "Sprachnotiz aufnehmen"}
+        </button>
+        <button
+          type="button"
+          className="alo-btn"
+          disabled={busy || recording || !serializeQuickCaptureText({ title, text, url })}
+          onClick={exportText}
+        >
+          Entwurf als TXT herunterladen
+        </button>
+      </div>
       {attachment && (
         <div className="alo-card">
           <p>{attachment.name}</p>
