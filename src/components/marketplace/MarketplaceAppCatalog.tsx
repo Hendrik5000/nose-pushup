@@ -41,18 +41,25 @@ export function MarketplaceAppCatalog({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeCollection, setActiveCollection] = useState<MarketplaceCollectionId>("official");
   const [query, setQuery] = useState("");
-  const visiblePlugins = getMarketplaceCollectionPlugins(plugins, activeCollection);
+  const isInstalled = (pluginId: string) => installState.installedPluginIds.includes(pluginId);
+  const availablePlugins = plugins.filter((plugin) => !isInstalled(plugin.id));
+  const visiblePlugins = getMarketplaceCollectionPlugins(availablePlugins, activeCollection);
+  const suggestions = availablePlugins.filter((plugin) =>
+    ["alo-sports", "alo-health-app", "alo-training"].includes(plugin.id),
+  );
+  const popular = availablePlugins.filter((plugin) =>
+    ["alo-sports", "alo-neon-starfighter"].includes(plugin.id),
+  );
   const selected = plugins.find((plugin) => plugin.id === selectedId) ?? null;
   const normalizedQuery = query.trim().toLowerCase();
   const searchResults =
     normalizedQuery.length > 0
-      ? plugins.filter(
+      ? availablePlugins.filter(
           (plugin) =>
             plugin.name.toLowerCase().includes(normalizedQuery) ||
             plugin.description.toLowerCase().includes(normalizedQuery),
         )
       : null;
-  const isInstalled = (pluginId: string) => installState.installedPluginIds.includes(pluginId);
 
   const AppIcon = ({ plugin, size }: { plugin: MarketplacePluginManifest; size: "md" | "lg" }) => {
     const Icon = MARKETPLACE_ICON_COMPONENTS[plugin.icon];
@@ -79,61 +86,36 @@ export function MarketplaceAppCatalog({
         <span className="mt-0.5 block truncate text-xs text-muted-foreground">
           {CATEGORY_LABELS[plugin.category]} · {plugin.publisher}
         </span>
-        {isInstalled(plugin.id) && (
-          <span className="mt-1 inline-block text-[11px] font-semibold text-primary">
-            Installiert
-          </span>
-        )}
       </span>
     </button>
   );
 
-  const ListRow = ({ plugin }: { plugin: MarketplacePluginManifest }) => {
-    const installed = isInstalled(plugin.id);
-    const enabled = installState.enabledPluginIds.includes(plugin.id);
-    return (
-      <div className="flex items-center gap-3 rounded-2xl px-1 py-2 transition hover:bg-card/70 sm:gap-4 sm:px-2">
-        <button
-          type="button"
-          aria-label={`${plugin.name}${installed ? ", auf diesem Gerät installiert" : ""}. Details öffnen`}
-          onClick={() => setSelectedId(plugin.id)}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:gap-4"
-        >
-          <AppIcon plugin={plugin} size="md" />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold">{plugin.name}</span>
-            <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-              {CATEGORY_LABELS[plugin.category]} · {plugin.publisher} · Version {plugin.version}
-            </span>
-            {installed && (
-              <span className="mt-1 inline-block text-[11px] font-semibold text-primary">
-                {enabled ? "Installiert und aktiv" : "Installiert, inaktiv"}
-              </span>
-            )}
+  const ListRow = ({ plugin }: { plugin: MarketplacePluginManifest }) => (
+    <div className="flex items-center gap-3 rounded-2xl px-1 py-2 transition hover:bg-card/70 sm:gap-4 sm:px-2">
+      <button
+        type="button"
+        aria-label={`${plugin.name}. Details öffnen`}
+        onClick={() => setSelectedId(plugin.id)}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:gap-4"
+      >
+        <AppIcon plugin={plugin} size="md" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold">{plugin.name}</span>
+          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+            {CATEGORY_LABELS[plugin.category]} · {plugin.publisher} · Version {plugin.version}
           </span>
-        </button>
-        {installed ? (
-          <button
-            type="button"
-            disabled={!ready}
-            onClick={() => onOpen(plugin.id)}
-            className="min-h-11 shrink-0 rounded-full border border-primary/40 px-4 text-sm font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Öffnen
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={!ready}
-            onClick={() => onInstall(plugin.id, plugin.name)}
-            className="min-h-11 shrink-0 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Installieren
-          </button>
-        )}
-      </div>
-    );
-  };
+        </span>
+      </button>
+      <button
+        type="button"
+        disabled={!ready}
+        onClick={() => onInstall(plugin.id, plugin.name)}
+        className="min-h-11 shrink-0 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Installieren
+      </button>
+    </div>
+  );
 
   return (
     <>
@@ -231,41 +213,41 @@ export function MarketplaceAppCatalog({
               </div>
               <div className="absolute -right-8 -top-12 h-48 w-48 rounded-full border-[22px] border-emerald-300/20" />
             </div>
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-lg font-bold">Vorschläge für dich</h2>
-                <button
-                  type="button"
-                  onClick={() => setActiveCollection("recommended")}
-                  className="rounded-full p-2 text-muted-foreground hover:bg-background hover:text-foreground"
-                  aria-label="Empfehlungen anzeigen"
-                >
-                  <ArrowRight className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
-                {plugins
-                  .filter((plugin) =>
-                    ["alo-sports", "alo-health-app", "alo-training"].includes(plugin.id),
-                  )
-                  .map((plugin) => (
+            {suggestions.length > 0 && (
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-lg font-bold">Vorschläge für dich</h2>
+                  <button
+                    type="button"
+                    onClick={() => setActiveCollection("recommended")}
+                    className="rounded-full p-2 text-muted-foreground hover:bg-background hover:text-foreground"
+                    aria-label="Empfehlungen anzeigen"
+                  >
+                    <ArrowRight className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+                  {suggestions.map((plugin) => (
                     <CarouselCard key={plugin.id} plugin={plugin} />
                   ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-lg font-bold">Beliebte Apps</h2>
-                <span className="text-xs text-muted-foreground">{plugins.length} Angebote</span>
-              </div>
-              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
-                {plugins
-                  .filter((plugin) => ["alo-sports", "alo-neon-starfighter"].includes(plugin.id))
-                  .map((plugin) => (
+            )}
+            {popular.length > 0 && (
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-lg font-bold">Beliebte Apps</h2>
+                  <span className="text-xs text-muted-foreground">
+                    {availablePlugins.length} Angebote
+                  </span>
+                </div>
+                <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+                  {popular.map((plugin) => (
                     <CarouselCard key={plugin.id} plugin={plugin} />
                   ))}
+                </div>
               </div>
-            </div>
+            )}
           </section>
 
           {visiblePlugins.length > 0 ? (
@@ -285,10 +267,22 @@ export function MarketplaceAppCatalog({
               className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-10 text-center"
               aria-live="polite"
             >
-              <p className="text-base font-semibold">Noch keine Apps von Freunden</p>
-              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                Hier erscheinen Apps, sobald Freunde etwas für den Alo-Marketplace freigeben.
-              </p>
+              {activeCollection === "friends" ? (
+                <>
+                  <p className="text-base font-semibold">Noch keine Apps von Freunden</p>
+                  <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                    Hier erscheinen Apps, sobald Freunde etwas für den Alo-Marketplace freigeben.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-base font-semibold">Alles installiert</p>
+                  <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                    Alle Apps dieser Kollektion sind bereits auf diesem Gerät installiert und
+                    erscheinen dadurch nicht mehr im Marketplace.
+                  </p>
+                </>
+              )}
             </section>
           )}
         </>
