@@ -315,4 +315,3 @@ test("secondary-section Home actions remain available in both visual variants", 
     );
   }
 });
-

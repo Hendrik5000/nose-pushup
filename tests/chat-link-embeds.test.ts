@@ -1,11 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import {
-  extractTikTokLinks,
-  tiktokEmbedSrc,
-  tiktokOEmbedUrl,
-} from "../src/lib/link-embeds";
+import { extractTikTokLinks, tiktokEmbedSrc, tiktokOEmbedUrl } from "../src/lib/link-embeds";
 
 test("extrahiert mehrere TikTok-Links aus einer Nachricht", () => {
   const text = [
@@ -44,8 +40,15 @@ test("m- und www-Varianten werden erkannt, Embed-URL korrekt", () => {
   );
   assert.equal(links.length, 2);
   assert.equal(links[0].videoId, "7301234567890123456");
-  assert.equal(tiktokEmbedSrc("7301234567890123456"), "https://www.tiktok.com/embed/v2/7301234567890123456");
-  assert.ok(tiktokOEmbedUrl("https://vm.tiktok.com/abc/").includes("url=https%3A%2F%2Fvm.tiktok.com%2Fabc%2F"));
+  assert.equal(
+    tiktokEmbedSrc("7301234567890123456"),
+    "https://www.tiktok.com/embed/v2/7301234567890123456",
+  );
+  assert.ok(
+    tiktokOEmbedUrl("https://vm.tiktok.com/abc/").includes(
+      "url=https%3A%2F%2Fvm.tiktok.com%2Fabc%2F",
+    ),
+  );
 });
 
 test("LocalChatShell bindet MessageLinkEmbeds ein (Regressionsschutz)", () => {

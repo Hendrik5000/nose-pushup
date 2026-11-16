@@ -86,7 +86,9 @@ test("schemaVersion 3 lehnt unbekannte Felder und ungültige Blöcke ab", () => 
     () =>
       validateMarketplaceAuthoredManifest({
         ...FLEX_MANIFEST,
-        blocks: [{ type: "stats", items: Array.from({ length: 9 }, () => ({ label: "x", value: "y" })) }],
+        blocks: [
+          { type: "stats", items: Array.from({ length: 9 }, () => ({ label: "x", value: "y" })) },
+        ],
       }),
     /1 bis 8/,
   );
@@ -99,7 +101,11 @@ test("schemaVersion 3 lehnt unbekannte Felder und ungültige Blöcke ab", () => 
     /1 bis 8/,
   );
   assert.throws(
-    () => validateMarketplaceAuthoredManifest({ ...FLEX_MANIFEST, blocks: [{ type: "divider", extra: 1 }] }),
+    () =>
+      validateMarketplaceAuthoredManifest({
+        ...FLEX_MANIFEST,
+        blocks: [{ type: "divider", extra: 1 }],
+      }),
     /Trennblock/,
   );
   assert.throws(

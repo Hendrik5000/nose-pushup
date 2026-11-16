@@ -342,10 +342,7 @@ test("Marketplace Admin access is bound to the current account during either swi
 
 test("Marketplace implementation has no executable plugin or network primitives", () => {
   const library = readFileSync(new URL("../src/lib/marketplace.ts", import.meta.url), "utf8");
-  const route = readFileSync(
-    new URL("../src/routes/marketplace.tsx", import.meta.url),
-    "utf8",
-  );
+  const route = readFileSync(new URL("../src/routes/marketplace.tsx", import.meta.url), "utf8");
   const catalog = readFileSync(
     new URL("../src/components/marketplace/MarketplaceAppCatalog.tsx", import.meta.url),
     "utf8",
@@ -359,10 +356,7 @@ test("Marketplace implementation has no executable plugin or network primitives"
   }
   assert.doesNotMatch(route, /srcDoc|<script\b/i);
   assert.match(route, /createFileRoute\("\/marketplace"\)/);
-  assert.doesNotMatch(
-    route,
-    /beforeLoad|redirect\(|requireSupabaseAuth|runMarketplaceAdminAction/,
-  );
+  assert.doesNotMatch(route, /beforeLoad|redirect\(|requireSupabaseAuth|runMarketplaceAdminAction/);
   assert.match(route, /supabase\.auth\.getSession\(\)/);
   assert.match(route, /onAuthStateChange/);
   assert.match(route, /getAdminAreaAccess\(\)[\s\S]*?setAdminAccess\(\{ userId, isAdmin:/);
@@ -373,4 +367,3 @@ test("Marketplace implementation has no executable plugin or network primitives"
   assert.match(route, /Änderung nicht gespeichert/);
   assert.ok(MARKETPLACE_CATALOG.every((plugin) => typeof plugin.action !== "function"));
 });
-
