@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getMarketplaceCollectionPlugins, type MarketplaceCollectionId } from "@/lib/marketplace-collections";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { MARKETPLACE_ICON_COMPONENTS } from "@/components/marketplace/MarketplaceIcon";
 import {
@@ -34,17 +35,38 @@ export function MarketplaceAppCatalog({
   onOpen,
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeCollection, setActiveCollection] = useState<MarketplaceCollectionId>("official");
+  const visiblePlugins = getMarketplaceCollectionPlugins(plugins, activeCollection);
   const selected = plugins.find((plugin) => plugin.id === selectedId) ?? null;
   const installed = selected ? installState.installedPluginIds.includes(selected.id) : false;
   const enabled = selected ? installState.enabledPluginIds.includes(selected.id) : false;
 
   return (
     <>
-      <section
-        className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6"
-        aria-label="Kuratierte Alo-Apps, Bereiche und Werkzeuge"
-      >
-        {plugins.map((plugin) => {
+      <nav className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-3" aria-label="Marketplace-Kategorien">
+        {([
+          ["official", "Offiziell"],
+          ["recommended", "Empfohlen"],
+          ["new", "Neu"],
+          ["friends", "Von Freunden"],
+        ] as const).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={activeCollection === id}
+            onClick={() => setActiveCollection(id)}
+            className={`min-h-10 shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeCollection === id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card/70 text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+      {visiblePlugins.length > 0 ? (
+        <section
+          className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6"
+          aria-label="Kuratierte Alo-Apps, Bereiche und Werkzeuge"
+        >
+        {visiblePlugins.map((plugin) => {
           const Icon = MARKETPLACE_ICON_COMPONENTS[plugin.icon];
           const isInstalled = installState.installedPluginIds.includes(plugin.id);
           return (
@@ -69,7 +91,15 @@ export function MarketplaceAppCatalog({
             </button>
           );
         })}
-      </section>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-10 text-center" aria-live="polite">
+          <p className="text-base font-semibold">Noch keine Apps von Freunden</p>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Hier erscheinen Apps, sobald Freunde etwas für den Alo-Marketplace freigeben.
+          </p>
+        </section>
+      )}
 
       <Dialog
         open={selected !== null}
