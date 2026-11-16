@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
 import { MarketplaceAppCatalog } from "@/components/marketplace/MarketplaceAppCatalog";
 import { MarketplaceCustomApps } from "@/components/marketplace/MarketplaceCustomApps";
@@ -75,18 +76,7 @@ function MarketplacePage() {
 
 function MarketplaceGuestView({ sessionChecked }: { sessionChecked: boolean }) {
   return (
-    <HomeAppMenuLayout
-      eyebrow="ALO · KURATIERT"
-      title="Marketplace"
-      description="Alle kuratierten Alo-Apps, Bereiche und Werkzeuge – auch ohne Anmeldung ansehen."
-    >
-      <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
-        Du siehst den öffentlichen Marketplace-Katalog. Zum Installieren und Öffnen der Apps melde
-        dich mit deinem Alo-Konto an.{" "}
-        <Link to="/auth" className="font-semibold text-primary underline-offset-4 hover:underline">
-          Zur Anmeldung
-        </Link>
-      </aside>
+    <HomeAppMenuLayout>
       {sessionChecked ? (
         <MarketplaceAppCatalog
           plugins={MARKETPLACE_CATALOG}
@@ -102,7 +92,35 @@ function MarketplaceGuestView({ sessionChecked }: { sessionChecked: boolean }) {
           Marketplace wird geladen …
         </p>
       )}
+      <footer className="space-y-4 border-t border-border/60 pt-6">
+        <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
+          Du siehst den öffentlichen Marketplace-Katalog. Zum Installieren und Öffnen der Apps melde
+          dich mit deinem Alo-Konto an.{" "}
+          <Link
+            to="/auth"
+            className="font-semibold text-primary underline-offset-4 hover:underline"
+          >
+            Zur Anmeldung
+          </Link>
+        </aside>
+        <MarketplaceFooterInfo description="Alle kuratierten Alo-Apps, Bereiche und Werkzeuge – auch ohne Anmeldung ansehen." />
+      </footer>
     </HomeAppMenuLayout>
+  );
+}
+
+function MarketplaceFooterInfo({ description }: { description: string }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--menu-accent)]">
+        ALO · KURATIERT
+      </p>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Marketplace</h1>
+      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+      <div className="mt-4">
+        <AloHomeLink />
+      </div>
+    </div>
   );
 }
 
@@ -205,19 +223,16 @@ function MarketplaceContent({ userId }: { userId: string }) {
   };
 
   return (
-    <HomeAppMenuLayout
-      eyebrow="ALO · KURATIERT"
-      title="Marketplace"
-      description="Installiere vorhandene Alo-Apps, Bereiche und Werkzeuge. Mit einem Admin-Konto kannst du zusätzlich mit Mira deklarative Apps entwerfen. Nur ausdrücklich bestätigte Manifeste werden veröffentlicht; ausführbare Plugins gibt es nicht."
-    >
-      <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
-        Persönliche Installationen, Aktivierungen und Versions-Pins werden nur in diesem Browser auf
-        diesem Gerät und getrennt nach deinem Alo-Konto gespeichert. Sie werden nicht
-        synchronisiert. Ein selbst erstelltes Manifest wird erst nach deiner ausdrücklichen
-        Bestätigung veröffentlicht.
-      </aside>
-
-      {isMarketplaceAdmin && <MarketplaceCustomApps userId={userId} isAdmin={isMarketplaceAdmin} />}
+    <HomeAppMenuLayout>
+      <MarketplaceAppCatalog
+        plugins={MARKETPLACE_CATALOG}
+        installState={state}
+        ready={ready}
+        onInstall={onInstall}
+        onToggle={onToggle}
+        onRemove={onRemove}
+        onOpen={onOpenPlugin}
+      />
 
       {storageError && (
         <p
@@ -231,21 +246,23 @@ function MarketplaceContent({ userId }: { userId: string }) {
         {status}
       </p>
 
-      <MarketplaceAppCatalog
-        plugins={MARKETPLACE_CATALOG}
-        installState={state}
-        ready={ready}
-        onInstall={onInstall}
-        onToggle={onToggle}
-        onRemove={onRemove}
-        onOpen={onOpenPlugin}
-      />
+      {isMarketplaceAdmin && <MarketplaceCustomApps userId={userId} isAdmin={isMarketplaceAdmin} />}
 
       {!ready && !storageError && (
         <p className="text-center text-xs text-muted-foreground" role="status">
           Lokaler Installationsstatus wird geladen …
         </p>
       )}
+
+      <footer className="space-y-4 border-t border-border/60 pt-6">
+        <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
+          Persönliche Installationen, Aktivierungen und Versions-Pins werden nur in diesem Browser
+          auf diesem Gerät und getrennt nach deinem Alo-Konto gespeichert. Sie werden nicht
+          synchronisiert. Ein selbst erstelltes Manifest wird erst nach deiner ausdrücklichen
+          Bestätigung veröffentlicht.
+        </aside>
+        <MarketplaceFooterInfo description="Installiere vorhandene Alo-Apps, Bereiche und Werkzeuge. Mit einem Admin-Konto kannst du zusätzlich mit Mira deklarative Apps entwerfen. Nur ausdrücklich bestätigte Manifeste werden veröffentlicht; ausführbare Plugins gibt es nicht." />
+      </footer>
     </HomeAppMenuLayout>
   );
 }
