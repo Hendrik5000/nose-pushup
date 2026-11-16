@@ -57,7 +57,7 @@ export function MiraVoiceConversationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="mira-voice-dialog fixed inset-0 z-50 grid h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-none border-0 p-0 text-white shadow-none sm:rounded-none">
+      <DialogContent className="mira-voice-dialog !fixed !inset-0 !z-50 !m-0 !grid !h-[100dvh] !w-screen !max-w-none !translate-x-0 !translate-y-0 !grid-rows-[auto_minmax(0,1fr)_auto] !gap-0 !overflow-hidden !rounded-none !border-0 !p-0 !text-white !shadow-none">
         <DialogTitle className="sr-only">Sprachgespräch mit Mira</DialogTitle>
         <DialogDescription className="sr-only">
           Ein bewusst gestartetes Sprachgespräch mit Mira. Du kannst Mira jederzeit unterbrechen
