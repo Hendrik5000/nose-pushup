@@ -585,144 +585,178 @@ function Collections({
     }
   };
   return (
-    <div className="space-y-3">
-      <h2 className="text-xl font-semibold">Sammlungen</h2>
-      <p className="text-xs text-muted-foreground">
-        Eine persönliche Sammlung für Inhalte aus allen drei Bereichen: Trainingspläne,
-        Mira-Antworten, Nexus-Nachrichten und Dateien. Keine automatische Freigabe an andere
-        Personen.
-      </p>
-      <form
-        className="flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!name.trim()) return;
-          try {
-            const r = putAlo("collection", { title: name.trim() }, undefined, userId);
-            setSelected(r.id);
-            setName("");
-          } catch {
-            setStatus("Sammlung konnte nicht gespeichert werden.");
-          }
-        }}
-      >
-        <input
-          aria-label="Neue Sammlung"
-          placeholder="Name der Sammlung"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={100}
-        />
-        <button className="alo-btn-primary" disabled={!name.trim()}>
-          Anlegen
-        </button>
-      </form>
-      <label>
-        Sammlung auswählen
-        <select
-          aria-label="Sammlung auswählen"
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-        >
-          <option value="">Alle Ablagen</option>
-          {collections.map((c) => (
-            <option key={c.id} value={c.id}>
-              {String(c.body.title)}
-            </option>
-          ))}
-        </select>
-      </label>
-      {selected && (
+    <div className="grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)]">
+      <aside className="space-y-1" aria-label="Notiz-Sammlungen">
+        <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Notizen
+        </p>
         <button
-          className="alo-btn text-destructive"
-          onClick={() => {
-            const c = collections.find((c) => c.id === selected);
-            if (c) remove(c);
+          type="button"
+          onClick={() => setSelected("")}
+          aria-pressed={selected === ""}
+          className={`w-full rounded-lg px-2 py-1.5 text-left text-sm font-medium transition-colors ${selected === "" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/60"}`}
+        >
+          Alle Notizen
+          <span className="ml-1 text-xs opacity-70">{captures.length}</span>
+        </button>
+        {collections.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => setSelected(c.id)}
+            aria-pressed={selected === c.id}
+            className={`w-full truncate rounded-lg px-2 py-1.5 text-left text-sm font-medium transition-colors ${selected === c.id ? "bg-primary/10 text-primary" : "text-foreground/80 hover:bg-muted/60"}`}
+          >
+            {String(c.body.title)}
+            <span className="ml-1 text-xs opacity-70">
+              {captures.filter((r) => r.body.collectionId === c.id).length}
+            </span>
+          </button>
+        ))}
+        <form
+          className="flex gap-1 px-1 pt-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!name.trim()) return;
+            try {
+              const r = putAlo("collection", { title: name.trim() }, undefined, userId);
+              setSelected(r.id);
+              setName("");
+            } catch {
+              setStatus("Sammlung konnte nicht gespeichert werden.");
+            }
           }}
         >
-          Sammlung entfernen
-        </button>
-      )}
-      {!items.length && (
-        <p className="alo-card text-sm text-muted-foreground">
-          Noch keine Inhalte. Nutze „Schnell speichern“ oder „Alo-Aktionen“ an einer Nachricht,
-          Antwort oder einem Trainingsplan.
+          <input
+            aria-label="Neue Sammlung"
+            placeholder="Neue Sammlung …"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+          />
+          <button className="alo-btn text-xs" disabled={!name.trim()}>
+            Anlegen
+          </button>
+        </form>
+        {selected && (
+          <button
+            className="mx-1 mt-2 text-xs text-destructive hover:underline"
+            onClick={() => {
+              const c = collections.find((c) => c.id === selected);
+              if (c) remove(c);
+            }}
+          >
+            Sammlung entfernen
+          </button>
+        )}
+      </aside>
+      <div className="space-y-3">
+        <h2 className="text-xl font-semibold">
+          {selected
+            ? String(collections.find((c) => c.id === selected)?.body.title ?? "Sammlung")
+            : "Alle Notizen"}
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Eine persönliche Sammlung für Inhalte aus allen drei Bereichen: Trainingspläne,
+          Mira-Antworten, Nexus-Nachrichten und Dateien. Keine automatische Freigabe an andere
+          Personen.
         </p>
-      )}
-      {items.map((r) => {
-        const a = readAttachment(r.body.attachment);
-        const url = safeLink(r.body.url);
-        return (
-          <article className="alo-card space-y-2" key={r.id}>
-            <p className="text-xs text-primary">
-              {String(r.body.source ?? "Schnellablage")} ·{" "}
-              {AREA_LABELS[String(r.body.area)] ?? "Alo"} ·{" "}
-              {r.dirty ? "lokal / Abgleich offen" : "Cloud + lokal"}
-            </p>
-            <h3 className="font-semibold">{String(r.body.title)}</h3>
-            <p className="whitespace-pre-wrap break-words text-sm">{String(r.body.text ?? "")}</p>
-            {url && (
-              <a
-                className="text-sm text-primary underline"
-                target="_blank"
-                rel="noopener noreferrer"
-                href={url}
-              >
-                Link öffnen
-              </a>
-            )}
-            {a && (
-              <>
-                <p className="text-xs">Datei: {a.name}</p>
-                {a.type.startsWith("image/") && (
-                  <img src={a.data} alt={a.name} className="max-h-60 rounded-xl" />
-                )}
-                {a.type.startsWith("audio/") && <audio controls src={a.data} className="w-full" />}
-                <a className="alo-btn inline-block" href={a.data} download={a.name}>
-                  Datei herunterladen
+        {!items.length && (
+          <p className="rounded-xl border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
+            Noch keine Inhalte. Nutze „Schnell speichern“ oder „Alo-Aktionen“ an einer Nachricht,
+            Antwort oder einem Trainingsplan.
+          </p>
+        )}
+        {items.map((r) => {
+          const a = readAttachment(r.body.attachment);
+          const url = safeLink(r.body.url);
+          return (
+            <article
+              className="rounded-xl border border-border/60 bg-card/60 p-5 transition-shadow hover:shadow-sm"
+              key={r.id}
+            >
+              <p className="text-xs text-muted-foreground">
+                {String(r.body.source ?? "Schnellablage")} ·{" "}
+                {AREA_LABELS[String(r.body.area)] ?? "Alo"} ·{" "}
+                {r.dirty ? "lokal / Abgleich offen" : "Cloud + lokal"}
+              </p>
+              <h3 className="mt-1 text-lg font-semibold">{String(r.body.title)}</h3>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground/90">
+                {String(r.body.text ?? "")}
+              </p>
+              {url && (
+                <a
+                  className="mt-2 inline-block text-sm text-primary underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href={url}
+                >
+                  Link öffnen
                 </a>
-              </>
-            )}
-            <label>
-              Zuordnung
-              <select
-                aria-label={`Sammlung für ${String(r.body.title)}`}
-                value={String(r.body.collectionId ?? "")}
-                onChange={(e) => {
-                  try {
-                    putAlo("capture", { ...r.body, collectionId: e.target.value }, r.id, userId);
-                  } catch {
-                    setStatus("Zuordnung nicht gespeichert.");
-                  }
-                }}
-              >
-                <option value="">Ohne Sammlung</option>
-                {collections.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {String(c.body.title)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="flex flex-wrap gap-3">
-              <ContentActions
-                userId={userId}
-                text={String(r.body.text ?? "")}
-                title={String(r.body.title)}
-                source={String(r.body.source ?? "Alo")}
-                extra={a ? { attachment: a } : {}}
-                onMiraNavigate={onNavigate}
-              />
-              <button className="text-xs text-destructive" onClick={() => remove(r)}>
-                Ablage löschen
-              </button>
-            </div>
-          </article>
-        );
-      })}
-      <p role="status" className="text-xs">
-        {status}
-      </p>
+              )}
+              {a && (
+                <>
+                  <p className="mt-2 text-xs">Datei: {a.name}</p>
+                  {a.type.startsWith("image/") && (
+                    <img src={a.data} alt={a.name} className="mt-2 max-h-60 rounded-lg" />
+                  )}
+                  {a.type.startsWith("audio/") && (
+                    <audio controls src={a.data} className="mt-2 w-full" />
+                  )}
+                  <a className="alo-btn mt-2 inline-block text-xs" href={a.data} download={a.name}>
+                    Datei herunterladen
+                  </a>
+                </>
+              )}
+              <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border/40 pt-3">
+                <label className="text-xs text-muted-foreground">
+                  Zuordnung
+                  <select
+                    aria-label={`Sammlung für ${String(r.body.title)}`}
+                    value={String(r.body.collectionId ?? "")}
+                    onChange={(e) => {
+                      try {
+                        putAlo(
+                          "capture",
+                          { ...r.body, collectionId: e.target.value },
+                          r.id,
+                          userId,
+                        );
+                      } catch {
+                        setStatus("Zuordnung nicht gespeichert.");
+                      }
+                    }}
+                  >
+                    <option value="">Ohne Sammlung</option>
+                    {collections.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {String(c.body.title)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <ContentActions
+                  userId={userId}
+                  text={String(r.body.text ?? "")}
+                  title={String(r.body.title)}
+                  source={String(r.body.source ?? "Alo")}
+                  extra={a ? { attachment: a } : {}}
+                  onMiraNavigate={onNavigate}
+                />
+                <button
+                  className="text-xs text-destructive hover:underline"
+                  onClick={() => remove(r)}
+                >
+                  Ablage löschen
+                </button>
+              </div>
+            </article>
+          );
+        })}
+        <p role="status" className="text-xs">
+          {status}
+        </p>
+      </div>
     </div>
   );
 }
