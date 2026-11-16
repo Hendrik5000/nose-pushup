@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { loadMarketplaceChecklistProgress, saveMarketplaceChecklistProgress } from "@/lib/marketplace-runtime";
+import {
+  loadMarketplaceChecklistProgress,
+  saveMarketplaceChecklistProgress,
+} from "@/lib/marketplace-runtime";
 import { getMarketplaceAuthorAction, type MarketplaceHostAction } from "@/lib/marketplace";
 import type { MarketplaceAuthoredManifest, MarketplaceQuizGame } from "@/lib/marketplace-authoring";
 
@@ -181,10 +184,7 @@ function MarketplaceChecklistView({
   const done = items.filter((_, itemIndex) => checked[itemIndex]).length;
 
   return (
-    <section
-      aria-label={title}
-      className="rounded-xl border border-border/60 bg-background/60 p-3"
-    >
+    <section aria-label={title} className="rounded-xl border border-border/60 bg-background/60 p-3">
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-bold">{title}</h4>
         <span className="text-[10px] text-muted-foreground" role="status" aria-live="polite">
