@@ -131,6 +131,30 @@ function SportsPage() {
     <HomeAppMenuLayout
       eyebrow="ALO SPORTS · FUSSBALL"
       title="Spiele & Live"
+      sidebar={
+        <div className="flex flex-col gap-2">
+          <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Ligen
+          </p>
+          {FOOTBALL_LEAGUES.map((entry: FootballLeague) => (
+            <button
+              key={entry.id}
+              type="button"
+              onClick={() => setLeagueId(entry.id)}
+              aria-pressed={entry.id === league.id}
+              className={`rounded-lg px-3 py-2 text-left text-sm font-medium ${entry.id === league.id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-card"}`}
+            >
+              {entry.name}
+            </button>
+          ))}
+          <Link
+            to="/football"
+            className="mt-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary hover:underline"
+          >
+            Alo Fußball öffnen
+          </Link>
+        </div>
+      }
       description={`${league.name} der Saison ${season}/${String(season + 1).slice(2)} — ${league.id === "deutschland" ? "live von TheSportsDB" : "live von OpenLigaDB"}.`}
     >
       <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Ligaauswahl">

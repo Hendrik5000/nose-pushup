@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
 import { ALO_WORKSPACE_MENU_ORDER, ALO_WORKSPACE_TOOLS } from "@/lib/home-app-menus";
 
@@ -26,6 +26,25 @@ function AloToolsPage() {
       eyebrow="ALO · APPS"
       title="Alo-Werkzeuge"
       description="Wähle ein Werkzeug. Jeder Schnellzugriff öffnet die bestehende Alo-Funktion im eigenen Werkzeugmenü."
+      sidebar={
+        <div className="flex flex-col gap-2">
+          <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Aktionen
+          </p>
+          <Link
+            to="/areas"
+            className="rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-card"
+          >
+            Weitere Bereiche
+          </Link>
+          <Link
+            to="/marketplace"
+            className="rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-card"
+          >
+            Marketplace
+          </Link>
+        </div>
+      }
     >
       <nav className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4" aria-label="Alo-Werkzeuge">
         {orderedTools.map(({ id, label, icon: Icon, description }) => (

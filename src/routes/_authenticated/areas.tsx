@@ -33,6 +33,25 @@ function MoreAreasPage() {
       eyebrow="ALO · APPS"
       title="Weitere Bereiche"
       description="Öffne einen Bereich direkt. Deine bisherigen Alo-Ziele bleiben alle hier erreichbar."
+      sidebar={
+        <div className="flex flex-col gap-2">
+          <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Aktionen
+          </p>
+          <Link
+            to="/tools"
+            className="rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-card"
+          >
+            Alo-Werkzeuge
+          </Link>
+          <Link
+            to="/marketplace"
+            className="rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-card"
+          >
+            Marketplace
+          </Link>
+        </div>
+      }
     >
       <nav
         className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4"

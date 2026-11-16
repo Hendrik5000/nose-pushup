@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
@@ -84,6 +84,25 @@ function FootballPage() {
       eyebrow="ALO FUSSBALL · BUNDESLIGA"
       title="Fußball"
       description={`Spieltage und Tabelle der Saison ${season}/${String(season + 1).slice(2)} — live von OpenLigaDB.`}
+      sidebar={
+        <div className="flex flex-col gap-2">
+          <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Aktionen
+          </p>
+          <Link
+            to="/sports"
+            className="rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-card"
+          >
+            Sports-Übersicht
+          </Link>
+          <Link
+            to="/marketplace"
+            className="rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-card"
+          >
+            Marketplace
+          </Link>
+        </div>
+      }
     >
       {error && (
         <p
