@@ -2,7 +2,6 @@ import { getPublicGameDocument } from "@/lib/public-game.functions";
 import { PUBLIC_GAME_IDS, type PublicGameId } from "@/lib/public-game-policy";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { toggleGameFullscreen } from "@/lib/game-fullscreen";
 import { z } from "zod";
 
 const searchSchema = z.object({ game: z.enum(PUBLIC_GAME_IDS).optional() });
@@ -58,8 +57,8 @@ function GamesHub() {
   }, [selectedGame]);
 
   return (
-    <main className="min-h-screen bg-background px-3 pb-12 pt-4 text-foreground sm:px-6">
-      <header className="mx-auto mb-5 flex max-w-5xl items-center justify-between gap-4">
+    <main className={selectedGame ? "min-h-dvh bg-slate-950 text-foreground" : "min-h-screen bg-background px-3 pb-12 pt-4 text-foreground sm:px-6"}>
+      {!selectedGame && <header className="mx-auto mb-5 flex max-w-5xl items-center justify-between gap-4">
         <Link
           to="/games"
           search={{}}
@@ -77,9 +76,9 @@ function GamesHub() {
             Spielauswahl
           </Link>
         )}
-      </header>
+      </header>}
 
-      <div className="mx-auto max-w-5xl">
+      <div className={selectedGame ? "min-h-dvh" : "mx-auto max-w-5xl"}>
         {!selectedGame ? (
           <GameSelection />
         ) : loadFailed ? (
@@ -103,11 +102,11 @@ function GamesHub() {
           </p>
         )}
 
-        <p className="mx-auto mt-6 max-w-3xl rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+        {!selectedGame && <p className="mx-auto mt-6 max-w-3xl rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
           Diese Neufassungen sind keine rechtliche Freigabe. Vor einer Weitergabe oder
           Veröffentlichung sind eigenständige Rechte-, Marken-, Text- und Gestaltungsprüfungen
           erforderlich.
-        </p>
+        </p>}
       </div>
     </main>
   );
@@ -206,54 +205,24 @@ function GameChoice({
 
 function GameFrame({ game, gameDocument }: { game: PublicGameId; gameDocument: string }) {
   const title = game === "grid-defense" ? "Grid Defense" : "Kupferkern";
-  const frameRef = useRef<HTMLElement | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fullscreenFailed, setFullscreenFailed] = useState(false);
-
-  useEffect(() => {
-    const syncFullscreen = () => setIsFullscreen(document.fullscreenElement === frameRef.current);
-    document.addEventListener("fullscreenchange", syncFullscreen);
-    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
-  }, []);
-
-  const handleFullscreen = async () => {
-    setFullscreenFailed(false);
-    const success = await toggleGameFullscreen(frameRef.current, document);
-    setFullscreenFailed(!success);
-  };
 
   return (
-    <section
-      ref={frameRef}
-      className={`mx-auto w-full max-w-[1500px] overflow-hidden border border-border bg-slate-950 shadow-xl ${
-        isFullscreen ? "h-[100dvh] max-w-none rounded-none" : "rounded-2xl"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-slate-900 px-4 py-3 text-white">
-        <h2 className="truncate text-sm font-semibold">{title}</h2>
-        <button
-          type="button"
-          onClick={() => void handleFullscreen()}
-          aria-pressed={isFullscreen}
-          className="shrink-0 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300"
-        >
-          {isFullscreen ? "Vollbild verlassen" : "Vollbild"}
-        </button>
-      </div>
+    <section className="fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950">
+      <Link
+        to="/games"
+        search={{}}
+        aria-label="Zur Spielauswahl"
+        className="absolute right-3 top-3 z-10 rounded-lg border border-white/20 bg-slate-950/80 px-3 py-2 text-xs font-semibold text-white/80 shadow-lg backdrop-blur transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300"
+      >
+        Spielauswahl
+      </Link>
       <iframe
         title={title}
         srcDoc={gameDocument}
         sandbox="allow-scripts"
         referrerPolicy="no-referrer"
-        className={`w-full border-0 ${
-          isFullscreen ? "h-[calc(100dvh-53px)] min-h-0" : "h-[82dvh] min-h-[650px]"
-        }`}
+        className="block h-full min-h-0 w-full border-0"
       />
-      {fullscreenFailed && (
-        <p role="alert" className="border-t border-white/10 px-4 py-2 text-xs text-amber-200">
-          Vollbild ist in diesem Browser oder auf diesem Gerät nicht verfügbar.
-        </p>
-      )}
     </section>
   );
 }
