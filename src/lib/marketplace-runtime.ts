@@ -138,13 +138,21 @@ export function loadMarketplaceChecklistProgress(
     throw new Error("Ungültige Checklisten-Größe.");
   }
   const raw = storage.getItem(marketplaceChecklistStorageKey(scope, blockIndex));
-  if (!raw || raw.length > 256) return Object.freeze(Array.from({ length: itemCount }, () => false));
+  if (!raw || raw.length > 256) {
+    return Object.freeze(Array.from({ length: itemCount }, () => false));
+  }
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length > 8 || parsed.some((value) => typeof value !== "boolean")) {
+    if (
+      !Array.isArray(parsed) ||
+      parsed.length > 8 ||
+      parsed.some((value) => typeof value !== "boolean")
+    ) {
       return Object.freeze(Array.from({ length: itemCount }, () => false));
     }
-    return Object.freeze(Array.from({ length: itemCount }, (_, index) => parsed[index] === true));
+    return Object.freeze(
+      Array.from({ length: itemCount }, (_, index) => parsed[index] === true),
+    );
   } catch {
     return Object.freeze(Array.from({ length: itemCount }, () => false));
   }
@@ -157,8 +165,15 @@ export function saveMarketplaceChecklistProgress(
   blockIndex: number,
   progress: readonly boolean[],
 ): void {
-  if (progress.length < 1 || progress.length > 8 || progress.some((value) => typeof value !== "boolean")) {
+  if (
+    progress.length < 1 ||
+    progress.length > 8 ||
+    progress.some((value) => typeof value !== "boolean")
+  ) {
     throw new Error("Ungültiger Checklisten-Fortschritt.");
   }
-  storage.setItem(marketplaceChecklistStorageKey(scope, blockIndex), JSON.stringify(progress));
+  storage.setItem(
+    marketplaceChecklistStorageKey(scope, blockIndex),
+    JSON.stringify(progress),
+  );
 }

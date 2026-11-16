@@ -302,8 +302,14 @@ test("checklist progress is isolated between accounts, app versions and blocks",
   };
   const scope = JSON.stringify(["user-1", appId, 3]);
   saveMarketplaceChecklistProgress(storage, scope, 0, [true, true]);
-  assert.deepEqual(loadMarketplaceChecklistProgress(storage, JSON.stringify(["user-2", appId, 3]), 0, 2), [false, false]);
-  assert.deepEqual(loadMarketplaceChecklistProgress(storage, JSON.stringify(["user-1", appId, 4]), 0, 2), [false, false]);
+  assert.deepEqual(
+    loadMarketplaceChecklistProgress(storage, JSON.stringify(["user-2", appId, 3]), 0, 2),
+    [false, false],
+  );
+  assert.deepEqual(
+    loadMarketplaceChecklistProgress(storage, JSON.stringify(["user-1", appId, 4]), 0, 2),
+    [false, false],
+  );
   assert.deepEqual(loadMarketplaceChecklistProgress(storage, scope, 1, 2), [false, false]);
 });
 
@@ -326,7 +332,10 @@ test("checklist storage rejects invalid indexes, counts and values", () => {
   const storage = { getItem: () => null, setItem: () => undefined };
   assert.throws(() => loadMarketplaceChecklistProgress(storage, "scope", 12, 2), /Block/);
   assert.throws(() => loadMarketplaceChecklistProgress(storage, "scope", 0, 9), /Größe/);
-  assert.throws(() => saveMarketplaceChecklistProgress(storage, "scope", 0, [true, 1 as unknown as boolean]), /Fortschritt/);
+  assert.throws(
+    () => saveMarketplaceChecklistProgress(storage, "scope", 0, [true, 1 as unknown as boolean]),
+    /Fortschritt/,
+  );
 });
 
 test("installed app viewer scopes checklist progress to account, app and installed version", () => {
@@ -334,5 +343,8 @@ test("installed app viewer scopes checklist progress to account, app and install
     new URL("../src/components/marketplace/MarketplacePublishedAppViewer.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(source, /checklistStorageScope=\{JSON\.stringify\(\[userId, appId, installedVersion\]\)\}/);
+  assert.match(
+    source,
+    /checklistStorageScope=\{JSON\.stringify\(\[userId, appId, installedVersion\]\)\}/,
+  );
 });
