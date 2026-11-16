@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   useCallback,
   useEffect,
@@ -73,7 +73,18 @@ import {
   type MarketplacePublishedInstall,
   type MarketplacePublishedInstallState,
 } from "@/lib/marketplace-authoring";
-import { isMarketplaceAdminAccessGranted } from "@/lib/marketplace";
+import {
+  EMPTY_MARKETPLACE_INSTALL_STATE,
+  isMarketplaceAdminAccessGranted,
+  loadMarketplaceInstallState,
+  marketplaceInstallStorageKey,
+  MARKETPLACE_CATALOG,
+  removeMarketplacePlugin,
+  saveMarketplaceInstallState,
+  type MarketplaceHostAction,
+  type MarketplaceIconId,
+  type MarketplaceInstallState,
+} from "@/lib/marketplace";
 import {
   MiraComposerPressAndHold,
   MiraInlineDictationController,
@@ -120,11 +131,19 @@ type HomeHubTile =
       artwork: "gridDefense" | "kupferkern";
       game: PrivateGameId;
     }
-  | { kind: "marketplace"; id: string; title: string; install: MarketplacePublishedInstall };
+  | { kind: "marketplace"; id: string; title: string; install: MarketplacePublishedInstall }
+  | {
+      kind: "plugin";
+      id: string;
+      title: string;
+      icon: MarketplaceIconId;
+      action: MarketplaceHostAction;
+    };
 
 function buildHomeHubTiles(
   canSeeAdmin: boolean,
   installs: readonly MarketplacePublishedInstall[],
+  pluginState: MarketplaceInstallState,
 ): HomeHubTile[] {
   const tiles: HomeHubTile[] = [
     { kind: "standard", id: "mira", title: "Mira", artwork: "mira", to: "/ai" },
@@ -199,6 +218,27 @@ function buildHomeHubTiles(
       });
     }
   }
+  const standardRoutes = new Set<string>(
+    tiles.filter((tile) => tile.kind === "standard").map((tile) => tile.to),
+  );
+  for (const plugin of MARKETPLACE_CATALOG) {
+    if (!pluginState.installedPluginIds.includes(plugin.id)) continue;
+    if (!pluginState.enabledPluginIds.includes(plugin.id)) continue;
+    if (plugin.action.type === "navigate" && standardRoutes.has(plugin.action.to)) continue;
+    if (
+      plugin.action.type === "open-game" &&
+      (plugin.action.gameId === "grid-defense" || plugin.action.gameId === "kupferkern")
+    ) {
+      continue;
+    }
+    tiles.push({
+      kind: "plugin",
+      id: `plugin:${plugin.id}`,
+      title: plugin.name,
+      icon: plugin.icon,
+      action: plugin.action,
+    });
+  }
   return tiles;
 }
 
@@ -222,6 +262,9 @@ function HomeAppHub({
   const [canSeeAdmin, setCanSeeAdmin] = useState(false);
   const [installState, setInstallState] = useState<MarketplacePublishedInstallState>(
     EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE,
+  );
+  const [pluginState, setPluginState] = useState<MarketplaceInstallState>(
+    EMPTY_MARKETPLACE_INSTALL_STATE,
   );
   const [marketplaceStorageError, setMarketplaceStorageError] = useState("");
   const [settings, setSettings] = useState<HomeAppHubSettings>(EMPTY_HOME_APP_HUB_SETTINGS);
@@ -344,6 +387,22 @@ function HomeAppHub({
     };
   }, [canSeeAdmin, user.id]);
 
+  useEffect(() => {
+    const load = () => {
+      try {
+        setPluginState(loadMarketplaceInstallState(window.localStorage, user.id));
+      } catch {
+        setPluginState(EMPTY_MARKETPLACE_INSTALL_STATE);
+      }
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === marketplaceInstallStorageKey(user.id)) load();
+    };
+    load();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [user.id]);
+
   const backgroundPreference = settings.background;
   const backgroundLoadKey =
     backgroundPreference.kind === "preset"
@@ -375,7 +434,7 @@ function HomeAppHub({
     };
   }, [backgroundLoadKey, user.id]);
 
-  const tiles = buildHomeHubTiles(canSeeAdmin, installState.installs);
+  const tiles = buildHomeHubTiles(canSeeAdmin, installState.installs, pluginState);
   const visibleAppIds = tiles.map((tile) => tile.id);
   const orderedTiles = orderHomeAppIds(visibleAppIds, settings.order).flatMap((appId) => {
     const tile = tiles.find((candidate) => candidate.id === appId);
@@ -775,10 +834,43 @@ function HomeAppHub({
     }
   };
 
+  const uninstallPluginFromHome = (tile: Extract<HomeHubTile, { kind: "plugin" }>) => {
+    const pluginId = tile.id.slice("plugin:".length);
+    const status = `„${uninstallTargetTitle}“ wurde von diesem Gerät entfernt. Installieren kannst du sie wieder im Marketplace.`;
+    try {
+      const next = removeMarketplacePlugin(pluginState, pluginId);
+      saveMarketplaceInstallState(window.localStorage, user.id, next);
+      setPluginState(next);
+      try {
+        const nextSettings = mergeHomeAppLocalEdit(
+          settings,
+          forgetHomeAppPersonalization(settings, tile.id),
+          loadHomeAppHubSettings(window.localStorage, user.id),
+        );
+        saveHomeAppHubSettings(window.localStorage, user.id, nextSettings);
+        setSettings(nextSettings);
+        setSettingsError("");
+      } catch {
+        setSettingsError(
+          "Die Installation wurde entfernt; der gespeicherte App-Name konnte nicht bereinigt werden.",
+        );
+      }
+      setHomeStatus(status);
+    } catch {
+      setHomeStatus("Die App konnte nicht lokal entfernt werden.");
+    }
+    setUninstallTargetAppId(null);
+  };
+
   const uninstallMarketplaceAppFromHome = async () => {
-    if (!uninstallTargetTile || uninstallTargetTile.kind !== "marketplace" || isUninstallingApp) {
+    if (!uninstallTargetTile || isUninstallingApp) {
       return;
     }
+    if (uninstallTargetTile.kind === "plugin") {
+      uninstallPluginFromHome(uninstallTargetTile);
+      return;
+    }
+    if (uninstallTargetTile.kind !== "marketplace") return;
     const { appId } = uninstallTargetTile.install;
     const status = `„${uninstallTargetTitle}“ wurde entfernt. Eigene Apps werden im Konto abgeglichen; der Marketplace-Eintrag bleibt erhalten.`;
     setIsUninstallingApp(true);
@@ -854,7 +946,44 @@ function HomeAppHub({
     }
   };
 
+  const navigate = useNavigate();
+  const openPluginAction = (action: MarketplaceHostAction) => {
+    if (action.type === "navigate") {
+      void navigate({ to: action.to as never });
+    } else if (action.type === "open-game") {
+      void navigate({ to: "/games", search: { game: action.gameId } });
+    } else {
+      window.dispatchEvent(new CustomEvent("alo-open", { detail: action.toolId }));
+    }
+  };
+
   const renderTile = (tile: HomeHubTile, title: string) => {
+    if (tile.kind === "plugin") {
+      const contents = (
+        <>
+          <span className="relative grid aspect-square w-full max-w-[96px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md">
+            <MarketplaceIcon icon={tile.icon} className="h-8 w-8 text-primary" />
+          </span>
+          <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
+            {title}
+          </span>
+        </>
+      );
+      return isEditingHub ? (
+        <div className={HUB_APP_ICON_CLASS_NAME} aria-label={`${title}, Marketplace-App`}>
+          {contents}
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={HUB_APP_ICON_CLASS_NAME}
+          aria-label={`${title} öffnen`}
+          onClick={() => openPluginAction(tile.action)}
+        >
+          {contents}
+        </button>
+      );
+    }
     if (tile.kind === "marketplace") {
       const contents = (
         <>
@@ -1231,7 +1360,9 @@ function HomeAppHub({
               <DialogDescription>
                 {activeActionTile.kind === "marketplace"
                   ? "Name und Installation eigener veröffentlichter Apps werden mit deinem Konto abgeglichen. Fremde Marketplace-Apps bleiben lokal. Aktionsfreigaben gelten nur auf diesem Gerät."
-                  : "Der Name dieser Alo-App wird mit deinem Konto abgeglichen. Reihenfolge und Hintergrund bleiben auf diesem Gerät."}
+                  : activeActionTile.kind === "plugin"
+                    ? "Diese Marketplace-App ist auf diesem Gerät installiert. Deinstallieren entfernt sie nur hier; im Marketplace kannst du sie wieder installieren."
+                    : "Der Name dieser Alo-App wird mit deinem Konto abgeglichen. Reihenfolge und Hintergrund bleiben auf diesem Gerät."}
               </DialogDescription>
               {isEditingHub && (
                 <div className="mt-4 grid grid-cols-2 gap-2">
@@ -1293,7 +1424,8 @@ function HomeAppHub({
                 >
                   Umbenennen
                 </button>
-                {activeActionTile.kind === "marketplace" && (
+                {(activeActionTile.kind === "marketplace" ||
+                  activeActionTile.kind === "plugin") && (
                   <button
                     type="button"
                     onClick={() => {
