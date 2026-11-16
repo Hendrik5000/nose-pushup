@@ -21,7 +21,6 @@ type ProviderId =
   | "google"
   | "lovable"
   | "custom"
-  | "groq"
   | "openrouter"
   | "cerebras"
   | "cloudflare";
@@ -68,7 +67,6 @@ const MODEL_ALLOW: Record<Exclude<ProviderId, "custom">, string[]> = {
     "openai/gpt-5-mini",
     "openai/gpt-5",
   ],
-  groq: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
   openrouter: ["openrouter/free"],
   cerebras: ["gpt-oss-120b"],
   cloudflare: [
@@ -382,7 +380,7 @@ export const superAiChat = createServerFn({ method: "POST" })
 
     const attachments = data.messages.flatMap((m) => m.attachments ?? []);
     if (
-      ["groq", "openrouter", "cerebras", "cloudflare"].includes(p.id) &&
+      ["openrouter", "cerebras", "cloudflare"].includes(p.id) &&
       attachments.some((item) => item.mime.startsWith("image/"))
     ) {
       throw new Error("Dieser Anbieter ist in Alo derzeit nur für Text und Textdateien freigeschaltet. Es wurde kein Bild gesendet.");
@@ -414,11 +412,10 @@ export const superAiChat = createServerFn({ method: "POST" })
         system,
         providerMessages,
       );
-    } else if (["groq", "openrouter", "cerebras", "cloudflare"].includes(p.id)) {
+    } else if (["openrouter", "cerebras", "cloudflare"].includes(p.id)) {
       if (!p.apiKey) throw new Error(`${p.id} API-Key fehlt`);
       let base: string;
-      if (p.id === "groq") base = "https://api.groq.com/openai/v1";
-      else if (p.id === "openrouter") base = "https://openrouter.ai/api/v1";
+      if (p.id === "openrouter") base = "https://openrouter.ai/api/v1";
       else if (p.id === "cerebras") base = "https://api.cerebras.ai/v1";
       else {
         if (!p.accountId || !/^[a-f0-9]{32}$/i.test(p.accountId)) {

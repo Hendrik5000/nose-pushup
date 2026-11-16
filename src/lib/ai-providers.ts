@@ -8,7 +8,6 @@ export type ProviderId =
   | "google"
   | "lovable"
   | "custom"
-  | "groq"
   | "openrouter"
   | "cerebras"
   | "cloudflare";
@@ -52,15 +51,6 @@ export type ProviderCatalogEntry = {
 
 /** Free access is provider-controlled and can change; no paid fallback is configured. */
 export const FREE_PROVIDER_CATALOG: ProviderCatalogEntry[] = [
-  {
-    id: "groq",
-    summary: "Sehr schnelle Inferenz mit OpenAI-kompatibler Chat-API.",
-    freeAccess: "Kostenloser Developer-Zugang mit Limits; aktuelle Kontingente beim Anbieter prüfen.",
-    models: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
-    keyUrl: "https://console.groq.com/keys",
-    docsUrl: "https://console.groq.com/docs/openai",
-    supportsImages: false,
-  },
   {
     id: "openrouter",
     summary: "Ein Zugang zu vielen Modellfamilien; der Free-Router wählt nur kostenlose Modelle.",
@@ -131,14 +121,6 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     baseUrl: "https://api.example.com/v1",
     model: "my-model",
     tasks: ["general"],
-  },
-  {
-    id: "groq",
-    label: "Groq (Free Developer)",
-    enabled: false,
-    apiKey: "",
-    model: "openai/gpt-oss-20b",
-    tasks: ["general", "coding", "science", "creative", "chat_summary"],
   },
   {
     id: "openrouter",
