@@ -120,6 +120,7 @@ import { getAdminAreaAccess } from "@/lib/admin.functions";
 import { isMarketplaceAdminAccessGranted } from "@/lib/marketplace";
 import { listMarketplaceCurrentApps, publishMarketplaceApp } from "@/lib/marketplace.functions";
 import { MarketplaceManifestView } from "@/components/marketplace/MarketplaceManifestView";
+import { MiraMarketplaceDraftsPanel } from "@/components/mira/MiraMarketplaceDraftsPanel";
 import { presentMiraMarketplaceReply } from "@/lib/mira-marketplace-reply";
 import {
   generateMarketplaceManifestDraft,
@@ -1819,6 +1820,13 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 )}
               </ul>
             </section>
+          )}
+
+          {sessionsOpen && userId && (
+            <MiraMarketplaceDraftsPanel
+              userId={userId}
+              onOpenSession={(sessionId) => switchSession(sessionId)}
+            />
           )}
 
           {settingsOpen && (
