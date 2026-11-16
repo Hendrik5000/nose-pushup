@@ -5,6 +5,7 @@ import {
   describeMarketplaceAuthoredPermissions,
   type MarketplaceAuthoredManifest,
 } from "@/lib/marketplace-authoring";
+import { useEffect, useState } from "react";
 
 export type MarketplaceMiraDraftTarget = Readonly<{
   appId: string;
@@ -26,6 +27,7 @@ type MiraMarketplaceDraftPreviewProps = {
   onConfirmPublish: () => void;
   onCancelPublish: () => void;
   onDiscard: () => void;
+  onRename: (name: string) => void;
 };
 
 export function MiraMarketplaceDraftPreview({
@@ -36,10 +38,14 @@ export function MiraMarketplaceDraftPreview({
   onConfirmPublish,
   onCancelPublish,
   onDiscard,
+  onRename,
 }: MiraMarketplaceDraftPreviewProps) {
   const { manifest, target } = draft;
+  const [name, setName] = useState(manifest.name);
   const nextVersion = target ? target.expectedVersion + 1 : 1;
   const permissions = describeMarketplaceAuthoredPermissions(manifest);
+
+  useEffect(() => setName(manifest.name), [manifest.name]);
 
   return (
     <section
@@ -54,7 +60,27 @@ export function MiraMarketplaceDraftPreview({
           <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
             Lokale Vorschau · noch nicht veröffentlicht
           </p>
-          <h3 className="mt-1 text-base font-bold">{manifest.name}</h3>
+          <label className="mt-2 block text-xs font-semibold" htmlFor="mira-draft-name">
+            App-Name
+          </label>
+          <div className="mt-1 flex flex-wrap gap-2">
+            <input
+              id="mira-draft-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              disabled={publishing}
+              maxLength={48}
+              className="min-h-10 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => onRename(name)}
+              disabled={publishing || name.trim() === manifest.name}
+              className="min-h-10 rounded-lg border border-border px-3 text-xs font-semibold disabled:opacity-50"
+            >
+              Umbenennen
+            </button>
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">Entwurf mit {draft.providerLabel}</p>
         </div>
         <button

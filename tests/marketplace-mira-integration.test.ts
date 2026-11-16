@@ -72,8 +72,14 @@ test("Mira authoring shows only a validated structured manifest as the local cha
   const manifestIndex = miraPage.indexOf(
     "const manifest = await generateMarketplaceManifestDraft(",
   );
-  const previewStateIndex = miraPage.indexOf("setMarketplaceDraft({", manifestIndex);
+  const previewStateIndex = miraPage.indexOf(
+    "setMarketplaceDraft(nextMarketplaceDraft)",
+    manifestIndex,
+  );
   assert.ok(manifestIndex >= 0 && previewStateIndex > manifestIndex);
+  assert.match(miraPage, /mira-marketplace-draft:/);
+  assert.match(miraPage, /target: "mira-marketplace"/);
+  assert.match(draftPreview, /Umbenennen/);
   assert.match(draftPreview, /Lokale Vorschau · noch nicht veröffentlicht/);
   assert.match(draftPreview, /<MarketplaceManifestView manifest=\{manifest\} preview \/>/);
 });

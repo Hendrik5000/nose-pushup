@@ -48,7 +48,14 @@ import {
   Check,
   X,
 } from "lucide-react";
-import { ALO_EVENT, ALO_REMOTE_EVENT, getMiraGrants, putAlo, removeAlo } from "@/lib/alo-store";
+import {
+  ALO_EVENT,
+  ALO_REMOTE_EVENT,
+  getMiraGrants,
+  listAlo,
+  putAlo,
+  removeAlo,
+} from "@/lib/alo-store";
 import { MiraContextControls } from "@/components/alo/MiraContextControls";
 import { MiraRunwareTools } from "@/components/alo/MiraRunwareTools";
 import { ContentActions } from "@/components/alo/ContentActions";
@@ -151,6 +158,7 @@ type MiraSubmitOptions = {
   skipMarketplaceAuthoring?: boolean;
 };
 type LocalMarketplaceMiraDraft = MarketplaceMiraDraft & { sessionId: string };
+const marketplaceDraftRecordId = (sessionId: string) => `mira-marketplace-draft:${sessionId}`;
 // Legacy MIRA_CONTEXT_KEY (alo-mira-context-enabled) is deliberately not migrated: consent defaults off per account.
 function getMiraContextPreference() {
   const grants = getMiraGrants();
@@ -370,7 +378,44 @@ export function SuperAiPage({
     sendingRef.current = false;
   }, [activeId]);
   useEffect(() => {
-    setMarketplaceDraft(null);
+    const record = userId
+      ? listAlo("draft", userId).find(
+          (candidate) => candidate.id === marketplaceDraftRecordId(activeId),
+        )
+      : undefined;
+    const body = record?.body;
+    if (
+      !body ||
+      body.target !== "mira-marketplace" ||
+      body.sessionId !== activeId ||
+      typeof body.providerLabel !== "string"
+    ) {
+      setMarketplaceDraft(null);
+      setMarketplacePublishConfirmationOpen(false);
+      return;
+    }
+    try {
+      const manifest = validateMarketplaceAuthoredManifest(body.manifest);
+      const rawTarget = body.targetApp;
+      const target =
+        rawTarget === null
+          ? null
+          : rawTarget &&
+              typeof rawTarget === "object" &&
+              typeof (rawTarget as { appId?: unknown }).appId === "string" &&
+              typeof (rawTarget as { expectedVersion?: unknown }).expectedVersion === "number" &&
+              typeof (rawTarget as { appName?: unknown }).appName === "string"
+            ? (rawTarget as MarketplaceMiraDraftTarget)
+            : null;
+      setMarketplaceDraft({
+        manifest,
+        target,
+        providerLabel: body.providerLabel,
+        sessionId: activeId,
+      });
+    } catch {
+      setMarketplaceDraft(null);
+    }
     setMarketplacePublishConfirmationOpen(false);
   }, [activeId, userId]);
   useEffect(() => {
@@ -992,12 +1037,29 @@ export function SuperAiPage({
           if (authoringGeneration !== generationRef.current) return null;
 
           setLastTask("general");
-          setMarketplaceDraft({
+          const nextMarketplaceDraft: LocalMarketplaceMiraDraft = {
             manifest,
             target,
             providerLabel: marketplaceSelection.provider.label,
             sessionId: submissionSessionId,
-          });
+          };
+          setMarketplaceDraft(nextMarketplaceDraft);
+          try {
+            putAlo(
+              "draft",
+              {
+                target: "mira-marketplace",
+                sessionId: submissionSessionId,
+                targetApp: target,
+                manifest,
+                providerLabel: marketplaceSelection.provider.label,
+              },
+              marketplaceDraftRecordId(submissionSessionId),
+              userId,
+            );
+          } catch {
+            setError("Entwurf erstellt, aber nicht dauerhaft gespeichert. Gerätespeicher prüfen.");
+          }
           setMarketplacePublishConfirmationOpen(false);
           const assistantText =
             (manifest.game
@@ -2785,6 +2847,35 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                         onDiscard={() => {
                           setMarketplaceDraft(null);
                           setMarketplacePublishConfirmationOpen(false);
+                          removeAlo(marketplaceDraftRecordId(activeId), userId);
+                        }}
+                        onRename={(name) => {
+                          try {
+                            const manifest = validateMarketplaceAuthoredManifest({
+                              ...activeMarketplaceDraft.manifest,
+                              name,
+                            });
+                            const nextDraft = { ...activeMarketplaceDraft, manifest };
+                            setMarketplaceDraft(nextDraft);
+                            putAlo(
+                              "draft",
+                              {
+                                target: "mira-marketplace",
+                                sessionId: activeId,
+                                targetApp: nextDraft.target,
+                                manifest,
+                                providerLabel: nextDraft.providerLabel,
+                              },
+                              marketplaceDraftRecordId(activeId),
+                              userId,
+                            );
+                          } catch (renameError) {
+                            setError(
+                              renameError instanceof Error
+                                ? renameError.message
+                                : "App-Name konnte nicht gespeichert werden.",
+                            );
+                          }
                         }}
                       />
                     </div>
