@@ -8,7 +8,10 @@ test("publishes the web view before the slower reader request completes", async 
 
   const loading = loadBrowserPageInParallel(
     async () => "<html>ready</html>",
-    () => new Promise<string>((resolve) => { finishReader = resolve; }),
+    () =>
+      new Promise<string>((resolve) => {
+        finishReader = resolve;
+      }),
     () => events.push("html"),
     () => events.push("reader"),
   );
@@ -26,7 +29,10 @@ test("publishes reader text immediately when it is the first available result", 
   let finishHtml!: (value: string) => void;
 
   const loading = loadBrowserPageInParallel(
-    () => new Promise<string>((resolve) => { finishHtml = resolve; }),
+    () =>
+      new Promise<string>((resolve) => {
+        finishHtml = resolve;
+      }),
     async () => "reader text",
     () => events.push("html"),
     () => events.push("reader"),
