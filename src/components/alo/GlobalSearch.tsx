@@ -5,17 +5,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { detectChatMode, loadChatStore, loadRoomsForUser } from "@/lib/chat-backend";
 import { listAlo, searchAlo } from "@/lib/alo-store";
 import { loadSessions } from "@/lib/super-ai-tools";
+import type { AloWorkspaceToolId } from "@/lib/home-app-menus";
+import type { PublicGameId } from "@/lib/public-game-policy";
+import {
+  MARKETPLACE_CATALOG,
+  type MarketplaceCategory,
+  type MarketplaceRouteTarget,
+} from "@/lib/marketplace";
 import { ContentActions } from "./ContentActions";
 type Hit = {
   id: string;
   title: string;
   text: string;
   source: string;
-  path: "/" | "/ai" | "/chat" | "/programs" | "/profile";
+  path: "/" | "/ai" | "/chat" | "/games" | "/programs" | "/profile" | MarketplaceRouteTarget;
   aloTab?: "today" | "collections";
   sessionId?: string;
   roomId?: string;
   messageId?: string;
+  gameId?: PublicGameId;
+  toolId?: AloWorkspaceToolId;
 };
 const SETTINGS: Hit[] = [
   {
@@ -47,6 +56,25 @@ const SETTINGS: Hit[] = [
     path: "/profile",
   },
 ];
+const APP_CATEGORY_LABELS = {
+  app: "Alo-App",
+  area: "Bereich",
+  tool: "Werkzeug",
+} satisfies Record<MarketplaceCategory, string>;
+const APP_HITS: Hit[] = MARKETPLACE_CATALOG.map((plugin) => ({
+  id: plugin.id,
+  title: plugin.name,
+  text: `${plugin.description} (${APP_CATEGORY_LABELS[plugin.category]} · ${plugin.publisher})`,
+  source: "App · Marketplace",
+  path:
+    plugin.action.type === "navigate"
+      ? plugin.action.to
+      : plugin.action.type === "open-game"
+        ? "/games"
+        : "/",
+  gameId: plugin.action.type === "open-game" ? plugin.action.gameId : undefined,
+  toolId: plugin.action.type === "open-tool" ? plugin.action.toolId : undefined,
+}));
 export function GlobalSearch({
   userId,
   onNavigate,
@@ -56,13 +84,13 @@ export function GlobalSearch({
   userId: string;
   onNavigate: () => void;
   onPrivacy: () => void;
-  onOpenAlo: (tab: "today" | "collections") => void;
+  onOpenAlo: (tab: AloWorkspaceToolId) => void;
 }) {
   const [area, setArea] = useState<SearchArea>("all");
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);
   const [status, setStatus] = useState(
-    "Suche lokal in Mira und Alo; Nexus und Trainingspläne werden bei einer Suche über ihre bestehende Datenanbindung geladen. Kein KI-Anbieter erhält die Suche.",
+    "Sucht lokal in Mira, Alo, Apps, Spielen und Einstellungen; Nexus und Trainingspläne werden bei einer Suche über ihre bestehende Datenanbindung geladen. Kein KI-Anbieter erhält die Suche.",
   );
   const [busy, setBusy] = useState(false);
   const request = useRef(0);
@@ -74,7 +102,7 @@ export function GlobalSearch({
       return;
     }
     setBusy(true);
-    const all: Hit[] = [...SETTINGS];
+    const all: Hit[] = [...SETTINGS, ...APP_HITS];
     const warnings: string[] = [];
     for (const session of loadSessions()) {
       for (const [i, m] of session.messages.entries())
@@ -182,7 +210,7 @@ export function GlobalSearch({
     setHits(results.slice(0, 100));
     setBusy(false);
     setStatus(
-      `${results.length} Treffer. ${warnings.length ? warnings.join("; ") + ". Lokale Suche bleibt verfügbar." : "Quellen geladen."} Cloud-Suche: bis zu 100 Nexus-Treffer, 100 Wochenpläne und 200 Programme; kein vollständiges Archiv oder Anhang-OCR.`,
+      `${results.length} Treffer. ${warnings.length ? warnings.join("; ") + ". Lokale Suche bleibt verfügbar." : "Quellen geladen."} Apps, Spiele und Werkzeuge werden lokal im Alo-Katalog durchsucht. Cloud-Suche: bis zu 100 Nexus-Treffer, 100 Wochenpläne und 200 Programme; kein vollständiges Archiv oder Anhang-OCR.`,
     );
   };
   return (
@@ -199,7 +227,7 @@ export function GlobalSearch({
           aria-label="Überall suchen"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Training, Mira, Nexus, Einstellungen …"
+          placeholder="Training, Mira, Nexus, Apps, Spiele …"
         />
         <button type="submit" className="alo-btn-primary" disabled={busy || !query.trim()}>
           {busy ? "Sucht …" : "Suchen"}
@@ -242,10 +270,23 @@ export function GlobalSearch({
                 <button className="alo-btn" onClick={() => onOpenAlo(h.aloTab!)}>
                   Quelle öffnen
                 </button>
+              ) : h.toolId ? (
+                <button className="alo-btn" onClick={() => onOpenAlo(h.toolId!)}>
+                  Werkzeug öffnen
+                </button>
               ) : h.id === "settings-privacy" ? (
                 <button className="alo-btn" onClick={onPrivacy}>
                   Öffnen
                 </button>
+              ) : h.gameId ? (
+                <Link
+                  to="/games"
+                  search={{ game: h.gameId }}
+                  className="text-sm font-semibold text-primary"
+                  onClick={onNavigate}
+                >
+                  Spiel öffnen
+                </Link>
               ) : (
                 <Link
                   to={h.path}
