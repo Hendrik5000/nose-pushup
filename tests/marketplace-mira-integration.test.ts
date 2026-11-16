@@ -99,14 +99,14 @@ test("Mira game requests render a directly playable local quiz instead of a gene
   assert.match(appViewer, /keine zusätzlichen Alo-Berechtigungen/);
 });
 
-test("curated Marketplace catalog uses icon-name tiles and full-screen detail permissions/actions", () => {
+test("curated Marketplace catalog uses a Play-Store-style search, rows and full-screen detail page", () => {
   assert.match(marketplaceRoute, /<MarketplaceAppCatalog/);
-  assert.match(appCatalog, /grid-cols-3[\s\S]*lg:grid-cols-6/);
+  assert.match(appCatalog, /Apps und Spiele suchen/);
   assert.match(appCatalog, /MARKETPLACE_ICON_COMPONENTS\[plugin\.icon\]/);
   assert.match(appCatalog, /onClick=\{\(\) => setSelectedId\(plugin\.id\)\}/);
   assert.match(appCatalog, /!h-\[100dvh\] !w-screen !max-w-none/);
   assert.match(appCatalog, /describeMarketplacePermissions\(selected\)/);
-  assert.match(appCatalog, /Auf diesem Gerät installieren/);
+  assert.match(appCatalog, /Installieren/);
   assert.match(appCatalog, /onToggle\(selected\.id, selected\.name, enabled\)/);
   assert.match(appCatalog, /onOpen\(selected\.id\)/);
 });

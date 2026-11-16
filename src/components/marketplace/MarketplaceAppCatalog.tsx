@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 import {
   getMarketplaceCollectionPlugins,
   type MarketplaceCollectionId,
@@ -40,33 +40,130 @@ export function MarketplaceAppCatalog({
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeCollection, setActiveCollection] = useState<MarketplaceCollectionId>("official");
+  const [query, setQuery] = useState("");
   const visiblePlugins = getMarketplaceCollectionPlugins(plugins, activeCollection);
   const selected = plugins.find((plugin) => plugin.id === selectedId) ?? null;
-  const CompactCard = ({ plugin }: { plugin: MarketplacePluginManifest }) => {
+  const normalizedQuery = query.trim().toLowerCase();
+  const searchResults =
+    normalizedQuery.length > 0
+      ? plugins.filter(
+          (plugin) =>
+            plugin.name.toLowerCase().includes(normalizedQuery) ||
+            plugin.description.toLowerCase().includes(normalizedQuery),
+        )
+      : null;
+  const isInstalled = (pluginId: string) => installState.installedPluginIds.includes(pluginId);
+
+  const AppIcon = ({ plugin, size }: { plugin: MarketplacePluginManifest; size: "md" | "lg" }) => {
     const Icon = MARKETPLACE_ICON_COMPONENTS[plugin.icon];
+    const box = size === "lg" ? "h-16 w-16 rounded-2xl sm:h-20 sm:w-20" : "h-14 w-14 rounded-2xl";
+    const glyph = size === "lg" ? "h-8 w-8 sm:h-10 sm:w-10" : "h-7 w-7";
     return (
-      <button
-        type="button"
-        onClick={() => setSelectedId(plugin.id)}
-        className="flex min-w-44 flex-1 items-center gap-3 rounded-2xl border border-border/70 bg-card/75 p-3 text-left transition hover:border-primary/45 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      <span
+        className={`flex shrink-0 items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/15 ${box}`}
       >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold">{plugin.name}</span>
-          <span className="mt-1 block text-xs text-muted-foreground">Alo · App</span>
-        </span>
-      </button>
+        <Icon className={glyph} aria-hidden="true" />
+      </span>
     );
   };
-  const installed = selected ? installState.installedPluginIds.includes(selected.id) : false;
-  const enabled = selected ? installState.enabledPluginIds.includes(selected.id) : false;
+
+  const CarouselCard = ({ plugin }: { plugin: MarketplacePluginManifest }) => (
+    <button
+      type="button"
+      onClick={() => setSelectedId(plugin.id)}
+      className="flex w-36 shrink-0 flex-col items-start gap-2.5 rounded-2xl p-1 text-left transition hover:bg-card/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:w-40"
+    >
+      <AppIcon plugin={plugin} size="md" />
+      <span className="w-full min-w-0">
+        <span className="block truncate text-sm font-semibold">{plugin.name}</span>
+        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+          {CATEGORY_LABELS[plugin.category]} · {plugin.publisher}
+        </span>
+        {isInstalled(plugin.id) && (
+          <span className="mt-1 inline-block text-[11px] font-semibold text-primary">
+            Installiert
+          </span>
+        )}
+      </span>
+    </button>
+  );
+
+  const ListRow = ({ plugin }: { plugin: MarketplacePluginManifest }) => {
+    const installed = isInstalled(plugin.id);
+    const enabled = installState.enabledPluginIds.includes(plugin.id);
+    return (
+      <div className="flex items-center gap-3 rounded-2xl px-1 py-2 transition hover:bg-card/70 sm:gap-4 sm:px-2">
+        <button
+          type="button"
+          aria-label={`${plugin.name}${installed ? ", auf diesem Gerät installiert" : ""}. Details öffnen`}
+          onClick={() => setSelectedId(plugin.id)}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:gap-4"
+        >
+          <AppIcon plugin={plugin} size="md" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold">{plugin.name}</span>
+            <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+              {CATEGORY_LABELS[plugin.category]} · {plugin.publisher} · Version {plugin.version}
+            </span>
+            {installed && (
+              <span className="mt-1 inline-block text-[11px] font-semibold text-primary">
+                {enabled ? "Installiert und aktiv" : "Installiert, inaktiv"}
+              </span>
+            )}
+          </span>
+        </button>
+        {installed ? (
+          <button
+            type="button"
+            disabled={!ready}
+            onClick={() => onOpen(plugin.id)}
+            className="min-h-11 shrink-0 rounded-full border border-primary/40 px-4 text-sm font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Öffnen
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={!ready}
+            onClick={() => onInstall(plugin.id, plugin.name)}
+            className="min-h-11 shrink-0 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Installieren
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
+      <form
+        role="search"
+        onSubmit={(event) => event.preventDefault()}
+        className="flex items-center gap-3 rounded-full border border-border bg-card px-4 shadow-sm"
+      >
+        <Search className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Apps und Spiele suchen"
+          aria-label="Apps und Spiele suchen"
+          className="min-h-12 w-full min-w-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+        />
+        {query.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Suche zurücksetzen"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-background hover:text-foreground"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
+      </form>
       <nav
-        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-3"
+        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
         aria-label="Marketplace-Kategorien"
       >
         {(
@@ -81,114 +178,120 @@ export function MarketplaceAppCatalog({
             key={id}
             type="button"
             aria-pressed={activeCollection === id}
-            onClick={() => setActiveCollection(id)}
+            onClick={() => {
+              setActiveCollection(id);
+              setQuery("");
+            }}
             className={`min-h-10 shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeCollection === id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card/70 text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}
           >
             {label}
           </button>
         ))}
       </nav>
-      <section
-        className="space-y-4 rounded-3xl border border-border/70 bg-card/40 p-4 sm:p-6"
-        aria-label="Marketplace-Startseite"
-      >
-        <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(120deg,#153a37,#182346)] p-5 text-white sm:p-7">
-          <div className="relative z-10 max-w-md">
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
-              <Sparkles className="h-4 w-4" /> Neu im Marketplace
+
+      {searchResults ? (
+        <section className="space-y-1" aria-label="Suchergebnisse" aria-live="polite">
+          <h2 className="px-1 pb-1 text-base font-bold">
+            {searchResults.length > 0 ? `${searchResults.length} Treffer` : "Keine Treffer"}
+          </h2>
+          {searchResults.map((plugin) => (
+            <ListRow key={plugin.id} plugin={plugin} />
+          ))}
+          {searchResults.length === 0 && (
+            <p className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-8 text-center text-sm text-muted-foreground">
+              Keine Alo-App passt zu „{query}“. Versuche einen anderen Begriff.
             </p>
-            <h2 className="mt-3 text-2xl font-bold sm:text-3xl">Deine nächsten Lieblings-Apps</h2>
-            <p className="mt-2 text-sm leading-relaxed text-white/75">
-              Entdecke kuratierte Alo-Apps und Spiele. Installieren und Aktivieren bleiben getrennt
-              von deinem Startbildschirm.
-            </p>
-            <button
-              type="button"
-              onClick={() => setActiveCollection("new")}
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-900"
-            >
-              Neu entdecken <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="absolute -right-8 -top-12 h-48 w-48 rounded-full border-[22px] border-emerald-300/20" />
-        </div>
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Vorschläge für dich</h2>
-            <button
-              type="button"
-              onClick={() => setActiveCollection("recommended")}
-              className="rounded-full p-2 text-muted-foreground hover:bg-background hover:text-foreground"
-              aria-label="Empfehlungen anzeigen"
-            >
-              <ArrowRight className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
-            {plugins
-              .filter((plugin) =>
-                ["alo-sports", "alo-health-app", "alo-training"].includes(plugin.id),
-              )
-              .map((plugin) => (
-                <CompactCard key={plugin.id} plugin={plugin} />
-              ))}
-          </div>
-        </div>
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Beliebte Apps</h2>
-            <span className="text-xs text-muted-foreground">{plugins.length} Angebote</span>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
-            {plugins
-              .filter((plugin) => ["alo-sports", "alo-neon-starfighter"].includes(plugin.id))
-              .map((plugin) => (
-                <CompactCard key={plugin.id} plugin={plugin} />
-              ))}
-          </div>
-        </div>
-      </section>
-      {visiblePlugins.length > 0 ? (
-        <section
-          className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6"
-          aria-label="Kuratierte Alo-Apps, Bereiche und Werkzeuge"
-        >
-          {visiblePlugins.map((plugin) => {
-            const Icon = MARKETPLACE_ICON_COMPONENTS[plugin.icon];
-            const isInstalled = installState.installedPluginIds.includes(plugin.id);
-            return (
-              <button
-                key={plugin.id}
-                type="button"
-                aria-label={`${plugin.name}${isInstalled ? ", auf diesem Gerät installiert" : ""}. Details öffnen`}
-                onClick={() => setSelectedId(plugin.id)}
-                className="flex min-h-32 min-w-0 flex-col items-center justify-center gap-3 rounded-2xl border border-border/70 bg-card/75 p-3 text-center shadow-sm transition hover:border-primary/45 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-h-36 sm:p-4"
-              >
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-14 sm:w-14">
-                  <Icon className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" />
-                </span>
-                <span className="line-clamp-2 text-xs font-semibold leading-tight sm:text-sm">
-                  {plugin.name}
-                </span>
-                {isInstalled && (
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                    Installiert
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          )}
         </section>
       ) : (
-        <section
-          className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-10 text-center"
-          aria-live="polite"
-        >
-          <p className="text-base font-semibold">Noch keine Apps von Freunden</p>
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Hier erscheinen Apps, sobald Freunde etwas für den Alo-Marketplace freigeben.
-          </p>
-        </section>
+        <>
+          <section
+            className="space-y-6 rounded-3xl border border-border/70 bg-card/40 p-4 sm:p-6"
+            aria-label="Marketplace-Startseite"
+          >
+            <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(120deg,#153a37,#182346)] p-5 text-white sm:p-7">
+              <div className="relative z-10 max-w-md">
+                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
+                  <Sparkles className="h-4 w-4" /> Neu im Marketplace
+                </p>
+                <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
+                  Deine nächsten Lieblings-Apps
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-white/75">
+                  Entdecke kuratierte Alo-Apps und Spiele. Installieren und Aktivieren bleiben
+                  getrennt von deinem Startbildschirm.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveCollection("new")}
+                  className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-bold text-slate-900"
+                >
+                  Neu entdecken <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="absolute -right-8 -top-12 h-48 w-48 rounded-full border-[22px] border-emerald-300/20" />
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-lg font-bold">Vorschläge für dich</h2>
+                <button
+                  type="button"
+                  onClick={() => setActiveCollection("recommended")}
+                  className="rounded-full p-2 text-muted-foreground hover:bg-background hover:text-foreground"
+                  aria-label="Empfehlungen anzeigen"
+                >
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+                {plugins
+                  .filter((plugin) =>
+                    ["alo-sports", "alo-health-app", "alo-training"].includes(plugin.id),
+                  )
+                  .map((plugin) => (
+                    <CarouselCard key={plugin.id} plugin={plugin} />
+                  ))}
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-lg font-bold">Beliebte Apps</h2>
+                <span className="text-xs text-muted-foreground">{plugins.length} Angebote</span>
+              </div>
+              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+                {plugins
+                  .filter((plugin) => ["alo-sports", "alo-neon-starfighter"].includes(plugin.id))
+                  .map((plugin) => (
+                    <CarouselCard key={plugin.id} plugin={plugin} />
+                  ))}
+              </div>
+            </div>
+          </section>
+
+          {visiblePlugins.length > 0 ? (
+            <section className="space-y-1" aria-label="Kuratierte Alo-Apps, Bereiche und Werkzeuge">
+              <h2 className="px-1 pb-1 text-lg font-bold">
+                {activeCollection === "official" && "Alle offiziellen Alo-Apps"}
+                {activeCollection === "recommended" && "Empfohlene Apps"}
+                {activeCollection === "new" && "Neu im Marketplace"}
+                {activeCollection === "friends" && "Von Freunden"}
+              </h2>
+              {visiblePlugins.map((plugin) => (
+                <ListRow key={plugin.id} plugin={plugin} />
+              ))}
+            </section>
+          ) : (
+            <section
+              className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-10 text-center"
+              aria-live="polite"
+            >
+              <p className="text-base font-semibold">Noch keine Apps von Freunden</p>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                Hier erscheinen Apps, sobald Freunde etwas für den Alo-Marketplace freigeben.
+              </p>
+            </section>
+          )}
+        </>
       )}
 
       <Dialog
@@ -200,34 +303,75 @@ export function MarketplaceAppCatalog({
         <DialogContent className="!fixed !left-0 !top-0 !z-50 !m-0 !flex !h-[100dvh] !w-screen !max-w-none !translate-x-0 !translate-y-0 !flex-col !gap-0 !overflow-y-auto !rounded-none !border-0 !p-0 !shadow-none">
           {selected &&
             (() => {
-              const Icon = MARKETPLACE_ICON_COMPONENTS[selected.icon];
+              const installed = isInstalled(selected.id);
+              const enabled = installState.enabledPluginIds.includes(selected.id);
               return (
                 <section
                   key={selected.id}
                   className="mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col px-5 pb-8 pt-16 sm:px-8 sm:pt-20"
                 >
-                  <header className="flex items-start gap-4">
-                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-20 sm:w-20">
-                      <Icon className="h-8 w-8 sm:h-10 sm:w-10" aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                        {CATEGORY_LABELS[selected.category]} · {selected.publisher} · Version{" "}
-                        {selected.version}
-                      </p>
-                      <DialogTitle className="mt-2 text-2xl font-bold leading-tight sm:text-3xl">
-                        {selected.name}
-                      </DialogTitle>
-                    </div>
-                  </header>
-                  <DialogDescription className="mt-6 text-base leading-relaxed text-foreground">
+                  <div className="flex flex-col items-center text-center">
+                    <AppIcon plugin={selected} size="lg" />
+                    <DialogTitle className="mt-4 text-2xl font-bold leading-tight sm:text-3xl">
+                      {selected.name}
+                    </DialogTitle>
+                    <p className="mt-1 text-sm font-semibold text-primary">{selected.publisher}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {CATEGORY_LABELS[selected.category]} · Version {selected.version}
+                    </p>
+                  </div>
+                  <div className="mt-6 flex justify-center">
+                    {!installed ? (
+                      <button
+                        type="button"
+                        disabled={!ready}
+                        onClick={() => onInstall(selected.id, selected.name)}
+                        className="min-h-12 rounded-full bg-primary px-8 text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Installieren
+                      </button>
+                    ) : (
+                      <div className="flex flex-wrap items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          aria-pressed={enabled}
+                          disabled={!ready}
+                          onClick={() => onToggle(selected.id, selected.name, enabled)}
+                          className="min-h-12 rounded-full bg-primary px-8 text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {enabled ? "Deaktivieren" : "Aktivieren"}
+                        </button>
+                        {installed && enabled && (
+                          <button
+                            type="button"
+                            onClick={() => onOpen(selected.id)}
+                            className="min-h-12 rounded-full border border-primary/40 px-6 text-sm font-bold text-primary"
+                          >
+                            App öffnen
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={!ready}
+                          onClick={() => onRemove(selected.id, selected.name)}
+                          className="min-h-12 rounded-full border border-border px-6 text-sm font-semibold text-muted-foreground disabled:opacity-50"
+                        >
+                          Deinstallieren
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <DialogDescription className="mt-8 text-base leading-relaxed text-foreground">
                     {selected.description}
                   </DialogDescription>
                   <section
                     className="mt-7 rounded-2xl border border-border/70 bg-card/60 p-4"
                     aria-label={`Berechtigungen für ${selected.name}`}
                   >
-                    <h3 className="text-sm font-bold">Was diese App verwendet</h3>
+                    <h3 className="flex items-center gap-2 text-sm font-bold">
+                      <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" /> Was diese
+                      App verwendet
+                    </h3>
                     <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">
                       {describeMarketplacePermissions(selected).map((permission) => (
                         <li key={permission}>{permission}</li>
@@ -238,47 +382,6 @@ export function MarketplaceAppCatalog({
                     Alo-Apps sind fest registrierte Funktionen. Installieren speichert deine Auswahl
                     lokal auf diesem Gerät; es wird kein ausführbarer Plugin-Code geladen.
                   </p>
-                  <div className="mt-auto flex flex-wrap gap-3 pt-8">
-                    {!installed ? (
-                      <button
-                        type="button"
-                        disabled={!ready}
-                        onClick={() => onInstall(selected.id, selected.name)}
-                        className="min-h-11 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Auf diesem Gerät installieren
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          aria-pressed={enabled}
-                          disabled={!ready}
-                          onClick={() => onToggle(selected.id, selected.name, enabled)}
-                          className="min-h-11 rounded-xl border border-border bg-background px-5 py-2 text-sm font-semibold disabled:opacity-50"
-                        >
-                          {enabled ? "Deaktivieren" : "Aktivieren"}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!ready}
-                          onClick={() => onRemove(selected.id, selected.name)}
-                          className="min-h-11 rounded-xl border border-border px-4 py-2 text-sm font-medium text-muted-foreground disabled:opacity-50"
-                        >
-                          Entfernen
-                        </button>
-                      </>
-                    )}
-                    {installed && enabled && (
-                      <button
-                        type="button"
-                        onClick={() => onOpen(selected.id)}
-                        className="min-h-11 rounded-xl border border-primary/30 bg-primary/5 px-5 py-2 text-sm font-semibold text-primary"
-                      >
-                        App öffnen
-                      </button>
-                    )}
-                  </div>
                 </section>
               );
             })()}
