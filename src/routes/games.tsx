@@ -1,7 +1,8 @@
 import { getPublicGameDocument } from "@/lib/public-game.functions";
 import { PUBLIC_GAME_IDS, type PublicGameId } from "@/lib/public-game-policy";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toggleGameFullscreen } from "@/lib/game-fullscreen";
 import { z } from "zod";
 
 const searchSchema = z.object({ game: z.enum(PUBLIC_GAME_IDS).optional() });
@@ -92,7 +93,7 @@ function GamesHub() {
             </p>
           </section>
         ) : currentDocument ? (
-          <GameFrame game={selectedGame} document={currentDocument} />
+          <GameFrame game={selectedGame} gameDocument={currentDocument} />
         ) : (
           <p
             className="mx-auto max-w-3xl rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground"
@@ -203,17 +204,56 @@ function GameChoice({
   );
 }
 
-function GameFrame({ game, document }: { game: PublicGameId; document: string }) {
+function GameFrame({ game, gameDocument }: { game: PublicGameId; gameDocument: string }) {
   const title = game === "grid-defense" ? "Grid Defense" : "Kupferkern";
+  const frameRef = useRef<HTMLElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenFailed, setFullscreenFailed] = useState(false);
+
+  useEffect(() => {
+    const syncFullscreen = () => setIsFullscreen(document.fullscreenElement === frameRef.current);
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+
+  const handleFullscreen = async () => {
+    setFullscreenFailed(false);
+    const success = await toggleGameFullscreen(frameRef.current, document);
+    setFullscreenFailed(!success);
+  };
+
   return (
-    <section className="mx-auto w-full max-w-[1500px] overflow-hidden rounded-2xl border border-border bg-slate-950 shadow-xl">
+    <section
+      ref={frameRef}
+      className={`mx-auto w-full max-w-[1500px] overflow-hidden border border-border bg-slate-950 shadow-xl ${
+        isFullscreen ? "h-[100dvh] max-w-none rounded-none" : "rounded-2xl"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-slate-900 px-4 py-3 text-white">
+        <h2 className="truncate text-sm font-semibold">{title}</h2>
+        <button
+          type="button"
+          onClick={() => void handleFullscreen()}
+          aria-pressed={isFullscreen}
+          className="shrink-0 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300"
+        >
+          {isFullscreen ? "Vollbild verlassen" : "Vollbild"}
+        </button>
+      </div>
       <iframe
         title={title}
-        srcDoc={document}
+        srcDoc={gameDocument}
         sandbox="allow-scripts"
         referrerPolicy="no-referrer"
-        className="h-[82dvh] min-h-[650px] w-full border-0"
+        className={`w-full border-0 ${
+          isFullscreen ? "h-[calc(100dvh-53px)] min-h-0" : "h-[82dvh] min-h-[650px]"
+        }`}
       />
+      {fullscreenFailed && (
+        <p role="alert" className="border-t border-white/10 px-4 py-2 text-xs text-amber-200">
+          Vollbild ist in diesem Browser oder auf diesem Gerät nicht verfügbar.
+        </p>
+      )}
     </section>
   );
 }
