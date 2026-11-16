@@ -97,11 +97,11 @@ export function AiProviderSettings({
                     <p>Freigegebene Modelle: {entry.models.join(", ")}</p>
                     <div className="flex gap-3 text-primary">
                       <a href={entry.keyUrl} target="_blank" rel="noreferrer">
-                          API-Key holen
-                        </a>
+                        API-Key holen
+                      </a>
                       <a href={entry.docsUrl} target="_blank" rel="noreferrer">
-                          API-Doku
-                        </a>
+                        API-Doku
+                      </a>
                     </div>
                   </>
                 );
