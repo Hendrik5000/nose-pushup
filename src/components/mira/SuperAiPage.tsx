@@ -123,6 +123,7 @@ import { MarketplaceManifestView } from "@/components/marketplace/MarketplaceMan
 import { presentMiraMarketplaceReply } from "@/lib/mira-marketplace-reply";
 import {
   generateMarketplaceManifestDraft,
+  validateMarketplaceAuthoredManifest,
   type MarketplaceAuthoredManifest,
   type MarketplaceMiraSend,
 } from "@/lib/marketplace-authoring";

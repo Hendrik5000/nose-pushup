@@ -1,5 +1,5 @@
 import { ALO_WORKSPACE_TOOLS, HOME_OTHER_AREAS, type AloWorkspaceToolId } from "./home-app-menus";
-import { PRIVATE_GAME_IDS, type PrivateGameId } from "./private-game-policy";
+import { PUBLIC_GAME_IDS, type PublicGameId } from "./public-game-policy";
 import { scopedStorageKey } from "../integrations/supabase/backendScope";
 
 export type MarketplaceCategory = "app" | "area" | "tool";
@@ -15,6 +15,7 @@ export type MarketplaceIconId =
   | "coach"
   | "inbox"
   | "game"
+  | "sports"
   | "programs"
   | "calisthenics"
   | "run"
@@ -37,6 +38,7 @@ const MARKETPLACE_APP_ROUTES = [
   "/exercises",
   "/profile",
   "/training",
+  "/sports",
   "/admin",
   "/areas",
   "/tools",
@@ -48,7 +50,7 @@ const MARKETPLACE_APP_ROUTES = [
 export type MarketplaceRouteTarget =
   (typeof MARKETPLACE_APP_ROUTES)[number] | (typeof HOME_OTHER_AREAS)[number]["to"];
 export type MarketplaceToolTarget = AloWorkspaceToolId;
-export type MarketplaceGameTarget = PrivateGameId;
+export type MarketplaceGameTarget = PublicGameId;
 
 export type MarketplaceHostAction =
   | { type: "navigate"; to: MarketplaceRouteTarget }
@@ -218,6 +220,30 @@ const BUNDLED_MARKETPLACE_CATALOG = [
     icon: "game",
     permissions: ["alo.navigate"],
     action: { type: "open-game", gameId: "kupferkern" },
+  },
+  {
+    id: "alo-sports",
+    name: "Alo Sports",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description:
+      "Live-Spieltag, Bundesliga-Tabelle und persönliche Sportstatistiken in einer fokussierten Ansicht.",
+    icon: "sports",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/sports" },
+  },
+  {
+    id: "alo-neon-starfighter",
+    name: "Neon Starfighter",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description:
+      "Ein schnelles Arcade-Spiel mit Missionen, Upgrades und lokalem Highscore – isoliert in einer Sandbox.",
+    icon: "game",
+    permissions: ["alo.navigate"],
+    action: { type: "open-game", gameId: "neon-starfighter" },
   },
   {
     id: "alo-health-overview",
@@ -453,7 +479,7 @@ const KNOWN_ROUTES = new Set<MarketplaceRouteTarget>([
   ...HOME_OTHER_AREAS.map(({ to }) => to),
 ]);
 const REGISTERED_TOOLS = new Set<MarketplaceToolTarget>(ALO_WORKSPACE_TOOLS.map(({ id }) => id));
-const REGISTERED_GAMES = new Set<MarketplaceGameTarget>(PRIVATE_GAME_IDS);
+const REGISTERED_GAMES = new Set<MarketplaceGameTarget>(PUBLIC_GAME_IDS);
 
 export const EMPTY_MARKETPLACE_INSTALL_STATE: MarketplaceInstallState = Object.freeze({
   schemaVersion: 1,

@@ -1,4 +1,4 @@
-export const PUBLIC_GAME_IDS = ["grid-defense", "kupferkern"] as const;
+export const PUBLIC_GAME_IDS = ["grid-defense", "kupferkern", "neon-starfighter"] as const;
 export type PublicGameId = (typeof PUBLIC_GAME_IDS)[number];
 
 export function isPublicGameId(value: unknown): value is PublicGameId {

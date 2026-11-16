@@ -233,7 +233,7 @@ export function MarketplacePublishedAppViewer({
               navigate: (to, gameId) =>
                 gameId
                   ? navigate({ to: "/games", search: { game: gameId as MarketplaceGameTarget } })
-                  : navigate({ to: to as MarketplaceRouteTarget }),
+                  : navigate({ to: to as MarketplaceRouteTarget as never }),
               openTool: (toolId) =>
                 window.dispatchEvent(new CustomEvent("alo-open", { detail: toolId })),
               close: () => onOpenChange(false),

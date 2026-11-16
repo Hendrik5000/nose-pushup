@@ -201,7 +201,7 @@ function MarketplaceContent({ userId }: { userId: string }) {
     const action = getEnabledMarketplaceAction(state, pluginId);
     if (!action) return;
     if (action.type === "navigate") {
-      void navigate({ to: action.to });
+      void navigate({ to: action.to as never });
     } else if (action.type === "open-game") {
       void navigate({ to: "/games", search: { game: action.gameId } });
     } else {

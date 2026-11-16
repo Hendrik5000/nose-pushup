@@ -18,7 +18,7 @@ export const Route = createFileRoute("/games")({
       {
         name: "description",
         content:
-          "Grid Defense und Kupferkern – zwei eigenständige Alo-Spiele, auch ohne Anmeldung.",
+          "Grid Defense, Kupferkern und Neon Starfighter – eigenständige Alo-Spiele, auch ohne Anmeldung.",
       },
     ],
   }),
@@ -122,7 +122,7 @@ function GameSelection() {
         Alo-Spiele
       </h1>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-        Zwei eigenständige Spiele, direkt im Browser und ohne Alo-Konto erreichbar.
+        Drei eigenständige Spiele, direkt im Browser und ohne Alo-Konto erreichbar.
       </p>
       <div className="mt-7 grid gap-4 sm:grid-cols-2">
         <GameChoice
@@ -136,6 +136,12 @@ function GameSelection() {
           title="Kupferkern"
           description="Energiepfad-Puzzle: Leitungen drehen und den Kern versorgen."
           icon="circuit"
+        />
+        <GameChoice
+          game="neon-starfighter"
+          title="Neon Starfighter"
+          description="Arcade-Action: Wellen abwehren, Schilde schützen und deinen Highscore verbessern."
+          icon="star"
         />
       </div>
     </section>
@@ -151,7 +157,7 @@ function GameChoice({
   game: PublicGameId;
   title: string;
   description: string;
-  icon: "grid" | "circuit";
+  icon: "grid" | "circuit" | "star";
 }) {
   return (
     <Link
@@ -172,7 +178,7 @@ function GameChoice({
               strokeWidth="2"
             />
           </svg>
-        ) : (
+        ) : icon === "circuit" ? (
           <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none">
             <path
               d="M5 9h7l4 7 5-9 6 4"
@@ -192,6 +198,8 @@ function GameChoice({
             <circle cx="27" cy="11" r="2" fill="currentColor" />
             <circle cx="27" cy="21" r="2" fill="currentColor" />
           </svg>
+        ) : (
+          <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none"><path d="m16 4 3.7 7.5 8.3 1.2-6 5.8 1.4 8.2-7.4-3.9-7.4 3.9L10.6 18l-6-5.8 8.3-1.2L16 4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
         )}
       </span>
       <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
@@ -204,7 +212,7 @@ function GameChoice({
 }
 
 function GameFrame({ game, gameDocument }: { game: PublicGameId; gameDocument: string }) {
-  const title = game === "grid-defense" ? "Grid Defense" : "Kupferkern";
+  const title = game === "grid-defense" ? "Grid Defense" : game === "kupferkern" ? "Kupferkern" : "Neon Starfighter";
 
   return (
     <section className="fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950">
