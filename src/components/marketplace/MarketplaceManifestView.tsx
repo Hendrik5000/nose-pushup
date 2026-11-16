@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  loadMarketplaceChecklistProgress,
+  saveMarketplaceChecklistProgress,
+} from "@/lib/marketplace-runtime";
 import { getMarketplaceAuthorAction, type MarketplaceHostAction } from "@/lib/marketplace";
 import type { MarketplaceAuthoredManifest, MarketplaceQuizGame } from "@/lib/marketplace-authoring";
 
@@ -10,6 +14,7 @@ type MarketplaceManifestViewProps = {
   pendingActionId?: string | null;
   onAction?: (actionId: string) => void;
   onRequestPermission?: (actionId: string) => void;
+  checklistStorageScope?: string;
 };
 
 export function MarketplaceManifestView({
@@ -20,6 +25,7 @@ export function MarketplaceManifestView({
   pendingActionId = null,
   onAction,
   onRequestPermission,
+  checklistStorageScope,
 }: MarketplaceManifestViewProps) {
   return (
     <section
@@ -73,6 +79,8 @@ export function MarketplaceManifestView({
               key={`checklist-${index}`}
               title={block.title}
               items={block.items}
+              storageScope={checklistStorageScope}
+              blockIndex={index}
             />
           );
         }
@@ -129,18 +137,54 @@ export function MarketplaceManifestView({
 function MarketplaceChecklistView({
   title,
   items,
+  storageScope,
+  blockIndex,
 }: {
   title: string;
   items: readonly string[];
+  storageScope?: string;
+  blockIndex: number;
 }) {
   const [checked, setChecked] = useState<Record<number, boolean>>({});
+  const [loadedScope, setLoadedScope] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!storageScope) {
+      setChecked({});
+      setLoadedScope(null);
+      return;
+    }
+    try {
+      const progress = loadMarketplaceChecklistProgress(
+        window.localStorage,
+        storageScope,
+        blockIndex,
+        items.length,
+      );
+      setChecked(Object.fromEntries(progress.map((value, index) => [index, value])));
+    } catch {
+      setChecked({});
+    }
+    setLoadedScope(storageScope);
+  }, [storageScope, blockIndex, items.length]);
+
+  useEffect(() => {
+    if (!storageScope || loadedScope !== storageScope) return;
+    try {
+      saveMarketplaceChecklistProgress(
+        window.localStorage,
+        storageScope,
+        blockIndex,
+        items.map((_, index) => Boolean(checked[index])),
+      );
+    } catch {
+      // Storage can be unavailable or full; checklist interaction remains usable in memory.
+    }
+  }, [checked, loadedScope, storageScope, blockIndex, items]);
   const done = items.filter((_, itemIndex) => checked[itemIndex]).length;
 
   return (
-    <section
-      aria-label={title}
-      className="rounded-xl border border-border/60 bg-background/60 p-3"
-    >
+    <section aria-label={title} className="rounded-xl border border-border/60 bg-background/60 p-3">
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-bold">{title}</h4>
         <span className="text-[10px] text-muted-foreground" role="status" aria-live="polite">

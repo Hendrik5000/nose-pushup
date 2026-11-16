@@ -12,6 +12,8 @@ import {
   describeMarketplaceFunctionality,
   dispatchMarketplaceHostAction,
   executeMarketplaceAppAction,
+  loadMarketplaceChecklistProgress,
+  saveMarketplaceChecklistProgress,
   type MarketplaceActionDependencies,
 } from "../src/lib/marketplace-runtime";
 import { MARKETPLACE_AUTHOR_ACTIONS } from "../src/lib/marketplace";
@@ -278,4 +280,71 @@ test("viewer binds async work to live scope and keeps recoverable action errors 
   assert.match(source, /setActionError\(\s*messageFrom/);
   assert.match(source, /<fieldset disabled=\{savingPermissions\}/);
   assert.doesNotMatch(source, /manifest &&.*!actionError/);
+});
+
+
+test("checklist progress is restored for the same account, app version and block", () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+  };
+  const scope = JSON.stringify(["user-1", appId, 3]);
+  saveMarketplaceChecklistProgress(storage, scope, 2, [true, false, true]);
+  assert.deepEqual(loadMarketplaceChecklistProgress(storage, scope, 2, 3), [true, false, true]);
+});
+
+test("checklist progress is isolated between accounts, app versions and blocks", () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+  };
+  const scope = JSON.stringify(["user-1", appId, 3]);
+  saveMarketplaceChecklistProgress(storage, scope, 0, [true, true]);
+  assert.deepEqual(
+    loadMarketplaceChecklistProgress(storage, JSON.stringify(["user-2", appId, 3]), 0, 2),
+    [false, false],
+  );
+  assert.deepEqual(
+    loadMarketplaceChecklistProgress(storage, JSON.stringify(["user-1", appId, 4]), 0, 2),
+    [false, false],
+  );
+  assert.deepEqual(loadMarketplaceChecklistProgress(storage, scope, 1, 2), [false, false]);
+});
+
+test("malformed or oversized checklist snapshots safely reset to unchecked", () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+  };
+  const scope = JSON.stringify(["user-1", appId, 1]);
+  saveMarketplaceChecklistProgress(storage, scope, 0, [true, false]);
+  const key = [...values.keys()][0]!;
+  values.set(key, '[true,"yes"]');
+  assert.deepEqual(loadMarketplaceChecklistProgress(storage, scope, 0, 2), [false, false]);
+  values.set(key, "x".repeat(257));
+  assert.deepEqual(loadMarketplaceChecklistProgress(storage, scope, 0, 2), [false, false]);
+});
+
+test("checklist storage rejects invalid indexes, counts and values", () => {
+  const storage = { getItem: () => null, setItem: () => undefined };
+  assert.throws(() => loadMarketplaceChecklistProgress(storage, "scope", 12, 2), /Block/);
+  assert.throws(() => loadMarketplaceChecklistProgress(storage, "scope", 0, 9), /Größe/);
+  assert.throws(
+    () => saveMarketplaceChecklistProgress(storage, "scope", 0, [true, 1 as unknown as boolean]),
+    /Fortschritt/,
+  );
+});
+
+test("installed app viewer scopes checklist progress to account, app and installed version", () => {
+  const source = readFileSync(
+    new URL("../src/components/marketplace/MarketplacePublishedAppViewer.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    source,
+    /checklistStorageScope=\{JSON\.stringify\(\[userId, appId, installedVersion\]\)\}/,
+  );
 });
