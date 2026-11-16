@@ -1386,7 +1386,15 @@ function HubAppIcon({
   title,
   artwork,
 }: {
-  to: "/ai" | "/chat" | "/exercises" | "/profile" | "/admin" | "/training" | "/marketplace" | "/browser";
+  to:
+    | "/ai"
+    | "/chat"
+    | "/exercises"
+    | "/profile"
+    | "/admin"
+    | "/training"
+    | "/marketplace"
+    | "/browser";
   title: string;
   artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
 }) {

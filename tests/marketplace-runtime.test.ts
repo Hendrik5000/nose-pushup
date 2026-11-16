@@ -282,7 +282,6 @@ test("viewer binds async work to live scope and keeps recoverable action errors 
   assert.doesNotMatch(source, /manifest &&.*!actionError/);
 });
 
-
 test("checklist progress is restored for the same account, app version and block", () => {
   const values = new Map<string, string>();
   const storage = {

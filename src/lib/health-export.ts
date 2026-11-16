@@ -37,7 +37,10 @@ export function buildHealthCsv(entries: HealthExportEntry[]): string {
 }
 
 /** Löst den Browser-Download der CSV aus (nur im Browser aufrufen). */
-export function downloadHealthCsv(entries: HealthExportEntry[], filename = "alo-gesundheitsdaten.csv"): void {
+export function downloadHealthCsv(
+  entries: HealthExportEntry[],
+  filename = "alo-gesundheitsdaten.csv",
+): void {
   const csv = buildHealthCsv(entries);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);

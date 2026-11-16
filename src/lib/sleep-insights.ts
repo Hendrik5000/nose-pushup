@@ -35,8 +35,7 @@ export function summarizeSleep(entries: SleepEntry[]): SleepInsights {
   const average = total / nights.length;
   const best = nights.reduce((a, b) => (b.hours > a.hours ? b : a));
   const shortest = nights.reduce((a, b) => (b.hours < a.hours ? b : a));
-  const variance =
-    nights.reduce((sum, n) => sum + (n.hours - average) ** 2, 0) / nights.length;
+  const variance = nights.reduce((sum, n) => sum + (n.hours - average) ** 2, 0) / nights.length;
   const stdDev = Math.sqrt(variance);
   const consistency: SleepInsights["consistency"] =
     nights.length < 3 ? "unbekannt" : stdDev <= 1 ? "regelmäßig" : "variabel";

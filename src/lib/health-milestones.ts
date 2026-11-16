@@ -63,13 +63,13 @@ export function evaluateHealthMilestones(entries: HealthExportEntry[]): HealthMi
       id: "sleep-7",
       label: "7 Nächte mit Schlaf erfasst",
       achieved: sleepNights.length >= 7,
-      achievedOn: sleepNights.length >= 7 ? sleepNights[6]?.day ?? null : null,
+      achievedOn: sleepNights.length >= 7 ? (sleepNights[6]?.day ?? null) : null,
     },
     {
       id: "weight-10",
       label: "10 Gewichtseinträge dokumentiert",
       achieved: weightLogs.length >= 10,
-      achievedOn: weightLogs.length >= 10 ? weightLogs[9]?.day ?? null : null,
+      achievedOn: weightLogs.length >= 10 ? (weightLogs[9]?.day ?? null) : null,
     },
   ];
   return defs;

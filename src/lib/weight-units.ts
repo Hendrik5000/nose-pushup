@@ -18,9 +18,7 @@ export function lbToKg(lb: number): number {
 
 export function formatWeight(kg: number, unit: WeightUnit): string {
   if (!Number.isFinite(kg) || kg <= 0) return "—";
-  return unit === "kg"
-    ? `${kg.toFixed(1)} kg`
-    : `${kgToLb(kg).toFixed(1)} lb`;
+  return unit === "kg" ? `${kg.toFixed(1)} kg` : `${kgToLb(kg).toFixed(1)} lb`;
 }
 
 export function getPreferredWeightUnit(): WeightUnit {

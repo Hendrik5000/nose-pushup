@@ -34,6 +34,7 @@ export const MARKETPLACE_ICON_COMPONENTS = {
   coach: Activity,
   inbox: Inbox,
   game: Gamepad2,
+  sports: Trophy,
   programs: CalendarDays,
   calisthenics: Activity,
   run: Footprints,

@@ -15,10 +15,7 @@ const homeTileBuilder = home.slice(
   home.indexOf("function HomeAppHub"),
 );
 const route = readFileSync(resolve(root, "src/routes/_authenticated/admin.tsx"), "utf8");
-const marketplaceRoute = readFileSync(
-  resolve(root, "src/routes/marketplace.tsx"),
-  "utf8",
-);
+const marketplaceRoute = readFileSync(resolve(root, "src/routes/marketplace.tsx"), "utf8");
 const functions = readFileSync(resolve(root, "src/lib/admin.functions.ts"), "utf8");
 const migrations = readdirSync(resolve(root, "supabase/migrations"));
 const schemaPath = migrations.find((name) => name.endsWith("_global_admin_roles.sql"));

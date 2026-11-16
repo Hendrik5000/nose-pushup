@@ -17,7 +17,12 @@ const RECOMMENDED_MARKETPLACE_IDS = new Set([
   "alo-smart-coach",
 ]);
 
-const NEW_MARKETPLACE_IDS = new Set(["alo-grid-defense", "alo-kupferkern"]);
+const NEW_MARKETPLACE_IDS = new Set([
+  "alo-grid-defense",
+  "alo-kupferkern",
+  "alo-sports",
+  "alo-neon-starfighter",
+]);
 
 type MarketplaceCollectionEntry = Readonly<{ id: string; publisher: string }>;
 

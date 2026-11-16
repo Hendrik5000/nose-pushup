@@ -86,11 +86,12 @@ export function HealthToolbox({ entries }: { entries: HealthExportEntry[] }) {
   };
 
   const convertValue = Number(convertInput.replace(",", "."));
-  const converted = Number.isFinite(convertValue) && convertValue > 0
-    ? unit === "kg"
-      ? `${kgToLb(convertValue).toFixed(1)} lb`
-      : `${lbToKg(convertValue).toFixed(1)} kg`
-    : null;
+  const converted =
+    Number.isFinite(convertValue) && convertValue > 0
+      ? unit === "kg"
+        ? `${kgToLb(convertValue).toFixed(1)} lb`
+        : `${lbToKg(convertValue).toFixed(1)} kg`
+      : null;
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
@@ -185,7 +186,9 @@ export function HealthToolbox({ entries }: { entries: HealthExportEntry[] }) {
         <ul className="mt-3 space-y-1.5">
           {milestones.map((m) => (
             <li key={m.id} className="flex items-center justify-between gap-2 text-xs">
-              <span className={m.achieved ? "font-medium text-foreground" : "text-muted-foreground"}>
+              <span
+                className={m.achieved ? "font-medium text-foreground" : "text-muted-foreground"}
+              >
                 {m.achieved ? "✅" : "⬜"} {m.label}
               </span>
               {m.achievedOn && (

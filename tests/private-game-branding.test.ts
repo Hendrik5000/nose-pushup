@@ -48,4 +48,3 @@ test("the public game keeps responsive controls and clearly says no sign-in is n
   assert.doesNotMatch(game, /Geschützte Admin-Auslieferung/);
   assert.match(game, /Spielstand nur für diese Sitzung/);
 });
-

@@ -116,7 +116,6 @@ export function describeMarketplaceFunctionality(manifest: {
   };
 }
 
-
 export type MarketplaceChecklistStorage = Pick<Storage, "getItem" | "setItem">;
 
 function marketplaceChecklistStorageKey(scope: string, blockIndex: number) {
@@ -150,9 +149,7 @@ export function loadMarketplaceChecklistProgress(
     ) {
       return Object.freeze(Array.from({ length: itemCount }, () => false));
     }
-    return Object.freeze(
-      Array.from({ length: itemCount }, (_, index) => parsed[index] === true),
-    );
+    return Object.freeze(Array.from({ length: itemCount }, (_, index) => parsed[index] === true));
   } catch {
     return Object.freeze(Array.from({ length: itemCount }, () => false));
   }
@@ -172,8 +169,5 @@ export function saveMarketplaceChecklistProgress(
   ) {
     throw new Error("Ungültiger Checklisten-Fortschritt.");
   }
-  storage.setItem(
-    marketplaceChecklistStorageKey(scope, blockIndex),
-    JSON.stringify(progress),
-  );
+  storage.setItem(marketplaceChecklistStorageKey(scope, blockIndex), JSON.stringify(progress));
 }

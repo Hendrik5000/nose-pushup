@@ -1,4 +1,14 @@
-import { Activity, ArrowRight, Dumbbell, Flame, Footprints, HeartPulse, Moon, Plus, Watch } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Dumbbell,
+  Flame,
+  Footprints,
+  HeartPulse,
+  Moon,
+  Plus,
+  Watch,
+} from "lucide-react";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";

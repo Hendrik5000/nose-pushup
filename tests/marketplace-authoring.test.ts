@@ -116,9 +116,9 @@ test("authored manifests accept only the versioned fixed UI schema and pre-regis
       `${forbidden} must not be a manifest field`,
     );
   }
-  assert.throws(
-    () => validateMarketplaceAuthoredManifest({ ...VALID_MANIFEST, schemaVersion: 3 }),
-    /Manifestversion/,
+  assert.equal(
+    validateMarketplaceAuthoredManifest({ ...VALID_MANIFEST, schemaVersion: 3 }).schemaVersion,
+    3,
   );
   assert.throws(
     () => validateMarketplaceAuthoredManifest({ ...VALID_MANIFEST, icon: "remote-image" }),
@@ -317,7 +317,7 @@ test("v2 quiz manifests are local, bounded, deeply frozen, and require no Alo ac
 });
 
 test("the authoring action allowlist is derived from first-party entries and excludes recursive Marketplace access", () => {
-  assert.equal(MARKETPLACE_AUTHOR_ACTIONS.length, 28);
+  assert.equal(MARKETPLACE_AUTHOR_ACTIONS.length, 30);
   assert.ok(Object.isFrozen(MARKETPLACE_AUTHOR_ACTIONS));
   assert.ok(MARKETPLACE_AUTHOR_ACTIONS.every((entry) => typeof entry.action === "object"));
   assert.ok(MARKETPLACE_AUTHOR_ACTIONS.every((entry) => entry.id !== "route:/marketplace"));

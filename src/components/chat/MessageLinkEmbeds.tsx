@@ -15,7 +15,9 @@ function ShortTikTokCard({ url }: { url: string }) {
   useEffect(() => {
     let alive = true;
     fetch(tiktokOEmbedUrl(url))
-      .then((r) => (r.ok ? (r.json() as Promise<TikTokOEmbed>) : Promise.reject(new Error("oembed failed"))))
+      .then((r) =>
+        r.ok ? (r.json() as Promise<TikTokOEmbed>) : Promise.reject(new Error("oembed failed")),
+      )
       .then((data) => {
         if (alive) setMeta(data);
       })
@@ -47,7 +49,11 @@ function ShortTikTokCard({ url }: { url: string }) {
           {meta?.title || "TikTok-Video"}
         </span>
         <span className="block truncate text-[10px] text-muted-foreground">
-          {failed ? url : meta?.author_name ? `${meta.author_name} · TikTok` : "TikTok-Kurzlink wird geladen …"}
+          {failed
+            ? url
+            : meta?.author_name
+              ? `${meta.author_name} · TikTok`
+              : "TikTok-Kurzlink wird geladen …"}
         </span>
       </span>
     </a>

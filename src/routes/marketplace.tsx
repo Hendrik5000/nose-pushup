@@ -28,7 +28,8 @@ export const Route = createFileRoute("/marketplace")({
       { title: "Marketplace — Alo" },
       {
         name: "description",
-        content: "Kuratierte, lokal installierbare Alo-Erweiterungen – Katalog auch ohne Anmeldung.",
+        content:
+          "Kuratierte, lokal installierbare Alo-Erweiterungen – Katalog auch ohne Anmeldung.",
       },
     ],
   }),
@@ -82,10 +83,7 @@ function MarketplaceGuestView({ sessionChecked }: { sessionChecked: boolean }) {
       <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
         Du siehst den öffentlichen Marketplace-Katalog. Zum Installieren und Öffnen der Apps melde
         dich mit deinem Alo-Konto an.{" "}
-        <Link
-          to="/auth"
-          className="font-semibold text-primary underline-offset-4 hover:underline"
-        >
+        <Link to="/auth" className="font-semibold text-primary underline-offset-4 hover:underline">
           Zur Anmeldung
         </Link>
       </aside>
@@ -188,10 +186,7 @@ function MarketplaceContent({ userId }: { userId: string }) {
 
   const onRemove = (pluginId: string, name: string) => {
     try {
-      persist(
-        removeMarketplacePlugin(state, pluginId),
-        `${name} wurde von diesem Gerät entfernt.`,
-      );
+      persist(removeMarketplacePlugin(state, pluginId), `${name} wurde von diesem Gerät entfernt.`);
     } catch {
       setStatus("Dieses Alo-Plugin kann nicht entfernt werden.");
     }
@@ -201,7 +196,7 @@ function MarketplaceContent({ userId }: { userId: string }) {
     const action = getEnabledMarketplaceAction(state, pluginId);
     if (!action) return;
     if (action.type === "navigate") {
-      void navigate({ to: action.to });
+      void navigate({ to: action.to as never });
     } else if (action.type === "open-game") {
       void navigate({ to: "/games", search: { game: action.gameId } });
     } else {

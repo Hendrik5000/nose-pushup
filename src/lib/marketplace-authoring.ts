@@ -106,6 +106,7 @@ export const MARKETPLACE_ICON_IDS: readonly MarketplaceIconId[] = Object.freeze(
   "collections",
   "shortcuts",
   "privacy",
+  "sports",
 ]);
 
 const MARKETPLACE_ICON_SET = new Set<string>(MARKETPLACE_ICON_IDS);
@@ -956,4 +957,3 @@ export function saveMarketplacePublishedInstallState(
   }
   storage.setItem(marketplacePublishedInstallStorageKey(userId), serialized);
 }
-

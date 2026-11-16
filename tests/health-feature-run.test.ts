@@ -7,14 +7,16 @@ import { evaluateHealthMilestones } from "@/lib/health-milestones";
 import { formatWeight, kgToLb, lbToKg } from "@/lib/weight-units";
 import { summarizeSleep } from "@/lib/sleep-insights";
 
-const entry = (over: Partial<{
-  day: string;
-  steps: number;
-  active_kcal: number;
-  weight_kg: number | null;
-  sleep_min: number;
-  source: string;
-}>) => ({
+const entry = (
+  over: Partial<{
+    day: string;
+    steps: number;
+    active_kcal: number;
+    weight_kg: number | null;
+    sleep_min: number;
+    source: string;
+  }>,
+) => ({
   day: "2026-11-15",
   steps: 0,
   active_kcal: 0,
@@ -52,8 +54,14 @@ test("HealthToolbox berechnet BMI, Meilensteine, Gewicht und Schlaf-Insights", (
 });
 
 test("HealthToolbox ist in beiden Health-Varianten eingebunden", () => {
-  const component = readFileSync(new URL("../src/components/HealthToolbox.tsx", import.meta.url), "utf8");
-  const health = readFileSync(new URL("../src/routes/_authenticated/health.tsx", import.meta.url), "utf8");
+  const component = readFileSync(
+    new URL("../src/components/HealthToolbox.tsx", import.meta.url),
+    "utf8",
+  );
+  const health = readFileSync(
+    new URL("../src/routes/_authenticated/health.tsx", import.meta.url),
+    "utf8",
+  );
   assert.match(component, /export function HealthToolbox/);
   assert.match(component, /downloadHealthCsv/);
   assert.doesNotMatch(component, /supabase/);
