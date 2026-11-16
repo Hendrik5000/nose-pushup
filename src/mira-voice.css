@@ -2,6 +2,16 @@
   background:
     radial-gradient(ellipse at 50% 47%, rgba(29, 57, 135, 0.17), transparent 42%),
     linear-gradient(180deg, #030407 0%, #020306 55%, #05060b 100%);
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  transform: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .mira-voice-dialog > button:last-child {

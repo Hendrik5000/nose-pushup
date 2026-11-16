@@ -267,7 +267,9 @@ test("Integration behält bearbeitbares Diktat und sendet Sprachturns text-only 
   const settingsControls = readFileSync("src/components/mira/MiraAppSettingsControls.tsx", "utf8");
   const speechSettings = readFileSync("src/components/mira/MiraSpeechPrivacySettings.tsx", "utf8");
 
-  assert.match(conversationDialog, /mira-voice-dialog fixed inset-0/);
+  assert.match(conversationDialog, /mira-voice-dialog !fixed !inset-0/);
+  assert.match(conversationDialog, /!translate-x-0 !translate-y-0/);
+  assert.match(voiceStyles, /\.mira-voice-dialog[\s\S]*?transform:\s*none !important/);
   assert.match(conversationDialog, /mira-voice-orb/);
   assert.doesNotMatch(conversationDialog, /ChatGPT/);
   assert.match(conversationDialog, /onClick=\{micAction\}/);
