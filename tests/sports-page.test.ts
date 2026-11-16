@@ -29,10 +29,17 @@ test("the Alo sports route offers the German leagues and the national team", () 
   assert.match(route, /setLeagueId/);
 });
 
-test("the national team stays honest when OpenLigaDB lists no matches", () => {
+test("the national team loads its matches from TheSportsDB and stays honest", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/sports.tsx"), "utf8");
-  assert.match(route, /sind aktuell keine Spiele in OpenLigaDB eingetragen\./);
+  const lib = readFileSync(resolve(root, "src/lib/football.ts"), "utf8");
+  assert.match(lib, /NATIONAL_TEAM_ID = "133907"/);
+  assert.match(lib, /thesportsdb\.com\/api\/v1\/json\/123/);
+  assert.match(lib, /parseNationalEvents/);
+  assert.match(route, /nationalApiUrl\(`eventsnext\.php\?id=\$\{NATIONAL_TEAM_ID\}`\)/);
+  assert.match(route, /nationalApiUrl\(`eventslast\.php\?id=\$\{NATIONAL_TEAM_ID\}`\)/);
+  assert.match(route, /parseNationalEvents/);
+  assert.match(route, /sind aktuell keine Spiele in TheSportsDB eingetragen\./);
   assert.match(route, /league\.hasTable && \(/);
   assert.match(route, /league\.id === "bl1" && \(/);
 });
@@ -54,7 +61,7 @@ test("the Alo sports route stays honest with loading, error and empty states", (
   const route = readFileSync(resolve(root, "src/routes/sports.tsx"), "utf8");
   assert.match(route, /role="alert"/);
   assert.match(route, /Bundesliga-Daten werden geladen/);
-  assert.match(route, /Fu\u00dfball-Daten von OpenLigaDB/);
+  assert.match(route, /Fu\u00dfball-Daten von OpenLigaDB und TheSportsDB/);
   assert.match(route, /Keine Tabellendaten verf\u00fcgbar\./);
   assert.match(route, /Keine angesetzten Spiele in den geladenen Daten\./);
   assert.match(route, /Noch kein Spiel beendet/);
