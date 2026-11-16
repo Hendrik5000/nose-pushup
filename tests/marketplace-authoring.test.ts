@@ -317,7 +317,7 @@ test("v2 quiz manifests are local, bounded, deeply frozen, and require no Alo ac
 });
 
 test("the authoring action allowlist is derived from first-party entries and excludes recursive Marketplace access", () => {
-  assert.equal(MARKETPLACE_AUTHOR_ACTIONS.length, 30);
+  assert.equal(MARKETPLACE_AUTHOR_ACTIONS.length, 31);
   assert.ok(Object.isFrozen(MARKETPLACE_AUTHOR_ACTIONS));
   assert.ok(MARKETPLACE_AUTHOR_ACTIONS.every((entry) => typeof entry.action === "object"));
   assert.ok(MARKETPLACE_AUTHOR_ACTIONS.every((entry) => entry.id !== "route:/marketplace"));

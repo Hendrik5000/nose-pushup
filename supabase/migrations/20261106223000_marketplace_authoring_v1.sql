@@ -193,7 +193,7 @@ BEGIN
         'route:/calisthenics', 'route:/run', 'route:/season', 'route:/battle',
         'route:/battle-league', 'route:/leaderboard', 'route:/clubs', 'route:/alarm',
         'game:grid-defense', 'game:kupferkern', 'game:neon-starfighter',
-        'route:/sports', 'tool:today', 'tool:search',
+        'route:/sports', 'route:/football', 'tool:today', 'tool:search',
         'tool:capture', 'tool:collections', 'tool:shortcuts', 'tool:privacy'
       ) OR action_id = ANY(action_ids) THEN
         RETURN FALSE;

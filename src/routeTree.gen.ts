@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as FootballRouteImport } from './routes/football'
 import { Route as GamesRouteImport } from './routes/games'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as McpRouteImport } from './routes/mcp'
@@ -56,6 +57,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FootballRoute = FootballRouteImport.update({
+  id: '/football',
+  path: '/football',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesRoute = GamesRouteImport.update({
@@ -259,6 +265,7 @@ const AuthenticatedSettingsAppsAppIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/football': typeof FootballRoute
   '/games': typeof GamesRoute
   '/marketplace': typeof MarketplaceRoute
   '/mcp': typeof McpRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/football': typeof FootballRoute
   '/games': typeof GamesRoute
   '/marketplace': typeof MarketplaceRoute
   '/mcp': typeof McpRoute
@@ -340,6 +348,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/football': typeof FootballRoute
   '/games': typeof GamesRoute
   '/marketplace': typeof MarketplaceRoute
   '/mcp': typeof McpRoute
@@ -383,6 +392,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/football'
     | '/games'
     | '/marketplace'
     | '/mcp'
@@ -422,6 +432,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/football'
     | '/games'
     | '/marketplace'
     | '/mcp'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/football'
     | '/games'
     | '/marketplace'
     | '/mcp'
@@ -505,6 +517,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  FootballRoute: typeof FootballRoute
   GamesRoute: typeof GamesRoute
   MarketplaceRoute: typeof MarketplaceRoute
   McpRoute: typeof McpRoute
@@ -531,6 +544,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/football': {
+      id: '/football'
+      path: '/football'
+      fullPath: '/football'
+      preLoaderRoute: typeof FootballRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games': {
@@ -861,6 +881,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  FootballRoute: FootballRoute,
   GamesRoute: GamesRoute,
   MarketplaceRoute: MarketplaceRoute,
   McpRoute: McpRoute,

@@ -39,6 +39,7 @@ const MARKETPLACE_APP_ROUTES = [
   "/profile",
   "/training",
   "/sports",
+  "/football",
   "/admin",
   "/areas",
   "/tools",
@@ -232,6 +233,18 @@ const BUNDLED_MARKETPLACE_CATALOG = [
     icon: "sports",
     permissions: ["alo.navigate"],
     action: { type: "navigate", to: "/sports" },
+  },
+  {
+    id: "alo-football",
+    name: "Alo Fußball",
+    version: "1.0.0",
+    publisher: "Alo",
+    category: "app",
+    description:
+      "Bundesliga live: aktuelle Spieltage mit Ergebnissen und Ansetzungen sowie die komplette Tabelle.",
+    icon: "league",
+    permissions: ["alo.navigate"],
+    action: { type: "navigate", to: "/football" },
   },
   {
     id: "alo-neon-starfighter",
