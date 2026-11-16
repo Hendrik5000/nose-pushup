@@ -115,3 +115,50 @@ export function describeMarketplaceFunctionality(manifest: {
     detail: `${actions} verknüpfte Alo-Ziele. Die Aktionen öffnen vorhandene Funktionen; dieser App-Typ enthält keine eigenen Formulare, Datenspeicher oder Live-Daten.`,
   };
 }
+
+
+export type MarketplaceChecklistStorage = Pick<Storage, "getItem" | "setItem">;
+
+function marketplaceChecklistStorageKey(scope: string, blockIndex: number) {
+  if (!scope.trim() || scope.length > 512) throw new Error("Ungültiger App-Speicherbereich.");
+  if (!Number.isInteger(blockIndex) || blockIndex < 0 || blockIndex >= 12) {
+    throw new Error("Ungültiger Checklisten-Block.");
+  }
+  return `alo-marketplace-checklist-v1:${encodeURIComponent(scope)}:${blockIndex}`;
+}
+
+/** Loads a bounded checklist snapshot scoped to one account, app version and block. */
+export function loadMarketplaceChecklistProgress(
+  storage: Pick<MarketplaceChecklistStorage, "getItem">,
+  scope: string,
+  blockIndex: number,
+  itemCount: number,
+): readonly boolean[] {
+  if (!Number.isInteger(itemCount) || itemCount < 1 || itemCount > 8) {
+    throw new Error("Ungültige Checklisten-Größe.");
+  }
+  const raw = storage.getItem(marketplaceChecklistStorageKey(scope, blockIndex));
+  if (!raw || raw.length > 256) return Object.freeze(Array.from({ length: itemCount }, () => false));
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length > 8 || parsed.some((value) => typeof value !== "boolean")) {
+      return Object.freeze(Array.from({ length: itemCount }, () => false));
+    }
+    return Object.freeze(Array.from({ length: itemCount }, (_, index) => parsed[index] === true));
+  } catch {
+    return Object.freeze(Array.from({ length: itemCount }, () => false));
+  }
+}
+
+/** Saves only boolean completion flags; checklist text and other app data are never stored. */
+export function saveMarketplaceChecklistProgress(
+  storage: Pick<MarketplaceChecklistStorage, "setItem">,
+  scope: string,
+  blockIndex: number,
+  progress: readonly boolean[],
+): void {
+  if (progress.length < 1 || progress.length > 8 || progress.some((value) => typeof value !== "boolean")) {
+    throw new Error("Ungültiger Checklisten-Fortschritt.");
+  }
+  storage.setItem(marketplaceChecklistStorageKey(scope, blockIndex), JSON.stringify(progress));
+}
