@@ -43,3 +43,27 @@ test("Areas and Tools pages offer app-specific sidebar actions", () => {
   assert.match(tools, /to="\/areas"/);
   assert.match(tools, /to="\/marketplace"/);
 });
+
+test("the games catalog offers app-specific sidebar actions outside fullscreen games", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/games.tsx"), "utf8");
+  assert.match(route, /aria-label="App-Aktionen"/);
+  assert.match(route, /search=\{\{ game: entry\.game \}\}/);
+  assert.match(route, /to="\/marketplace"/);
+  assert.match(route, /Marketplace \u00f6ffnen/);
+  assert.match(route, /selectedGame \? \(\s*<div/);
+});
+
+test("the settings page offers a category sidebar in both design views", () => {
+  const root = process.cwd();
+  const page = readFileSync(
+    resolve(root, "src/routes/_authenticated/profile-page-impl.tsx"),
+    "utf8",
+  );
+  assert.match(page, /function SettingsActionsSidebar/);
+  assert.equal((page.match(/aria-label="App-Aktionen"/g) ?? []).length, 2);
+  assert.match(page, /to="\/settings\/\$category"/);
+  assert.match(page, /params=\{\{ category: categoryId \}\}/);
+  assert.match(page, /aria-current=\{active \? "page" : undefined\}/);
+  assert.match(page, /PROFILE_SETTINGS_GROUPS\.map/);
+});
