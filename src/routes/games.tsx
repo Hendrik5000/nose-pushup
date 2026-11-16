@@ -211,8 +211,7 @@ function GameFrame({ game, gameDocument }: { game: PublicGameId; gameDocument: s
   const [fullscreenFailed, setFullscreenFailed] = useState(false);
 
   useEffect(() => {
-    const syncFullscreen = () =>
-      setIsFullscreen(document.fullscreenElement === frameRef.current);
+    const syncFullscreen = () => setIsFullscreen(document.fullscreenElement === frameRef.current);
     document.addEventListener("fullscreenchange", syncFullscreen);
     return () => document.removeEventListener("fullscreenchange", syncFullscreen);
   }, []);
