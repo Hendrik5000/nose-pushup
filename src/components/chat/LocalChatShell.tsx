@@ -11,10 +11,12 @@ import {
   MessageCircle,
   MoreVertical,
   Search,
+  Sparkles,
   Users,
   Mic,
   MessageCirclePlus,
 } from "lucide-react";
+import { MiraNexusPanel } from "@/components/chat/MiraNexusPanel";
 import { Link } from "@tanstack/react-router";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
 import {
@@ -120,6 +122,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [dmPickerOpen, setDmPickerOpen] = useState(false);
+  const [miraOpen, setMiraOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
   const [, refreshSyncLabel] = useState(0);
@@ -430,10 +433,11 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
   }, [userId, rooms, roomsReady, flash]);
 
   const headerTitle = useMemo(() => {
+    if (miraOpen) return "Mira · Assistentin";
     if (!active) return "Chat";
     if (active.kind === "room") return rooms.find((r) => r.id === active.id)?.name ?? "Raum";
     return dms.find((d) => d.id === active.id)?.other_name ?? "DM";
-  }, [active, rooms, dms]);
+  }, [active, rooms, dms, miraOpen]);
 
   const dmPeer = useMemo(() => {
     if (mode !== "supabase" || active?.kind !== "dm") return null;
@@ -761,6 +765,28 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
         </p>
       </div>
       <div className="community-list-scroll flex-1 overflow-y-auto px-3 py-3">
+        <button
+          type="button"
+          onClick={() => {
+            setMiraOpen(true);
+            setMobileListOpen(false);
+          }}
+          aria-label="Mira in Nexus öffnen"
+          className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-left transition hover:bg-primary/15"
+        >
+          <span
+            aria-hidden="true"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary"
+          >
+            <Sparkles className="h-4 w-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-bold">Mira</span>
+            <span className="block text-xs text-muted-foreground">
+              Assistentin — direkt in Nexus fragen
+            </span>
+          </span>
+        </button>
         <div className="mb-1 flex items-center justify-between px-1">
           <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             {mode === "local" ? "Lokale Räume" : "Räume"}
@@ -997,7 +1023,9 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">{headerTitle}</div>
             <div className="text-[10px] text-muted-foreground">
-              {active?.kind === "room" ? "Raum" : "DM"} · {mode === "supabase" ? "Cloud" : "lokal"}
+              {miraOpen
+                ? "Assistentin"
+                : `${active?.kind === "room" ? "Raum" : "DM"} · ${mode === "supabase" ? "Cloud" : "lokal"}`}
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -1095,417 +1123,430 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
             </div>
           </details>
         </div>
-        {active?.kind === "room" && userId && (
-          <RoomTools
-            key={active.id}
-            userId={userId}
-            roomId={active.id}
-            roomName={headerTitle}
-            mode={mode}
-          />
-        )}
-        <p className="border-b border-border px-4 py-1 text-[10px] text-muted-foreground">
-          Nachrichten: {mode === "supabase" ? "Cloud · Nexus" : "nur auf diesem Gerät"} · Entwurf:{" "}
-          {cloudEnabled(userId) ? getSyncState().message : "nur auf diesem Gerät"}
-        </p>
-        {searchOpen && (
-          <div className="border-b border-border bg-card/40 px-3 py-2">
-            <input
-              autoFocus
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Nachrichten durchsuchen…"
-              aria-label="Nachrichten durchsuchen"
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            {search.trim() && (
-              <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto">
-                {hits.length === 0 && (
-                  <li className="text-xs text-muted-foreground">Keine Treffer</li>
-                )}
-                {hits.map((h) => (
-                  <li key={h.id}>
-                    <button
-                      type="button"
-                      className="w-full rounded-lg px-2 py-1.5 text-left text-xs hover:bg-secondary/50"
-                      onClick={() => {
-                        document
-                          .getElementById(`msg-${h.id}`)
-                          ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }}
-                    >
-                      <span className="line-clamp-2">{h.content}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+        {miraOpen && userId ? (
+          <MiraNexusPanel userId={userId} onBack={() => setMiraOpen(false)} />
+        ) : (
+          <>
+            {active?.kind === "room" && userId && (
+              <RoomTools
+                key={active.id}
+                userId={userId}
+                roomId={active.id}
+                roomName={headerTitle}
+                mode={mode}
+              />
             )}
-          </div>
-        )}
-
-        {pinned.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto border-b border-border bg-primary/5 px-3 py-2">
-            {pinned.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() =>
-                  document
-                    .getElementById(`msg-${p.id}`)
-                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
-                }
-                className="max-w-[200px] shrink-0 rounded-xl border border-primary/30 bg-background/60 px-2 py-1.5 text-left text-[11px]"
-              >
-                📌 <span className="line-clamp-2">{p.content}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {menuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden">
-            <button
-              type="button"
-              className="absolute inset-0 bg-black/50"
-              onClick={() => setMenuOpen(false)}
-              aria-label="Schließen"
-            />
-            <div className="absolute inset-y-0 left-0 w-[85vw] max-w-80 border-r border-border bg-background shadow-xl">
-              {sidebar}
-            </div>
-          </div>
-        )}
-
-        <div className="sport-chat-message-list flex-1 space-y-3 overflow-y-auto px-4 py-5 sm:px-6">
-          {messages.map((m, i) => {
-            const own = m.user_id === userId;
-            const prev = messages[i - 1];
-            const showAuthor = !prev || prev.user_id !== m.user_id;
-            const author =
-              m.user_id === "system"
-                ? "System"
-                : own
-                  ? myName
-                  : dms.find((d) => d.other_id === m.user_id)?.other_name ||
-                    names[m.user_id] ||
-                    "Mitglied";
-            const reply = m.reply_to_id ? messages.find((x) => x.id === m.reply_to_id) : null;
-            const msgReactions = reactions.filter((r) => r.message_id === m.id);
-            const grouped = msgReactions.reduce<Record<string, { count: number; mine: boolean }>>(
-              (acc, r) => {
-                const e = acc[r.emoji] ?? { count: 0, mine: false };
-                e.count += 1;
-                if (r.user_id === userId) e.mine = true;
-                acc[r.emoji] = e;
-                return acc;
-              },
-              {},
-            );
-            const isPinned = prefs?.pinnedMessageIds.includes(m.id);
-
-            return (
-              <div
-                key={m.id}
-                id={`msg-${m.id}`}
-                className={`flex flex-col gap-1 ${own ? "items-end" : "items-start"}`}
-              >
-                {showAuthor && (
-                  <div className="flex items-center gap-2 px-1 text-[10px] text-muted-foreground">
-                    <span className="font-medium">{own ? "Du" : author}</span>
-                    <span>{formatTime(m.created_at)}</span>
-                    {isPinned && <span>📌</span>}
-                  </div>
+            <p className="border-b border-border px-4 py-1 text-[10px] text-muted-foreground">
+              Nachrichten: {mode === "supabase" ? "Cloud · Nexus" : "nur auf diesem Gerät"} ·
+              Entwurf: {cloudEnabled(userId) ? getSyncState().message : "nur auf diesem Gerät"}
+            </p>
+            {searchOpen && (
+              <div className="border-b border-border bg-card/40 px-3 py-2">
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Nachrichten durchsuchen…"
+                  aria-label="Nachrichten durchsuchen"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+                {search.trim() && (
+                  <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto">
+                    {hits.length === 0 && (
+                      <li className="text-xs text-muted-foreground">Keine Treffer</li>
+                    )}
+                    {hits.map((h) => (
+                      <li key={h.id}>
+                        <button
+                          type="button"
+                          className="w-full rounded-lg px-2 py-1.5 text-left text-xs hover:bg-secondary/50"
+                          onClick={() => {
+                            document
+                              .getElementById(`msg-${h.id}`)
+                              ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                          }}
+                        >
+                          <span className="line-clamp-2">{h.content}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-                <div
-                  className={`sport-chat-bubble max-w-[85%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
-                    own
-                      ? "rounded-br-sm bg-primary text-primary-foreground"
-                      : m.user_id === "system"
-                        ? "rounded-bl-sm border border-border bg-card/60 text-muted-foreground"
-                        : "rounded-bl-sm border border-border/50 bg-secondary/90 text-secondary-foreground"
-                  } ${isPinned ? "ring-1 ring-primary/40" : ""}`}
-                >
-                  {reply && (
-                    <div className="mb-1.5 rounded-lg border-l-2 border-primary/60 bg-background/20 px-2 py-1 text-xs opacity-80">
-                      <div className="font-medium">Antwort</div>
-                      <div className="truncate">{reply.content}</div>
-                    </div>
-                  )}
-                  {m.attachment_url && (
-                    <MessageImage
-                      url={imageUrls[m.attachment_url]}
-                      name={m.attachment_name}
-                      onOpen={(url, name) => setLightbox({ url, name })}
-                    />
-                  )}
-                  {m.content && (
-                    <div className="whitespace-pre-wrap break-words select-text">{m.content}</div>
-                  )}
-                  <MessageLinkEmbeds content={m.content} />
-                  {m.edited_at && <div className="mt-0.5 text-[10px] opacity-60">(bearbeitet)</div>}
+              </div>
+            )}
+
+            {pinned.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto border-b border-border bg-primary/5 px-3 py-2">
+                {pinned.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() =>
+                      document
+                        .getElementById(`msg-${p.id}`)
+                        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                    }
+                    className="max-w-[200px] shrink-0 rounded-xl border border-primary/30 bg-background/60 px-2 py-1.5 text-left text-[11px]"
+                  >
+                    📌 <span className="line-clamp-2">{p.content}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {menuOpen && (
+              <div className="fixed inset-0 z-50 md:hidden">
+                <button
+                  type="button"
+                  className="absolute inset-0 bg-black/50"
+                  onClick={() => setMenuOpen(false)}
+                  aria-label="Schließen"
+                />
+                <div className="absolute inset-y-0 left-0 w-[85vw] max-w-80 border-r border-border bg-background shadow-xl">
+                  {sidebar}
                 </div>
+              </div>
+            )}
 
-                {Object.keys(grouped).length > 0 && (
-                  <div className={`flex flex-wrap gap-1 px-1 ${own ? "justify-end" : ""}`}>
-                    {Object.entries(grouped).map(([emoji, info]) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => {
-                          if (!userId || !active) return;
-                          void reactToMessage(userId, m.id, emoji).then(() =>
-                            refresh(userId, active),
-                          );
-                        }}
-                        className={`community-reaction-button rounded-full border px-2 py-0.5 text-xs ${
-                          info.mine ? "border-primary bg-primary/15" : "border-border bg-card/50"
-                        }`}
-                      >
-                        {emoji} {info.count}
-                      </button>
-                    ))}
-                  </div>
-                )}
+            <div className="sport-chat-message-list flex-1 space-y-3 overflow-y-auto px-4 py-5 sm:px-6">
+              {messages.map((m, i) => {
+                const own = m.user_id === userId;
+                const prev = messages[i - 1];
+                const showAuthor = !prev || prev.user_id !== m.user_id;
+                const author =
+                  m.user_id === "system"
+                    ? "System"
+                    : own
+                      ? myName
+                      : dms.find((d) => d.other_id === m.user_id)?.other_name ||
+                        names[m.user_id] ||
+                        "Mitglied";
+                const reply = m.reply_to_id ? messages.find((x) => x.id === m.reply_to_id) : null;
+                const msgReactions = reactions.filter((r) => r.message_id === m.id);
+                const grouped = msgReactions.reduce<
+                  Record<string, { count: number; mine: boolean }>
+                >((acc, r) => {
+                  const e = acc[r.emoji] ?? { count: 0, mine: false };
+                  e.count += 1;
+                  if (r.user_id === userId) e.mine = true;
+                  acc[r.emoji] = e;
+                  return acc;
+                }, {});
+                const isPinned = prefs?.pinnedMessageIds.includes(m.id);
 
-                <details className="alo-message-actions">
-                  <summary>Nachrichtenaktionen</summary>
-                  <div className={`flex flex-wrap gap-1 px-1 ${own ? "justify-end" : ""}`}>
-                    {QUICK_EMOJIS.slice(0, 4).map((e) => (
-                      <button
-                        key={e}
-                        type="button"
-                        className="text-xs opacity-40 transition hover:opacity-100"
-                        onClick={() => {
-                          if (!userId || !active) return;
-                          void reactToMessage(userId, m.id, e).then(() => refresh(userId, active));
-                        }}
-                      >
-                        {e}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      className="text-[10px] text-muted-foreground"
-                      onClick={() => setReplyTo(m)}
+                return (
+                  <div
+                    key={m.id}
+                    id={`msg-${m.id}`}
+                    className={`flex flex-col gap-1 ${own ? "items-end" : "items-start"}`}
+                  >
+                    {showAuthor && (
+                      <div className="flex items-center gap-2 px-1 text-[10px] text-muted-foreground">
+                        <span className="font-medium">{own ? "Du" : author}</span>
+                        <span>{formatTime(m.created_at)}</span>
+                        {isPinned && <span>📌</span>}
+                      </div>
+                    )}
+                    <div
+                      className={`sport-chat-bubble max-w-[85%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
+                        own
+                          ? "rounded-br-sm bg-primary text-primary-foreground"
+                          : m.user_id === "system"
+                            ? "rounded-bl-sm border border-border bg-card/60 text-muted-foreground"
+                            : "rounded-bl-sm border border-border/50 bg-secondary/90 text-secondary-foreground"
+                      } ${isPinned ? "ring-1 ring-primary/40" : ""}`}
                     >
-                      Antwort
-                    </button>
-                    {userId && (
-                      <button
-                        type="button"
-                        className="text-[10px] text-muted-foreground"
-                        onClick={() => setPrefs(togglePinMessage(userId, m.id))}
-                      >
-                        {isPinned ? "Lösen" : "Pin"}
-                      </button>
+                      {reply && (
+                        <div className="mb-1.5 rounded-lg border-l-2 border-primary/60 bg-background/20 px-2 py-1 text-xs opacity-80">
+                          <div className="font-medium">Antwort</div>
+                          <div className="truncate">{reply.content}</div>
+                        </div>
+                      )}
+                      {m.attachment_url && (
+                        <MessageImage
+                          url={imageUrls[m.attachment_url]}
+                          name={m.attachment_name}
+                          onOpen={(url, name) => setLightbox({ url, name })}
+                        />
+                      )}
+                      {m.content && (
+                        <div className="whitespace-pre-wrap break-words select-text">
+                          {m.content}
+                        </div>
+                      )}
+                      <MessageLinkEmbeds content={m.content} />
+                      {m.edited_at && (
+                        <div className="mt-0.5 text-[10px] opacity-60">(bearbeitet)</div>
+                      )}
+                    </div>
+
+                    {Object.keys(grouped).length > 0 && (
+                      <div className={`flex flex-wrap gap-1 px-1 ${own ? "justify-end" : ""}`}>
+                        {Object.entries(grouped).map(([emoji, info]) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => {
+                              if (!userId || !active) return;
+                              void reactToMessage(userId, m.id, emoji).then(() =>
+                                refresh(userId, active),
+                              );
+                            }}
+                            className={`community-reaction-button rounded-full border px-2 py-0.5 text-xs ${
+                              info.mine
+                                ? "border-primary bg-primary/15"
+                                : "border-border bg-card/50"
+                            }`}
+                          >
+                            {emoji} {info.count}
+                          </button>
+                        ))}
+                      </div>
                     )}
-                    {userId && (
-                      <ContentActions
-                        userId={userId}
-                        text={m.content}
-                        title={`Nachricht aus ${headerTitle}`}
-                        source="Nexus"
-                      />
-                    )}
-                    {own && m.user_id !== "system" && (
-                      <>
+
+                    <details className="alo-message-actions">
+                      <summary>Nachrichtenaktionen</summary>
+                      <div className={`flex flex-wrap gap-1 px-1 ${own ? "justify-end" : ""}`}>
+                        {QUICK_EMOJIS.slice(0, 4).map((e) => (
+                          <button
+                            key={e}
+                            type="button"
+                            className="text-xs opacity-40 transition hover:opacity-100"
+                            onClick={() => {
+                              if (!userId || !active) return;
+                              void reactToMessage(userId, m.id, e).then(() =>
+                                refresh(userId, active),
+                              );
+                            }}
+                          >
+                            {e}
+                          </button>
+                        ))}
                         <button
                           type="button"
                           className="text-[10px] text-muted-foreground"
-                          onClick={() => {
-                            const next = window.prompt("Bearbeiten", m.content);
-                            if (next && userId && active) {
-                              void editChatMessage(userId, m.id, next).then(() =>
-                                refresh(userId, active),
-                              );
-                            }
-                          }}
+                          onClick={() => setReplyTo(m)}
                         >
-                          Edit
+                          Antwort
                         </button>
-                        <button
-                          type="button"
-                          className="text-[10px] text-destructive"
-                          onClick={() => {
-                            if (!userId || !active) return;
-                            if (
-                              !window.confirm(
-                                `Diese Nachricht ${mode === "supabase" ? "in der Cloud für alle Raumteilnehmer" : "auf diesem Gerät"} löschen? Gespeicherte Kopien in Sammlungen bleiben erhalten.`,
-                              )
-                            )
-                              return;
-                            void deleteChatMessage(userId, m.id).then(() =>
-                              refresh(userId, active),
-                            );
-                          }}
-                        >
-                          Löschen
-                        </button>
-                      </>
-                    )}
+                        {userId && (
+                          <button
+                            type="button"
+                            className="text-[10px] text-muted-foreground"
+                            onClick={() => setPrefs(togglePinMessage(userId, m.id))}
+                          >
+                            {isPinned ? "Lösen" : "Pin"}
+                          </button>
+                        )}
+                        {userId && (
+                          <ContentActions
+                            userId={userId}
+                            text={m.content}
+                            title={`Nachricht aus ${headerTitle}`}
+                            source="Nexus"
+                          />
+                        )}
+                        {own && m.user_id !== "system" && (
+                          <>
+                            <button
+                              type="button"
+                              className="text-[10px] text-muted-foreground"
+                              onClick={() => {
+                                const next = window.prompt("Bearbeiten", m.content);
+                                if (next && userId && active) {
+                                  void editChatMessage(userId, m.id, next).then(() =>
+                                    refresh(userId, active),
+                                  );
+                                }
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="text-[10px] text-destructive"
+                              onClick={() => {
+                                if (!userId || !active) return;
+                                if (
+                                  !window.confirm(
+                                    `Diese Nachricht ${mode === "supabase" ? "in der Cloud für alle Raumteilnehmer" : "auf diesem Gerät"} löschen? Gespeicherte Kopien in Sammlungen bleiben erhalten.`,
+                                  )
+                                )
+                                  return;
+                                void deleteChatMessage(userId, m.id).then(() =>
+                                  refresh(userId, active),
+                                );
+                              }}
+                            >
+                              Löschen
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </details>
                   </div>
-                </details>
+                );
+              })}
+              <div ref={bottomRef} />
+            </div>
+
+            {replyTo && (
+              <div className="flex items-center gap-2 border-t border-border bg-secondary/30 px-3 py-2 text-xs">
+                <span className="min-w-0 flex-1 truncate">
+                  Antwort auf: <strong>{replyTo.content}</strong>
+                </span>
+                <button
+                  type="button"
+                  aria-label="Antwort abbrechen"
+                  onClick={() => setReplyTo(null)}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  ×
+                </button>
               </div>
-            );
-          })}
-          <div ref={bottomRef} />
-        </div>
+            )}
 
-        {replyTo && (
-          <div className="flex items-center gap-2 border-t border-border bg-secondary/30 px-3 py-2 text-xs">
-            <span className="min-w-0 flex-1 truncate">
-              Antwort auf: <strong>{replyTo.content}</strong>
-            </span>
-            <button
-              type="button"
-              aria-label="Antwort abbrechen"
-              onClick={() => setReplyTo(null)}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            {/* Quick replies + workout share */}
+            <details className="alo-chat-quick-options">
+              <summary>Schnellantworten & Training teilen</summary>
+              <div className="community-quick-replies flex flex-wrap gap-2">
+                {QUICK_REPLIES.map((q) => (
+                  <button
+                    key={q.id}
+                    type="button"
+                    onClick={() => void onSend(q.text)}
+                    className="shrink-0 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[10px] font-medium"
+                  >
+                    {q.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={todayReps <= 0}
+                  title={
+                    todayReps > 0
+                      ? "Erfasste Wiederholungen teilen"
+                      : "Noch keine Wiederholungen erfasst"
+                  }
+                  onClick={() => void onSend(workoutShareTemplate(todayReps))}
+                  className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary"
+                >
+                  🏋️ Workout teilen
+                </button>
+              </div>
+            </details>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void onSend();
+              }}
+              className="classic-only community-chat-composer flex items-end gap-2 border-t border-border bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
             >
-              ×
-            </button>
-          </div>
-        )}
-
-        {/* Quick replies + workout share */}
-        <details className="alo-chat-quick-options">
-          <summary>Schnellantworten & Training teilen</summary>
-          <div className="community-quick-replies flex flex-wrap gap-2">
-            {QUICK_REPLIES.map((q) => (
               <button
-                key={q.id}
                 type="button"
-                onClick={() => void onSend(q.text)}
-                className="shrink-0 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[10px] font-medium"
+                onClick={toggleVoice}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm ${
+                  listening
+                    ? "border-primary bg-primary/20 text-primary"
+                    : "border-border bg-secondary/40"
+                }`}
+                aria-label="Sprache"
               >
-                {q.label}
+                🎤
               </button>
-            ))}
-            <button
-              type="button"
-              disabled={todayReps <= 0}
-              title={
-                todayReps > 0
-                  ? "Erfasste Wiederholungen teilen"
-                  : "Noch keine Wiederholungen erfasst"
-              }
-              onClick={() => void onSend(workoutShareTemplate(todayReps))}
-              className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary"
+              <AttachImageButton
+                enabled={mode === "supabase" && !!active}
+                busy={uploading || sending}
+                onPick={(file) => void onAttachImage(file)}
+              />
+              <textarea
+                value={draft}
+                onChange={(e) => {
+                  draftRef.current = e.target.value;
+                  setDraft(e.target.value);
+                  if (userId && active) {
+                    try {
+                      saveDraft(userId, active.kind, active.id, e.target.value);
+                    } catch {
+                      flash("Entwurf nicht gespeichert. Gerätespeicher prüfen.");
+                    }
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void onSend();
+                  }
+                }}
+                placeholder={active ? "Nachricht…" : "Raum wählen…"}
+                aria-label="Nachricht in Nexus Chat"
+                rows={1}
+                disabled={!active}
+                className="min-w-0 flex-1 resize-none rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-50"
+                style={{ maxHeight: 120 }}
+              />
+              <button
+                type="submit"
+                disabled={!active || !draft.trim() || sending}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-40"
+              >
+                ↑
+              </button>
+            </form>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void onSend();
+              }}
+              className="sport-only sport-chat-composer flex items-end gap-3 border-t border-border/70 bg-card/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
             >
-              🏋️ Workout teilen
-            </button>
-          </div>
-        </details>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void onSend();
-          }}
-          className="classic-only community-chat-composer flex items-end gap-2 border-t border-border bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
-        >
-          <button
-            type="button"
-            onClick={toggleVoice}
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm ${
-              listening
-                ? "border-primary bg-primary/20 text-primary"
-                : "border-border bg-secondary/40"
-            }`}
-            aria-label="Sprache"
-          >
-            🎤
-          </button>
-          <AttachImageButton
-            enabled={mode === "supabase" && !!active}
-            busy={uploading || sending}
-            onPick={(file) => void onAttachImage(file)}
-          />
-          <textarea
-            value={draft}
-            onChange={(e) => {
-              draftRef.current = e.target.value;
-              setDraft(e.target.value);
-              if (userId && active) {
-                try {
-                  saveDraft(userId, active.kind, active.id, e.target.value);
-                } catch {
-                  flash("Entwurf nicht gespeichert. Gerätespeicher prüfen.");
-                }
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void onSend();
-              }
-            }}
-            placeholder={active ? "Nachricht…" : "Raum wählen…"}
-            aria-label="Nachricht in Nexus Chat"
-            rows={1}
-            disabled={!active}
-            className="min-w-0 flex-1 resize-none rounded-xl border border-border bg-background/60 px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-50"
-            style={{ maxHeight: 120 }}
-          />
-          <button
-            type="submit"
-            disabled={!active || !draft.trim() || sending}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-40"
-          >
-            ↑
-          </button>
-        </form>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void onSend();
-          }}
-          className="sport-only sport-chat-composer flex items-end gap-3 border-t border-border/70 bg-card/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
-        >
-          <button
-            type="button"
-            onClick={toggleVoice}
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
-            aria-label="Spracheingabe"
-          >
-            <Mic className="h-5 w-5" aria-hidden="true" />
-          </button>
-          <AttachImageButton
-            size="lg"
-            enabled={mode === "supabase" && !!active}
-            busy={uploading || sending}
-            onPick={(file) => void onAttachImage(file)}
-          />
-          <textarea
-            value={draft}
-            onChange={(e) => {
-              draftRef.current = e.target.value;
-              setDraft(e.target.value);
-              if (userId && active) saveDraft(userId, active.kind, active.id, e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void onSend();
-              }
-            }}
-            placeholder={replyTo ? "Antwort…" : "Nachricht…"}
-            aria-label="Nachricht in Nexus Chat"
-            rows={1}
-            disabled={!active}
-            className="min-h-12 min-w-0 flex-1 resize-none rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
-            style={{ maxHeight: 120 }}
-          />
-          <button
-            type="submit"
-            disabled={!active || !draft.trim() || sending}
-            className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
-          >
-            <span className="sr-only">Nachricht senden</span>
-            <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
-          </button>
-        </form>
+              <button
+                type="button"
+                onClick={toggleVoice}
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${listening ? "border-primary bg-primary/20 text-primary" : "border-border bg-secondary/40"}`}
+                aria-label="Spracheingabe"
+              >
+                <Mic className="h-5 w-5" aria-hidden="true" />
+              </button>
+              <AttachImageButton
+                size="lg"
+                enabled={mode === "supabase" && !!active}
+                busy={uploading || sending}
+                onPick={(file) => void onAttachImage(file)}
+              />
+              <textarea
+                value={draft}
+                onChange={(e) => {
+                  draftRef.current = e.target.value;
+                  setDraft(e.target.value);
+                  if (userId && active) saveDraft(userId, active.kind, active.id, e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void onSend();
+                  }
+                }}
+                placeholder={replyTo ? "Antwort…" : "Nachricht…"}
+                aria-label="Nachricht in Nexus Chat"
+                rows={1}
+                disabled={!active}
+                className="min-h-12 min-w-0 flex-1 resize-none rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary"
+                style={{ maxHeight: 120 }}
+              />
+              <button
+                type="submit"
+                disabled={!active || !draft.trim() || sending}
+                className="flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-40"
+              >
+                <span className="sr-only">Nachricht senden</span>
+                <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </form>
+          </>
+        )}
         <ImageLightbox image={lightbox} onClose={() => setLightbox(null)} />
         {toast && (
           <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-xs shadow-lg">
