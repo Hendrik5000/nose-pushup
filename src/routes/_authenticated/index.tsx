@@ -1992,7 +1992,7 @@ function MiraOverlayLauncher() {
         error={voiceError}
         onContinue={continueToMira}
         continueLabel="Frage in Mira prüfen"
-        className="alo-dialog alo-mira-voice-entry-dialog max-h-[88dvh] overflow-y-auto sm:max-w-md"
+        className="alo-dialog alo-mira-voice-entry-dialog !fixed !left-0 !top-0 !z-50 !m-0 !flex !h-[100dvh] !w-screen !max-w-none !translate-x-0 !translate-y-0 !flex-col !gap-0 !overflow-y-auto !rounded-none !border-0 !p-0 !shadow-none"
       />
     </>
   );

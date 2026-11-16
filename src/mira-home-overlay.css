@@ -131,10 +131,14 @@ html[data-navigation-visible="true"][data-navigation-expanded="true"]:is(
 }
 
 .alo-mira-voice-entry-dialog {
-  border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border)) !important;
-  border-radius: 1.25rem !important;
-  background: color-mix(in srgb, var(--card) 96%, var(--background)) !important;
-  box-shadow: 0 24px 80px color-mix(in srgb, #000 42%, transparent) !important;
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--background) !important;
+  box-shadow: none !important;
+}
+
+.alo-mira-voice-entry-dialog > button:last-child {
+  top: max(1rem, env(safe-area-inset-top, 0px)) !important;
+  right: max(1rem, env(safe-area-inset-right, 0px)) !important;
+  z-index: 10;
 }

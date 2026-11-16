@@ -57,9 +57,22 @@ test("Home voice handoff keeps the current explicit preview and never sends to M
     voiceDialog,
     /onClick=\{\(\) => \(onContinue \? onContinue\(\) : onOpenChange\(false\)\)\}/,
   );
-  assert.match(voiceDialog, /Je nach Browser kann/);
-  assert.match(voiceDialog, /nichts wird automatisch\s+an Mira gesendet/);
+  assert.match(voiceDialog, /Je nach Browser\s+kann/);
+  assert.match(voiceDialog, /nichts\s+wird\s+automatisch\s+an Mira gesendet/);
   assert.match(voiceDialog, /Mira wird nicht automatisch kontaktiert/);
   assert.match(handoff, /Kein Versand beim Öffnen/);
   assert.match(handoff, /Kein automatisches Senden/);
+});
+
+test("Home voice mode opens centered and fullscreen like the Mira voice conversation", () => {
+  assert.match(
+    launcher,
+    /alo-mira-voice-entry-dialog !fixed !left-0 !top-0 !z-50 !m-0 !flex !h-\[100dvh\] !w-screen !max-w-none !translate-x-0 !translate-y-0 !flex-col !gap-0 !overflow-y-auto !rounded-none !border-0 !p-0 !shadow-none/,
+  );
+  assert.match(
+    voiceDialog,
+    /mx-auto flex min-h-\[100dvh\] w-full max-w-2xl flex-col justify-center gap-5 px-5/,
+  );
+  assert.match(styles, /\.alo-mira-voice-entry-dialog\s*\{[^}]*border-radius:\s*0 !important/);
+  assert.match(styles, /\.alo-mira-voice-entry-dialog\s*\{[^}]*box-shadow:\s*none !important/);
 });
