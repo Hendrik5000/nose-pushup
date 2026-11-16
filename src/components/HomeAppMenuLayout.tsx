@@ -6,6 +6,7 @@ type HomeAppMenuLayoutProps = {
   eyebrow?: string;
   title?: string;
   description?: string;
+  sidebar?: ReactNode;
   children: ReactNode;
 };
 
@@ -14,6 +15,7 @@ function MenuFrame({
   eyebrow,
   title,
   description,
+  sidebar,
   children,
 }: HomeAppMenuLayoutProps & { variant: "sport" | "classic" }) {
   const frameClass =
@@ -23,7 +25,9 @@ function MenuFrame({
 
   return (
     <main
-      className={`relative mx-auto flex min-h-[100dvh] w-full max-w-4xl flex-col gap-6 ${frameClass}`}
+      className={`relative mx-auto flex min-h-[100dvh] w-full flex-col gap-6 ${frameClass} ${
+        sidebar ? "max-w-5xl" : "max-w-4xl"
+      }`}
       aria-labelledby={showHeader ? "home-app-menu-title" : undefined}
       data-alo-menu-surface="true"
     >
@@ -46,7 +50,19 @@ function MenuFrame({
           <AloHomeLink className="border-border/70 bg-card/70 px-2.5 sm:px-3" />
         </header>
       )}
-      {children}
+      {sidebar ? (
+        <div className="grid gap-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
+          <aside
+            aria-label="App-Aktionen"
+            className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
+          >
+            {sidebar}
+          </aside>
+          <div className="flex min-w-0 flex-col gap-6">{children}</div>
+        </div>
+      ) : (
+        children
+      )}
     </main>
   );
 }
