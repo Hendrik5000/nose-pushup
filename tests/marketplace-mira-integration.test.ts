@@ -24,11 +24,25 @@ test("Alo apps are authored from ordinary Mira chat messages without a separate 
   );
   assert.match(miraPage, /classifyMarketplaceChatIntent/);
   assert.match(miraPage, /await checkMarketplaceAdmin\(\)/);
+  assert.match(
+    miraPage,
+    /hasMarketplaceAdminAccess \|\|\s*marketplaceIntent === "create" \|\|\s*marketplaceIntent === "edit-draft"/,
+  );
+  assert.match(
+    miraPage,
+    /Non-admins may discuss ideas and create local drafts, but cannot edit published apps or publish/,
+  );
+  assert.match(miraPage, /const requestMarketplacePublishConfirmation = async \(\) =>/);
+  assert.match(miraPage, /if \(!allowed\)/);
   assert.match(miraPage, /generateMarketplaceManifestDraft\(/);
   assert.match(miraPage, /role: "user", content: text/);
   assert.match(miraPage, /previousManifest/);
   assert.match(miraPage, /MiraMarketplaceDraftPreview/);
   assert.match(miraPage, /confirmed: true as const/);
+  assert.match(
+    miraPage,
+    /if \(!draft \|\| !marketplacePublishConfirmationOpen \|\| isPublishingMarketplaceApp\) return/,
+  );
   assert.match(miraPage, /angehängten Dateien habe ich für diesen Entwurf nicht gesendet/);
   assert.doesNotMatch(
     customApps,
