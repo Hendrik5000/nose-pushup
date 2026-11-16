@@ -36,8 +36,9 @@ export function AiProviderSettings({
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
         Keys sind kontogebunden auf diesem Gerät (localStorage) und werden beim Abmelden gelöscht.
-        Super-AI wählt je nach Aufgabe einen aktivierten Anbieter. Es gibt keinen automatischen Wechsel
-        zu kostenpflichtigen Modellen. API-Keys werden wie bisher kontogebunden auf diesem Gerät gespeichert.
+        Super-AI wählt anhand deiner aktivierten Anbieter und Aufgabenbereiche. Bei Fehlern oder
+        aufgebrauchtem Kontingent gibt es keinen automatischen Retry oder Anbieterwechsel. API-Keys
+        werden wie bisher kontogebunden auf diesem Gerät gespeichert.
       </p>
       {list.map((p) => (
         <div key={p.id} className="rounded-2xl border border-border bg-background/40 p-3 space-y-2">
