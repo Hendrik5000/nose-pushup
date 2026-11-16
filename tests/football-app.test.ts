@@ -1,0 +1,167 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import {
+  currentFootballSeason,
+  footballApiUrl,
+  formatKickOff,
+  parseFootballMatches,
+  parseFootballTable,
+} from "../src/lib/football";
+
+test("currentFootballSeason follows the Bundesliga season turn in August", () => {
+  assert.equal(currentFootballSeason(new Date("2026-11-16T12:00:00Z")), 2026);
+  assert.equal(currentFootballSeason(new Date("2026-08-01T00:00:00Z")), 2026);
+  assert.equal(currentFootballSeason(new Date("2026-07-31T23:59:00Z")), 2025);
+  assert.equal(currentFootballSeason(new Date("2027-05-15T12:00:00Z")), 2026);
+});
+
+test("footballApiUrl targets the OpenLigaDB host without double slashes", () => {
+  assert.equal(
+    footballApiUrl("getbltable/bl1/2026"),
+    "https://api.openligadb.de/getbltable/bl1/2026",
+  );
+  assert.equal(
+    footballApiUrl("/getmatchdata/bl1/2026/12"),
+    "https://api.openligadb.de/getmatchdata/bl1/2026/12",
+  );
+});
+
+test("parseFootballTable sorts by points, goal difference and goals", () => {
+  const table = parseFootballTable([
+    {
+      teamName: "FC Bayern München",
+      matches: 11,
+      won: 8,
+      draw: 2,
+      lost: 1,
+      goals: 30,
+      opponentGoals: 12,
+      points: 26,
+    },
+    {
+      teamName: "SC Freiburg",
+      matches: 11,
+      won: 6,
+      draw: 3,
+      lost: 2,
+      goals: 20,
+      opponentGoals: 14,
+      points: 21,
+    },
+    {
+      teamName: "Bayer 04 Leverkusen",
+      matches: 11,
+      won: 6,
+      draw: 3,
+      lost: 2,
+      goals: 22,
+      opponentGoals: 14,
+      points: 21,
+    },
+    {
+      teamName: "Borussia Dortmund",
+      matches: 11,
+      won: 6,
+      draw: 3,
+      lost: 2,
+      goals: 20,
+      opponentGoals: 12,
+      points: 21,
+    },
+    { teamName: "" },
+    null,
+  ]);
+  assert.deepEqual(
+    table.map(({ name }) => name),
+    ["FC Bayern München", "Bayer 04 Leverkusen", "Borussia Dortmund", "SC Freiburg"],
+  );
+  assert.equal(table[0].position, 1);
+  assert.equal(table[3].position, 4);
+});
+
+test("parseFootballTable rejects non-array payloads", () => {
+  assert.deepEqual(parseFootballTable(null), []);
+  assert.deepEqual(parseFootballTable({ error: "x" }), []);
+});
+
+test("parseFootballMatches reads final results and keeps open matches honest", () => {
+  const matches = parseFootballMatches([
+    {
+      matchID: 83255,
+      matchDateTimeUTC: "2026-12-04T19:30:00Z",
+      matchIsFinished: false,
+      matchResults: [],
+      group: { groupName: "12. Spieltag", groupOrderID: 12 },
+      team1: { teamName: "FC Bayern München" },
+      team2: { teamName: "SC Paderborn 07" },
+    },
+    {
+      matchID: 83256,
+      matchDateTimeUTC: "2026-12-05T14:30:00Z",
+      matchIsFinished: true,
+      matchResults: [
+        { resultTypeID: 1, pointsTeam1: 1, pointsTeam2: 0 },
+        { resultTypeID: 2, pointsTeam1: 2, pointsTeam2: 1 },
+      ],
+      group: { groupName: "12. Spieltag", groupOrderID: 12 },
+      team1: { teamName: "RB Leipzig" },
+      team2: { teamName: "1. FSV Mainz 05" },
+    },
+    { matchID: 83257, team1: { teamName: "" }, team2: { teamName: "Ohne Gegner" } },
+  ]);
+  assert.equal(matches.length, 2);
+  assert.equal(matches[0].home, "FC Bayern München");
+  assert.equal(matches[0].finished, false);
+  assert.equal(matches[0].homeGoals, null);
+  assert.equal(matches[0].awayGoals, null);
+  assert.equal(matches[0].groupOrder, 12);
+  assert.equal(matches[1].homeGoals, 2);
+  assert.equal(matches[1].awayGoals, 1);
+  assert.equal(matches[1].finished, true);
+});
+
+test("parseFootballMatches falls back to the last reported result", () => {
+  const matches = parseFootballMatches([
+    {
+      matchID: 1,
+      matchIsFinished: true,
+      matchResults: [{ resultTypeID: 3, pointsTeam1: 0, pointsTeam2: 3 }],
+      team1: { teamName: "A" },
+      team2: { teamName: "B" },
+    },
+  ]);
+  assert.equal(matches[0].homeGoals, 0);
+  assert.equal(matches[0].awayGoals, 3);
+});
+
+test("formatKickOff formats German kick-off times and stays honest without data", () => {
+  assert.equal(formatKickOff(null), "Termin offen");
+  assert.equal(formatKickOff("kein datum"), "Termin offen");
+  assert.match(formatKickOff("2026-12-04T19:30:00Z"), /04\.12\./);
+  assert.match(formatKickOff("2026-12-04T19:30:00Z"), /19:30/);
+});
+
+test("the Alo football route exists and loads real Bundesliga data", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/football.tsx"), "utf8");
+  assert.match(route, /createFileRoute\("\/football"\)/);
+  assert.match(route, /footballApiUrl\(`getbltable\/bl1\/\$\{season\}`\)/);
+  assert.match(route, /getmatchdata\/bl1\/\$\{season\}/);
+  assert.match(route, /parseFootballTable/);
+  assert.match(route, /parseFootballMatches/);
+  assert.match(route, /aria-label="Vorheriger Spieltag"/);
+  assert.match(route, /aria-label="Nächster Spieltag"/);
+  assert.match(route, /Keine Tabellendaten verfügbar\./);
+});
+
+test("the football app is registered as a declarative Marketplace app", () => {
+  const root = process.cwd();
+  const marketplace = readFileSync(resolve(root, "src/lib/marketplace.ts"), "utf8");
+  assert.match(marketplace, /id: "alo-football"/);
+  assert.match(marketplace, /name: "Alo Fußball"/);
+  assert.match(marketplace, /action: \{ type: "navigate", to: "\/football" \}/);
+  assert.match(marketplace, /"\/football",/);
+});

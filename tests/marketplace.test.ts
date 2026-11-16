@@ -36,7 +36,7 @@ class MemoryStorage {
 
 test("bundled Marketplace manifests are canonical, declarative and host-registered", () => {
   assert.equal(new Set(MARKETPLACE_CATALOG.map(({ id }) => id)).size, MARKETPLACE_CATALOG.length);
-  assert.equal(MARKETPLACE_CATALOG.length, 31);
+  assert.equal(MARKETPLACE_CATALOG.length, 32);
 
   assert.ok(Object.isFrozen(MARKETPLACE_CATALOG));
   for (const manifest of MARKETPLACE_CATALOG) {
@@ -139,7 +139,7 @@ test("Marketplace covers all existing first-party app, area, tool and game regis
     );
   }
 
-  assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "app").length, 15);
+  assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "app").length, 16);
   assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "area").length, 10);
   assert.equal(MARKETPLACE_CATALOG.filter(({ category }) => category === "tool").length, 6);
 });

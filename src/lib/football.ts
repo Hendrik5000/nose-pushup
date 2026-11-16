@@ -1,0 +1,157 @@
+export type FootballTableRow = {
+  position: number;
+  name: string;
+  matches: number;
+  won: number;
+  draw: number;
+  lost: number;
+  goals: number;
+  opponentGoals: number;
+  points: number;
+};
+
+export type FootballMatch = {
+  id: number | string;
+  home: string;
+  away: string;
+  kickOffUtc: string | null;
+  finished: boolean;
+  homeGoals: number | null;
+  awayGoals: number | null;
+  groupName: string;
+  groupOrder: number;
+};
+
+const OPENLIGADB_BASE = "https://api.openligadb.de";
+
+export function footballApiUrl(path: string): string {
+  return `${OPENLIGADB_BASE}/${path.replace(/^\/+/, "")}`;
+}
+
+export function currentFootballSeason(now = new Date()): number {
+  return now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+}
+
+export type FootballLeague = {
+  id: string;
+  name: string;
+  hasTable: boolean;
+};
+
+export const FOOTBALL_LEAGUES: FootballLeague[] = [
+  { id: "bl1", name: "Bundesliga", hasTable: true },
+  { id: "bl2", name: "2. Bundesliga", hasTable: true },
+  { id: "bl3", name: "3. Liga", hasTable: true },
+  { id: "deutschland", name: "Nationalmannschaft", hasTable: false },
+];
+
+export function footballMatchesPath(leagueId: string, season: number): string {
+  return leagueId === "deutschland"
+    ? "getmatchdata/deutschland"
+    : `getmatchdata/${leagueId}/${season}`;
+}
+
+export function footballTablePath(leagueId: string, season: number): string {
+  return `getbltable/${leagueId}/${season}`;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function numberOf(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function goalsOf(entry: Record<string, unknown>): { home: number; away: number } | null {
+  const results = Array.isArray(entry.matchResults) ? entry.matchResults : [];
+  if (results.length === 0) return null;
+  const chosen =
+    results.find((candidate) => asRecord(candidate).resultTypeID === 2) ??
+    results[results.length - 1];
+  const result = asRecord(chosen);
+  const home = numberOf(result.pointsTeam1);
+  const away = numberOf(result.pointsTeam2);
+  if (!Number.isFinite(home) || !Number.isFinite(away)) return null;
+  return { home, away };
+}
+
+export function parseFootballTable(value: unknown): FootballTableRow[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((raw) => {
+      const entry = asRecord(raw);
+      return {
+        position: 0,
+        name: typeof entry.teamName === "string" ? entry.teamName : "",
+        matches: numberOf(entry.matches),
+        won: numberOf(entry.won),
+        draw: numberOf(entry.draw),
+        lost: numberOf(entry.lost),
+        goals: numberOf(entry.goals),
+        opponentGoals: numberOf(entry.opponentGoals),
+        points: numberOf(entry.points),
+      };
+    })
+    .filter((row) => row.name.trim().length > 0)
+    .sort(
+      (a, b) =>
+        b.points - a.points ||
+        b.goals - b.opponentGoals - (a.goals - a.opponentGoals) ||
+        b.goals - a.goals ||
+        a.name.localeCompare(b.name),
+    )
+    .map((row, index) => ({ ...row, position: index + 1 }));
+}
+
+export function parseFootballMatches(value: unknown): FootballMatch[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .flatMap((raw) => {
+      const entry = asRecord(raw);
+      const home = asRecord(entry.team1);
+      const away = asRecord(entry.team2);
+      const homeName = typeof home.teamName === "string" ? home.teamName : "";
+      const awayName = typeof away.teamName === "string" ? away.teamName : "";
+      if (!homeName || !awayName) return [];
+      const group = asRecord(entry.group);
+      const result = goalsOf(entry);
+      const kickOffUtc =
+        typeof entry.matchDateTimeUTC === "string"
+          ? entry.matchDateTimeUTC
+          : typeof entry.matchDateTime === "string"
+            ? entry.matchDateTime
+            : null;
+      return [
+        {
+          id: typeof entry.matchID === "number" ? entry.matchID : `${homeName}-${awayName}`,
+          home: homeName,
+          away: awayName,
+          kickOffUtc,
+          finished: entry.matchIsFinished === true,
+          homeGoals: result?.home ?? null,
+          awayGoals: result?.away ?? null,
+          groupName: typeof group.groupName === "string" ? group.groupName : "",
+          groupOrder: numberOf(group.groupOrderID),
+        },
+      ];
+    })
+    .sort((a, b) => {
+      const aTime = a.kickOffUtc ? new Date(a.kickOffUtc).getTime() : Number.MAX_SAFE_INTEGER;
+      const bTime = b.kickOffUtc ? new Date(b.kickOffUtc).getTime() : Number.MAX_SAFE_INTEGER;
+      return aTime - bTime;
+    });
+}
+
+export function formatKickOff(kickOffUtc: string | null): string {
+  if (!kickOffUtc) return "Termin offen";
+  const date = new Date(kickOffUtc);
+  if (Number.isNaN(date.getTime())) return "Termin offen";
+  return new Intl.DateTimeFormat("de-DE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
