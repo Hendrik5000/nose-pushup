@@ -895,7 +895,13 @@ export function SuperAiPage({
       }
       if (authoringGeneration !== generationRef.current) return null;
 
-      if (hasMarketplaceAdminAccess) {
+      // Anyone may create or revise their own local draft. Published-app edits still
+      // require the admin catalogue, and the publish action re-checks admin access below.
+      if (
+        hasMarketplaceAdminAccess ||
+        marketplaceIntent === "create" ||
+        marketplaceIntent === "edit-draft"
+      ) {
         const submissionSessionId = activeId;
         let submittedComposerRevision = composerRevisionAtStart;
         let submittedComposerText: string | null = null;
@@ -1055,7 +1061,7 @@ export function SuperAiPage({
         }
       }
 
-      // Non-admins can still discuss app ideas with Mira, but cannot create or publish Marketplace apps.
+      // Non-admins may discuss ideas and create local drafts, but cannot edit published apps or publish.
       setMarketplaceProgress(null);
       sendingRef.current = false;
       setLoading(false);
