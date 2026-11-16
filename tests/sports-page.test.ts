@@ -23,6 +23,14 @@ test("the Alo sports route offers the German leagues and the national team", () 
   assert.match(lib, /id: "bl2"/);
   assert.match(lib, /id: "bl3"/);
   assert.match(lib, /id: "deutschland"/);
+  assert.match(lib, /id: "premier"/);
+  assert.match(lib, /id: "laliga"/);
+  assert.match(lib, /id: "seriea"/);
+  assert.match(lib, /id: "ligue1"/);
+  assert.match(lib, /sportsDbId: "4328"/);
+  assert.match(lib, /sportsDbId: "4335"/);
+  assert.match(lib, /sportsDbId: "4332"/);
+  assert.match(lib, /sportsDbId: "4334"/);
   assert.match(lib, /getmatchdata\/deutschland/);
   assert.match(route, /aria-label="Ligaauswahl"/);
   assert.match(route, /FOOTBALL_LEAGUES\.map/);
@@ -66,6 +74,38 @@ test("the Alo sports route stays honest with loading, error and empty states", (
   assert.match(route, /Keine angesetzten Spiele in den geladenen Daten\./);
   assert.match(route, /Noch kein Spiel beendet/);
   assert.match(route, /OpenLigaDB/);
+});
+
+test("the Alo sports route shows live matches with status, venue and refresh", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/sports.tsx"), "utf8");
+  const lib = readFileSync(resolve(root, "src/lib/football.ts"), "utf8");
+  assert.match(route, /Live & Aktuell/);
+  assert.match(route, /isLiveMatch/);
+  assert.match(route, /matchStatusLabel/);
+  assert.match(route, /aria-label="Daten aktualisieren"/);
+  assert.match(route, /Gerade kein Live-Spiel in den geladenen Daten\./);
+  assert.match(route, /sportsDbLeagueEventsPath/);
+  assert.match(route, /sportsDbLeagueResultsPath/);
+  assert.match(lib, /eventsnextleague\.php\?id=/);
+  assert.match(lib, /eventspastleague\.php\?id=/);
+  assert.match(lib, /lookuptable\.php\?l=/);
+  assert.match(lib, /isLiveStatus/);
+  assert.match(lib, /matchStatusLabel/);
+});
+
+test("the Alo sports route lets users pick and manage favorite teams", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/sports.tsx"), "utf8");
+  assert.match(route, /Lieblingsteams/);
+  assert.match(route, /als Lieblingsteam merken/);
+  assert.match(route, /loadFavoriteTeams/);
+  assert.match(route, /toggleFavoriteTeam/);
+  assert.match(
+    readFileSync(resolve(root, "src/lib/favorite-teams.ts"), "utf8"),
+    /alo-favorite-teams/,
+  );
+  assert.match(route, /Keine Spiele deiner Lieblingsteams in den geladenen Daten von/);
 });
 
 test("the Alo sports route links to the full football table", () => {

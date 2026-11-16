@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Activity, ArrowUpRight, CircleDot, Flame, Trophy } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Activity, ArrowUpRight, CircleDot, Flame, Star, Trophy, X } from "lucide-react";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
 import {
   FOOTBALL_LEAGUES,
@@ -10,14 +10,22 @@ import {
   footballMatchesPath,
   footballTablePath,
   formatKickOff,
+  isLiveStatus,
+  matchStatusLabel,
   nationalApiUrl,
   parseFootballMatches,
   parseFootballTable,
   parseNationalEvents,
+  parseSportsDbTable,
+  sportsDbLeagueEventsPath,
+  sportsDbLeagueResultsPath,
+  sportsDbSeason,
+  sportsDbTablePath,
   type FootballLeague,
   type FootballMatch,
   type FootballTableRow,
 } from "@/lib/football";
+import { loadFavoriteTeams, toggleFavoriteTeam } from "@/lib/favorite-teams";
 
 export const Route = createFileRoute("/sports")({
   ssr: false,
@@ -54,14 +62,120 @@ function lastFinishedMatch(matches: FootballMatch[], matchday: number): Football
   return finished[finished.length - 1];
 }
 
+function isLiveMatch(match: FootballMatch): boolean {
+  return !match.finished && isLiveStatus(match.status);
+}
+
+function TeamStarButton({
+  team,
+  favorites,
+  onToggleFavorite,
+}: {
+  team: string;
+  favorites: string[];
+  onToggleFavorite: (team: string) => void;
+}) {
+  const active = favorites.includes(team);
+  return (
+    <button
+      type="button"
+      onClick={() => onToggleFavorite(team)}
+      aria-pressed={active}
+      aria-label={
+        active ? `${team} aus Lieblingsteams entfernen` : `${team} als Lieblingsteam merken`
+      }
+      className="shrink-0 rounded-full p-1 text-muted-foreground transition hover:text-amber-400"
+    >
+      <Star
+        className={`h-4 w-4 ${active ? "fill-amber-400 text-amber-400" : ""}`}
+        aria-hidden="true"
+      />
+    </button>
+  );
+}
+
+function MatchCard({
+  match,
+  favorites,
+  onToggleFavorite,
+}: {
+  match: FootballMatch;
+  favorites: string[];
+  onToggleFavorite: (team: string) => void;
+}) {
+  const live = isLiveMatch(match);
+  const showScore = match.finished || live;
+  return (
+    <article
+      className={`rounded-2xl border p-4 ${
+        live ? "border-emerald-400/50 bg-emerald-400/10" : "border-border/70 bg-card/70"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">{formatKickOff(match.kickOffUtc)}</p>
+        {match.status && (
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+              live ? "bg-emerald-400/20 text-emerald-300" : "bg-primary/10 text-muted-foreground"
+            }`}
+          >
+            {matchStatusLabel(match.status)}
+          </span>
+        )}
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <TeamStarButton
+          team={match.home}
+          favorites={favorites}
+          onToggleFavorite={onToggleFavorite}
+        />
+        <p className="min-w-0 flex-1 truncate font-semibold">{match.home}</p>
+        {showScore && (
+          <span className="shrink-0 font-bold">
+            {match.homeGoals ?? "–"} : {match.awayGoals ?? "–"}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <TeamStarButton
+          team={match.away}
+          favorites={favorites}
+          onToggleFavorite={onToggleFavorite}
+        />
+        <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground">vs. {match.away}</p>
+      </div>
+      {(match.round || match.venue) && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {[match.round ? `Spieltag ${match.round}` : null, match.venue]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      )}
+    </article>
+  );
+}
+
 function SportsPage() {
   const season = currentFootballSeason();
+  const dbSeason = sportsDbSeason();
   const [leagueId, setLeagueId] = useState("bl1");
   const [table, setTable] = useState<FootballTableRow[]>([]);
   const [matches, setMatches] = useState<FootballMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [reloadKey, setReloadKey] = useState(0);
   const league = FOOTBALL_LEAGUES.find((entry) => entry.id === leagueId) ?? FOOTBALL_LEAGUES[0];
+
+  useEffect(() => {
+    setFavorites(loadFavoriteTeams());
+  }, []);
+
+  const toggleFavorite = useCallback((team: string) => {
+    setFavorites((current) => toggleFavoriteTeam(current, team));
+  }, []);
+
+  const refresh = useCallback(() => setReloadKey((key) => key + 1), []);
 
   useEffect(() => {
     let active = true;
@@ -70,31 +184,40 @@ function SportsPage() {
     const activeLeague =
       FOOTBALL_LEAGUES.find((entry) => entry.id === leagueId) ?? FOOTBALL_LEAGUES[0];
     const isNational = activeLeague.id === "deutschland";
+    const isSportsDbLeague = activeLeague.source === "sportsdb" && !isNational;
+    const fetchJson = (url: string) =>
+      fetch(url)
+        .then((response) => (response.ok ? response.json() : null))
+        .catch(() => null);
     const requests: [Promise<unknown>, Promise<unknown>] = [
-      activeLeague.hasTable
-        ? fetch(footballApiUrl(footballTablePath(leagueId, season)))
-            .then((response) => (response.ok ? response.json() : null))
-            .catch(() => null)
-        : Promise.resolve(null),
+      !activeLeague.hasTable
+        ? Promise.resolve(null)
+        : isSportsDbLeague
+          ? fetchJson(nationalApiUrl(sportsDbTablePath(activeLeague.sportsDbId ?? "", dbSeason)))
+          : fetchJson(footballApiUrl(footballTablePath(leagueId, season))),
       isNational
         ? Promise.all([
-            fetch(nationalApiUrl(`eventsnext.php?id=${NATIONAL_TEAM_ID}`))
-              .then((response) => (response.ok ? response.json() : null))
-              .catch(() => null),
-            fetch(nationalApiUrl(`eventslast.php?id=${NATIONAL_TEAM_ID}`))
-              .then((response) => (response.ok ? response.json() : null))
-              .catch(() => null),
+            fetchJson(nationalApiUrl(`eventsnext.php?id=${NATIONAL_TEAM_ID}`)),
+            fetchJson(nationalApiUrl(`eventslast.php?id=${NATIONAL_TEAM_ID}`)),
           ]).then(([nextValue, lastValue]) => [
             ...parseNationalEvents(nextValue),
             ...parseNationalEvents(lastValue),
           ])
-        : fetch(footballApiUrl(footballMatchesPath(leagueId, season)))
-            .then((response) => (response.ok ? response.json() : null))
-            .catch(() => null),
+        : isSportsDbLeague
+          ? Promise.all([
+              fetchJson(nationalApiUrl(sportsDbLeagueEventsPath(activeLeague.sportsDbId ?? ""))),
+              fetchJson(nationalApiUrl(sportsDbLeagueResultsPath(activeLeague.sportsDbId ?? ""))),
+            ]).then(([nextValue, lastValue]) => [
+              ...parseNationalEvents(nextValue),
+              ...parseNationalEvents(lastValue),
+            ])
+          : fetchJson(footballApiUrl(footballMatchesPath(leagueId, season))),
     ];
     void Promise.all(requests).then(([tableValue, matchValue]) => {
       if (!active) return;
-      const parsedTable = parseFootballTable(tableValue);
+      const parsedTable = isSportsDbLeague
+        ? parseSportsDbTable(tableValue)
+        : parseFootballTable(tableValue);
       const parsedMatches = Array.isArray(matchValue)
         ? (matchValue as FootballMatch[])
         : parseFootballMatches(matchValue);
@@ -102,7 +225,7 @@ function SportsPage() {
       setMatches(parsedMatches);
       if (parsedMatches.length === 0 && (!activeLeague.hasTable || parsedTable.length === 0)) {
         setError(
-          activeLeague.hasTable
+          activeLeague.source === "openligadb"
             ? "Die Bundesliga-Daten sind gerade nicht erreichbar. Bitte versuche es später erneut."
             : `Für ${activeLeague.name} sind aktuell keine Spiele in TheSportsDB eingetragen.`,
         );
@@ -112,19 +235,24 @@ function SportsPage() {
     return () => {
       active = false;
     };
-  }, [season, leagueId]);
+  }, [season, dbSeason, leagueId, reloadKey]);
 
   const matchday = latestMatchday(matches);
   const matchdayLabel =
     matches.find((match) => match.groupOrder === matchday)?.groupName ||
     (matchday > 0 && league.id !== "deutschland" ? `${matchday}. Spieltag` : "");
-  const highlight = lastFinishedMatch(matches, matchday);
+  const liveMatches = matches.filter(isLiveMatch);
+  const liveMatch = liveMatches[0] ?? null;
+  const highlight = liveMatch ?? lastFinishedMatch(matches, matchday);
   const upcoming = nextMatches(matches, matchday);
   const matchdayMatches = matches.filter((match) => match.groupOrder === matchday);
   const finishedCount = matchdayMatches.filter((match) => match.finished).length;
   const goalsCount = matchdayMatches.reduce(
     (sum, match) => sum + (match.homeGoals ?? 0) + (match.awayGoals ?? 0),
     0,
+  );
+  const favoriteMatches = matches.filter(
+    (match) => favorites.includes(match.home) || favorites.includes(match.away),
   );
 
   return (
@@ -155,7 +283,7 @@ function SportsPage() {
           </Link>
         </div>
       }
-      description={`${league.name} der Saison ${season}/${String(season + 1).slice(2)} — ${league.id === "deutschland" ? "live von TheSportsDB" : "live von OpenLigaDB"}.`}
+      description={`${league.name} der Saison ${season}/${String(season + 1).slice(2)} — ${league.source === "openligadb" ? "live von OpenLigaDB" : "live von TheSportsDB"}.`}
     >
       <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Ligaauswahl">
         {FOOTBALL_LEAGUES.map((entry: FootballLeague) => (
@@ -203,12 +331,14 @@ function SportsPage() {
                 <h2 id="matchday-title" className="mt-5 text-xl font-bold sm:text-2xl">
                   {highlight.home}{" "}
                   <span className="text-emerald-300">
-                    {highlight.homeGoals ?? 0} : {highlight.awayGoals ?? 0}
+                    {highlight.homeGoals ?? "–"} : {highlight.awayGoals ?? "–"}
                   </span>{" "}
                   {highlight.away}
                 </h2>
                 <p className="mt-2 text-xs uppercase tracking-wide text-emerald-300">
-                  Beendet · Letztes Ergebnis
+                  {liveMatch
+                    ? `Live · ${matchStatusLabel(liveMatch.status)}`
+                    : "Beendet · Letztes Ergebnis"}
                 </p>
               </>
             ) : (
@@ -234,6 +364,39 @@ function SportsPage() {
             </div>
           </section>
 
+          <section aria-labelledby="live-title">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 id="live-title" className="text-lg font-bold">
+                Live & Aktuell
+              </h2>
+              <button
+                type="button"
+                onClick={refresh}
+                aria-label="Daten aktualisieren"
+                className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/70 px-3 py-1 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+              >
+                <Activity className="h-3.5 w-3.5" /> Aktualisieren
+              </button>
+            </div>
+            {liveMatches.length === 0 ? (
+              <p className="rounded-2xl border border-border/70 bg-card/70 p-4 text-sm text-muted-foreground">
+                Gerade kein Live-Spiel in den geladenen Daten. Der Status wird beim Aktualisieren
+                neu geladen; laufende Spielminuten bietet die Quelle nicht an.
+              </p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {liveMatches.map((match) => (
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    favorites={favorites}
+                    onToggleFavorite={toggleFavorite}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
           <section aria-labelledby="upcoming-title">
             <div className="mb-3 flex items-center justify-between">
               <h2 id="upcoming-title" className="text-lg font-bold">
@@ -248,16 +411,12 @@ function SportsPage() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-3">
                 {upcoming.map((match) => (
-                  <article
+                  <MatchCard
                     key={match.id}
-                    className="rounded-2xl border border-border/70 bg-card/70 p-4"
-                  >
-                    <p className="text-xs text-muted-foreground">
-                      {formatKickOff(match.kickOffUtc)}
-                    </p>
-                    <p className="mt-3 font-semibold">{match.home}</p>
-                    <p className="text-sm text-muted-foreground">vs. {match.away}</p>
-                  </article>
+                    match={match}
+                    favorites={favorites}
+                    onToggleFavorite={toggleFavorite}
+                  />
                 ))}
               </div>
             )}
@@ -282,9 +441,14 @@ function SportsPage() {
                 ) : (
                   <div className="mt-4 space-y-3 text-sm">
                     {table.slice(0, 5).map((row) => (
-                      <div key={row.name} className="flex items-center gap-3">
+                      <div key={row.name} className="flex items-center gap-2">
                         <span className="w-5 text-muted-foreground">{row.position}</span>
-                        <span className="flex-1 font-medium">{row.name}</span>
+                        <span className="min-w-0 flex-1 truncate font-medium">{row.name}</span>
+                        <TeamStarButton
+                          team={row.name}
+                          favorites={favorites}
+                          onToggleFavorite={toggleFavorite}
+                        />
                         <span className="text-muted-foreground">{row.matches} Sp.</span>
                         <span className="font-bold">{row.points} Pkt.</span>
                       </div>
@@ -313,7 +477,9 @@ function SportsPage() {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div className="rounded-xl bg-primary/10 p-3">
                     <strong className="block text-2xl">{goalsCount}</strong>
-                    <span className="text-xs text-muted-foreground">Tore am Spieltag</span>
+                    <span className="text-xs text-muted-foreground">
+                      {matchday > 0 ? "Tore am Spieltag" : "Tore in den geladenen Spielen"}
+                    </span>
                   </div>
                   <div className="rounded-xl bg-primary/10 p-3">
                     <strong className="block text-2xl">
@@ -325,13 +491,76 @@ function SportsPage() {
               </section>
             </div>
           )}
+
+          <section
+            aria-labelledby="favorites-title"
+            className="rounded-2xl border border-border/70 bg-card/70 p-5"
+          >
+            <div className="flex items-center justify-between">
+              <h2 id="favorites-title" className="font-bold">
+                Lieblingsteams
+              </h2>
+              <Star className="h-5 w-5 text-amber-400" aria-hidden="true" />
+            </div>
+            {favorites.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Noch keine Lieblingsteams gewählt. Tippe in der Tabelle oder in einem Spiel auf den
+                Stern, um ein Team zu merken.
+              </p>
+            ) : (
+              <>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {favorites.map((team) => (
+                    <span
+                      key={team}
+                      className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm"
+                    >
+                      {team}
+                      <button
+                        type="button"
+                        onClick={() => toggleFavorite(team)}
+                        aria-label={`${team} aus Lieblingsteams entfernen`}
+                        className="text-muted-foreground transition hover:text-destructive"
+                      >
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-4 text-sm text-muted-foreground">
+                  {favoriteMatches.length > 0
+                    ? `Spiele deiner Lieblingsteams in ${league.name}:`
+                    : `Keine Spiele deiner Lieblingsteams in den geladenen Daten von ${league.name}.`}
+                </p>
+                <div className="mt-3 space-y-2">
+                  {favoriteMatches.slice(0, 5).map((match) => (
+                    <div
+                      key={`favorite-${match.id}`}
+                      className="flex items-center justify-between gap-3 rounded-xl bg-primary/10 px-3 py-2 text-sm"
+                    >
+                      <span className="min-w-0 truncate">
+                        {match.home} vs. {match.away}
+                      </span>
+                      <span className="shrink-0 font-semibold">
+                        {match.finished || isLiveMatch(match)
+                          ? `${match.homeGoals ?? "–"} : ${match.awayGoals ?? "–"}`
+                          : formatKickOff(match.kickOffUtc)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
         </>
       )}
 
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Diese Seite zeigt echte Fußball-Daten von OpenLigaDB und TheSportsDB. Live-Spielminuten oder
+        Diese Seite zeigt echte Fußball-Daten von OpenLigaDB und TheSportsDB. Der Live-Status und
+        die Spielstände werden beim Aktualisieren neu geladen; laufende Spielminuten oder
         Zwischenstände während laufender Spiele bieten die Quellen nicht an; angezeigt werden
-        Ergebnisse beendeter Spiele und die aktuellen Ansetzungen.
+        Ergebnisse beendeter Spiele und die aktuellen Ansetzungen. Lieblingsteams werden nur lokal
+        auf deinem Gerät gespeichert.
       </p>
       <Link to="/marketplace" className="text-sm font-semibold text-primary hover:underline">
         Zurück zum Marketplace
