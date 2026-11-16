@@ -6,6 +6,7 @@
  * externe KI-/Proxy-Endpunkte sind frei zugängliche Dienste ohne Schlüssel.
  */
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { loadBrowserPageInParallel } from "@/lib/browser-page-loading";
 import {
   Globe,
   Search,
@@ -346,11 +347,20 @@ export default function AloBrowser() {
       return "";
     };
 
-    const [rawHtml, readerTxt] = await Promise.all([fetchProxy(), fetchReader()]);
+    const { html: rawHtml, reader: readerTxt } = await loadBrowserPageInParallel(
+      fetchProxy,
+      fetchReader,
+      (html) =>
+        updateTab(tabId, {
+          htmlDoc: buildSafeSrcDoc(html, targetUrl),
+          mode: "web",
+          loading: false,
+        }),
+      (reader) => updateTab(tabId, { readerText: reader, loading: false }),
+    );
 
     if (rawHtml) {
       updateTab(tabId, {
-        htmlDoc: buildSafeSrcDoc(rawHtml, targetUrl),
         readerText: readerTxt || "Kein separater Reader-Text gefunden.",
         mode: "web",
         loading: false,
