@@ -5,7 +5,9 @@ import { test } from "node:test";
 import { DEFAULT_PROVIDERS, type ProviderConfig } from "../src/lib/ai-providers";
 import {
   aiStatusFromProviders,
+  formatDailyGoalLine,
   formatHealthTodayParts,
+  formatPostfachContextLine,
   formatStreakLine,
   hasMeasuredHealthToday,
   parseHealthTodayRow,
@@ -131,4 +133,25 @@ test("the home screen wires real data into Dein Tag and the nexus badge", () => 
   assert.match(home, /Zusammenfassung bei Mira anfragen/);
   assert.match(home, /SUPER_TOOLS\.find\(\(tool\) => tool\.id === "chat_summary"\)/);
   assert.match(home, /alo-mira-autosend/);
+});
+
+test("daily goal line only shows with a set goal and known reps", () => {
+  assert.equal(formatDailyGoalLine(null, 50), null);
+  assert.equal(formatDailyGoalLine(30, 0), null);
+  assert.equal(formatDailyGoalLine(30, -5), null);
+  assert.equal(formatDailyGoalLine(30, 50), "Heute 30 / 50 Wiederholungen");
+  assert.equal(formatDailyGoalLine(50, 50), "Tagesziel erreicht: 50 / 50");
+  assert.equal(formatDailyGoalLine(62, 50), "Tagesziel erreicht: 62 / 50");
+});
+
+test("postfach context line shows real unread and actionable counts only", () => {
+  assert.equal(formatPostfachContextLine(3, 1, false), null);
+  assert.equal(formatPostfachContextLine(0, 0, true), null);
+  assert.equal(formatPostfachContextLine(2, 0, true), "2 ungelesene Nachrichten");
+  assert.equal(formatPostfachContextLine(1, 0, true), "1 ungelesene Nachricht");
+  assert.equal(formatPostfachContextLine(0, 2, true), "2 offene Anfragen");
+  assert.equal(
+    formatPostfachContextLine(3, 1, true),
+    "3 ungelesene Nachrichten · 1 offene Anfrage",
+  );
 });

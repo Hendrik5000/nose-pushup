@@ -33,7 +33,9 @@ import {
 import { homeDayGreeting, loadRecentHomeAppIds, rememberHomeAppOpen } from "@/lib/home-recent-apps";
 import {
   aiStatusFromProviders,
+  formatDailyGoalLine,
   formatHealthTodayParts,
+  formatPostfachContextLine,
   formatStreakLine,
   formatWeeklyWorkoutLine,
   hasMeasuredHealthToday,
@@ -1553,11 +1555,19 @@ function HomeAppHub({
                     healthToday && hasMeasuredHealthToday(healthToday)
                       ? formatHealthTodayParts(healthToday)
                       : [];
+                  const dailyGoalLine = formatDailyGoalLine(dailyReps, dailyGoal);
+                  const postfachLine = formatPostfachContextLine(
+                    postfach.unreadCount,
+                    postfach.actionableCount,
+                    postfach.available,
+                  );
                   const offerChatSummary = shouldOfferChatSummary(nexusUnread);
                   if (
                     healthParts.length === 0 &&
                     !streakLine &&
                     !workoutLine &&
+                    !dailyGoalLine &&
+                    !postfachLine &&
                     !aiStatus &&
                     !offerChatSummary
                   )
@@ -1595,6 +1605,18 @@ function HomeAppHub({
                               Zusammenfassung bei Mira anfragen
                             </button>
                           </dd>
+                        </div>
+                      )}
+                      {dailyGoalLine && (
+                        <div className="flex flex-wrap gap-x-2">
+                          <dt className="font-semibold text-foreground">Tagesziel:</dt>
+                          <dd>{dailyGoalLine}</dd>
+                        </div>
+                      )}
+                      {postfachLine && (
+                        <div className="flex flex-wrap gap-x-2">
+                          <dt className="font-semibold text-foreground">Postfach:</dt>
+                          <dd>{postfachLine}</dd>
                         </div>
                       )}
                       <div className="flex flex-wrap gap-x-2">

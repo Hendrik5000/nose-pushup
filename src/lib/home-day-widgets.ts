@@ -79,6 +79,32 @@ export function shouldOfferChatSummary(unread: number | null): boolean {
   return unread !== null && Number.isFinite(unread) && unread >= NEXUS_UNREAD_SUMMARY_THRESHOLD;
 }
 
+export function formatDailyGoalLine(reps: number | null, goal: number): string | null {
+  if (reps === null || !Number.isFinite(reps) || !Number.isFinite(goal) || goal <= 0) return null;
+  const safeReps = Math.max(0, Math.floor(reps));
+  const safeGoal = Math.floor(goal);
+  if (safeReps >= safeGoal) return `Tagesziel erreicht: ${safeReps} / ${safeGoal}`;
+  return `Heute ${safeReps} / ${safeGoal} Wiederholungen`;
+}
+
+export function formatPostfachContextLine(
+  unreadCount: number,
+  actionableCount: number,
+  available: boolean,
+): string | null {
+  if (!available) return null;
+  const unread = Number.isFinite(unreadCount) ? Math.max(0, Math.floor(unreadCount)) : 0;
+  const actionable = Number.isFinite(actionableCount)
+    ? Math.max(0, Math.floor(actionableCount))
+    : 0;
+  if (unread === 0 && actionable === 0) return null;
+  const parts: string[] = [];
+  if (unread > 0) parts.push(`${unread} ungelesene ${unread === 1 ? "Nachricht" : "Nachrichten"}`);
+  if (actionable > 0)
+    parts.push(`${actionable} offene ${actionable === 1 ? "Anfrage" : "Anfragen"}`);
+  return parts.join(" · ");
+}
+
 export function formatWeeklyWorkoutLine(count: number): string | null {
   if (!Number.isFinite(count) || count < 0) return null;
   if (count === 0) return "Noch kein Workout diese Woche";
