@@ -631,6 +631,19 @@
   --design-main-card-shadow: 0 1px 3px color-mix(in srgb, var(--foreground) 7%, transparent);
   --design-card-padding: 1.25rem;
   --design-main-max-width: 76rem;
+  --design-hig-tint: #007aff;
+  --design-hig-green: #34c759;
+  --design-hig-fill: color-mix(in srgb, var(--foreground) 6%, transparent);
+  --design-hig-separator: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --design-hig-vibrancy: color-mix(in srgb, var(--card) 80%, transparent);
+}
+
+html.dark[data-design-style="hig"] {
+  --design-hig-tint: #0a84ff;
+  --design-hig-green: #30d158;
+  --design-hig-fill: color-mix(in srgb, var(--foreground) 9%, transparent);
+  --design-hig-separator: color-mix(in srgb, var(--foreground) 16%, transparent);
+  --design-hig-vibrancy: color-mix(in srgb, var(--card) 72%, transparent);
 }
 
 html[data-design-style="hig"] body {
@@ -649,8 +662,38 @@ html[data-design-style="hig"] h1 {
 
 html[data-design-style="hig"] .sh-card,
 html[data-design-style="hig"] .rounded-2xl[class*="border"] {
+  background-color: var(--design-hig-vibrancy);
   backdrop-filter: saturate(1.4) blur(12px);
   -webkit-backdrop-filter: saturate(1.4) blur(12px);
+}
+
+html[data-design-style="hig"] h2 {
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.375rem);
+}
+
+html[data-design-style="hig"] hr {
+  border-color: var(--design-hig-separator);
+}
+
+html[data-design-style="hig"] ::selection {
+  background: color-mix(in srgb, var(--design-hig-tint) 30%, transparent);
+}
+
+html[data-design-style="hig"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html[data-design-style="hig"] ::-webkit-scrollbar-track,
+html[data-design-style="hig"] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html[data-design-style="hig"] ::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 22%, transparent);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
 }
 
 html[data-design-style="hig"] .alo-page-sidebar aside,
@@ -689,6 +732,81 @@ html[data-design-style="hig"] [role="button"] {
 html[data-design-style="hig"] button:active,
 html[data-design-style="hig"] [role="button"]:active {
   transform: scale(0.97);
+}
+
+html[data-design-style="hig"] :focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--design-hig-tint) 65%, transparent);
+  outline-offset: 2px;
+}
+
+html[data-design-style="hig"] .app-homebar .homebar-items {
+  border: 0.5px solid var(--design-hig-separator);
+  background: var(--design-hig-vibrancy);
+  backdrop-filter: saturate(1.8) blur(20px);
+  -webkit-backdrop-filter: saturate(1.8) blur(20px);
+}
+
+html[data-design-style="hig"][data-navigation-layout="bottom"] .app-homebar {
+  background: var(--design-hig-vibrancy);
+  border-top: 0.5px solid var(--design-hig-separator);
+  backdrop-filter: saturate(1.8) blur(20px);
+  -webkit-backdrop-filter: saturate(1.8) blur(20px);
+}
+
+html[data-design-style="hig"][data-navigation-layout="bottom"] .app-homebar .homebar-items {
+  background: transparent;
+  border: 0;
+}
+
+html[data-design-style="hig"] .ah-segment a,
+html[data-design-style="hig"] .ah-segment button {
+  font-weight: 500;
+}
+
+html[data-design-style="hig"] .ah-segment a.active,
+html[data-design-style="hig"] .ah-segment a[data-status="active"],
+html[data-design-style="hig"] .ah-segment a[aria-current="page"],
+html[data-design-style="hig"] .ah-segment .is-active {
+  background: color-mix(in srgb, var(--design-hig-tint) 14%, transparent);
+  color: var(--design-hig-tint);
+  box-shadow: none;
+}
+
+html[data-design-style="hig"] [data-slot="dialog-content"] {
+  border-color: var(--design-hig-separator);
+  border-radius: 1.375rem;
+  background: var(--design-hig-vibrancy);
+  box-shadow: 0 24px 60px color-mix(in srgb, #000 32%, transparent);
+  backdrop-filter: saturate(1.6) blur(24px);
+  -webkit-backdrop-filter: saturate(1.6) blur(24px);
+}
+
+html[data-design-style="hig"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-design-style="hig"] textarea,
+html[data-design-style="hig"] select {
+  border-color: transparent;
+  border-radius: 0.625rem;
+  background-color: var(--design-hig-fill);
+  box-shadow: none;
+}
+
+html[data-design-style="hig"]
+  input:focus-visible:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-design-style="hig"] textarea:focus-visible,
+html[data-design-style="hig"] select:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--design-hig-tint) 55%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--design-hig-tint) 18%, transparent);
+}
+
+html[data-design-style="hig"] [role="switch"][data-state="checked"] {
+  background-color: var(--design-hig-green);
+}
+
+html[data-design-style="hig"] [role="checkbox"][data-state="checked"],
+html[data-design-style="hig"] [role="checkbox"][aria-checked="true"] {
+  background-color: var(--design-hig-tint);
+  border-color: var(--design-hig-tint);
 }
 
 html[data-design-style] body {
