@@ -37,11 +37,11 @@ export function SettingsCategoryRow({ categoryId }: { categoryId: ProfileSetting
     <Link
       to="/settings/$category"
       params={{ category: categoryId }}
-      className="settings-category-row flex min-h-16 w-full items-center gap-3 rounded-2xl border border-border/70 bg-card/70 p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--menu-accent)]"
+      className="settings-category-row flex min-h-16 w-full items-center gap-3 p-3 text-left transition hover:bg-foreground/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--menu-accent)]"
       aria-label={`${category.title} öffnen`}
       data-settings-category={categoryId}
     >
-      <span className="settings-category-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+      <span className="settings-category-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.7rem] bg-[var(--menu-accent-soft)] text-[var(--menu-accent)]">
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
@@ -52,7 +52,7 @@ export function SettingsCategoryRow({ categoryId }: { categoryId: ProfileSetting
           {category.subtitle}
         </span>
       </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/70" aria-hidden="true" />
     </Link>
   );
 }
