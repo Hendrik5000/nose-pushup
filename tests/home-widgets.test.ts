@@ -151,7 +151,10 @@ test("Home route renders the widget section, honest empty states, and the edit p
   assert.match(home, /HOME_WIDGET_SIZE_LABELS\[nextSize\]/);
   assert.match(home, /ausschließlich echte Daten aus deinen Alo-Apps/);
 
+  const catalog = readRepoFile("src/lib/home-widget-registry.ts");
+  assert.match(catalog, /HOME_WIDGET_CATALOG = Object\.freeze/);
   const lib = readRepoFile("src/lib/home-app-hub.ts");
-  assert.match(lib, /HOME_WIDGET_CATALOG = Object\.freeze/);
+  assert.match(lib, /HOME_WIDGET_CATALOG/);
+  assert.match(lib, /from "\.\/home-widget-registry"/);
   assert.match(lib, /schemaVersion: 4/);
 });
