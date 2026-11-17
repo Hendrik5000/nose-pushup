@@ -98,3 +98,19 @@ test("applying the HIG style sets the data attribute and persists the choice", (
   assert.equal(document.documentElement.dataset.designStyle, "performance");
   assert.equal(getStoredDesignStyle(), "performance");
 });
+
+test("the HIG style covers the remaining pages: tables, progress and league chips", () => {
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(css, /html\[data-design-style="hig"\] table\s*\{/);
+  assert.match(css, /html\[data-design-style="hig"\] table :is\(td, th\)/);
+  assert.match(css, /font-variant-numeric: tabular-nums/);
+  assert.match(css, /html\[data-design-style="hig"\] table thead th/);
+  assert.match(css, /html\[data-design-style="hig"\] \[role="progressbar"\]/);
+  assert.match(css, /html\[data-design-style="hig"\] nav\[aria-label="Ligaauswahl"\] button/);
+  assert.match(
+    css,
+    /html\[data-design-style="hig"\] nav\[aria-label="Ligaauswahl"\] button\[aria-pressed="true"\]/,
+  );
+  const sports = readFileSync(new URL("../src/routes/sports.tsx", import.meta.url), "utf8");
+  assert.match(sports, /aria-pressed=\{entry\.id === league\.id\}/);
+});

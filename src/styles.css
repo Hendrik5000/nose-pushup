@@ -893,6 +893,47 @@ html[data-design-style="hig"]
   background-color: transparent;
 }
 
+html[data-design-style="hig"] table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-design-style="hig"] table :is(td, th) {
+  border-bottom: 0.5px solid var(--design-hig-separator);
+}
+
+html[data-design-style="hig"] table tbody tr:last-child :is(td, th) {
+  border-bottom: 0;
+}
+
+html[data-design-style="hig"] table thead th {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+html[data-design-style="hig"] [role="progressbar"] {
+  background-color: var(--design-hig-fill);
+}
+
+html[data-design-style="hig"] [role="progressbar"] > div {
+  background-color: var(--design-hig-tint);
+}
+
+html[data-design-style="hig"] nav[aria-label="Ligaauswahl"] button {
+  border-color: transparent;
+  background-color: var(--design-hig-fill);
+  color: var(--muted-foreground);
+  box-shadow: none;
+}
+
+html[data-design-style="hig"] nav[aria-label="Ligaauswahl"] button[aria-pressed="true"] {
+  background-color: color-mix(in srgb, var(--design-hig-tint) 16%, transparent);
+  color: var(--design-hig-tint);
+}
+
 html[data-design-style] body {
   font-family: var(--design-body-font);
 }
