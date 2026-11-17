@@ -1,5 +1,8 @@
 import { listAlo, removeAlo } from "@/lib/alo-store";
-import { validateMarketplaceAuthoredManifest } from "@/lib/marketplace-authoring";
+import {
+  validateMarketplaceAuthoredManifest,
+  type MarketplaceAuthoredManifest,
+} from "@/lib/marketplace-authoring";
 import type { MarketplaceIconId } from "@/lib/marketplace";
 
 export type MiraMarketplaceDraftSummary = Readonly<{
@@ -39,6 +42,21 @@ export function listMiraMarketplaceDrafts(userId: string): MiraMarketplaceDraftS
     })
     .filter((entry): entry is MiraMarketplaceDraftSummary => entry !== null)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export function getMiraMarketplaceDraftManifest(
+  userId: string,
+  sessionId: string,
+): MarketplaceAuthoredManifest | null {
+  if (!userId || !sessionId.trim()) return null;
+  const recordId = miraMarketplaceDraftRecordId(sessionId);
+  const row = listAlo("draft", userId).find((entry) => entry.id === recordId);
+  if (!row) return null;
+  try {
+    return validateMarketplaceAuthoredManifest(row.body.manifest);
+  } catch {
+    return null;
+  }
 }
 
 export function removeMiraMarketplaceDraft(userId: string, sessionId: string): void {
