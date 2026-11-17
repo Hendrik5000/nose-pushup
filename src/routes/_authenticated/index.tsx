@@ -1111,6 +1111,7 @@ function HomeAppHub({
         <button
           type="button"
           aria-expanded={!collapsed}
+          data-home-group-toggle={groupId}
           onClick={() => {
             try {
               persistSettings(

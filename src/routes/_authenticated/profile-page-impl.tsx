@@ -30,7 +30,13 @@ import { PublicProfileSettings } from "@/components/PublicProfileSettings";
 import { AppsSettingsList } from "@/components/settings/AppsSettingsList";
 import { MenuAccentPicker } from "@/components/settings/MenuAccentPicker";
 import { SettingsCategoryRow } from "@/components/settings/SettingsCategoryRow";
-import { restartWelcomeTour } from "@/components/WelcomeTour";
+import {
+  ALL_TUTORIALS,
+  getTutorial,
+  loadTutorialState,
+  saveTutorialState,
+  startTutorial,
+} from "@/lib/tutorials";
 import {
   getProfileSettingsCategory,
   PROFILE_SETTINGS_GROUPS,
@@ -317,8 +323,16 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
       hapticsOn={hapticsOn}
       onToggleHaptics={() => void toggleHaptics()}
       onDeleteWorkout={(id) => void deleteWorkout(id)}
-      onRestartTour={() => {
-        if (profile) restartWelcomeTour(profile.id);
+      onStartTutorial={(id) => {
+        if (!profile) return;
+        try {
+          const state = loadTutorialState(window.localStorage, profile.id);
+          saveTutorialState(window.localStorage, profile.id, startTutorial(state, id));
+        } catch {
+          /* run continues without persistence */
+        }
+        const tutorial = getTutorial(id);
+        if (tutorial) void navigate({ to: tutorial.route as never });
       }}
     />
   ) : null;
@@ -655,7 +669,7 @@ type SettingsCategoryContentProps = {
   hapticsOn: boolean;
   onToggleHaptics: () => void;
   onDeleteWorkout: (id: string) => void;
-  onRestartTour: () => void;
+  onStartTutorial: (id: string) => void;
 };
 
 function SettingsCategoryContent(props: SettingsCategoryContentProps) {
@@ -915,17 +929,27 @@ function SettingsCategoryContent(props: SettingsCategoryContentProps) {
     case "support":
       return (
         <>
-          <SettingsBlock title="Willkommenstour">
+          <SettingsBlock title="Tutorials">
             <p className="text-sm text-muted-foreground">
-              Die kurze Tour kannst du jederzeit erneut starten.
+              Interaktive Touren für den Home-Bildschirm und einzelne Apps — du machst jede Übung
+              selbst mit.
             </p>
-            <button
-              type="button"
-              onClick={props.onRestartTour}
-              className="min-h-11 w-full rounded-xl border border-border px-4 py-3 text-left text-sm font-semibold hover:border-[var(--menu-accent)]"
-            >
-              Willkommenstour starten
-            </button>
+            <ul className="flex flex-col gap-2">
+              {ALL_TUTORIALS.map((tutorial) => (
+                <li key={tutorial.id}>
+                  <button
+                    type="button"
+                    onClick={() => props.onStartTutorial(tutorial.id)}
+                    className="min-h-11 w-full rounded-xl border border-border px-4 py-3 text-left hover:border-[var(--menu-accent)]"
+                  >
+                    <span className="block text-sm font-semibold">{tutorial.title}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {tutorial.description}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </SettingsBlock>
           <SettingsBlock title="Kurzanleitung">
             <AloWebAppGuide />
