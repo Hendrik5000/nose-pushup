@@ -100,3 +100,22 @@ test("Alo-Browser: Mira-Aktionen sind sichtbar und \u00fcbernahmen von Mira m\u0
   assert.match(superAi, /rememberBrowserOpenUrl/);
   assert.match(superAi, /browserStepsToSystemBlock/);
 });
+
+test("Alo-Browser: blockierte und JS-leere Seiten landen automatisch im Reader-Modus (Alo 1.172)", () => {
+  assert.match(component, /looksLikeJsShell/);
+  assert.match(component, /miraServePage/);
+  assert.match(component, /frameBlocked/);
+  assert.match(component, /blockiert das Einbetten/);
+  assert.match(component, /per JavaScript auf/);
+  const browserFetchLib = readFileSync(
+    new URL("../src/lib/browser-fetch.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(browserFetchLib, /export function looksLikeJsShell/);
+  const serverAgent = readFileSync(
+    new URL("../src/lib/browser-agent.server.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(serverAgent, /responseBlocksFraming/);
+  assert.match(serverAgent, /frameBlocked/);
+});

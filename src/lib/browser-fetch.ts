@@ -33,6 +33,24 @@ export function browserReaderUrl(targetUrl: string): string {
   return `https://r.jina.ai/${targetUrl}`;
 }
 
+/**
+ * Erkennt JS-Shell-Seiten (Single-Page-Apps): viele Script-Tags, kaum sichtbarer
+ * Text, typische Mount-Punkte wie id="root". Diese Seiten zeigen im iframe nur
+ * Weiß — sie gehören direkt in den Reader-Modus.
+ */
+export function looksLikeJsShell(html: string): boolean {
+  const scriptCount = (html.match(/<script\b/gi) ?? []).length;
+  if (scriptCount < 3) return false;
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text.length >= 200) return false;
+  return /id\s*=\s*["']?(root|app|__next|__nuxt|mount)["']?/i.test(html) || text.length < 80;
+}
+
 const cache = new Map<string, { at: number; html: string; reader: string }>();
 
 export function readCachedBrowserPage(

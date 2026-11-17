@@ -22,6 +22,7 @@ export interface BrowserAgentPage {
   text: string;
   links: BrowserAgentLink[];
   forms: BrowserAgentForm[];
+  frameBlocked?: boolean;
 }
 
 const MAX_BYTES = 3_000_000;
@@ -141,6 +142,15 @@ export function buildFormSearchUrl(form: BrowserAgentForm, query: string): strin
   return url.toString();
 }
 
+export function responseBlocksFraming(headers: Headers): boolean {
+  const xfo = (headers.get("x-frame-options") ?? "").toLowerCase();
+  if (xfo.includes("deny") || xfo.includes("sameorigin")) return true;
+  const csp = (headers.get("content-security-policy") ?? "").toLowerCase();
+  const ancestors = csp.match(/frame-ancestors([^;]*)/);
+  if (ancestors) return !ancestors[1].trim().includes("*");
+  return false;
+}
+
 export async function fetchBrowserAgentPage(rawUrl: string): Promise<BrowserAgentPage> {
   const url = assertPublicHttpUrl(rawUrl);
   const doFetch = injected.fetchImpl ?? fetch;
@@ -160,7 +170,10 @@ export async function fetchBrowserAgentPage(rawUrl: string): Promise<BrowserAgen
     const buffer = await res.arrayBuffer();
     if (buffer.byteLength > MAX_BYTES) throw new Error("Die Seite ist zu groß für den Abruf.");
     const html = new TextDecoder("utf-8").decode(buffer);
-    return extractBrowserAgentPage(html, res.url || url.toString());
+    return {
+      ...extractBrowserAgentPage(html, res.url || url.toString()),
+      frameBlocked: responseBlocksFraming(res.headers),
+    };
   } finally {
     clearTimeout(timer);
   }
