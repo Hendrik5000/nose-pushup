@@ -47,6 +47,7 @@ import { loadProviders } from "@/lib/ai-providers";
 import { useHomeDayData } from "@/hooks/useHomeDayData";
 import { useNexusUnread } from "@/hooks/useNexusUnread";
 import { supabase } from "@/integrations/supabase/client";
+import { AloErrorBoundary } from "@/components/AloErrorBoundary";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
 import { usePostfach } from "@/components/postfach/PostfachProvider";
 import { MarketplaceIcon } from "@/components/marketplace/MarketplaceIcon";
@@ -1439,237 +1440,246 @@ function HomeAppHub({
             </p>
           )}
           {isEditingHub ? (
-            <nav
-              className="alo-tablet-home-apps grid w-full max-w-[520px] grid-flow-row-dense grid-cols-4 gap-x-3 gap-y-6"
-              aria-label="Alo-Apps"
-              onPointerMoveCapture={moveHomeTileDrag}
-            >
-              {orderedTiles.map((tile) => {
-                const title = settings.nameOverrides[tile.id] ?? tile.title;
-                const editTileSize: HomeAppTileSize = settings.tileSizes[tile.id] ?? "small";
-                return (
-                  <div
-                    key={tile.id}
-                    data-home-app-id={tile.id}
-                    data-home-tile-size={editTileSize}
-                    data-drop-placement={
-                      dropTargetAppId === tile.id ? dropTargetPlacement : undefined
-                    }
-                    role={isEditingHub ? "button" : undefined}
-                    tabIndex={isEditingHub ? 0 : undefined}
-                    aria-label={
-                      isEditingHub
-                        ? `${title}. Leertaste zum Aufnehmen, Pfeiltasten zum Verschieben; lange drücken oder Umschalt+F10 für Aktionen.`
-                        : undefined
-                    }
-                    aria-pressed={isEditingHub ? keyboardGrabbedAppId === tile.id : undefined}
-                    aria-haspopup={isEditingHub ? "dialog" : undefined}
-                    aria-describedby={isEditingHub ? "home-app-edit-help" : undefined}
-                    className={`relative min-w-0 select-none rounded-xl transition ${HOME_APP_TILE_SIZE_CLASS_NAMES[editTileSize]} ${editTileSize === "large" ? "flex flex-col items-center justify-center" : ""} ${isEditingHub ? "touch-none cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:cursor-grabbing" : ""} ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
-                    onPointerDown={(event) => {
-                      startHomeLongPress(event, tile.id);
-                      if (isEditingHub && event.isPrimary && event.button === 0) {
-                        pendingHomeDragRef.current = {
-                          appId: tile.id,
-                          pointerId: event.pointerId,
-                          x: event.clientX,
-                          y: event.clientY,
-                          element: event.currentTarget,
-                        };
+            <AloErrorBoundary section="Apps">
+              <nav
+                className="alo-tablet-home-apps grid w-full max-w-[520px] grid-flow-row-dense grid-cols-4 gap-x-3 gap-y-6"
+                aria-label="Alo-Apps"
+                onPointerMoveCapture={moveHomeTileDrag}
+              >
+                {orderedTiles.map((tile) => {
+                  const title = settings.nameOverrides[tile.id] ?? tile.title;
+                  const editTileSize: HomeAppTileSize = settings.tileSizes[tile.id] ?? "small";
+                  return (
+                    <div
+                      key={tile.id}
+                      data-home-app-id={tile.id}
+                      data-home-tile-size={editTileSize}
+                      data-drop-placement={
+                        dropTargetAppId === tile.id ? dropTargetPlacement : undefined
                       }
-                    }}
-                    onPointerUp={(event) => {
-                      pendingHomeDragRef.current = null;
-                      cancelHomeLongPress();
-                      if (isEditingHub) finishHomeTileDrag(event);
-                    }}
-                    onPointerCancel={(event) => {
-                      pendingHomeDragRef.current = null;
-                      cancelHomeLongPress();
-                      if (isEditingHub) cancelHomeTileDrag(event);
-                    }}
-                    onClickCapture={(event) => suppressLongPressClick(event, tile.id)}
-                    onContextMenu={(event) => {
-                      event.preventDefault();
-                      if (
-                        longPressStartRef.current?.kind === "app" &&
-                        longPressStartRef.current.appId === tile.id
-                      ) {
-                        longPressTriggeredAppIdRef.current = tile.id;
+                      role={isEditingHub ? "button" : undefined}
+                      tabIndex={isEditingHub ? 0 : undefined}
+                      aria-label={
+                        isEditingHub
+                          ? `${title}. Leertaste zum Aufnehmen, Pfeiltasten zum Verschieben; lange drücken oder Umschalt+F10 für Aktionen.`
+                          : undefined
                       }
-                      setActiveAppMenuId(tile.id);
-                    }}
-                    onKeyDown={(event) => handleHomeTileKeyDown(event, tile.id, title)}
-                  >
-                    {renderTile(tile, title)}
-                    {draggingAppId && dropTargetAppId === tile.id && dropTargetPlacement && (
-                      <span
-                        aria-hidden="true"
-                        className={`pointer-events-none absolute inset-y-0 z-20 w-1 rounded-full bg-primary ${dropTargetPlacement === "before" ? "left-0" : "right-0"}`}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </nav>
+                      aria-pressed={isEditingHub ? keyboardGrabbedAppId === tile.id : undefined}
+                      aria-haspopup={isEditingHub ? "dialog" : undefined}
+                      aria-describedby={isEditingHub ? "home-app-edit-help" : undefined}
+                      className={`relative min-w-0 select-none rounded-xl transition ${HOME_APP_TILE_SIZE_CLASS_NAMES[editTileSize]} ${editTileSize === "large" ? "flex flex-col items-center justify-center" : ""} ${isEditingHub ? "touch-none cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:cursor-grabbing" : ""} ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                      onPointerDown={(event) => {
+                        startHomeLongPress(event, tile.id);
+                        if (isEditingHub && event.isPrimary && event.button === 0) {
+                          pendingHomeDragRef.current = {
+                            appId: tile.id,
+                            pointerId: event.pointerId,
+                            x: event.clientX,
+                            y: event.clientY,
+                            element: event.currentTarget,
+                          };
+                        }
+                      }}
+                      onPointerUp={(event) => {
+                        pendingHomeDragRef.current = null;
+                        cancelHomeLongPress();
+                        if (isEditingHub) finishHomeTileDrag(event);
+                      }}
+                      onPointerCancel={(event) => {
+                        pendingHomeDragRef.current = null;
+                        cancelHomeLongPress();
+                        if (isEditingHub) cancelHomeTileDrag(event);
+                      }}
+                      onClickCapture={(event) => suppressLongPressClick(event, tile.id)}
+                      onContextMenu={(event) => {
+                        event.preventDefault();
+                        if (
+                          longPressStartRef.current?.kind === "app" &&
+                          longPressStartRef.current.appId === tile.id
+                        ) {
+                          longPressTriggeredAppIdRef.current = tile.id;
+                        }
+                        setActiveAppMenuId(tile.id);
+                      }}
+                      onKeyDown={(event) => handleHomeTileKeyDown(event, tile.id, title)}
+                    >
+                      {renderTile(tile, title)}
+                      {draggingAppId && dropTargetAppId === tile.id && dropTargetPlacement && (
+                        <span
+                          aria-hidden="true"
+                          className={`pointer-events-none absolute inset-y-0 z-20 w-1 rounded-full bg-primary ${dropTargetPlacement === "before" ? "left-0" : "right-0"}`}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </nav>
+            </AloErrorBoundary>
           ) : (
             <div className="flex w-full max-w-[520px] flex-col gap-7">
-              <section
-                aria-label="Dein Tag"
-                className="rounded-2xl border border-border bg-card/60 p-4 backdrop-blur"
-              >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="text-base font-semibold">
-                    {homeDayGreeting(new Date().getHours())}!
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date().toLocaleDateString("de-DE", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </p>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link to="/ai" className="alo-btn">
-                    Mira fragen
-                  </Link>
-                  <button
-                    type="button"
-                    className="alo-btn"
-                    onClick={() =>
-                      window.dispatchEvent(new CustomEvent("alo-open", { detail: "capture" }))
-                    }
-                  >
-                    Notiz erfassen
-                  </button>
-                  <Link to="/postfach" className="alo-btn">
-                    Postfach
-                  </Link>
-                </div>
-                {(() => {
-                  const streakLine = formatStreakLine(streak);
-                  const workoutLine =
-                    weeklyWorkouts !== null ? formatWeeklyWorkoutLine(weeklyWorkouts) : null;
-                  const healthParts =
-                    healthToday && hasMeasuredHealthToday(healthToday)
-                      ? formatHealthTodayParts(healthToday)
-                      : [];
-                  const dailyGoalLine = formatDailyGoalLine(dailyReps, dailyGoal);
-                  const postfachLine = formatPostfachContextLine(
-                    postfach.unreadCount,
-                    postfach.actionableCount,
-                    postfach.available,
-                  );
-                  const offerChatSummary = shouldOfferChatSummary(nexusUnread);
-                  if (
-                    healthParts.length === 0 &&
-                    !streakLine &&
-                    !workoutLine &&
-                    !dailyGoalLine &&
-                    !postfachLine &&
-                    !aiStatus &&
-                    !offerChatSummary
-                  )
-                    return null;
-                  return (
-                    <dl className="mt-3 space-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-                      {healthParts.length > 0 && (
+              <AloErrorBoundary section="Dein Tag">
+                <section
+                  aria-label="Dein Tag"
+                  className="rounded-2xl border border-border bg-card/60 p-4 backdrop-blur"
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="text-base font-semibold">
+                      {homeDayGreeting(new Date().getHours())}!
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date().toLocaleDateString("de-DE", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </p>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Link to="/ai" className="alo-btn">
+                      Mira fragen
+                    </Link>
+                    <button
+                      type="button"
+                      className="alo-btn"
+                      onClick={() =>
+                        window.dispatchEvent(new CustomEvent("alo-open", { detail: "capture" }))
+                      }
+                    >
+                      Notiz erfassen
+                    </button>
+                    <Link to="/postfach" className="alo-btn">
+                      Postfach
+                    </Link>
+                  </div>
+                  {(() => {
+                    const streakLine = formatStreakLine(streak);
+                    const workoutLine =
+                      weeklyWorkouts !== null ? formatWeeklyWorkoutLine(weeklyWorkouts) : null;
+                    const healthParts =
+                      healthToday && hasMeasuredHealthToday(healthToday)
+                        ? formatHealthTodayParts(healthToday)
+                        : [];
+                    const dailyGoalLine = formatDailyGoalLine(dailyReps, dailyGoal);
+                    const postfachLine = formatPostfachContextLine(
+                      postfach.unreadCount,
+                      postfach.actionableCount,
+                      postfach.available,
+                    );
+                    const offerChatSummary = shouldOfferChatSummary(nexusUnread);
+                    if (
+                      healthParts.length === 0 &&
+                      !streakLine &&
+                      !workoutLine &&
+                      !dailyGoalLine &&
+                      !postfachLine &&
+                      !aiStatus &&
+                      !offerChatSummary
+                    )
+                      return null;
+                    return (
+                      <dl className="mt-3 space-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+                        {healthParts.length > 0 && (
+                          <div className="flex flex-wrap gap-x-2">
+                            <dt className="font-semibold text-foreground">Health heute:</dt>
+                            <dd>{healthParts.join(" · ")}</dd>
+                          </div>
+                        )}
+                        {workoutLine && (
+                          <div className="flex flex-wrap gap-x-2">
+                            <dt className="font-semibold text-foreground">Training:</dt>
+                            <dd>{workoutLine}</dd>
+                          </div>
+                        )}
+                        {streakLine && (
+                          <div className="flex flex-wrap gap-x-2">
+                            <dt className="font-semibold text-foreground">Streak:</dt>
+                            <dd>{streakLine}</dd>
+                          </div>
+                        )}
+                        {offerChatSummary && (
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <dt className="font-semibold text-foreground">Nexus Chat:</dt>
+                            <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span>{nexusUnread} ungelesene Nachrichten</span>
+                              <button
+                                type="button"
+                                onClick={requestChatSummary}
+                                className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-primary hover:border-primary/50"
+                              >
+                                Zusammenfassung bei Mira anfragen
+                              </button>
+                            </dd>
+                          </div>
+                        )}
+                        {dailyGoalLine && (
+                          <div className="flex flex-wrap gap-x-2">
+                            <dt className="font-semibold text-foreground">Tagesziel:</dt>
+                            <dd>{dailyGoalLine}</dd>
+                          </div>
+                        )}
+                        {postfachLine && (
+                          <div className="flex flex-wrap gap-x-2">
+                            <dt className="font-semibold text-foreground">Postfach:</dt>
+                            <dd>{postfachLine}</dd>
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-x-2">
-                          <dt className="font-semibold text-foreground">Health heute:</dt>
-                          <dd>{healthParts.join(" · ")}</dd>
-                        </div>
-                      )}
-                      {workoutLine && (
-                        <div className="flex flex-wrap gap-x-2">
-                          <dt className="font-semibold text-foreground">Training:</dt>
-                          <dd>{workoutLine}</dd>
-                        </div>
-                      )}
-                      {streakLine && (
-                        <div className="flex flex-wrap gap-x-2">
-                          <dt className="font-semibold text-foreground">Streak:</dt>
-                          <dd>{streakLine}</dd>
-                        </div>
-                      )}
-                      {offerChatSummary && (
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <dt className="font-semibold text-foreground">Nexus Chat:</dt>
-                          <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <span>{nexusUnread} ungelesene Nachrichten</span>
-                            <button
-                              type="button"
-                              onClick={requestChatSummary}
-                              className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-primary hover:border-primary/50"
-                            >
-                              Zusammenfassung bei Mira anfragen
-                            </button>
+                          <dt className="font-semibold text-foreground">KI:</dt>
+                          <dd>
+                            {aiStatus
+                              ? `${aiStatus.provider} · ${aiStatus.model}`
+                              : "Kein KI-Anbieter aktiv"}
                           </dd>
                         </div>
-                      )}
-                      {dailyGoalLine && (
-                        <div className="flex flex-wrap gap-x-2">
-                          <dt className="font-semibold text-foreground">Tagesziel:</dt>
-                          <dd>{dailyGoalLine}</dd>
-                        </div>
-                      )}
-                      {postfachLine && (
-                        <div className="flex flex-wrap gap-x-2">
-                          <dt className="font-semibold text-foreground">Postfach:</dt>
-                          <dd>{postfachLine}</dd>
-                        </div>
-                      )}
-                      <div className="flex flex-wrap gap-x-2">
-                        <dt className="font-semibold text-foreground">KI:</dt>
-                        <dd>
-                          {aiStatus
-                            ? `${aiStatus.provider} · ${aiStatus.model}`
-                            : "Kein KI-Anbieter aktiv"}
-                        </dd>
-                      </div>
-                    </dl>
-                  );
-                })()}
-              </section>
-              {settings.widgetOrder.length > 0 && (
-                <section
-                  aria-label="Widgets"
-                  className="grid grid-flow-row-dense grid-cols-2 gap-3"
-                >
-                  {settings.widgetOrder.map((widgetId) => {
-                    const widget = renderHomeWidget(widgetId as HomeWidgetId);
-                    const widgetSize: HomeWidgetSize = settings.widgetSizes[widgetId] ?? "small";
-                    return (
-                      <div
-                        key={widgetId}
-                        data-home-widget-id={widgetId}
-                        className={`rounded-2xl border border-border bg-card/60 p-4 backdrop-blur ${HOME_WIDGET_SIZE_CLASS_NAMES[widgetSize]}`}
-                      >
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {widget.title}
-                        </p>
-                        <p className="mt-2 text-sm leading-relaxed text-foreground">
-                          {widget.body}
-                        </p>
-                        {widget.link && (
-                          <Link
-                            to={widget.link.to}
-                            className="mt-2 inline-block text-xs font-semibold text-primary underline-offset-4 hover:underline"
-                          >
-                            {widget.link.label}
-                          </Link>
-                        )}
-                      </div>
+                      </dl>
                     );
-                  })}
+                  })()}
                 </section>
+              </AloErrorBoundary>
+              {settings.widgetOrder.length > 0 && (
+                <AloErrorBoundary section="Widgets">
+                  <section
+                    aria-label="Widgets"
+                    className="grid grid-flow-row-dense grid-cols-2 gap-3"
+                  >
+                    {settings.widgetOrder.map((widgetId) => {
+                      const widget = renderHomeWidget(widgetId as HomeWidgetId);
+                      const widgetSize: HomeWidgetSize = settings.widgetSizes[widgetId] ?? "small";
+                      return (
+                        <div
+                          key={widgetId}
+                          data-home-widget-id={widgetId}
+                          className={`rounded-2xl border border-border bg-card/60 p-4 backdrop-blur ${HOME_WIDGET_SIZE_CLASS_NAMES[widgetSize]}`}
+                        >
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            {widget.title}
+                          </p>
+                          <p className="mt-2 text-sm leading-relaxed text-foreground">
+                            {widget.body}
+                          </p>
+                          {widget.link && (
+                            <Link
+                              to={widget.link.to}
+                              className="mt-2 inline-block text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                            >
+                              {widget.link.label}
+                            </Link>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </section>
+                </AloErrorBoundary>
               )}
-              {recentTiles.length > 0 &&
-                renderHomeGroup("recent", "Zuletzt verwendet", recentTiles)}
-              {favoriteTiles.length > 0 && renderHomeGroup("favorites", "Favoriten", favoriteTiles)}
-              {homeSections.map((section) =>
-                renderHomeGroup(section.id, section.label, section.tiles),
-              )}
+              <AloErrorBoundary section="Apps">
+                {recentTiles.length > 0 &&
+                  renderHomeGroup("recent", "Zuletzt verwendet", recentTiles)}
+                {favoriteTiles.length > 0 &&
+                  renderHomeGroup("favorites", "Favoriten", favoriteTiles)}
+                {homeSections.map((section) =>
+                  renderHomeGroup(section.id, section.label, section.tiles),
+                )}
+              </AloErrorBoundary>
             </div>
           )}
 
