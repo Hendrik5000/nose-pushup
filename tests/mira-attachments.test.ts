@@ -207,7 +207,7 @@ test("the server includes text attachments before every provider call and enforc
   const dispatchEnd = server.indexOf("return {", dispatchStart);
   assert.ok(dispatchEnd > dispatchStart);
   const dispatch = server.slice(dispatchStart, dispatchEnd);
-  assert.equal((dispatch.match(/\bproviderMessages\b/g) ?? []).length, 6);
+  assert.equal((dispatch.match(/\bproviderMessages\b/g) ?? []).length, 7);
 });
 test("camera is retained separately from library/device pickers, with accessible removal and local previews", () => {
   const picker = read("components/mira/MiraAttachments.tsx");
