@@ -64,60 +64,84 @@ function GamesHub() {
           : "min-h-screen bg-background px-3 pb-12 pt-4 text-foreground sm:px-6"
       }
     >
-      {!selectedGame && (
-        <header className="mx-auto mb-5 flex max-w-5xl items-center justify-between gap-4">
-          <Link
-            to="/games"
-            search={{}}
-            className="rounded-lg text-sm font-semibold uppercase tracking-[0.16em] text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label="Zur Alo-Spielauswahl"
+      {!selectedGame ? (
+        <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
+          <aside
+            aria-label="App-Aktionen"
+            className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
           >
-            Alo · Spiele
-          </Link>
-          {selectedGame && (
+            <div className="flex flex-col gap-2">
+              <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Spiele
+              </p>
+              {(
+                [
+                  { game: "grid-defense", title: "Grid Defense" },
+                  { game: "kupferkern", title: "Kupferkern" },
+                  { game: "neon-starfighter", title: "Neon Starfighter" },
+                ] as const
+              ).map((entry) => (
+                <Link
+                  key={entry.game}
+                  to="/games"
+                  search={{ game: entry.game }}
+                  className="rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground hover:bg-card"
+                >
+                  {entry.title}
+                </Link>
+              ))}
+              <Link
+                to="/marketplace"
+                className="mt-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary hover:underline"
+              >
+                Marketplace öffnen
+              </Link>
+            </div>
+          </aside>
+          <header className="mb-5 flex items-center justify-between gap-4">
             <Link
               to="/games"
               search={{}}
-              className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              className="rounded-lg text-sm font-semibold uppercase tracking-[0.16em] text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              aria-label="Zur Alo-Spielauswahl"
             >
-              Spielauswahl
+              Alo · Spiele
             </Link>
-          )}
-        </header>
-      )}
+          </header>
 
-      <div className={selectedGame ? "min-h-dvh" : "mx-auto max-w-5xl"}>
-        {!selectedGame ? (
-          <GameSelection />
-        ) : loadFailed ? (
-          <section
-            className="mx-auto max-w-3xl rounded-3xl border border-border bg-card/50 p-5 sm:p-8"
-            role="alert"
-          >
-            <h1 className="text-2xl font-bold">Spiel konnte nicht geladen werden</h1>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Der Inhalt ist momentan nicht verfügbar. Probiere es später noch einmal.
+          <div className="flex min-w-0 flex-col gap-6">
+            <GameSelection />
+            <p className="mx-auto max-w-3xl rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+              Diese Neufassungen sind keine rechtliche Freigabe. Vor einer Weitergabe oder
+              Veröffentlichung sind eigenständige Rechte-, Marken-, Text- und Gestaltungsprüfungen
+              erforderlich.
             </p>
-          </section>
-        ) : currentDocument ? (
-          <GameFrame game={selectedGame} gameDocument={currentDocument} />
-        ) : (
-          <p
-            className="mx-auto max-w-3xl rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground"
-            aria-live="polite"
-          >
-            Spielinhalt wird geladen …
-          </p>
-        )}
-
-        {!selectedGame && (
-          <p className="mx-auto mt-6 max-w-3xl rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
-            Diese Neufassungen sind keine rechtliche Freigabe. Vor einer Weitergabe oder
-            Veröffentlichung sind eigenständige Rechte-, Marken-, Text- und Gestaltungsprüfungen
-            erforderlich.
-          </p>
-        )}
-      </div>
+          </div>
+        </div>
+      ) : (
+        <div className="min-h-dvh">
+          {loadFailed ? (
+            <section
+              className="mx-auto max-w-3xl rounded-3xl border border-border bg-card/50 p-5 sm:p-8"
+              role="alert"
+            >
+              <h1 className="text-2xl font-bold">Spiel konnte nicht geladen werden</h1>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                Der Inhalt ist momentan nicht verfügbar. Probiere es später noch einmal.
+              </p>
+            </section>
+          ) : currentDocument ? (
+            <GameFrame game={selectedGame} gameDocument={currentDocument} />
+          ) : (
+            <p
+              className="mx-auto max-w-3xl rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground"
+              aria-live="polite"
+            >
+              Spielinhalt wird geladen …
+            </p>
+          )}
+        </div>
+      )}
     </main>
   );
 }
