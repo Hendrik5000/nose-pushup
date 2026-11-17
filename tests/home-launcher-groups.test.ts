@@ -9,7 +9,7 @@ import {
   toggleHomeAppGroupCollapsed,
 } from "@/lib/home-app-hub";
 
-test("home settings schema v3 keeps v1 payloads and migrates them without losing order", () => {
+test("home settings schema v4 keeps v1 payloads and migrates them without losing order", () => {
   const v1 = {
     schemaVersion: 1,
     order: ["mira", "training"],
@@ -17,7 +17,7 @@ test("home settings schema v3 keeps v1 payloads and migrates them without losing
     background: { kind: "none" },
   };
   const migrated = parseHomeAppHubSettings(v1);
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
   assert.deepEqual(migrated.order, ["mira", "training"]);
   assert.equal(migrated.nameOverrides.mira, "Meine Mira");
   assert.deepEqual(migrated.favorites, []);

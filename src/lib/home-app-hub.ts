@@ -30,14 +30,62 @@ export const HOME_APP_TILE_SIZE_LABELS: Readonly<Record<HomeAppTileSize, string>
   large: "Groß",
 });
 
+export const HOME_WIDGET_CATALOG = Object.freeze([
+  {
+    id: "health-today",
+    label: "Health heute",
+    description: "Schritte, aktive kcal und Schlaf aus echten Messwerten.",
+  },
+  {
+    id: "fitness-week",
+    label: "Training & Streak",
+    description: "Workouts der letzten 7 Tage und dein aktueller Streak.",
+  },
+  {
+    id: "nexus-unread",
+    label: "Nexus ungelesen",
+    description: "Anzahl deiner ungelesenen Nexus-Nachrichten.",
+  },
+  {
+    id: "ai-status",
+    label: "KI-Status",
+    description: "Aktiver KI-Anbieter und gewähltes Modell.",
+  },
+  {
+    id: "installed-apps",
+    label: "Meine Apps",
+    description: "Installierte Marketplace-Apps auf diesem Gerät.",
+  },
+] as const);
+
+export type HomeWidgetId = (typeof HOME_WIDGET_CATALOG)[number]["id"];
+
+export const HOME_WIDGET_SIZES = Object.freeze(["small", "wide"] as const);
+
+export type HomeWidgetSize = (typeof HOME_WIDGET_SIZES)[number];
+
+export const HOME_WIDGET_SIZE_CLASS_NAMES: Readonly<Record<HomeWidgetSize, string>> = Object.freeze(
+  {
+    small: "",
+    wide: "col-span-2",
+  },
+);
+
+export const HOME_WIDGET_SIZE_LABELS: Readonly<Record<HomeWidgetSize, string>> = Object.freeze({
+  small: "Schmal",
+  wide: "Breit",
+});
+
 export type HomeAppHubSettings = Readonly<{
-  schemaVersion: 3;
+  schemaVersion: 4;
   order: readonly string[];
   nameOverrides: Readonly<Record<string, string>>;
   background: HomeBackgroundPreference;
   favorites: readonly string[];
   collapsedGroups: readonly string[];
   tileSizes: Readonly<Record<string, HomeAppTileSize>>;
+  widgetOrder: readonly string[];
+  widgetSizes: Readonly<Record<string, HomeWidgetSize>>;
 }>;
 
 export type HomeAppHubStorage = Pick<Storage, "getItem" | "setItem">;
@@ -47,13 +95,15 @@ export const HOME_DEFAULT_BACKGROUND: HomeBackgroundPreference = Object.freeze({
 });
 
 export const EMPTY_HOME_APP_HUB_SETTINGS: HomeAppHubSettings = Object.freeze({
-  schemaVersion: 3,
+  schemaVersion: 4,
   order: Object.freeze([]),
   nameOverrides: Object.freeze({}),
   background: HOME_DEFAULT_BACKGROUND,
   favorites: Object.freeze([]),
   collapsedGroups: Object.freeze([]),
   tileSizes: Object.freeze({}),
+  widgetOrder: Object.freeze([]),
+  widgetSizes: Object.freeze({}),
 });
 
 export const HOME_BACKGROUND_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -85,7 +135,10 @@ const HOME_MAX_NAME_OVERRIDES = 128;
 const HOME_MAX_FAVORITES = 32;
 const HOME_MAX_COLLAPSED_GROUPS = 16;
 const HOME_MAX_SETTINGS_BYTES = 32_768;
+const HOME_MAX_WIDGETS = 8;
 const HOME_APP_TILE_SIZE_SET = new Set<string>(HOME_APP_TILE_SIZES);
+const HOME_WIDGET_ID_SET = new Set<string>(HOME_WIDGET_CATALOG.map(({ id }) => id));
+const HOME_WIDGET_SIZE_SET = new Set<string>(HOME_WIDGET_SIZES);
 const HOME_BACKGROUND_DB_NAME = "alo-home-background-images-v1";
 const HOME_BACKGROUND_DB_VERSION = 1;
 const HOME_BACKGROUND_OBJECT_STORE = "images";
@@ -154,10 +207,12 @@ export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
   ) {
     return parseHomeAppHubSettings({
       ...value,
-      schemaVersion: 3,
+      schemaVersion: 4,
       favorites: [],
       collapsedGroups: [],
       tileSizes: {},
+      widgetOrder: [],
+      widgetSizes: {},
     });
   }
   if (
@@ -171,7 +226,32 @@ export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
       "collapsedGroups",
     ])
   ) {
-    return parseHomeAppHubSettings({ ...value, schemaVersion: 3, tileSizes: {} });
+    return parseHomeAppHubSettings({
+      ...value,
+      schemaVersion: 4,
+      tileSizes: {},
+      widgetOrder: [],
+      widgetSizes: {},
+    });
+  }
+  if (
+    value.schemaVersion === 3 &&
+    exactKeys(value, [
+      "schemaVersion",
+      "order",
+      "nameOverrides",
+      "background",
+      "favorites",
+      "collapsedGroups",
+      "tileSizes",
+    ])
+  ) {
+    return parseHomeAppHubSettings({
+      ...value,
+      schemaVersion: 4,
+      widgetOrder: [],
+      widgetSizes: {},
+    });
   }
   if (
     !exactKeys(value, [
@@ -182,8 +262,10 @@ export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
       "favorites",
       "collapsedGroups",
       "tileSizes",
+      "widgetOrder",
+      "widgetSizes",
     ]) ||
-    value.schemaVersion !== 3 ||
+    value.schemaVersion !== 4 ||
     !Array.isArray(value.order) ||
     value.order.length > HOME_MAX_APP_IDS ||
     !isRecord(value.nameOverrides) ||
@@ -193,7 +275,11 @@ export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
     !Array.isArray(value.collapsedGroups) ||
     value.collapsedGroups.length > HOME_MAX_COLLAPSED_GROUPS ||
     !isRecord(value.tileSizes) ||
-    Object.keys(value.tileSizes).length > HOME_MAX_APP_IDS
+    Object.keys(value.tileSizes).length > HOME_MAX_APP_IDS ||
+    !Array.isArray(value.widgetOrder) ||
+    value.widgetOrder.length > HOME_MAX_WIDGETS ||
+    !isRecord(value.widgetSizes) ||
+    Object.keys(value.widgetSizes).length > HOME_MAX_WIDGETS
   ) {
     throw new Error("Ungültige lokale Home-Einstellungen.");
   }
@@ -242,14 +328,42 @@ export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
     tileSizes[appId] = size as HomeAppTileSize;
   }
 
+  const widgetOrder: string[] = [];
+  const seenWidgets = new Set<string>();
+  for (const candidate of value.widgetOrder) {
+    if (
+      typeof candidate !== "string" ||
+      !HOME_WIDGET_ID_SET.has(candidate) ||
+      seenWidgets.has(candidate)
+    ) {
+      throw new Error("Ungültiges oder doppeltes Home-Widget.");
+    }
+    seenWidgets.add(candidate);
+    widgetOrder.push(candidate);
+  }
+
+  const widgetSizes: Record<string, HomeWidgetSize> = {};
+  for (const [widgetId, size] of Object.entries(value.widgetSizes)) {
+    if (
+      typeof size !== "string" ||
+      !HOME_WIDGET_ID_SET.has(widgetId) ||
+      !HOME_WIDGET_SIZE_SET.has(size)
+    ) {
+      throw new Error("Ungültige Home-Widget-Größe.");
+    }
+    widgetSizes[widgetId] = size as HomeWidgetSize;
+  }
+
   return Object.freeze({
-    schemaVersion: 3,
+    schemaVersion: 4,
     order: Object.freeze(order),
     nameOverrides: Object.freeze(nameOverrides),
     background: parseBackgroundPreference(value.background),
     favorites: Object.freeze(favorites),
     collapsedGroups: Object.freeze(collapsedGroups),
     tileSizes: Object.freeze(tileSizes),
+    widgetOrder: Object.freeze(widgetOrder),
+    widgetSizes: Object.freeze(widgetSizes),
   });
 }
 
@@ -373,6 +487,74 @@ export function setHomeAppTileSize(
   if (sizeInput === "small") delete tileSizes[appId];
   else tileSizes[appId] = sizeInput as HomeAppTileSize;
   return parseHomeAppHubSettings({ ...settings, tileSizes });
+}
+
+export function addHomeWidget(settingsInput: unknown, widgetId: unknown): HomeAppHubSettings {
+  if (typeof widgetId !== "string" || !HOME_WIDGET_ID_SET.has(widgetId)) {
+    throw new Error("Unbekanntes Home-Widget.");
+  }
+  const settings = parseHomeAppHubSettings(settingsInput);
+  if (settings.widgetOrder.includes(widgetId)) return settings;
+  if (settings.widgetOrder.length >= HOME_MAX_WIDGETS) {
+    throw new Error("Maximale Anzahl an Home-Widgets erreicht.");
+  }
+  return parseHomeAppHubSettings({
+    ...settings,
+    widgetOrder: [...settings.widgetOrder, widgetId],
+  });
+}
+
+export function removeHomeWidget(settingsInput: unknown, widgetId: unknown): HomeAppHubSettings {
+  if (typeof widgetId !== "string" || !HOME_WIDGET_ID_SET.has(widgetId)) {
+    throw new Error("Unbekanntes Home-Widget.");
+  }
+  const settings = parseHomeAppHubSettings(settingsInput);
+  const widgetSizes = { ...settings.widgetSizes };
+  delete widgetSizes[widgetId];
+  return parseHomeAppHubSettings({
+    ...settings,
+    widgetOrder: settings.widgetOrder.filter((candidate) => candidate !== widgetId),
+    widgetSizes,
+  });
+}
+
+export function moveHomeWidget(
+  settingsInput: unknown,
+  widgetId: unknown,
+  direction: -1 | 1,
+): HomeAppHubSettings {
+  if (direction !== -1 && direction !== 1) throw new Error("Ungültige Verschieberichtung.");
+  if (typeof widgetId !== "string" || !HOME_WIDGET_ID_SET.has(widgetId)) {
+    throw new Error("Unbekanntes Home-Widget.");
+  }
+  const settings = parseHomeAppHubSettings(settingsInput);
+  const widgetOrder = [...settings.widgetOrder];
+  const index = widgetOrder.indexOf(widgetId);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= widgetOrder.length) return settings;
+  [widgetOrder[index], widgetOrder[nextIndex]] = [widgetOrder[nextIndex]!, widgetOrder[index]!];
+  return parseHomeAppHubSettings({ ...settings, widgetOrder });
+}
+
+export function setHomeWidgetSize(
+  settingsInput: unknown,
+  widgetId: unknown,
+  sizeInput: unknown,
+): HomeAppHubSettings {
+  if (typeof widgetId !== "string" || !HOME_WIDGET_ID_SET.has(widgetId)) {
+    throw new Error("Unbekanntes Home-Widget.");
+  }
+  if (typeof sizeInput !== "string" || !HOME_WIDGET_SIZE_SET.has(sizeInput)) {
+    throw new Error("Ungültige Widget-Größe.");
+  }
+  const settings = parseHomeAppHubSettings(settingsInput);
+  if (!settings.widgetOrder.includes(widgetId)) {
+    throw new Error("Das Widget ist nicht hinzugefügt.");
+  }
+  const widgetSizes = { ...settings.widgetSizes };
+  if (sizeInput === "small") delete widgetSizes[widgetId];
+  else widgetSizes[widgetId] = sizeInput as HomeWidgetSize;
+  return parseHomeAppHubSettings({ ...settings, widgetSizes });
 }
 
 export function toggleHomeAppGroupCollapsed(
