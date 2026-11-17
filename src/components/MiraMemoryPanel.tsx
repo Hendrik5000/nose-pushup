@@ -36,8 +36,8 @@ export function MiraMemoryPanel({ userId }: { userId?: string | null }) {
         <div>
           <div className="text-sm font-semibold">Kontext-Gedächtnis</div>
           <p className="text-[11px] text-muted-foreground">
-            Nur lokal auf diesem Gerät. Wird nur mitgeschickt, wenn aktiv und Notizen vorhanden
-            sind.
+            Nur lokal auf diesem Gerät. Wird nur mitgeschickt, wenn aktiv und Notizen vorhanden sind
+            — in der Mira-App und in Nexus.
           </p>
         </div>
         <button
