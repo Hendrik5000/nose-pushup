@@ -870,6 +870,14 @@ html[data-design-style="hig"] .alo-tablet-home-apps > :is(a, button) > span:last
   letter-spacing: 0.01em;
 }
 
+html[data-design-style]
+  .alo-tablet-home-apps
+  > [data-home-tile-size="large"]
+  > :is(a, button, div)
+  > span:first-child {
+  max-width: 160px;
+}
+
 html[data-design-style="hig"] .alo-browser-tabbar {
   background: var(--design-hig-vibrancy);
   backdrop-filter: saturate(1.6) blur(20px);
