@@ -829,7 +829,8 @@ html[data-design-style="hig"] .alo-tablet-home-apps > :is(a, button, div) > span
   transform: scale(1.04);
 }
 
-html[data-design-style="hig"] [role="switch"][data-state="checked"] {
+html[data-design-style="hig"] [role="switch"][data-state="checked"],
+html[data-design-style="hig"] [role="switch"][aria-checked="true"] {
   background-color: var(--design-hig-green);
 }
 
