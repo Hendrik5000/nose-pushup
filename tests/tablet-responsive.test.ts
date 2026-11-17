@@ -100,3 +100,27 @@ test("existing narrow mobile assumptions remain separate from tablet rules", () 
     assert.ok(width <= 420);
   }
 });
+
+test("large screens scale the launcher grid up and touch devices skip sticky hover", () => {
+  const desktopStart = responsiveCss.indexOf("@media (min-width: 1280px)");
+  assert.notEqual(desktopStart, -1, "desktop rules should exist beyond the tablet range");
+  const desktopEnd = responsiveCss.indexOf("@media (hover: none)", desktopStart);
+  assert.notEqual(desktopEnd, -1, "touch rules should follow the desktop rules");
+  const desktopStyles = responsiveCss.slice(desktopStart, desktopEnd);
+  assert.match(desktopStyles, /\.alo-tablet-home-apps/);
+  assert.match(desktopStyles, /grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/);
+  assert.match(desktopStyles, /max-width: 52rem/);
+
+  const landscapeTabletStart = responsiveCss.indexOf(
+    "@media (min-width: 1024px) and (max-width: 1279px) {",
+  );
+  assert.notEqual(landscapeTabletStart, -1, "upper tablet range should get more columns");
+  const landscapeTabletStyles = responsiveCss.slice(
+    landscapeTabletStart,
+    responsiveCss.indexOf("@media (min-width: 1280px)", landscapeTabletStart),
+  );
+  assert.match(landscapeTabletStyles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+
+  const hoverNoneStyles = responsiveCss.slice(desktopEnd);
+  assert.match(hoverNoneStyles, /transform:\s*none/);
+});
