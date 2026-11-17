@@ -72,7 +72,7 @@ const MODEL_ALLOW: Record<Exclude<ProviderId, "custom">, string[]> = {
   cloudflare: [
     "@cf/zai-org/glm-4.7-flash",
     "@cf/google/gemma-4-26b-a4b-it",
-    "@cf/nvidia/nemotron-3-120b-a12b",
+    "@cf/qwen/qwen3.8-27b",
   ],
 };
 

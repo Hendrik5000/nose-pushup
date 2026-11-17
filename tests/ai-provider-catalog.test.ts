@@ -3,16 +3,19 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { DEFAULT_PROVIDERS, FREE_PROVIDER_CATALOG, toPayload } from "../src/lib/ai-providers.ts";
 
-test("free API provider catalog contains only the four explicitly supported integrations", () => {
+test("free API provider catalog contains only the three explicitly supported integrations", () => {
   assert.deepEqual(
     FREE_PROVIDER_CATALOG.map((entry) => entry.id),
     ["openrouter", "cerebras", "cloudflare"],
   );
   assert.ok(FREE_PROVIDER_CATALOG.every((entry) => entry.models.length > 0));
+  const cloudflare = FREE_PROVIDER_CATALOG.find((entry) => entry.id === "cloudflare")!;
+  assert.ok(cloudflare.models.includes("@cf/qwen/qwen3.8-27b"));
+  assert.ok(!cloudflare.models.includes("@cf/nvidia/nemotron-3-120b-a12b"));
   assert.ok(FREE_PROVIDER_CATALOG.every((entry) => entry.supportsImages === false));
 });
 
-test("new API providers are disabled by default and never trigger a paid fallback", () => {
+test("new API providers start disabled and require an explicit API key", () => {
   for (const id of ["openrouter", "cerebras", "cloudflare"] as const) {
     const provider = DEFAULT_PROVIDERS.find((item) => item.id === id);
     assert.ok(provider);
