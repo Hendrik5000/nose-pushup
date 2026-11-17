@@ -75,5 +75,9 @@ test("Alo Health offers app-specific sidebar actions in both design views", () =
   assert.match(route, /href="#health-today"/);
   assert.match(route, /to="\/sports"/);
   assert.match(route, /to="\/football"/);
+  assert.match(route, /to="\/training"/);
+  assert.match(route, /to="\/calisthenics"/);
+  assert.match(route, /to="\/exercises"/);
+  assert.match(route, /to="\/coach"/);
   assert.match(route, /Sport verbinden/);
 });

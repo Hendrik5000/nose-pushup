@@ -70,6 +70,30 @@ function HealthActionsSidebar() {
         Alo Fußball öffnen
       </Link>
       <Link
+        to="/training"
+        className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary hover:underline"
+      >
+        Alo Training öffnen
+      </Link>
+      <Link
+        to="/calisthenics"
+        className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary hover:underline"
+      >
+        Calisthenics öffnen
+      </Link>
+      <Link
+        to="/exercises"
+        className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary hover:underline"
+      >
+        Übungen öffnen
+      </Link>
+      <Link
+        to="/coach"
+        className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary hover:underline"
+      >
+        Coach öffnen
+      </Link>
+      <Link
         to="/marketplace"
         className="rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground hover:bg-card"
       >
