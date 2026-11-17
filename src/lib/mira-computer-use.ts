@@ -8,6 +8,8 @@
  * Modi) und bewegt den Zeiger sichtbar, kann aber nicht in die Seite selbst klicken.
  */
 
+import { ALO_APP_REGISTRY } from "@/lib/app-registry";
+
 export type MiraPointerStep =
   | { kind: "open"; label: string; route: string }
   | { kind: "click"; label: string; target: string }
@@ -63,24 +65,12 @@ export function navigateMiraRoute(route: string) {
   if (typeof window !== "undefined") window.location.assign(route);
 }
 
-export const MIRA_POINTER_ROUTES: Array<{ keys: string[]; route: string; label: string }> = [
-  { keys: ["einstellungen", "settings", "profil"], route: "/profile", label: "Einstellungen" },
-  { keys: ["sport"], route: "/sports", label: "Alo Sports" },
-  { keys: ["fußball", "fussball", "football"], route: "/football", label: "Alo Fußball" },
-  { keys: ["health", "gesundheit"], route: "/health", label: "Alo Health" },
-  {
-    keys: ["spiele", "games", "grid defense", "kupferkern", "starfighter"],
-    route: "/games",
-    label: "Alo Spiele",
-  },
-  { keys: ["marketplace", "app store", "store"], route: "/marketplace", label: "Marketplace" },
-  { keys: ["browser", "internet"], route: "/browser", label: "Browser" },
-  { keys: ["mira", "ki-app"], route: "/ai", label: "Mira" },
-  { keys: ["nexus", "chat"], route: "/chat", label: "Nexus" },
-  { keys: ["training"], route: "/training", label: "Training" },
-  { keys: ["werkzeuge", "tools"], route: "/tools", label: "Alo-Werkzeuge" },
-  { keys: ["start", "home", "startbildschirm"], route: "/", label: "Start" },
-];
+export const MIRA_POINTER_ROUTES: Array<{ keys: string[]; route: string; label: string }> =
+  ALO_APP_REGISTRY.map((app) => ({
+    keys: [app.title.toLowerCase(), ...app.aliases],
+    route: app.route,
+    label: app.title,
+  }));
 
 const SPLIT_PATTERN =
   /(?:,\s*)?\bund\s+(?=(?:klicke|tippe|schreibe|gib|scrolle|öffne|oeffne|geh|gehe|suche|bewege)\b)|\s*\bdann\s+(?=(?:klicke|tippe|schreibe|gib|scrolle|öffne|oeffne|geh|gehe|suche|bewege)\b)|;\s*/i;
