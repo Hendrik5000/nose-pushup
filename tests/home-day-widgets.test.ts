@@ -9,8 +9,12 @@ import {
   formatStreakLine,
   hasMeasuredHealthToday,
   parseHealthTodayRow,
+  formatWeeklyWorkoutLine,
+  NEXUS_UNREAD_SUMMARY_THRESHOLD,
+  shouldOfferChatSummary,
   sumKnownUnread,
 } from "../src/lib/home-day-widgets";
+import { SUPER_TOOLS } from "../src/lib/super-ai-tools";
 
 test("health today rows parse and only measured values count", () => {
   const entry = parseHealthTodayRow({ steps: 3500, active_kcal: 320, sleep_min: 450 });
@@ -76,6 +80,24 @@ test("ai status reflects the real provider selection", () => {
   assert.equal(aiStatusFromProviders(withoutLovable), null);
 });
 
+test("weekly workout lines and the chat summary threshold stay honest", () => {
+  assert.equal(formatWeeklyWorkoutLine(0), "Noch kein Workout diese Woche");
+  assert.equal(formatWeeklyWorkoutLine(1), "Diese Woche: 1 Workout");
+  assert.equal(formatWeeklyWorkoutLine(4), "Diese Woche: 4 Workouts");
+  assert.equal(formatWeeklyWorkoutLine(Number.NaN), null);
+  assert.equal(formatWeeklyWorkoutLine(-1), null);
+
+  assert.equal(shouldOfferChatSummary(null), false);
+  assert.equal(shouldOfferChatSummary(0), false);
+  assert.equal(shouldOfferChatSummary(NEXUS_UNREAD_SUMMARY_THRESHOLD - 1), false);
+  assert.equal(shouldOfferChatSummary(NEXUS_UNREAD_SUMMARY_THRESHOLD), true);
+  assert.equal(shouldOfferChatSummary(25), true);
+
+  const summaryTool = SUPER_TOOLS.find((tool) => tool.id === "chat_summary");
+  assert.ok(summaryTool);
+  assert.match(summaryTool.prompt, /Chat-Nachrichten/);
+});
+
 test("the home screen wires real data into Dein Tag and the nexus badge", () => {
   const home = readFileSync("src/routes/_authenticated/index.tsx", "utf8");
   assert.match(home, /useHomeDayData\(user\.id\)/);
@@ -93,10 +115,20 @@ test("the home screen wires real data into Dein Tag and the nexus badge", () => 
   assert.match(dayData, /from\("profiles"\)/);
   assert.match(dayData, /current_streak/);
   assert.match(dayData, /localDateKey/);
+  assert.match(dayData, /from\("workouts"\)/);
+  assert.match(dayData, /count: "exact", head: true/);
+  assert.match(dayData, /weeklyWorkouts/);
 
   const nexus = readFileSync("src/hooks/useNexusUnread.ts", "utf8");
   assert.match(nexus, /loadRoomPreview/);
   assert.match(nexus, /sumKnownUnread/);
   assert.match(nexus, /aggregateUnread/);
   assert.match(nexus, /loadChatPrefs/);
+
+  assert.match(home, /formatWeeklyWorkoutLine\(weeklyWorkouts\)/);
+  assert.match(home, /shouldOfferChatSummary\(nexusUnread\)/);
+  assert.match(home, /requestChatSummary/);
+  assert.match(home, /Zusammenfassung bei Mira anfragen/);
+  assert.match(home, /SUPER_TOOLS\.find\(\(tool\) => tool\.id === "chat_summary"\)/);
+  assert.match(home, /alo-mira-autosend/);
 });

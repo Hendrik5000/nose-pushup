@@ -35,9 +35,12 @@ import {
   aiStatusFromProviders,
   formatHealthTodayParts,
   formatStreakLine,
+  formatWeeklyWorkoutLine,
   hasMeasuredHealthToday,
+  shouldOfferChatSummary,
   type HomeAiStatus,
 } from "@/lib/home-day-widgets";
+import { SUPER_TOOLS } from "@/lib/super-ai-tools";
 import { loadProviders } from "@/lib/ai-providers";
 import { useHomeDayData } from "@/hooks/useHomeDayData";
 import { useNexusUnread } from "@/hooks/useNexusUnread";
@@ -332,7 +335,7 @@ function HomeAppHub({
   const [settings, setSettings] = useState<HomeAppHubSettings>(EMPTY_HOME_APP_HUB_SETTINGS);
   const [settingsError, setSettingsError] = useState("");
   const [recentAppIds, setRecentAppIds] = useState<string[]>([]);
-  const { healthToday, streak } = useHomeDayData(user.id);
+  const { healthToday, streak, weeklyWorkouts } = useHomeDayData(user.id);
   const nexusUnread = useNexusUnread(user.id);
   const [aiStatus, setAiStatus] = useState<HomeAiStatus | null>(null);
   const [isEditingHub, setIsEditingHub] = useState(false);
@@ -513,6 +516,25 @@ function HomeAppHub({
       setRecentAppIds(rememberHomeAppOpen(window.localStorage, user.id, appId));
     } catch {
       setRecentAppIds([]);
+    }
+  };
+
+  const requestChatSummary = () => {
+    const prompt = SUPER_TOOLS.find((tool) => tool.id === "chat_summary")?.prompt;
+    if (!prompt) return;
+    try {
+      const sessionId = currentMiraSession();
+      handoffToMira({
+        userId: user.id,
+        sessionId,
+        expectedDraft: readMiraDraft(sessionId),
+        text: prompt,
+        choice: "append",
+      });
+      window.sessionStorage.setItem("alo-mira-autosend", "1");
+      navigate({ to: "/ai" });
+    } catch {
+      setHomeStatus("Zusammenfassung konnte nicht an Mira übergeben werden.");
     }
   };
 
@@ -1403,11 +1425,21 @@ function HomeAppHub({
                 </div>
                 {(() => {
                   const streakLine = formatStreakLine(streak);
+                  const workoutLine =
+                    weeklyWorkouts !== null ? formatWeeklyWorkoutLine(weeklyWorkouts) : null;
                   const healthParts =
                     healthToday && hasMeasuredHealthToday(healthToday)
                       ? formatHealthTodayParts(healthToday)
                       : [];
-                  if (healthParts.length === 0 && !streakLine && !aiStatus) return null;
+                  const offerChatSummary = shouldOfferChatSummary(nexusUnread);
+                  if (
+                    healthParts.length === 0 &&
+                    !streakLine &&
+                    !workoutLine &&
+                    !aiStatus &&
+                    !offerChatSummary
+                  )
+                    return null;
                   return (
                     <dl className="mt-3 space-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
                       {healthParts.length > 0 && (
@@ -1416,10 +1448,31 @@ function HomeAppHub({
                           <dd>{healthParts.join(" · ")}</dd>
                         </div>
                       )}
+                      {workoutLine && (
+                        <div className="flex flex-wrap gap-x-2">
+                          <dt className="font-semibold text-foreground">Training:</dt>
+                          <dd>{workoutLine}</dd>
+                        </div>
+                      )}
                       {streakLine && (
                         <div className="flex flex-wrap gap-x-2">
                           <dt className="font-semibold text-foreground">Streak:</dt>
                           <dd>{streakLine}</dd>
+                        </div>
+                      )}
+                      {offerChatSummary && (
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <dt className="font-semibold text-foreground">Nexus Chat:</dt>
+                          <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span>{nexusUnread} ungelesene Nachrichten</span>
+                            <button
+                              type="button"
+                              onClick={requestChatSummary}
+                              className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-primary hover:border-primary/50"
+                            >
+                              Zusammenfassung bei Mira anfragen
+                            </button>
+                          </dd>
                         </div>
                       )}
                       <div className="flex flex-wrap gap-x-2">
