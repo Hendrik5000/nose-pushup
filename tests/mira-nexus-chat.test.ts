@@ -65,3 +65,73 @@ test("the Mira Nexus panel asks superAiChat and stays honest about limits", () =
   assert.match(panel, /Mira denkt nach …/);
   assert.doesNotMatch(panel, /entry is MiraNexusMessage/);
 });
+
+test("mira nexus threads keep only validated visuals", () => {
+  const validVisual = {
+    type: "metricGrid",
+    schemaVersion: 1,
+    title: "Überblick",
+    items: [
+      { label: "Tage", value: "3" },
+      { label: "Ziel", value: "4" },
+    ],
+  };
+  const stored = [
+    {
+      id: "1",
+      role: "assistant",
+      content: "Mit Karte",
+      at: "2026-11-16T10:00:00Z",
+      visual: validVisual,
+    },
+    {
+      id: "2",
+      role: "assistant",
+      content: "Kaputte Karte wird ehrlich verworfen",
+      at: "2026-11-16T10:00:05Z",
+      visual: { type: "iframe", src: "https://evil.example" },
+    },
+    {
+      id: "3",
+      role: "user",
+      content: "Frage",
+      at: "2026-11-16T10:00:10Z",
+      visual: validVisual,
+    },
+  ];
+  withStorage({ "alo-nexus-mira-thread:user-1": JSON.stringify(stored) }, () => {
+    const loaded = loadMiraNexusThread("user-1");
+    assert.equal(loaded.length, 3);
+    assert.deepEqual(loaded[0]?.visual, validVisual);
+    assert.equal(loaded[1]?.visual, undefined);
+    assert.equal(loaded[2]?.visual, undefined);
+  });
+});
+
+test("the Nexus Mira panel reuses the shared visual answer pipeline", () => {
+  const root = process.cwd();
+  const panel = readFileSync(resolve(root, "src/components/chat/MiraNexusPanel.tsx"), "utf8");
+  assert.match(panel, /systemExtra: MIRA_VISUAL_INSTRUCTIONS/);
+  assert.match(panel, /parseAiResponse\(res\.reply, \{ preserveCode: false \}\)/);
+  assert.match(panel, /\.\.\.\(visual \? \{ visual \} : \{\}\)/);
+  assert.match(panel, /m\.role === "assistant" && m\.visual && <MiraVisualAnswerCard/);
+});
+
+function withStorage(initial: Record<string, string>, run: () => void) {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const storage = new Map(Object.entries(initial));
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {
+      localStorage: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+      },
+    },
+  });
+  try {
+    run();
+  } finally {
+    if (original) Object.defineProperty(globalThis, "window", original);
+  }
+}

@@ -1,3 +1,5 @@
+import { validateMiraVisualAnswer, type MiraVisualAnswer } from "@/lib/mira-visual-answer";
+
 export const MIRA_NEXUS_THREAD_STORAGE_PREFIX = "alo-nexus-mira-thread";
 
 export type MiraNexusMessage = {
@@ -5,6 +7,7 @@ export type MiraNexusMessage = {
   role: "user" | "assistant";
   content: string;
   at: string;
+  visual?: MiraVisualAnswer;
 };
 
 export function miraNexusThreadKey(userId: string): string {
@@ -18,19 +21,26 @@ export function loadMiraNexusThread(userId: string): MiraNexusMessage[] {
     const parsed: unknown = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) return [];
     return parsed
-      .filter(
-        (entry): entry is MiraNexusMessage =>
-          !!entry &&
-          typeof entry === "object" &&
-          typeof (entry as MiraNexusMessage).id === "string" &&
-          ((entry as MiraNexusMessage).role === "user" ||
-            (entry as MiraNexusMessage).role === "assistant") &&
-          typeof (entry as MiraNexusMessage).content === "string",
-      )
+      .map((entry) => sanitizeMiraNexusMessage(entry))
+      .filter((entry): entry is MiraNexusMessage => entry !== null)
       .slice(-200);
   } catch {
     return [];
   }
+}
+
+function sanitizeMiraNexusMessage(entry: unknown): MiraNexusMessage | null {
+  if (!entry || typeof entry !== "object") return null;
+  const message = entry as MiraNexusMessage;
+  if (
+    typeof message.id !== "string" ||
+    (message.role !== "user" && message.role !== "assistant") ||
+    typeof message.content !== "string"
+  )
+    return null;
+  if (message.role === "user" || !message.visual) return { ...message, visual: undefined };
+  const visual = validateMiraVisualAnswer(message.visual);
+  return visual ? { ...message, visual } : { ...message, visual: undefined };
 }
 
 export function saveMiraNexusThread(userId: string, messages: MiraNexusMessage[]): void {
