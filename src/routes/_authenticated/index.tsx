@@ -41,7 +41,16 @@ import {
   createBrowserSpeechRecognitionFactory,
   type MiraSpeechRecognitionLike,
 } from "@/lib/mira-voice-conversation";
-import { ChevronLeft, ChevronRight, Mic, Search, Trash2, Users, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Mic,
+  Search,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 import {
   EMPTY_HOME_APP_HUB_SETTINGS,
   HOME_BACKGROUND_PRESETS,
@@ -61,6 +70,8 @@ import {
   saveHomeBackgroundImage,
   setHomeAppName,
   setHomeBackground,
+  toggleHomeAppFavorite,
+  toggleHomeAppGroupCollapsed,
   type HomeAppHubSettings,
 } from "@/lib/home-app-hub";
 import {
@@ -241,6 +252,45 @@ function buildHomeHubTiles(
     });
   }
   return tiles;
+}
+
+const HOME_APP_GROUPS = Object.freeze([
+  { id: "intelligence", label: "Alo Intelligence" },
+  { id: "sport", label: "Fitness & Sport" },
+  { id: "communication", label: "Kommunikation & Community" },
+  { id: "tools", label: "Werkzeuge & System" },
+  { id: "entertainment", label: "Unterhaltung & Erweiterungen" },
+  { id: "own", label: "Meine Apps" },
+] as const);
+
+type HomeAppGroupId = (typeof HOME_APP_GROUPS)[number]["id"];
+
+const HOME_ROUTE_GROUPS: Record<string, HomeAppGroupId> = {
+  "/ai": "intelligence",
+  "/chat": "intelligence",
+  "/exercises": "sport",
+  "/sports": "sport",
+  "/football": "sport",
+  "/training": "sport",
+  "/calisthenics": "sport",
+  "/coach": "sport",
+  "/profile": "tools",
+  "/admin": "tools",
+  "/browser": "tools",
+  "/tools": "tools",
+  "/areas": "tools",
+  "/marketplace": "tools",
+};
+
+function homeTileGroupId(tile: HomeHubTile): HomeAppGroupId {
+  if (tile.kind === "game") return "entertainment";
+  if (tile.kind === "marketplace") return "own";
+  if (tile.kind === "plugin") {
+    if (tile.action.type === "open-game") return "entertainment";
+    if (tile.action.type === "open-tool") return "tools";
+    return HOME_ROUTE_GROUPS[tile.action.to] ?? "own";
+  }
+  return HOME_ROUTE_GROUPS[tile.to] ?? "own";
 }
 
 function HomeAppHub({
@@ -441,6 +491,14 @@ function HomeAppHub({
     const tile = tiles.find((candidate) => candidate.id === appId);
     return tile ? [tile] : [];
   });
+  const favoriteTiles = orderedTiles.filter((tile) => settings.favorites.includes(tile.id));
+  const homeSections = HOME_APP_GROUPS.map(({ id, label }) => ({
+    id,
+    label,
+    tiles: orderedTiles.filter(
+      (tile) => !settings.favorites.includes(tile.id) && homeTileGroupId(tile) === id,
+    ),
+  })).filter((section) => section.tiles.length > 0);
   const renamingTile = orderedTiles.find((tile) => tile.id === renamingAppId) ?? null;
   const activeActionTile = orderedTiles.find((tile) => tile.id === activeAppMenuId) ?? null;
   const activeActionTitle = activeActionTile
@@ -1046,6 +1104,68 @@ function HomeAppHub({
     return <HubAppIcon to={tile.to} title={title} artwork={tile.artwork} />;
   };
 
+  const renderHomeGroup = (groupId: string, label: string, groupTiles: HomeHubTile[]) => {
+    const collapsed = settings.collapsedGroups.includes(groupId);
+    return (
+      <section key={groupId} aria-label={`Alo-Apps: ${label}`}>
+        <button
+          type="button"
+          aria-expanded={!collapsed}
+          onClick={() => {
+            try {
+              persistSettings(
+                toggleHomeAppGroupCollapsed(settings, groupId),
+                collapsed ? "Home-Gruppe eingeblendet." : "Home-Gruppe ausgeblendet.",
+              );
+            } catch {
+              setSettingsError("Diese Gruppe konnte nicht umgeschaltet werden.");
+            }
+          }}
+          className="mb-3 flex w-full items-center gap-2 text-left text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <ChevronDown
+            aria-hidden="true"
+            className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+          />
+          {label}
+          <span className="ml-auto text-[10px] font-medium normal-case tracking-normal">
+            {groupTiles.length}
+          </span>
+        </button>
+        {!collapsed && (
+          <div className="alo-tablet-home-apps grid w-full grid-cols-4 gap-x-3 gap-y-6">
+            {groupTiles.map((tile) => {
+              const title = settings.nameOverrides[tile.id] ?? tile.title;
+              return (
+                <div
+                  key={tile.id}
+                  data-home-app-id={tile.id}
+                  className="relative min-w-0 select-none rounded-xl transition"
+                  onPointerDown={(event) => startHomeLongPress(event, tile.id)}
+                  onPointerUp={() => cancelHomeLongPress()}
+                  onPointerCancel={() => cancelHomeLongPress()}
+                  onClickCapture={(event) => suppressLongPressClick(event, tile.id)}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    if (
+                      longPressStartRef.current?.kind === "app" &&
+                      longPressStartRef.current.appId === tile.id
+                    ) {
+                      longPressTriggeredAppIdRef.current = tile.id;
+                    }
+                    setActiveAppMenuId(tile.id);
+                  }}
+                >
+                  {renderTile(tile, title)}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    );
+  };
+
   return (
     <>
       <section
@@ -1133,77 +1253,86 @@ function HomeAppHub({
               beenden.
             </p>
           )}
-          <nav
-            className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
-            aria-label="Alo-Apps"
-            onPointerMoveCapture={moveHomeTileDrag}
-          >
-            {orderedTiles.map((tile) => {
-              const title = settings.nameOverrides[tile.id] ?? tile.title;
-              return (
-                <div
-                  key={tile.id}
-                  data-home-app-id={tile.id}
-                  data-drop-placement={
-                    dropTargetAppId === tile.id ? dropTargetPlacement : undefined
-                  }
-                  role={isEditingHub ? "button" : undefined}
-                  tabIndex={isEditingHub ? 0 : undefined}
-                  aria-label={
-                    isEditingHub
-                      ? `${title}. Leertaste zum Aufnehmen, Pfeiltasten zum Verschieben; lange drücken oder Umschalt+F10 für Aktionen.`
-                      : undefined
-                  }
-                  aria-pressed={isEditingHub ? keyboardGrabbedAppId === tile.id : undefined}
-                  aria-haspopup={isEditingHub ? "dialog" : undefined}
-                  aria-describedby={isEditingHub ? "home-app-edit-help" : undefined}
-                  className={`relative min-w-0 select-none rounded-xl transition ${isEditingHub ? "touch-none cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:cursor-grabbing" : ""} ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
-                  onPointerDown={(event) => {
-                    startHomeLongPress(event, tile.id);
-                    if (isEditingHub && event.isPrimary && event.button === 0) {
-                      pendingHomeDragRef.current = {
-                        appId: tile.id,
-                        pointerId: event.pointerId,
-                        x: event.clientX,
-                        y: event.clientY,
-                        element: event.currentTarget,
-                      };
+          {isEditingHub ? (
+            <nav
+              className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
+              aria-label="Alo-Apps"
+              onPointerMoveCapture={moveHomeTileDrag}
+            >
+              {orderedTiles.map((tile) => {
+                const title = settings.nameOverrides[tile.id] ?? tile.title;
+                return (
+                  <div
+                    key={tile.id}
+                    data-home-app-id={tile.id}
+                    data-drop-placement={
+                      dropTargetAppId === tile.id ? dropTargetPlacement : undefined
                     }
-                  }}
-                  onPointerUp={(event) => {
-                    pendingHomeDragRef.current = null;
-                    cancelHomeLongPress();
-                    if (isEditingHub) finishHomeTileDrag(event);
-                  }}
-                  onPointerCancel={(event) => {
-                    pendingHomeDragRef.current = null;
-                    cancelHomeLongPress();
-                    if (isEditingHub) cancelHomeTileDrag(event);
-                  }}
-                  onClickCapture={(event) => suppressLongPressClick(event, tile.id)}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    if (
-                      longPressStartRef.current?.kind === "app" &&
-                      longPressStartRef.current.appId === tile.id
-                    ) {
-                      longPressTriggeredAppIdRef.current = tile.id;
+                    role={isEditingHub ? "button" : undefined}
+                    tabIndex={isEditingHub ? 0 : undefined}
+                    aria-label={
+                      isEditingHub
+                        ? `${title}. Leertaste zum Aufnehmen, Pfeiltasten zum Verschieben; lange drücken oder Umschalt+F10 für Aktionen.`
+                        : undefined
                     }
-                    setActiveAppMenuId(tile.id);
-                  }}
-                  onKeyDown={(event) => handleHomeTileKeyDown(event, tile.id, title)}
-                >
-                  {renderTile(tile, title)}
-                  {draggingAppId && dropTargetAppId === tile.id && dropTargetPlacement && (
-                    <span
-                      aria-hidden="true"
-                      className={`pointer-events-none absolute inset-y-0 z-20 w-1 rounded-full bg-primary ${dropTargetPlacement === "before" ? "left-0" : "right-0"}`}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </nav>
+                    aria-pressed={isEditingHub ? keyboardGrabbedAppId === tile.id : undefined}
+                    aria-haspopup={isEditingHub ? "dialog" : undefined}
+                    aria-describedby={isEditingHub ? "home-app-edit-help" : undefined}
+                    className={`relative min-w-0 select-none rounded-xl transition ${isEditingHub ? "touch-none cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:cursor-grabbing" : ""} ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                    onPointerDown={(event) => {
+                      startHomeLongPress(event, tile.id);
+                      if (isEditingHub && event.isPrimary && event.button === 0) {
+                        pendingHomeDragRef.current = {
+                          appId: tile.id,
+                          pointerId: event.pointerId,
+                          x: event.clientX,
+                          y: event.clientY,
+                          element: event.currentTarget,
+                        };
+                      }
+                    }}
+                    onPointerUp={(event) => {
+                      pendingHomeDragRef.current = null;
+                      cancelHomeLongPress();
+                      if (isEditingHub) finishHomeTileDrag(event);
+                    }}
+                    onPointerCancel={(event) => {
+                      pendingHomeDragRef.current = null;
+                      cancelHomeLongPress();
+                      if (isEditingHub) cancelHomeTileDrag(event);
+                    }}
+                    onClickCapture={(event) => suppressLongPressClick(event, tile.id)}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      if (
+                        longPressStartRef.current?.kind === "app" &&
+                        longPressStartRef.current.appId === tile.id
+                      ) {
+                        longPressTriggeredAppIdRef.current = tile.id;
+                      }
+                      setActiveAppMenuId(tile.id);
+                    }}
+                    onKeyDown={(event) => handleHomeTileKeyDown(event, tile.id, title)}
+                  >
+                    {renderTile(tile, title)}
+                    {draggingAppId && dropTargetAppId === tile.id && dropTargetPlacement && (
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none absolute inset-y-0 z-20 w-1 rounded-full bg-primary ${dropTargetPlacement === "before" ? "left-0" : "right-0"}`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
+          ) : (
+            <div className="flex w-full max-w-[520px] flex-col gap-7">
+              {favoriteTiles.length > 0 && renderHomeGroup("favorites", "Favoriten", favoriteTiles)}
+              {homeSections.map((section) =>
+                renderHomeGroup(section.id, section.label, section.tiles),
+              )}
+            </div>
+          )}
 
           {isEditingHub && (
             <div className="mt-6 max-w-xl space-y-5" data-home-press-ignore="true">
@@ -1410,6 +1539,28 @@ function HomeAppHub({
                 </div>
               )}
               <div className={`${isEditingHub ? "mt-2" : "mt-4"} grid gap-2`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const wasFavorite = settings.favorites.includes(activeActionTile.id);
+                    try {
+                      persistSettings(
+                        toggleHomeAppFavorite(settings, activeActionTile.id),
+                        wasFavorite
+                          ? `„${activeActionTitle}“ wurde aus den Favoriten entfernt.`
+                          : `„${activeActionTitle}“ wurde zu den Favoriten hinzugefügt.`,
+                      );
+                    } catch {
+                      setSettingsError("Favorit konnte nicht gespeichert werden.");
+                    }
+                    setActiveAppMenuId(null);
+                  }}
+                  className="min-h-12 rounded-xl border border-border px-4 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  {settings.favorites.includes(activeActionTile.id)
+                    ? "Aus Favoriten entfernen"
+                    : "Zu Favoriten hinzufügen"}
+                </button>
                 <button
                   type="button"
                   onClick={() => {
