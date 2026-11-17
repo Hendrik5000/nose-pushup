@@ -1,5 +1,5 @@
 export type DesignStyleId =
-  "soft" | "compact" | "editorial" | "studio" | "performance" | "legacy-performance";
+  "soft" | "compact" | "editorial" | "studio" | "hig" | "performance" | "legacy-performance";
 
 export interface DesignStyleDefinition {
   id: DesignStyleId;
@@ -28,6 +28,12 @@ export const DESIGN_STYLES: DesignStyleDefinition[] = [
     id: "studio",
     label: "Studio",
     description: "Monospace, harte 2-px-Rahmen, versetzte Schatten und Tab-Navigation.",
+  },
+  {
+    id: "hig",
+    label: "Apple HIG",
+    description:
+      "Apple-HIG-inspiriert: SF-Pro-Typografie mit klarer Hierarchie, semantische Farben für Light- und Dark-Mode, weiche Ecken, Vibrancy-Blur und sanfte Federn-Animationen.",
   },
   {
     id: "performance",
