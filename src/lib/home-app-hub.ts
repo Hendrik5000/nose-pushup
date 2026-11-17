@@ -30,35 +30,17 @@ export const HOME_APP_TILE_SIZE_LABELS: Readonly<Record<HomeAppTileSize, string>
   large: "Groß",
 });
 
-export const HOME_WIDGET_CATALOG = Object.freeze([
-  {
-    id: "health-today",
-    label: "Health heute",
-    description: "Schritte, aktive kcal und Schlaf aus echten Messwerten.",
-  },
-  {
-    id: "fitness-week",
-    label: "Training & Streak",
-    description: "Workouts der letzten 7 Tage und dein aktueller Streak.",
-  },
-  {
-    id: "nexus-unread",
-    label: "Nexus ungelesen",
-    description: "Anzahl deiner ungelesenen Nexus-Nachrichten.",
-  },
-  {
-    id: "ai-status",
-    label: "KI-Status",
-    description: "Aktiver KI-Anbieter und gewähltes Modell.",
-  },
-  {
-    id: "installed-apps",
-    label: "Meine Apps",
-    description: "Installierte Marketplace-Apps auf diesem Gerät.",
-  },
-] as const);
+export {
+  /**
+   * Der Widget-Katalog lebt im erweiterbaren Widget-Verzeichnis (eine Quelle der
+   * Wahrheit, mit sourceApp pro Widget); das Schema-Set hier leitet sich daraus ab.
+   */
+  HOME_WIDGET_CATALOG,
+} from "./home-widget-registry";
+export type { HomeWidgetId } from "./home-widget-registry";
+import { HOME_WIDGET_CATALOG as HOME_WIDGET_CATALOG_ENTRIES } from "./home-widget-registry";
 
-export type HomeWidgetId = (typeof HOME_WIDGET_CATALOG)[number]["id"];
+export type HomeWidgetCatalogEntry = (typeof HOME_WIDGET_CATALOG_ENTRIES)[number];
 
 export const HOME_WIDGET_SIZES = Object.freeze(["small", "wide"] as const);
 
@@ -137,7 +119,7 @@ const HOME_MAX_COLLAPSED_GROUPS = 16;
 const HOME_MAX_SETTINGS_BYTES = 32_768;
 const HOME_MAX_WIDGETS = 8;
 const HOME_APP_TILE_SIZE_SET = new Set<string>(HOME_APP_TILE_SIZES);
-const HOME_WIDGET_ID_SET = new Set<string>(HOME_WIDGET_CATALOG.map(({ id }) => id));
+const HOME_WIDGET_ID_SET = new Set<string>(HOME_WIDGET_CATALOG_ENTRIES.map(({ id }) => id));
 const HOME_WIDGET_SIZE_SET = new Set<string>(HOME_WIDGET_SIZES);
 const HOME_BACKGROUND_DB_NAME = "alo-home-background-images-v1";
 const HOME_BACKGROUND_DB_VERSION = 1;

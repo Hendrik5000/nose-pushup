@@ -46,6 +46,7 @@ import { useHomeDayData } from "@/hooks/useHomeDayData";
 import { useNexusUnread } from "@/hooks/useNexusUnread";
 import { supabase } from "@/integrations/supabase/client";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
+import { usePostfach } from "@/components/postfach/PostfachProvider";
 import { MarketplaceIcon } from "@/components/marketplace/MarketplaceIcon";
 import { MarketplacePublishedAppViewer } from "@/components/marketplace/MarketplacePublishedAppViewer";
 import { MiraHandoff } from "@/components/alo/MiraHandoff";
@@ -350,8 +351,9 @@ function HomeAppHub({
   const [settings, setSettings] = useState<HomeAppHubSettings>(EMPTY_HOME_APP_HUB_SETTINGS);
   const [settingsError, setSettingsError] = useState("");
   const [recentAppIds, setRecentAppIds] = useState<string[]>([]);
-  const { healthToday, streak, weeklyWorkouts } = useHomeDayData(user.id);
+  const { healthToday, streak, weeklyWorkouts, dailyReps, dailyGoal } = useHomeDayData(user.id);
   const nexusUnread = useNexusUnread(user.id);
+  const postfach = usePostfach();
   const [aiStatus, setAiStatus] = useState<HomeAiStatus | null>(null);
   const [isEditingHub, setIsEditingHub] = useState(false);
   const isEditingHubRef = useRef(isEditingHub);
@@ -539,7 +541,7 @@ function HomeAppHub({
   ): {
     title: string;
     body: string;
-    link: { to: "/chat" | "/marketplace"; label: string } | null;
+    link: { to: "/chat" | "/marketplace" | "/postfach"; label: string } | null;
   } => {
     switch (widgetId) {
       case "health-today": {
@@ -563,6 +565,35 @@ function HomeAppHub({
           link: null,
         };
       }
+      case "daily-goal": {
+        if (dailyGoal <= 0) {
+          return { title: "Tagesziel", body: "Kein Tagesziel gesetzt.", link: null };
+        }
+        if (dailyReps === null) {
+          return { title: "Tagesziel", body: "Unbekannter Stand.", link: null };
+        }
+        return {
+          title: "Tagesziel",
+          body:
+            dailyReps >= dailyGoal
+              ? `Ziel erreicht: ${dailyReps} / ${dailyGoal} Wiederholungen`
+              : `${dailyReps} / ${dailyGoal} Wiederholungen heute`,
+          link: null,
+        };
+      }
+      case "postfach-unread":
+        return {
+          title: "Postfach ungelesen",
+          body: !postfach.available
+            ? "Postfach nicht verfügbar."
+            : postfach.unreadCount === 0
+              ? "Alles gelesen."
+              : `${postfach.unreadCount} ungelesene Nachrichten`,
+          link:
+            postfach.available && postfach.unreadCount > 0
+              ? { to: "/postfach", label: "Postfach öffnen" }
+              : null,
+        };
       case "nexus-unread":
         return {
           title: "Nexus ungelesen",
