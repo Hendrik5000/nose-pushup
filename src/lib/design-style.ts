@@ -48,8 +48,9 @@ export const DESIGN_STYLES: DesignStyleDefinition[] = [
   },
 ];
 
-export const DEFAULT_DESIGN_STYLE: DesignStyleId = "performance";
+export const DEFAULT_DESIGN_STYLE: DesignStyleId = "hig";
 const STORAGE_KEY = "np-design-style";
+const DEFAULT_MIGRATION_KEY = "np-design-style-default-v2";
 
 export function isDesignStyleId(value: unknown): value is DesignStyleId {
   return typeof value === "string" && DESIGN_STYLES.some((style) => style.id === value);
@@ -59,6 +60,13 @@ export function getStoredDesignStyle(): DesignStyleId {
   if (typeof window === "undefined") return DEFAULT_DESIGN_STYLE;
   try {
     const value = window.localStorage.getItem(STORAGE_KEY);
+    if (window.localStorage.getItem(DEFAULT_MIGRATION_KEY) !== "1") {
+      window.localStorage.setItem(DEFAULT_MIGRATION_KEY, "1");
+      if (!isDesignStyleId(value) || value === "performance") {
+        window.localStorage.setItem(STORAGE_KEY, DEFAULT_DESIGN_STYLE);
+      }
+      return window.localStorage.getItem(STORAGE_KEY) as DesignStyleId;
+    }
     return isDesignStyleId(value) ? value : DEFAULT_DESIGN_STYLE;
   } catch {
     // Storage may be blocked by browser privacy settings.
