@@ -89,6 +89,7 @@ import {
   MiraComposerPressAndHold,
   MiraInlineDictationController,
 } from "@/lib/mira-inline-dictation";
+import { currentMiraSession, handoffToMira, readMiraDraft } from "@/lib/mira-handoff";
 import "@/mira-home-overlay.css";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -1830,6 +1831,7 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
 
 function MiraOverlayLauncher() {
   const { user } = Route.useRouteContext();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
@@ -1844,6 +1846,19 @@ function MiraOverlayLauncher() {
   const suppressClickRef = useRef(false);
   const suppressClickTimerRef = useRef<number | null>(null);
   const handoffIdRef = useRef(0);
+  const autoHandoffRef = useRef(false);
+  const transcriptRef = useRef("");
+  const voiceErrorRef = useRef<string | null>(null);
+  const directHandoffRef = useRef<(text: string) => void>(() => {});
+
+  const applyVoiceError = (value: string | null) => {
+    voiceErrorRef.current = value;
+    setVoiceError(value);
+  };
+  const applyTranscript = (value: string) => {
+    transcriptRef.current = value;
+    setTranscript(value);
+  };
 
   const suppressNextClick = useCallback(() => {
     suppressClickRef.current = true;
@@ -1873,18 +1888,20 @@ function MiraOverlayLauncher() {
     const recognitionFactory = createBrowserSpeechRecognitionFactory();
     const recognition = recognitionFactory?.();
     if (!recognition) {
-      setVoiceError("Spracherkennung wird in diesem Browser nicht unterstützt.");
+      applyVoiceError("Spracherkennung wird in diesem Browser nicht unterstützt.");
       return;
     }
 
-    setVoiceError(null);
+    applyVoiceError(null);
     recognition.lang = "de-DE";
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.onresult = (event) => {
       const recognized = event.results[0]?.[0]?.transcript?.trim() ?? "";
-      if (recognized)
-        setTranscript((previous) => (previous ? `${previous} ${recognized}` : recognized));
+      if (recognized) {
+        const previous = transcriptRef.current;
+        applyTranscript(previous ? `${previous} ${recognized}` : recognized);
+      }
     };
     recognition.onerror = (event) => {
       const message =
@@ -1895,7 +1912,7 @@ function MiraOverlayLauncher() {
             : event?.error === "no-speech"
               ? "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon und versuche es erneut."
               : "Spracherkennung fehlgeschlagen. Versuche es erneut oder nutze den Textbereich.";
-      setVoiceError(message);
+      applyVoiceError(message);
       setListening(false);
     };
     recognition.onend = () => {
@@ -1909,7 +1926,7 @@ function MiraOverlayLauncher() {
     } catch {
       recognitionRef.current = null;
       setListening(false);
-      setVoiceError(
+      applyVoiceError(
         "Das Mikrofon konnte nicht gestartet werden. Prüfe die Berechtigung und versuche es erneut.",
       );
     }
@@ -1920,7 +1937,7 @@ function MiraOverlayLauncher() {
       stopListening();
       inlineDictationRef.current?.cancel();
       setInterimTranscript("");
-    } else setVoiceError(null);
+    } else applyVoiceError(null);
     setOpen(nextOpen);
   };
 
@@ -1928,7 +1945,7 @@ function MiraOverlayLauncher() {
     if (listening) {
       stopListening();
       inlineDictationRef.current?.stop();
-      setVoiceError(
+      applyVoiceError(
         "Diktat beendet. Prüfe den erkannten Text und tippe danach erneut auf die Übergabe.",
       );
       return;
@@ -1942,28 +1959,68 @@ function MiraOverlayLauncher() {
     setHandoffRequest({ id: handoffIdRef.current, text });
   };
 
+  directHandoffRef.current = (text: string) => {
+    try {
+      const sessionId = currentMiraSession();
+      handoffToMira({
+        userId: user.id,
+        sessionId,
+        expectedDraft: readMiraDraft(sessionId),
+        text,
+        choice: "append",
+      });
+      window.sessionStorage.setItem("alo-mira-autosend", "1");
+      setOpen(false);
+      applyTranscript("");
+      navigate({ to: "/ai" });
+    } catch (error) {
+      applyVoiceError(
+        error instanceof Error
+          ? error.message
+          : "Übergabe an Mira fehlgeschlagen. Prüfe den Text und nutze die Übergabe-Schaltfläche.",
+      );
+    }
+  };
+
   useEffect(() => {
     const recognitionFactory = createBrowserSpeechRecognitionFactory();
     const inlineDictation = new MiraInlineDictationController({
       createRecognition: () => recognitionFactory?.() ?? null,
-      onTranscript: (recognized) =>
-        setTranscript((previous) => (previous ? `${previous} ${recognized}` : recognized)),
+      onTranscript: (recognized) => {
+        const previous = transcriptRef.current;
+        applyTranscript(previous ? `${previous} ${recognized}` : recognized);
+      },
       onInterimTranscript: setInterimTranscript,
       onListeningChange: setListening,
-      onError: setVoiceError,
+      onError: applyVoiceError,
+      onSettled: () => {
+        if (!autoHandoffRef.current) return;
+        autoHandoffRef.current = false;
+        const text = transcriptRef.current.trim();
+        if (!text) {
+          if (!voiceErrorRef.current)
+            applyVoiceError(
+              "Es wurde keine Sprache erkannt. Tippe auf das Mikrofon oder schreibe deine Frage.",
+            );
+          return;
+        }
+        directHandoffRef.current(text);
+      },
     });
     inlineDictationRef.current = inlineDictation;
     const pressAndHold = new MiraComposerPressAndHold(
       () => {
         holdTriggeredRef.current = true;
-        setVoiceError(null);
-        setTranscript("");
+        autoHandoffRef.current = false;
+        applyVoiceError(null);
+        applyTranscript("");
         setInterimTranscript("");
         inlineDictation.start();
       },
       () => {
         if (!holdTriggeredRef.current) return;
         holdTriggeredRef.current = false;
+        autoHandoffRef.current = true;
         inlineDictation.stop();
         setInterimTranscript("");
         setOpen(true);
@@ -1972,9 +2029,10 @@ function MiraOverlayLauncher() {
       () => {
         if (!holdTriggeredRef.current) return;
         holdTriggeredRef.current = false;
+        autoHandoffRef.current = false;
         inlineDictation.cancel();
         setInterimTranscript("");
-        setVoiceError(null);
+        applyVoiceError(null);
         suppressNextClick();
       },
     );
@@ -2002,9 +2060,9 @@ function MiraOverlayLauncher() {
     <>
       <div className={`alo-mira-home-launcher${handoffRequest ? " has-handoff" : ""}`}>
         <p id="home-mira-hold-disclosure" className="sr-only">
-          Halte die Mira-Schaltfläche, um zu diktieren; loslassen beendet die Aufnahme. Je nach
-          Browser kann Sprache über einen Browser-Dienst erkannt werden. Der Text wird erst nach
-          deiner Prüfung und einem eigenen Tipp an Mira übergeben.
+          Halte die Mira-Schaltfläche, um zu diktieren; loslassen beendet die Aufnahme und übergibt
+          den erkannten Text direkt an Mira. Je nach Browser kann Sprache über einen Browser-Dienst
+          erkannt werden.
         </p>
         {(listening || interimTranscript) && (
           <div className="alo-mira-home-live-transcript" role="status" aria-live="polite">
@@ -2032,7 +2090,7 @@ function MiraOverlayLauncher() {
               className="alo-mira-home-handoff-button"
               onNavigate={() => {
                 setHandoffRequest(null);
-                setTranscript("");
+                applyTranscript("");
               }}
             />
             <button
@@ -2041,7 +2099,7 @@ function MiraOverlayLauncher() {
               aria-label="Diktierte Frage verwerfen"
               onClick={() => {
                 setHandoffRequest(null);
-                setTranscript("");
+                applyTranscript("");
               }}
             >
               <X className="h-4 w-4" aria-hidden="true" />
@@ -2053,7 +2111,7 @@ function MiraOverlayLauncher() {
             className="alo-mira-home-launcher-button"
             aria-label="Mira öffnen oder halten, um eine Frage zu diktieren"
             aria-describedby="home-mira-hold-disclosure"
-            title="Tippen öffnet den Diktierdialog. Halten startet die Aufnahme; loslassen beendet sie."
+            title="Tippen öffnet den Diktierdialog. Halten startet die Aufnahme; loslassen übergibt die Frage direkt an Mira."
             aria-haspopup="dialog"
             aria-expanded={open}
             onPointerDown={(event) => {
@@ -2117,7 +2175,7 @@ function MiraOverlayLauncher() {
         open={open}
         onOpenChange={handleOpenChange}
         transcript={transcript}
-        onTranscriptChange={setTranscript}
+        onTranscriptChange={applyTranscript}
         listening={listening}
         onStartListening={startListening}
         onStopListening={stopListening}

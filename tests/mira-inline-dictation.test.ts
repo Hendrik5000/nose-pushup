@@ -51,14 +51,16 @@ function createController(recognition: FakeRecognition | null) {
   const interimTranscripts: string[] = [];
   const listening: boolean[] = [];
   const errors: string[] = [];
+  const settled: number[] = [];
   const controller = new MiraInlineDictationController({
     createRecognition: () => recognition,
     onTranscript: (transcript) => transcripts.push(transcript),
     onInterimTranscript: (transcript) => interimTranscripts.push(transcript),
     onListeningChange: (value) => listening.push(value),
     onError: (message) => errors.push(message),
+    onSettled: () => settled.push(1),
   });
-  return { controller, transcripts, interimTranscripts, listening, errors };
+  return { controller, transcripts, interimTranscripts, listening, errors, settled };
 }
 
 type ScheduledTask = { callback: () => void; dueAt: number };
@@ -279,4 +281,31 @@ test("dispose clears a pending timer and cancels push-to-talk that already start
   assert.equal(starts, 1);
   assert.equal(cancels, 1);
   assert.equal(stops, 0);
+});
+
+test("onSettled fires once after a normal stop once the final result arrived", () => {
+  const recognition = new FakeRecognition();
+  const harness = createController(recognition);
+  harness.controller.start();
+  harness.controller.stop();
+  assert.deepEqual(harness.settled, [], "settle waits for the recognition session to end");
+  recognition.emitResult([{ transcript: "Direkt an Mira", isFinal: true }]);
+  recognition.emitEnd();
+  assert.deepEqual(harness.settled, [1]);
+  recognition.emitEnd();
+  assert.equal(harness.settled.length, 1, "settle fires only once per session");
+});
+
+test("onSettled fires after an error finish but not after cancel", () => {
+  const recognition = new FakeRecognition();
+  const harness = createController(recognition);
+  harness.controller.start();
+  recognition.emitError("no-speech");
+  assert.equal(harness.settled.length, 1);
+
+  const second = new FakeRecognition();
+  const secondHarness = createController(second);
+  secondHarness.controller.start();
+  secondHarness.controller.cancel();
+  assert.deepEqual(secondHarness.settled, [], "cancel must not trigger a handoff");
 });
