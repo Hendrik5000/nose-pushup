@@ -57,3 +57,46 @@ test("Alo-Browser: Route /browser ist im authentifizierten Layout registriert", 
   assert.match(routeTree, /AuthenticatedBrowserRouteImport/);
   assert.match(routeTree, /'\/_authenticated\/browser'/);
 });
+
+test("Alo-Browser: nutzt Alo-Theme-Tokens statt fester Dunkelfarben (Apple-HIG-f\u00e4hig)", () => {
+  assert.match(component, /alo-browser[^\n]*bg-background/);
+  assert.match(component, /text-foreground/);
+  assert.match(component, /text-muted-foreground/);
+  assert.match(component, /border-border/);
+  assert.match(component, /bg-primary text-primary-foreground/);
+  assert.doesNotMatch(component, /bg-zinc-950/);
+  assert.doesNotMatch(component, /text-zinc-400/);
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(css, /html\[data-design-style="hig"\] \.alo-browser-tabbar/);
+  assert.match(css, /html\[data-design-style="hig"\] \.alo-browser-toolbar/);
+});
+
+test("Alo-Browser: l\u00e4dt \u00fcber die parallele Proxy-Race-Schicht mit Cache", () => {
+  assert.match(component, /fetchBrowserPage/);
+  assert.match(component, /fetchFirstUsable/);
+  const lib = readFileSync(new URL("../src/lib/browser-fetch.ts", import.meta.url), "utf8");
+  assert.match(lib, /fetchFirstUsable/);
+  assert.match(lib, /AbortController/);
+  assert.match(lib, /BROWSER_FETCH_TIMEOUT_MS/);
+  assert.match(lib, /cacheBrowserPage/);
+});
+
+test("Alo-Browser: blockierte Seiten bleiben \u00fcber externen Tab erreichbar", () => {
+  assert.match(component, /Im neuen Tab \u00f6ffnen/);
+});
+
+test("Alo-Browser: Mira-Aktionen sind sichtbar und \u00fcbernahmen von Mira m\u00f6glich", () => {
+  assert.match(component, /miraActivity/);
+  assert.match(component, /Was Mira macht/);
+  assert.match(component, /takeBrowserOpenUrl/);
+  const miraBridge = readFileSync(new URL("../src/lib/mira-browser.ts", import.meta.url), "utf8");
+  assert.match(miraBridge, /rememberBrowserOpenUrl/);
+  assert.match(miraBridge, /hasWebIntent/);
+  const superAi = readFileSync(
+    new URL("../src/components/mira/SuperAiPage.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(superAi, /MiraWebActivityCard/);
+  assert.match(superAi, /rememberBrowserOpenUrl/);
+  assert.match(superAi, /browserStepsToSystemBlock/);
+});

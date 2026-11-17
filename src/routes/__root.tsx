@@ -14,6 +14,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { GlobalAlarmMonitor } from "@/components/AlarmMonitor";
+import { MiraPointerOverlay } from "@/components/mira/MiraPointerOverlay";
+import { setActiveMiraRouter } from "@/lib/mira-computer-use";
 import appCss from "../styles.css?url";
 import sportCss from "../sport.css?url";
 import communityReferenceCss from "../community-reference.css?url";
@@ -178,6 +180,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  setActiveMiraRouter(router);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [installable, setInstallable] = useState(false);
   const [standalone, setStandalone] = useState(false);
@@ -347,6 +350,7 @@ function RootComponent() {
         <Outlet />
       </div>
       <GlobalAlarmMonitor />
+      <MiraPointerOverlay />
       {installable && !standalone && (
         <aside
           aria-label="App installieren"

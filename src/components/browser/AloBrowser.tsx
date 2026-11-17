@@ -4,9 +4,16 @@
  * angepasst (FormEvent/MouseEvent), SEARCH_DOMAINS-Regex korrigiert.
  * Sicherheit: Webseiten laufen in einem sandboxed iframe ohne allow-same-origin;
  * externe KI-/Proxy-Endpunkte sind frei zugängliche Dienste ohne Schlüssel.
+ * Design: vollständig über die Alo-Theme-Tokens (Apple-HIG-fähig, Light/Dark).
+ * Tempo: Proxy- und Reader-Quellen werden parallel geraced (siehe lib/browser-fetch),
+ * Seiten werden kurz gecacht. Fällt alles aus, bleibt die Seite über Visuell +
+ * „Im neuen Tab öffnen“ erreichbar.
  */
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
-import { loadBrowserPageInParallel } from "@/lib/browser-page-loading";
+import { fetchBrowserPage, fetchFirstUsable } from "@/lib/browser-fetch";
+import { parseJinaSearchResults, takeBrowserOpenUrl } from "@/lib/mira-browser";
+import { miraServePageText, runMiraSiteAction } from "@/lib/mira-browser-agent";
+import { emitMiraPointer } from "@/lib/mira-computer-use";
 import {
   Globe,
   Search,
@@ -23,6 +30,7 @@ import {
   ShieldCheck,
   Loader2,
   Send,
+  Activity,
 } from "lucide-react";
 
 type ViewMode = "home" | "google" | "search" | "web" | "reader" | "visual";
@@ -31,6 +39,12 @@ interface SearchResult {
   title: string;
   url: string;
   snippet: string;
+}
+
+interface MiraActivityEntry {
+  id: string;
+  text: string;
+  at: number;
 }
 
 interface Tab {
@@ -81,6 +95,8 @@ const KNOWN_SITES: Record<string, string> = {
   github: "https://github.com",
   reddit: "https://www.reddit.com",
   hackernews: "https://news.ycombinator.com",
+  youtube: "https://www.youtube.com",
+  google: "https://google.com",
   alo: "https://alo-web.lovable.app",
 };
 
@@ -191,6 +207,7 @@ export default function AloBrowser() {
   const [aiOpen, setAiOpen] = useState<boolean>(false);
   const [aiInput, setAiInput] = useState<string>("");
   const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [miraActivity, setMiraActivity] = useState<MiraActivityEntry[]>([]);
   const [aiMessages, setAiMessages] = useState<{ role: "user" | "ai"; text: string }[]>([
     {
       role: "ai",
@@ -205,6 +222,36 @@ export default function AloBrowser() {
   const updateTab = (id: string, patch: Partial<Tab>) => {
     setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
   };
+
+  const logMiraActivity = (text: string) => {
+    setMiraActivity((prev) =>
+      [
+        { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, text, at: Date.now() },
+        ...prev,
+      ].slice(0, 12),
+    );
+  };
+
+  const pointMiraPointerAt = (el: Element | null, label: string) => {
+    if (!el || typeof window === "undefined") return;
+    const rect = el.getBoundingClientRect();
+    emitMiraPointer({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+      label,
+      active: true,
+    });
+  };
+
+  const pointMiraPointerAtAddressBar = (label: string) => {
+    pointMiraPointerAt(document.querySelector(".alo-browser-toolbar input"), label);
+  };
+
+  useEffect(() => {
+    const pending = takeBrowserOpenUrl();
+    if (pending) void openUrl("1", pending, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const onMessage = (ev: MessageEvent) => {
@@ -319,51 +366,11 @@ export default function AloBrowser() {
       return;
     }
 
-    const fetchProxy = async (): Promise<string> => {
-      const urls = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
-      ];
-      for (const p of urls) {
-        try {
-          const r = await fetch(p);
-          if (r.ok) {
-            const t = await r.text();
-            if (t && t.length > 200) return t;
-          }
-        } catch (_) {
-          /* nächster Proxy */
-        }
-      }
-      return "";
-    };
-
-    const fetchReader = async (): Promise<string> => {
-      try {
-        const r = await fetch(`https://r.jina.ai/${targetUrl}`, {
-          headers: { Accept: "text/plain" },
-        });
-        if (r.ok) return await r.text();
-      } catch (_) {
-        /* kein Reader-Text */
-      }
-      return "";
-    };
-
-    const { html: rawHtml, reader: readerTxt } = await loadBrowserPageInParallel(
-      fetchProxy,
-      fetchReader,
-      (html) =>
-        updateTab(tabId, {
-          htmlDoc: buildSafeSrcDoc(html, targetUrl),
-          mode: "web",
-          loading: false,
-        }),
-      (reader) => updateTab(tabId, { readerText: reader, loading: false }),
-    );
+    const { html: rawHtml, reader: readerTxt } = await fetchBrowserPage(targetUrl);
 
     if (rawHtml) {
       updateTab(tabId, {
+        htmlDoc: buildSafeSrcDoc(rawHtml, targetUrl),
         readerText: readerTxt || "Kein separater Reader-Text gefunden.",
         mode: "web",
         loading: false,
@@ -373,7 +380,7 @@ export default function AloBrowser() {
     } else {
       updateTab(tabId, {
         htmlDoc: "",
-        readerText: "Seite im visuellen Modus geladen.",
+        readerText: "",
         mode: "visual",
         loading: false,
       });
@@ -396,27 +403,12 @@ export default function AloBrowser() {
 
     const fetchResults = async (): Promise<SearchResult[]> => {
       try {
-        const res = await fetch(`https://s.jina.ai/${encodeURIComponent(q)}`, {
+        const res = await fetchFirstUsable([`https://s.jina.ai/${encodeURIComponent(q)}`], {
+          minLength: 40,
           headers: { Accept: "text/plain" },
         });
-        if (res.ok) {
-          const raw = await res.text();
-          const blocks = raw.split(/\n(?=\[\d+\])/).slice(0, 8);
-          const parsed = blocks
-            .map((b) => {
-              const t = b.match(/Title:\s*(.+)/i)?.[1]?.trim() || "";
-              const u = b.match(/URL Source:\s*(https?:\/\/\S+)/i)?.[1]?.trim() || "";
-              const d =
-                b.match(/Description:\s*(.+)/i)?.[1]?.trim() ||
-                b
-                  .replace(/Title:.*|URL Source:.*/gi, "")
-                  .trim()
-                  .slice(0, 200);
-              return { title: t || u, url: u, snippet: d };
-            })
-            .filter((x) => x.url);
-          if (parsed.length > 0) return parsed;
-        }
+        const parsed = parseJinaSearchResults(res);
+        if (parsed.length > 0) return parsed;
       } catch (_) {
         /* Fallback unten */
       }
@@ -454,7 +446,7 @@ export default function AloBrowser() {
   };
 
   // Prüft, ob der Nutzer Mira einen direkten Browser-Befehl gibt ("Öffne Google", "Suche nach X" ...)
-  const tryExecuteBrowserCommand = (rawText: string): string | null => {
+  const tryExecuteBrowserCommand = async (rawText: string): Promise<string | null> => {
     const clean = rawText.trim();
     const lower = clean.toLowerCase();
 
@@ -466,8 +458,32 @@ export default function AloBrowser() {
       lower === "google"
     ) {
       openGoogleMode(activeTab.id);
+      pointMiraPointerAtAddressBar("Öffne Google");
+      logMiraActivity("Google-Suche geöffnet");
       if (window.innerWidth < 640) setAiOpen(false);
       return "✅ Ich habe die integrierte Google-Suche für dich geöffnet!";
+    }
+
+    // 1b. Browser-Use: Mira bedient fremde Seiten (Links klicken, site-interne Suche)
+    const operatesSite =
+      Boolean(activeTab.url) &&
+      (/^(?:klicke?|durchsuche)\b/i.test(clean) ||
+        /^suche\s+(?:auf|im)\s+(?:dieser\s+|der\s+|dem\s+)?(?:seite|website|shop|angebot)\b/i.test(
+          clean,
+        ) ||
+        /^öffne\s+.+\s+auf\s+(?:dieser\s+)?(?:seite|website)\b/i.test(clean));
+    if (operatesSite && activeTab.url) {
+      const siteAction = await runMiraSiteAction(clean, activeTab.url);
+      if (siteAction.kind === "navigated" || siteAction.kind === "search") {
+        pointMiraPointerAtAddressBar(siteAction.label);
+        logMiraActivity(`${siteAction.label} · ${activeTab.title}`);
+        void openUrl(activeTab.id, siteAction.url, true);
+        if (window.innerWidth < 640) setAiOpen(false);
+        return siteAction.kind === "search"
+          ? `🔍 ${siteAction.label} …`
+          : `🖱 Ich habe „${siteAction.label}“ geöffnet.`;
+      }
+      return `⚠️ ${siteAction.kind === "failed" ? siteAction.detail : "Das ging nicht."}`;
     }
 
     // 2. "Suche nach ..." / "Google nach ..."
@@ -476,6 +492,8 @@ export default function AloBrowser() {
     );
     if (searchMatch && searchMatch[1]) {
       const term = searchMatch[1].replace(/^["']|["']$/g, "").trim();
+      pointMiraPointerAtAddressBar(`Suche: ${term}`);
+      logMiraActivity(`Websuche: „${term}“`);
       runSearch(activeTab.id, term);
       if (window.innerWidth < 640) setAiOpen(false);
       return `🔍 Ich suche im Web nach „${term}“ …`;
@@ -488,21 +506,29 @@ export default function AloBrowser() {
       const key = target.toLowerCase().replace(/\s+/g, "");
 
       if (key.includes("youtube")) {
+        pointMiraPointerAtAddressBar("YouTube-Suche");
+        logMiraActivity("YouTube-Suche gestartet");
         runSearch(activeTab.id, "YouTube Trends Videos");
         if (window.innerWidth < 640) setAiOpen(false);
         return "🎬 Ich habe YouTube-Treffer geladen (klicke ein Video an, um es direkt abzuspielen).";
       }
       if (KNOWN_SITES[key]) {
+        pointMiraPointerAtAddressBar(`Öffne ${target}`);
+        logMiraActivity(`Öffne ${target}`);
         openUrl(activeTab.id, KNOWN_SITES[key], true);
         if (window.innerWidth < 640) setAiOpen(false);
         return `🌐 Ich öffne ${target} für dich …`;
       }
       if (isLikelyUrl(target)) {
+        pointMiraPointerAtAddressBar(`Öffne ${target}`);
+        logMiraActivity(`Öffne ${target}`);
         openUrl(activeTab.id, target, true);
         if (window.innerWidth < 640) setAiOpen(false);
         return `🌐 Ich öffne ${target} …`;
       }
       // Falls keine Domain angegeben ("Öffne Bayern München"), direkt danach suchen!
+      pointMiraPointerAtAddressBar(`Suche: ${target}`);
+      logMiraActivity(`Websuche: „${target}“`);
       runSearch(activeTab.id, target);
       if (window.innerWidth < 640) setAiOpen(false);
       return `🔍 Ich habe die passenden Ergebnisse zu „${target}“ geöffnet!`;
@@ -519,16 +545,23 @@ export default function AloBrowser() {
     setAiMessages((m) => [...m, { role: "user", text: q }]);
 
     // Erst prüfen, ob es ein Browser-Steuerbefehl ist!
-    const commandReply = tryExecuteBrowserCommand(q);
+    const commandReply = await tryExecuteBrowserCommand(q);
     if (commandReply) {
       setAiMessages((m) => [...m, { role: "ai", text: commandReply }]);
       return;
     }
 
     setAiLoading(true);
+    let servedText: string | null = null;
+    if (!activeTab.readerText && activeTab.url) {
+      servedText = await miraServePageText(activeTab.url);
+    }
     const context = activeTab.readerText
       ? activeTab.readerText.slice(0, 4500)
-      : `Aktueller Modus: ${activeTab.mode}, URL: ${activeTab.url || "Startseite"}`;
+      : servedText
+        ? servedText.slice(0, 4500)
+        : `Aktueller Modus: ${activeTab.mode}, URL: ${activeTab.url || "Startseite"}`;
+    if (activeTab.url) logMiraActivity(`Seiteninhalt gelesen: ${activeTab.title}`);
 
     const answer = await fetchSmartAI(
       "Du bist Mira, der hilfreiche KI-Browser-Agent in der App Alo. Antworte immer auf Deutsch, freundlich, direkt und gut lesbar.",
@@ -607,10 +640,10 @@ export default function AloBrowser() {
   };
 
   return (
-    <div className="flex h-screen w-full flex-col bg-zinc-950 font-sans text-zinc-100 antialiased">
+    <div className="alo-browser flex h-screen w-full flex-col bg-background font-sans text-foreground antialiased">
       {/* Tab-Leiste */}
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-zinc-900 bg-zinc-950 px-2 pt-2">
-        <span className="shrink-0 px-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
+      <div className="alo-browser-tabbar flex items-center gap-1 overflow-x-auto border-b border-border bg-background px-2 pt-2">
+        <span className="shrink-0 px-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
           ALO · WEB
         </span>
         {tabs.map((tab) => (
@@ -619,15 +652,16 @@ export default function AloBrowser() {
             onClick={() => setActiveId(tab.id)}
             className={`flex max-w-40 shrink-0 cursor-pointer items-center gap-1.5 rounded-t-xl px-3 py-1.5 text-xs font-medium ${
               tab.id === activeId
-                ? "border-x border-t border-zinc-800 bg-zinc-900 text-white"
-                : "text-zinc-500 hover:text-zinc-300"
+                ? "border-x border-t border-border bg-card text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Globe className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+            <Globe className="h-3.5 w-3.5 shrink-0 text-primary" />
             <span className="truncate">{tab.title}</span>
             <button
               onClick={(e) => closeTab(tab.id, e)}
-              className="rounded p-0.5 hover:bg-zinc-800"
+              className="rounded p-0.5 hover:bg-muted"
+              aria-label={`Tab ${tab.title} schließen`}
             >
               <X className="h-3 w-3" />
             </button>
@@ -635,15 +669,20 @@ export default function AloBrowser() {
         ))}
         <button
           onClick={addTab}
-          className="shrink-0 rounded-lg p-1.5 text-zinc-400 hover:text-white"
+          className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:text-foreground"
+          aria-label="Neuen Tab öffnen"
         >
           <Plus className="h-4 w-4" />
         </button>
       </div>
 
       {/* Einzeilige, saubere Mobile-Navigationsleiste */}
-      <div className="flex items-center gap-1.5 border-b border-zinc-800 bg-zinc-900 px-2 py-2">
-        <button onClick={goBack} className="shrink-0 rounded-lg p-2 text-zinc-400 hover:text-white">
+      <div className="alo-browser-toolbar flex items-center gap-1.5 border-b border-border bg-card px-2 py-2">
+        <button
+          onClick={goBack}
+          className="shrink-0 rounded-lg p-2 text-muted-foreground hover:text-foreground"
+          aria-label="Zurück"
+        >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <button
@@ -652,34 +691,40 @@ export default function AloBrowser() {
               ? openUrl(activeTab.id, activeTab.url, false)
               : updateTab(activeTab.id, { mode: "home", input: "" })
           }
-          className="shrink-0 rounded-lg p-2 text-zinc-400 hover:text-white"
+          className="shrink-0 rounded-lg p-2 text-muted-foreground hover:text-foreground"
+          aria-label="Neu laden"
         >
-          <RotateCw
-            className={`h-4 w-4 ${activeTab.loading ? "animate-spin text-emerald-400" : ""}`}
-          />
+          <RotateCw className={`h-4 w-4 ${activeTab.loading ? "animate-spin text-primary" : ""}`} />
         </button>
 
         <form
           onSubmit={handleBarSubmit}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 focus-within:border-emerald-500/60"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-background px-2.5 py-1.5 focus-within:border-primary/60"
         >
-          <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400" />
+          <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
           <input
             type="text"
             value={activeTab.input}
             onChange={(e) => updateTab(activeTab.id, { input: e.target.value })}
             placeholder="Suchen oder URL …"
-            className="w-full min-w-0 bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none"
+            className="w-full min-w-0 bg-transparent text-sm text-foreground placeholder-muted-foreground focus:outline-none"
           />
-          <button type="submit" className="shrink-0 text-zinc-400 hover:text-white">
+          <button
+            type="submit"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+            aria-label="Los"
+          >
             <Search className="h-4 w-4" />
           </button>
         </form>
 
         <button
           onClick={() => setAiOpen(!aiOpen)}
+          aria-pressed={aiOpen}
           className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition ${
-            aiOpen ? "bg-emerald-400 text-zinc-950" : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+            aiOpen
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-foreground hover:bg-accent"
           }`}
         >
           <Sparkles className="h-3.5 w-3.5" />
@@ -689,12 +734,12 @@ export default function AloBrowser() {
 
       {/* Sub-Bar nur wenn eine Webseite aktiv ist */}
       {activeTab.url && (
-        <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/60 px-3 py-1.5 text-xs">
+        <div className="flex items-center justify-between border-b border-border/80 bg-card/60 px-3 py-1.5 text-xs">
           <div className="flex items-center gap-1">
             <button
               onClick={() => updateTab(activeTab.id, { mode: "web" })}
               className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-medium ${
-                activeTab.mode === "web" ? "bg-zinc-800 text-white" : "text-zinc-400"
+                activeTab.mode === "web" ? "bg-muted text-foreground" : "text-muted-foreground"
               }`}
             >
               <Layout className="h-3.5 w-3.5" /> Web
@@ -702,7 +747,7 @@ export default function AloBrowser() {
             <button
               onClick={() => updateTab(activeTab.id, { mode: "reader" })}
               className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-medium ${
-                activeTab.mode === "reader" ? "bg-zinc-800 text-white" : "text-zinc-400"
+                activeTab.mode === "reader" ? "bg-muted text-foreground" : "text-muted-foreground"
               }`}
             >
               <BookOpen className="h-3.5 w-3.5" /> Reader
@@ -710,7 +755,7 @@ export default function AloBrowser() {
             <button
               onClick={() => updateTab(activeTab.id, { mode: "visual" })}
               className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-medium ${
-                activeTab.mode === "visual" ? "bg-zinc-800 text-white" : "text-zinc-400"
+                activeTab.mode === "visual" ? "bg-muted text-foreground" : "text-muted-foreground"
               }`}
             >
               <ImageIcon className="h-3.5 w-3.5" /> Visuell
@@ -720,7 +765,8 @@ export default function AloBrowser() {
             <button
               onClick={goForward}
               disabled={activeTab.historyIndex >= activeTab.history.length - 1}
-              className="p-1 text-zinc-400 disabled:opacity-30"
+              className="p-1 text-muted-foreground disabled:opacity-30"
+              aria-label="Vorwärts"
             >
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
@@ -728,7 +774,8 @@ export default function AloBrowser() {
               href={activeTab.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-1 text-zinc-400 hover:text-white"
+              className="p-1 text-muted-foreground hover:text-foreground"
+              aria-label="Im neuen Tab öffnen"
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
@@ -738,10 +785,10 @@ export default function AloBrowser() {
 
       {/* Hauptbereich */}
       <div className="relative flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-y-auto bg-zinc-950">
+        <div className="flex-1 overflow-y-auto bg-background">
           {activeTab.loading ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-zinc-400">
-              <Loader2 className="h-7 w-7 animate-spin text-emerald-400" />
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
               <p className="text-sm">Wird im Alo-Browser geladen …</p>
             </div>
           ) : activeTab.mode === "google" ? (
@@ -754,11 +801,11 @@ export default function AloBrowser() {
                 <span className="text-blue-400">g</span>
                 <span className="text-emerald-400">l</span>
                 <span className="text-red-400">e</span>
-                <span className="ml-2 align-middle text-xs font-semibold text-zinc-400">
+                <span className="ml-2 align-middle text-xs font-semibold text-muted-foreground">
                   via Alo
                 </span>
               </div>
-              <p className="mb-6 text-xs text-zinc-400">
+              <p className="mb-6 text-xs text-muted-foreground">
                 Ungesperrte Web-Suche mit KI-Zusammenfassung
               </p>
 
@@ -769,20 +816,20 @@ export default function AloBrowser() {
                   runSearch(activeTab.id, boxQuery);
                   setBoxQuery("");
                 }}
-                className="flex w-full max-w-md items-center gap-3 rounded-full border border-zinc-700 bg-zinc-900 px-4 py-3 shadow-xl focus-within:border-blue-400"
+                className="flex w-full max-w-md items-center gap-3 rounded-full border border-border bg-card px-4 py-3 shadow-xl focus-within:border-primary"
               >
-                <Search className="h-5 w-5 shrink-0 text-zinc-400" />
+                <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <input
                   type="text"
                   autoFocus
                   value={boxQuery}
                   onChange={(e) => setBoxQuery(e.target.value)}
                   placeholder="Auf Google suchen …"
-                  className="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none"
+                  className="w-full bg-transparent text-sm text-foreground placeholder-muted-foreground focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="shrink-0 rounded-full bg-blue-500 px-3.5 py-1.5 text-xs font-semibold text-white"
+                  className="shrink-0 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground"
                 >
                   Suchen
                 </button>
@@ -794,7 +841,7 @@ export default function AloBrowser() {
                     <button
                       key={sample}
                       onClick={() => runSearch(activeTab.id, sample)}
-                      className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-600"
+                      className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-foreground hover:border-foreground/40"
                     >
                       {sample}
                     </button>
@@ -805,13 +852,13 @@ export default function AloBrowser() {
           ) : activeTab.mode === "home" ? (
             /* Alo Startseite */
             <div className="mx-auto max-w-xl px-5 py-9">
-              <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
+              <span className="text-xs font-bold uppercase tracking-widest text-primary">
                 ALO · WEB &amp; MIRA
               </span>
-              <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 Surfen. Suchen. Verstehen.
               </h1>
-              <p className="mt-1 text-xs text-zinc-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Tippe einen Begriff ein oder sag Mira rechts oben einfach „Öffne Google“.
               </p>
 
@@ -823,19 +870,19 @@ export default function AloBrowser() {
                   else runSearch(activeTab.id, boxQuery);
                   setBoxQuery("");
                 }}
-                className="mt-6 flex items-center gap-3 rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 shadow-lg focus-within:border-emerald-400"
+                className="mt-6 flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-lg focus-within:border-primary"
               >
-                <Search className="h-5 w-5 shrink-0 text-zinc-400" />
+                <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
                 <input
                   type="text"
                   value={boxQuery}
                   onChange={(e) => setBoxQuery(e.target.value)}
                   placeholder="Im Web suchen oder Adresse eingeben …"
-                  className="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none"
+                  className="w-full bg-transparent text-sm text-foreground placeholder-muted-foreground focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="shrink-0 rounded-xl bg-white px-3.5 py-1.5 text-xs font-semibold text-zinc-950"
+                  className="shrink-0 rounded-xl bg-foreground px-3.5 py-1.5 text-xs font-semibold text-background"
                 >
                   Start
                 </button>
@@ -850,11 +897,11 @@ export default function AloBrowser() {
                         ? openGoogleMode(activeTab.id)
                         : openUrl(activeTab.id, item.url || "", true)
                     }
-                    className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4 text-left transition hover:border-zinc-600"
+                    className="rounded-2xl border border-border bg-card p-4 text-left transition hover:border-foreground/40"
                   >
-                    <span className="font-mono text-xs text-emerald-400">{item.num}</span>
-                    <div className="mt-1 text-sm font-semibold text-white">{item.title}</div>
-                    <div className="mt-0.5 text-xs text-zinc-400">{item.desc}</div>
+                    <span className="font-mono text-xs text-primary">{item.num}</span>
+                    <div className="mt-1 text-sm font-semibold text-foreground">{item.title}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">{item.desc}</div>
                   </button>
                 ))}
               </div>
@@ -863,11 +910,11 @@ export default function AloBrowser() {
             /* Suchergebnisse */
             <div className="mx-auto max-w-3xl space-y-4 px-4 py-5">
               {activeTab.aiOverview && (
-                <div className="rounded-2xl border border-emerald-500/30 bg-zinc-900 p-4">
-                  <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                <div className="rounded-2xl border border-primary/30 bg-card p-4">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-primary">
                     <Sparkles className="h-3.5 w-3.5" /> Mira Direkt-Antwort
                   </div>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-200">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                     {activeTab.aiOverview}
                   </p>
                 </div>
@@ -878,11 +925,11 @@ export default function AloBrowser() {
                   <div
                     key={i}
                     onClick={() => openUrl(activeTab.id, r.url, true)}
-                    className="cursor-pointer rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 transition hover:border-zinc-600"
+                    className="cursor-pointer rounded-2xl border border-border bg-card p-4 transition hover:border-foreground/40"
                   >
-                    <div className="truncate text-xs text-emerald-400">{r.url}</div>
-                    <div className="mt-0.5 text-base font-semibold text-white">{r.title}</div>
-                    <p className="mt-1 text-xs text-zinc-400">{r.snippet}</p>
+                    <div className="truncate text-xs text-primary">{r.url}</div>
+                    <div className="mt-0.5 text-base font-semibold text-foreground">{r.title}</div>
+                    <p className="mt-1 text-xs text-muted-foreground">{r.snippet}</p>
                   </div>
                 ))}
               </div>
@@ -899,22 +946,35 @@ export default function AloBrowser() {
               <img
                 src={`https://image.thum.io/get/width/1200/noanimate/${activeTab.url}`}
                 alt={activeTab.title}
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-900"
+                className="w-full rounded-xl border border-border bg-card"
               />
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-3">
+                <p className="text-xs text-muted-foreground">
+                  Die Seite blockiert das Einbetten. Du kannst sie trotzdem öffnen:
+                </p>
+                <a
+                  href={activeTab.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> Im neuen Tab öffnen
+                </a>
+              </div>
             </div>
           ) : (
             <div className="mx-auto max-w-3xl px-5 py-6">
-              <div className="mb-5 flex items-center justify-between gap-2 border-b border-zinc-800 pb-4">
-                <span className="truncate text-xs text-zinc-400">{activeTab.url}</span>
+              <div className="mb-5 flex items-center justify-between gap-2 border-b border-border pb-4">
+                <span className="truncate text-xs text-muted-foreground">{activeTab.url}</span>
                 <button
                   onClick={() => askMira("Fasse diese Seite in 5 kurzen Stichpunkten zusammen.")}
-                  className="flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white"
+                  className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground"
                 >
-                  <Sparkles className="h-3.5 w-3.5 text-emerald-400" /> Zusammenfassen
+                  <Sparkles className="h-3.5 w-3.5 text-primary" /> Zusammenfassen
                 </button>
               </div>
-              <article className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-200">
-                {activeTab.readerText}
+              <article className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {activeTab.readerText || "Kein Seiteninhalt gefunden."}
               </article>
             </div>
           )}
@@ -922,43 +982,72 @@ export default function AloBrowser() {
 
         {/* Mira Agenten- & Seiten-KI Panel */}
         {aiOpen && (
-          <aside className="absolute inset-0 z-20 flex flex-col border-l border-zinc-800 bg-zinc-950 sm:static sm:w-80 sm:bg-zinc-900 md:w-96">
-            <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900 p-3.5">
+          <aside
+            className="alo-browser-mira-panel absolute inset-0 z-20 flex flex-col border-l border-border bg-background sm:static sm:w-80 sm:bg-card md:w-96"
+            aria-label="Mira Browser-Agent"
+          >
+            <div className="flex items-center justify-between border-b border-border bg-card p-3.5">
               <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                <div className="text-xs font-bold uppercase tracking-wider text-primary">
                   MIRA · BROWSER-AGENT
                 </div>
-                <div className="text-xs text-zinc-400">
+                <div className="text-xs text-muted-foreground">
                   Steuert Web, Suche &amp; Zusammenfassungen
                 </div>
               </div>
               <button
                 onClick={() => setAiOpen(false)}
-                className="rounded-lg bg-zinc-800 p-1.5 text-zinc-200"
+                className="rounded-lg bg-muted p-1.5 text-foreground"
+                aria-label="Mira-Panel schließen"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="flex gap-1.5 overflow-x-auto border-b border-zinc-800 bg-zinc-900/50 p-2.5">
+            <div className="flex gap-1.5 overflow-x-auto border-b border-border bg-card/50 p-2.5">
               <button
                 onClick={() => askMira("Öffne Google")}
-                className="shrink-0 rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-300"
+                className="shrink-0 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
               >
                 ⚡ Öffne Google
               </button>
               <button
                 onClick={() => askMira("Fasse die aktuelle Seite kurz zusammen.")}
-                className="shrink-0 rounded-lg bg-zinc-800 px-2.5 py-1 text-xs text-zinc-200"
+                className="shrink-0 rounded-lg bg-muted px-2.5 py-1 text-xs text-foreground"
               >
                 Zusammenfassen
               </button>
               <button
                 onClick={() => askMira("Öffne Tagesschau")}
-                className="shrink-0 rounded-lg bg-zinc-800 px-2.5 py-1 text-xs text-zinc-200"
+                className="shrink-0 rounded-lg bg-muted px-2.5 py-1 text-xs text-foreground"
               >
                 ⚡ Tagesschau
               </button>
+            </div>
+
+            <div className="alo-browser-mira-activity border-b border-border bg-card/50 px-3.5 py-2.5">
+              <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <Activity className="h-3 w-3" /> Was Mira macht
+              </div>
+              {miraActivity.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Noch keine Aktion – gib Mira einen Befehl.
+                </p>
+              ) : (
+                <ul className="space-y-1">
+                  {miraActivity.map((entry) => (
+                    <li key={entry.id} className="flex items-center gap-2 text-xs text-foreground">
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        {new Date(entry.at).toLocaleTimeString("de-DE", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      <span className="truncate">{entry.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-3.5 text-xs leading-relaxed">
@@ -967,16 +1056,16 @@ export default function AloBrowser() {
                   key={i}
                   className={`whitespace-pre-wrap rounded-2xl p-3 ${
                     m.role === "user"
-                      ? "ml-10 bg-white font-medium text-zinc-950"
-                      : "mr-6 border border-zinc-800 bg-zinc-900 text-zinc-200"
+                      ? "ml-10 bg-foreground font-medium text-background"
+                      : "mr-6 border border-border bg-card text-foreground"
                   }`}
                 >
                   {m.text}
                 </div>
               ))}
               {aiLoading && (
-                <div className="flex items-center gap-2 p-2 text-zinc-400">
-                  <Loader2 className="h-4 w-4 animate-spin text-emerald-400" /> Mira arbeitet …
+                <div className="flex items-center gap-2 p-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" /> Mira arbeitet …
                 </div>
               )}
             </div>
@@ -986,19 +1075,20 @@ export default function AloBrowser() {
                 e.preventDefault();
                 askMira();
               }}
-              className="flex gap-2 border-t border-zinc-800 bg-zinc-900 p-3"
+              className="flex gap-2 border-t border-border bg-card p-3"
             >
               <input
                 type="text"
                 value={aiInput}
                 onChange={(e) => setAiInput(e.target.value)}
                 placeholder="Befehl („Öffne Google“) oder Frage …"
-                className="flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:border-emerald-500/60 focus:outline-none"
+                className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-xs text-foreground placeholder-muted-foreground focus:border-primary/60 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={aiLoading}
-                className="rounded-xl bg-emerald-400 p-2.5 font-semibold text-zinc-950 disabled:opacity-40"
+                className="rounded-xl bg-primary p-2.5 font-semibold text-primary-foreground disabled:opacity-40"
+                aria-label="Senden"
               >
                 <Send className="h-4 w-4" />
               </button>
