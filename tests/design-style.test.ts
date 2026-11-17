@@ -58,7 +58,7 @@ test("catalog exposes all independent design styles and defaults to performance"
     DESIGN_STYLES.map((style) => style.id),
     expected,
   );
-  assert.equal(DEFAULT_DESIGN_STYLE, "performance");
+  assert.equal(DEFAULT_DESIGN_STYLE, "hig");
   assert.equal(DESIGN_STYLES.find((style) => style.id === "soft")?.label, "Klassisch");
   assert.equal(DESIGN_STYLES.find((style) => style.id === "compact")?.label, "Kompakt");
   assert.equal(DESIGN_STYLES.find((style) => style.id === "performance")?.label, "Performance");
@@ -81,6 +81,9 @@ test("stored style safely defaults in SSR, for missing/invalid data, and blocked
   mockGlobals({ stored: "soft" });
   assert.equal(getStoredDesignStyle(), "soft");
   mockGlobals({ stored: "performance" });
+  assert.equal(getStoredDesignStyle(), DEFAULT_DESIGN_STYLE);
+  const migrated = mockGlobals({ stored: "performance" });
+  migrated.storage.set("np-design-style-default-v2", "1");
   assert.equal(getStoredDesignStyle(), "performance");
   mockGlobals({ stored: "invalid" });
   assert.equal(getStoredDesignStyle(), DEFAULT_DESIGN_STYLE);

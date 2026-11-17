@@ -648,6 +648,7 @@ html.dark[data-design-style="hig"] {
 
 html[data-design-style="hig"] body {
   letter-spacing: -0.01em;
+  font-size: 1.0625rem;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -662,9 +663,7 @@ html[data-design-style="hig"] h1 {
 
 html[data-design-style="hig"] .sh-card,
 html[data-design-style="hig"] .rounded-2xl[class*="border"] {
-  background-color: var(--design-hig-vibrancy);
-  backdrop-filter: saturate(1.4) blur(12px);
-  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  background-color: color-mix(in srgb, var(--card) 94%, transparent);
 }
 
 html[data-design-style="hig"] h2 {
@@ -710,6 +709,17 @@ html[data-design-style="hig"] aside[aria-label="App-Aktionen"] button,
 html[data-design-style="hig"] aside[aria-label="App-Aktionen"] a {
   border-radius: 0.75rem;
   font-weight: 500;
+}
+
+html[data-design-style="hig"] .alo-page-sidebar-link {
+  border-radius: 0.625rem;
+  font-weight: 500;
+}
+
+html[data-design-style="hig"] .alo-page-sidebar-link[aria-current] {
+  background: color-mix(in srgb, var(--design-hig-tint) 13%, transparent);
+  color: var(--design-hig-tint);
+  font-weight: 600;
 }
 
 html[data-design-style="hig"] .module-menu,
@@ -772,13 +782,29 @@ html[data-design-style="hig"] .ah-segment .is-active {
   box-shadow: none;
 }
 
-html[data-design-style="hig"] [data-slot="dialog-content"] {
+html[data-design-style="hig"] [data-slot="dialog-content"],
+html[data-design-style="hig"] [role="alertdialog"],
+html[data-design-style="hig"] [role="menu"],
+html[data-design-style="hig"] [role="listbox"],
+html[data-design-style="hig"] [data-radix-popper-content-wrapper] > * {
   border-color: var(--design-hig-separator);
   border-radius: 1.375rem;
   background: var(--design-hig-vibrancy);
   box-shadow: 0 24px 60px color-mix(in srgb, #000 32%, transparent);
   backdrop-filter: saturate(1.6) blur(24px);
   -webkit-backdrop-filter: saturate(1.6) blur(24px);
+}
+
+html[data-design-style="hig"] [role="menu"] > [role="menuitem"],
+html[data-design-style="hig"] [role="listbox"] > [role="option"] {
+  border-radius: 0.625rem;
+  font-weight: 500;
+}
+
+html[data-design-style="hig"] [role="menu"] > [role="menuitem"][aria-checked="true"],
+html[data-design-style="hig"] [role="option"][aria-selected="true"] {
+  color: var(--design-hig-tint);
+  font-weight: 600;
 }
 
 html[data-design-style="hig"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
@@ -799,6 +825,10 @@ html[data-design-style="hig"] select:focus-visible {
   box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--design-hig-tint) 18%, transparent);
 }
 
+html[data-design-style="hig"] .alo-tablet-home-apps > :is(a, button, div) > span:first-child:hover {
+  transform: scale(1.04);
+}
+
 html[data-design-style="hig"] [role="switch"][data-state="checked"] {
   background-color: var(--design-hig-green);
 }
@@ -807,6 +837,36 @@ html[data-design-style="hig"] [role="checkbox"][data-state="checked"],
 html[data-design-style="hig"] [role="checkbox"][aria-checked="true"] {
   background-color: var(--design-hig-tint);
   border-color: var(--design-hig-tint);
+}
+
+html[data-design-style="hig"] .alo-tablet-home-hub {
+  border-color: var(--design-hig-separator);
+  border-radius: 1.75rem;
+  box-shadow: none;
+}
+
+html[data-design-style="hig"] .alo-tablet-home-hub > header :is(button, a) {
+  border-color: transparent;
+  background-color: var(--design-hig-fill);
+  box-shadow: none;
+}
+
+html[data-design-style="hig"] .alo-tablet-home-apps > :is(a, button, div) {
+  background: transparent;
+}
+
+html[data-design-style="hig"] .alo-tablet-home-apps > :is(a, button, div) > span:first-child {
+  border-radius: 1.375rem;
+  border-color: color-mix(in srgb, #fff 14%, transparent);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, #000 14%, transparent),
+    0 10px 24px color-mix(in srgb, #000 12%, transparent);
+}
+
+html[data-design-style="hig"] .alo-tablet-home-apps > :is(a, button) > span:last-child {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 html[data-design-style] body {

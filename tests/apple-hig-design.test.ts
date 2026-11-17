@@ -21,7 +21,8 @@ test("the Apple HIG style is a selectable design style next to the existing ones
 
 test("the HIG style keeps the current design selectable and untouched", () => {
   const lib = readFileSync(new URL("../src/lib/design-style.ts", import.meta.url), "utf8");
-  assert.match(lib, /DEFAULT_DESIGN_STYLE: DesignStyleId = "performance"/);
+  assert.match(lib, /DEFAULT_DESIGN_STYLE: DesignStyleId = "hig"/);
+  assert.match(lib, /np-design-style-default-v2/);
   const picker = readFileSync(
     new URL("../src/components/DesignStylePicker.tsx", import.meta.url),
     "utf8",
@@ -55,6 +56,36 @@ test("the HIG style renders iOS-like system components", () => {
   );
   assert.match(css, /html\[data-design-style="hig"\] ::-webkit-scrollbar-thumb/);
   assert.match(css, /html\[data-design-style="hig"\]\s+input:focus-visible/);
+});
+
+test("the HIG style covers every menu and alert surface site-wide", () => {
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(css, /html\[data-design-style="hig"\] \[role="alertdialog"\]/);
+  assert.match(css, /html\[data-design-style="hig"\] \[role="menu"\]/);
+  assert.match(css, /html\[data-design-style="hig"\] \[data-radix-popper-content-wrapper\] > \*/);
+  assert.match(css, /html\[data-design-style="hig"\] \.alo-page-sidebar-link\[aria-current\]/);
+  assert.match(css, /html\[data-design-style="hig"\] body \{[\s\S]*?font-size: 1\.0625rem/);
+});
+
+test("the HIG style gives the home hub an iOS home-screen look", () => {
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(css, /html\[data-design-style="hig"\] \.alo-tablet-home-hub/);
+  assert.match(
+    css,
+    /html\[data-design-style="hig"\] \.alo-tablet-home-hub > header :is\(button, a\)/,
+  );
+  assert.match(
+    css,
+    /html\[data-design-style="hig"\] \.alo-tablet-home-apps > :is\(a, button, div\)/,
+  );
+  assert.match(
+    css,
+    /html\[data-design-style="hig"\] \.alo-tablet-home-apps > :is\(a, button, div\)\s+>\s+span:first-child/,
+  );
+  assert.match(
+    css,
+    /html\[data-design-style="hig"\] \.alo-tablet-home-apps > :is\(a, button\)\s+>\s+span:last-child/,
+  );
 });
 
 test("applying the HIG style sets the data attribute and persists the choice", () => {
