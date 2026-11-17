@@ -72,3 +72,15 @@ export function aiStatusFromProviders(providers: readonly ProviderConfig[]): Hom
   if (!selection.provider) return null;
   return { provider: selection.provider.label, model: selection.provider.model };
 }
+
+export const NEXUS_UNREAD_SUMMARY_THRESHOLD = 10;
+
+export function shouldOfferChatSummary(unread: number | null): boolean {
+  return unread !== null && Number.isFinite(unread) && unread >= NEXUS_UNREAD_SUMMARY_THRESHOLD;
+}
+
+export function formatWeeklyWorkoutLine(count: number): string | null {
+  if (!Number.isFinite(count) || count < 0) return null;
+  if (count === 0) return "Noch kein Workout diese Woche";
+  return `Diese Woche: ${count} ${count === 1 ? "Workout" : "Workouts"}`;
+}
