@@ -13,13 +13,31 @@ export type HomeBackgroundPreference =
   | Readonly<{ kind: "preset"; presetId: HomeBackgroundPresetId }>
   | Readonly<{ kind: "custom" }>;
 
+export const HOME_APP_TILE_SIZES = Object.freeze(["small", "medium", "large"] as const);
+
+export type HomeAppTileSize = (typeof HOME_APP_TILE_SIZES)[number];
+
+export const HOME_APP_TILE_SIZE_CLASS_NAMES: Readonly<Record<HomeAppTileSize, string>> =
+  Object.freeze({
+    small: "",
+    medium: "col-span-2",
+    large: "col-span-2 row-span-2",
+  });
+
+export const HOME_APP_TILE_SIZE_LABELS: Readonly<Record<HomeAppTileSize, string>> = Object.freeze({
+  small: "Klein",
+  medium: "Mittel",
+  large: "Groß",
+});
+
 export type HomeAppHubSettings = Readonly<{
-  schemaVersion: 2;
+  schemaVersion: 3;
   order: readonly string[];
   nameOverrides: Readonly<Record<string, string>>;
   background: HomeBackgroundPreference;
   favorites: readonly string[];
   collapsedGroups: readonly string[];
+  tileSizes: Readonly<Record<string, HomeAppTileSize>>;
 }>;
 
 export type HomeAppHubStorage = Pick<Storage, "getItem" | "setItem">;
@@ -29,12 +47,13 @@ export const HOME_DEFAULT_BACKGROUND: HomeBackgroundPreference = Object.freeze({
 });
 
 export const EMPTY_HOME_APP_HUB_SETTINGS: HomeAppHubSettings = Object.freeze({
-  schemaVersion: 2,
+  schemaVersion: 3,
   order: Object.freeze([]),
   nameOverrides: Object.freeze({}),
   background: HOME_DEFAULT_BACKGROUND,
   favorites: Object.freeze([]),
   collapsedGroups: Object.freeze([]),
+  tileSizes: Object.freeze({}),
 });
 
 export const HOME_BACKGROUND_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -66,6 +85,7 @@ const HOME_MAX_NAME_OVERRIDES = 128;
 const HOME_MAX_FAVORITES = 32;
 const HOME_MAX_COLLAPSED_GROUPS = 16;
 const HOME_MAX_SETTINGS_BYTES = 32_768;
+const HOME_APP_TILE_SIZE_SET = new Set<string>(HOME_APP_TILE_SIZES);
 const HOME_BACKGROUND_DB_NAME = "alo-home-background-images-v1";
 const HOME_BACKGROUND_DB_VERSION = 1;
 const HOME_BACKGROUND_OBJECT_STORE = "images";
@@ -134,10 +154,24 @@ export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
   ) {
     return parseHomeAppHubSettings({
       ...value,
-      schemaVersion: 2,
+      schemaVersion: 3,
       favorites: [],
       collapsedGroups: [],
+      tileSizes: {},
     });
+  }
+  if (
+    value.schemaVersion === 2 &&
+    exactKeys(value, [
+      "schemaVersion",
+      "order",
+      "nameOverrides",
+      "background",
+      "favorites",
+      "collapsedGroups",
+    ])
+  ) {
+    return parseHomeAppHubSettings({ ...value, schemaVersion: 3, tileSizes: {} });
   }
   if (
     !exactKeys(value, [
@@ -147,8 +181,9 @@ export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
       "background",
       "favorites",
       "collapsedGroups",
+      "tileSizes",
     ]) ||
-    value.schemaVersion !== 2 ||
+    value.schemaVersion !== 3 ||
     !Array.isArray(value.order) ||
     value.order.length > HOME_MAX_APP_IDS ||
     !isRecord(value.nameOverrides) ||
@@ -156,7 +191,9 @@ export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
     !Array.isArray(value.favorites) ||
     value.favorites.length > HOME_MAX_FAVORITES ||
     !Array.isArray(value.collapsedGroups) ||
-    value.collapsedGroups.length > HOME_MAX_COLLAPSED_GROUPS
+    value.collapsedGroups.length > HOME_MAX_COLLAPSED_GROUPS ||
+    !isRecord(value.tileSizes) ||
+    Object.keys(value.tileSizes).length > HOME_MAX_APP_IDS
   ) {
     throw new Error("Ungültige lokale Home-Einstellungen.");
   }
@@ -197,13 +234,22 @@ export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
     collapsedGroups.push(candidate);
   }
 
+  const tileSizes: Record<string, HomeAppTileSize> = {};
+  for (const [appId, size] of Object.entries(value.tileSizes)) {
+    if (typeof size !== "string" || !validHomeAppId(appId) || !HOME_APP_TILE_SIZE_SET.has(size)) {
+      throw new Error("Ungültige Home-Kachelgröße.");
+    }
+    tileSizes[appId] = size as HomeAppTileSize;
+  }
+
   return Object.freeze({
-    schemaVersion: 2,
+    schemaVersion: 3,
     order: Object.freeze(order),
     nameOverrides: Object.freeze(nameOverrides),
     background: parseBackgroundPreference(value.background),
     favorites: Object.freeze(favorites),
     collapsedGroups: Object.freeze(collapsedGroups),
+    tileSizes: Object.freeze(tileSizes),
   });
 }
 
@@ -313,6 +359,22 @@ export function toggleHomeAppFavorite(settingsInput: unknown, appId: string): Ho
   return parseHomeAppHubSettings({ ...settings, favorites });
 }
 
+export function setHomeAppTileSize(
+  settingsInput: unknown,
+  appId: string,
+  sizeInput: unknown,
+): HomeAppHubSettings {
+  if (!validHomeAppId(appId)) throw new Error("Ungültige Alo-App.");
+  if (typeof sizeInput !== "string" || !HOME_APP_TILE_SIZE_SET.has(sizeInput)) {
+    throw new Error("Ungültige Kachelgröße.");
+  }
+  const settings = parseHomeAppHubSettings(settingsInput);
+  const tileSizes = { ...settings.tileSizes };
+  if (sizeInput === "small") delete tileSizes[appId];
+  else tileSizes[appId] = sizeInput as HomeAppTileSize;
+  return parseHomeAppHubSettings({ ...settings, tileSizes });
+}
+
 export function toggleHomeAppGroupCollapsed(
   settingsInput: unknown,
   groupId: string,
@@ -333,10 +395,13 @@ export function forgetHomeAppPersonalization(
   const settings = parseHomeAppHubSettings(settingsInput);
   const nameOverrides = { ...settings.nameOverrides };
   delete nameOverrides[appId];
+  const tileSizes = { ...settings.tileSizes };
+  delete tileSizes[appId];
   return parseHomeAppHubSettings({
     ...settings,
     order: settings.order.filter((savedId) => savedId !== appId),
     nameOverrides,
+    tileSizes,
   });
 }
 

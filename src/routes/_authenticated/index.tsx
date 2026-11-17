@@ -67,6 +67,9 @@ import {
 } from "lucide-react";
 import {
   EMPTY_HOME_APP_HUB_SETTINGS,
+  HOME_APP_TILE_SIZE_CLASS_NAMES,
+  HOME_APP_TILE_SIZE_LABELS,
+  HOME_APP_TILE_SIZES,
   HOME_BACKGROUND_PRESETS,
   HOME_DEFAULT_BACKGROUND,
   hasHomeAppDragThreshold,
@@ -83,10 +86,12 @@ import {
   saveHomeAppHubSettings,
   saveHomeBackgroundImage,
   setHomeAppName,
+  setHomeAppTileSize,
   setHomeBackground,
   toggleHomeAppFavorite,
   toggleHomeAppGroupCollapsed,
   type HomeAppHubSettings,
+  type HomeAppTileSize,
 } from "@/lib/home-app-hub";
 import {
   EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE,
@@ -1076,10 +1081,14 @@ function HomeAppHub({
   };
 
   const renderTile = (tile: HomeHubTile, title: string, badge: number | null = null) => {
+    const tileSize: HomeAppTileSize = settings.tileSizes[tile.id] ?? "small";
+    const large = tileSize === "large";
     if (tile.kind === "plugin") {
       const contents = (
         <>
-          <span className="relative grid aspect-square w-full max-w-[96px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md">
+          <span
+            className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
+          >
             <MarketplaceIcon icon={tile.icon} className="h-8 w-8 text-primary" />
           </span>
           <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
@@ -1105,7 +1114,9 @@ function HomeAppHub({
     if (tile.kind === "marketplace") {
       const contents = (
         <>
-          <span className="relative grid aspect-square w-full max-w-[96px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md">
+          <span
+            className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
+          >
             <MarketplaceIcon icon={tile.install.icon ?? "hub"} className="h-8 w-8 text-primary" />
           </span>
           <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
@@ -1131,12 +1142,12 @@ function HomeAppHub({
     if (isEditingHub) {
       return (
         <div className={HUB_APP_ICON_CLASS_NAME} aria-label={`${title}, Home-App`}>
-          <HubAppIconContents title={title} artwork={tile.artwork} />
+          <HubAppIconContents title={title} artwork={tile.artwork} large={large} />
         </div>
       );
     }
     if (tile.kind === "game") {
-      return <HubGameAppIcon game={tile.game} title={title} artwork={tile.artwork} />;
+      return <HubGameAppIcon game={tile.game} title={title} artwork={tile.artwork} large={large} />;
     }
     if (tile.to === "/areas") {
       return (
@@ -1145,7 +1156,7 @@ function HomeAppHub({
           className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
           aria-label={`Weitere Bereiche öffnen (${HOME_OTHER_AREAS.length})`}
         >
-          <HubAppIconContents title={title} artwork={tile.artwork} />
+          <HubAppIconContents title={title} artwork={tile.artwork} large={large} />
         </Link>
       );
     }
@@ -1156,11 +1167,13 @@ function HomeAppHub({
           className={`alo-tablet-home-app-action ${HUB_APP_ICON_CLASS_NAME}`}
           aria-label="Alo-Werkzeuge öffnen"
         >
-          <HubAppIconContents title={title} artwork={tile.artwork} />
+          <HubAppIconContents title={title} artwork={tile.artwork} large={large} />
         </Link>
       );
     }
-    return <HubAppIcon to={tile.to} title={title} artwork={tile.artwork} badge={badge} />;
+    return (
+      <HubAppIcon to={tile.to} title={title} artwork={tile.artwork} badge={badge} large={large} />
+    );
   };
 
   const renderHomeGroup = (groupId: string, label: string, groupTiles: HomeHubTile[]) => {
@@ -1193,16 +1206,18 @@ function HomeAppHub({
           </span>
         </button>
         {!collapsed && (
-          <div className="alo-tablet-home-apps grid w-full grid-cols-4 gap-x-3 gap-y-6">
+          <div className="alo-tablet-home-apps grid w-full grid-flow-row-dense grid-cols-4 gap-x-3 gap-y-6">
             {groupTiles.map((tile) => {
               const title = settings.nameOverrides[tile.id] ?? tile.title;
               const badge =
                 tile.id === "nexus" && nexusUnread !== null && nexusUnread > 0 ? nexusUnread : null;
+              const tileSize: HomeAppTileSize = settings.tileSizes[tile.id] ?? "small";
               return (
                 <div
                   key={tile.id}
                   data-home-app-id={tile.id}
-                  className="relative min-w-0 select-none rounded-xl transition"
+                  data-home-tile-size={tileSize}
+                  className={`relative min-w-0 select-none rounded-xl transition ${HOME_APP_TILE_SIZE_CLASS_NAMES[tileSize]} ${tileSize === "large" ? "flex flex-col items-center justify-center" : ""}`}
                   onPointerDown={(event) => startHomeLongPress(event, tile.id)}
                   onPointerUp={() => cancelHomeLongPress()}
                   onPointerCancel={() => cancelHomeLongPress()}
@@ -1318,16 +1333,18 @@ function HomeAppHub({
           )}
           {isEditingHub ? (
             <nav
-              className="alo-tablet-home-apps grid w-full max-w-[520px] grid-cols-4 gap-x-3 gap-y-6"
+              className="alo-tablet-home-apps grid w-full max-w-[520px] grid-flow-row-dense grid-cols-4 gap-x-3 gap-y-6"
               aria-label="Alo-Apps"
               onPointerMoveCapture={moveHomeTileDrag}
             >
               {orderedTiles.map((tile) => {
                 const title = settings.nameOverrides[tile.id] ?? tile.title;
+                const editTileSize: HomeAppTileSize = settings.tileSizes[tile.id] ?? "small";
                 return (
                   <div
                     key={tile.id}
                     data-home-app-id={tile.id}
+                    data-home-tile-size={editTileSize}
                     data-drop-placement={
                       dropTargetAppId === tile.id ? dropTargetPlacement : undefined
                     }
@@ -1341,7 +1358,7 @@ function HomeAppHub({
                     aria-pressed={isEditingHub ? keyboardGrabbedAppId === tile.id : undefined}
                     aria-haspopup={isEditingHub ? "dialog" : undefined}
                     aria-describedby={isEditingHub ? "home-app-edit-help" : undefined}
-                    className={`relative min-w-0 select-none rounded-xl transition ${isEditingHub ? "touch-none cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:cursor-grabbing" : ""} ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                    className={`relative min-w-0 select-none rounded-xl transition ${HOME_APP_TILE_SIZE_CLASS_NAMES[editTileSize]} ${editTileSize === "large" ? "flex flex-col items-center justify-center" : ""} ${isEditingHub ? "touch-none cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:cursor-grabbing" : ""} ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
                     onPointerDown={(event) => {
                       startHomeLongPress(event, tile.id);
                       if (isEditingHub && event.isPrimary && event.button === 0) {
@@ -1701,6 +1718,37 @@ function HomeAppHub({
                 </div>
               )}
               <div className={`${isEditingHub ? "mt-2" : "mt-4"} grid gap-2`}>
+                <div
+                  role="group"
+                  aria-label={`${activeActionTitle} Kachelgröße wählen`}
+                  className="grid grid-cols-3 gap-2"
+                >
+                  {HOME_APP_TILE_SIZES.map((size) => {
+                    const current = (settings.tileSizes[activeActionTile.id] ?? "small") === size;
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        aria-pressed={current}
+                        aria-label={`${activeActionTitle} Kachelgröße ${HOME_APP_TILE_SIZE_LABELS[size]}`}
+                        onClick={() => {
+                          try {
+                            persistSettings(
+                              setHomeAppTileSize(settings, activeActionTile.id, size),
+                              `Kachelgröße von „${activeActionTitle}“ auf „${HOME_APP_TILE_SIZE_LABELS[size]}“ gesetzt.`,
+                            );
+                          } catch {
+                            setSettingsError("Kachelgröße konnte nicht gespeichert werden.");
+                          }
+                          setActiveAppMenuId(null);
+                        }}
+                        className={`min-h-11 rounded-xl border px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${current ? "border-primary bg-primary/10 text-primary" : "border-border"}`}
+                      >
+                        {HOME_APP_TILE_SIZE_LABELS[size]}
+                      </button>
+                    );
+                  })}
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -1832,6 +1880,7 @@ function HubAppIcon({
   title,
   artwork,
   badge = null,
+  large = false,
 }: {
   to:
     | "/ai"
@@ -1845,14 +1894,15 @@ function HubAppIcon({
   title: string;
   artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
   badge?: number | null;
+  large?: boolean;
 }) {
   return (
     <Link
       to={to}
       aria-label={badge !== null ? `${title} öffnen, ${badge} ungelesen` : `${title} öffnen`}
-      className={HUB_APP_ICON_CLASS_NAME}
+      className={`${HUB_APP_ICON_CLASS_NAME} ${large ? "justify-center" : ""}`}
     >
-      <HubAppIconContents title={title} artwork={artwork} badge={badge} />
+      <HubAppIconContents title={title} artwork={artwork} badge={badge} large={large} />
     </Link>
   );
 }
@@ -1861,19 +1911,21 @@ function HubGameAppIcon({
   game,
   title,
   artwork,
+  large = false,
 }: {
   game: PrivateGameId;
   title: string;
   artwork: "gridDefense" | "kupferkern";
+  large?: boolean;
 }) {
   return (
     <Link
       to="/games"
       search={{ game }}
       aria-label={`${title} öffnen`}
-      className={HUB_APP_ICON_CLASS_NAME}
+      className={`${HUB_APP_ICON_CLASS_NAME} ${large ? "justify-center" : ""}`}
     >
-      <HubAppIconContents title={title} artwork={artwork} />
+      <HubAppIconContents title={title} artwork={artwork} large={large} />
     </Link>
   );
 }
@@ -1882,14 +1934,18 @@ function HubAppIconContents({
   title,
   artwork,
   badge = null,
+  large = false,
 }: {
   title: string;
   artwork: HubArtworkKind;
   badge?: number | null;
+  large?: boolean;
 }) {
   return (
     <>
-      <span className="relative grid aspect-square w-full max-w-[96px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg">
+      <span
+        className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
+      >
         <HubArtwork kind={artwork} />
       </span>
       {badge !== null && (
