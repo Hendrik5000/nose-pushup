@@ -15,6 +15,7 @@ import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { MiraVoiceConversationDialog } from "@/components/mira/MiraVoiceConversationDialog";
 import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
+import { MIRA_VISUAL_INSTRUCTIONS } from "@/lib/mira-visual-answer";
 import {
   MiraMarketplaceDraftPreview,
   type MarketplaceMiraDraft,
@@ -1194,7 +1195,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
 
 Interaktive Antwort (optional, nur bei einer ausdrücklichen Gaming-PC-Konfiguratorfrage): Ergänze zum normalen reply-Feld höchstens ein interaction-Objekt exakt in dieser Form: {"type":"pcConfigurator","schemaVersion":1,"budget":900,"resolution":"1080p","priority":"fps"}. Erlaubt sind ausschließlich budget als ganze Zahl von 600 bis 3500 in 100er-Schritten, resolution „1080p“, „1440p“ oder „4k“, priority „fps“ oder „quiet“ sowie die genannten Felder. Keine weiteren Felder. Die feste Alo-Karte leitet daraus lokal ein versioniertes Profil ab. Nenne keine aktuellen Preise, Bestände, Händler, konkreten SKUs oder Kompatibilitätszusagen; dafür gibt es keinen Live-Abgleich. Bei anderen Fragen kein interaction-Feld.
 
-Visualisierung (optional, nur wenn sie die Antwort tatsächlich klarer macht): Wenn du visualisierst, antworte als JSON-Objekt mit dem vollständigen normalen reply und genau einem visual-Objekt. Erlaubte Formen: {"reply":"...","visual":{"type":"metricGrid","schemaVersion":1,"title":"...","items":[{"label":"...","value":"..."},{"label":"...","value":"..."}]}} oder {"reply":"...","visual":{"type":"barChart","schemaVersion":1,"title":"...","unit":"km","items":[{"label":"...","value":2.5},{"label":"...","value":5}]}}. metricGrid hat 2–6 items mit nur label, value und optional detail (Text); barChart hat 2–6 items mit nur label und value, optional unit ausschließlich aus %, €, km, m, cm, kg, g, kcal, h, min, s, W, °C, Punkte. Keine weiteren Felder. Zahlen im barChart müssen aus der Nutzereingabe oder ausdrücklich freigegebenem Kontext stammen; einfache Rechnungen daraus sind nur erlaubt, wenn du sie im reply nachvollziehbar erklärst. Erfinde keine Messwerte, persönlichen Daten, Vergleiche oder Live-Daten. Fehlen belegte Zahlen oder hilft ein Bild nicht, antworte im normalen Textformat und lasse visual weg. Keine URLs, HTML, JavaScript, Iframes, Einbettungen oder ausführbaren Inhalte; die Visuals werden ausschließlich als feste Alo-Karten gerendert.${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
+${MIRA_VISUAL_INSTRUCTIONS}${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
       const aloKnowledge = getMiraAloKnowledgeContext(userContent);
       if (aloKnowledge) systemExtra += `\n\n${aloKnowledge}`;
       if (lastFeedback === "passt_nicht") {

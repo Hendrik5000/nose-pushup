@@ -291,3 +291,23 @@ test("both Mira chat views pass optional visuals to the fixed component only", (
   assert.match(card, /validateMiraVisualAnswer\(visual\)/);
   assert.doesNotMatch(card, /dangerouslySetInnerHTML|<iframe|<script|href=|fetch\(/i);
 });
+
+test("the visual instructions are shared between the Mira page and Nexus panel", () => {
+  const lib = readFileSync(new URL("../src/lib/mira-visual-answer.ts", import.meta.url), "utf8");
+  const page = readFileSync(
+    new URL("../src/components/mira/SuperAiPage.tsx", import.meta.url),
+    "utf8",
+  );
+  const panel = readFileSync(
+    new URL("../src/components/chat/MiraNexusPanel.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(lib, /export const MIRA_VISUAL_INSTRUCTIONS/);
+  assert.match(lib, /Keine URLs, HTML, JavaScript, Iframes/);
+  assert.match(page, /\$\{MIRA_VISUAL_INSTRUCTIONS\}/);
+  assert.doesNotMatch(
+    page,
+    /Visualisierung \(optional, nur wenn sie die Antwort tatsächlich klarer macht\)/,
+  );
+  assert.match(panel, /MIRA_VISUAL_INSTRUCTIONS/);
+});
