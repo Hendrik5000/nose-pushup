@@ -51,6 +51,11 @@ export function MarketplaceAppCatalog({
     ["alo-sports", "alo-neon-starfighter"].includes(plugin.id),
   );
   const selected = plugins.find((plugin) => plugin.id === selectedId) ?? null;
+  const similarApps = selected
+    ? plugins
+        .filter((plugin) => plugin.category === selected.category && plugin.id !== selected.id)
+        .slice(0, 6)
+    : [];
   const normalizedQuery = query.trim().toLowerCase();
   const searchResults =
     normalizedQuery.length > 0
@@ -358,6 +363,46 @@ export function MarketplaceAppCatalog({
                   <DialogDescription className="mt-8 text-base leading-relaxed text-foreground">
                     {selected.description}
                   </DialogDescription>
+                  <section
+                    className="mt-7"
+                    aria-label={`Stilisierte Vorschau von ${selected.name} — keine echten Screenshots`}
+                  >
+                    <h3 className="text-sm font-bold">Vorschau</h3>
+                    <div className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1 pb-1">
+                      <div
+                        aria-hidden="true"
+                        className="flex h-44 w-32 shrink-0 flex-col items-center justify-center gap-3 rounded-2xl bg-gradient-to-br from-primary/25 via-primary/10 to-transparent p-3 text-center ring-1 ring-primary/15"
+                      >
+                        <AppIcon plugin={selected} size="lg" />
+                        <span className="text-xs font-semibold leading-snug">{selected.name}</span>
+                      </div>
+                      {describeMarketplacePermissions(selected)
+                        .slice(0, 3)
+                        .map((permission) => (
+                          <div
+                            key={permission}
+                            className="flex h-44 w-32 shrink-0 items-end rounded-2xl bg-gradient-to-t from-primary/20 via-primary/5 to-transparent p-3 ring-1 ring-primary/10"
+                          >
+                            <span className="text-xs font-medium leading-snug text-foreground">
+                              {permission}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                    <p className="mt-2 px-1 text-[10px] text-muted-foreground">
+                      Stilisierte Darstellung — Alo-Apps nutzen keine externen Screenshots.
+                    </p>
+                  </section>
+                  {similarApps.length > 0 && (
+                    <section className="mt-7" aria-label={`Ähnliche Apps wie ${selected.name}`}>
+                      <h3 className="text-sm font-bold">Ähnliche Apps</h3>
+                      <div className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1 pb-1">
+                        {similarApps.map((plugin) => (
+                          <CarouselCard key={plugin.id} plugin={plugin} />
+                        ))}
+                      </div>
+                    </section>
+                  )}
                   <section
                     className="mt-7 rounded-2xl border border-border/70 bg-card/60 p-4"
                     aria-label={`Berechtigungen für ${selected.name}`}
