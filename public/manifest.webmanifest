@@ -61,6 +61,72 @@
           "sizes": "192x192"
         }
       ]
+    },
+    {
+      "name": "Alo Fußball",
+      "short_name": "Fußball",
+      "url": "/football",
+      "icons": [
+        {
+          "src": "/alo-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Alo Sports",
+      "short_name": "Sports",
+      "url": "/sports",
+      "icons": [
+        {
+          "src": "/alo-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Alo Health",
+      "short_name": "Health",
+      "url": "/health",
+      "icons": [
+        {
+          "src": "/alo-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Alo Spiele",
+      "short_name": "Spiele",
+      "url": "/games",
+      "icons": [
+        {
+          "src": "/alo-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Alo Marketplace",
+      "short_name": "Marketplace",
+      "url": "/marketplace",
+      "icons": [
+        {
+          "src": "/alo-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Alo Browser",
+      "short_name": "Browser",
+      "url": "/browser",
+      "icons": [
+        {
+          "src": "/alo-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

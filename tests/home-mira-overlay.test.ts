@@ -7,6 +7,7 @@ const home = read("src/routes/_authenticated/index.tsx");
 const styles = read("src/mira-home-overlay.css");
 const voiceDialog = read("src/components/mira/MiraVoiceChatDialog.tsx");
 const handoff = read("src/components/alo/MiraHandoff.tsx");
+const superAi = read("src/components/mira/SuperAiPage.tsx");
 const launcherStart = home.indexOf("function MiraOverlayLauncher");
 const launcherEnd = home.indexOf("\nfunction Dashboard", launcherStart);
 const launcher = home.slice(launcherStart, launcherEnd);
@@ -47,7 +48,12 @@ test("Home restores the historical bottom-center Mira launcher and voice dialog"
   );
 });
 
-test("Home voice handoff keeps the current explicit preview and never sends to Mira automatically", () => {
+test("Home voice handoff sends the recognized question directly to Mira after dictation ends", () => {
+  assert.match(launcher, /autoHandoffRef/);
+  assert.match(launcher, /onSettled/);
+  assert.match(launcher, /handoffToMira\(\{/);
+  assert.match(launcher, /alo-mira-autosend/);
+  assert.match(launcher, /navigate\(\{ to: "\/ai" \}\)/);
   assert.match(launcher, /label="Frage in Mira prüfen"/);
   assert.match(launcher, /aria-label="Diktierte Frage verwerfen"/);
   assert.doesNotMatch(launcher, /openOnMount/);
@@ -58,10 +64,13 @@ test("Home voice handoff keeps the current explicit preview and never sends to M
     /onClick=\{\(\) => \(onContinue \? onContinue\(\) : onOpenChange\(false\)\)\}/,
   );
   assert.match(voiceDialog, /Je nach Browser\s+kann/);
-  assert.match(voiceDialog, /nichts\s+wird\s+automatisch\s+an Mira gesendet/);
-  assert.match(voiceDialog, /Mira wird nicht automatisch kontaktiert/);
+  assert.match(voiceDialog, /direkt an Mira übergeben/);
+  assert.doesNotMatch(voiceDialog, /nichts\s+wird\s+automatisch\s+an Mira gesendet/);
+  assert.doesNotMatch(voiceDialog, /Mira wird nicht automatisch kontaktiert/);
   assert.match(handoff, /Kein Versand beim Öffnen/);
   assert.match(handoff, /Kein automatisches Senden/);
+  assert.match(superAi, /alo-mira-autosend/);
+  assert.match(superAi, /submitRef\.current\(text, messagesRef\.current/);
 });
 
 test("Home voice mode opens centered and fullscreen like the Mira voice conversation", () => {

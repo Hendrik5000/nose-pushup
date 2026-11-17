@@ -9,6 +9,7 @@ export type MiraInlineDictationOptions = {
   onInterimTranscript?: (transcript: string) => void;
   onListeningChange?: (listening: boolean) => void;
   onError?: (message: string) => void;
+  onSettled?: () => void;
 };
 
 function getRecognitionErrorMessage(error?: string): string {
@@ -132,6 +133,7 @@ export class MiraInlineDictationController {
     recognition.onerror = null;
     recognition.onend = null;
     this.setListening(false);
+    this.options.onSettled?.();
   }
 
   private release(notify: boolean): void {

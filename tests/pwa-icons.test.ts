@@ -43,3 +43,36 @@ test("the manifest, document head, service worker and notifications still point 
   assert.match(readProjectFile("public/sw.js"), /icon: "\/alo-icon-192\.png"/);
   assert.match(readProjectFile("src/lib/notifications.ts"), /icon: "\/favicon\.png"/);
 });
+
+test("the manifest exposes Android home-screen shortcuts for every main Alo app", () => {
+  const manifest = JSON.parse(readProjectFile("public/manifest.webmanifest")) as {
+    shortcuts: Array<{
+      name: string;
+      short_name: string;
+      url: string;
+      icons: Array<{ src: string }>;
+    }>;
+  };
+  const expected = [
+    ["Nose-Pushup starten", "/"],
+    ["Mira fragen", "/ai"],
+    ["Nexus Chat", "/chat"],
+    ["Alo Fußball", "/football"],
+    ["Alo Sports", "/sports"],
+    ["Alo Health", "/health"],
+    ["Alo Spiele", "/games"],
+    ["Alo Marketplace", "/marketplace"],
+    ["Alo Browser", "/browser"],
+  ] as const;
+  assert.equal(manifest.shortcuts.length, expected.length);
+  for (const [name, url] of expected) {
+    const shortcut = manifest.shortcuts.find((entry) => entry.url === url);
+    assert.ok(shortcut, `shortcut for ${url} should exist`);
+    assert.equal(shortcut.name, name);
+    assert.ok(shortcut.short_name.length > 0, `${url} needs a short_name`);
+    assert.ok(
+      shortcut.icons.some((icon) => icon.src === "/alo-icon-192.png"),
+      `${url} shortcut needs an icon`,
+    );
+  }
+});

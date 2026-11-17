@@ -386,6 +386,7 @@ export function SuperAiPage({
     null,
   );
   const [attachments, setAttachments] = useState<LocalMiraAttachment[]>([]);
+  const [autoSendText, setAutoSendText] = useState<string | null>(null);
   const sendingRef = useRef(false);
   useEffect(() => {
     setAttachments([]);
@@ -764,11 +765,18 @@ export function SuperAiPage({
         setMessages([]);
         setActiveId(id);
       }
-      setInput(readMiraDraft(draftSessionId));
+      const draftText = readMiraDraft(draftSessionId);
+      setInput(draftText);
+      return draftText;
     };
     window.addEventListener(ALO_REMOTE_EVENT, refresh);
     const requested = window.sessionStorage.getItem("alo-open-mira");
-    if (requested) refresh();
+    const autoSendRequested = window.sessionStorage.getItem("alo-mira-autosend") === "1";
+    if (autoSendRequested) window.sessionStorage.removeItem("alo-mira-autosend");
+    if (requested || autoSendRequested) {
+      const draftText = refresh();
+      if (autoSendRequested && requested && draftText.trim()) setAutoSendText(draftText);
+    }
     return () => window.removeEventListener(ALO_REMOTE_EVENT, refresh);
   }, [activeId, cancelInlineDictation, loading]);
   useEffect(() => {
@@ -1377,6 +1385,14 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
   messagesRef.current = messages;
   const submitRef = useRef(submit);
   submitRef.current = submit;
+
+  useEffect(() => {
+    if (!autoSendText) return;
+    const text = autoSendText;
+    setAutoSendText(null);
+    if (!text.trim()) return;
+    void submitRef.current(text, messagesRef.current, { includeAttachments: false });
+  }, [autoSendText]);
 
   const handleVoiceConversationOpenChange = (open: boolean) => {
     setVoiceConversationOpen(open);
