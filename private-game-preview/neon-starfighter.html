@@ -1,10 +1,697 @@
 <!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; img-src 'none';">
-<title>Neon Starfighter</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; img-src 'none';">
+<!-- neon-starfighter-server-only-v2 · Alo 1.173 -->
+<title>Neon Starfighter — Alo-Spiel</title>
 <style>
-:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#070b18;color:#e9f2ff;font:16px system-ui,sans-serif;display:grid;place-items:center}.shell{width:min(920px,100%);padding:20px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.brand{letter-spacing:.16em;text-transform:uppercase;font-size:12px;color:#7dd3fc}.score{display:flex;gap:12px;font-size:13px;color:#a7b6d5}.score b{color:#fff}.panel{position:relative;border:1px solid #263458;border-radius:24px;overflow:hidden;background:radial-gradient(circle at 50% 10%,#19285a,#0b1025 58%,#070b18);box-shadow:0 20px 70px #02040c}.panel:before{content:"";position:absolute;inset:0;background-image:linear-gradient(#fff1 1px,transparent 1px),linear-gradient(90deg,#fff1 1px,transparent 1px);background-size:42px 42px;opacity:.06}.hud{position:absolute;z-index:2;inset:16px;display:flex;justify-content:space-between;pointer-events:none}.tag{height:max-content;padding:8px 10px;border-radius:999px;background:#0b1228cc;border:1px solid #5ee7ff44;font-size:12px}.tag b{color:#67e8f9}.stage{display:block;width:100%;height:min(62vh,560px);min-height:390px}.actions{display:flex;justify-content:center;gap:10px;margin-top:14px}.button{border:1px solid #3a4b78;border-radius:12px;background:#101a35;color:#fff;padding:11px 16px;font-weight:700;cursor:pointer}.button.primary{background:#0891b2;border-color:#67e8f9;color:#00131a}.help{text-align:center;color:#91a1c2;font-size:12px;margin-top:10px}
+:root{color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;background:#070b18;color:#e9f2ff;font:16px system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;place-items:center;touch-action:none}
+.shell{width:min(960px,100%);padding:20px}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.brand{letter-spacing:.16em;text-transform:uppercase;font-size:12px;color:#7dd3fc}
+h1{margin:4px 0 0;font-size:clamp(24px,5vw,38px);letter-spacing:-.02em}
+.score{display:flex;gap:14px;font-size:13px;color:#a7b6d5;align-items:center;flex-wrap:wrap}
+.score b{color:#fff;font-variant-numeric:tabular-nums}
+.score .credits{color:#fbbf24}
+.statusline{min-height:18px;font-size:12px;color:#67e8f9;margin-bottom:10px}
+.panel{position:relative;border:1px solid #263458;border-radius:24px;overflow:hidden;background:radial-gradient(circle at 50% 10%,#19285a,#0b1025 58%,#070b18);box-shadow:0 20px 70px #02040c}
+.panel:before{content:"";position:absolute;inset:0;background-image:linear-gradient(#fff1 1px,transparent 1px),linear-gradient(90deg,#fff1 1px,transparent 1px);background-size:42px 42px;opacity:.06;pointer-events:none}
+.stage{display:block;width:100%;height:min(60vh,540px);min-height:380px}
+.hud{position:absolute;z-index:2;inset:14px;display:flex;justify-content:space-between;gap:10px;pointer-events:none;align-items:flex-start}
+.bars{display:flex;flex-direction:column;gap:8px;width:min(46%,240px)}
+.bar{pointer-events:auto;cursor:pointer}
+.bar .lbl{display:flex;justify-content:space-between;font-size:11px;color:#a7b6d5;margin-bottom:3px}
+.bar .lbl b{color:#e9f2ff}
+.track{height:5px;border-radius:999px;background:#0b1228cc;border:1px solid #ffffff22;overflow:hidden}
+.fill{height:100%;border-radius:999px;transition:width .15s linear}
+.fill.shield{background:#67e8f9}
+.fill.emp{background:#a78bfa}
+.fill.emp.ready{background:#c4b5fd;box-shadow:0 0 10px #a78bfa}
+.tag{height:max-content;padding:8px 10px;border-radius:999px;background:#0b1228cc;border:1px solid #5ee7ff44;font-size:12px;white-space:nowrap}
+.tag b{color:#67e8f9;font-variant-numeric:tabular-nums}
+.combo{position:absolute;z-index:2;top:64px;left:14px;font-size:11px;font-weight:700;letter-spacing:.08em;color:#fbbf24;opacity:0;transition:opacity .2s}
+.combo.on{opacity:1}
+.overlay{position:absolute;inset:0;z-index:10;background:#070b18f2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px;overflow-y:auto}
+.overlay.hidden{display:none}
+.overlay h2{font-size:clamp(20px,4vw,30px);letter-spacing:-.01em;margin-bottom:4px}
+.overlay .sub{font-size:12px;color:#7dd3fc;text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px}
+.meta{display:flex;justify-content:space-between;width:100%;max-width:420px;border-bottom:1px solid #ffffff1a;padding-bottom:8px;margin-bottom:12px;font-size:13px;color:#a7b6d5}
+.meta b{color:#fbbf24;font-variant-numeric:tabular-nums}
+.classes{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:420px;margin-bottom:12px}
+.class-tab{border:1px solid #263458;background:#0b122866;border-radius:14px;padding:10px;cursor:pointer;transition:all .2s}
+.class-tab.sel{border-color:#67e8f9;background:#67e8f914}
+.class-tab .name{display:block;font-size:13px;font-weight:600;color:#fff}
+.class-tab .desc{display:block;font-size:11px;color:#a7b6d5;margin-top:2px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);width:100%;max-width:420px;border-bottom:1px solid #ffffff1a;margin-bottom:10px}
+.tabs button{background:none;border:none;border-bottom:2px solid transparent;color:#a7b6d5;font-size:12px;font-weight:600;padding:9px 2px;cursor:pointer}
+.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:#67e8f9}
+.tabpane{width:100%;max-width:420px;max-height:34vh;min-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;text-align:left}
+.tabpane.hidden{display:none}
+.card{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;border:1px solid #263458;background:#0b122866;border-radius:14px;padding:10px 12px;cursor:pointer;text-align:left;transition:all .2s;color:#e9f2ff;font:inherit}
+.card:hover:not(:disabled){border-color:#5ee7ff88;background:#0b1228aa}
+.card:disabled{opacity:.45;cursor:not-allowed}
+.card .t{font-size:13px;font-weight:600;color:#fff}
+.card .d{font-size:11px;color:#a7b6d5;margin-top:2px}
+.card .price{font-size:12px;font-weight:700;color:#fbbf24;white-space:nowrap;font-variant-numeric:tabular-nums}
+.card.owned .price{color:#67e8f9}
+.card.equipped{border-color:#67e8f9;background:#67e8f914}
+.card.done{opacity:.55}
+.card.static{cursor:default}
+.mission-done .price{color:#34d399}
+.profile-row{display:flex;flex-direction:column;gap:8px}
+.profile-row label{font-size:11px;color:#a7b6d5;text-transform:uppercase;letter-spacing:.1em}
+.profile-row input{background:#0b1228aa;border:1px solid #263458;border-radius:999px;color:#fff;font:inherit;font-size:13px;padding:9px 14px;outline:none;text-align:center;width:100%}
+.profile-row input:focus{border-color:#67e8f9}
+.avatars{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.avatar-option{border:1px solid #263458;background:#0b122866;border-radius:12px;font-size:20px;padding:8px 0;cursor:pointer;text-align:center}
+.avatar-option.sel{border-color:#67e8f9;background:#67e8f914}
+.ai-tip{border:1px solid #263458;background:#0b122866;border-radius:14px;padding:12px;font-size:12px;line-height:1.5;color:#cfe6ff}
+.ai-tip b{color:#67e8f9}
+.actions{display:flex;justify-content:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.button{border:1px solid #3a4b78;border-radius:12px;background:#101a35;color:#fff;padding:11px 16px;font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s}
+.button:active{transform:scale(.97)}
+.button.primary{background:#0891b2;border-color:#67e8f9;color:#00131a}
+.button.ghost{background:transparent}
+.gameover-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:360px;margin-bottom:14px}
+.gameover-stats div{border:1px solid #263458;border-radius:14px;padding:12px}
+.gameover-stats .k{font-size:11px;color:#a7b6d5;text-transform:uppercase;letter-spacing:.1em}
+.gameover-stats .v{font-size:22px;font-weight:700;color:#fff;margin-top:2px;font-variant-numeric:tabular-nums}
+.record{color:#fbbf24;font-size:12px;font-weight:700;letter-spacing:.08em;margin-bottom:10px}
+.toast{position:absolute;z-index:30;top:-90px;left:50%;transform:translateX(-50%);width:90%;max-width:380px;background:#0b1228f0;border:1px solid #67e8f966;border-radius:18px;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 18px 40px #02040ecc;transition:top .35s cubic-bezier(.16,1,.3,1);text-align:left}
+.toast.show{top:70px}
+.toast .ic{font-size:20px}
+.toast .cat{font-size:9px;color:#7dd3fc;text-transform:uppercase;letter-spacing:.12em;font-weight:700}
+.toast .ti{font-size:12px;color:#fff;font-weight:600}
+.toast .rw{font-size:10px;color:#fbbf24;margin-top:1px}
+.help{text-align:center;color:#91a1c2;font-size:12px;margin-top:10px;line-height:1.6}
+.help .pub{display:block;margin-top:4px;color:#5b6b8f;font-size:11px}
+@media (max-width:1000px){.stage{height:min(56vh,480px)}.hud{inset:10px}}
+@media (max-width:600px){.shell{padding:12px}.stage{min-height:320px;height:52vh}.tabs button{font-size:11px;padding:8px 1px}.score{font-size:12px;gap:10px}.actions .button{padding:10px 14px;font-size:13px}}
 </style></head>
-<body><main class="shell"><div class="top"><div><div class="brand">Alo Arcade</div><h1 style="margin:4px 0 0;font-size:clamp(24px,5vw,38px)">Neon Starfighter</h1></div><div class="score">Welle <b id="wave">1</b> · Punkte <b id="points">0</b></div></div><section class="panel"><div class="hud"><span class="tag">Schild <b id="shield">100%</b></span><span class="tag">Mission <b id="mission">Bereit</b></span></div><canvas id="stage" class="stage" aria-label="Spielfeld"></canvas></section><div class="actions"><button class="button primary" id="start">Mission starten</button><button class="button" id="reset">Highscore löschen</button></div><p class="help">Steuerung: Pfeiltasten oder A/D bewegen · Leertaste feuert · Mobil: tippen und ziehen</p></main>
-<script>(()=>{const c=document.querySelector('#stage'),x=c.getContext('2d'),start=document.querySelector('#start'),reset=document.querySelector('#reset'),pointsEl=document.querySelector('#points'),waveEl=document.querySelector('#wave'),shieldEl=document.querySelector('#shield'),missionEl=document.querySelector('#mission');let d=1,w=1,p=0,s=100,running=false,keys=new Set(),ship={x:.5,y:.84},shots=[],enemies=[],last=0,raf=0;const high=()=>Number(localStorage.getItem('alo-neon-highscore')||0);function size(){const q=c.getBoundingClientRect();d=Math.max(1,devicePixelRatio||1);c.width=q.width*d;c.height=q.height*d;x.setTransform(d,0,0,d,0,0)}function spawn(){enemies=[];for(let i=0;i<Math.min(4+w,9);i++)enemies.push({x:.12+i/(Math.min(4+w,9)-1)*.76,y:.14+Math.random()*.18,dx:(Math.random()-.5)*.03,hp:1})}function draw(){const q=c.getBoundingClientRect(),W=q.width,H=q.height;x.clearRect(0,0,W,H);x.fillStyle='#67e8f9';for(let i=0;i<35;i++){const xx=(i*97+Date.now()/35)%W,yy=(i*53)%H;x.globalAlpha=.25+(i%3)/5;x.fillRect(xx,yy,2,2)}x.globalAlpha=1;x.save();x.translate(ship.x*W,ship.y*H);x.fillStyle='#a5f3fc';x.shadowBlur=20;x.shadowColor='#22d3ee';x.beginPath();x.moveTo(0,-18);x.lineTo(13,14);x.lineTo(0,8);x.lineTo(-13,14);x.closePath();x.fill();x.restore();enemies.forEach(e=>{x.fillStyle='#fb7185';x.shadowBlur=14;x.shadowColor='#fb7185';x.beginPath();x.moveTo(e.x*W,(e.y*H)-12);x.lineTo(e.x*W+12,e.y*H+10);x.lineTo(e.x*W-12,e.y*H+10);x.closePath();x.fill()});x.shadowBlur=0;shots.forEach(a=>{x.fillStyle='#fef08a';x.fillRect(a.x*W,a.y*H,3,12)})}function frame(t){const dt=Math.min(32,t-last)/1000;last=t;if(running){if(keys.has('ArrowLeft')||keys.has('a'))ship.x=Math.max(.06,ship.x-dt*.65);if(keys.has('ArrowRight')||keys.has('d'))ship.x=Math.min(.94,ship.x+dt*.65);shots.forEach(a=>a.y-=dt*1.25);shots=shots.filter(a=>a.y>-.1);enemies.forEach(e=>{e.x+=e.dx*dt;e.y+=dt*.025});shots.forEach(a=>enemies.forEach(e=>{if(Math.abs(a.x-e.x)<.035&&Math.abs(a.y-e.y)<.05){e.hp=0;p+=10}}));enemies=enemies.filter(e=>e.hp);if(enemies.some(e=>e.y>.78)){s=Math.max(0,s-20);shieldEl.textContent=s+'%';enemies=[]}if(!enemies.length){w++;waveEl.textContent=w;missionEl.textContent='Welle '+w;spawn()}pointsEl.textContent=p}draw();raf=requestAnimationFrame(frame)}function begin(){running=true;p=0;w=1;s=100;ship.x=.5;waveEl.textContent=w;pointsEl.textContent=p;shieldEl.textContent='100%';missionEl.textContent='Welle 1';spawn();cancelAnimationFrame(raf);raf=requestAnimationFrame(frame);start.textContent='Mission läuft'}function fire(){if(running)shots.push({x:ship.x,y:ship.y-.05})}addEventListener('keydown',e=>{keys.add(e.key);if(e.code==='Space'){e.preventDefault();fire()}if(e.key==='Enter'&&!running)begin()});addEventListener('keyup',e=>keys.delete(e.key));c.addEventListener('pointermove',e=>{if(e.buttons){const q=c.getBoundingClientRect();ship.x=Math.max(.06,Math.min(.94,(e.clientX-q.left)/q.width))}});c.addEventListener('pointerdown',fire);start.onclick=begin;reset.onclick=()=>{localStorage.removeItem('alo-neon-highscore');pointsEl.textContent='0';missionEl.textContent='Highscore gelöscht'};addEventListener('resize',size);size();draw()})();</script></body></html>
+<body>
+<main class="shell">
+  <div class="top">
+    <div>
+      <div class="brand">Alo Arcade</div>
+      <h1>Neon Starfighter</h1>
+    </div>
+    <div class="score">
+      <span>Punkte <b id="points">0</b></span>
+      <span>Sektor <b id="wave">01</b></span>
+      <span class="credits">Credits <b id="credits">0</b></span>
+      <span>Sitzungsbest <b id="best">0</b></span>
+    </div>
+  </div>
+  <p class="statusline" id="status" role="status" aria-live="polite">Bereit im Hangar — Klasse wählen und Mission starten.</p>
+  <section class="panel">
+    <canvas id="stage" class="stage" aria-label="Spielfeld"></canvas>
+    <div class="hud">
+      <div class="bars">
+        <div class="bar" id="shield-bar">
+          <div class="lbl"><span>Schild</span><b id="shield-txt">100%</b></div>
+          <div class="track"><div class="fill shield" id="shield-fill" style="width:100%"></div></div>
+        </div>
+        <div class="bar" id="emp-click" title="EMP entladen">
+          <div class="lbl"><span>EMP (E / Tippen)</span><b id="emp-txt">0%</b></div>
+          <div class="track"><div class="fill emp" id="emp-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+      <span class="tag" id="mission-tag">Mission <b>Bereit</b></span>
+    </div>
+    <div class="combo" id="combo">x1 Combo</div>
+    <div class="toast" id="toast">
+      <span class="ic" id="toast-ic">🏅</span>
+      <span><span class="cat" id="toast-cat">Mission</span><br><span class="ti" id="toast-ti">Ziel erreicht</span><br><span class="rw" id="toast-rw">+50 C</span></span>
+    </div>
+
+    <div class="overlay" id="screen-start">
+      <h2>Neon Starfighter</h2>
+      <p class="sub">Alo Arcade Command Center</p>
+      <div class="meta"><span>🪙 Credits: <b id="credits-hangar">0</b></span><span>Rang: <b id="rank" style="color:#fff">Rekrut</b></span></div>
+      <div class="classes">
+        <button class="class-tab sel" id="class-interceptor" aria-pressed="true"><span class="name">Interceptor</span><span class="desc">Wendig & ausgewogen</span></button>
+        <button class="class-tab" id="class-valkyrie" aria-pressed="false"><span class="name">Valkyrie Heavy</span><span class="desc">Panzerung & Wucht</span></button>
+      </div>
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" id="tab-status">Status</button>
+        <button role="tab" aria-selected="false" id="tab-arsenal">Arsenal</button>
+        <button role="tab" aria-selected="false" id="tab-missions">Missionen</button>
+        <button role="tab" aria-selected="false" id="tab-profile">Profil</button>
+        <button role="tab" aria-selected="false" id="tab-ai">KI-Kern</button>
+      </div>
+      <div class="tabpane" id="pane-status"></div>
+      <div class="tabpane hidden" id="pane-arsenal"></div>
+      <div class="tabpane hidden" id="pane-missions"></div>
+      <div class="tabpane hidden" id="pane-profile">
+        <div class="profile-row">
+          <label for="pilot-name">Pilotenname</label>
+          <input id="pilot-name" maxlength="18" placeholder="Pilot" autocomplete="off">
+        </div>
+        <div class="profile-row">
+          <label id="avatar-label">Abzeichen</label>
+          <div class="avatars" role="group" aria-labelledby="avatar-label" id="avatar-list"></div>
+        </div>
+      </div>
+      <div class="tabpane hidden" id="pane-ai">
+        <div class="ai-tip" id="ai-tip"><b>KI-Kern:</b> Starte eine Mission — ich analysiere deine Lage und gebe dir während des Flugs Rat.</div>
+      </div>
+      <div class="actions">
+        <button class="button primary" id="start">Mission starten</button>
+      </div>
+    </div>
+
+    <div class="overlay hidden" id="screen-over">
+      <h2>Mission beendet</h2>
+      <p class="record hidden" id="record">★ Neuer Sitzungsbest ★</p>
+      <div class="gameover-stats">
+        <div><div class="k">Punkte</div><div class="v" id="final-points">0</div></div>
+        <div><div class="k">Sektor</div><div class="v" id="final-wave">01</div></div>
+        <div><div class="k">Abschüsse</div><div class="v" id="final-kills">0</div></div>
+        <div><div class="k">Credits verdient</div><div class="v" id="final-credits">0</div></div>
+      </div>
+      <div class="actions">
+        <button class="button primary" id="again">Erneut starten</button>
+        <button class="button ghost" id="to-hangar">Zum Hangar</button>
+      </div>
+    </div>
+  </section>
+  <div class="actions">
+    <button class="button" id="pause" hidden>Pause</button>
+    <button class="button ghost" id="reset">Sitzungsbest zurücksetzen</button>
+  </div>
+  <p class="help">
+    Steuerung: Pfeiltasten oder A/D bewegen · Leertaste feuern · E für EMP · P für Pause · Mobil: tippen und ziehen
+    <span class="pub">Alo-Spiel · ohne Anmeldung · Öffentliche Alo-Spielauslieferung · Spielstand nur für diese Sitzung</span>
+  </p>
+</main>
+<script>(()=>{
+"use strict";
+const q=(s)=>document.querySelector(s);
+const c=q("#stage"),x=c.getContext("2d");
+const pointsEl=q("#points"),waveEl=q("#wave"),creditsEl=q("#credits"),bestEl=q("#best");
+const shieldTxt=q("#shield-txt"),shieldFill=q("#shield-fill"),empTxt=q("#emp-txt"),empFill=q("#emp-fill");
+const missionTag=q("#mission-tag"),comboEl=q("#combo"),statusEl=q("#status");
+const screenStart=q("#screen-start"),screenOver=q("#screen-over");
+const startBtn=q("#start"),againBtn=q("#again"),hangarBtn=q("#to-hangar"),pauseBtn=q("#pause"),resetBtn=q("#reset");
+const toast=q("#toast"),toastIc=q("#toast-ic"),toastCat=q("#toast-cat"),toastTi=q("#toast-ti"),toastRw=q("#toast-rw");
+
+const session={best:0,credits:0,pilot:"",avatar:"🌌",cls:"interceptor",weapon:"blaster",owned:{blaster:true,scatter:false,railgun:false},up:{shield:1,weapon:1,combo:1},missions:{}};
+const AVATARS=["🌌","🚀","👾","🛸","⭐","☄️"];
+const CLASSES={
+  interceptor:{name:"Interceptor",maxShield:100,speed:.72,cooldown:13,label:"Wendig & ausgewogen"},
+  valkyrie:{name:"Valkyrie Heavy",maxShield:165,speed:.5,cooldown:17,label:"Panzerung & Wucht"}
+};
+const WEAPONS={
+  blaster:{name:"Standard-Blaster",desc:"Doppelte Gold-Strahlen",price:0},
+  scatter:{name:"Streu-Feuer",desc:"3-Wege-Spread-Array",price:600},
+  railgun:{name:"Plasma-Railcore",desc:"Durchschlagsstrahlen mit hoher Geschwindigkeit",price:1200}
+};
+const UPGRADES={
+  shield:{name:"Schild-Matrix",desc:(l)=>"Max. Schild +25 (Stufe "+l+"/5)",price:(l)=>200*l},
+  weapon:{name:"Laser-Katalysator",desc:(l)=>"Feuerrate & Schaden + (Stufe "+l+"/5)",price:(l)=>350*l},
+  combo:{name:"Combo-Prozessor",desc:(l)=>"Combo-Fenster + (Stufe "+l+"/5)",price:(l)=>150*l}
+};
+const MISSIONS=[
+  {id:"first",ic:"🎯",name:"Erster Abschuss",desc:"Zerstöre 1 Gegner",reward:50,test:(s)=>s.kills>=1},
+  {id:"kills25",ic:"🎯",name:"Rettungsschwarm",desc:"Zerstöre 25 Gegner",reward:150,test:(s)=>s.kills>=25},
+  {id:"score10k",ic:"💯",name:"Zehntausend",desc:"Erreiche 10.000 Punkte",reward:300,test:(s)=>s.score>=10000},
+  {id:"wave5",ic:"🧭",name:"Sektor 5",desc:"Erreiche Sektor 5",reward:200,test:(s)=>s.wave>=5},
+  {id:"boss",ic:"👾",name:"Kernbrecher",desc:"Besiege einen Sektor-Boss",reward:500,test:(s)=>s.bossKills>=1},
+  {id:"combo10",ic:"⚡",name:"Kettenkommando",desc:"Erreiche Combo x10",reward:250,test:(s)=>s.maxCombo>=10}
+];
+const RANKS=[[0,"Rekrut"],[3000,"Flieger"],[8000,"Veteran"],[15000,"Ass"],[30000,"Kommandant"]];
+
+let dpr=1,raf=0,last=0;
+let state="menu";
+let paused=false;
+let score=0,wave=1,kills=0,bossKills=0,maxCombo=0;
+let shield=100,maxShield=100,emp=0;
+let combo=0,comboTimer=0,comboMax=200;
+let shots=[],eShots=[],enemies=[],boss=null,powerups=[],particles=[];
+let stars=[],ship={x:.5,y:.84},shake=0,flash=0,warnTimer=0,warnText="";
+let cooldown=0,coolMax=13,tripleTimer=0,stunTimer=0;
+let hack=null;
+
+function rank(){let r=RANKS[0][1];for(const[min,name]of RANKS){if(session.credits>=min)r=name}return r}
+function classCfg(){return CLASSES[session.cls]}
+function applyClass(){maxShield=classCfg().maxShield+(session.up.shield-1)*25;coolMax=Math.max(5,classCfg().cooldown-(session.up.weapon-1)*2);comboMax=200+(session.up.combo-1)*45}
+function setStatus(t){statusEl.textContent=t}
+function fmt(n){return String(n).padStart(2,"0")}
+
+function size(){const r=c.getBoundingClientRect();dpr=Math.max(1,window.devicePixelRatio||1);c.width=Math.round(r.width*dpr);c.height=Math.round(r.height*dpr)}
+function starsInit(){stars=[];for(let i=0;i<46;i++)stars.push({x:Math.random(),y:Math.random(),s:Math.random()*1.8+.6,a:.2+Math.random()*.5,v:.02+Math.random()*.06})}
+
+function updateHud(){
+  pointsEl.textContent=score;waveEl.textContent=fmt(wave);creditsEl.textContent=session.credits;bestEl.textContent=session.best;
+  shieldTxt.textContent=Math.round(shield)+"%";shieldFill.style.width=(maxShield?shield/maxShield*100:0)+"%";
+  empTxt.textContent=Math.round(emp)+"%";empFill.style.width=emp+"%";empFill.classList.toggle("ready",emp>=100);
+  missionTag.innerHTML="Mission <b>"+(state==="playing"?"Sektor "+fmt(wave):state==="hacking"?"Hack läuft":state==="gameover"?"Beendet":"Bereit")+"</b>";
+  if(combo>1){comboEl.textContent="x"+combo+" Combo";comboEl.classList.add("on")}else comboEl.classList.remove("on");
+  q("#credits-hangar").textContent=session.credits;q("#rank").textContent=rank();
+}
+
+function toastShow(ic,cat,ti,rw){
+  toastIc.textContent=ic;toastCat.textContent=cat;toastTi.textContent=ti;toastRw.textContent=rw;
+  toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),2600);
+}
+function checkMissions(){
+  const snap={kills,score,wave,bossKills,maxCombo};
+  for(const m of MISSIONS){
+    if(!session.missions[m.id]&&m.test(snap)){
+      session.missions[m.id]=true;session.credits+=m.reward;
+      toastShow(m.ic,"Mission",m.name,"+"+m.reward+" C");
+    }
+  }
+}
+
+function buyUpgrade(key){
+  const lvl=session.up[key];
+  if(lvl>=5)return;
+  const cost=UPGRADES[key].price(lvl);
+  if(session.credits<cost){setStatus("Nicht genug Credits für "+UPGRADES[key].name+" ("+cost+" C).");return}
+  session.credits-=cost;session.up[key]=lvl+1;applyClass();
+  setStatus(UPGRADES[key].name+" auf Stufe "+(lvl+1)+" ausgebaut.");
+  renderHangar();updateHud();
+}
+function buyWeapon(key){
+  if(session.owned[key]){session.weapon=key;setStatus(WEAPONS[key].name+" ausgerüstet.");renderHangar();return}
+  const cost=WEAPONS[key].price;
+  if(session.credits<cost){setStatus("Nicht genug Credits für "+WEAPONS[key].name+" ("+cost+" C).");return}
+  session.credits-=cost;session.owned[key]=true;session.weapon=key;
+  setStatus(WEAPONS[key].name+" gekauft und ausgerüstet.");
+  renderHangar();updateHud();
+}
+
+function renderHangar(){
+  const st=q("#pane-status");st.innerHTML="";
+  for(const key of Object.keys(UPGRADES)){
+    const lvl=session.up[key],b=document.createElement("button");
+    b.className="card"+(lvl>=5?" done":"");
+    const cost=lvl>=5?"MAX":UPGRADES[key].price(lvl)+" C";
+    b.innerHTML='<span><span class="t">'+UPGRADES[key].name+'</span><span class="d">'+UPGRADES[key].desc(lvl)+'</span></span><span class="price">'+cost+"</span>";
+    if(lvl<5)b.onclick=()=>buyUpgrade(key);
+    st.appendChild(b);
+  }
+  const ar=q("#pane-arsenal");ar.innerHTML="";
+  for(const key of Object.keys(WEAPONS)){
+    const owned=session.owned[key],eq=session.weapon===key,b=document.createElement("button");
+    b.className="card"+(eq?" equipped":"")+(owned?" owned":"");
+    b.innerHTML='<span><span class="t">'+WEAPONS[key].name+'</span><span class="d">'+WEAPONS[key].desc+(owned?(eq?" · Ausgerüstet":" · Bereit"):"")+'</span></span><span class="price">'+(owned?(eq?"Aktiv":"Ausrüsten"):WEAPONS[key].price+" C")+"</span>";
+    b.onclick=()=>buyWeapon(key);
+    ar.appendChild(b);
+  }
+  const ms=q("#pane-missions");ms.innerHTML="";
+  for(const m of MISSIONS){
+    const done=Boolean(session.missions[m.id]),d=document.createElement("div");
+    d.className="card static"+(done?" done mission-done":"");
+    d.innerHTML='<span><span class="t">'+m.ic+" "+m.name+'</span><span class="d">'+m.desc+"</span></span>"+'<span class="price">'+(done?"✓ Erledigt":"+"+m.reward+" C")+"</span>";
+    ms.appendChild(d);
+  }
+  q("#pilot-name").value=session.pilot;
+  const al=q("#avatar-list");al.innerHTML="";
+  for(const a of AVATARS){
+    const b=document.createElement("button");
+    b.className="avatar-option"+(session.avatar===a?" sel":"");b.textContent=a;
+    b.setAttribute("aria-label","Abzeichen "+a);b.setAttribute("aria-pressed",String(session.avatar===a));
+    b.onclick=()=>{session.avatar=a;renderHangar()};
+    al.appendChild(b);
+  }
+  q("#ai-tip").innerHTML="<b>KI-Kern:</b> "+aiAdvice();
+}
+
+function aiAdvice(){
+  if(state==="playing"&&boss)return "Boss im Anflug — halte die Mitte, weiche den Plasma-Kugeln seitlich aus und feure in die HP-Leiste.";
+  if(state==="playing"&&shield<maxShield*.35)return "Schild kritisch ("+Math.round(shield)+"%) — weich aus, sammle grüne Reparatur-Würfel.";
+  if(state==="playing"&&emp>=100)return "EMP voll geladen — tippe die violette Leiste oder drücke E, um alle Geschosse zu löschen.";
+  if(state==="playing"&&combo>=5)return "Combo x"+combo+" läuft — nicht getroffen werden, sonst ist die Kette weg.";
+  if(session.credits>=600&&!session.owned.scatter)return "600 Credits reichen für das Streu-Feuer-Array — deutlich mehr Flächenschaden.";
+  if(session.up.shield<3&&session.credits>=200*session.up.shield)return "Investiere in die Schild-Matrix — Überleben schlägt Feuerkraft.";
+  return "Halte die Mitte des Feldes, nutze Kurzbursts und sammle Powerups zwischen den Wellen.";
+}
+
+function spawnWave(){
+  enemies=[];boss=null;
+  if(wave%5===0){
+    boss={x:.5,y:-.12,hp:22+wave*4,maxHp:22+wave*4,cool:60,t:0};
+    warnText="SEKTOR "+fmt(wave)+" — BOSS IM ANFLUG";
+  }else{
+    const n=Math.min(4+wave,9),hp=1+Math.floor((wave-1)/6);
+    for(let i=0;i<n;i++)enemies.push({x:.12+i/(n-1)*.76,y:.1+Math.random()*.16,dx:(Math.random()-.5)*.05,hp,type:i===wave%3?"elite":"bug",t:Math.random()*6});
+    warnText="SEKTOR "+fmt(wave)+" INCOMING";
+  }
+  warnTimer=110;
+}
+
+function startHack(){
+  state="hacking";paused=false;
+  const span=Math.max(.42,.85-wave*.03);
+  const start=Math.random()*(Math.PI*2);
+  hack={angle:0,speed:.05+wave*.004,targetStart:start,targetEnd:start+span,left:300,done:false};
+  setStatus("Hack den Sektortransfer: Tippe, wenn die Nadel im grünen Sektor ist.");
+  updateHud();
+}
+
+function beginRun(){
+  applyClass();
+  score=0;wave=1;kills=0;bossKills=0;maxCombo=0;combo=0;comboTimer=0;emp=0;
+  shield=maxShield;shots=[];eShots=[];enemies=[];boss=null;powerups=[];particles=[];
+  tripleTimer=0;stunTimer=0;cooldown=0;shake=0;flash=0;
+  ship.x=.5;state="playing";paused=false;
+  screenStart.classList.add("hidden");screenOver.classList.add("hidden");pauseBtn.hidden=false;
+  spawnWave();setStatus("Mission gestartet — Sektor 1.");updateHud();
+  cancelAnimationFrame(raf);last=performance.now();raf=requestAnimationFrame(frame);
+}
+
+function endRun(){
+  state="gameover";pauseBtn.hidden=true;
+  const earned=Math.floor(score/10);session.credits+=earned;
+  const record=score>session.best;if(record)session.best=score;
+  q("#final-points").textContent=score;q("#final-wave").textContent=fmt(wave);
+  q("#final-kills").textContent=kills;q("#final-credits").textContent=earned;
+  q("#record").classList.toggle("hidden",!record);
+  screenOver.classList.remove("hidden");
+  setStatus("Mission beendet — "+earned+" Credits verdient.");
+  updateHud();renderHangar();
+}
+
+function toHangar(){
+  state="menu";screenOver.classList.add("hidden");screenStart.classList.remove("hidden");
+  pauseBtn.hidden=true;renderHangar();updateHud();
+  setStatus("Zurück im Hangar — Upgrades prüfen und erneut starten.");
+}
+
+function boom(xn,yn,color,n){
+  for(let i=0;i<n*8;i++)particles.push({x:xn,y:yn,dx:(Math.random()-.5)*.9,dy:(Math.random()-.5)*.9,r:Math.random()*2.2+.6,c:color,a:.85,dk:.03});
+}
+function fireEmp(){
+  if(state!=="playing"||emp<100)return;
+  emp=0;stunTimer=190;flash=.7;shake=8;
+  eShots=[];
+  for(const e of enemies)e.hp-=3;
+  if(boss)boss.hp-=6;
+  enemies=enemies.filter(e=>e.hp>0);
+  setStatus("EMP entladen — alle Geschosse gelöscht, Feinde gestunnt.");
+  updateHud();
+}
+function togglePause(){
+  if(state!=="playing"&&state!=="hacking")return;
+  paused=!paused;pauseBtn.textContent=paused?"Weiter":"Pause";
+  setStatus(paused?"Pause":"Weiter geht's.");
+}
+
+function update(dt){
+  for(const s of stars){s.y+=s.v*dt*60/1000;if(s.y>1){s.y=0;s.x=Math.random()}}
+  if(flash>0)flash-=.05;if(shake>0)shake*=.86;if(warnTimer>0)warnTimer--;
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.dx*dt*60/1000;p.y+=p.dy*dt*60/1000;p.a-=p.dk;if(p.a<=0)particles.splice(i,1)}
+  if(state!=="playing"||paused)return;
+
+  if(combo>0){comboTimer-=dt*60;if(comboTimer<=0){combo=0;updateHud()}}
+  if(tripleTimer>0)tripleTimer-=dt*60;
+  if(stunTimer>0)stunTimer-=dt*60;
+
+  if(keys.has("ArrowLeft")||keys.has("a"))ship.x=Math.max(.05,ship.x-classCfg().speed*dt);
+  if(keys.has("ArrowRight")||keys.has("d"))ship.x=Math.min(.95,ship.x+classCfg().speed*dt);
+
+  if(cooldown>0)cooldown-=dt*60;
+  if(cooldown<=0){
+    const dmg=session.up.weapon;
+    if(tripleTimer>0||session.weapon==="scatter"){
+      shots.push({x:ship.x-.03,y:ship.y-.03,dx:-.28,dy:-.95,dmg});
+      shots.push({x:ship.x,y:ship.y-.05,dx:0,dy:-1.05,dmg});
+      shots.push({x:ship.x+.03,y:ship.y-.03,dx:.28,dy:-.95,dmg});
+      cooldown=Math.max(6,coolMax-3);
+    }else if(session.weapon==="railgun"){
+      shots.push({x:ship.x,y:ship.y-.06,dx:0,dy:-1.5,dmg:dmg+1,rail:true});
+      cooldown=Math.max(4,coolMax-4);
+    }else{
+      shots.push({x:ship.x-.02,y:ship.y-.04,dx:0,dy:-1,dmg});
+      shots.push({x:ship.x+.02,y:ship.y-.04,dx:0,dy:-1,dmg});
+      cooldown=coolMax;
+    }
+  }
+
+  for(let i=shots.length-1;i>=0;i--){const s=shots[i];s.x+=s.dx*dt;s.y+=s.dy*dt;if(s.y<-.08)shots.splice(i,1)}
+
+  if(!enemies.length&&!boss){startHack();return}
+
+  if(boss){
+    if(boss.y<.16)boss.y+=.12*dt;else boss.t+=dt;
+    if(stunTimer<=0){
+      boss.x=.5+Math.sin(boss.t*.9)*.3;
+      boss.cool-=dt*60;
+      if(boss.cool<=0&&boss.y>=.16){
+        const ang=Math.atan2(ship.y-boss.y,ship.x-boss.x);
+        eShots.push({x:boss.x,y:boss.y+.04,dx:Math.cos(ang)*.42,dy:Math.sin(ang)*.42,sphere:true});
+        boss.cool=Math.max(38,75-wave);
+      }
+    }
+    for(let j=shots.length-1;j>=0;j--){const s=shots[j];
+      if(Math.abs(s.x-boss.x)<.06&&Math.abs(s.y-boss.y)<.06){
+        shots.splice(j,1);boss.hp-=s.dmg;
+        if(boss.hp<=0){
+          boom(boss.x,boss.y,"#fb7185",4);shake=10;bossKills++;kills++;
+          score+=3000;session.credits+=200;boss=null;
+          toastShow("👾","Boss","Sektor-Boss besiegt","+200 C");
+          checkMissions();startHack();return;
+        }
+      }
+    }
+  }
+
+  for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];
+    if(stunTimer<=0){
+      e.x+=e.dx*dt;if(e.x<.06||e.x>.94)e.dx*=-1;
+      e.y+=.028*dt;e.t+=dt*3;
+      e.cool=(e.cool||60+Math.random()*90)-dt*60;
+      if(e.cool<=0){eShots.push({x:e.x,y:e.y+.03,dx:0,dy:.5});e.cool=60+Math.random()*90}
+    }
+    for(let j=shots.length-1;j>=0;j--){const s=shots[j];
+      if(Math.abs(s.x-e.x)<.04&&Math.abs(s.y-e.y)<.05){
+        if(!s.rail)shots.splice(j,1);
+        e.hp-=s.dmg;
+        if(e.hp<=0){
+          boom(e.x,e.y,e.type==="elite"?"#fbbf24":"#e879f9",1);
+          kills++;combo++;comboTimer=comboMax;maxCombo=Math.max(maxCombo,combo);
+          score+=(e.type==="elite"?150:50)*Math.max(1,combo);
+          if(emp<100)emp=Math.min(100,emp+(e.type==="elite"?15:6));
+          checkMissions();
+          if(Math.random()<.25)powerups.push({x:e.x,y:e.y,type:Math.random()<.4?"triple":"repair",t:0});
+          enemies.splice(i,1);break;
+        }
+      }
+    }
+    updateHud();
+  }
+
+  for(let i=eShots.length-1;i>=0;i--){const s=eShots[i];s.x+=s.dx*dt;s.y+=s.dy*dt;
+    if(s.y>1.05||s.x<-.05||s.x>1.05){eShots.splice(i,1);continue}
+    if(Math.abs(s.x-ship.x)<.03&&Math.abs(s.y-ship.y)<.045){
+      eShots.splice(i,1);
+      shield=Math.max(0,shield-(s.sphere?16:10));
+      shake=6;flash=.4;combo=0;
+      setStatus(s.sphere?"Plasma-Kugel getroffen!":"Treffer — Schild sinkt.");
+      updateHud();
+      if(shield<=0){endRun();return}
+    }
+  }
+
+  for(let i=powerups.length-1;i>=0;i--){const p=powerups[i];p.y+=.22*dt;p.t+=dt*2;
+    if(p.y>1.05){powerups.splice(i,1);continue}
+    if(Math.abs(p.x-ship.x)<.05&&Math.abs(p.y-ship.y)<.06){
+      if(p.type==="triple"){tripleTimer=420;setStatus("3x-Feuer für kurze Zeit!")}
+      else{shield=Math.min(maxShield,shield+26);setStatus("Schild repariert (+26%).")}
+      powerups.splice(i,1);updateHud();
+    }
+  }
+}
+
+function draw(){
+  const r=c.getBoundingClientRect(),W=r.width,H=r.height;
+  x.setTransform(dpr,0,0,dpr,0,0);
+  x.clearRect(0,0,W,H);
+  x.fillStyle="#e9f2ff";
+  for(const s of stars){x.globalAlpha=s.a;x.fillRect(s.x*W,s.y*H,s.s,s.s)}
+  x.globalAlpha=1;
+
+  if(state==="hacking"&&hack){
+    drawHack(W,H);return;
+  }
+  if(state==="menu"||state==="gameover")return;
+
+  x.save();
+  if(shake>.3)x.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+
+  for(const p of powerups){
+    x.strokeStyle=p.type==="triple"?"#38bdf8":"#34d399";x.lineWidth=2;
+    x.save();x.translate(p.x*W,p.y*H);x.rotate(p.t*.5);x.strokeRect(-8,-8,16,16);x.restore();
+    x.fillStyle="#fff";x.font="700 9px system-ui";x.textAlign="center";x.textBaseline="middle";
+    x.fillText(p.type==="triple"?"3X":"✚",p.x*W,p.y*H);
+  }
+
+  x.fillStyle="#fef08a";
+  for(const s of shots){
+    if(s.rail){x.fillStyle="#7dd3fc";x.fillRect(s.x*W-1.5,s.y*H,3,22);x.fillStyle="#fef08a"}
+    else x.fillRect(s.x*W-2,s.y*H,4,14);
+  }
+  for(const s of eShots){
+    if(s.sphere){x.strokeStyle="#fb7185";x.lineWidth=2;x.beginPath();x.arc(s.x*W,s.y*H,7,0,Math.PI*2);x.stroke()}
+    else{x.fillStyle="#fb7185";x.fillRect(s.x*W-1.5,s.y*H,3,12)}
+  }
+
+  if(boss){
+    const bx=boss.x*W,by=boss.y*H,bw=W*.22;
+    x.strokeStyle="#fb7185";x.lineWidth=2;
+    x.beginPath();x.arc(bx,by,bw/2,Math.PI,0);x.lineTo(bx+bw/2,by+H*.045);x.lineTo(bx-bw/2,by+H*.045);x.closePath();x.stroke();
+    x.fillStyle="#ffffff22";x.fillRect(bx-bw/2,by-H*.05,bw,4);
+    x.fillStyle="#fb7185";x.fillRect(bx-bw/2,by-H*.05,bw*(boss.hp/boss.maxHp),4);
+  }
+
+  for(const e of enemies){
+    const cx=e.x*W,cy=e.y*H,flap=Math.sin(e.t)*5;
+    x.save();x.shadowBlur=10;x.shadowColor=e.type==="elite"?"#fbbf24":"#e879f9";
+    x.fillStyle=e.type==="elite"?"#fbbf24":"#e879f9";
+    x.beginPath();x.ellipse(cx,cy,e.type==="elite"?13:11,e.type==="elite"?15:13,0,0,Math.PI*2);x.fill();
+    x.fillStyle=e.type==="elite"?"#fef08a":"#f5d0fe";
+    x.beginPath();x.ellipse(cx-12,cy-3,9+flap*.6,5,-.4,0,Math.PI*2);x.ellipse(cx+12,cy-3,9+flap*.6,5,.4,0,Math.PI*2);x.fill();
+    x.fillStyle=e.type==="elite"?"#fb7185":"#7dd3fc";
+    x.beginPath();x.arc(cx,cy,4,0,Math.PI*2);x.fill();
+    x.restore();
+  }
+
+  const px=ship.x*W,py=ship.y*H,pw=W*.055,ph=H*.05;
+  x.save();x.shadowBlur=14;x.shadowColor="#0891b2";
+  x.fillStyle="#e9f2ff";
+  x.beginPath();x.moveTo(px,py-ph);x.lineTo(px+pw/2,py);x.lineTo(px+pw/2,py+ph/2);x.lineTo(px,py+ph/3);x.lineTo(px-pw/2,py+ph/2);x.lineTo(px-pw/2,py);x.closePath();x.fill();
+  x.fillStyle="#0891b2";
+  x.beginPath();x.moveTo(px+pw/2,py+ph/2);x.lineTo(px+pw*.72,py+ph*.3);x.lineTo(px+pw*.3,py+ph*.2);x.closePath();x.fill();
+  x.beginPath();x.moveTo(px-pw/2,py+ph/2);x.lineTo(px-pw*.72,py+ph*.3);x.lineTo(px-pw*.3,py+ph*.2);x.closePath();x.fill();
+  x.fillStyle="#67e8f9";x.beginPath();x.ellipse(px,py-4,4,8,0,0,Math.PI*2);x.fill();
+  x.fillStyle="#fbbf24";
+  x.beginPath();x.ellipse(px-pw*.28,py+ph/2+4,3,7+Math.random()*5,0,0,Math.PI*2);x.ellipse(px+pw*.28,py+ph/2+4,3,7+Math.random()*5,0,0,Math.PI*2);x.fill();
+  x.restore();
+
+  if(flash>0){x.strokeStyle="rgba(103,232,249,"+flash+")";x.lineWidth=2;x.beginPath();x.arc(px,py,pw,0,Math.PI*2);x.stroke()}
+  if(stunTimer>0){x.strokeStyle="rgba(167,139,250,.5)";x.lineWidth=3;x.beginPath();x.arc(px,py,pw*1.5,0,Math.PI*2);x.stroke()}
+
+  for(const p of particles){x.globalAlpha=p.a;x.fillStyle=p.c;x.beginPath();x.arc(p.x*W,p.y*H,p.r,0,Math.PI*2);x.fill()}
+  x.globalAlpha=1;
+
+  if(warnTimer>0){
+    x.globalAlpha=Math.abs(Math.sin(warnTimer/12))*.5+.4;
+    x.fillStyle="#fbbf24";x.font="700 15px system-ui";x.textAlign="center";x.textBaseline="middle";
+    x.fillText(warnText,W/2,H/2-40);x.globalAlpha=1;
+  }
+  x.restore();
+}
+
+function drawHack(W,H){
+  const cx=W/2,cy=H/2,rad=Math.min(W,H)*.22;
+  x.textAlign="center";x.textBaseline="middle";
+  x.font="700 16px system-ui";
+  x.fillStyle=hack.done?"#34d399":"#a78bfa";
+  x.fillText(hack.done?"ZUGRIFF GEWÄHRT":"SEKTOR-HACK",cx,cy-rad-34);
+  x.font="12px system-ui";x.fillStyle="#a7b6d5";
+  x.fillText("Tippe, wenn die Nadel im grünen Sektor ist",cx,cy-rad-14);
+  x.strokeStyle="#ffffff14";x.lineWidth=12;x.beginPath();x.arc(cx,cy,rad,0,Math.PI*2);x.stroke();
+  x.strokeStyle="#34d399";x.lineWidth=14;x.beginPath();x.arc(cx,cy,rad,hack.targetStart,hack.targetEnd);x.stroke();
+  x.save();x.translate(cx,cy);x.rotate(hack.angle);
+  x.strokeStyle="#e9f2ff";x.lineWidth=3;x.beginPath();x.moveTo(0,0);x.lineTo(rad+14,0);x.stroke();x.restore();
+  x.fillStyle="#070b18e6";x.beginPath();x.arc(cx,cy,26,0,Math.PI*2);x.fill();
+  x.font="700 14px system-ui";x.fillStyle="#e9f2ff";
+  x.fillText(Math.ceil(hack.left/60)+"s",cx,cy);
+}
+
+function hackTick(dt){
+  if(hack.done){hack.left-=dt*60;if(hack.left<=-40)spawnNextAfterHack();return}
+  hack.angle+=hack.speed*dt*60;
+  hack.left-=dt*60;
+  if(hack.left<=0){
+    setStatus("Hack fehlgeschlagen — Sektortransfer ohne Bonus.");
+    spawnNextAfterHack();
+  }
+}
+function tryHack(){
+  if(state!=="hacking"||!hack||hack.done)return;
+  let a=hack.angle%(Math.PI*2);if(a<0)a+=Math.PI*2;
+  let s=hack.targetStart%(Math.PI*2);if(s<0)s+=Math.PI*2;
+  const e=s+(hack.targetEnd-hack.targetStart);
+  const inZone=s<e?(a>=s&&a<=e):(a>=s||a<=e);
+  if(inZone){
+    hack.done=true;hack.left=50;
+    const bonus=25*wave;session.credits+=bonus;
+    setStatus("Hack erfolgreich — +"+bonus+" Credits.");
+    updateHud();
+  }else{
+    hack.speed+=.006;
+    setStatus("Daneben — die Nadel wird schneller.");
+  }
+}
+function spawnNextAfterHack(){
+  wave++;waveEl.textContent=fmt(wave);
+  state="playing";hack=null;
+  score+=100*(wave-1);
+  spawnWave();setStatus("Sektor "+fmt(wave)+" erreicht.");checkMissions();updateHud();
+}
+
+function frame(t){
+  const dt=Math.min(32,t-last)/1000;last=t;
+  if(state==="hacking"&&!paused)hackTick(dt);
+  update(dt);
+  draw();
+  raf=requestAnimationFrame(frame);
+}
+
+const keys=new Set();
+addEventListener("keydown",(e)=>{
+  if(e.key===" "){e.preventDefault();if(state==="hacking")tryHack();else if(state==="playing"&&!paused)cooldown=Math.min(cooldown,0)}
+  if(e.key==="Enter"&&(state==="menu"||state==="gameover"))beginRun();
+  if(e.key==="e"||e.key==="E")fireEmp();
+  if(e.key==="p"||e.key==="P")togglePause();
+  keys.add(e.key);
+});
+addEventListener("keyup",(e)=>keys.delete(e.key));
+c.addEventListener("pointerdown",(e)=>{if(state==="hacking")tryHack();else if(state==="playing"&&!paused)cooldown=Math.min(cooldown,0);trackPointer(e)});
+c.addEventListener("pointermove",(e)=>{if(e.buttons)trackPointer(e)});
+function trackPointer(e){
+  if(state!=="playing"||paused)return;
+  const r=c.getBoundingClientRect();
+  ship.x=Math.max(.05,Math.min(.95,(e.clientX-r.left)/r.width));
+}
+
+const TABS=[["tab-status","pane-status"],["tab-arsenal","pane-arsenal"],["tab-missions","pane-missions"],["tab-profile","pane-profile"],["tab-ai","pane-ai"]];
+for(const[tab,pane]of TABS){
+  q("#"+tab).addEventListener("click",()=>{
+    for(const[t2,p2]of TABS){q("#"+t2).setAttribute("aria-selected",String(t2===tab));q("#"+p2).classList.toggle("hidden",p2!==pane)}
+  });
+}
+q("#class-interceptor").addEventListener("click",()=>setClass("interceptor"));
+q("#class-valkyrie").addEventListener("click",()=>setClass("valkyrie"));
+function setClass(k){
+  session.cls=k;
+  q("#class-interceptor").classList.toggle("sel",k==="interceptor");
+  q("#class-interceptor").setAttribute("aria-pressed",String(k==="interceptor"));
+  q("#class-valkyrie").classList.toggle("sel",k==="valkyrie");
+  q("#class-valkyrie").setAttribute("aria-pressed",String(k==="valkyrie"));
+  q("#ai-tip").innerHTML="<b>KI-Kern:</b> "+aiAdvice();
+}
+q("#pilot-name").addEventListener("input",(e)=>{session.pilot=e.target.value.trim()});
+
+startBtn.addEventListener("click",beginRun);
+againBtn.addEventListener("click",beginRun);
+hangarBtn.addEventListener("click",toHangar);
+pauseBtn.addEventListener("click",togglePause);
+q("#emp-click").addEventListener("click",fireEmp);
+resetBtn.addEventListener("click",()=>{
+  session.best=0;bestEl.textContent="0";
+  setStatus("Sitzungsbest zurückgesetzt.");
+});
+
+addEventListener("resize",size);
+size();starsInit();applyClass();renderHangar();updateHud();
+setStatus("Bereit im Hangar — Klasse wählen und Mission starten.");
+})();
+</script>
+</body>
+</html>
