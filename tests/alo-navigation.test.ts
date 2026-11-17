@@ -48,12 +48,12 @@ test("optional bar hides after intentional downward scroll, returns upward, and 
 });
 
 test("onboarding, swipe, hidden-by-default bottom navigation, and optional context remain explicit", () => {
-  const tour = read("components/WelcomeTour.tsx");
-  assert.match(tour, /nose-push:tour-seen:\$\{VERSION\}/);
-  assert.match(tour, /Training/);
-  assert.match(tour, /horizontal/);
-  assert.match(tour, /Tour kannst du im Profil wiederholen/);
+  const tutorials = read("lib/tutorials.ts");
+  assert.match(tutorials, /nose-push:tour-seen:/);
+  assert.match(tutorials, /alo-tutorial-state-v1/);
   const shell = read("routes/_authenticated/route.tsx");
+  assert.match(shell, /TutorialOverlay/);
+  assert.doesNotMatch(shell, /WelcomeTour/);
   assert.match(shell, /installModuleSwipeGesture/);
   assert.match(read("lib/module-swipe-gesture.ts"), /getSwipeDestination/);
   const nav = read("components/TopNav.tsx");

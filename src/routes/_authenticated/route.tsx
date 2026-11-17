@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
 import { setAloOwner } from "@/lib/alo-store";
 import { AloWorkspace } from "@/components/alo/AloWorkspace";
-import { WelcomeTour } from "@/components/WelcomeTour";
+import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 import { PostfachProvider } from "@/components/postfach/PostfachProvider";
 import { CallProvider } from "@/components/calls/CallProvider";
 import { AppNavigation } from "@/components/TopNav";
@@ -71,7 +71,7 @@ function AuthenticatedLayout() {
             <Outlet />
           </div>
           <AloWorkspace userId={user.id} />
-          <WelcomeTour userId={user.id} />
+          <TutorialOverlay userId={user.id} autoStart />
         </div>
       </CallProvider>
     </PostfachProvider>
