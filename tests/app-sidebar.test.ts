@@ -67,3 +67,14 @@ test("the settings page offers a category sidebar in both design views", () => {
   assert.match(page, /aria-current=\{active \? "page" : undefined\}/);
   assert.match(page, /PROFILE_SETTINGS_GROUPS\.map/);
 });
+
+test("Alo Health offers app-specific sidebar actions in both design views", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/_authenticated/health.tsx"), "utf8");
+  assert.equal((route.match(/aria-label="App-Aktionen"/g) ?? []).length, 2);
+  assert.match(route, /function HealthActionsSidebar/);
+  assert.match(route, /href="#health-today"/);
+  assert.match(route, /to="\/sports"/);
+  assert.match(route, /to="\/football"/);
+  assert.match(route, /Sport verbinden/);
+});
