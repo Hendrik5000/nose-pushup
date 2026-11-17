@@ -59,6 +59,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Mic,
   Search,
   Trash2,
@@ -66,13 +67,18 @@ import {
   X,
 } from "lucide-react";
 import {
+  addHomeWidget,
   EMPTY_HOME_APP_HUB_SETTINGS,
   HOME_APP_TILE_SIZE_CLASS_NAMES,
   HOME_APP_TILE_SIZE_LABELS,
   HOME_APP_TILE_SIZES,
   HOME_BACKGROUND_PRESETS,
   HOME_DEFAULT_BACKGROUND,
+  HOME_WIDGET_CATALOG,
+  HOME_WIDGET_SIZE_CLASS_NAMES,
+  HOME_WIDGET_SIZE_LABELS,
   hasHomeAppDragThreshold,
+  moveHomeWidget,
   clearHomeAppName,
   forgetHomeAppPersonalization,
   homeAppHubSettingsStorageKey,
@@ -84,14 +90,18 @@ import {
   prepareHomeBackgroundImage,
   removeHomeBackgroundImage,
   saveHomeAppHubSettings,
+  removeHomeWidget,
   saveHomeBackgroundImage,
   setHomeAppName,
   setHomeAppTileSize,
   setHomeBackground,
+  setHomeWidgetSize,
   toggleHomeAppFavorite,
   toggleHomeAppGroupCollapsed,
   type HomeAppHubSettings,
   type HomeAppTileSize,
+  type HomeWidgetId,
+  type HomeWidgetSize,
 } from "@/lib/home-app-hub";
 import {
   EMPTY_MARKETPLACE_PUBLISHED_INSTALL_STATE,
@@ -521,6 +531,70 @@ function HomeAppHub({
       setRecentAppIds(rememberHomeAppOpen(window.localStorage, user.id, appId));
     } catch {
       setRecentAppIds([]);
+    }
+  };
+
+  const renderHomeWidget = (
+    widgetId: HomeWidgetId,
+  ): {
+    title: string;
+    body: string;
+    link: { to: "/chat" | "/marketplace"; label: string } | null;
+  } => {
+    switch (widgetId) {
+      case "health-today": {
+        const parts = healthToday ? formatHealthTodayParts(healthToday) : [];
+        return {
+          title: "Health heute",
+          body: parts.length > 0 ? parts.join(" · ") : "Keine Messwerte für heute.",
+          link: null,
+        };
+      }
+      case "fitness-week": {
+        const workoutLine =
+          weeklyWorkouts !== null ? formatWeeklyWorkoutLine(weeklyWorkouts) : null;
+        const streakLine = formatStreakLine(streak);
+        return {
+          title: "Training & Streak",
+          body: [
+            workoutLine ?? "Keine Trainingsdaten diese Woche.",
+            streakLine ?? "Noch kein Streak.",
+          ].join(" · "),
+          link: null,
+        };
+      }
+      case "nexus-unread":
+        return {
+          title: "Nexus ungelesen",
+          body:
+            nexusUnread === null
+              ? "Unbekannter Stand."
+              : nexusUnread === 0
+                ? "Alles gelesen."
+                : `${nexusUnread} ungelesene Nachrichten`,
+          link:
+            nexusUnread !== null && nexusUnread > 0 ? { to: "/chat", label: "Nexus öffnen" } : null,
+        };
+      case "ai-status":
+        return {
+          title: "KI-Status",
+          body: aiStatus ? `${aiStatus.provider} · ${aiStatus.model}` : "Kein KI-Anbieter aktiv.",
+          link: null,
+        };
+      case "installed-apps": {
+        const installs = installState.installs;
+        const names = installs
+          .map((install) => install.manifestName ?? `Alo-App ${install.appId.slice(0, 8)}`)
+          .slice(0, 4);
+        return {
+          title: "Meine Apps",
+          body:
+            installs.length === 0
+              ? "Noch keine Marketplace-Apps installiert."
+              : `${names.join(" · ")}${installs.length > names.length ? ` · +${installs.length - names.length} weitere` : ""}`,
+          link: { to: "/marketplace", label: "Marketplace öffnen" },
+        };
+      }
     }
   };
 
@@ -1504,6 +1578,39 @@ function HomeAppHub({
                   );
                 })()}
               </section>
+              {settings.widgetOrder.length > 0 && (
+                <section
+                  aria-label="Widgets"
+                  className="grid grid-flow-row-dense grid-cols-2 gap-3"
+                >
+                  {settings.widgetOrder.map((widgetId) => {
+                    const widget = renderHomeWidget(widgetId as HomeWidgetId);
+                    const widgetSize: HomeWidgetSize = settings.widgetSizes[widgetId] ?? "small";
+                    return (
+                      <div
+                        key={widgetId}
+                        data-home-widget-id={widgetId}
+                        className={`rounded-2xl border border-border bg-card/60 p-4 backdrop-blur ${HOME_WIDGET_SIZE_CLASS_NAMES[widgetSize]}`}
+                      >
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          {widget.title}
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed text-foreground">
+                          {widget.body}
+                        </p>
+                        {widget.link && (
+                          <Link
+                            to={widget.link.to}
+                            className="mt-2 inline-block text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                          >
+                            {widget.link.label}
+                          </Link>
+                        )}
+                      </div>
+                    );
+                  })}
+                </section>
+              )}
               {recentTiles.length > 0 &&
                 renderHomeGroup("recent", "Zuletzt verwendet", recentTiles)}
               {favoriteTiles.length > 0 && renderHomeGroup("favorites", "Favoriten", favoriteTiles)}
@@ -1635,6 +1742,121 @@ function HomeAppHub({
                     {backgroundError}
                   </p>
                 )}
+              </section>
+
+              <section
+                className="space-y-3 rounded-2xl border border-border/70 bg-card/80 p-4"
+                aria-label="Widgets anpassen"
+              >
+                <div>
+                  <h2 className="text-sm font-bold">Widgets</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Widgets zeigen ausschließlich echte Daten aus deinen Alo-Apps und werden lokal
+                    auf diesem Gerät gespeichert.
+                  </p>
+                </div>
+                <div className="grid gap-2">
+                  {HOME_WIDGET_CATALOG.map((widget) => {
+                    const added = settings.widgetOrder.includes(widget.id);
+                    const widgetIndex = settings.widgetOrder.indexOf(widget.id);
+                    const widgetSize: HomeWidgetSize = settings.widgetSizes[widget.id] ?? "small";
+                    const nextSize: HomeWidgetSize = widgetSize === "wide" ? "small" : "wide";
+                    return (
+                      <div
+                        key={widget.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">{widget.label}</p>
+                          <p className="text-xs text-muted-foreground">{widget.description}</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {added && (
+                            <>
+                              <button
+                                type="button"
+                                aria-label={`${widget.label} nach vorne verschieben`}
+                                disabled={widgetIndex <= 0}
+                                onClick={() => {
+                                  try {
+                                    persistSettings(
+                                      moveHomeWidget(settings, widget.id, -1),
+                                      "Widget-Reihenfolge lokal gespeichert.",
+                                    );
+                                  } catch {
+                                    setSettingsError("Widget konnte nicht verschoben werden.");
+                                  }
+                                }}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border disabled:opacity-40"
+                              >
+                                <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`${widget.label} nach hinten verschieben`}
+                                disabled={
+                                  widgetIndex < 0 || widgetIndex >= settings.widgetOrder.length - 1
+                                }
+                                onClick={() => {
+                                  try {
+                                    persistSettings(
+                                      moveHomeWidget(settings, widget.id, 1),
+                                      "Widget-Reihenfolge lokal gespeichert.",
+                                    );
+                                  } catch {
+                                    setSettingsError("Widget konnte nicht verschoben werden.");
+                                  }
+                                }}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border disabled:opacity-40"
+                              >
+                                <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`${widget.label} ${HOME_WIDGET_SIZE_LABELS[nextSize]} machen`}
+                                onClick={() => {
+                                  try {
+                                    persistSettings(
+                                      setHomeWidgetSize(settings, widget.id, nextSize),
+                                      `Widget-Größe von „${widget.label}“ auf „${HOME_WIDGET_SIZE_LABELS[nextSize]}“ gesetzt.`,
+                                    );
+                                  } catch {
+                                    setSettingsError(
+                                      "Widget-Größe konnte nicht gespeichert werden.",
+                                    );
+                                  }
+                                }}
+                                className="min-h-10 rounded-xl border border-border px-3 text-xs font-semibold"
+                              >
+                                {HOME_WIDGET_SIZE_LABELS[nextSize]}
+                              </button>
+                            </>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              try {
+                                persistSettings(
+                                  added
+                                    ? removeHomeWidget(settings, widget.id)
+                                    : addHomeWidget(settings, widget.id),
+                                  added
+                                    ? `Widget „${widget.label}“ entfernt.`
+                                    : `Widget „${widget.label}“ hinzugefügt.`,
+                                );
+                              } catch {
+                                setSettingsError("Widget konnte nicht geändert werden.");
+                              }
+                            }}
+                            className={`min-h-10 rounded-xl border px-3 text-xs font-semibold ${added ? "border-destructive/40 text-destructive" : "border-primary/50 text-primary"}`}
+                          >
+                            {added ? "Entfernen" : "Hinzufügen"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </section>
             </div>
           )}
