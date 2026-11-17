@@ -99,12 +99,34 @@ export function PostfachPage() {
       )}
 
       <section aria-labelledby="postfach-open" className="mt-6">
-        <h2
-          id="postfach-open"
-          className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground"
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2
+            id="postfach-open"
+            className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground"
+          >
+            Offen {open.length > 0 && `(${open.length})`}
+          </h2>
+          {open.some((item) => !item.readAt) && (
+            <button
+              type="button"
+              onClick={() =>
+                void postfach
+                  .markRead(open.filter((item) => !item.readAt).map((item) => item.id))
+                  .then(() => toast.success("Alle offenen Einträge als gelesen markiert."))
+              }
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              Alle als gelesen markieren
+            </button>
+          )}
+        </div>
+        <Link
+          to="/settings/$category"
+          params={{ category: "notifications" }}
+          className="mt-2 inline-block text-xs text-muted-foreground underline hover:text-foreground"
         >
-          Offen {open.length > 0 && `(${open.length})`}
-        </h2>
+          Benachrichtigungseinstellungen öffnen
+        </Link>
         <div className="mt-3 space-y-2">
           {postfach.loading && <p className="text-xs text-muted-foreground">Lade…</p>}
           {!postfach.loading && open.length === 0 && (
