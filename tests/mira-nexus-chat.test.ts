@@ -111,7 +111,8 @@ test("mira nexus threads keep only validated visuals", () => {
 test("the Nexus Mira panel reuses the shared visual answer pipeline", () => {
   const root = process.cwd();
   const panel = readFileSync(resolve(root, "src/components/chat/MiraNexusPanel.tsx"), "utf8");
-  assert.match(panel, /systemExtra: MIRA_VISUAL_INSTRUCTIONS/);
+  assert.match(panel, /let systemExtra = MIRA_VISUAL_INSTRUCTIONS/);
+  assert.match(panel, /systemExtra,/);
   assert.match(panel, /parseAiResponse\(res\.reply, \{ preserveCode: false \}\)/);
   assert.match(panel, /\.\.\.\(visual \? \{ visual \} : \{\}\)/);
   assert.match(panel, /m\.role === "assistant" && m\.visual && <MiraVisualAnswerCard/);

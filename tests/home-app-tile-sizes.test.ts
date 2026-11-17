@@ -44,7 +44,7 @@ test("Tile sizes round-trip through the settings schema and migrate older layout
     favorites: ["mira"],
     collapsedGroups: ["fitness"],
   });
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
   assert.deepEqual(migrated.tileSizes, {});
   assert.deepEqual(migrated.favorites, ["mira"]);
 
@@ -54,7 +54,7 @@ test("Tile sizes round-trip through the settings schema and migrate older layout
     nameOverrides: {},
     background: { kind: "preset", presetId: "ocean" },
   });
-  assert.equal(legacy.schemaVersion, 3);
+  assert.equal(legacy.schemaVersion, 4);
   assert.deepEqual(legacy.tileSizes, {});
 });
 
@@ -116,6 +116,7 @@ test("Home hub renders tile sizes in both grids, the action menu, and the styles
   );
 
   const lib = readRepoFile("src/lib/home-app-hub.ts");
-  assert.match(lib, /schemaVersion: 3/);
+  assert.match(lib, /schemaVersion: 4/);
+  assert.match(lib, /schemaVersion === 3/);
   assert.match(lib, /HOME_APP_TILE_SIZE_SET\.has/);
 });
