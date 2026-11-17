@@ -35,9 +35,26 @@ test("the HIG style defines its own tokens without touching the palette", () => 
   assert.ok(tokenBlock, "missing hig token block");
   assert.match(tokenBlock, /--design-card-radius:/);
   assert.match(tokenBlock, /-apple-system/);
+  assert.match(tokenBlock, /--design-hig-tint:/);
+  assert.match(tokenBlock, /--design-hig-green:/);
   assert.doesNotMatch(tokenBlock, /--primary\s*:/);
+  assert.match(css, /html\.dark\[data-design-style="hig"\]/);
   assert.match(css, /html\[data-design-style="hig"\] aside\[aria-label="App-Aktionen"\]/);
   assert.match(css, /html\[data-design-style="hig"\] \.alo-page-sidebar aside/);
+});
+
+test("the HIG style renders iOS-like system components", () => {
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(css, /html\[data-design-style="hig"\] \[data-slot="dialog-content"\]/);
+  assert.match(css, /html\[data-design-style="hig"\] \[role="switch"\]\[data-state="checked"\]/);
+  assert.match(css, /html\[data-design-style="hig"\] \[role="checkbox"\]/);
+  assert.match(css, /html\[data-design-style="hig"\] \.app-homebar \.homebar-items/);
+  assert.match(
+    css,
+    /html\[data-design-style="hig"\] \[data-slot="dialog-content"\][\s\S]*?backdrop-filter/,
+  );
+  assert.match(css, /html\[data-design-style="hig"\] ::-webkit-scrollbar-thumb/);
+  assert.match(css, /html\[data-design-style="hig"\]\s+input:focus-visible/);
 });
 
 test("applying the HIG style sets the data attribute and persists the choice", () => {

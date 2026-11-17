@@ -33,7 +33,7 @@ export const DESIGN_STYLES: DesignStyleDefinition[] = [
     id: "hig",
     label: "Apple HIG",
     description:
-      "Apple-HIG-inspiriert: SF-Pro-Typografie mit klarer Hierarchie, semantische Farben für Light- und Dark-Mode, weiche Ecken, Vibrancy-Blur und sanfte Federn-Animationen.",
+      "Apple-HIG-inspiriert: SF-Pro-Typografie mit klarer Hierarchie, semantische Farben für Light- und Dark-Mode, iOS-Steuerelemente (Switches, Segmente, Sheets), Vibrancy-Blur und sanfte Federn-Animationen.",
   },
   {
     id: "performance",
