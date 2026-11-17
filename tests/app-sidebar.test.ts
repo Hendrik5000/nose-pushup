@@ -54,18 +54,17 @@ test("the games catalog offers app-specific sidebar actions outside fullscreen g
   assert.match(route, /selectedGame \? \(\s*<div/);
 });
 
-test("the settings page offers a category sidebar in both design views", () => {
+test("the settings pages do not repeat the full category list next to the content", () => {
   const root = process.cwd();
   const page = readFileSync(
     resolve(root, "src/routes/_authenticated/profile-page-impl.tsx"),
     "utf8",
   );
-  assert.match(page, /function SettingsActionsSidebar/);
-  assert.equal((page.match(/aria-label="App-Aktionen"/g) ?? []).length, 2);
-  assert.match(page, /to="\/settings\/\$category"/);
-  assert.match(page, /params=\{\{ category: categoryId \}\}/);
-  assert.match(page, /aria-current=\{active \? "page" : undefined\}/);
-  assert.match(page, /PROFILE_SETTINGS_GROUPS\.map/);
+  assert.doesNotMatch(page, /SettingsActionsSidebar/);
+  assert.doesNotMatch(page, /aria-label="App-Aktionen"/);
+  assert.equal((page.match(/PROFILE_SETTINGS_GROUPS\.map/g) ?? []).length, 1);
+  assert.match(page, /data-settings-category-list="true"/);
+  assert.doesNotMatch(page, /Alo \u00b7 Einstellungen/);
 });
 
 test("Alo Health offers app-specific sidebar actions in both design views", () => {

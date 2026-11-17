@@ -30,7 +30,8 @@ test("settings hub has ten genuine, grouped categories with allowlisted destinat
   assert.equal(PROFILE_SETTINGS_GROUPS.flatMap((group) => group.categories).length, 10);
   assert.match(profile, /aria-label="Einstellungsbereiche"/);
   assert.match(profile, /SettingsCategoryGroups/);
-  assert.match(profile, /SettingsCategoryRow key=\{categoryId\} categoryId=\{categoryId\}/);
+  assert.match(profile, /<Fragment key=\{categoryId\}>/);
+  assert.match(profile, /SettingsCategoryRow categoryId=\{categoryId\}/);
   assert.match(categoryRow, /to="\/settings\/\$category"/);
   assert.match(settingsRoute, /beforeLoad:[\s\S]*?isProfileSettingsCategory\(params\.category\)/);
   assert.match(settingsRoute, /return <ProfilePage sectionId=\{category\} \/>/);

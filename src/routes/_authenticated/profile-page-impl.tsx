@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -331,38 +332,30 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
             title={category?.title ?? "Einstellungen"}
             profile={profile}
           />
-          <div className="grid gap-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
-            <aside
-              aria-label="App-Aktionen"
-              className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
-            >
-              <SettingsActionsSidebar sectionId={sectionId} />
-            </aside>
-            <div className="flex min-w-0 flex-col gap-4">
-              {sectionId && category ? (
-                <SettingsCategoryScreen subtitle={category.subtitle}>
-                  {categoryContent}
-                </SettingsCategoryScreen>
-              ) : (
-                <>
-                  <ProfileSummaryCard
-                    variant="classic"
-                    profile={profile}
-                    email={email}
-                    isAnonymous={isAnonymous}
-                    loading={profileLoading}
-                    profileError={profileError}
-                    workoutsLoading={workoutsLoading}
-                    workoutsError={workoutsError}
-                    lp={lp}
-                    streak={streak}
-                    streakActive={streakActive}
-                  />
-                  <SettingsCategoryGroups />
-                </>
-              )}
-              <BottomNav />
-            </div>
+          <div className="flex min-w-0 flex-col gap-4">
+            {sectionId && category ? (
+              <SettingsCategoryScreen subtitle={category.subtitle}>
+                {categoryContent}
+              </SettingsCategoryScreen>
+            ) : (
+              <>
+                <ProfileSummaryCard
+                  variant="classic"
+                  profile={profile}
+                  email={email}
+                  isAnonymous={isAnonymous}
+                  loading={profileLoading}
+                  profileError={profileError}
+                  workoutsLoading={workoutsLoading}
+                  workoutsError={workoutsError}
+                  lp={lp}
+                  streak={streak}
+                  streakActive={streakActive}
+                />
+                <SettingsCategoryGroups />
+              </>
+            )}
+            <BottomNav />
           </div>
         </main>
       </DesignView>
@@ -374,77 +367,34 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
             profile={profile}
             sport
           />
-          <div className="grid gap-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
-            <aside
-              aria-label="App-Aktionen"
-              className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
-            >
-              <SettingsActionsSidebar sectionId={sectionId} />
-            </aside>
-            <div className="flex min-w-0 flex-col gap-5">
-              {sectionId && category ? (
-                <SettingsCategoryScreen subtitle={category.subtitle}>
-                  {categoryContent}
-                </SettingsCategoryScreen>
-              ) : (
-                <>
-                  <ProfileSummaryCard
-                    variant="sport"
-                    profile={profile}
-                    email={email}
-                    isAnonymous={isAnonymous}
-                    loading={profileLoading}
-                    profileError={profileError}
-                    workoutsLoading={workoutsLoading}
-                    workoutsError={workoutsError}
-                    lp={lp}
-                    streak={streak}
-                    streakActive={streakActive}
-                  />
-                  <SettingsCategoryGroups />
-                </>
-              )}
-              <BottomNav />
-            </div>
+          <div className="flex min-w-0 flex-col gap-5">
+            {sectionId && category ? (
+              <SettingsCategoryScreen subtitle={category.subtitle}>
+                {categoryContent}
+              </SettingsCategoryScreen>
+            ) : (
+              <>
+                <ProfileSummaryCard
+                  variant="sport"
+                  profile={profile}
+                  email={email}
+                  isAnonymous={isAnonymous}
+                  loading={profileLoading}
+                  profileError={profileError}
+                  workoutsLoading={workoutsLoading}
+                  workoutsError={workoutsError}
+                  lp={lp}
+                  streak={streak}
+                  streakActive={streakActive}
+                />
+                <SettingsCategoryGroups />
+              </>
+            )}
+            <BottomNav />
           </div>
         </main>
       </DesignView>
     </>
-  );
-}
-
-function SettingsActionsSidebar({ sectionId }: { sectionId?: ProfileSettingsCategoryId }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-        Einstellungen
-      </p>
-      {PROFILE_SETTINGS_GROUPS.map((group) => (
-        <div key={group.title} className="flex flex-col gap-1">
-          <p className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            {group.title}
-          </p>
-          {group.categories.map((categoryId) => {
-            const entry = getProfileSettingsCategory(categoryId);
-            if (!entry) return null;
-            const active = sectionId === categoryId;
-            return (
-              <Link
-                key={categoryId}
-                to="/settings/$category"
-                params={{ category: categoryId }}
-                aria-current={active ? "page" : undefined}
-                className={`rounded-lg px-3 py-2 text-left text-sm font-medium ${
-                  active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-card"
-                }`}
-              >
-                {entry.title}
-              </Link>
-            );
-          })}
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -484,7 +434,9 @@ function SettingsPageHeader({
         <h1
           ref={titleRef}
           tabIndex={sectionId ? -1 : undefined}
-          className="truncate text-xl font-bold tracking-tight focus:outline-none sm:text-2xl"
+          className={`truncate font-bold tracking-tight focus:outline-none ${
+            sectionId ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"
+          }`}
         >
           {title}
         </h1>
@@ -637,17 +589,19 @@ function SettingsCategoryGroups() {
             >
               {group.title}
             </h2>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {group.categories.map((categoryId) => (
-                <SettingsCategoryRow key={categoryId} categoryId={categoryId} />
+            <div className="settings-category-group overflow-hidden rounded-2xl border border-border/70 bg-card/70">
+              {group.categories.map((categoryId, rowIndex) => (
+                <Fragment key={categoryId}>
+                  {rowIndex > 0 && (
+                    <div className="mx-3 h-px bg-border/70 sm:mx-4" aria-hidden="true" />
+                  )}
+                  <SettingsCategoryRow categoryId={categoryId} />
+                </Fragment>
               ))}
             </div>
           </section>
         );
       })}
-      <p className="px-1 text-xs text-muted-foreground" data-alo-version="true">
-        {formatAloVersionLabel()}
-      </p>
     </nav>
   );
 }
@@ -655,12 +609,7 @@ function SettingsCategoryGroups() {
 function SettingsCategoryScreen({ subtitle, children }: { subtitle: string; children: ReactNode }) {
   return (
     <div className="settings-category-screen space-y-4" data-settings-category-screen="true">
-      <section className="rounded-2xl border border-border/70 bg-card/60 p-4 sm:p-5">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--menu-accent)]">
-          Alo · Einstellungen
-        </p>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
-      </section>
+      <p className="px-1 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
       <div className="space-y-3">{children}</div>
     </div>
   );
@@ -668,7 +617,7 @@ function SettingsCategoryScreen({ subtitle, children }: { subtitle: string; chil
 
 function SettingsBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border/70 bg-card/60 p-4 sm:p-5">
+    <section className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
       <h2 className="text-sm font-bold">{title}</h2>
       <div className="mt-3 space-y-3">{children}</div>
     </section>
