@@ -1,5 +1,6 @@
 import { searchArea, type SearchArea } from "@/lib/alo-ui";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { forgetRecentSearches, loadRecentSearches, rememberSearch } from "@/lib/search-recent";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { detectChatMode, loadChatStore, loadRoomsForUser } from "@/lib/chat-backend";
@@ -117,9 +118,13 @@ export function GlobalSearch({
     "Sucht lokal in Mira, Alo, Apps, Spielen und Einstellungen sowie in Fußball-Ligen und Health-Übungen; App-Entwürfe, Nexus und Trainingspläne werden bei einer Suche über ihre bestehende Datenanbindung geladen. Kein KI-Anbieter erhält die Suche.",
   );
   const [busy, setBusy] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
   const request = useRef(0);
-  const run = async () => {
-    const q = query.trim();
+  useEffect(() => {
+    setRecent(loadRecentSearches(window.localStorage, userId));
+  }, [userId]);
+  const run = async (searchValue?: string) => {
+    const q = (searchValue ?? query).trim();
     const token = ++request.current;
     if (!q) {
       setHits([]);
@@ -240,6 +245,7 @@ export function GlobalSearch({
     }
     if (token !== request.current) return;
     const results = searchAlo(all, q);
+    if (results.length > 0) setRecent(rememberSearch(window.localStorage, userId, q));
     setHits(results.slice(0, 100));
     setBusy(false);
     setStatus(
@@ -266,6 +272,36 @@ export function GlobalSearch({
           {busy ? "Sucht …" : "Suchen"}
         </button>
       </form>
+      {!query.trim() && recent.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Zuletzt gesucht</span>
+          {recent.map((entry) => (
+            <button
+              key={entry}
+              type="button"
+              aria-label={`Nach ${entry} suchen`}
+              onClick={() => {
+                setQuery(entry);
+                void run(entry);
+              }}
+              className="alo-btn"
+            >
+              {entry}
+            </button>
+          ))}
+          <button
+            type="button"
+            aria-label="Zuletzt gesuchte Begriffe vergessen"
+            onClick={() => {
+              forgetRecentSearches(window.localStorage, userId);
+              setRecent([]);
+            }}
+            className="text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            Vergessen
+          </button>
+        </div>
+      )}
       <label>
         Bereich
         <select
