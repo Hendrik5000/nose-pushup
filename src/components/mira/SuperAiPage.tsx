@@ -17,6 +17,16 @@ import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
 import { MIRA_VISUAL_INSTRUCTIONS } from "@/lib/mira-visual-answer";
 import {
+  browserStepsToSystemBlock,
+  extractWebTarget,
+  hasWebIntent,
+  miraReadPage,
+  miraWebSearch,
+  rememberBrowserOpenUrl,
+  type MiraWebStep,
+} from "@/lib/mira-browser";
+import { MiraWebActivityCard, type MiraWebActivity } from "@/components/mira/MiraWebActivityCard";
+import {
   MiraMarketplaceDraftPreview,
   type MarketplaceMiraDraft,
   type MarketplaceMiraDraftTarget,
@@ -442,6 +452,7 @@ export function SuperAiPage({
   const [persona, setPersona] = useState<AiPersona>(() => loadPersona());
   const [favs, setFavs] = useState<string[]>(() => loadFavPrompts());
   const [contextHint, setContextHint] = useState<string | null>(null);
+  const [webActivity, setWebActivity] = useState<MiraWebActivity | null>(null);
   const [appContext, setAppContext] = useState<AppContextPack | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
   const [listening, setListening] = useState(false);
@@ -1189,6 +1200,53 @@ export function SuperAiPage({
         submittedAttachments.map((item) => item.file),
       );
       if (generation !== generationRef.current) return null;
+      let webContextBlock = "";
+      if (hasWebIntent(userContent)) {
+        const target = extractWebTarget(userContent);
+        const steps: MiraWebStep[] = [];
+        let resultsText = "";
+        let openTargetUrl: string | null = null;
+        if (target?.kind === "url") {
+          const pageText = await miraReadPage(target.value);
+          if (pageText) {
+            steps.push({
+              kind: "read",
+              url: target.value,
+              title: target.value,
+              chars: pageText.length,
+            });
+            resultsText = pageText;
+            openTargetUrl = target.value;
+          } else {
+            steps.push({
+              kind: "failed",
+              detail: `Seite konnte nicht gelesen werden: ${target.value}`,
+            });
+          }
+        } else if (target?.kind === "query") {
+          const results = await miraWebSearch(target.value);
+          steps.push({ kind: "search", query: target.value, resultCount: results.length });
+          resultsText = results.map((r) => `${r.title} — ${r.snippet} (${r.url})`).join("\n");
+          openTargetUrl = results[0]?.url ?? null;
+          if (results[0]) {
+            const pageText = await miraReadPage(results[0].url);
+            if (pageText) {
+              steps.push({
+                kind: "read",
+                url: results[0].url,
+                title: results[0].title,
+                chars: pageText.length,
+              });
+              resultsText = `${resultsText}\n\n${pageText}`;
+            }
+          }
+        }
+        webContextBlock = browserStepsToSystemBlock(steps, resultsText);
+        setWebActivity({ steps, targetUrl: openTargetUrl });
+      } else {
+        setWebActivity(null);
+      }
+      if (generation !== generationRef.current) return null;
       let systemExtra = `Du bist Mira, die vielseitige allgemeine KI von Alo (All in one). Hilf bei Alltag, Wissen, Schreiben, Ideen, Lernen und Planung. Sei verlässlich, klar und passe die Antwort an. Du bist keine reine Sport-App: Sport- und Chat-Themen sind optionale Bereiche. ${PERSONAS.find((p) => p.id === persona)?.system ?? ""}
 
 Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routing bedeutet: die App wählt passend zur Frage ein KI-Modell). Erfinde keine persönlichen Daten oder Trainingsergebnisse. Fehlt für eine sichere oder persönliche Trainingsempfehlung wichtiger Kontext, stelle zuerst eine konkrete Rückfrage. Bei einem konkreten einzelnen Trainingsvorschlag gib zusätzlich ein JSON-Objekt mit reply und einem vollständig ausgefüllten plan (title, exercise_id, sets, reps, rest_s, rationale) aus; wenn Kontext fehlt, lasse plan weg. Normale Antworten bleiben Text.
@@ -1198,6 +1256,7 @@ Interaktive Antwort (optional, nur bei einer ausdrücklichen Gaming-PC-Konfigura
 ${MIRA_VISUAL_INSTRUCTIONS}${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
       const aloKnowledge = getMiraAloKnowledgeContext(userContent);
       if (aloKnowledge) systemExtra += `\n\n${aloKnowledge}`;
+      if (webContextBlock) systemExtra += `\n\n${webContextBlock}`;
       if (lastFeedback === "passt_nicht") {
         systemExtra +=
           "\nDer letzte Vorschlag passt nicht. Frage gezielt, ob Übung, verfügbare Zeit, Ausrüstung oder ein anderer Grund nicht passt; ändere nicht einfach nur Wiederholungszahlen. Gib erst nach Klärung einen neuen persönlichen Plan aus.";
@@ -2113,6 +2172,15 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               </div>
             )}
             {loading && <MiraGeneratingIndicator label={marketplaceProgress ?? undefined} />}
+            {webActivity && (
+              <MiraWebActivityCard
+                activity={webActivity}
+                onOpenInBrowser={(url) => {
+                  rememberBrowserOpenUrl(url);
+                  window.location.assign("/browser");
+                }}
+              />
+            )}
           </div>
 
           {error && (
@@ -2912,6 +2980,15 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     </div>
                   )}
                   {loading && <MiraGeneratingIndicator label={marketplaceProgress ?? undefined} />}
+                  {webActivity && (
+                    <MiraWebActivityCard
+                      activity={webActivity}
+                      onOpenInBrowser={(url) => {
+                        rememberBrowserOpenUrl(url);
+                        window.location.assign("/browser");
+                      }}
+                    />
+                  )}
                 </div>
                 {!sketchLayout && (
                   <div className="mira-chat-bottom-row">

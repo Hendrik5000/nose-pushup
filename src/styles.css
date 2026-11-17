@@ -870,6 +870,29 @@ html[data-design-style="hig"] .alo-tablet-home-apps > :is(a, button) > span:last
   letter-spacing: 0.01em;
 }
 
+html[data-design-style="hig"] .alo-browser-tabbar {
+  background: var(--design-hig-vibrancy);
+  backdrop-filter: saturate(1.6) blur(20px);
+  -webkit-backdrop-filter: saturate(1.6) blur(20px);
+}
+
+html[data-design-style="hig"] .alo-browser-toolbar,
+html[data-design-style="hig"] .alo-browser-mira-panel {
+  background: var(--design-hig-vibrancy);
+  backdrop-filter: saturate(1.6) blur(20px);
+  -webkit-backdrop-filter: saturate(1.6) blur(20px);
+}
+
+html[data-design-style="hig"] .alo-browser-mira-activity {
+  border-color: var(--design-hig-separator);
+}
+
+html[data-design-style="hig"]
+  .alo-browser
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  background-color: transparent;
+}
+
 html[data-design-style] body {
   font-family: var(--design-body-font);
 }
