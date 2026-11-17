@@ -325,71 +325,126 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
   return (
     <>
       <DesignView variant="classic">
-        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col gap-4 px-4 pt-5 pb-28 sm:px-8">
+        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-4 px-4 pt-5 pb-28 sm:px-8">
           <SettingsPageHeader
             sectionId={sectionId}
             title={category?.title ?? "Einstellungen"}
             profile={profile}
           />
-          {sectionId && category ? (
-            <SettingsCategoryScreen subtitle={category.subtitle}>
-              {categoryContent}
-            </SettingsCategoryScreen>
-          ) : (
-            <>
-              <ProfileSummaryCard
-                variant="classic"
-                profile={profile}
-                email={email}
-                isAnonymous={isAnonymous}
-                loading={profileLoading}
-                profileError={profileError}
-                workoutsLoading={workoutsLoading}
-                workoutsError={workoutsError}
-                lp={lp}
-                streak={streak}
-                streakActive={streakActive}
-              />
-              <SettingsCategoryGroups />
-            </>
-          )}
-          <BottomNav />
+          <div className="grid gap-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
+            <aside
+              aria-label="App-Aktionen"
+              className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
+            >
+              <SettingsActionsSidebar sectionId={sectionId} />
+            </aside>
+            <div className="flex min-w-0 flex-col gap-4">
+              {sectionId && category ? (
+                <SettingsCategoryScreen subtitle={category.subtitle}>
+                  {categoryContent}
+                </SettingsCategoryScreen>
+              ) : (
+                <>
+                  <ProfileSummaryCard
+                    variant="classic"
+                    profile={profile}
+                    email={email}
+                    isAnonymous={isAnonymous}
+                    loading={profileLoading}
+                    profileError={profileError}
+                    workoutsLoading={workoutsLoading}
+                    workoutsError={workoutsError}
+                    lp={lp}
+                    streak={streak}
+                    streakActive={streakActive}
+                  />
+                  <SettingsCategoryGroups />
+                </>
+              )}
+              <BottomNav />
+            </div>
+          </div>
         </main>
       </DesignView>
       <DesignView variant="sport">
-        <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-4xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8">
+        <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8">
           <SettingsPageHeader
             sectionId={sectionId}
             title={category?.title ?? "Einstellungen"}
             profile={profile}
             sport
           />
-          {sectionId && category ? (
-            <SettingsCategoryScreen subtitle={category.subtitle}>
-              {categoryContent}
-            </SettingsCategoryScreen>
-          ) : (
-            <>
-              <ProfileSummaryCard
-                variant="sport"
-                profile={profile}
-                email={email}
-                isAnonymous={isAnonymous}
-                loading={profileLoading}
-                profileError={profileError}
-                workoutsLoading={workoutsLoading}
-                workoutsError={workoutsError}
-                lp={lp}
-                streak={streak}
-                streakActive={streakActive}
-              />
-              <SettingsCategoryGroups />
-            </>
-          )}
-          <BottomNav />
+          <div className="grid gap-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
+            <aside
+              aria-label="App-Aktionen"
+              className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
+            >
+              <SettingsActionsSidebar sectionId={sectionId} />
+            </aside>
+            <div className="flex min-w-0 flex-col gap-5">
+              {sectionId && category ? (
+                <SettingsCategoryScreen subtitle={category.subtitle}>
+                  {categoryContent}
+                </SettingsCategoryScreen>
+              ) : (
+                <>
+                  <ProfileSummaryCard
+                    variant="sport"
+                    profile={profile}
+                    email={email}
+                    isAnonymous={isAnonymous}
+                    loading={profileLoading}
+                    profileError={profileError}
+                    workoutsLoading={workoutsLoading}
+                    workoutsError={workoutsError}
+                    lp={lp}
+                    streak={streak}
+                    streakActive={streakActive}
+                  />
+                  <SettingsCategoryGroups />
+                </>
+              )}
+              <BottomNav />
+            </div>
+          </div>
         </main>
       </DesignView>
     </>
+  );
+}
+
+function SettingsActionsSidebar({ sectionId }: { sectionId?: ProfileSettingsCategoryId }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        Einstellungen
+      </p>
+      {PROFILE_SETTINGS_GROUPS.map((group) => (
+        <div key={group.title} className="flex flex-col gap-1">
+          <p className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {group.title}
+          </p>
+          {group.categories.map((categoryId) => {
+            const entry = getProfileSettingsCategory(categoryId);
+            if (!entry) return null;
+            const active = sectionId === categoryId;
+            return (
+              <Link
+                key={categoryId}
+                to="/settings/$category"
+                params={{ category: categoryId }}
+                aria-current={active ? "page" : undefined}
+                className={`rounded-lg px-3 py-2 text-left text-sm font-medium ${
+                  active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-card"
+                }`}
+              >
+                {entry.title}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+    </div>
   );
 }
 
