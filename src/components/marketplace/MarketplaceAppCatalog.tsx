@@ -6,6 +6,7 @@ import {
 } from "@/lib/marketplace-collections";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { MARKETPLACE_ICON_COMPONENTS } from "@/components/marketplace/MarketplaceIcon";
+import { FriendAppSharesSection } from "@/components/marketplace/FriendAppSharesSection";
 import {
   describeMarketplacePermissions,
   type MarketplaceCategory,
@@ -27,6 +28,7 @@ type Props = Readonly<{
   onToggle: (pluginId: string, name: string, enabled: boolean) => void;
   onRemove: (pluginId: string, name: string) => void;
   onOpen: (pluginId: string) => void;
+  userId?: string | null;
 }>;
 
 export function MarketplaceAppCatalog({
@@ -37,6 +39,7 @@ export function MarketplaceAppCatalog({
   onToggle,
   onRemove,
   onOpen,
+  userId = null,
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeCollection, setActiveCollection] = useState<MarketplaceCollectionId>("official");
@@ -273,12 +276,16 @@ export function MarketplaceAppCatalog({
               aria-live="polite"
             >
               {activeCollection === "friends" ? (
-                <>
-                  <p className="text-base font-semibold">Noch keine Apps von Freunden</p>
-                  <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                    Hier erscheinen Apps, sobald Freunde etwas für den Alo-Marketplace freigeben.
-                  </p>
-                </>
+                userId ? (
+                  <FriendAppSharesSection userId={userId} />
+                ) : (
+                  <>
+                    <p className="text-base font-semibold">Noch keine Apps von Freunden</p>
+                    <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                      Melde dich an, um Apps zu sehen, die deine Freunde geteilt haben.
+                    </p>
+                  </>
+                )
               ) : (
                 <>
                   <p className="text-base font-semibold">Alles installiert</p>

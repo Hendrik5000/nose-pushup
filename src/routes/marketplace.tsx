@@ -232,6 +232,7 @@ function MarketplaceContent({ userId }: { userId: string }) {
         onToggle={onToggle}
         onRemove={onRemove}
         onOpen={onOpenPlugin}
+        userId={userId}
       />
 
       {storageError && (
