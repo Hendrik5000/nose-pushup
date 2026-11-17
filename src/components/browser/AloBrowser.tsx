@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { fetchBrowserPage, fetchFirstUsable } from "@/lib/browser-fetch";
 import { parseJinaSearchResults, takeBrowserOpenUrl } from "@/lib/mira-browser";
+import { emitMiraPointer } from "@/lib/mira-computer-use";
 import {
   Globe,
   Search,
@@ -230,6 +231,21 @@ export default function AloBrowser() {
     );
   };
 
+  const pointMiraPointerAt = (el: Element | null, label: string) => {
+    if (!el || typeof window === "undefined") return;
+    const rect = el.getBoundingClientRect();
+    emitMiraPointer({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+      label,
+      active: true,
+    });
+  };
+
+  const pointMiraPointerAtAddressBar = (label: string) => {
+    pointMiraPointerAt(document.querySelector(".alo-browser-toolbar input"), label);
+  };
+
   useEffect(() => {
     const pending = takeBrowserOpenUrl();
     if (pending) void openUrl("1", pending, true);
@@ -441,6 +457,7 @@ export default function AloBrowser() {
       lower === "google"
     ) {
       openGoogleMode(activeTab.id);
+      pointMiraPointerAtAddressBar("Öffne Google");
       logMiraActivity("Google-Suche geöffnet");
       if (window.innerWidth < 640) setAiOpen(false);
       return "✅ Ich habe die integrierte Google-Suche für dich geöffnet!";
@@ -452,6 +469,7 @@ export default function AloBrowser() {
     );
     if (searchMatch && searchMatch[1]) {
       const term = searchMatch[1].replace(/^["']|["']$/g, "").trim();
+      pointMiraPointerAtAddressBar(`Suche: ${term}`);
       logMiraActivity(`Websuche: „${term}“`);
       runSearch(activeTab.id, term);
       if (window.innerWidth < 640) setAiOpen(false);
@@ -465,24 +483,28 @@ export default function AloBrowser() {
       const key = target.toLowerCase().replace(/\s+/g, "");
 
       if (key.includes("youtube")) {
+        pointMiraPointerAtAddressBar("YouTube-Suche");
         logMiraActivity("YouTube-Suche gestartet");
         runSearch(activeTab.id, "YouTube Trends Videos");
         if (window.innerWidth < 640) setAiOpen(false);
         return "🎬 Ich habe YouTube-Treffer geladen (klicke ein Video an, um es direkt abzuspielen).";
       }
       if (KNOWN_SITES[key]) {
+        pointMiraPointerAtAddressBar(`Öffne ${target}`);
         logMiraActivity(`Öffne ${target}`);
         openUrl(activeTab.id, KNOWN_SITES[key], true);
         if (window.innerWidth < 640) setAiOpen(false);
         return `🌐 Ich öffne ${target} für dich …`;
       }
       if (isLikelyUrl(target)) {
+        pointMiraPointerAtAddressBar(`Öffne ${target}`);
         logMiraActivity(`Öffne ${target}`);
         openUrl(activeTab.id, target, true);
         if (window.innerWidth < 640) setAiOpen(false);
         return `🌐 Ich öffne ${target} …`;
       }
       // Falls keine Domain angegeben ("Öffne Bayern München"), direkt danach suchen!
+      pointMiraPointerAtAddressBar(`Suche: ${target}`);
       logMiraActivity(`Websuche: „${target}“`);
       runSearch(activeTab.id, target);
       if (window.innerWidth < 640) setAiOpen(false);

@@ -27,6 +27,12 @@ import {
 } from "@/lib/mira-browser";
 import { MiraWebActivityCard, type MiraWebActivity } from "@/components/mira/MiraWebActivityCard";
 import {
+  planMiraPointerSteps,
+  runMiraPointerPlan,
+  type MiraPointerStep,
+} from "@/lib/mira-computer-use";
+import { MiraPointerActivityCard } from "@/components/mira/MiraPointerActivityCard";
+import {
   MiraMarketplaceDraftPreview,
   type MarketplaceMiraDraft,
   type MarketplaceMiraDraftTarget,
@@ -453,6 +459,7 @@ export function SuperAiPage({
   const [favs, setFavs] = useState<string[]>(() => loadFavPrompts());
   const [contextHint, setContextHint] = useState<string | null>(null);
   const [webActivity, setWebActivity] = useState<MiraWebActivity | null>(null);
+  const [pointerActivity, setPointerActivity] = useState<MiraPointerStep[] | null>(null);
   const [appContext, setAppContext] = useState<AppContextPack | null>(null);
   const [contextLoading, setContextLoading] = useState(false);
   const [listening, setListening] = useState(false);
@@ -1247,6 +1254,17 @@ export function SuperAiPage({
         setWebActivity(null);
       }
       if (generation !== generationRef.current) return null;
+      let pointerNote = "";
+      const pointerSteps = planMiraPointerSteps(userContent);
+      if (pointerSteps.length > 0) {
+        setWebActivity(null);
+        setPointerActivity(pointerSteps);
+        const pointerTranscript = await runMiraPointerPlan(pointerSteps);
+        pointerNote = `Mira hat die Alo-Website mit dem virtuellen Mauszeiger bedient: ${pointerTranscript.join("; ")}. Berichte kurz, was du getan hast, und frage bei Bedarf nach dem nächsten Schritt.`;
+        if (generation !== generationRef.current) return null;
+      } else {
+        setPointerActivity(null);
+      }
       let systemExtra = `Du bist Mira, die vielseitige allgemeine KI von Alo (All in one). Hilf bei Alltag, Wissen, Schreiben, Ideen, Lernen und Planung. Sei verlässlich, klar und passe die Antwort an. Du bist keine reine Sport-App: Sport- und Chat-Themen sind optionale Bereiche. ${PERSONAS.find((p) => p.id === persona)?.system ?? ""}
 
 Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routing bedeutet: die App wählt passend zur Frage ein KI-Modell). Erfinde keine persönlichen Daten oder Trainingsergebnisse. Fehlt für eine sichere oder persönliche Trainingsempfehlung wichtiger Kontext, stelle zuerst eine konkrete Rückfrage. Bei einem konkreten einzelnen Trainingsvorschlag gib zusätzlich ein JSON-Objekt mit reply und einem vollständig ausgefüllten plan (title, exercise_id, sets, reps, rest_s, rationale) aus; wenn Kontext fehlt, lasse plan weg. Normale Antworten bleiben Text.
@@ -1257,6 +1275,7 @@ ${MIRA_VISUAL_INSTRUCTIONS}${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAINI
       const aloKnowledge = getMiraAloKnowledgeContext(userContent);
       if (aloKnowledge) systemExtra += `\n\n${aloKnowledge}`;
       if (webContextBlock) systemExtra += `\n\n${webContextBlock}`;
+      if (pointerNote) systemExtra += `\n\n${pointerNote}`;
       if (lastFeedback === "passt_nicht") {
         systemExtra +=
           "\nDer letzte Vorschlag passt nicht. Frage gezielt, ob Übung, verfügbare Zeit, Ausrüstung oder ein anderer Grund nicht passt; ändere nicht einfach nur Wiederholungszahlen. Gib erst nach Klärung einen neuen persönlichen Plan aus.";
@@ -2181,6 +2200,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 }}
               />
             )}
+            {pointerActivity && <MiraPointerActivityCard steps={pointerActivity} />}
           </div>
 
           {error && (
@@ -2989,6 +3009,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       }}
                     />
                   )}
+                  {pointerActivity && <MiraPointerActivityCard steps={pointerActivity} />}
                 </div>
                 {!sketchLayout && (
                   <div className="mira-chat-bottom-row">
