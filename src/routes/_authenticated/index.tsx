@@ -31,6 +31,16 @@ import {
   requestHomeAppAccountSync,
 } from "@/lib/home-app-account-sync";
 import { homeDayGreeting, loadRecentHomeAppIds, rememberHomeAppOpen } from "@/lib/home-recent-apps";
+import {
+  aiStatusFromProviders,
+  formatHealthTodayParts,
+  formatStreakLine,
+  hasMeasuredHealthToday,
+  type HomeAiStatus,
+} from "@/lib/home-day-widgets";
+import { loadProviders } from "@/lib/ai-providers";
+import { useHomeDayData } from "@/hooks/useHomeDayData";
+import { useNexusUnread } from "@/hooks/useNexusUnread";
 import { supabase } from "@/integrations/supabase/client";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
 import { MarketplaceIcon } from "@/components/marketplace/MarketplaceIcon";
@@ -322,6 +332,9 @@ function HomeAppHub({
   const [settings, setSettings] = useState<HomeAppHubSettings>(EMPTY_HOME_APP_HUB_SETTINGS);
   const [settingsError, setSettingsError] = useState("");
   const [recentAppIds, setRecentAppIds] = useState<string[]>([]);
+  const { healthToday, streak } = useHomeDayData(user.id);
+  const nexusUnread = useNexusUnread(user.id);
+  const [aiStatus, setAiStatus] = useState<HomeAiStatus | null>(null);
   const [isEditingHub, setIsEditingHub] = useState(false);
   const isEditingHubRef = useRef(isEditingHub);
   const [renamingAppId, setRenamingAppId] = useState<string | null>(null);
@@ -489,6 +502,10 @@ function HomeAppHub({
 
   useEffect(() => {
     setRecentAppIds(loadRecentHomeAppIds(window.localStorage, user.id));
+  }, [user.id]);
+
+  useEffect(() => {
+    setAiStatus(aiStatusFromProviders(loadProviders(user.id)));
   }, [user.id]);
 
   const rememberAppOpen = (appId: string) => {
@@ -1036,7 +1053,7 @@ function HomeAppHub({
     }
   };
 
-  const renderTile = (tile: HomeHubTile, title: string) => {
+  const renderTile = (tile: HomeHubTile, title: string, badge: number | null = null) => {
     if (tile.kind === "plugin") {
       const contents = (
         <>
@@ -1121,7 +1138,7 @@ function HomeAppHub({
         </Link>
       );
     }
-    return <HubAppIcon to={tile.to} title={title} artwork={tile.artwork} />;
+    return <HubAppIcon to={tile.to} title={title} artwork={tile.artwork} badge={badge} />;
   };
 
   const renderHomeGroup = (groupId: string, label: string, groupTiles: HomeHubTile[]) => {
@@ -1157,6 +1174,8 @@ function HomeAppHub({
           <div className="alo-tablet-home-apps grid w-full grid-cols-4 gap-x-3 gap-y-6">
             {groupTiles.map((tile) => {
               const title = settings.nameOverrides[tile.id] ?? tile.title;
+              const badge =
+                tile.id === "nexus" && nexusUnread !== null && nexusUnread > 0 ? nexusUnread : null;
               return (
                 <div
                   key={tile.id}
@@ -1178,7 +1197,7 @@ function HomeAppHub({
                     setActiveAppMenuId(tile.id);
                   }}
                 >
-                  {renderTile(tile, title)}
+                  {renderTile(tile, title, badge)}
                 </div>
               );
             })}
@@ -1382,6 +1401,38 @@ function HomeAppHub({
                     Postfach
                   </Link>
                 </div>
+                {(() => {
+                  const streakLine = formatStreakLine(streak);
+                  const healthParts =
+                    healthToday && hasMeasuredHealthToday(healthToday)
+                      ? formatHealthTodayParts(healthToday)
+                      : [];
+                  if (healthParts.length === 0 && !streakLine && !aiStatus) return null;
+                  return (
+                    <dl className="mt-3 space-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+                      {healthParts.length > 0 && (
+                        <div className="flex flex-wrap gap-x-2">
+                          <dt className="font-semibold text-foreground">Health heute:</dt>
+                          <dd>{healthParts.join(" · ")}</dd>
+                        </div>
+                      )}
+                      {streakLine && (
+                        <div className="flex flex-wrap gap-x-2">
+                          <dt className="font-semibold text-foreground">Streak:</dt>
+                          <dd>{streakLine}</dd>
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-x-2">
+                        <dt className="font-semibold text-foreground">KI:</dt>
+                        <dd>
+                          {aiStatus
+                            ? `${aiStatus.provider} · ${aiStatus.model}`
+                            : "Kein KI-Anbieter aktiv"}
+                        </dd>
+                      </div>
+                    </dl>
+                  );
+                })()}
               </section>
               {recentTiles.length > 0 &&
                 renderHomeGroup("recent", "Zuletzt verwendet", recentTiles)}
@@ -1721,12 +1772,13 @@ type HubArtworkKind =
   | "browser";
 
 const HUB_APP_ICON_CLASS_NAME =
-  "group flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "group relative flex w-full min-w-0 flex-col items-center gap-2 rounded-xl text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 function HubAppIcon({
   to,
   title,
   artwork,
+  badge = null,
 }: {
   to:
     | "/ai"
@@ -1739,10 +1791,15 @@ function HubAppIcon({
     | "/browser";
   title: string;
   artwork: Exclude<HubArtworkKind, "gridDefense" | "kupferkern">;
+  badge?: number | null;
 }) {
   return (
-    <Link to={to} aria-label={`${title} öffnen`} className={HUB_APP_ICON_CLASS_NAME}>
-      <HubAppIconContents title={title} artwork={artwork} />
+    <Link
+      to={to}
+      aria-label={badge !== null ? `${title} öffnen, ${badge} ungelesen` : `${title} öffnen`}
+      className={HUB_APP_ICON_CLASS_NAME}
+    >
+      <HubAppIconContents title={title} artwork={artwork} badge={badge} />
     </Link>
   );
 }
@@ -1768,12 +1825,28 @@ function HubGameAppIcon({
   );
 }
 
-function HubAppIconContents({ title, artwork }: { title: string; artwork: HubArtworkKind }) {
+function HubAppIconContents({
+  title,
+  artwork,
+  badge = null,
+}: {
+  title: string;
+  artwork: HubArtworkKind;
+  badge?: number | null;
+}) {
   return (
     <>
       <span className="relative grid aspect-square w-full max-w-[96px] place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg">
         <HubArtwork kind={artwork} />
       </span>
+      {badge !== null && (
+        <span
+          aria-hidden="true"
+          className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground"
+        >
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
       <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
         {title}
       </span>

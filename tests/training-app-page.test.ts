@@ -13,7 +13,10 @@ test("the Training/Gym app tile navigates to its own authenticated route, not a 
     home.slice(home.indexOf("function buildHomeHubTiles"), home.indexOf("function HomeAppHub")),
     /id: "training"[\s\S]*?to: "\/training"/,
   );
-  assert.match(home, /<Link to=\{to\} aria-label=\{`\$\{title\} öffnen`\}/);
+  assert.match(
+    home,
+    /<Link\s+to=\{to\}\s+aria-label=\{badge !== null \? `\$\{title\} öffnen, \$\{badge\} ungelesen` : `\$\{title\} öffnen`\}/,
+  );
   assert.match(route, /createFileRoute\("\/_authenticated\/training"\)/);
   assert.match(route, /const \{ user \} = Route\.useRouteContext\(\)/);
   assert.match(route, /<TrainingDashboard user=\{user\} \/>/);
