@@ -14,10 +14,12 @@ export type HomeBackgroundPreference =
   | Readonly<{ kind: "custom" }>;
 
 export type HomeAppHubSettings = Readonly<{
-  schemaVersion: 1;
+  schemaVersion: 2;
   order: readonly string[];
   nameOverrides: Readonly<Record<string, string>>;
   background: HomeBackgroundPreference;
+  favorites: readonly string[];
+  collapsedGroups: readonly string[];
 }>;
 
 export type HomeAppHubStorage = Pick<Storage, "getItem" | "setItem">;
@@ -27,10 +29,12 @@ export const HOME_DEFAULT_BACKGROUND: HomeBackgroundPreference = Object.freeze({
 });
 
 export const EMPTY_HOME_APP_HUB_SETTINGS: HomeAppHubSettings = Object.freeze({
-  schemaVersion: 1,
+  schemaVersion: 2,
   order: Object.freeze([]),
   nameOverrides: Object.freeze({}),
   background: HOME_DEFAULT_BACKGROUND,
+  favorites: Object.freeze([]),
+  collapsedGroups: Object.freeze([]),
 });
 
 export const HOME_BACKGROUND_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -59,6 +63,8 @@ const HOME_MARKETPLACE_APP_ID_PATTERN =
 const HOME_NAME_MAX_CHARS = 48;
 const HOME_MAX_APP_IDS = 128;
 const HOME_MAX_NAME_OVERRIDES = 128;
+const HOME_MAX_FAVORITES = 32;
+const HOME_MAX_COLLAPSED_GROUPS = 16;
 const HOME_MAX_SETTINGS_BYTES = 32_768;
 const HOME_BACKGROUND_DB_NAME = "alo-home-background-images-v1";
 const HOME_BACKGROUND_DB_VERSION = 1;
@@ -121,14 +127,36 @@ function parseBackgroundPreference(value: unknown): HomeBackgroundPreference {
 }
 
 export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
+  if (!isRecord(value)) throw new Error("Ungültige lokale Home-Einstellungen.");
   if (
-    !isRecord(value) ||
-    !exactKeys(value, ["schemaVersion", "order", "nameOverrides", "background"]) ||
-    value.schemaVersion !== 1 ||
+    value.schemaVersion === 1 &&
+    exactKeys(value, ["schemaVersion", "order", "nameOverrides", "background"])
+  ) {
+    return parseHomeAppHubSettings({
+      ...value,
+      schemaVersion: 2,
+      favorites: [],
+      collapsedGroups: [],
+    });
+  }
+  if (
+    !exactKeys(value, [
+      "schemaVersion",
+      "order",
+      "nameOverrides",
+      "background",
+      "favorites",
+      "collapsedGroups",
+    ]) ||
+    value.schemaVersion !== 2 ||
     !Array.isArray(value.order) ||
     value.order.length > HOME_MAX_APP_IDS ||
     !isRecord(value.nameOverrides) ||
-    Object.keys(value.nameOverrides).length > HOME_MAX_NAME_OVERRIDES
+    Object.keys(value.nameOverrides).length > HOME_MAX_NAME_OVERRIDES ||
+    !Array.isArray(value.favorites) ||
+    value.favorites.length > HOME_MAX_FAVORITES ||
+    !Array.isArray(value.collapsedGroups) ||
+    value.collapsedGroups.length > HOME_MAX_COLLAPSED_GROUPS
   ) {
     throw new Error("Ungültige lokale Home-Einstellungen.");
   }
@@ -149,11 +177,33 @@ export function parseHomeAppHubSettings(value: unknown): HomeAppHubSettings {
     nameOverrides[appId] = normalizeHomeAppName(rawName);
   }
 
+  const favorites: string[] = [];
+  const seenFavorites = new Set<string>();
+  for (const candidate of value.favorites) {
+    if (!validHomeAppId(candidate) || seenFavorites.has(candidate)) {
+      throw new Error("Ungültige oder doppelte Home-Favoriten.");
+    }
+    seenFavorites.add(candidate);
+    favorites.push(candidate);
+  }
+
+  const collapsedGroups: string[] = [];
+  const seenGroups = new Set<string>();
+  for (const candidate of value.collapsedGroups) {
+    if (typeof candidate !== "string" || seenGroups.has(candidate)) {
+      throw new Error("Ungültige oder doppelte Home-Gruppen.");
+    }
+    seenGroups.add(candidate);
+    collapsedGroups.push(candidate);
+  }
+
   return Object.freeze({
-    schemaVersion: 1,
+    schemaVersion: 2,
     order: Object.freeze(order),
     nameOverrides: Object.freeze(nameOverrides),
     background: parseBackgroundPreference(value.background),
+    favorites: Object.freeze(favorites),
+    collapsedGroups: Object.freeze(collapsedGroups),
   });
 }
 
@@ -252,6 +302,27 @@ export function clearHomeAppName(settingsInput: unknown, appId: string): HomeApp
   const nameOverrides = { ...settings.nameOverrides };
   delete nameOverrides[appId];
   return parseHomeAppHubSettings({ ...settings, nameOverrides });
+}
+
+export function toggleHomeAppFavorite(settingsInput: unknown, appId: string): HomeAppHubSettings {
+  if (!validHomeAppId(appId)) throw new Error("Ungültige Alo-App.");
+  const settings = parseHomeAppHubSettings(settingsInput);
+  const favorites = settings.favorites.includes(appId)
+    ? settings.favorites.filter((candidate) => candidate !== appId)
+    : [...settings.favorites, appId];
+  return parseHomeAppHubSettings({ ...settings, favorites });
+}
+
+export function toggleHomeAppGroupCollapsed(
+  settingsInput: unknown,
+  groupId: string,
+): HomeAppHubSettings {
+  if (!groupId.trim()) throw new Error("Ungültige Home-Gruppe.");
+  const settings = parseHomeAppHubSettings(settingsInput);
+  const collapsedGroups = settings.collapsedGroups.includes(groupId)
+    ? settings.collapsedGroups.filter((candidate) => candidate !== groupId)
+    : [...settings.collapsedGroups, groupId];
+  return parseHomeAppHubSettings({ ...settings, collapsedGroups });
 }
 
 export function forgetHomeAppPersonalization(
