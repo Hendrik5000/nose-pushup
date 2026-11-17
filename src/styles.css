@@ -619,6 +619,78 @@
   --design-main-max-width: 74rem;
 }
 
+[data-design-style="hig"] {
+  --design-card-radius: 1rem;
+  --design-heading-font:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  --design-body-font:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --design-gap: 1rem;
+  --design-border-width: 1px;
+  --design-shadow: 0 1px 3px color-mix(in srgb, var(--foreground) 7%, transparent);
+  --design-main-card-shadow: 0 1px 3px color-mix(in srgb, var(--foreground) 7%, transparent);
+  --design-card-padding: 1.25rem;
+  --design-main-max-width: 76rem;
+}
+
+html[data-design-style="hig"] body {
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[data-design-style="hig"] :is(h1, h2, h3) {
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+html[data-design-style="hig"] h1 {
+  font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.125rem);
+}
+
+html[data-design-style="hig"] .sh-card,
+html[data-design-style="hig"] .rounded-2xl[class*="border"] {
+  backdrop-filter: saturate(1.4) blur(12px);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+}
+
+html[data-design-style="hig"] .alo-page-sidebar aside,
+html[data-design-style="hig"] aside[aria-label="App-Aktionen"] {
+  border-radius: 1rem;
+  border-color: color-mix(in srgb, var(--foreground) 12%, transparent);
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+  backdrop-filter: saturate(1.4) blur(16px);
+  -webkit-backdrop-filter: saturate(1.4) blur(16px);
+}
+
+html[data-design-style="hig"] .alo-page-sidebar button,
+html[data-design-style="hig"] aside[aria-label="App-Aktionen"] button,
+html[data-design-style="hig"] aside[aria-label="App-Aktionen"] a {
+  border-radius: 0.75rem;
+  font-weight: 500;
+}
+
+html[data-design-style="hig"] .module-menu,
+html[data-design-style="hig"] nav[aria-label] {
+  letter-spacing: 0;
+}
+
+html[data-design-style="hig"] button[class*="rounded-full"],
+html[data-design-style="hig"] [role="button"][class*="rounded-full"] {
+  font-weight: 600;
+}
+
+html[data-design-style="hig"] button,
+html[data-design-style="hig"] [role="button"] {
+  transition-property: transform, opacity, background-color, border-color, box-shadow, color;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+html[data-design-style="hig"] button:active,
+html[data-design-style="hig"] [role="button"]:active {
+  transform: scale(0.97);
+}
+
 html[data-design-style] body {
   font-family: var(--design-body-font);
 }

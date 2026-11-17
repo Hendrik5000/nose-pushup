@@ -45,7 +45,15 @@ afterEach(() => {
 });
 
 test("catalog exposes all independent design styles and defaults to performance", () => {
-  const expected = ["soft", "compact", "editorial", "studio", "performance", "legacy-performance"];
+  const expected = [
+    "soft",
+    "compact",
+    "editorial",
+    "studio",
+    "hig",
+    "performance",
+    "legacy-performance",
+  ];
   assert.deepEqual(
     DESIGN_STYLES.map((style) => style.id),
     expected,
