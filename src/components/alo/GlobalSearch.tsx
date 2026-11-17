@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { detectChatMode, loadChatStore, loadRoomsForUser } from "@/lib/chat-backend";
 import { listAlo, searchAlo } from "@/lib/alo-store";
 import { loadSessions } from "@/lib/super-ai-tools";
+import { FOOTBALL_LEAGUES } from "@/lib/football";
+import { EXERCISE_CONFIG } from "@/lib/exercises";
+import { listMiraMarketplaceDrafts } from "@/lib/mira-marketplace-drafts";
 import type { AloWorkspaceToolId } from "@/lib/home-app-menus";
 import type { PublicGameId } from "@/lib/public-game-policy";
 import {
@@ -25,6 +28,7 @@ type Hit = {
   messageId?: string;
   gameId?: PublicGameId;
   toolId?: AloWorkspaceToolId;
+  exerciseId?: string;
 };
 const SETTINGS: Hit[] = [
   {
@@ -75,6 +79,26 @@ const APP_HITS: Hit[] = MARKETPLACE_CATALOG.map((plugin) => ({
   gameId: plugin.action.type === "open-game" ? plugin.action.gameId : undefined,
   toolId: plugin.action.type === "open-tool" ? plugin.action.toolId : undefined,
 }));
+const FOOTBALL_LEAGUE_HITS: Hit[] = FOOTBALL_LEAGUES.map((league) => ({
+  id: league.id,
+  title: league.name,
+  text:
+    league.id === "deutschland"
+      ? "Alo Fußball Nationalmannschaft Deutschland Länderspiele Termine Ergebnisse"
+      : `Alo Fußball ${league.name} Tabelle Spieltage Ergebnisse Saison`,
+  source: "Alo Fußball · Liga",
+  path: "/football",
+}));
+const EXERCISE_HITS: Hit[] = Object.entries(EXERCISE_CONFIG)
+  .filter(([id]) => !id.startsWith("cali_"))
+  .map(([id, config]) => ({
+    id,
+    title: config.repLabel,
+    text: `${config.repLabel} Übung in Alo Health · Training und Bestwert ${config.idleHint}`,
+    source: "Alo Health · Übung",
+    path: "/exercises",
+    exerciseId: id,
+  }));
 export function GlobalSearch({
   userId,
   onNavigate,
@@ -90,7 +114,7 @@ export function GlobalSearch({
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);
   const [status, setStatus] = useState(
-    "Sucht lokal in Mira, Alo, Apps, Spielen und Einstellungen; Nexus und Trainingspläne werden bei einer Suche über ihre bestehende Datenanbindung geladen. Kein KI-Anbieter erhält die Suche.",
+    "Sucht lokal in Mira, Alo, Apps, Spielen und Einstellungen sowie in Fußball-Ligen und Health-Übungen; App-Entwürfe, Nexus und Trainingspläne werden bei einer Suche über ihre bestehende Datenanbindung geladen. Kein KI-Anbieter erhält die Suche.",
   );
   const [busy, setBusy] = useState(false);
   const request = useRef(0);
@@ -102,7 +126,7 @@ export function GlobalSearch({
       return;
     }
     setBusy(true);
-    const all: Hit[] = [...SETTINGS, ...APP_HITS];
+    const all: Hit[] = [...SETTINGS, ...APP_HITS, ...FOOTBALL_LEAGUE_HITS, ...EXERCISE_HITS];
     const warnings: string[] = [];
     for (const session of loadSessions()) {
       for (const [i, m] of session.messages.entries())
@@ -130,6 +154,15 @@ export function GlobalSearch({
             : `Alo · ${String(row.body.source ?? ({ capture: "Ablage", task: "Aufgabe", collection: "Sammlung" } as Record<string, string>)[row.kind] ?? "Alo")}`,
         path: row.kind === "note" ? "/" : "/ai",
         aloTab: row.kind === "note" ? undefined : row.kind === "task" ? "today" : "collections",
+      });
+    for (const draft of listMiraMarketplaceDrafts(userId))
+      all.push({
+        id: draft.sessionId,
+        title: draft.name,
+        text: `Persönliche Marketplace-App (Entwurf von Mira) · ${draft.providerLabel}`,
+        source: "Mira · App-Entwurf",
+        path: "/ai",
+        sessionId: draft.sessionId,
       });
     try {
       const { data, error } = await supabase
@@ -278,6 +311,15 @@ export function GlobalSearch({
                 <button className="alo-btn" onClick={onPrivacy}>
                   Öffnen
                 </button>
+              ) : h.exerciseId ? (
+                <Link
+                  to="/workout/$exerciseId"
+                  params={{ exerciseId: h.exerciseId }}
+                  className="text-sm font-semibold text-primary"
+                  onClick={onNavigate}
+                >
+                  Übung öffnen
+                </Link>
               ) : h.gameId ? (
                 <Link
                   to="/games"
