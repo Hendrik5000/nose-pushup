@@ -9,6 +9,7 @@
  */
 
 import { ALO_APP_REGISTRY } from "@/lib/app-registry";
+import { findSensitiveActionLabel } from "@/lib/alo-permissions";
 
 export type MiraPointerStep =
   | { kind: "open"; label: string; route: string }
@@ -227,14 +228,24 @@ export function typeIntoElement(el: HTMLElement, text: string) {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export type MiraPointerConfirm = (label: string, reason: string) => boolean | Promise<boolean>;
+
+function defaultConfirmSensitiveAction(label: string, reason: string): boolean {
+  if (typeof window === "undefined") return false;
+  return window.confirm(
+    `Mira möchte die sensible Aktion „${label}“ ausführen (${reason}). Erlauben?`,
+  );
+}
+
 export async function runMiraPointerPlan(
   steps: MiraPointerStep[],
-  options: { stepDelayMs?: number } = {},
+  options: { stepDelayMs?: number; confirmSensitive?: MiraPointerConfirm } = {},
 ): Promise<string[]> {
   const stepDelayMs = options.stepDelayMs ?? 650;
+  const confirmSensitive = options.confirmSensitive ?? defaultConfirmSensitiveAction;
   const transcript: string[] = [];
   for (const step of steps) {
-    const line = await performMiraPointerStep(step);
+    const line = await performMiraPointerStep(step, { confirmSensitive });
     transcript.push(line);
     await wait(stepDelayMs);
   }
@@ -242,7 +253,19 @@ export async function runMiraPointerPlan(
   return transcript;
 }
 
-export async function performMiraPointerStep(step: MiraPointerStep): Promise<string> {
+function actionLabelOfElement(el: HTMLElement): string {
+  return (
+    el.getAttribute("aria-label") ||
+    (el instanceof HTMLInputElement ? el.placeholder : "") ||
+    el.textContent ||
+    ""
+  ).trim();
+}
+
+export async function performMiraPointerStep(
+  step: MiraPointerStep,
+  options: { confirmSensitive?: MiraPointerConfirm } = {},
+): Promise<string> {
   switch (step.kind) {
     case "open": {
       emitMiraPointer({
@@ -259,6 +282,16 @@ export async function performMiraPointerStep(step: MiraPointerStep): Promise<str
       if (!el) {
         emitMiraPointer({ x: 0, y: 0, label: "", active: false });
         return `„${step.label}" nicht gefunden`;
+      }
+      const actionableLabel = actionLabelOfElement(el) || step.label;
+      const sensitiveReason = findSensitiveActionLabel(actionableLabel);
+      if (sensitiveReason) {
+        const confirm = options.confirmSensitive ?? defaultConfirmSensitiveAction;
+        const allowed = await confirm(actionableLabel, sensitiveReason);
+        if (!allowed) {
+          emitMiraPointer({ x: 0, y: 0, label: "", active: false });
+          return `Sensible Aktion „${actionableLabel}“ (Kategorie: ${sensitiveReason}) wurde nicht bestätigt — übersprungen`;
+        }
       }
       const { x, y } = centerOfElement(el);
       emitMiraPointer({ x, y, label: `Klicke: ${step.label}`, active: true });
