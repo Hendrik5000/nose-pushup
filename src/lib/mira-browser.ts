@@ -145,6 +145,13 @@ export function parseJinaSearchResults(raw: string): MiraWebResult[] {
 
 export async function miraReadPage(url: string): Promise<string> {
   try {
+    const { fetchMiraBrowserPage } = await import("./browser-agent.functions");
+    const page = await fetchMiraBrowserPage({ data: { url } });
+    if (page?.text && page.text.length > 40) return page.text.slice(0, 6000);
+  } catch {
+    /* Server-Abruf nicht verfügbar, Reader-Fallback */
+  }
+  try {
     const res = await fetchWithTimeout(
       `https://r.jina.ai/${url}`,
       { headers: { Accept: "text/plain" } },

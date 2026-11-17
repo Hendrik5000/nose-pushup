@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { fetchBrowserPage, fetchFirstUsable } from "@/lib/browser-fetch";
 import { parseJinaSearchResults, takeBrowserOpenUrl } from "@/lib/mira-browser";
+import { miraServePageText, runMiraSiteAction } from "@/lib/mira-browser-agent";
 import { emitMiraPointer } from "@/lib/mira-computer-use";
 import {
   Globe,
@@ -445,7 +446,7 @@ export default function AloBrowser() {
   };
 
   // Prüft, ob der Nutzer Mira einen direkten Browser-Befehl gibt ("Öffne Google", "Suche nach X" ...)
-  const tryExecuteBrowserCommand = (rawText: string): string | null => {
+  const tryExecuteBrowserCommand = async (rawText: string): Promise<string | null> => {
     const clean = rawText.trim();
     const lower = clean.toLowerCase();
 
@@ -461,6 +462,28 @@ export default function AloBrowser() {
       logMiraActivity("Google-Suche geöffnet");
       if (window.innerWidth < 640) setAiOpen(false);
       return "✅ Ich habe die integrierte Google-Suche für dich geöffnet!";
+    }
+
+    // 1b. Browser-Use: Mira bedient fremde Seiten (Links klicken, site-interne Suche)
+    const operatesSite =
+      Boolean(activeTab.url) &&
+      (/^(?:klicke?|durchsuche)\b/i.test(clean) ||
+        /^suche\s+(?:auf|im)\s+(?:dieser\s+|der\s+|dem\s+)?(?:seite|website|shop|angebot)\b/i.test(
+          clean,
+        ) ||
+        /^öffne\s+.+\s+auf\s+(?:dieser\s+)?(?:seite|website)\b/i.test(clean));
+    if (operatesSite && activeTab.url) {
+      const siteAction = await runMiraSiteAction(clean, activeTab.url);
+      if (siteAction.kind === "navigated" || siteAction.kind === "search") {
+        pointMiraPointerAtAddressBar(siteAction.label);
+        logMiraActivity(`${siteAction.label} · ${activeTab.title}`);
+        void openUrl(activeTab.id, siteAction.url, true);
+        if (window.innerWidth < 640) setAiOpen(false);
+        return siteAction.kind === "search"
+          ? `🔍 ${siteAction.label} …`
+          : `🖱 Ich habe „${siteAction.label}“ geöffnet.`;
+      }
+      return `⚠️ ${siteAction.kind === "failed" ? siteAction.detail : "Das ging nicht."}`;
     }
 
     // 2. "Suche nach ..." / "Google nach ..."
@@ -522,16 +545,22 @@ export default function AloBrowser() {
     setAiMessages((m) => [...m, { role: "user", text: q }]);
 
     // Erst prüfen, ob es ein Browser-Steuerbefehl ist!
-    const commandReply = tryExecuteBrowserCommand(q);
+    const commandReply = await tryExecuteBrowserCommand(q);
     if (commandReply) {
       setAiMessages((m) => [...m, { role: "ai", text: commandReply }]);
       return;
     }
 
     setAiLoading(true);
+    let servedText: string | null = null;
+    if (!activeTab.readerText && activeTab.url) {
+      servedText = await miraServePageText(activeTab.url);
+    }
     const context = activeTab.readerText
       ? activeTab.readerText.slice(0, 4500)
-      : `Aktueller Modus: ${activeTab.mode}, URL: ${activeTab.url || "Startseite"}`;
+      : servedText
+        ? servedText.slice(0, 4500)
+        : `Aktueller Modus: ${activeTab.mode}, URL: ${activeTab.url || "Startseite"}`;
     if (activeTab.url) logMiraActivity(`Seiteninhalt gelesen: ${activeTab.title}`);
 
     const answer = await fetchSmartAI(
