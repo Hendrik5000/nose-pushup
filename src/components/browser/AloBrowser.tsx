@@ -10,9 +10,9 @@
  * „Im neuen Tab öffnen“ erreichbar.
  */
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
-import { fetchBrowserPage, fetchFirstUsable } from "@/lib/browser-fetch";
+import { fetchBrowserPage, fetchFirstUsable, looksLikeJsShell } from "@/lib/browser-fetch";
 import { parseJinaSearchResults, takeBrowserOpenUrl } from "@/lib/mira-browser";
-import { miraServePageText, runMiraSiteAction } from "@/lib/mira-browser-agent";
+import { miraServePage, miraServePageText, runMiraSiteAction } from "@/lib/mira-browser-agent";
 import { emitMiraPointer } from "@/lib/mira-computer-use";
 import {
   Globe,
@@ -60,6 +60,7 @@ interface Tab {
   loading: boolean;
   history: string[];
   historyIndex: number;
+  notice: string;
 }
 
 const QUICK_LINKS = [
@@ -200,6 +201,7 @@ export default function AloBrowser() {
       loading: false,
       history: [],
       historyIndex: -1,
+      notice: "",
     },
   ]);
   const [activeId, setActiveId] = useState<string>("1");
@@ -350,6 +352,7 @@ export default function AloBrowser() {
       title: domain,
       loading: true,
       mode: "web",
+      notice: "",
       history: nextHistory,
       historyIndex: nextIndex,
     });
@@ -362,27 +365,46 @@ export default function AloBrowser() {
         readerText: `YouTube Video: ${targetUrl}`,
         loading: false,
         mode: "web",
+        notice: "",
       });
       return;
     }
 
-    const { html: rawHtml, reader: readerTxt } = await fetchBrowserPage(targetUrl);
+    const [{ html: rawHtml, reader: readerTxt }, servedPage] = await Promise.all([
+      fetchBrowserPage(targetUrl),
+      miraServePage(targetUrl),
+    ]);
+    const shell = rawHtml ? looksLikeJsShell(rawHtml) : false;
+    const frameBlocked = Boolean(servedPage?.frameBlocked);
+    const reader = readerTxt || servedPage?.text || "";
 
-    if (rawHtml) {
+    if (rawHtml && !shell && !frameBlocked) {
       updateTab(tabId, {
         htmlDoc: buildSafeSrcDoc(rawHtml, targetUrl),
-        readerText: readerTxt || "Kein separater Reader-Text gefunden.",
+        readerText: reader || "Kein separater Reader-Text gefunden.",
         mode: "web",
+        notice: "",
         loading: false,
       });
-    } else if (readerTxt) {
-      updateTab(tabId, { htmlDoc: "", readerText: readerTxt, mode: "reader", loading: false });
+    } else if (reader) {
+      updateTab(tabId, {
+        htmlDoc: "",
+        readerText: reader,
+        mode: "reader",
+        loading: false,
+        notice: frameBlocked
+          ? "Diese Seite blockiert das Einbetten — ich habe sie als Text gelesen."
+          : shell
+            ? "Diese Seite baut ihren Inhalt erst per JavaScript auf — ich habe sie als Text gelesen."
+            : "",
+      });
     } else {
       updateTab(tabId, {
         htmlDoc: "",
         readerText: "",
         mode: "visual",
         loading: false,
+        notice: frameBlocked ? "Diese Seite blockiert das Einbetten." : "",
       });
     }
   };
@@ -399,6 +421,7 @@ export default function AloBrowser() {
       loading: true,
       aiOverview: "",
       results: [],
+      notice: "",
     });
 
     const fetchResults = async (): Promise<SearchResult[]> => {
@@ -587,7 +610,13 @@ export default function AloBrowser() {
       updateTab(activeTab.id, { historyIndex: activeTab.historyIndex - 1 });
       openUrl(activeTab.id, prev, false);
     } else {
-      updateTab(activeTab.id, { mode: "home", url: "", input: "", title: "Start" });
+      updateTab(activeTab.id, {
+        mode: "home",
+        url: "",
+        input: "",
+        title: "Start",
+        notice: "",
+      });
     }
   };
 
@@ -616,6 +645,7 @@ export default function AloBrowser() {
         loading: false,
         history: [],
         historyIndex: -1,
+        notice: "",
       },
     ]);
     setActiveId(id);
@@ -973,6 +1003,19 @@ export default function AloBrowser() {
                   <Sparkles className="h-3.5 w-3.5 text-primary" /> Zusammenfassen
                 </button>
               </div>
+              {activeTab.notice && (
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">{activeTab.notice}</p>
+                  <a
+                    href={activeTab.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" /> Im neuen Tab öffnen
+                  </a>
+                </div>
+              )}
               <article className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                 {activeTab.readerText || "Kein Seiteninhalt gefunden."}
               </article>

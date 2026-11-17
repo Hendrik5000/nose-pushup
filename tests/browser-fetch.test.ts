@@ -8,6 +8,7 @@ import {
   clearBrowserPageCacheForTests,
   fetchBrowserPage,
   fetchFirstUsable,
+  looksLikeJsShell,
   readCachedBrowserPage,
   setBrowserFetchForTests,
 } from "../src/lib/browser-fetch.ts";
@@ -126,4 +127,22 @@ test("fetchBrowserPage returns html and reader independently when one fails", as
     setBrowserFetchForTests(undefined);
     clearBrowserPageCacheForTests();
   }
+});
+
+test("looksLikeJsShell detects single-page-app shells (Alo 1.172)", () => {
+  const shell = `<!DOCTYPE html><html><head><title>App</title>
+    <script src="/a.js"></script><script src="/b.js"></script><script src="/c.js"></script>
+    </head><body><div id="root"></div></body></html>`;
+  assert.equal(looksLikeJsShell(shell), true);
+
+  const shellNuxt = `<html><body><div id="__next"></div><script>1</script><script>2</script><script>3</script></body></html>`;
+  assert.equal(looksLikeJsShell(shellNuxt), true);
+
+  const normal = `<!DOCTYPE html><html><head><script src="/a.js"></script><script src="/b.js"></script></head>
+    <body><h1>Willkommen bei der Tagesschau</h1><p>Hier stehen viele aktuelle Nachrichten mit richtigem Inhalt für alle Leser.</p>
+    <p>Noch mehr Text, damit die Seite klar erkennbaren Inhalt hat und kein leerer Shell-Fall ist.</p></body></html>`;
+  assert.equal(looksLikeJsShell(normal), false);
+
+  const staticPage = `<html><body><div id="app"><p>Kurzer Text</p></div></body></html>`;
+  assert.equal(looksLikeJsShell(staticPage), false);
 });

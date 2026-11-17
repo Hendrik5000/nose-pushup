@@ -6,6 +6,7 @@ import {
   buildFormSearchUrl,
   extractBrowserAgentPage,
   fetchBrowserAgentPage,
+  responseBlocksFraming,
   setBrowserAgentFetchForTests,
   stripHtmlToText,
   type BrowserAgentPage,
@@ -194,5 +195,51 @@ test("runMiraSiteAction fails gracefully when the page cannot be served", async 
     assert.match((result as { detail: string }).detail, /nicht geladen/);
   } finally {
     setMiraBrowserAgentForTests();
+  }
+});
+
+test("responseBlocksFraming detects X-Frame-Options and CSP frame-ancestors (Alo 1.172)", () => {
+  assert.equal(responseBlocksFraming(new Headers({ "x-frame-options": "DENY" })), true);
+  assert.equal(responseBlocksFraming(new Headers({ "x-frame-options": "SAMEORIGIN" })), true);
+  assert.equal(
+    responseBlocksFraming(
+      new Headers({ "content-security-policy": "default-src 'self'; frame-ancestors 'self'" }),
+    ),
+    true,
+  );
+  assert.equal(
+    responseBlocksFraming(
+      new Headers({ "content-security-policy": "default-src 'self'; frame-ancestors *" }),
+    ),
+    false,
+  );
+  assert.equal(responseBlocksFraming(new Headers()), false);
+});
+
+test("fetchBrowserAgentPage reports frameBlocked from response headers (Alo 1.172)", async () => {
+  setBrowserAgentFetchForTests(
+    (async () =>
+      new Response("<html><title>Gesperrt</title><body><p>Text</p></body></html>", {
+        status: 200,
+        headers: { "x-frame-options": "SAMEORIGIN" },
+      })) as typeof fetch,
+  );
+  try {
+    const page = await fetchBrowserAgentPage("https://example.com");
+    assert.equal(page.frameBlocked, true);
+  } finally {
+    setBrowserAgentFetchForTests();
+  }
+  setBrowserAgentFetchForTests(
+    (async () =>
+      new Response("<html><title>Offen</title><body><p>Text</p></body></html>", {
+        status: 200,
+      })) as typeof fetch,
+  );
+  try {
+    const page = await fetchBrowserAgentPage("https://example.com");
+    assert.equal(page.frameBlocked, false);
+  } finally {
+    setBrowserAgentFetchForTests();
   }
 });
