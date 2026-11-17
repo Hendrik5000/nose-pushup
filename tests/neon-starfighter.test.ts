@@ -81,3 +81,20 @@ test("Neon Starfighter: responsive Steuerung und Barrierefreiheit", () => {
   assert.match(game, /aria-pressed/);
   assert.match(game, /role="tab"/);
 });
+
+test("Neon Starfighter: Vollbild-Canvas mit Overlay-HUD und Overlay-Bedienfeld", () => {
+  assert.match(game, /body\{height:100dvh;overflow:hidden/);
+  assert.match(game, /\.shell\{position:fixed;inset:0/);
+  assert.match(game, /\.panel\{position:absolute;inset:0/);
+  assert.match(game, /\.stage\{display:block;width:100%;height:100%\}/);
+  assert.match(game, /\.top\{position:absolute[^}]*pointer-events:none/);
+  assert.match(game, /\.statusline\{position:absolute[^}]*pointer-events:none/);
+  assert.match(
+    game,
+    /\.overlay\{position:absolute;inset:0;z-index:10;background:#070b18d9;backdrop-filter:blur\(8px\)/,
+  );
+  assert.match(game, /\.actions\{position:absolute[^}]*bottom:14px[^}]*pointer-events:none/);
+  assert.match(game, /pauseBtn\.hidden=false;resetBtn\.hidden=true/);
+  assert.match(game, /pauseBtn\.hidden=true;resetBtn\.hidden=false/);
+  assert.match(game, /last=performance\.now\(\);raf=requestAnimationFrame\(frame\);/);
+});
