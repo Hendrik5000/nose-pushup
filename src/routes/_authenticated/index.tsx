@@ -30,6 +30,7 @@ import {
   mergeMarketplaceLocalEdit,
   requestHomeAppAccountSync,
 } from "@/lib/home-app-account-sync";
+import { homeDayGreeting, loadRecentHomeAppIds, rememberHomeAppOpen } from "@/lib/home-recent-apps";
 import { supabase } from "@/integrations/supabase/client";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
 import { MarketplaceIcon } from "@/components/marketplace/MarketplaceIcon";
@@ -320,6 +321,7 @@ function HomeAppHub({
   const [marketplaceStorageError, setMarketplaceStorageError] = useState("");
   const [settings, setSettings] = useState<HomeAppHubSettings>(EMPTY_HOME_APP_HUB_SETTINGS);
   const [settingsError, setSettingsError] = useState("");
+  const [recentAppIds, setRecentAppIds] = useState<string[]>([]);
   const [isEditingHub, setIsEditingHub] = useState(false);
   const isEditingHubRef = useRef(isEditingHub);
   const [renamingAppId, setRenamingAppId] = useState<string | null>(null);
@@ -485,6 +487,18 @@ function HomeAppHub({
     };
   }, [backgroundLoadKey, user.id]);
 
+  useEffect(() => {
+    setRecentAppIds(loadRecentHomeAppIds(window.localStorage, user.id));
+  }, [user.id]);
+
+  const rememberAppOpen = (appId: string) => {
+    try {
+      setRecentAppIds(rememberHomeAppOpen(window.localStorage, user.id, appId));
+    } catch {
+      setRecentAppIds([]);
+    }
+  };
+
   const tiles = buildHomeHubTiles(canSeeAdmin, installState.installs, pluginState);
   const visibleAppIds = tiles.map((tile) => tile.id);
   const orderedTiles = orderHomeAppIds(visibleAppIds, settings.order).flatMap((appId) => {
@@ -492,6 +506,12 @@ function HomeAppHub({
     return tile ? [tile] : [];
   });
   const favoriteTiles = orderedTiles.filter((tile) => settings.favorites.includes(tile.id));
+  const recentTiles = recentAppIds
+    .flatMap((appId) => {
+      const tile = orderedTiles.find((candidate) => candidate.id === appId);
+      return tile && !settings.favorites.includes(tile.id) ? [tile] : [];
+    })
+    .slice(0, 4);
   const homeSections = HOME_APP_GROUPS.map(({ id, label }) => ({
     id,
     label,
@@ -1145,6 +1165,7 @@ function HomeAppHub({
                   onPointerUp={() => cancelHomeLongPress()}
                   onPointerCancel={() => cancelHomeLongPress()}
                   onClickCapture={(event) => suppressLongPressClick(event, tile.id)}
+                  onClick={() => rememberAppOpen(tile.id)}
                   onContextMenu={(event) => {
                     event.preventDefault();
                     if (
@@ -1327,6 +1348,42 @@ function HomeAppHub({
             </nav>
           ) : (
             <div className="flex w-full max-w-[520px] flex-col gap-7">
+              <section
+                aria-label="Dein Tag"
+                className="rounded-2xl border border-border bg-card/60 p-4 backdrop-blur"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="text-base font-semibold">
+                    {homeDayGreeting(new Date().getHours())}!
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date().toLocaleDateString("de-DE", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                    })}
+                  </p>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link to="/ai" className="alo-btn">
+                    Mira fragen
+                  </Link>
+                  <button
+                    type="button"
+                    className="alo-btn"
+                    onClick={() =>
+                      window.dispatchEvent(new CustomEvent("alo-open", { detail: "capture" }))
+                    }
+                  >
+                    Notiz erfassen
+                  </button>
+                  <Link to="/postfach" className="alo-btn">
+                    Postfach
+                  </Link>
+                </div>
+              </section>
+              {recentTiles.length > 0 &&
+                renderHomeGroup("recent", "Zuletzt verwendet", recentTiles)}
               {favoriteTiles.length > 0 && renderHomeGroup("favorites", "Favoriten", favoriteTiles)}
               {homeSections.map((section) =>
                 renderHomeGroup(section.id, section.label, section.tiles),
