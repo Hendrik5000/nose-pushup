@@ -76,7 +76,7 @@ test("ai status reflects the real provider selection", () => {
   const status = aiStatusFromProviders([enabled]);
   assert.ok(status);
   assert.equal(status.provider, enabled.label);
-  assert.equal(status.model, "gpt-test");
+  assert.equal(status.model, "openrouter/free");
 
   const withoutOpenRouter = DEFAULT_PROVIDERS.filter((provider) => provider.id !== "openrouter");
   assert.equal(aiStatusFromProviders(withoutOpenRouter), null);
