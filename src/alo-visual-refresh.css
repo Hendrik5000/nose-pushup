@@ -1395,3 +1395,116 @@ html[data-design-style] .alo-training-page .training-progress {
   html[data-design-style] .alo-training-page { padding-inline: max(0.9rem, env(safe-area-inset-left)); }
   html[data-design-style] .alo-training-page .training-plan-metrics > * { padding: 0.7rem 0.35rem; }
 }
+
+
+/* Route families: shared visual language with page-specific rhythm. */
+html[data-design-style] .alo-admin-page,
+html[data-design-style] .alo-areas-page,
+html[data-design-style] .alo-tools-page,
+html[data-design-style] .alo-settings-page,
+html[data-design-style] .alo-profile-page,
+html[data-design-style] .alo-leaderboard-page,
+html[data-design-style] .alo-clubs-page {
+  width: min(100%, 76rem);
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2.25rem);
+  padding-top: clamp(1rem, 2.4vw, 1.8rem);
+  padding-bottom: max(6rem, env(safe-area-inset-bottom));
+}
+html[data-design-style] .alo-admin-page > section,
+html[data-design-style] .alo-admin-page > div,
+html[data-design-style] .alo-profile-page section,
+html[data-design-style] .alo-settings-page section {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 1.35rem;
+  box-shadow: 0 8px 26px color-mix(in srgb, #000 4%, transparent);
+}
+html[data-design-style] .alo-admin-page h1,
+html[data-design-style] .alo-areas-page h1,
+html[data-design-style] .alo-tools-page h1,
+html[data-design-style] .alo-settings-page h1,
+html[data-design-style] .alo-profile-page h1,
+html[data-design-style] .alo-leaderboard-page h1,
+html[data-design-style] .alo-clubs-page h1 {
+  font-size: clamp(1.55rem, 1.2rem + 1.1vw, 2.15rem);
+  font-weight: 680;
+  letter-spacing: -0.05em;
+  line-height: 1.12;
+}
+html[data-design-style] .alo-areas-page .group,
+html[data-design-style] .alo-tools-page .group {
+  min-height: 7rem;
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  box-shadow: none;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+html[data-design-style] .alo-areas-page .group:hover,
+html[data-design-style] .alo-tools-page .group:hover { transform: translateY(-2px); }
+html[data-design-style] .alo-admin-page input,
+html[data-design-style] .alo-admin-page textarea,
+html[data-design-style] .alo-settings-page input,
+html[data-design-style] .alo-settings-page textarea,
+html[data-design-style] .alo-profile-page input,
+html[data-design-style] .alo-profile-page textarea {
+  min-height: 2.85rem;
+  border-radius: 0.85rem;
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  background: color-mix(in srgb, var(--background) 78%, var(--card));
+}
+html[data-design-style] .sport-only,
+html[data-design-style] .sport-feature-card,
+html[data-design-style] .sport-focus-card {
+  min-width: 0;
+}
+html[data-design-style] .sport-feature-card,
+html[data-design-style] .sport-focus-card {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--card) 91%, transparent);
+  box-shadow: none;
+  backdrop-filter: blur(16px) saturate(1.18);
+  -webkit-backdrop-filter: blur(16px) saturate(1.18);
+}
+html[data-design-style] .sport-only > header h1,
+html[data-design-style] .sport-only > header h2 {
+  letter-spacing: -0.045em;
+}
+html[data-design-style] .sport-only .sport-back-link {
+  min-height: 2.6rem;
+  border-radius: 0.8rem;
+  color: var(--muted-foreground);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+html[data-design-style] .sport-only .sport-back-link:hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+html[data-design-style] .alo-admin-page button,
+html[data-design-style] .alo-settings-page button,
+html[data-design-style] .alo-profile-page button,
+html[data-design-style] .alo-areas-page button,
+html[data-design-style] .alo-tools-page button {
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+html[data-design-style] .alo-admin-page button:active,
+html[data-design-style] .alo-settings-page button:active,
+html[data-design-style] .alo-profile-page button:active,
+html[data-design-style] .alo-areas-page button:active,
+html[data-design-style] .alo-tools-page button:active { transform: scale(0.985); }
+@media (min-width: 900px) {
+  html[data-design-style] .sport-only { width: min(100%, 68rem); }
+}
+@media (max-width: 640px) {
+  html[data-design-style] .alo-admin-page,
+  html[data-design-style] .alo-areas-page,
+  html[data-design-style] .alo-tools-page,
+  html[data-design-style] .alo-settings-page,
+  html[data-design-style] .alo-profile-page,
+  html[data-design-style] .alo-leaderboard-page,
+  html[data-design-style] .alo-clubs-page {
+    padding-inline: max(0.85rem, env(safe-area-inset-left));
+  }
+}
