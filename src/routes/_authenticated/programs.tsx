@@ -195,7 +195,7 @@ function ProgramsPage() {
   return (
     <>
       <DesignView variant="sport">
-        <main className="sport-only relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-7 px-5 py-6 sm:px-8">
+        <main className="sport-only relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-7 px-5 py-6 sm:px-8 alo-programs-page">
           <SportPageIntro
             eyebrow="TRAININGSBEREICH · 02"
             title="Trainingsprogramme"
@@ -425,7 +425,7 @@ function ProgramsPage() {
         </main>
       </DesignView>
       <DesignView variant="classic">
-        <main className="classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
+        <main className="classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 alo-programs-page">
           <header className="flex items-center justify-between">
             <div className="programs-header-title min-w-0 flex-1">
               <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">

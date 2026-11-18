@@ -1508,3 +1508,37 @@ html[data-design-style] .alo-tools-page button:active { transform: scale(0.985);
     padding-inline: max(0.85rem, env(safe-area-inset-left));
   }
 }
+
+
+html[data-design-style] .alo-site-directory-page {
+  width: min(100%, 84rem);
+  margin-inline: auto;
+}
+html[data-design-style] .alo-site-directory-page nav[aria-label] {
+  gap: clamp(0.75rem, 1.5vw, 1.15rem);
+}
+html[data-design-style] .alo-programs-page {
+  width: min(100%, 78rem);
+  max-width: 78rem;
+}
+html[data-design-style] .alo-programs-page .sport-focus-card {
+  border-radius: 1.5rem;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--primary) 6%, var(--card)), var(--card) 68%);
+}
+html[data-design-style] .alo-clubs-page,
+html[data-design-style] .alo-leaderboard-page {
+  max-width: 76rem;
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+html[data-design-style] .alo-clubs-page > section,
+html[data-design-style] .alo-leaderboard-page > section {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+}
+html[data-design-style] .alo-profile-page {
+  max-width: 78rem;
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+html[data-design-style] .alo-profile-page > section,
+html[data-design-style] .alo-profile-page > div > section {
+  border-radius: 1.35rem;
+}
