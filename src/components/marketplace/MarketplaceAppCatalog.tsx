@@ -92,7 +92,7 @@ export function MarketplaceAppCatalog({
       <span className="w-full min-w-0">
         <span className="block truncate text-sm font-semibold">{plugin.name}</span>
         <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-          {CATEGORY_LABELS[plugin.category]} · {plugin.publisher}
+          {CATEGORY_LABELS[plugin.category]} Â· {plugin.publisher}
         </span>
       </span>
     </button>
@@ -102,7 +102,7 @@ export function MarketplaceAppCatalog({
     <div className="flex items-center gap-3 rounded-2xl px-1 py-2 transition hover:bg-card/70 sm:gap-4 sm:px-2">
       <button
         type="button"
-        aria-label={`${plugin.name}. Details öffnen`}
+        aria-label={`${plugin.name}. Details Ã¶ffnen`}
         onClick={() => setSelectedId(plugin.id)}
         className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:gap-4"
       >
@@ -110,7 +110,7 @@ export function MarketplaceAppCatalog({
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold">{plugin.name}</span>
           <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-            {CATEGORY_LABELS[plugin.category]} · {plugin.publisher} · Version {plugin.version}
+            {CATEGORY_LABELS[plugin.category]} Â· {plugin.publisher} Â· Version {plugin.version}
           </span>
         </span>
       </button>
@@ -130,7 +130,7 @@ export function MarketplaceAppCatalog({
       <form
         role="search"
         onSubmit={(event) => event.preventDefault()}
-        className="flex items-center gap-3 rounded-full border border-border bg-card px-4 shadow-sm"
+        className="alo-marketplace-search flex items-center gap-3 rounded-full border border-border bg-card px-4 shadow-sm"
       >
         <Search className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
         <input
@@ -145,7 +145,7 @@ export function MarketplaceAppCatalog({
           <button
             type="button"
             onClick={() => setQuery("")}
-            aria-label="Suche zurücksetzen"
+            aria-label="Suche zurÃ¼cksetzen"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-background hover:text-foreground"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -153,7 +153,7 @@ export function MarketplaceAppCatalog({
         )}
       </form>
       <nav
-        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+        className="alo-marketplace-categories -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
         aria-label="Marketplace-Kategorien"
       >
         {(
@@ -189,14 +189,14 @@ export function MarketplaceAppCatalog({
           ))}
           {searchResults.length === 0 && (
             <p className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-8 text-center text-sm text-muted-foreground">
-              Keine Alo-App passt zu „{query}“. Versuche einen anderen Begriff.
+              Keine Alo-App passt zu â{query}â. Versuche einen anderen Begriff.
             </p>
           )}
         </section>
       ) : (
         <>
           <section
-            className="space-y-6 rounded-3xl border border-border/70 bg-card/40 p-4 sm:p-6"
+            className="alo-marketplace-section space-y-6 rounded-3xl border border-border/70 bg-card/40 p-4 sm:p-6"
             aria-label="Marketplace-Startseite"
           >
             <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(120deg,#153a37,#182346)] p-5 text-white sm:p-7">
@@ -205,7 +205,7 @@ export function MarketplaceAppCatalog({
                   <Sparkles className="h-4 w-4" /> Neu im Marketplace
                 </p>
                 <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
-                  Deine nächsten Lieblings-Apps
+                  Deine nÃ¤chsten Lieblings-Apps
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-white/75">
                   Entdecke kuratierte Alo-Apps und Spiele. Installieren und Aktivieren bleiben
@@ -224,7 +224,7 @@ export function MarketplaceAppCatalog({
             {suggestions.length > 0 && (
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-lg font-bold">Vorschläge für dich</h2>
+                  <h2 className="text-lg font-bold">VorschlÃ¤ge fÃ¼r dich</h2>
                   <button
                     type="button"
                     onClick={() => setActiveCollection("recommended")}
@@ -290,7 +290,7 @@ export function MarketplaceAppCatalog({
                 <>
                   <p className="text-base font-semibold">Alles installiert</p>
                   <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                    Alle Apps dieser Kollektion sind bereits auf diesem Gerät installiert und
+                    Alle Apps dieser Kollektion sind bereits auf diesem GerÃ¤t installiert und
                     erscheinen dadurch nicht mehr im Marketplace.
                   </p>
                 </>
@@ -323,7 +323,7 @@ export function MarketplaceAppCatalog({
                     </DialogTitle>
                     <p className="mt-1 text-sm font-semibold text-primary">{selected.publisher}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {CATEGORY_LABELS[selected.category]} · Version {selected.version}
+                      {CATEGORY_LABELS[selected.category]} Â· Version {selected.version}
                     </p>
                   </div>
                   <div className="mt-6 flex justify-center">
@@ -353,7 +353,7 @@ export function MarketplaceAppCatalog({
                             onClick={() => onOpen(selected.id)}
                             className="min-h-12 rounded-full border border-primary/40 px-6 text-sm font-bold text-primary"
                           >
-                            App öffnen
+                            App Ã¶ffnen
                           </button>
                         )}
                         <button
@@ -372,7 +372,7 @@ export function MarketplaceAppCatalog({
                   </DialogDescription>
                   <section
                     className="mt-7"
-                    aria-label={`Stilisierte Vorschau von ${selected.name} — keine echten Screenshots`}
+                    aria-label={`Stilisierte Vorschau von ${selected.name} â keine echten Screenshots`}
                   >
                     <h3 className="text-sm font-bold">Vorschau</h3>
                     <div className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1 pb-1">
@@ -397,12 +397,12 @@ export function MarketplaceAppCatalog({
                         ))}
                     </div>
                     <p className="mt-2 px-1 text-[10px] text-muted-foreground">
-                      Stilisierte Darstellung — Alo-Apps nutzen keine externen Screenshots.
+                      Stilisierte Darstellung â Alo-Apps nutzen keine externen Screenshots.
                     </p>
                   </section>
                   {similarApps.length > 0 && (
-                    <section className="mt-7" aria-label={`Ähnliche Apps wie ${selected.name}`}>
-                      <h3 className="text-sm font-bold">Ähnliche Apps</h3>
+                    <section className="mt-7" aria-label={`Ãhnliche Apps wie ${selected.name}`}>
+                      <h3 className="text-sm font-bold">Ãhnliche Apps</h3>
                       <div className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1 pb-1">
                         {similarApps.map((plugin) => (
                           <CarouselCard key={plugin.id} plugin={plugin} />
@@ -412,7 +412,7 @@ export function MarketplaceAppCatalog({
                   )}
                   <section
                     className="mt-7 rounded-2xl border border-border/70 bg-card/60 p-4"
-                    aria-label={`Berechtigungen für ${selected.name}`}
+                    aria-label={`Berechtigungen fÃ¼r ${selected.name}`}
                   >
                     <h3 className="flex items-center gap-2 text-sm font-bold">
                       <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" /> Was diese
@@ -426,7 +426,7 @@ export function MarketplaceAppCatalog({
                   </section>
                   <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                     Alo-Apps sind fest registrierte Funktionen. Installieren speichert deine Auswahl
-                    lokal auf diesem Gerät; es wird kein ausführbarer Plugin-Code geladen.
+                    lokal auf diesem GerÃ¤t; es wird kein ausfÃ¼hrbarer Plugin-Code geladen.
                   </p>
                 </section>
               );
