@@ -2,14 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const css = readFileSync(
-  new URL("../src/alo-visual-refresh.css", import.meta.url),
-  "utf8",
-);
-const root = readFileSync(
-  new URL("../src/routes/__root.tsx", import.meta.url),
-  "utf8",
-);
+const css = readFileSync(new URL("../src/alo-visual-refresh.css", import.meta.url), "utf8");
+const root = readFileSync(new URL("../src/routes/__root.tsx", import.meta.url), "utf8");
 const home = readFileSync(
   new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
   "utf8",
