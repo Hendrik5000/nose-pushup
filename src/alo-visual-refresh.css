@@ -876,6 +876,7 @@ html[data-design-style] {
   --design-card-padding: 1.35rem;
   --design-main-max-width: var(--alo-content-width);
   font-family: var(--design-body-font);
+  font-size: 1rem;
   letter-spacing: -0.012em;
 }
 html[data-design-style] body {
@@ -884,7 +885,7 @@ html[data-design-style] body {
 }
 html[data-design-style] .authenticated-shell { overflow-wrap: normal; }
 html[data-design-style] .authenticated-shell :is(p, h1, h2, h3, h4, label, a, button, td, th) { overflow-wrap: break-word; }
-html[data-design-style] .authenticated-shell main {
+html[data-design-style] .authenticated-shell main:not(.alo-games-page) {
   width: min(100%, var(--alo-content-width));
   margin-inline: auto;
   padding-inline: var(--alo-page-gutter);
