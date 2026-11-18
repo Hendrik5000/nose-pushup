@@ -383,10 +383,7 @@ export const superAiChat = createServerFn({ method: "POST" })
     assertModelAllowed(p.id, p.model);
 
     const attachments = data.messages.flatMap((m) => m.attachments ?? []);
-    if (
-      ["openrouter", "cerebras", "cloudflare"].includes(p.id) &&
-      attachments.some((item) => item.mime.startsWith("image/"))
-    ) {
+    if (attachments.some((item) => item.mime.startsWith("image/"))) {
       throw new Error(
         "Dieser Anbieter ist in Alo derzeit nur für Text und Textdateien freigeschaltet. Es wurde kein Bild gesendet.",
       );
@@ -396,47 +393,14 @@ export const superAiChat = createServerFn({ method: "POST" })
     const providerMessages = includeMiraTextAttachments(data.messages);
     const system = buildMiraSystemPrompt(data.systemExtra ?? "");
 
-    let reply = "";
-    if (p.id === "lovable") {
-      reply = await callLovable(
-        p.model || "google/gemini-3-flash-preview",
-        system,
-        providerMessages,
-      );
-    } else if (p.id === "anthropic") {
-      if (!p.apiKey) throw new Error("Anthropic API-Key fehlt");
-      reply = await callAnthropic(p.apiKey, p.model, system, providerMessages);
-    } else if (p.id === "google") {
-      if (!p.apiKey) throw new Error("Google API-Key fehlt");
-      reply = await callGoogle(p.apiKey, p.model, system, providerMessages);
-    } else if (p.id === "openai") {
-      if (!p.apiKey) throw new Error("OpenAI API-Key fehlt");
-      reply = await callOpenAICompat(
-        "https://api.openai.com/v1",
-        p.apiKey,
-        p.model,
-        system,
-        providerMessages,
-      );
-    } else if (["openrouter", "cerebras", "cloudflare"].includes(p.id)) {
-      if (!p.apiKey) throw new Error(`${p.id} API-Key fehlt`);
-      let base: string;
-      if (p.id === "openrouter") base = "https://openrouter.ai/api/v1";
-      else if (p.id === "cerebras") base = "https://api.cerebras.ai/v1";
-      else {
-        if (!p.accountId || !/^[a-f0-9]{32}$/i.test(p.accountId)) {
-          throw new Error("Cloudflare: gültige Account ID (32 Hex-Zeichen) erforderlich.");
-        }
-        base = `https://api.cloudflare.com/client/v4/accounts/${p.accountId}/ai/v1`;
-      }
-      reply = await callOpenAICompat(base, p.apiKey, p.model, system, providerMessages);
-    } else if (p.id === "custom") {
-      if (!p.apiKey || !p.baseUrl) throw new Error("Custom: API-Key und Base-URL nötig");
-      const safeBase = await assertSafeCustomBaseUrl(p.baseUrl);
-      reply = await callOpenAICompat(safeBase, p.apiKey, p.model, system, providerMessages);
-    } else {
-      throw new Error("Unbekannter Provider");
-    }
+    if (!p.apiKey) throw new Error("OpenRouter API-Key fehlt");
+    const reply = await callOpenAICompat(
+      "https://openrouter.ai/api/v1",
+      p.apiKey,
+      p.model,
+      system,
+      providerMessages,
+    );
 
     return {
       reply: reply || "Keine Antwort erhalten.",

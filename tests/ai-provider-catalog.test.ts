@@ -147,9 +147,13 @@ test("server rejects every provider except the fixed OpenRouter free router", ()
   const server = readFileSync(new URL("../src/lib/super-ai.functions.ts", import.meta.url), "utf8");
   assert.match(server, /openrouter:\s*\["openrouter\/free"\]/);
   assert.match(server, /max_tokens: 1200/);
-  const guard = server.indexOf('if (p.id !== "openrouter")');
-  const providerDispatch = server.indexOf('if (p.id === "lovable")');
-  assert.ok(guard >= 0 && guard < providerDispatch);
+  assert.match(server, /if \(p.id !== "openrouter"\)/);
+  assert.match(
+    server,
+    /const reply = await callOpenAICompat\([\s\S]*?https:\/\/openrouter\.ai\/api\/v1/,
+  );
+  assert.doesNotMatch(server, /reply = await callLovable/);
+  assert.doesNotMatch(server, /assertSafeCustomBaseUrl\(p\.baseUrl\)/);
   assert.match(server, /Alo ist im Free-only-Modus/);
 });
 
