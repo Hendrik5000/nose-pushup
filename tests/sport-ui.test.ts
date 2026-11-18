@@ -9,7 +9,10 @@ import { DESIGN_STYLES, isDesignStyleId } from "../src/lib/design-style";
 const read = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 
 test("Alo Modern is the only selectable design while old preferences remain migratable", () => {
-  assert.deepEqual(DESIGN_STYLES.map((style) => style.id), ["hig"]);
+  assert.deepEqual(
+    DESIGN_STYLES.map((style) => style.id),
+    ["hig"],
+  );
   assert.equal(DESIGN_STYLES[0]?.label, "Alo Modern");
   for (const legacyId of [
     "soft",
