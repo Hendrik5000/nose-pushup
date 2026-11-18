@@ -145,15 +145,14 @@ test("logout cleanup clears sensitive keys from local and session storage", () =
 
 test("server rejects every provider except the fixed OpenRouter free router", () => {
   const server = readFileSync(new URL("../src/lib/super-ai.functions.ts", import.meta.url), "utf8");
-  assert.match(server, /openrouter:\s*\["openrouter\/free"\]/);
+  assert.match(server, /const OPENROUTER_MODEL = "openrouter\/free"/);
   assert.match(server, /max_tokens: 1200/);
   assert.match(server, /if \(p.id !== "openrouter"\)/);
-  assert.match(
+  assert.match(server, /https:\/\/openrouter\.ai\/api\/v1\/chat\/completions/);
+  assert.doesNotMatch(
     server,
-    /const reply = await callOpenAICompat\([\s\S]*?https:\/\/openrouter\.ai\/api\/v1/,
+    /callLovable|callAnthropic|callGoogle|assertSafeCustomBaseUrl|node:dns|node:net|baseUrl/,
   );
-  assert.doesNotMatch(server, /reply = await callLovable/);
-  assert.doesNotMatch(server, /assertSafeCustomBaseUrl\(p\.baseUrl\)/);
   assert.match(server, /Alo ist im Free-only-Modus/);
 });
 

@@ -532,3 +532,28 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 - GitHub Actions Run `44350388516` vollständig erfolgreich: Lint, Regressionstests, TypeScript und Produktionsbuild.
 - Der PR wird als Draft eröffnet, weil die Code-/CI-Prüfung abgeschlossen ist, aber Browser-Screenshots und echte Geräteabnahme (Smartphone, Tablet, Laptop und große Displays) hier nicht durchgeführt werden konnten. Diese Grenze wird im PR ausdrücklich festgehalten.
 - Kein Merge und kein Lovable-Live-Publish; die Veröffentlichung bleibt separat.
+
+
+## Nachtrag 2026-11-18 – PR #198, Free-only-Sicherheitsprüfung und Zugriffsstatus
+
+### Verifizierter GitHub-Stand
+- `main` bleibt auf `1feffca6a1dbf2ceafe6b15a62cb5a5891ab249c` (Alo Modern, PR #197).
+- Es gibt genau einen offenen PR: [#198](https://github.com/Hendrik5000/nose-pushup/pull/198), weiterhin Draft, Basis `main`, 22 Dateien, 530 Ergänzungen und 333 Löschungen. Es liegen keine menschlichen Reviews oder Inline-Review-Kommentare vor; die fünf Konversationskommentare stammen vom Vercel-Bot.
+- Der bisherige PR-Code-Head `ab574e526b4ea2bfa62e467437348fcbfeb11a59` besteht GitHub Actions Run `44375770284` vollständig: Lint, Regressionstests, TypeScript und Build erfolgreich. Der nun vorbereitete Folgepatch zur Bereinigung der unerreichbaren Providerpfade und zum früheren Ablehnen von Bild-/PDF-Anhängen ist darin noch nicht enthalten und benötigt einen neuen CI-Lauf.
+- Die automatische Vercel-Preview wurde wegen des Free-Plan-Limits von mehr als 100 Deployments pro Tag abgelehnt (`api-deployments-free-per-day`, erneuter Versuch laut Vercel nach 24 Stunden). Das ist kein Buildfehler. Es gibt keinen bestätigten Preview- oder Live-Deploy.
+
+### Supabase – Live-Prüfung weiterhin blockiert
+- Der verbundene Supabase-Zugang listet das Projekt `Alo` (`mujuqmcxhdjwgoeaphpe`) als `ACTIVE_HEALTHY` in `eu-central-1`.
+- Abfragen der Migration-History und der Tabellenübersicht scheitern derzeit mit PostgreSQL `28P01: password authentication failed for user postgres`. Deshalb sind angewandte Migrationen, RLS-Policies und die Live-Existenz von `friend_app_shares` weiterhin **nicht verifiziert**.
+- Keine Migration wurde ausgeführt oder verändert. Keine Secrets wurden gelesen. Keine Live-Daten wurden geschrieben.
+
+### Free-only-KI – zusätzliche Codehärtung im Folgepatch
+- Der Serverpfad wird auf den einen freigegebenen Provider `openrouter` und das feste Modell `openrouter/free` reduziert. Unerreichbare Implementierungen für Lovable, OpenAI, Anthropic, Google sowie Custom-URL/DNS-Prüfpfade werden entfernt; die OpenRouter-URL wird fest im Servercode verankert.
+- Mira lehnt Bild- und PDF-Anhänge bereits vor dem Netzwerkaufruf mit einer zutreffenden Free-only-Meldung ab. Unterstützt bleiben Textdateien (TXT, MD, CSV, TSV, JSON). Der bisherige Hinweis, für PDFs Google auszuwählen, war im Free-only-Modus irreführend.
+- Der OpenRouter-Key bleibt vorläufig unverschlüsselt in `sessionStorage` und ist für aktive Seitenskripte/XSS lesbar. Das ist ausdrücklich nur eine Zwischenlösung, kein zentraler Schlüsseltresor.
+- Das KI-Rate-Limit liegt weiterhin pro Serverprozess im Arbeitsspeicher und ist keine globale, dauerhafte Mehrinstanzquote. Vor einer größeren Freigabe sind persistente Quoten und Parallelitäts-/Mehrinstanztests erforderlich.
+
+### Status und nächste Abhängigkeiten
+- PR #198 bleibt Draft und ungemergt. Kein Livegang ist bestätigt.
+- Phase 0 bleibt teilweise offen: Supabase-Migrations-/RLS-Prüfung, Secret-Hygieneprüfung, reale Kernabläufe auf Geräten und vollständige Live-Abnahme fehlen.
+- Nächster technischer Schritt: neuen Folgepatch vollständig durch CI prüfen, danach unabhängige Sicherheitsprüfung des PRs. Vercel-Preview erst nach Ende des Tageslimits erneut prüfen; Supabase-Audit erst nach Behebung des Datenbankzugriffs fortsetzen.

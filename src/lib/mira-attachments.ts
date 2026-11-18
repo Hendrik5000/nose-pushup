@@ -6,7 +6,7 @@ export const MIRA_TOTAL_LIMIT = 3 * 1024 * 1024;
 export const MIRA_TEXT_FILE_LIMIT = 128 * 1024;
 export const MIRA_ATTACHMENT_TEXT_LIMIT = 10_000;
 export const MIRA_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
-export const MIRA_FILE_ACCEPT = `${MIRA_IMAGE_ACCEPT},application/pdf,.txt,.md,.csv,.tsv,.json`;
+export const MIRA_FILE_ACCEPT = ".txt,.md,.csv,.tsv,.json";
 const formats: Record<string, string> = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
@@ -76,17 +76,14 @@ export function removeMiraAttachment(items: LocalMiraAttachment[], id: string) {
   return items.filter((item) => item.id !== id);
 }
 export function assertMiraAttachmentProvider(
-  provider: ProviderId,
+  _provider: ProviderId,
   attachments: Pick<MiraAttachment, "mime">[],
 ): void {
-  if (attachments.some((item) => item.mime === "application/pdf") && provider !== "google")
+  if (attachments.some((item) => item.mime.startsWith("image/") || item.mime === "application/pdf")) {
     throw new Error(
-      "PDF wird derzeit nur über den Google-Anbieter verarbeitet. Bitte Google in den KI-Einstellungen wählen oder PDF als TXT exportieren. Es wurde nichts gesendet.",
+      "Im aktuellen Free-only-Modus unterstützt Mira nur Textdateien (TXT, MD, CSV, TSV, JSON). Bilder und PDFs werden nicht übertragen. Bitte exportiere die Datei als Text. Es wurde nichts gesendet.",
     );
-  if (attachments.some((item) => item.mime.startsWith("image/")) && provider === "custom")
-    throw new Error(
-      "Bilder sind für eigene Anbieter nicht verlässlich freigeschaltet. Bitte OpenAI, Google, Anthropic oder das Gateway wählen. Es wurde nichts gesendet.",
-    );
+  }
 }
 function validSignature(mime: string, bytes: Uint8Array): boolean {
   const ascii = (start: number, end: number) => String.fromCharCode(...bytes.slice(start, end));
