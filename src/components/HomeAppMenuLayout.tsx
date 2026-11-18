@@ -25,7 +25,7 @@ function MenuFrame({
 
   return (
     <main
-      className={`relative mx-auto flex min-h-[100dvh] w-full flex-col gap-6 ${frameClass} ${
+      className={`alo-site-directory-page relative mx-auto flex min-h-[100dvh] w-full flex-col gap-6 ${frameClass} ${
         sidebar ? "max-w-5xl" : "max-w-4xl"
       }`}
       aria-labelledby={showHeader ? "home-app-menu-title" : undefined}
