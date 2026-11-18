@@ -51,7 +51,7 @@ export function AppSettingsPage({
           description="Gerät koppeln, Daten importieren und synchronisieren"
           icon={<Watch className="h-5 w-5" aria-hidden="true" />}
         >
-          <SmartwatchPanel />
+          <SmartwatchPanel userId={userId} />
         </SettingsBlock>
       </>
     );

@@ -22,37 +22,36 @@ import {
   type WatchDevice,
 } from "@/lib/smartwatch";
 
-const watchSyncGateway: WatchSyncGateway = {
-  getUserId: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error) throw error;
-    return data.user?.id ?? null;
-  },
-  getEntry: async (userId, day) => {
-    const { data, error } = await supabase
-      .from("health_entries")
-      .select("steps, active_kcal, sleep_min, weight_kg")
-      .eq("user_id", userId)
-      .eq("day", day)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
-  },
-  upsert: async (payload) => {
-    const { error } = await supabase
-      .from("health_entries")
-      .upsert(payload, { onConflict: "user_id,day" });
-    if (error) throw error;
-  },
-};
+function createWatchSyncGateway(userId: string): WatchSyncGateway {
+  return {
+    getUserId: async () => userId,
+    getEntry: async (userId, day) => {
+      const { data, error } = await supabase
+        .from("health_entries")
+        .select("steps, active_kcal, sleep_min, weight_kg")
+        .eq("user_id", userId)
+        .eq("day", day)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    upsert: async (payload) => {
+      const { error } = await supabase
+        .from("health_entries")
+        .upsert(payload, { onConflict: "user_id,day" });
+      if (error) throw error;
+    },
+  };
+}
 
-export function SmartwatchPanel() {
+export function SmartwatchPanel({ userId }: { userId: string }) {
   const [devices, setDevices] = useState<WatchDevice[]>(() => getWatchDevices());
   const [snapshot, setSnapshot] = useState(() => getWatchSnapshot());
   const [brand, setBrand] = useState<WatchBrand>("galaxy");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const watchSyncGateway = createWatchSyncGateway(userId);
 
   const refresh = () => {
     setDevices(getWatchDevices());

@@ -71,7 +71,7 @@ test("the three routes retain their pages, Health data sources and new Classic d
   );
   assert.match(health, /health_entries/);
   assert.match(health, /<HealthConnectPanel \/>/);
-  assert.match(health, /<SmartwatchPanel \/>/);
+  assert.match(health, /<SmartwatchPanel userId=\{userId\} \/>/);
   assert.match(health, /className="classic-only health-classic-dashboard/);
   assert.match(health, /className="health-classic-hero"/);
   assert.match(health, /id="health-classic-today-title"/);
