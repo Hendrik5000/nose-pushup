@@ -4,7 +4,10 @@ import test from "node:test";
 
 const css = readFileSync(new URL("../src/alo-visual-refresh.css", import.meta.url), "utf8");
 const root = readFileSync(new URL("../src/routes/__root.tsx", import.meta.url), "utf8");
-const directory = readFileSync(new URL("../src/components/HomeAppMenuLayout.tsx", import.meta.url), "utf8");
+const directory = readFileSync(
+  new URL("../src/components/HomeAppMenuLayout.tsx", import.meta.url),
+  "utf8",
+);
 const games = readFileSync(new URL("../src/routes/games.tsx", import.meta.url), "utf8");
 
 test("the shared Alo visual layer is loaded after the adaptive layout", () => {
