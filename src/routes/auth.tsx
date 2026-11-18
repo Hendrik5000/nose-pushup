@@ -110,16 +110,18 @@ function AuthPage() {
   const handleOAuth = async (provider: "google" | "apple") => {
     setError(null);
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin + "/auth?next=" + encodeURIComponent(next),
-    });
-    if (result.error) {
-      setError(result.error instanceof Error ? result.error.message : "OAuth fehlgeschlagen");
+    try {
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin + "/auth?next=" + encodeURIComponent(next),
+      });
+      if (result.error) throw result.error;
+      if (!result.redirected) window.location.href = next;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "OAuth fehlgeschlagen";
+      setError(translateAuthError(message));
+    } finally {
       setLoading(false);
-      return;
     }
-    if (result.redirected) return;
-    window.location.href = next;
   };
 
   const handleGuest = async () => {
