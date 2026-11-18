@@ -66,22 +66,27 @@ test("selectProvider prefers provider that lists the task", () => {
     enabled: false,
     apiKey: "",
   }));
+  const openrouter = providers.find((p) => p.id === "openrouter")!;
+  openrouter.enabled = true;
+  openrouter.apiKey = "free-key";
+  openrouter.model = "openrouter/free";
+  openrouter.tasks = ["vision", "creative", "coding"];
   const google = providers.find((p) => p.id === "google")!;
   google.enabled = true;
-  google.apiKey = "k";
-  google.tasks = ["vision", "creative"];
+  google.apiKey = "paid-key";
+  google.tasks = ["vision"];
   const openai = providers.find((p) => p.id === "openai")!;
   openai.enabled = true;
-  openai.apiKey = "k";
+  openai.apiKey = "paid-key";
   openai.tasks = ["coding"];
 
   const visionSel = selectProvider(providers, "vision");
-  assert.equal(visionSel.provider?.id, "google");
+  assert.equal(visionSel.provider?.id, "openrouter");
   assert.equal(visionSel.reason, "task_preference");
   assert.match(describeProviderSelection(visionSel, "vision"), /Bild verstehen/);
 
   const codeSel = selectProvider(providers, "coding");
-  assert.equal(codeSel.provider?.id, "openai");
+  assert.equal(codeSel.provider?.id, "openrouter");
 });
 
 test("mira memory is off by default and only builds system block when enabled with notes", () => {

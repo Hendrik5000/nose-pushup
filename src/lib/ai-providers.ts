@@ -93,7 +93,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
   {
     id: "lovable",
-    label: "Lovable Gateway (Kosten nicht verifiziert – gesperrt)",
+    label: "Lovable Gateway",
     enabled: false,
     apiKey: "",
     model: "google/gemini-3-flash-preview",

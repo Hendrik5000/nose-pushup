@@ -334,11 +334,26 @@ function RootComponent() {
 
   useEffect(() => {
     let unsub: { unsubscribe: () => void } | undefined;
+    let currentUserId: string | null = null;
     (async () => {
       const { supabase } = await import("@/integrations/supabase/client");
-      const { data } = supabase.auth.onAuthStateChange((event) => {
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === "INITIAL_SESSION") {
+          currentUserId = session?.user.id ?? null;
+          return;
+        }
+        if (event === "SIGNED_IN") {
+          const nextUserId = session?.user.id ?? null;
+          if (currentUserId && nextUserId && currentUserId !== nextUserId) {
+            clearSensitiveClientStorage();
+          }
+          currentUserId = nextUserId;
+        }
+        if (event === "SIGNED_OUT") {
+          clearSensitiveClientStorage();
+          currentUserId = null;
+        }
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-        if (event === "SIGNED_OUT") clearSensitiveClientStorage();
         router.invalidate();
         if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
       });
