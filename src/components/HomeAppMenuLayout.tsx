@@ -21,10 +21,7 @@ export function HomeAppMenuLayout({
 
   return (
     <main
-      className={
-        "alo-site-directory-page relative mx-auto flex min-h-[100dvh] w-full flex-col " +
-        widthClass
-      }
+      className={`alo-site-directory-page relative mx-auto flex min-h-[100dvh] w-full flex-col ${widthClass}`}
       aria-labelledby={showHeader ? "home-app-menu-title" : undefined}
       data-alo-menu-surface="true"
     >
