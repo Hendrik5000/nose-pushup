@@ -186,7 +186,13 @@ function LeaderboardPage() {
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold">
                   {p.avatar_url ? (
-                    <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      src={p.avatar_url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     (p.display_name || "?").slice(0, 1).toUpperCase()
                   )}

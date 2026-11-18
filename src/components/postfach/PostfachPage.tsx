@@ -261,7 +261,13 @@ function ItemCard({ item, children }: { item: PostfachItem; children?: React.Rea
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold">
           {item.fromAvatarUrl ? (
-            <img src={item.fromAvatarUrl} alt="" className="h-full w-full object-cover" />
+            <img
+              loading="lazy"
+              decoding="async"
+              src={item.fromAvatarUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
           ) : (
             item.fromName.slice(0, 1).toUpperCase()
           )}

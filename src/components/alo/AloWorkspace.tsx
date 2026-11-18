@@ -698,7 +698,13 @@ function Collections({
                 <>
                   <p className="mt-2 text-xs">Datei: {a.name}</p>
                   {a.type.startsWith("image/") && (
-                    <img src={a.data} alt={a.name} className="mt-2 max-h-60 rounded-lg" />
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      src={a.data}
+                      alt={a.name}
+                      className="mt-2 max-h-60 rounded-lg"
+                    />
                   )}
                   {a.type.startsWith("audio/") && (
                     <audio controls src={a.data} className="mt-2 w-full" />

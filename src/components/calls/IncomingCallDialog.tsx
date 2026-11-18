@@ -30,7 +30,12 @@ export function IncomingCallDialog({
       <div className="w-full max-w-sm rounded-3xl border border-border bg-background p-6 text-center shadow-2xl">
         <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-2xl font-semibold">
           {call.callerAvatarUrl ? (
-            <img src={call.callerAvatarUrl} alt="" className="h-full w-full object-cover" />
+            <img
+              decoding="async"
+              src={call.callerAvatarUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
           ) : (
             initial
           )}

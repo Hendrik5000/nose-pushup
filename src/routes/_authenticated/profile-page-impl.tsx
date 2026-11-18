@@ -479,7 +479,15 @@ function SettingsPageHeader({
 
 function ProfileAvatar({ profile }: { profile: Profile | null }) {
   if (profile?.avatar_url) {
-    return <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />;
+    return (
+      <img
+        loading="lazy"
+        decoding="async"
+        src={profile.avatar_url}
+        alt=""
+        className="h-full w-full object-cover"
+      />
+    );
   }
   return <span aria-hidden="true">{(profile?.display_name || "?").slice(0, 1).toUpperCase()}</span>;
 }

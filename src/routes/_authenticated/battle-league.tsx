@@ -246,7 +246,13 @@ function BattleLeaguePage() {
                   </div>
                   <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-xs font-semibold">
                     {p.avatar_url ? (
-                      <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                      <img
+                        loading="lazy"
+                        decoding="async"
+                        src={p.avatar_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       (p.display_name || "?").slice(0, 1).toUpperCase()
                     )}
@@ -291,7 +297,13 @@ function BattleLeaguePage() {
                 >
                   <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-xs font-semibold">
                     {r.avatar_url ? (
-                      <img src={r.avatar_url} alt="" className="h-full w-full object-cover" />
+                      <img
+                        loading="lazy"
+                        decoding="async"
+                        src={r.avatar_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       r.name.slice(0, 1).toUpperCase()
                     )}
