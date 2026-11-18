@@ -976,6 +976,7 @@ export default function AloBrowser() {
               <img
                 src={`https://image.thum.io/get/width/1200/noanimate/${activeTab.url}`}
                 alt={activeTab.title}
+                decoding="async"
                 className="w-full rounded-xl border border-border bg-card"
               />
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-3">

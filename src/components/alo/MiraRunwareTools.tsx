@@ -319,6 +319,7 @@ export function MiraRunwareTools({
           <img
             src={image}
             alt="Ausgewähltes Referenzbild"
+            decoding="async"
             className="max-h-40 w-full rounded-xl object-contain"
           />
         )}

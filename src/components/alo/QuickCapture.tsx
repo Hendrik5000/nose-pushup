@@ -242,7 +242,13 @@ export function QuickCapture({ userId, onSaved }: { userId: string; onSaved?: ()
             <audio controls src={attachment.data} className="w-full" />
           )}
           {attachment.type.startsWith("image/") && (
-            <img className="max-h-40 rounded-xl" src={attachment.data} alt={attachment.name} />
+            <img
+              loading="lazy"
+              decoding="async"
+              className="max-h-40 rounded-xl"
+              src={attachment.data}
+              alt={attachment.name}
+            />
           )}
           <button className="alo-btn" onClick={() => setAttachment(null)}>
             Anhang entfernen

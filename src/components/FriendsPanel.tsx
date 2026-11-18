@@ -268,7 +268,13 @@ function FriendRow({
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold">
           {friend.avatarUrl ? (
-            <img src={friend.avatarUrl} alt="" className="h-full w-full object-cover" />
+            <img
+              loading="lazy"
+              decoding="async"
+              src={friend.avatarUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
           ) : (
             initial
           )}

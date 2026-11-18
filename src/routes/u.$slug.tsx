@@ -73,7 +73,13 @@ function PublicProfilePage() {
           <div className="rounded-3xl border border-border bg-card/60 p-6 text-center backdrop-blur">
             <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-2xl font-bold">
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                <img
+                  loading="lazy"
+                  decoding="async"
+                  src={profile.avatar_url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 (profile.display_name || "?").slice(0, 1).toUpperCase()
               )}
@@ -112,7 +118,13 @@ function PublicProfilePage() {
             <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
               <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[2rem] border border-primary/30 bg-background/70 text-4xl font-bold">
                 {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                  <img
+                    loading="lazy"
+                    decoding="async"
+                    src={profile.avatar_url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   (profile.display_name || "?").slice(0, 1).toUpperCase()
                 )}

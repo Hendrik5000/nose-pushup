@@ -73,7 +73,13 @@ export function FriendDmPicker({
             >
               <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-xs font-semibold">
                 {friend.avatarUrl ? (
-                  <img src={friend.avatarUrl} alt="" className="h-full w-full object-cover" />
+                  <img
+                    loading="lazy"
+                    decoding="async"
+                    src={friend.avatarUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   friend.displayName.slice(0, 1).toUpperCase()
                 )}
@@ -215,7 +221,13 @@ export function MessageImage({
       aria-label={`${label} vergrößern`}
       className="mb-1 block overflow-hidden rounded-xl"
     >
-      <img src={url} alt={label} loading="lazy" className="max-h-64 max-w-full object-contain" />
+      <img
+        loading="lazy"
+        decoding="async"
+        src={url}
+        alt={label}
+        className="max-h-64 max-w-full object-contain"
+      />
     </button>
   );
 }

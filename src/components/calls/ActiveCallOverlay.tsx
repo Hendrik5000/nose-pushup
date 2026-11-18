@@ -70,7 +70,12 @@ export function ActiveCallOverlay({ call, state }: { call: ActiveCall; state: Ca
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
           <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 text-4xl font-semibold">
             {call.peer.avatarUrl ? (
-              <img src={call.peer.avatarUrl} alt="" className="h-full w-full object-cover" />
+              <img
+                decoding="async"
+                src={call.peer.avatarUrl}
+                alt=""
+                className="h-full w-full object-cover"
+              />
             ) : (
               initial
             )}
