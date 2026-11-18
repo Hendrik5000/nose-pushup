@@ -24,8 +24,8 @@ test("all authenticated pages receive shared layout, card, control and navigatio
     ".alo-page-sidebar-link",
     ".dashboard-widget-grid",
     ".app-homebar .homebar-items",
-    "[data-slot="dialog-content"]",
-    "[data-slot="sheet-content"]",
+    '[data-slot=\"dialog-content\"]',
+    '[data-slot=\"sheet-content\"]',
     ":focus-visible",
   ]) {
     assert.ok(css.includes(selector), `missing shared site selector ${selector}`);
