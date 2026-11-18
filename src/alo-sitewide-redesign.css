@@ -311,3 +311,216 @@ html[data-design-style] [cmdk-root] {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Shared modern page introductions used throughout the training and sport areas. */
+html[data-design-style] .sport-page-intro {
+  position: relative;
+  display: grid;
+  gap: clamp(0.7rem, 1.7vw, 1.1rem);
+  padding-block: clamp(0.5rem, 1.5vw, 1rem) clamp(0.9rem, 2vw, 1.35rem);
+}
+
+html[data-design-style] .sport-eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.38rem 0.72rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 8%, var(--card));
+  color: var(--primary);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-design-style] .sport-eyebrow > span {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+html[data-design-style] .sport-intro-body {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+html[data-design-style] .sport-page-intro h1 {
+  max-width: 18ch;
+  font-size: clamp(2rem, 1.45rem + 2vw, 3rem);
+  font-weight: 780;
+  line-height: 1.04;
+  letter-spacing: -0.055em;
+}
+
+html[data-design-style] .sport-intro-description {
+  max-width: 58ch;
+  margin-top: 0.65rem;
+  color: var(--muted-foreground);
+  font-size: clamp(0.9rem, 0.85rem + 0.2vw, 1rem);
+  line-height: 1.7;
+}
+
+html[data-design-style] .sport-intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+html[data-design-style] .sport-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-block: 0.4rem 0.9rem;
+}
+
+html[data-design-style] .sport-section-number {
+  display: grid;
+  width: 1.7rem;
+  height: 1.7rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--primary) 9%, var(--card));
+  color: var(--primary);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+html[data-design-style] .sport-section-label h2 {
+  font-size: 0.92rem;
+  font-weight: 760;
+}
+
+html[data-design-style] .sport-section-line {
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, var(--alo-site-border), transparent);
+}
+
+/* Settings: recognizable category tiles and clear grouping. */
+html[data-design-style] .settings-category-row {
+  border: 1px solid var(--alo-site-border);
+  border-radius: 1.15rem;
+  background: var(--alo-site-panel);
+  box-shadow: var(--alo-site-shadow-soft);
+}
+
+html[data-design-style] .settings-category-row:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--menu-accent, var(--primary)) 38%, var(--border));
+  background: color-mix(in srgb, var(--primary) 5%, var(--card));
+}
+
+html[data-design-style] .settings-category-icon {
+  border: 1px solid color-mix(in srgb, var(--menu-accent, var(--primary)) 20%, transparent);
+}
+
+/* Marketplace: search and category controls become a focused discovery toolbar. */
+html[data-design-style] .alo-marketplace-search {
+  min-height: 3.25rem;
+  border-color: var(--alo-site-border);
+  background: var(--alo-site-panel-raised);
+  box-shadow: var(--alo-site-shadow-soft);
+}
+
+html[data-design-style] .alo-marketplace-categories > * {
+  min-height: 2.45rem;
+  border: 1px solid var(--alo-site-border);
+  border-radius: 999px;
+  background: var(--alo-site-panel);
+}
+
+html[data-design-style] .alo-marketplace-preview {
+  padding: clamp(0.9rem, 2.5vw, 1.25rem);
+  border: 1px solid var(--alo-site-border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--card) 90%, var(--background));
+}
+
+html[data-design-style] .alo-marketplace-preview [aria-hidden="true"] {
+  border: 1px solid color-mix(in srgb, var(--primary) 17%, transparent);
+  box-shadow: var(--alo-site-shadow-soft);
+}
+
+/* Profile and activity: identity first, metrics second, supporting details last. */
+html[data-design-style] .sport-public-profile > section:first-child {
+  border-radius: clamp(1.5rem, 3vw, 2.25rem);
+  box-shadow: var(--alo-site-shadow);
+}
+
+html[data-design-style] .sport-public-profile > section:not(:first-child) {
+  border: 1px solid var(--alo-site-border);
+  border-radius: 1.4rem;
+  background: var(--alo-site-panel);
+  padding: clamp(1rem, 2.5vw, 1.35rem);
+}
+
+html[data-design-style] .sport-auth-page .sport-auth-hero {
+  box-shadow: var(--alo-site-shadow);
+}
+
+html[data-design-style] .sport-auth-page > section:last-child {
+  border-radius: 1.8rem;
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--foreground) 9%, transparent);
+}
+
+/* Training and activity pages: focus cards and progress elements. */
+html[data-design-style] .sport-focus-card,
+html[data-design-style] .sport-feature-card {
+  background: linear-gradient(145deg, var(--alo-site-panel-raised), var(--alo-site-panel));
+}
+
+html[data-design-style] .run-stat-grid > *,
+html[data-design-style] .health-classic-dashboard .health-classic-widget-card {
+  border-color: var(--alo-site-border);
+  border-radius: 1.15rem;
+  background: var(--alo-site-panel);
+}
+
+html[data-design-style] .health-classic-section-heading {
+  padding-block-end: 0.35rem;
+}
+
+/* Football and match cards: stronger score hierarchy and calmer data rows. */
+html[data-design-style] .alo-module-surface article[class*="rounded-2xl"][class*="border"] {
+  background: linear-gradient(145deg, var(--alo-site-panel-raised), var(--alo-site-panel));
+}
+
+html[data-design-style] .alo-module-surface article[class*="rounded-2xl"][class*="border"] :is([class*="tabular-nums"], [data-score]) {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+
+/* Admin, Postfach, tools and area directories. */
+html[data-design-style] .alo-admin-page > header,
+html[data-design-style] .alo-postfach-page > header {
+  border-color: var(--alo-site-border);
+  background: var(--alo-site-panel);
+  box-shadow: var(--alo-site-shadow-soft);
+}
+
+html[data-design-style] .alo-module-surface :is(.settings-category-row, [data-settings-category]) {
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  html[data-design-style] .sport-intro-body {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  html[data-design-style] .sport-intro-actions {
+    justify-content: flex-start;
+  }
+}
