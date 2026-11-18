@@ -40,7 +40,7 @@ export type ProviderConfig = {
 const STORAGE_KEY = "super-ai-providers-v1";
 
 export type ProviderCatalogEntry = {
-  id: Exclude<ProviderId, "openai" | "anthropic" | "google" | "lovable" | "custom">;
+  id: "openrouter";
   summary: string;
   freeAccess: string;
   models: string[];
@@ -49,42 +49,27 @@ export type ProviderCatalogEntry = {
   supportsImages: false;
 };
 
-/** Free access is provider-controlled and can change; no paid fallback is configured. */
+/** Only OpenRouter's Free Models Router is currently allowed in Alo's zero-cost mode. */
 export const FREE_PROVIDER_CATALOG: ProviderCatalogEntry[] = [
   {
     id: "openrouter",
-    summary: "Ein Zugang zu vielen Modellfamilien; der Free-Router wählt nur kostenlose Modelle.",
-    freeAccess: "Free-Modelle; der Free-Plan ist begrenzt (derzeit 50 Anfragen/Tag laut Anbieter).",
+    summary: "Ein Zugang zu wechselnden kostenlosen Modellen; der Free-Router wählt ausschließlich kostenlose Modellvarianten.",
+    freeAccess: "Kostenloser Tarif ohne Zahlungsoptionen; 20 Anfragen/Minute und 50 Anfragen/Tag. Bei Limits pausiert die Anfrage – kein kostenpflichtiger Fallback.",
     models: ["openrouter/free"],
     keyUrl: "https://openrouter.ai/keys",
     docsUrl: "https://openrouter.ai/docs/quickstart",
     supportsImages: false,
   },
-  {
-    id: "cerebras",
-    summary: "Sehr schnelle Inferenz für ausgewählte Open-Weight-Modelle.",
-    freeAccess:
-      "Einmalig 5 USD Promo-Guthaben nur mit gültiger Zahlungsmethode; 30 Tage gültig. Keine automatische kostenpflichtige Nutzung: Nach Ablauf oder Verbrauch pausiert die API, bis separat PayGo-Guthaben gekauft wird.",
-    models: ["gpt-oss-120b"],
-    keyUrl: "https://cloud.cerebras.ai/",
-    docsUrl: "https://inference-docs.cerebras.ai/",
-    supportsImages: false,
-  },
-  {
-    id: "cloudflare",
-    summary: "Workers AI mit mehreren Open-Weight-Modellen und festem Cloudflare-Endpunkt.",
-    freeAccess: "10.000 Neurons pro Tag im Free-Plan; einzelne Modelle benötigen einen Paid-Plan.",
-    models: ["@cf/zai-org/glm-4.7-flash", "@cf/google/gemma-4-26b-a4b-it", "@cf/qwen/qwen3.8-27b"],
-    keyUrl: "https://dash.cloudflare.com/profile/api-tokens",
-    docsUrl: "https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/",
-    supportsImages: false,
-  },
 ];
+
+export function isFreeOnlyProvider(id: ProviderId): boolean {
+  return id === "openrouter";
+}
 
 export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   {
     id: "openai",
-    label: "OpenAI",
+    label: "OpenAI (gesperrt – kostenpflichtige API)",
     enabled: false,
     apiKey: "",
     model: "gpt-4o-mini",
@@ -92,7 +77,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
   {
     id: "anthropic",
-    label: "Anthropic (Claude)",
+    label: "Anthropic (gesperrt – kostenpflichtige API)",
     enabled: false,
     apiKey: "",
     model: "claude-3-5-haiku-latest",
@@ -100,7 +85,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
   {
     id: "google",
-    label: "Google (Gemini)",
+    label: "Google Gemini (nicht für Free-only freigegeben)",
     enabled: false,
     apiKey: "",
     model: "gemini-2.0-flash",
@@ -108,15 +93,15 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
   {
     id: "lovable",
-    label: "Lovable Gateway",
-    enabled: true,
+    label: "Lovable Gateway (Kosten nicht verifiziert – gesperrt)",
+    enabled: false,
     apiKey: "",
     model: "google/gemini-3-flash-preview",
     tasks: ["general", "quick_log", "motivation", "vision", "creative"],
   },
   {
     id: "custom",
-    label: "Custom (OpenAI-kompatibel)",
+    label: "Custom (Kosten nicht verifiziert – gesperrt)",
     enabled: false,
     apiKey: "",
     baseUrl: "https://api.example.com/v1",
@@ -133,7 +118,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
   {
     id: "cerebras",
-    label: "Cerebras (Startguthaben)",
+    label: "Cerebras (Zahlungsmethode erforderlich – gesperrt)",
     enabled: false,
     apiKey: "",
     model: "gpt-oss-120b",
@@ -141,7 +126,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
   {
     id: "cloudflare",
-    label: "Cloudflare Workers AI",
+    label: "Cloudflare Workers AI (Tarif nicht verifiziert – gesperrt)",
     enabled: false,
     apiKey: "",
     accountId: "",
@@ -153,35 +138,70 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
 export function loadProviders(userId?: string | null): ProviderConfig[] {
   try {
     const key = providersStorageKey(userId);
-    let raw = localStorage.getItem(key);
-    if (!raw && userId) {
-      raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        localStorage.setItem(key, raw);
-        localStorage.removeItem(STORAGE_KEY);
+    const session = window.sessionStorage;
+    let raw = session.getItem(key);
+
+    // One-time migration: remove previously persistent BYOK data from localStorage.
+    const legacyKeys = userId ? [key, STORAGE_KEY] : [STORAGE_KEY];
+    for (const legacyKey of legacyKeys) {
+      const legacy = window.localStorage.getItem(legacyKey);
+      const belongsToCurrentAccount = !userId || legacyKey === key;
+      try {
+        if (!raw && legacy && belongsToCurrentAccount) {
+          session.setItem(key, legacy);
+          raw = legacy;
+        }
+      } finally {
+        // Never carry an unscoped legacy key into a newly signed-in account.
+        window.localStorage.removeItem(legacyKey);
       }
     }
+
     if (!raw) return structuredClone(DEFAULT_PROVIDERS);
     const parsed = JSON.parse(raw) as ProviderConfig[];
     if (!Array.isArray(parsed) || parsed.length === 0) return structuredClone(DEFAULT_PROVIDERS);
-    return DEFAULT_PROVIDERS.map((d) => {
-      const found = parsed.find((p) => p.id === d.id);
-      return found ? { ...d, ...found, id: d.id, label: d.label } : d;
+
+    const normalized = DEFAULT_PROVIDERS.map((defaults) => {
+      const found = parsed.find((provider) => provider.id === defaults.id);
+      if (!found) return { ...defaults };
+      const merged = { ...defaults, ...found, id: defaults.id, label: defaults.label };
+      if (!isFreeOnlyProvider(defaults.id)) {
+        return { ...merged, enabled: false, apiKey: "", baseUrl: undefined, accountId: undefined };
+      }
+      return {
+        ...merged,
+        enabled: Boolean(found.enabled),
+        apiKey: typeof found.apiKey === "string" ? found.apiKey : "",
+        model: "openrouter/free",
+        baseUrl: undefined,
+        accountId: undefined,
+      };
     });
+
+    // Persist only the free provider and its fixed free-router model for this session.
+    session.setItem(key, JSON.stringify(normalized));
+    return normalized;
   } catch {
     return structuredClone(DEFAULT_PROVIDERS);
   }
 }
 
 export function saveProviders(list: ProviderConfig[], userId?: string | null) {
-  const sanitized = list.map((p) => ({
-    ...p,
-    apiKey: typeof p.apiKey === "string" ? p.apiKey : "",
-    ...(p.id === "cloudflare"
-      ? { accountId: typeof p.accountId === "string" ? p.accountId.trim().slice(0, 32) : "" }
-      : {}),
-  }));
-  localStorage.setItem(providersStorageKey(userId), JSON.stringify(sanitized));
+  const sanitized = DEFAULT_PROVIDERS.map((defaults) => {
+    const provider = list.find((item) => item.id === defaults.id) ?? defaults;
+    if (!isFreeOnlyProvider(defaults.id)) {
+      return { ...defaults, enabled: false, apiKey: "", baseUrl: undefined, accountId: undefined };
+    }
+    return {
+      ...defaults,
+      enabled: Boolean(provider.enabled),
+      apiKey: typeof provider.apiKey === "string" ? provider.apiKey : "",
+      model: "openrouter/free",
+      baseUrl: undefined,
+      accountId: undefined,
+    };
+  });
+  window.sessionStorage.setItem(providersStorageKey(userId), JSON.stringify(sanitized));
 }
 
 /** Classify user message into a task for model routing. */
@@ -227,7 +247,9 @@ const TASK_LABELS: Record<AiTask, string> = {
 };
 
 export function selectProvider(providers: ProviderConfig[], task: AiTask): ProviderSelection {
-  const enabled = providers.filter((p) => p.enabled && (p.id === "lovable" || p.apiKey.trim()));
+  const enabled = providers.filter(
+    (provider) => isFreeOnlyProvider(provider.id) && provider.enabled && provider.apiKey.trim(),
+  );
   if (enabled.length === 0) return { provider: null, reason: "no_provider" };
   const preferred = enabled.find((p) => p.tasks.includes(task));
   return preferred
@@ -249,7 +271,9 @@ export function providerLabel(id: ProviderId | string): string {
 }
 
 export function enabledProviderSummary(providers: ProviderConfig[]): string {
-  const on = providers.filter((p) => p.enabled && (p.id === "lovable" || p.apiKey.trim()));
+  const on = providers.filter(
+    (provider) => isFreeOnlyProvider(provider.id) && provider.enabled && provider.apiKey.trim(),
+  );
   if (on.length === 0) return "Keine Anbieter aktiv";
   return on.map((p) => p.label).join(", ");
 }

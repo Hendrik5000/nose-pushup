@@ -372,10 +372,13 @@ export const superAiChat = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }): Promise<SuperAiResult> => {
     const { userId } = context as { userId: string };
-    checkUserRateLimit(userId);
-
     const p = data.provider;
-    if (p.id === "lovable" && !p.model) p.model = "google/gemini-3-flash-preview";
+    if (p.id !== "openrouter") {
+      throw new Error(
+        "Alo ist im Free-only-Modus. Aktuell ist ausschließlich OpenRouter Free freigeschaltet; andere Anbieter sind gesperrt, um kostenpflichtige Nutzung auszuschließen.",
+      );
+    }
+    checkUserRateLimit(userId);
     assertModelAllowed(p.id, p.model);
 
     const attachments = data.messages.flatMap((m) => m.attachments ?? []);

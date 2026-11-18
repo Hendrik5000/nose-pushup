@@ -1,49 +1,151 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { DEFAULT_PROVIDERS, FREE_PROVIDER_CATALOG, toPayload } from "../src/lib/ai-providers.ts";
+import {
+  DEFAULT_PROVIDERS,
+  FREE_PROVIDER_CATALOG,
+  enabledProviderSummary,
+  isFreeOnlyProvider,
+  loadProviders,
+  saveProviders,
+  selectProvider,
+  toPayload,
+} from "../src/lib/ai-providers.ts";
+import { clearSensitiveClientStorage } from "../src/lib/sensitive-storage.ts";
 
-test("free API provider catalog contains only the three explicitly supported integrations", () => {
-  assert.deepEqual(
-    FREE_PROVIDER_CATALOG.map((entry) => entry.id),
-    ["openrouter", "cerebras", "cloudflare"],
-  );
-  assert.ok(FREE_PROVIDER_CATALOG.every((entry) => entry.models.length > 0));
-  const cloudflare = FREE_PROVIDER_CATALOG.find((entry) => entry.id === "cloudflare")!;
-  assert.ok(cloudflare.models.includes("@cf/qwen/qwen3.8-27b"));
-  assert.ok(!cloudflare.models.includes("@cf/nvidia/nemotron-3-120b-a12b"));
-  assert.ok(FREE_PROVIDER_CATALOG.every((entry) => entry.supportsImages === false));
-});
+function memoryStorage(initial: Record<string, string> = {}) {
+  const values = new Map(Object.entries(initial));
+  return {
+    get length() {
+      return values.size;
+    },
+    getItem(key: string) {
+      return values.get(key) ?? null;
+    },
+    setItem(key: string, value: string) {
+      values.set(key, String(value));
+    },
+    removeItem(key: string) {
+      values.delete(key);
+    },
+    key(index: number) {
+      return [...values.keys()][index] ?? null;
+    },
+  } as unknown as Storage;
+}
 
-test("new API providers start disabled and require an explicit API key", () => {
-  for (const id of ["openrouter", "cerebras", "cloudflare"] as const) {
-    const provider = DEFAULT_PROVIDERS.find((item) => item.id === id);
-    assert.ok(provider);
-    assert.equal(provider.enabled, false);
-    assert.equal(provider.apiKey, "");
+function withBrowserStorage<T>(
+  localStorage: Storage,
+  sessionStorage: Storage,
+  run: () => T,
+): T {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { localStorage, sessionStorage },
+  });
+  try {
+    return run();
+  } finally {
+    if (previousWindow) Object.defineProperty(globalThis, "window", previousWindow);
+    else Reflect.deleteProperty(globalThis, "window");
   }
+}
+
+test("free provider catalog contains only OpenRouter's zero-cost free router", () => {
+  assert.deepEqual(FREE_PROVIDER_CATALOG.map((entry) => entry.id), ["openrouter"]);
+  assert.deepEqual(FREE_PROVIDER_CATALOG[0].models, ["openrouter/free"]);
+  assert.equal(FREE_PROVIDER_CATALOG[0].supportsImages, false);
 });
 
-test("Cloudflare account ID is included only for the Cloudflare provider", () => {
-  const cloudflare = DEFAULT_PROVIDERS.find((item) => item.id === "cloudflare")!;
-  cloudflare.accountId = "0123456789abcdef0123456789abcdef";
-  assert.equal(toPayload(cloudflare).accountId, cloudflare.accountId);
-  const openrouter = DEFAULT_PROVIDERS.find((item) => item.id === "openrouter")!;
-  assert.equal(toPayload(openrouter).accountId, undefined);
+test("only OpenRouter Free can be enabled or selected", () => {
+  for (const provider of DEFAULT_PROVIDERS) {
+    if (provider.id !== "openrouter") {
+      assert.equal(provider.enabled, false);
+      assert.equal(isFreeOnlyProvider(provider.id), false);
+    }
+  }
+  const configured = DEFAULT_PROVIDERS.map((provider) => ({
+    ...provider,
+    enabled: true,
+    apiKey: "test-key",
+  }));
+  const selection = selectProvider(configured, "general");
+  assert.equal(selection.provider?.id, "openrouter");
+  assert.equal(selection.provider?.model, "openrouter/free");
+  assert.equal(enabledProviderSummary(configured), "OpenRouter (Free Models)");
 });
 
-test("server pins provider endpoints and model IDs instead of accepting arbitrary URLs", () => {
+test("provider loading migrates old localStorage keys to sessionStorage and strips blocked providers", () => {
+  const userKey = "super-ai-providers-v1:user-1";
+  const legacy = DEFAULT_PROVIDERS.map((provider) => ({
+    ...provider,
+    enabled: true,
+    apiKey: `legacy-${provider.id}`,
+    model: provider.id === "openrouter" ? "some-paid-model" : provider.model,
+  }));
+  const local = memoryStorage({
+    [userKey]: JSON.stringify(legacy),
+    "super-ai-providers-v1": JSON.stringify([
+      { id: "openrouter", enabled: true, apiKey: "belongs-to-previous-user", model: "openrouter/free" },
+    ]),
+  });
+  const session = memoryStorage();
+
+  withBrowserStorage(local, session, () => {
+    const loaded = loadProviders("user-1");
+    const openrouter = loaded.find((provider) => provider.id === "openrouter")!;
+    const cerebras = loaded.find((provider) => provider.id === "cerebras")!;
+    assert.equal(openrouter.enabled, true);
+    assert.equal(openrouter.model, "openrouter/free");
+    assert.equal(openrouter.apiKey, "legacy-openrouter");
+    assert.equal(cerebras.enabled, false);
+    assert.equal(cerebras.apiKey, "");
+    assert.equal(local.getItem(userKey), null);
+    assert.equal(local.getItem("super-ai-providers-v1"), null);
+    assert.ok(session.getItem(userKey));
+    assert.doesNotMatch(session.getItem(userKey)!, /belongs-to-previous-user/);
+
+    saveProviders(loaded.map((provider) => ({ ...provider, enabled: true, apiKey: "attempted-key" })), "user-1");
+    const saved = JSON.parse(session.getItem(userKey)!) as typeof loaded;
+    assert.equal(saved.find((provider) => provider.id === "openrouter")?.apiKey, "attempted-key");
+    assert.equal(saved.find((provider) => provider.id === "cerebras")?.apiKey, "");
+    assert.equal(saved.find((provider) => provider.id === "cerebras")?.enabled, false);
+  });
+});
+
+test("logout cleanup clears sensitive keys from local and session storage", () => {
+  const local = memoryStorage({
+    "super-ai-providers-v1:user-1": "secret",
+    "np-watch-snapshot:user-1": "snapshot",
+    "keep-this": "safe",
+  });
+  const session = memoryStorage({
+    "super-ai-providers-v1:user-1": "secret",
+    "np-watch-snapshot:user-1": "snapshot",
+    "keep-this-too": "safe",
+  });
+  withBrowserStorage(local, session, () => {
+    clearSensitiveClientStorage();
+    assert.equal(local.getItem("super-ai-providers-v1:user-1"), null);
+    assert.equal(session.getItem("super-ai-providers-v1:user-1"), null);
+    assert.equal(local.getItem("np-watch-snapshot:user-1"), null);
+    assert.equal(session.getItem("np-watch-snapshot:user-1"), null);
+    assert.equal(local.getItem("keep-this"), "safe");
+    assert.equal(session.getItem("keep-this-too"), "safe");
+  });
+});
+
+test("server rejects every provider except the fixed OpenRouter free router", () => {
   const server = readFileSync(new URL("../src/lib/super-ai.functions.ts", import.meta.url), "utf8");
   assert.match(server, /openrouter:\s*\["openrouter\/free"\]/);
-  assert.match(server, /cerebras:\s*\["gpt-oss-120b"\]/);
-  assert.match(server, /https:\/\/openrouter\.ai\/api\/v1/);
-  assert.match(server, /https:\/\/api\.cerebras\.ai\/v1/);
-  assert.match(server, /https:\/\/api\.cloudflare\.com\/client\/v4\/accounts/);
-  assert.match(server, /\^\[a-f0-9\]\{32\}\$/);
+  const guard = server.indexOf('if (p.id !== "openrouter")');
+  const providerDispatch = server.indexOf('if (p.id === "lovable")');
+  assert.ok(guard >= 0 && guard < providerDispatch);
+  assert.match(server, /Alo ist im Free-only-Modus/);
 });
 
-test("text-only free providers reject image attachments before forwarding", () => {
-  const server = readFileSync(new URL("../src/lib/super-ai.functions.ts", import.meta.url), "utf8");
-  assert.match(server, /attachments\.some\(\(item\) => item\.mime\.startsWith\("image\/"\)\)/);
-  assert.match(server, /Es wurde kein Bild gesendet/);
+test("OpenRouter account metadata is not added to its payload", () => {
+  const openrouter = DEFAULT_PROVIDERS.find((item) => item.id === "openrouter")!;
+  assert.equal(toPayload(openrouter).accountId, undefined);
 });

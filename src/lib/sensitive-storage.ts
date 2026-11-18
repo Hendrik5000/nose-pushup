@@ -29,18 +29,21 @@ const PREFIX_KEYS = [
 /** Remove BYOK keys and wearable/health caches from this browser. */
 export function clearSensitiveClientStorage(): void {
   if (typeof window === "undefined") return;
-  try {
-    for (const k of GLOBAL_SECRET_KEYS) {
-      window.localStorage.removeItem(k);
+  for (const storageName of ["sessionStorage", "localStorage"] as const) {
+    try {
+      const storage = window[storageName];
+      for (const k of GLOBAL_SECRET_KEYS) storage.removeItem(k);
+      const toRemove: string[] = [];
+      for (let i = 0; i < storage.length; i++) {
+        const key = storage.key(i);
+        if (!key) continue;
+        if (PREFIX_KEYS.some((prefix) => key.startsWith(prefix))) toRemove.push(key);
+      }
+      for (const k of toRemove) storage.removeItem(k);
+    } catch {
+      // One storage API may be unavailable (e.g. private browsing); still clear the other.
     }
-    const toRemove: string[] = [];
-    for (let i = 0; i < window.localStorage.length; i++) {
-      const key = window.localStorage.key(i);
-      if (!key) continue;
-      if (PREFIX_KEYS.some((p) => key.startsWith(p))) toRemove.push(key);
-    }
-    for (const k of toRemove) window.localStorage.removeItem(k);
-  } catch {
+  }
     // ignore quota / private mode
   }
 }
