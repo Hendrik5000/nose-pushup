@@ -12,6 +12,7 @@ import {
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { localDateKey } from "@/lib/training-dates";
+import { HealthEntryInputError, mergeHealthEntryMetrics } from "@/lib/health-entry";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
@@ -197,22 +198,34 @@ function HealthPage() {
   const save = async () => {
     setBusy(true);
     setMsg(null);
-    const payload = {
-      user_id: userId,
-      day,
-      steps: Math.max(0, Math.min(200000, parseInt(steps || "0", 10) || 0)),
-      active_kcal: Math.max(0, Math.min(20000, parseInt(kcal || "0", 10) || 0)),
-      weight_kg: weight ? Math.max(20, Math.min(400, parseFloat(weight))) : null,
-      sleep_min: Math.max(0, Math.min(1440, Math.round((parseFloat(sleepH || "0") || 0) * 60))),
-      source: "manual",
-    };
     try {
+      const { data: existing, error: readError } = await supabase
+        .from("health_entries")
+        .select("steps, active_kcal, weight_kg, sleep_min")
+        .eq("user_id", userId)
+        .eq("day", day)
+        .maybeSingle();
+      if (readError) throw readError;
+
+      const metrics = mergeHealthEntryMetrics(existing, {
+        steps,
+        kcal,
+        weight,
+        sleepHours: sleepH,
+      });
+      const payload = {
+        user_id: userId,
+        day,
+        ...metrics,
+        source: "manual",
+      };
       const { error } = await supabase
         .from("health_entries")
         .upsert(payload, { onConflict: "user_id,day" });
       if (error) throw error;
+
       let profileWeightSaved = true;
-      if (payload.weight_kg) {
+      if (weight.trim() && payload.weight_kg !== null) {
         const { error: profileError } = await supabase
           .from("profiles")
           .update({ weight_kg: payload.weight_kg })
@@ -228,8 +241,12 @@ function HealthPage() {
       setKcal("");
       setSleepH("");
       void load();
-    } catch {
-      setMsg("Speichern fehlgeschlagen. Verbindung prüfen und erneut versuchen.");
+    } catch (error) {
+      setMsg(
+        error instanceof HealthEntryInputError
+          ? error.message
+          : "Speichern fehlgeschlagen. Verbindung prüfen und erneut versuchen.",
+      );
     } finally {
       setBusy(false);
     }
