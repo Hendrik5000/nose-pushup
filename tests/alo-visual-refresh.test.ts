@@ -65,10 +65,7 @@ test("the whole-site experience includes restrained motion and honors reduced-mo
 
 test("secondary routes expose explicit hooks for their shared Alo Modern page treatments", () => {
   const routes = {
-    alarm: readFileSync(
-      new URL("../src/routes/_authenticated/alarm.tsx", import.meta.url),
-      "utf8",
-    ),
+    alarm: readFileSync(new URL("../src/routes/_authenticated/alarm.tsx", import.meta.url), "utf8"),
     battle: readFileSync(
       new URL("../src/routes/_authenticated/battle.index.tsx", import.meta.url),
       "utf8",
@@ -85,10 +82,7 @@ test("secondary routes expose explicit hooks for their shared Alo Modern page tr
       new URL("../src/routes/_authenticated/calisthenics.tsx", import.meta.url),
       "utf8",
     ),
-    clubs: readFileSync(
-      new URL("../src/routes/_authenticated/clubs.tsx", import.meta.url),
-      "utf8",
-    ),
+    clubs: readFileSync(new URL("../src/routes/_authenticated/clubs.tsx", import.meta.url), "utf8"),
     exercises: readFileSync(
       new URL("../src/routes/_authenticated/exercises.tsx", import.meta.url),
       "utf8",
@@ -105,10 +99,7 @@ test("secondary routes expose explicit hooks for their shared Alo Modern page tr
       new URL("../src/routes/_authenticated/programs.tsx", import.meta.url),
       "utf8",
     ),
-    run: readFileSync(
-      new URL("../src/routes/_authenticated/run.tsx", import.meta.url),
-      "utf8",
-    ),
+    run: readFileSync(new URL("../src/routes/_authenticated/run.tsx", import.meta.url), "utf8"),
     season: readFileSync(
       new URL("../src/routes/_authenticated/season.tsx", import.meta.url),
       "utf8",
