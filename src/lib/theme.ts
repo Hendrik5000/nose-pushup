@@ -217,7 +217,11 @@ function effectiveMode(mode: ThemeMode, fallback: ThemeMode): "light" | "dark" {
 }
 
 function accentForeground(hex: string): string {
-  const channels = hex.slice(1).match(/.{2}/g)?.map((part) => parseInt(part, 16)) ?? [0, 0, 0];
+  const channels =
+    hex
+      .slice(1)
+      .match(/.{2}/g)
+      ?.map((part) => parseInt(part, 16)) ?? [0, 0, 0];
   const brightness = (channels[0] * 299 + channels[1] * 587 + channels[2] * 114) / 1000;
   return brightness > 150 ? "#102033" : "#ffffff";
 }
@@ -251,7 +255,10 @@ export function applyTheme(theme: ThemeId) {
   document.documentElement.dataset["themeMode"] = mode;
   document.documentElement.style.setProperty("--primary", accent);
   document.documentElement.style.setProperty("--ring", accent);
-  document.documentElement.style.setProperty("--glow-1", `color-mix(in srgb, ${accent} 24%, transparent)`);
+  document.documentElement.style.setProperty(
+    "--glow-1",
+    `color-mix(in srgb, ${accent} 24%, transparent)`,
+  );
   document.documentElement.style.setProperty("--primary-foreground", accentForeground(accent));
   updateThemeColorMeta(theme);
   try {

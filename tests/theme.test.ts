@@ -54,7 +54,9 @@ function mockGlobals(
       dataset: {} as Record<string, string>,
       style: {
         values: {} as Record<string, string>,
-        setProperty(name: string, value: string) { this.values[name] = value; },
+        setProperty(name: string, value: string) {
+          this.values[name] = value;
+        },
       },
     },
     head: { appendChild: (element: (typeof metas)[number]) => metas.push(element) },
@@ -83,9 +85,8 @@ function mockGlobals(
     configurable: true,
     value: {
       localStorage,
-      matchMedia: options.prefersDark === undefined
-        ? undefined
-        : () => ({ matches: options.prefersDark }),
+      matchMedia:
+        options.prefersDark === undefined ? undefined : () => ({ matches: options.prefersDark }),
     },
   });
   Object.defineProperty(globalThis, "document", { configurable: true, value: document });
@@ -271,7 +272,6 @@ test("new themes define all semantic CSS tokens and readable foreground pairs", 
   }
 });
 
-
 test("appearance mode supports automatic, light and dark without replacing the selected palette", () => {
   const { storage, document } = mockGlobals({ stored: "neon", prefersDark: true });
   assert.equal(getStoredThemeMode(), "system");
@@ -300,5 +300,8 @@ test("custom accent colors persist, override the selected preset, and can be res
   assert.equal(document.documentElement.style.values["--primary"], "#12abcf");
   applyCustomAccent(null);
   assert.equal(storage.has("alo-custom-accent"), false);
-  assert.equal(document.documentElement.style.values["--primary"], THEMES.find((item) => item.id === "neon")?.swatch[0]);
+  assert.equal(
+    document.documentElement.style.values["--primary"],
+    THEMES.find((item) => item.id === "neon")?.swatch[0],
+  );
 });

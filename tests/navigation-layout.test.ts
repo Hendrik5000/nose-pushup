@@ -117,7 +117,6 @@ test("application updates the document and tolerates blocked storage writes", ()
   assert.equal(document.documentElement.dataset.widgetLayout, "existing-widget");
 });
 
-
 test("navigation is visible by default but respects an explicit user preference", () => {
   mockGlobals();
   assert.equal(getNavigationVisible(), true);
