@@ -436,3 +436,21 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Ãnderung, keine SQL-AusfÃ�
 - CI auf Commit `81c054b0e93cfef7d9deb1a6a09aac1719300c84` vollständig erfolgreich: Lint, Regressionstests, TypeScript und Produktionsbuild. GitHub Actions Run `44326564862`.
 - Draft-PR #195: https://github.com/Hendrik5000/nose-pushup/pull/195. Kein Merge, kein Live-Publish.
 - Offen: Marketplace, Browser, Profil, Einstellungen, Spiele, Sport/Fußball und weitere Werkzeuge einzeln verfeinern; anschließend visuelle Prüfung auf Smartphone, Tablet, Laptop und großen Displays sowie in allen bestehenden Designstilen und Farbwelten.
+
+
+## Phase 1.2 – Vollständiges Alo-Website-Redesign (2026-11-18)
+
+**Code-Durchgang umgesetzt; GitHub-CI vollständig erfolgreich; manuelle visuelle Abnahme noch offen.** Dieser Umfang gilt ausdrücklich für die komplette Website – öffentliche und angemeldete Routen, nicht nur die drei Haupt-Apps oder die Bildschirmgrößen.
+
+- Globale Stylesheet-Ebene `src/alo-sitewide-redesign.css` ergänzt und in `src/routes/__root.tsx` nach den bestehenden Theme-, Responsive- und App-Styles geladen. Damit erhalten auch öffentliche Routen und Auth-Seiten die gemeinsame UI-Sprache.
+- Gemeinsame Seitenstruktur: Intro-/Seitentitel-Hierarchie, Abschnittslabels, Abstände, Karten, Navigation/Sidebars, Formulare, Dialoge, Tabellen, Fokuszustände, Hover-Verhalten und Reduced-Motion-Behandlung.
+- Explizit berücksichtigte Seitenfamilien: Home/Dashboard, Training, Übungen, Programme, Calisthenics, Laufen, Mira, Nexus, Health, Marketplace (Suche, Kategorien, App-Karten und Detailvorschau), Browser, Profil und öffentliche Profile, Einstellungen und App-Einstellungen, Rangliste, Battle, Battle-Liga, Clubs, Saison, Sport, Fußball, Spiele, Alarm, Postfach, Admin, Tools/Bereiche und Authentifizierung.
+- Marketplace-Detailvorschau semantisch markiert und deutsche Vorschau-/Berechtigungstexte mit korrekter UTF-8-Kodierung wiederhergestellt.
+- Neue Tests: `tests/alo-sitewide-redesign.test.ts`; bestehende `tests/alo-visual-refresh.test.ts` Prettier-Format korrigiert.
+- Projektregister: neue vollständige Site-Redesign-Zeile in `docs/AI-TEAM.md`.
+
+**Designgrenzen:** Die bestehenden Designstile, Farbwelten, Theme-Tokens, Navigation, App-Funktionen und Datenflüsse bleiben erhalten. Keine neue globale Farbpalette; kein Eingriff in DB, RLS, Secrets oder Provider.
+
+**Offene Abnahme:** CI auf Code-/Test-Commit `366362d5bc8329013c19507e67434320e68c2148` vollständig erfolgreich (GitHub Actions Run `44330430243`: Lint, Regressionstests, TypeScript und Produktionsbuild). Danach jede Route visuell prüfen (Loading-, Empty-, Error-, Success- und Interaktionszustände), sowie alle bestehenden Designstile/Farbwelten in hellem und dunklem Theme auf Smartphone, Tablet, Laptop und großen Displays. CSS-Selektoren und Page-Styles sind implementiert, aber echte Browser-/Geräte-Screenshots liegen noch nicht vor. Kein Merge und kein Lovable-Live-Publish, bis Review und Abnahme erfolgt sind.
+
+Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5bc8329013c19507e67434320e68c2148`; Dokumentations-Commit für CI-Status `3100f2d80195681eebf468d9cc268a887f1a8256`. Draft-PR #196: https://github.com/Hendrik5000/nose-pushup/pull/196.

@@ -290,7 +290,7 @@ export function MarketplaceAppCatalog({
                 <>
                   <p className="text-base font-semibold">Alles installiert</p>
                   <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                    Alle Apps dieser Kollektion sind bereits auf diesem GerÃ¤t installiert und
+                    Alle Apps dieser Kollektion sind bereits auf diesem Gerät installiert und
                     erscheinen dadurch nicht mehr im Marketplace.
                   </p>
                 </>
@@ -371,7 +371,7 @@ export function MarketplaceAppCatalog({
                     {selected.description}
                   </DialogDescription>
                   <section
-                    className="mt-7"
+                    className="alo-marketplace-preview mt-7"
                     aria-label={`Stilisierte Vorschau von ${selected.name} â keine echten Screenshots`}
                   >
                     <h3 className="text-sm font-bold">Vorschau</h3>
@@ -397,12 +397,12 @@ export function MarketplaceAppCatalog({
                         ))}
                     </div>
                     <p className="mt-2 px-1 text-[10px] text-muted-foreground">
-                      Stilisierte Darstellung â Alo-Apps nutzen keine externen Screenshots.
+                      Stilisierte Darstellung — Alo-Apps nutzen keine externen Screenshots.
                     </p>
                   </section>
                   {similarApps.length > 0 && (
-                    <section className="mt-7" aria-label={`Ãhnliche Apps wie ${selected.name}`}>
-                      <h3 className="text-sm font-bold">Ãhnliche Apps</h3>
+                    <section className="mt-7" aria-label={`Ähnliche Apps wie ${selected.name}`}>
+                      <h3 className="text-sm font-bold">Ähnliche Apps</h3>
                       <div className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1 pb-1">
                         {similarApps.map((plugin) => (
                           <CarouselCard key={plugin.id} plugin={plugin} />
@@ -412,7 +412,7 @@ export function MarketplaceAppCatalog({
                   )}
                   <section
                     className="mt-7 rounded-2xl border border-border/70 bg-card/60 p-4"
-                    aria-label={`Berechtigungen fÃ¼r ${selected.name}`}
+                    aria-label={`Berechtigungen für ${selected.name}`}
                   >
                     <h3 className="flex items-center gap-2 text-sm font-bold">
                       <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" /> Was diese
@@ -426,7 +426,7 @@ export function MarketplaceAppCatalog({
                   </section>
                   <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                     Alo-Apps sind fest registrierte Funktionen. Installieren speichert deine Auswahl
-                    lokal auf diesem GerÃ¤t; es wird kein ausfÃ¼hrbarer Plugin-Code geladen.
+                    lokal auf diesem Gerät; es wird kein ausfÃ¼hrbarer Plugin-Code geladen.
                   </p>
                 </section>
               );
