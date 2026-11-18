@@ -50,9 +50,9 @@ export function AiProviderSettings({
         Router verwendet nur kostenlose Modelle (20 Anfragen/Minute, 50/Tag). Es gibt keinen
         kostenpflichtigen Fallback. Andere Anbieter bleiben gesperrt, solange eine garantierte
         Nutzung ohne Zahlungsdaten oder Abrechnung nicht nachgewiesen ist. Dein OpenRouter-Key wird
-        nur in dieser Browser-Sitzung gespeichert und beim Abmelden gelöscht. Er ist nicht
-        verschlüsselt und für aktive Seitenskripte zugänglich; nutze einen separaten Key mit minimalen
-        Berechtigungen.
+        nur in dieser Browser-Sitzung gespeichert und beim Abmelden gelöscht. Der Key ist nicht
+        verschlüsselt; aktive Seitenskripte können ihn lesen. Nutze einen separaten Key mit
+        minimalen Berechtigungen.
       </p>
       {list.map((p) => {
         const canUseProvider = isFreeOnlyProvider(p.id);
@@ -118,9 +118,7 @@ export function AiProviderSettings({
                 Dieser Anbieter ist im Free-only-Modus serverseitig gesperrt.
               </p>
             )}
-            <div className="text-[10px] text-muted-foreground">
-              Aufgaben: {p.tasks.join(", ")}
-            </div>
+            <div className="text-[10px] text-muted-foreground">Aufgaben: {p.tasks.join(", ")}</div>
           </div>
         );
       })}

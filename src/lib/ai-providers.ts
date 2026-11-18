@@ -53,8 +53,8 @@ export type ProviderCatalogEntry = {
 export const FREE_PROVIDER_CATALOG: ProviderCatalogEntry[] = [
   {
     id: "openrouter",
-    summary: "Ein Zugang zu wechselnden kostenlosen Modellen; der Free-Router wählt ausschließlich kostenlose Modellvarianten.",
-    freeAccess: "Kostenloser Tarif ohne Zahlungsoptionen; 20 Anfragen/Minute und 50 Anfragen/Tag. Bei Limits pausiert die Anfrage – kein kostenpflichtiger Fallback.",
+    summary: "Kostenlose Modelle; der Router wählt ausschließlich Free-Varianten.",
+    freeAccess: "Ohne Zahlungsoptionen; max. 20 Anfragen/Min. und 50/Tag. Kein Paid-Fallback.",
     models: ["openrouter/free"],
     keyUrl: "https://openrouter.ai/keys",
     docsUrl: "https://openrouter.ai/docs/quickstart",

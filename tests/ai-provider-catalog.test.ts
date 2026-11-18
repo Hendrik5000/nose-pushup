@@ -145,6 +145,14 @@ test("server rejects every provider except the fixed OpenRouter free router", ()
   assert.match(server, /Alo ist im Free-only-Modus/);
 });
 
+test("root auth listener clears sensitive browser storage when the signed-in account changes", () => {
+  const root = readFileSync(new URL("../src/routes/__root.tsx", import.meta.url), "utf8");
+  assert.match(root, /onAuthStateChange\(\(event, session\)/);
+  assert.match(root, /event === "INITIAL_SESSION"/);
+  assert.match(root, /currentUserId !== nextUserId/);
+  assert.match(root, /if \(currentUserId && nextUserId && currentUserId !== nextUserId\) \{[\s\S]*?clearSensitiveClientStorage\(\)/);
+});
+
 test("OpenRouter account metadata is not added to its payload", () => {
   const openrouter = DEFAULT_PROVIDERS.find((item) => item.id === "openrouter")!;
   assert.equal(toPayload(openrouter).accountId, undefined);

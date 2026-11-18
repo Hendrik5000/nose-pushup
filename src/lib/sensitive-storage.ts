@@ -44,8 +44,6 @@ export function clearSensitiveClientStorage(): void {
       // One storage API may be unavailable (e.g. private browsing); still clear the other.
     }
   }
-    // ignore quota / private mode
-  }
 }
 
 export function providersStorageKey(userId: string | null | undefined): string {
