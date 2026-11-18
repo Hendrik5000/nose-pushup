@@ -436,3 +436,18 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Ãnderung, keine SQL-AusfÃ�
 - CI auf Commit `81c054b0e93cfef7d9deb1a6a09aac1719300c84` vollständig erfolgreich: Lint, Regressionstests, TypeScript und Produktionsbuild. GitHub Actions Run `44326564862`.
 - Draft-PR #195: https://github.com/Hendrik5000/nose-pushup/pull/195. Kein Merge, kein Live-Publish.
 - Offen: Marketplace, Browser, Profil, Einstellungen, Spiele, Sport/Fußball und weitere Werkzeuge einzeln verfeinern; anschließend visuelle Prüfung auf Smartphone, Tablet, Laptop und großen Displays sowie in allen bestehenden Designstilen und Farbwelten.
+
+
+## Statusupdate 2026-11-18 – Ganzheitlicher Website-UI-Durchgang
+
+**Status: gemeinsame Gestaltungsebene und erste Routen-Verfeinerung implementiert; vollständige individuelle Seitenabnahme noch offen.**
+
+- Das Repository enthält 47 Routendateien. Der Auftrag umfasst ausdrücklich die gesamte Website: Startseite, weitere Bereiche/Werkzeuge, Marketplace, Mira, Nexus, Browser, Health, Training/Gym, Profil, Einstellungen, Postfach, Freunde/Clubs, Sport/Fußball, Spiele, Battles/Leaderboards, Admin, öffentliche Profile sowie weitere Unterrouten.
+- `src/alo-visual-refresh.css` erweitert das bestehende Token-System auf authenticated und public routes: Seitenhierarchie, Karten, Navigation, Sidebars, Dialoge, Formulare, Fokuszustände, Tabellen und Interaktionen.
+- `HomeAppMenuLayout` erhält `alo-site-directory-page` und deckt damit Weitere Bereiche, Werkzeuge, Marketplace, Fußball und Live-Sport ab. Die Spiele-Seite erhält `alo-games-page`; der immersive Spielmodus bleibt unangetastet.
+- Bestehende App-spezifische Verfeinerungen für Mira, Nexus Chat, Health, Training, Postfach, Admin und Browser bleiben Teil der gemeinsamen Ebene.
+- Regressionstests: `tests/adaptive-layout.test.ts` und `tests/alo-visual-refresh.test.ts` prüfen Layout- und UI-Hooks.
+- Designregeln: keine neue Palette; aktive Theme-Tokens verwenden; bestehende sieben Designstile und 13 Farbwelten, Nutzerpersonalisierung, Navigation und Funktionen bewahren.
+- Letzter Code-Commit `909d51e517ccb52ca2b16d980b62602b9b6bed94`; nachfolgender Dokumentations-Commit `440264aed400731662b95b1b5f65fc93f8820a6c`. GitHub-CI für den Code-Commit `909d51e...` läuft im Run `44330185487`; der neue Dokumentations-Commit löst eine weitere CI-Prüfung aus.
+- Noch offen: jede Route einzeln visuell durchgehen; eigene Header-/Hero-/Content-Hierarchie, Filter/Tabellen, Empty-/Loading-/Error-States, Formulare und Detailansichten prüfen; Überlappungen und Kontrast in allen Themes/Styles prüfen; Screenshots und reale Geräteabnahme für Smartphone, Tablet, Laptop und große Displays. Keine Behauptung einer vollständigen visuellen Abnahme, solange diese Schritte fehlen.
+- Änderungen bleiben auf `gpt6/fix-alo-ui-lint-20261118`. Kein PR, kein Merge und kein Live-Publish in diesem Statusupdate.
