@@ -3,7 +3,7 @@ import test from "node:test";
 import { buildGymInviteMessage } from "../src/lib/gym-partner";
 
 test("Gym invite message normalises the code and explains the manual join flow", () => {
-  const message = buildGymInviteMessage("a1b2-c3d4-e5f6");
+  const message = buildGymInviteMessage("a1b2c3d4e5f6");
   assert.match(message, /A1B2C3D4E5F6/);
   assert.match(message, /Gym → Zu zweit/);
   assert.match(message, /einzelne Freigaben aktivierst/);
