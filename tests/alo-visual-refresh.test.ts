@@ -11,7 +11,7 @@ const home = readFileSync(
 const marketplace = readFileSync(
   new URL("../src/components/marketplace/MarketplaceAppCatalog.tsx", import.meta.url),
   "utf8",
-);
+);\nconst directory = readFileSync(new URL("../src/components/HomeAppMenuLayout.tsx", import.meta.url), "utf8");\nconst games = readFileSync(new URL("../src/routes/games.tsx", import.meta.url), "utf8");
 
 test("the visual refresh is loaded after the adaptive layout layer", () => {
   assert.ok(root.indexOf("adaptiveLayoutCss") < root.indexOf("aloVisualRefreshCss"));
@@ -99,4 +99,14 @@ test("Admin, Browser, Settings, Profile, Postfach and Training share the refresh
 test("motion stays subtle and respects reduced-motion preferences", () => {
   assert.ok(css.includes("@media (hover: hover) and (pointer: fine)"));
   assert.ok(css.includes("prefers-reduced-motion: reduce"));
+});
+
+
+test("shared directory pages and the standalone games hub have explicit whole-site design hooks", () => {
+  assert.match(directory, /alo-site-directory-page/);
+  assert.match(games, /alo-games-page/);
+  assert.match(css, /\.alo-site-directory-page/);
+  assert.match(css, /\.alo-games-page/);
+  assert.match(css, /alo-site-directory-page > header/);
+  assert.match(css, /games-title/);
 });
