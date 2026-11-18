@@ -46,7 +46,6 @@ import { SUPER_TOOLS } from "@/lib/super-ai-tools";
 import { loadProviders } from "@/lib/ai-providers";
 import { useHomeDayData } from "@/hooks/useHomeDayData";
 import { useNexusUnread } from "@/hooks/useNexusUnread";
-import { supabase } from "@/integrations/supabase/client";
 import { AloErrorBoundary } from "@/components/AloErrorBoundary";
 import { PostfachBell } from "@/components/postfach/PostfachBell";
 import { usePostfach } from "@/components/postfach/PostfachProvider";
@@ -1425,7 +1424,12 @@ function HomeAppHub({
                 title="Profil und Einstellungen"
               >
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   initials
                 )}
@@ -2864,49 +2868,16 @@ function MiraOverlayLauncher() {
   );
 }
 
-type HomeProfile = { display_name: string | null; avatar_url: string | null };
-
 function Dashboard() {
   const { user } = Route.useRouteContext();
-  const [profile, setProfile] = useState<HomeProfile | null>(null);
-  useEffect(() => {
-    let active = true;
-    setProfile(null);
-    void (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (!active) return;
-      let current = data;
-      if (!current) {
-        const { data: created } = await supabase
-          .from("profiles")
-          .insert({
-            id: user.id,
-            display_name:
-              (user.user_metadata?.display_name as string | undefined) ??
-              (user.is_anonymous ? "Gast" : (user.email?.split("@")[0] ?? null)),
-          })
-          .select("display_name, avatar_url")
-          .maybeSingle();
-        if (!active) return;
-        current = created;
-      }
-      setProfile(current);
-    })();
-    return () => {
-      active = false;
-    };
-  }, [user]);
+  const { displayName, avatarUrl } = useHomeDayData(user.id, {
+    fallbackName:
+      (user.user_metadata?.display_name as string | undefined) ??
+      (user.is_anonymous ? "Gast" : (user.email?.split("@")[0] ?? null)),
+  });
   return (
     <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
-      <HomeAppHub
-        key={user.id}
-        displayName={profile?.display_name}
-        avatarUrl={profile?.avatar_url}
-      />
+      <HomeAppHub key={user.id} displayName={displayName} avatarUrl={avatarUrl} />
       <MiraOverlayLauncher />
     </main>
   );

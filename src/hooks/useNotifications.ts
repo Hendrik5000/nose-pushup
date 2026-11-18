@@ -8,6 +8,7 @@ import {
   reminderTimeReached,
   showNotification,
 } from "@/lib/notifications";
+import { cachedRead, HOME_DATA_CACHE_TTL_MS } from "@/lib/cached-read";
 
 const CHECK_INTERVAL_MS = 60_000;
 
@@ -26,28 +27,34 @@ export function useNotifications(userId: string) {
 
       try {
         const today = new Date().toISOString().slice(0, 10);
-        const [{ data: prof, error: profileError }, { data: stat, error: statsError }] =
-          await Promise.all([
-            supabase
+        const [profileRead, statsRead] = await Promise.all([
+          cachedRead(`alo-home-profile:${userId}`, HOME_DATA_CACHE_TTL_MS, async () => {
+            const { data, error } = await supabase
               .from("profiles")
-              .select("daily_goal, current_streak")
+              .select("current_streak, daily_goal")
               .eq("id", userId)
-              .maybeSingle(),
-            supabase
+              .maybeSingle();
+            return { data, error };
+          }),
+          cachedRead(`alo-home-daily:${userId}:${today}`, HOME_DATA_CACHE_TTL_MS, async () => {
+            const { data, error } = await supabase
               .from("daily_stats")
               .select("total_reps")
               .eq("user_id", userId)
               .eq("day", today)
-              .maybeSingle(),
-          ]);
-        if (cancelled || profileError || statsError) return;
+              .maybeSingle();
+            return { data, error };
+          }),
+        ]);
+        if (cancelled || profileRead.error || statsRead.error) return;
 
-        const goal = prof?.daily_goal ?? 50;
-        const done = stat?.total_reps ?? 0;
+        const goal = (profileRead.data as { daily_goal: number | null } | null)?.daily_goal ?? 50;
+        const done = (statsRead.data as { total_reps: number | null } | null)?.total_reps ?? 0;
         if (done >= goal) return;
 
         markReminderSent();
-        const streak = prof?.current_streak ?? 0;
+        const streak =
+          (profileRead.data as { current_streak: number | null } | null)?.current_streak ?? 0;
         const missing = Math.max(1, goal - done);
         await showNotification(
           streak > 0 ? `Streak retten: ${streak} Tage 🔥` : "Zeit für Push-Ups 💪",
