@@ -247,7 +247,7 @@ function HealthPage() {
   return (
     <AloPageSidebar active="health">
       <DesignView variant="classic">
-        <main className="classic-only health-classic-dashboard alo-tablet-health mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-4 pt-5 pb-28 sm:px-8">
+        <main className="classic-only health-classic-dashboard alo-health-page alo-tablet-health mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-5 px-4 pt-5 pb-28 sm:px-8">
           <header className="health-classic-header">
             <div className="health-classic-top-row">
               <div className="flex items-center gap-2">
@@ -565,7 +565,7 @@ function HealthPage() {
         </main>
       </DesignView>
       <DesignView variant="sport">
-        <main className="sport-only sport-health-page alo-tablet-health mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-6 px-5 py-6 pb-28 sm:px-8">
+        <main className="sport-only sport-health-page alo-health-page alo-tablet-health mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-6 px-5 py-6 pb-28 sm:px-8">
           <div className="health-page-intro">
             <SportPageIntro
               eyebrow="DEIN WOHLBEFINDEN"

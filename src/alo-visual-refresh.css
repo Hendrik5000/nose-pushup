@@ -996,3 +996,118 @@ html[data-design-style] [role="menuitem"] { min-height: 2.7rem; margin: 0.12rem;
 @media (prefers-reduced-motion: reduce) {
   html[data-design-style] .authenticated-shell main > * { animation: none !important; transition: none !important; transform: none !important; }
 }
+
+
+/* Route-level refinement: calmer navigation, health and Marketplace surfaces. */
+html[data-design-style] .alo-page-sidebar [data-sidebar="sidebar"] {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  background: var(--alo-frosted);
+  box-shadow: 0 16px 44px color-mix(in srgb, #000 9%, transparent);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+}
+html[data-design-style] .alo-page-sidebar-nav {
+  background: transparent;
+}
+html[data-design-style] .alo-page-sidebar-mark {
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
+  box-shadow: none;
+  color: var(--primary);
+}
+html[data-design-style] .alo-page-sidebar [data-sidebar="group-label"] {
+  padding-block: 0.8rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-transform: none;
+}
+html[data-design-style] .alo-page-sidebar .alo-page-sidebar-link {
+  min-height: 2.75rem;
+  border-color: transparent;
+  border-radius: 0.85rem;
+  padding-inline: 0.8rem;
+  font-weight: 520;
+  box-shadow: none;
+}
+html[data-design-style] .alo-page-sidebar .alo-page-sidebar-link:hover {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+html[data-design-style] .alo-page-sidebar .alo-page-sidebar-link[data-active="true"] {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--primary) 11%, transparent);
+  color: var(--primary);
+  box-shadow: none;
+}
+html[data-design-style] .alo-page-sidebar .alo-page-sidebar-quick-action {
+  min-height: 2.85rem;
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  background: color-mix(in srgb, var(--card) 90%, var(--background));
+  font-weight: 600;
+}
+html[data-design-style] .alo-page-sidebar .alo-page-sidebar-quick-action:hover {
+  border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
+  box-shadow: none;
+}
+html[data-design-style] .alo-page-sidebar-footer {
+  border-color: color-mix(in srgb, var(--border) 75%, transparent);
+}
+html[data-design-style] .alo-page-sidebar-footer a {
+  border-color: transparent;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+}
+html[data-design-style] .alo-page-sidebar-footer a:hover {
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+html[data-design-style] .alo-marketplace-feature {
+  display: flex;
+  min-height: 15rem;
+  align-items: center;
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+  background: linear-gradient(115deg, color-mix(in srgb, var(--primary) 8%, var(--card)), var(--card) 58%);
+  box-shadow: none;
+}
+html[data-design-style] .alo-marketplace-feature h2 {
+  max-width: 18ch;
+  font-size: clamp(1.8rem, 1.45rem + 1.4vw, 2.45rem);
+  font-weight: 650;
+  letter-spacing: -0.055em;
+  line-height: 1.08;
+}
+html[data-design-style] .alo-marketplace-feature > div:first-child {
+  max-width: 38rem;
+}
+html[data-design-style] .alo-marketplace-feature button {
+  min-height: 2.85rem;
+  padding-inline: 1.2rem;
+  box-shadow: none;
+}
+html[data-design-style] .alo-marketplace-section {
+  padding: clamp(1rem, 2.2vw, 1.5rem);
+  box-shadow: none;
+}
+html[data-design-style] .alo-health-page {
+  gap: clamp(1.25rem, 2.4vw, 2rem);
+}
+html[data-design-style] .alo-health-page :is(.health-classic-header, .health-daily-hero) {
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 1.5rem;
+  box-shadow: none;
+}
+html[data-design-style] .alo-health-page :is(.health-classic-widget-card, .health-classic-source-card, .health-classic-history-row, .health-activity-card, .health-sleep-card) {
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 1.25rem;
+  box-shadow: none;
+}
+html[data-design-style] .alo-health-page :is(.health-classic-category-nav, .health-category-nav) {
+  border-color: color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 1rem;
+  box-shadow: none;
+}
+@media (max-width: 640px) {
+  html[data-design-style] .alo-marketplace-feature { min-height: 0; padding: 1.25rem; }
+  html[data-design-style] .alo-marketplace-feature h2 { max-width: 14ch; }
+}
