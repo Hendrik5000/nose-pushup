@@ -474,3 +474,229 @@ html[data-design-style] .alo-marketplace-section {
     background: var(--alo-ui-surface-raised, var(--card));
   }
 }
+
+
+/* Whole-site pass: every route inherits a coherent hierarchy, not just the launcher. */
+html[data-design-style] .authenticated-shell main {
+  min-width: 0;
+  color: var(--foreground);
+}
+
+html[data-design-style] .authenticated-shell main > :is(header, [data-page-header]) {
+  min-width: 0;
+  margin-block-end: clamp(0.9rem, 2vw, 1.5rem);
+}
+
+html[data-design-style] .authenticated-shell main :is(h1, [data-page-title]) {
+  text-wrap: balance;
+  letter-spacing: -0.04em;
+}
+
+html[data-design-style] .authenticated-shell main :is(h2, h3) {
+  text-wrap: balance;
+  letter-spacing: -0.025em;
+}
+
+html[data-design-style] .authenticated-shell main :is(
+  article[class*="rounded-2xl"][class*="border"],
+  article[class*="rounded-3xl"][class*="border"],
+  section[class*="rounded-2xl"][class*="border"],
+  section[class*="rounded-3xl"][class*="border"],
+  [data-card],
+  [data-panel]
+) {
+  border-color: var(--alo-ui-hairline, var(--border));
+  box-shadow: 0 7px 24px color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
+html[data-design-style] .authenticated-shell main :is(input, textarea, select) {
+  border-color: var(--alo-ui-hairline, var(--border));
+  border-radius: min(var(--design-control-radius, 0.9rem), 1.1rem);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+html[data-design-style] .authenticated-shell main :is(input, textarea, select):focus-visible {
+  border-color: var(--primary);
+  outline: 2px solid color-mix(in srgb, var(--primary) 24%, transparent);
+  outline-offset: 2px;
+}
+
+html[data-design-style] .authenticated-shell main :is(button, a[role="button"], [role="button"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-design-style] .authenticated-shell main :is(button, a[role="button"], [role="button"]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 72%, transparent);
+  outline-offset: 3px;
+}
+
+html[data-design-style] .authenticated-shell main :is(nav[aria-label], [role="tablist"]) {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--primary) 32%, var(--border)) transparent;
+}
+
+html[data-design-style] .authenticated-shell main :is(table, [role="table"]) {
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-design-style] .authenticated-shell main table thead {
+  background: color-mix(in srgb, var(--card) 88%, var(--primary) 12%);
+}
+
+html[data-design-style] .authenticated-shell main table tbody tr {
+  transition: background-color 150ms ease;
+}
+
+html[data-design-style] .authenticated-shell main table tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+}
+
+/* App and tool catalogues */
+html[data-design-style] .authenticated-shell main :is(.alo-tablet-home-apps, [aria-label="Alo-Werkzeuge"], [aria-label="Alo-Bereiche"]) {
+  align-items: stretch;
+}
+
+html[data-design-style] .authenticated-shell main :is(.alo-tablet-home-apps, [aria-label="Alo-Werkzeuge"], [aria-label="Alo-Bereiche"]) > * {
+  min-width: 0;
+  border-color: var(--alo-ui-hairline, var(--border));
+  border-radius: calc(var(--design-card-radius, 1rem) + 0.15rem);
+  background: linear-gradient(145deg, var(--alo-ui-surface, var(--card)), color-mix(in srgb, var(--card) 92%, var(--primary) 8%));
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--foreground) 4%, transparent);
+  transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-design-style] .authenticated-shell main :is(.alo-tablet-home-apps, [aria-label="Alo-Werkzeuge"], [aria-label="Alo-Bereiche"]) > *:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--foreground) 8%, transparent);
+  }
+}
+
+/* Marketplace: discovery, categories, app cards and detail/authoring surfaces. */
+html[data-design-style] .alo-marketplace-page,
+html[data-design-style] [data-marketplace-root] {
+  width: min(100%, 92rem);
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2.25rem);
+}
+
+html[data-design-style] .alo-marketplace-page :is(article, [data-marketplace-card]),
+html[data-design-style] [data-marketplace-root] :is(article, [data-marketplace-card]) {
+  border-color: var(--alo-ui-hairline, var(--border));
+  border-radius: calc(var(--design-card-radius, 1rem) + 0.2rem);
+  background: var(--alo-ui-surface, var(--card));
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
+html[data-design-style] .alo-marketplace-page :is(input, [role="searchbox"]) {
+  min-height: 3.1rem;
+  border-radius: 1rem;
+  background: var(--alo-ui-surface-raised, var(--card));
+}
+
+html[data-design-style] .alo-marketplace-page [role="tablist"] button,
+html[data-design-style] .alo-marketplace-page .alo-marketplace-categories button {
+  min-height: 2.6rem;
+  border-radius: 999px;
+}
+
+/* Browser: clear browser chrome, tab strip, toolbar and content canvas. */
+html[data-design-style] .alo-browser {
+  min-width: 0;
+  background: var(--background);
+}
+
+html[data-design-style] .alo-browser :is(.alo-browser-tabbar, .alo-browser-toolbar) {
+  border-color: var(--alo-ui-hairline, var(--border));
+  background: var(--alo-ui-surface, var(--card));
+  box-shadow: 0 3px 14px color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
+html[data-design-style] .alo-browser :is(input, button) {
+  min-height: 2.65rem;
+}
+
+html[data-design-style] .alo-browser :is(.alo-browser-tabbar, .alo-browser-toolbar) button {
+  border-radius: 0.8rem;
+}
+
+html[data-design-style] .alo-browser > :last-child {
+  min-height: 0;
+}
+
+/* Sports, football, leagues, battles, clubs and leaderboards. */
+html[data-design-style] .authenticated-shell main.sport-public-profile,
+html[data-design-style] .authenticated-shell main.alo-tablet-training,
+html[data-design-style] .authenticated-shell main.sport-health-page,
+html[data-design-style] .authenticated-shell main.health-classic-dashboard {
+  width: min(100%, 88rem);
+}
+
+html[data-design-style] .authenticated-shell main :is(.sport-focus-card, .sport-feature-card, .training-hero) {
+  border-radius: calc(var(--design-card-radius, 1rem) + 0.45rem);
+  background: linear-gradient(145deg, var(--alo-ui-surface, var(--card)), color-mix(in srgb, var(--card) 95%, var(--primary) 5%));
+}
+
+html[data-design-style] .authenticated-shell main :is(.club-join-row, .battle-join-row) input {
+  min-width: 0;
+}
+
+html[data-design-style] .authenticated-shell main :is(.sport-only nav, .sport-only [role="tablist"]) button[aria-current="page"],
+html[data-design-style] .authenticated-shell main :is(.sport-only nav, .sport-only [role="tablist"]) button[aria-selected="true"] {
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+html[data-design-style] .authenticated-shell main :is(.sport-public-profile, [data-profile-root]) > header {
+  border-color: var(--alo-ui-hairline, var(--border));
+  border-radius: calc(var(--design-card-radius, 1rem) + 0.5rem);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--primary) 10%, var(--card)), var(--alo-ui-surface, var(--card)));
+}
+
+/* Settings and app configuration. */
+html[data-design-style] .authenticated-shell main :is(.settings-category-screen, [data-settings-category-screen]) > section,
+html[data-design-style] .authenticated-shell main :is(.settings-category-group, .settings-app-row) {
+  border-color: var(--alo-ui-hairline, var(--border));
+  border-radius: calc(var(--design-card-radius, 1rem) + 0.15rem);
+  background: var(--alo-ui-surface, var(--card));
+}
+
+html[data-design-style] .authenticated-shell main .settings-page-header {
+  padding-block: 0.5rem 1rem;
+  border-bottom: 1px solid var(--alo-ui-hairline, var(--border));
+}
+
+/* Games and immersive/fullscreen surfaces retain their own canvas. */
+html[data-design-style] .authenticated-shell main :is([data-game-card], .game-card, .battle-card) {
+  overflow: hidden;
+  border-color: var(--alo-ui-hairline, var(--border));
+  border-radius: calc(var(--design-card-radius, 1rem) + 0.25rem);
+}
+
+/* Admin, Postfach and public profile. */
+html[data-design-style] .alo-admin-page > section,
+html[data-design-style] .alo-postfach-page > section,
+html[data-design-style] .sport-public-profile > section {
+  border-color: var(--alo-ui-hairline, var(--border));
+  background: var(--alo-ui-surface, var(--card));
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
+@media (max-width: 640px) {
+  html[data-design-style] .authenticated-shell main :is(.sport-focus-card, .sport-feature-card) {
+    border-radius: calc(var(--design-card-radius, 1rem) + 0.1rem);
+  }
+
+  html[data-design-style] .authenticated-shell main :is(table, [role="table"]) {
+    font-size: 0.8rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-design-style] .authenticated-shell main *,
+  html[data-design-style] .alo-browser * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
