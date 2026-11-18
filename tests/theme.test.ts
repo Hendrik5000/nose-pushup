@@ -305,3 +305,13 @@ test("custom accent colors persist, override the selected preset, and can be res
     THEMES.find((item) => item.id === "neon")?.swatch[0],
   );
 });
+
+
+test("appearance mode and custom accents still apply when local storage is blocked", () => {
+  const { document, metas } = mockGlobals({ blockedWrite: true });
+  applyThemeMode("light");
+  assert.equal(document.documentElement.dataset.themeMode, "light");
+  assert.equal(metas.filter((meta) => !meta.removed)[0]?.attributes.content, "#f4f8ff");
+  applyCustomAccent("#12abcf");
+  assert.equal(document.documentElement.style.values["--primary"], "#12abcf");
+});

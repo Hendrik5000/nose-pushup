@@ -225,12 +225,23 @@ function accentForeground(hex: string): string {
   return brightness > 150 ? "#102033" : "#ffffff";
 }
 
+function applyAccentStyles(accent: string) {
+  if (typeof document === "undefined") return;
+  document.documentElement.style.setProperty("--primary", accent);
+  document.documentElement.style.setProperty("--ring", accent);
+  document.documentElement.style.setProperty(
+    "--glow-1",
+    `color-mix(in srgb, ${accent} 24%, transparent)`,
+  );
+  document.documentElement.style.setProperty("--primary-foreground", accentForeground(accent));
+}
+
 /** Background color for browser/system UI metadata, following the active appearance mode. */
-function updateThemeColorMeta(theme: ThemeId) {
+function updateThemeColorMeta(theme: ThemeId, modeOverride?: ThemeMode) {
   if (typeof document === "undefined") return;
   const definition = THEMES.find((item) => item.id === theme);
   if (!definition) return;
-  const mode = getStoredThemeMode();
+  const mode = modeOverride ?? getStoredThemeMode();
   const color =
     mode === "system" && typeof window !== "undefined" && typeof window.matchMedia !== "function"
       ? definition.background
@@ -252,14 +263,8 @@ export function applyTheme(theme: ThemeId) {
   const accent = customAccent ?? definition.swatch[0];
   document.documentElement.dataset["theme"] = theme;
   document.documentElement.dataset["themeMode"] = mode;
-  document.documentElement.style.setProperty("--primary", accent);
-  document.documentElement.style.setProperty("--ring", accent);
-  document.documentElement.style.setProperty(
-    "--glow-1",
-    `color-mix(in srgb, ${accent} 24%, transparent)`,
-  );
-  document.documentElement.style.setProperty("--primary-foreground", accentForeground(accent));
-  updateThemeColorMeta(theme);
+  applyAccentStyles(accent);
+  updateThemeColorMeta(theme, mode);
   try {
     window.localStorage.setItem(STORAGE_KEY, theme);
   } catch {
@@ -272,21 +277,37 @@ export function applyTheme(theme: ThemeId) {
 
 export function applyThemeMode(mode: ThemeMode) {
   if (!isThemeMode(mode)) return;
+  let persisted = true;
   try {
     window.localStorage.setItem(THEME_MODE_STORAGE_KEY, mode);
   } catch {
-    // The current page can still use the selected mode when storage is blocked.
+    persisted = false;
   }
   applyTheme(getStoredTheme());
+  if (!persisted && typeof document !== "undefined") {
+    document.documentElement.dataset["themeMode"] = mode;
+    updateThemeColorMeta(getStoredTheme(), mode);
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new Event("np-theme-change"));
+    }
+  }
 }
 
 export function applyCustomAccent(color: string | null) {
   if (color !== null && !isCustomAccentColor(color)) return;
+  let persisted = true;
   try {
     if (color) window.localStorage.setItem(CUSTOM_ACCENT_STORAGE_KEY, color);
     else window.localStorage.removeItem(CUSTOM_ACCENT_STORAGE_KEY);
   } catch {
-    // The accent still applies for this page when storage is blocked.
+    persisted = false;
   }
   applyTheme(getStoredTheme());
+  if (!persisted && typeof document !== "undefined") {
+    const fallback = THEMES.find((item) => item.id === getStoredTheme())?.swatch[0] ?? "#9bddff";
+    applyAccentStyles(color ?? fallback);
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new Event("np-theme-change"));
+    }
+  }
 }
