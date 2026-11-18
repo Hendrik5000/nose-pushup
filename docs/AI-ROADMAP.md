@@ -422,3 +422,17 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Ãnderung, keine SQL-AusfÃ�
 **Changelog 2026-11-18:** Der Nutzer hat klargestellt, dass der Auftrag nicht bei der Responsivität endet, sondern die gesamte Alo-UI und alle App-Oberflächen umfassen soll. Die responsive Grundlage bleibt Teil des Auftrags. Die bestehende Notion-Gestaltungsleitlinie und das Repository-Handoff sind maßgeblich. Die Umsetzung erfolgt in überprüfbaren Schritten auf `gpt6/responsive-adaptive-layout-20261118`; bestehende Funktionen, Nutzeranpassungen, sieben Designstile und Farbwelten bleiben erhalten. Noch kein PR, kein Merge, keine echte Geräteabnahme und kein Live-Publish.
 
 **Zweiter UI-Umsetzungsschritt 2026-11-18:** Weitere gezielte Verfeinerungen für Admin, Alo-Browser, Marketplace (eigene Such-/Kategorie-/Bereichs-Hooks), Einstellungen, Profil, Postfach und Training ergänzt. Die Regeln nutzen weiterhin die bestehenden Theme-Tokens. Diese Ergänzungen sind noch nicht durch CI, Browser-Screenshots oder reale Geräte geprüft.
+
+
+## Statusupdate 2026-11-18 – Alo-Gesamtredesign
+
+**Erster visueller Durchgang implementiert; weitere App-Verfeinerung und visuelle Abnahme offen.**
+
+- Neue gemeinsame UI-Ebene: `src/alo-visual-refresh.css`, geladen nach der responsiven Ebene in `src/routes/__root.tsx`.
+- Startseiten-App-Hub, Gruppen, Kacheln und Header-Aktionen visuell aufgewertet; vorhandene Personalisierung und Interaktionen bleiben erhalten.
+- Gemeinsame Oberflächen für Karten, Navigation, Sidebars, Dialoge, Formulare und Fokuszustände verfeinert.
+- App-spezifische Verfeinerungen für Mira, Nexus Chat, Health und Training; Seitenrahmen für Postfach und Admin ergänzt.
+- Regressionstests: `tests/adaptive-layout.test.ts` und `tests/alo-visual-refresh.test.ts`.
+- CI auf Commit `81c054b0e93cfef7d9deb1a6a09aac1719300c84` vollständig erfolgreich: Lint, Regressionstests, TypeScript und Produktionsbuild. GitHub Actions Run `44326564862`.
+- Draft-PR #195: https://github.com/Hendrik5000/nose-pushup/pull/195. Kein Merge, kein Live-Publish.
+- Offen: Marketplace, Browser, Profil, Einstellungen, Spiele, Sport/Fußball und weitere Werkzeuge einzeln verfeinern; anschließend visuelle Prüfung auf Smartphone, Tablet, Laptop und großen Displays sowie in allen bestehenden Designstilen und Farbwelten.
