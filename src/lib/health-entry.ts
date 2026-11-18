@@ -12,6 +12,13 @@ export type HealthMetricsDraft = {
   sleepHours: string;
 };
 
+export type MergedHealthMetrics = {
+  steps: number;
+  active_kcal: number;
+  weight_kg: number | null;
+  sleep_min: number;
+};
+
 export class HealthEntryInputError extends Error {
   constructor(message: string) {
     super(message);
@@ -34,7 +41,7 @@ function readDraftNumber(raw: string, label: string, integer = false): number | 
 export function mergeHealthEntryMetrics(
   existing: ExistingHealthMetrics | null,
   draft: HealthMetricsDraft,
-): ExistingHealthMetrics {
+): MergedHealthMetrics {
   const steps = readDraftNumber(draft.steps, "Schritte", true);
   const kcal = readDraftNumber(draft.kcal, "Aktive Kalorien", true);
   const weight = readDraftNumber(draft.weight, "Gewicht");
