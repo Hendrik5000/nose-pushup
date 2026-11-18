@@ -538,10 +538,8 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 
 ### Verifizierter GitHub-Stand
 - `main` bleibt auf `1feffca6a1dbf2ceafe6b15a62cb5a5891ab249c` (Alo Modern, PR #197).
-- Es gibt genau einen offenen PR: [#198](https://github.com/Hendrik5000/nose-pushup/pull/198), weiterhin Draft, Basis `main`, 22 Dateien, 530 Ergänzungen und 333 Löschungen. Es liegen keine menschlichen Reviews oder Inline-Review-Kommentare vor; die fünf Konversationskommentare stammen vom Vercel-Bot.
-- Der bisherige PR-Code-Head `ab574e526b4ea2bfa62e467437348fcbfeb11a59` besteht GitHub Actions Run `44375770284` vollständig: Lint, Regressionstests, TypeScript und Build erfolgreich. Der nun vorbereitete Folgepatch zur Bereinigung der unerreichbaren Providerpfade und zum früheren Ablehnen von Bild-/PDF-Anhängen ist darin noch nicht enthalten und benötigt einen neuen CI-Lauf.
-- Die automatische Vercel-Preview wurde wegen des Free-Plan-Limits von mehr als 100 Deployments pro Tag abgelehnt (`api-deployments-free-per-day`, erneuter Versuch laut Vercel nach 24 Stunden). Das ist kein Buildfehler. Es gibt keinen bestätigten Preview- oder Live-Deploy.
-
+- Es gibt genau einen offenen PR: Draft-PR [#199](https://github.com/Hendrik5000/nose-pushup/pull/199), Branch `gpt6/alo-roadmap-followup-20261118`, Basis `main` `fcb77742ff6ab1bf25c52ac6e885f8a2ebb9c247`, 9 Dateien, 216 Ergänzungen und 266 Löschungen. PR #198 ist gemergt.\n- Der bisherige PR-Code-Head `ab574e526b4ea2bfa62e467437348fcbfeb11a59` besteht GitHub Actions Run `44375770284` vollständig: Lint, Regressionstests, TypeScript und Build erfolgreich. Der nun vorbereitete Folgepatch zur Bereinigung der unerreichbaren Providerpfade und zum früheren Ablehnen von Bild-/PDF-Anhängen ist darin noch nicht enthalten und benötigt einen neuen CI-Lauf.
+- Vercel-Bot-Kommentar vom 18.11.2026, 19:33:59 UTC, meldet eine Ready-Preview für PR #199 im Projekt `nose-pushup`: https://nose-pushup-git-gpt6-alo-1e2953-hendrikkamps2011-6017s-projects.vercel.app. Der exakte Deployment-Commit ist nicht bestätigt und die Preview wurde nicht visuell abgenommen. Zwei weitere Projekt-Deployments scheiterten am Free-Plan-Limit von mehr als 100 Deployments pro Tag. Kein Production-Livegang bestätigt.\n
 ### Supabase – Live-Prüfung weiterhin blockiert
 - Der verbundene Supabase-Zugang listet das Projekt `Alo` (`mujuqmcxhdjwgoeaphpe`) als `ACTIVE_HEALTHY` in `eu-central-1`.
 - Abfragen der Migration-History und der Tabellenübersicht scheitern derzeit mit PostgreSQL `28P01: password authentication failed for user postgres`. Deshalb sind angewandte Migrationen, RLS-Policies und die Live-Existenz von `friend_app_shares` weiterhin **nicht verifiziert**.
@@ -556,8 +554,7 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 ### Status und nächste Abhängigkeiten
 - PR #198 wurde am 18.11.2026 um 19:18:43 UTC gemergt (Merge-Commit `fcb77742ff6ab1bf25c52ac6e885f8a2ebb9c247`). Der Merge enthält den geprüften PR-Head `ab574e526b4ea2bfa62e467437348fcbfeb11a59`; spätere Folgecommits `39c0694`, `53e0a86`, `42319f6`, `fabb722` und `f08c917` sind nicht Teil des Merges. Diese Änderungen liegen nun in Draft-PR [#199](https://github.com/Hendrik5000/nose-pushup/pull/199), Branch `gpt6/alo-roadmap-followup-20261118`, Basis `main` `fcb77742ff6ab1bf25c52ac6e885f8a2ebb9c247`. PR #199 umfasst 9 Dateien (216 Ergänzungen, 266 Löschungen) und 5 Commits. Kein Livegang ist bestätigt.
 - Phase 0 bleibt teilweise offen: Supabase-Migrations-/RLS-Prüfung, Secret-Hygieneprüfung, reale Kernabläufe auf Geräten und vollständige Live-Abnahme fehlen.
-- Nächster technischer Schritt: neuen Folgepatch vollständig durch CI prüfen, danach unabhängige Sicherheitsprüfung des PRs. Vercel-Preview erst nach Ende des Tageslimits erneut prüfen; Supabase-Audit erst nach Behebung des Datenbankzugriffs fortsetzen.
-
+- Nächster technischer Schritt: PR #199 nach vollständigem CI und Review sicher abschließen; Ready-Preview visuell auf Desktop/Tablet/Mobil prüfen, sobald ein Browserzugang verfügbar ist. Supabase-Audit erst nach Behebung des PostgreSQL-28P01-Zugriffs fortsetzen.\n
 
 ### CI-Nachtrag zum Free-only-Folgepatch
 - CI-Run `44379257455` stoppte im Lint ausschließlich wegen zweier Prettier-Formatierungen in `src/lib/mira-attachments.ts` und `src/lib/super-ai.functions.ts`; 15 bestehende Warnungen waren nicht blockierend. Regressionstests, TypeScript und Build wurden deshalb übersprungen. Die beiden Formatstellen sind korrigiert; ein erneuter CI-Lauf ist erforderlich.
@@ -568,8 +565,7 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 ### Health-Datenintegrität – Schutz partieller manueller Einträge
 - Beim manuellen Speichern in Alo Health wurden nicht ausgefüllte Felder zuvor als `0` bzw. `null` in den Tagesdatensatz geschrieben. Dadurch konnten vorhandene Schritte, Kalorien, Schlaf- oder Gewichtswerte desselben Tages unbeabsichtigt überschrieben werden.
 - Der Folgepatch liest nun den vorhandenen Tagesdatensatz und führt nur explizit eingegebene Werte zusammen; leere Felder bleiben erhalten. Profilgewicht wird nur aktualisiert, wenn tatsächlich ein neuer Gewichtswert eingegeben wurde. Ungültige Zahlen erhalten eine konkrete Eingabemeldung.
-- Neue Unit-/Integrationsabdeckung: `src/lib/health-entry.ts`, `tests/health-entry-merge.test.ts`; die Route `_authenticated/health.tsx` nutzt den Merge vor dem Upsert. Der vorangegangene Provider-Patch `42319f6109e70e9ba1f9d020431c234733d9a1ed` wurde mit Run `44379822035` vollständig erfolgreich geprüft (Lint, Regressionstests, TypeScript und Build). Der Health-Folgepatch `fabb7221d6af217b99804673221ca45c3f119091` scheiterte in Run `44380290158` ausschließlich an Prettier-Formatierungen in `src/lib/health-entry.ts` und `tests/health-entry-merge.test.ts`; die Formatstellen sind in Commit `f08c917b47ccaa8666df44bff7e6c9f96250387f` korrigiert. Der aktuelle PR-Head `35845655e59f393b71be4795323742a92dc5b446` bestand PR-CI `44382036405` vollständig (Lint, Regressionstests, TypeScript und Build).
-
+- Neue Unit-/Integrationsabdeckung: `src/lib/health-entry.ts`, `tests/health-entry-merge.test.ts`; Health-Teileinträge bewahren bestehende Werte bei leeren Feldern. PR #199 aktueller Head `bd6bfb4a71290854819b54f54ac3522f5ea6163e` bestand den manuellen PR-CI-Lauf `44382651985` vollständig (Lint, Regressionstests, TypeScript und Build).\n
 
 ## Sicherheits- und Merge-Nachtrag 2026-11-18
 - PR #198 ist in `main` integriert: Merge-Commit `fcb77742ff6ab1bf25c52ac6e885f8a2ebb9c247`; aktueller `main`-Head wurde damit verifiziert. Der Merge enthält PR-Head `ab574e...`, nicht die späteren Follow-up-Commits.
@@ -577,8 +573,7 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 - `main` ist als protected markiert, aber `required_status_checks.enforcement_level` ist `off`, die Checkliste leer und für `main` wurden keine aktiven Rulesets zurückgegeben. CI ist damit nicht als verpflichtende Merge-Bedingung nachgewiesen.
 - Follow-up-Änderungen (OpenRouter-Endpunkt/Provider-Code-Pruning, Text-only-Anhänge, Health-Teilupdate-Schutz) liegen in Draft-PR [#199](https://github.com/Hendrik5000/nose-pushup/pull/199) gegen den aktuellen `main`-Head. PR bleibt Draft, bis CI, Review und manuelle Abnahme abgeschlossen sind.
 
-- PR #199 CI: aktueller Head `35845655e59f393b71be4795323742a92dc5b446` bestand PR-Run `44382036405` vollständig. Lint, Regressionstests, TypeScript und Produktionsbuild sind erfolgreich.
-
+- PR #199 CI: aktueller Head `bd6bfb4a71290854819b54f54ac3522f5ea6163e` bestand den manuellen PR-Run `44382651985` vollständig. Lint, Regressionstests, TypeScript und Produktionsbuild sind erfolgreich.\n
 - PR #199 lint follow-up: Run `44380867198` failed only on one remaining Prettier line break in `src/lib/health-entry.ts` (line 46). That exact format issue is corrected; another CI run is required.
 
 - PR #199 TypeScript-Nachtrag: Run `44381193534` hatte Lint und Regressionstests erfolgreich, scheiterte aber im Typecheck (`TS2345`), weil der Merge-Helper nullable Bestandswerte im Rückgabetyp statt garantierter Insert-Werte deklarierte. Der Helper hat jetzt einen getrennten `MergedHealthMetrics`-Typ (Schritte/Kalorien/Schlaf garantiert numerisch, Gewicht nullable); erneute CI-Prüfung erforderlich.
