@@ -1542,3 +1542,86 @@ html[data-design-style] .alo-profile-page > section,
 html[data-design-style] .alo-profile-page > div > section {
   border-radius: 1.35rem;
 }
+
+
+html[data-design-style] .alo-site-directory-page {
+  width: min(100%, 84rem);
+  margin-inline: auto;
+}
+html[data-design-style] .alo-site-directory-page .group {
+  min-height: 7.25rem;
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow: none;
+}
+html[data-design-style] .alo-alarm-page,
+html[data-design-style] .alo-battle-page,
+html[data-design-style] .alo-battle-league-page,
+html[data-design-style] .alo-season-page {
+  width: min(100%, 68rem);
+  max-width: 68rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2rem);
+}
+html[data-design-style] .alo-alarm-page > section,
+html[data-design-style] .alo-battle-page > section,
+html[data-design-style] .alo-battle-league-page > section,
+html[data-design-style] .alo-season-page > section {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 1.4rem;
+  box-shadow: none;
+}
+html[data-design-style] .alo-exercises-page,
+html[data-design-style] .alo-calisthenics-page,
+html[data-design-style] .alo-run-page {
+  width: min(100%, 76rem);
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2.25rem);
+}
+html[data-design-style] .alo-exercises-page .group,
+html[data-design-style] .alo-calisthenics-page .group,
+html[data-design-style] .alo-run-page .group {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 1.35rem;
+  box-shadow: none;
+}
+html[data-design-style] .settings-page-header {
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+html[data-design-style] .settings-category-group,
+html[data-design-style] .settings-category-screen > section {
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 1.2rem;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+html[data-design-style] .settings-category-group button,
+html[data-design-style] .settings-category-screen button {
+  min-height: 2.9rem;
+}
+html[data-design-style] .alo-training-focus {
+  width: min(100%, 58rem);
+  max-width: 58rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2rem);
+}
+html[data-design-style] .alo-training-focus .alo-manual-entry,
+html[data-design-style] .alo-training-focus .alo-session-controls,
+html[data-design-style] .alo-training-focus .alo-training-secondary {
+  border-radius: 1.4rem;
+  box-shadow: none;
+}
+@media (max-width: 640px) {
+  html[data-design-style] .alo-alarm-page,
+  html[data-design-style] .alo-battle-page,
+  html[data-design-style] .alo-battle-league-page,
+  html[data-design-style] .alo-season-page,
+  html[data-design-style] .alo-exercises-page,
+  html[data-design-style] .alo-calisthenics-page,
+  html[data-design-style] .alo-run-page {
+    padding-inline: max(0.9rem, env(safe-area-inset-left));
+  }
+}

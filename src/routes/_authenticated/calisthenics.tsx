@@ -126,7 +126,7 @@ function CalisthenicsPage() {
   return (
     <>
       <DesignView variant="sport">
-        <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-6 px-5 py-6 sm:px-8">
+        <main className="sport-only alo-calisthenics-page mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-6 px-5 py-6 sm:px-8">
           <SportPageIntro
             eyebrow="SKILL SYSTEM · CALISTHENICS"
             title="Baue echte Kontrolle auf"
@@ -268,7 +268,7 @@ function CalisthenicsPage() {
         </main>
       </DesignView>
       <DesignView variant="classic">
-        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
+        <main className="classic-only alo-calisthenics-page mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
           {/* Header */}
           <header className="flex items-center justify-between">
             <div>
