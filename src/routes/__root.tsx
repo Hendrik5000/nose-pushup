@@ -153,6 +153,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: aiResponsiveCss },
       { rel: "stylesheet", href: adaptiveLayoutCss },
       { rel: "stylesheet", href: aloVisualRefreshCss },
+      { rel: "stylesheet", href: aloSitewideRedesignCss },
 
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
