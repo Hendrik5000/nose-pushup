@@ -11,7 +11,9 @@ const home = readFileSync(
 const marketplace = readFileSync(
   new URL("../src/components/marketplace/MarketplaceAppCatalog.tsx", import.meta.url),
   "utf8",
-);\nconst directory = readFileSync(new URL("../src/components/HomeAppMenuLayout.tsx", import.meta.url), "utf8");\nconst games = readFileSync(new URL("../src/routes/games.tsx", import.meta.url), "utf8");
+);
+const directory = readFileSync(new URL("../src/components/HomeAppMenuLayout.tsx", import.meta.url), "utf8");
+const games = readFileSync(new URL("../src/routes/games.tsx", import.meta.url), "utf8");
 
 test("the visual refresh is loaded after the adaptive layout layer", () => {
   assert.ok(root.indexOf("adaptiveLayoutCss") < root.indexOf("aloVisualRefreshCss"));
