@@ -127,7 +127,7 @@ function BattleLeaguePage() {
   const last10 = battles.slice(0, 10);
 
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
+    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10 alo-battle-league-page">
       <header className="classic-only flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Link

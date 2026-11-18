@@ -137,7 +137,7 @@ function AlarmPage() {
     : "ausgeschaltet";
 
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-5 px-4 pt-5 pb-28 sm:px-7 sm:pt-8">
+    <main className="mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-5 px-4 pt-5 pb-28 sm:px-7 sm:pt-8 alo-alarm-page">
       <header className="space-y-5">
         <div className="flex items-center justify-between">
           <AloHomeLink className="px-2 text-[10px]" />

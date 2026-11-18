@@ -454,3 +454,73 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Ãnderung, keine SQL-AusfÃ�
 **Offene Abnahme:** CI auf Code-/Test-Commit `366362d5bc8329013c19507e67434320e68c2148` vollständig erfolgreich (GitHub Actions Run `44330430243`: Lint, Regressionstests, TypeScript und Produktionsbuild). Danach jede Route visuell prüfen (Loading-, Empty-, Error-, Success- und Interaktionszustände), sowie alle bestehenden Designstile/Farbwelten in hellem und dunklem Theme auf Smartphone, Tablet, Laptop und großen Displays. CSS-Selektoren und Page-Styles sind implementiert, aber echte Browser-/Geräte-Screenshots liegen noch nicht vor. Kein Merge und kein Lovable-Live-Publish, bis Review und Abnahme erfolgt sind.
 
 Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5bc8329013c19507e67434320e68c2148`; Dokumentations-Commit für CI-Status `3100f2d80195681eebf468d9cc268a887f1a8256`. Draft-PR #196: https://github.com/Hendrik5000/nose-pushup/pull/196.
+
+## Statusupdate 2026-11-18 – Ganzheitlicher Website-UI-Durchgang
+
+**Status: gemeinsame Gestaltungsebene und erste Routen-Verfeinerung implementiert; vollständige individuelle Seitenabnahme noch offen.**
+
+- Das Repository enthält 47 Routendateien. Der Auftrag umfasst ausdrücklich die gesamte Website: Startseite, weitere Bereiche/Werkzeuge, Marketplace, Mira, Nexus, Browser, Health, Training/Gym, Profil, Einstellungen, Postfach, Freunde/Clubs, Sport/Fußball, Spiele, Battles/Leaderboards, Admin, öffentliche Profile sowie weitere Unterrouten.
+- `src/alo-visual-refresh.css` erweitert das bestehende Token-System auf authenticated und public routes: Seitenhierarchie, Karten, Navigation, Sidebars, Dialoge, Formulare, Fokuszustände, Tabellen und Interaktionen.
+- `HomeAppMenuLayout` erhält `alo-site-directory-page` und deckt damit Weitere Bereiche, Werkzeuge, Marketplace, Fußball und Live-Sport ab. Die Spiele-Seite erhält `alo-games-page`; der immersive Spielmodus bleibt unangetastet.
+- Bestehende App-spezifische Verfeinerungen für Mira, Nexus Chat, Health, Training, Postfach, Admin und Browser bleiben Teil der gemeinsamen Ebene.
+- Regressionstests: `tests/adaptive-layout.test.ts` und `tests/alo-visual-refresh.test.ts` prüfen Layout- und UI-Hooks.
+- Designregeln: keine neue Palette; aktive Theme-Tokens verwenden; bestehende sieben Designstile und 13 Farbwelten, Nutzerpersonalisierung, Navigation und Funktionen bewahren.
+- Letzter Code-Commit `909d51e517ccb52ca2b16d980b62602b9b6bed94`; nachfolgender Dokumentations-Commit `440264aed400731662b95b1b5f65fc93f8820a6c`. GitHub-CI für den Code-Commit `909d51e...` läuft im Run `44330185487`; der neue Dokumentations-Commit löst eine weitere CI-Prüfung aus.
+- Noch offen: jede Route einzeln visuell durchgehen; eigene Header-/Hero-/Content-Hierarchie, Filter/Tabellen, Empty-/Loading-/Error-States, Formulare und Detailansichten prüfen; Überlappungen und Kontrast in allen Themes/Styles prüfen; Screenshots und reale Geräteabnahme für Smartphone, Tablet, Laptop und große Displays. Keine Behauptung einer vollständigen visuellen Abnahme, solange diese Schritte fehlen.
+- Änderungen bleiben auf `gpt6/fix-alo-ui-lint-20261118`. Kein PR, kein Merge und kein Live-Publish in diesem Statusupdate.
+
+
+## Statusupdate 2026-11-18 – Motion- und Interaktionssystem
+
+- Ergänzt wurde ein gemeinsames Motion-System für alle Alo-Routen auf Basis der bestehenden Theme-Tokens.
+- Seiteninhalte erhalten einen dezenten, leicht gestaffelten Einstieg; Karten, Verzeichnis-Einträge und interaktive Flächen reagieren mit kurzen, natürlichen Übergängen.
+- Buttons bekommen eine unmittelbare Press-Reaktion; Dialoge und Menüs werden weich eingeblendet.
+- Fortschrittsanzeigen erhalten eine dezente Ankunftsanimation.
+- `prefers-reduced-motion` wird respektiert; Animationen werden bei entsprechender Systemeinstellung deaktiviert.
+- Die bestehende Farbpalette, die sieben Designstile und die vorhandenen App-Funktionen bleiben unverändert.
+- Offen: CI-Ergebnis abwarten, die noch offenen Einzelrouten visuell prüfen und Animationen auf echten Geräten hinsichtlich Performance und Bewegungsgefühl validieren. Dieser Durchgang ist ein gemeinsames Fundament und noch kein abgeschlossener Redesign-Abschluss aller 47 Routen.
+
+
+## Statusupdate 2026-11-18 – Alo Modern: einheitliches Premium-Redesign
+
+- Die bisherigen sieben auswählbaren Designvarianten werden durch ein einheitliches Designsystem ersetzt. Bereits gespeicherte Altwerte werden beim Laden auf hig / Alo Modern migriert; alte Kennungen bleiben für Kompatibilität lesbar.
+- Die Einstellungsansicht bietet keine veralteten Stil-Kacheln mehr, sondern zeigt das aktive einheitliche Design.
+- HomeAppMenuLayout rendert Menüseiten nur noch einmal. Die parallelen Classic-/Performance-Varianten werden aus diesem gemeinsamen Menürahmen entfernt.
+- Das globale Layout erhält mehr nutzbaren Weißraum, größere und konsistente Seitenränder, eine klarere Typografie-Hierarchie, ruhigere Karten, modernisierte Eingabefelder und hochwertigere Dialog-/Menüoberflächen.
+- Das bisherige aggressive overflow-wrap: anywhere wird für den App-Shell-Bereich neutralisiert, damit Überschriften und normale Texte nicht unnötig auseinandergerissen oder gequetscht werden.
+- Die Navigation erhält eine zurückhaltende, glasartige Oberfläche mit klarer Aktiv-Markierung. Bestehende Farbthemen bleiben erhalten; die neue visuelle Sprache verwendet die vorhandenen Theme-Tokens.
+- Animationen bleiben dezent und schnell; prefers-reduced-motion wird weiterhin respektiert.
+- Offen: CI vollständig grün bekommen, die Marketplace-Textregressionen prüfen und die tatsächlichen Seiten auf verschiedenen Viewports visuell durchgehen. Keine Live-Veröffentlichung ohne Review.
+
+
+## Statusupdate 2026-11-18 – Route-spezifische Verfeinerung Alo Modern
+
+- Das vereinheitlichte Design wird weiter auf tatsächliche App-Oberflächen angewendet, nicht nur als globale CSS-Schicht.
+- `HomeAppMenuLayout` erhält einen aufgeräumten, breiteren Sidebar-/Content-Rahmen; die zugehörige Regressionserwartung wurde an die neue 240-px-Sidebar angepasst.
+- Marketplace: farblich beruhigter Feature-Bereich, bessere Typografie und Korrektur beschädigter Umlaute im Detaildialog.
+- Alo Health: beide vorhandenen Layout-Varianten erhalten denselben Hook für die neue Health-Oberflächenhierarchie; Datenlogik bleibt unverändert.
+- Nexus Chat: ruhigere Arbeitsfläche, klarerer Nachrichten-Header und Composer mit mehr Raum.
+- Globale Bereichsnavigation: gruppierte, zurückhaltende Dialogoberfläche statt stark leuchtender, dichter Menülisten.
+- Mira: die aktive einheitliche Chatansicht erhält auf Desktop mehr nutzbare Breite; mobile Breite und Safe Areas bleiben berücksichtigt.
+- Lint war in Run `44344536375` erfolgreich. Regressionstests zeigten veraltete Sidebar-Breitenannahmen und beschädigte Marketplace-Texte; beide Ursachen wurden bearbeitet. CI für den aktuellen Head `7c0e6593d4a3ec901db2f52425fde904fd37a676` läuft in Run `44345492252`.
+- Noch offen: CI vollständig grün, weitere Routen individuell überarbeiten, visuelle Browser-/Screenshotabnahme bei mehreren Viewports und echte Geräteprüfung. Kein PR, kein Merge und kein Live-Publish.
+
+
+## Statusupdate 2026-11-18 – CI erfolgreich, route-spezifischer Durchgang
+
+- Aktueller Branch-Head: `80444f8d4e4554b303ea4edc23e233835d9b6557` auf `gpt6/fix-alo-ui-lint-20261118`.
+- GitHub Actions Run `44346485145` ist vollständig erfolgreich: Lint, Regressionstests, TypeScript und Produktionsbuild.
+- Der veraltete Regressionstest, der weiterhin alle alten Designvarianten als auswählbar verlangte, wurde an die neue Entscheidung angepasst: Alo Modern ist die einzige auswählbare Designvariante; alte IDs bleiben ausschließlich für die Migration vorhandener gespeicherter Einstellungen lesbar.
+- Routen-Verfeinerungen dieser Runde: Marketplace, Health, Nexus Chat, Mira, Training sowie globale Bereichsnavigation und App-Menürahmen.
+- CI-Grün ist noch keine visuelle Freigabe: Browser-/Screenshotabnahme aller 47 Routendateien und Geräteprüfung auf Smartphone, Tablet, Laptop und großen Displays stehen noch aus.
+- Kein PR, kein Merge und kein Live-Publish in diesem Statusupdate.
+
+
+## Abschlussstatus 2026-11-18 – Alo Modern PR-Vorbereitung
+
+- Der endgültige PR-Branch ist `gpt6/alo-modern-synced-20261118`. Er wurde direkt auf dem aktuellen `main` (`9adad0f2a9dfc8cc0dc50b96266a9a9d247e82ce`) aufgebaut, damit der PR keine bereits gemergten Änderungen erneut enthält.
+- Der Vergleich `main...gpt6/alo-modern-synced-20261118` ist sauber: 0 Commits Rückstand, nur die neuen Alo-Modern-Änderungen.
+- Aktueller Code-Stand vor diesem Dokumentationsupdate: `181a17f29888c54d851f6db42932abdd8c022b93`. Geänderte Bereiche: gemeinsames Designsystem, einheitliche Designauswahl, HomeAppMenuLayout, Marketplace, Health, Mira/Nexus/Training-Oberflächen, Profile, Clubs, Ranglisten, Übungen, Calisthenics, Laufen, Battle-/Saison-/Alarmseiten und Spiele-Hub sowie Regressionstests.
+- GitHub Actions Run `44350388516` vollständig erfolgreich: Lint, Regressionstests, TypeScript und Produktionsbuild.
+- Der PR wird als Draft eröffnet, weil die Code-/CI-Prüfung abgeschlossen ist, aber Browser-Screenshots und echte Geräteabnahme (Smartphone, Tablet, Laptop und große Displays) hier nicht durchgeführt werden konnten. Diese Grenze wird im PR ausdrücklich festgehalten.
+- Kein Merge und kein Lovable-Live-Publish; die Veröffentlichung bleibt separat.

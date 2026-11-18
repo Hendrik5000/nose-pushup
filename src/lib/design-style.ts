@@ -7,80 +7,54 @@ export interface DesignStyleDefinition {
   description: string;
 }
 
+/** Legacy identifiers remain readable for migration, but Alo now has one design language. */
 export const DESIGN_STYLES: DesignStyleDefinition[] = [
   {
-    id: "soft",
-    label: "Klassisch",
-    description:
-      "Das bisherige Soft-Design: vertraute runde Health-Karten und die ursprüngliche Oberfläche.",
-  },
-  {
-    id: "compact",
-    label: "Kompakt",
-    description: "Kompakte Abstände, kleine Ecken und eine nüchterne Sans.",
-  },
-  {
-    id: "editorial",
-    label: "Editorial",
-    description: "Große Serif-Überschriften, luftige Karten und unterstrichene Navigation.",
-  },
-  {
-    id: "studio",
-    label: "Studio",
-    description: "Monospace, harte 2-px-Rahmen, versetzte Schatten und Tab-Navigation.",
-  },
-  {
     id: "hig",
-    label: "Apple HIG",
+    label: "Alo Modern",
     description:
-      "Apple-HIG-inspiriert: SF-Pro-Typografie mit klarer Hierarchie, semantische Farben für Light- und Dark-Mode, iOS-Steuerelemente (Switches, Segmente, Sheets), Vibrancy-Blur und sanfte Federn-Animationen.",
-  },
-  {
-    id: "performance",
-    label: "Performance",
-    description:
-      "Die neue Sport-Oberfläche: Fokusbereiche, große Kennzahlen, klare Linien und neue Seitenlayouts.",
-  },
-  {
-    id: "legacy-performance",
-    label: "Performance · bisher",
-    description: "Die großzügige Performance-Oberfläche vor der kompletten Neugestaltung.",
+      "Ein einheitliches, minimalistisches Design mit großzügigem Weißraum und klarer Hierarchie.",
   },
 ];
 
 export const DEFAULT_DESIGN_STYLE: DesignStyleId = "hig";
 const STORAGE_KEY = "np-design-style";
-const DEFAULT_MIGRATION_KEY = "np-design-style-default-v2";
+const DEFAULT_MIGRATION_KEY = "np-design-style-unified-v1";
+const LEGACY_STYLE_IDS: DesignStyleId[] = [
+  "soft",
+  "compact",
+  "editorial",
+  "studio",
+  "performance",
+  "legacy-performance",
+];
 
 export function isDesignStyleId(value: unknown): value is DesignStyleId {
-  return typeof value === "string" && DESIGN_STYLES.some((style) => style.id === value);
+  return (
+    value === "hig" ||
+    (typeof value === "string" && LEGACY_STYLE_IDS.includes(value as DesignStyleId))
+  );
 }
 
 export function getStoredDesignStyle(): DesignStyleId {
   if (typeof window === "undefined") return DEFAULT_DESIGN_STYLE;
   try {
-    const value = window.localStorage.getItem(STORAGE_KEY);
-    if (window.localStorage.getItem(DEFAULT_MIGRATION_KEY) !== "1") {
-      window.localStorage.setItem(DEFAULT_MIGRATION_KEY, "1");
-      if (!isDesignStyleId(value) || value === "performance") {
-        window.localStorage.setItem(STORAGE_KEY, DEFAULT_DESIGN_STYLE);
-      }
-      return window.localStorage.getItem(STORAGE_KEY) as DesignStyleId;
-    }
-    return isDesignStyleId(value) ? value : DEFAULT_DESIGN_STYLE;
+    window.localStorage.setItem(DEFAULT_MIGRATION_KEY, "1");
+    window.localStorage.setItem(STORAGE_KEY, DEFAULT_DESIGN_STYLE);
+    return DEFAULT_DESIGN_STYLE;
   } catch {
-    // Storage may be blocked by browser privacy settings.
     return DEFAULT_DESIGN_STYLE;
   }
 }
 
-/** Apply only the visual design language; the selected color theme is untouched. */
-export function applyDesignStyle(style: DesignStyleId): void {
+/** All legacy style selections resolve to the single current Alo design. */
+export function applyDesignStyle(_style: DesignStyleId): void {
   if (typeof document === "undefined") return;
-  document.documentElement.dataset.designStyle = style;
+  document.documentElement.dataset.designStyle = DEFAULT_DESIGN_STYLE;
   try {
-    window.localStorage.setItem(STORAGE_KEY, style);
+    window.localStorage.setItem(STORAGE_KEY, DEFAULT_DESIGN_STYLE);
+    window.localStorage.setItem(DEFAULT_MIGRATION_KEY, "1");
   } catch {
-    // Applying the style still works when storage is unavailable.
+    // The current visual design still applies when storage is unavailable.
   }
 }

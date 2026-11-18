@@ -340,7 +340,7 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
   return (
     <>
       <DesignView variant="classic">
-        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-4 px-4 pt-5 pb-28 sm:px-8">
+        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-4 px-4 pt-5 pb-28 sm:px-8 alo-profile-page">
           <SettingsPageHeader
             sectionId={sectionId}
             title={category?.title ?? "Einstellungen"}
@@ -374,7 +374,7 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
         </main>
       </DesignView>
       <DesignView variant="sport">
-        <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8">
+        <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-5 px-5 py-6 pb-28 sm:px-8 alo-profile-page">
           <SettingsPageHeader
             sectionId={sectionId}
             title={category?.title ?? "Einstellungen"}

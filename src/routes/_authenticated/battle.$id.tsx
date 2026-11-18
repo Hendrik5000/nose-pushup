@@ -238,7 +238,7 @@ function BattleArena() {
   if (battle.status === "waiting") {
     const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/battle` : "";
     return (
-      <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
+      <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10 alo-battle-detail-page">
         <header className="classic-only flex items-center justify-between">
           <Link to="/battle" className="text-sm text-muted-foreground">
             ← Lobby
@@ -311,7 +311,7 @@ function BattleArena() {
     const myFinal = iAmHost ? battle.host_count : battle.guest_count;
     const oppFinal = iAmHost ? battle.guest_count : battle.host_count;
     return (
-      <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col items-center px-5 pt-8 pb-10">
+      <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col items-center px-5 pt-8 pb-10 alo-battle-detail-page">
         <div className="classic-only text-6xl">{draw ? "🤝" : iWon ? "🏆" : "💀"}</div>
         <div className="sport-only mt-5 rounded-full border border-primary/30 bg-primary/10 p-4 text-primary">
           <Trophy className="h-10 w-10" />
@@ -386,7 +386,7 @@ function BattleArena() {
 
   return (
     <main
-      className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4"
+      className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4 alo-battle-detail-page"
       onPointerDown={tap}
     >
       <header className="classic-only flex items-center justify-between">

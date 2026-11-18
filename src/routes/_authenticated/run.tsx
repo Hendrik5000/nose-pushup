@@ -244,7 +244,7 @@ function RunPage() {
   return (
     <>
       <DesignView variant="sport">
-        <main className="sport-only mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-7 px-5 py-6 sm:px-8">
+        <main className="sport-only alo-run-page mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-7 px-5 py-6 sm:px-8">
           <SportPageIntro
             eyebrow="ENDURANCE · OUTDOOR"
             title="Dein Lauf. Dein Tempo."
@@ -369,7 +369,7 @@ function RunPage() {
         </main>
       </DesignView>
       <DesignView variant="classic">
-        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
+        <main className="classic-only alo-run-page mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
           <header className="flex items-center justify-between">
             <AloHomeLink className="px-2 text-[10px]" />
             <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
