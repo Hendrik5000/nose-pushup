@@ -440,7 +440,7 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Ãnderung, keine SQL-AusfÃ�
 
 ## Phase 1.2 – Vollständiges Alo-Website-Redesign (2026-11-18)
 
-**Umgesetzt auf Feature-Branch; CI-/visuelle Abnahme noch offen.** Dieser Umfang gilt ausdrücklich für die komplette Website – öffentliche und angemeldete Routen, nicht nur die drei Haupt-Apps oder die Bildschirmgrößen.
+**Code-Durchgang umgesetzt; GitHub-CI vollständig erfolgreich; manuelle visuelle Abnahme noch offen.** Dieser Umfang gilt ausdrücklich für die komplette Website – öffentliche und angemeldete Routen, nicht nur die drei Haupt-Apps oder die Bildschirmgrößen.
 
 - Globale Stylesheet-Ebene `src/alo-sitewide-redesign.css` ergänzt und in `src/routes/__root.tsx` nach den bestehenden Theme-, Responsive- und App-Styles geladen. Damit erhalten auch öffentliche Routen und Auth-Seiten die gemeinsame UI-Sprache.
 - Gemeinsame Seitenstruktur: Intro-/Seitentitel-Hierarchie, Abschnittslabels, Abstände, Karten, Navigation/Sidebars, Formulare, Dialoge, Tabellen, Fokuszustände, Hover-Verhalten und Reduced-Motion-Behandlung.
@@ -451,6 +451,6 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Ãnderung, keine SQL-AusfÃ�
 
 **Designgrenzen:** Die bestehenden Designstile, Farbwelten, Theme-Tokens, Navigation, App-Funktionen und Datenflüsse bleiben erhalten. Keine neue globale Farbpalette; kein Eingriff in DB, RLS, Secrets oder Provider.
 
-**Offene Abnahme:** CI auf dem aktuellen Commit einschließlich Regressionstests, TypeScript und Build vollständig bestätigen. Danach jede Route visuell prüfen (Loading-, Empty-, Error-, Success- und Interaktionszustände), sowie alle bestehenden Designstile/Farbwelten in hellem und dunklem Theme auf Smartphone, Tablet, Laptop und großen Displays. CSS-Selektoren und Page-Styles sind implementiert, aber echte Browser-/Geräte-Screenshots liegen noch nicht vor. Kein Merge und kein Lovable-Live-Publish, bis Review und Abnahme erfolgt sind.
+**Offene Abnahme:** CI auf Code-/Test-Commit `366362d5bc8329013c19507e67434320e68c2148` vollständig erfolgreich (GitHub Actions Run `44330430243`: Lint, Regressionstests, TypeScript und Produktionsbuild). Danach jede Route visuell prüfen (Loading-, Empty-, Error-, Success- und Interaktionszustände), sowie alle bestehenden Designstile/Farbwelten in hellem und dunklem Theme auf Smartphone, Tablet, Laptop und großen Displays. CSS-Selektoren und Page-Styles sind implementiert, aber echte Browser-/Geräte-Screenshots liegen noch nicht vor. Kein Merge und kein Lovable-Live-Publish, bis Review und Abnahme erfolgt sind.
 
-Branch: `gpt6/full-site-ui-redesign-20261118`. Letzter Code-/Test-Commit: `1bb032e80e59b86db59534b3df8ea6774fa88dc4`; Dokumentations-Commit `b003a57fdac3be2d60a14fba0bb8855b07528b1e`. CI-Lauf `44329388816` war beim letzten Check noch aktiv.
+Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5bc8329013c19507e67434320e68c2148`; Dokumentations-Commit für CI-Status `3100f2d80195681eebf468d9cc268a887f1a8256`. Draft-PR #196: https://github.com/Hendrik5000/nose-pushup/pull/196.
