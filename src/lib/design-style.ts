@@ -1,11 +1,5 @@
 export type DesignStyleId =
-  | "soft"
-  | "compact"
-  | "editorial"
-  | "studio"
-  | "hig"
-  | "performance"
-  | "legacy-performance";
+  "soft" | "compact" | "editorial" | "studio" | "hig" | "performance" | "legacy-performance";
 
 export interface DesignStyleDefinition {
   id: DesignStyleId;
@@ -18,7 +12,8 @@ export const DESIGN_STYLES: DesignStyleDefinition[] = [
   {
     id: "hig",
     label: "Alo Modern",
-    description: "Ein einheitliches, minimalistisches Design mit großzügigem Weißraum und klarer Hierarchie.",
+    description:
+      "Ein einheitliches, minimalistisches Design mit großzügigem Weißraum und klarer Hierarchie.",
   },
 ];
 
@@ -35,7 +30,10 @@ const LEGACY_STYLE_IDS: DesignStyleId[] = [
 ];
 
 export function isDesignStyleId(value: unknown): value is DesignStyleId {
-  return value === "hig" || (typeof value === "string" && LEGACY_STYLE_IDS.includes(value as DesignStyleId));
+  return (
+    value === "hig" ||
+    (typeof value === "string" && LEGACY_STYLE_IDS.includes(value as DesignStyleId))
+  );
 }
 
 export function getStoredDesignStyle(): DesignStyleId {

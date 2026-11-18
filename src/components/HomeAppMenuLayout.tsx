@@ -21,7 +21,10 @@ export function HomeAppMenuLayout({
 
   return (
     <main
-      className={"alo-site-directory-page relative mx-auto flex min-h-[100dvh] w-full flex-col " + widthClass}
+      className={
+        "alo-site-directory-page relative mx-auto flex min-h-[100dvh] w-full flex-col " +
+        widthClass
+      }
       aria-labelledby={showHeader ? "home-app-menu-title" : undefined}
       data-alo-menu-surface="true"
     >
@@ -33,7 +36,10 @@ export function HomeAppMenuLayout({
                 {eyebrow}
               </p>
             )}
-            <h1 id="home-app-menu-title" className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
+            <h1
+              id="home-app-menu-title"
+              className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl"
+            >
               {title}
             </h1>
             {description && (
@@ -47,7 +53,10 @@ export function HomeAppMenuLayout({
       )}
       {sidebar ? (
         <div className="grid min-w-0 gap-7 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
-          <aside aria-label="App-Aktionen" className="min-w-0 rounded-2xl border border-border/60 p-3 lg:sticky lg:top-6">
+          <aside
+            aria-label="App-Aktionen"
+            className="min-w-0 rounded-2xl border border-border/60 p-3 lg:sticky lg:top-6"
+          >
             {sidebar}
           </aside>
           <div className="flex min-w-0 flex-col gap-7">{children}</div>

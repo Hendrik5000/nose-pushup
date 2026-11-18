@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { afterEach, test } from "node:test";
 import {
   applyDesignStyle,
@@ -15,8 +16,12 @@ function mockGlobals(stored: string | null = null) {
   const storage = new Map<string, string>();
   if (stored) storage.set("np-design-style", stored);
   const localStorage = {
-    getItem(key: string) { return storage.get(key) ?? null; },
-    setItem(key: string, value: string) { storage.set(key, value); },
+    getItem(key: string) {
+      return storage.get(key) ?? null;
+    },
+    setItem(key: string, value: string) {
+      storage.set(key, value);
+    },
   };
   const document = { documentElement: { dataset: {} as Record<string, string> } };
   Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage } });
@@ -33,9 +38,20 @@ afterEach(() => {
 
 test("Alo exposes one current design while recognizing legacy IDs for migration", () => {
   assert.equal(DEFAULT_DESIGN_STYLE, "hig");
-  assert.deepEqual(DESIGN_STYLES.map((style) => style.id), ["hig"]);
+  assert.deepEqual(
+    DESIGN_STYLES.map((style) => style.id),
+    ["hig"],
+  );
   assert.equal(DESIGN_STYLES[0]?.label, "Alo Modern");
-  for (const id of ["soft", "compact", "editorial", "studio", "hig", "performance", "legacy-performance"]) {
+  for (const id of [
+    "soft",
+    "compact",
+    "editorial",
+    "studio",
+    "hig",
+    "performance",
+    "legacy-performance",
+  ]) {
     assert.equal(isDesignStyleId(id), true);
   }
   assert.equal(isDesignStyleId("not-a-style"), false);
@@ -43,7 +59,14 @@ test("Alo exposes one current design while recognizing legacy IDs for migration"
 });
 
 test("all previously saved design choices migrate to Alo Modern", () => {
-  for (const oldStyle of ["soft", "compact", "editorial", "studio", "performance", "legacy-performance"]) {
+  for (const oldStyle of [
+    "soft",
+    "compact",
+    "editorial",
+    "studio",
+    "performance",
+    "legacy-performance",
+  ]) {
     const { storage } = mockGlobals(oldStyle);
     assert.equal(getStoredDesignStyle(), "hig");
     assert.equal(storage.get("np-design-style"), "hig");
@@ -60,16 +83,17 @@ test("applying any legacy style keeps the single design and persists it", () => 
   assert.equal(document.documentElement.dataset.designStyle, "hig");
 });
 
-test("unified design style picker no longer offers legacy design choices", async () => {
-  const { readFileSync } = await import("node:fs");
-  const picker = readFileSync(new URL("../src/components/DesignStylePicker.tsx", import.meta.url), "utf8");
+test("unified design style picker no longer offers legacy design choices", () => {
+  const picker = readFileSync(
+    new URL("../src/components/DesignStylePicker.tsx", import.meta.url),
+    "utf8",
+  );
   assert.match(picker, /Alo Modern/);
   assert.match(picker, /Einheitliches Design aktiv/);
   assert.doesNotMatch(picker, /DESIGN_STYLES\.map/);
 });
 
-test("unified design system provides Apple-like typography, whitespace and motion", async () => {
-  const { readFileSync } = await import("node:fs");
+test("unified design system provides Apple-like typography, whitespace and motion", () => {
   const css = readFileSync(new URL("../src/alo-visual-refresh.css", import.meta.url), "utf8");
   assert.match(css, /--alo-page-gutter/);
   assert.match(css, /--alo-section-gap/);
