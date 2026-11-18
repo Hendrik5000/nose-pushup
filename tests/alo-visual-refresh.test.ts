@@ -62,3 +62,37 @@ test("the whole-site experience includes restrained motion and honors reduced-mo
   assert.match(css, /prefers-reduced-motion: reduce/);
   assert.match(css, /:active/);
 });
+
+test("secondary routes expose explicit hooks for their shared Alo Modern page treatments", () => {
+  const routes = {
+    alarm: readFileSync(new URL("../src/routes/_authenticated/alarm.tsx", import.meta.url), "utf8"),
+    battle: readFileSync(new URL("../src/routes/_authenticated/battle.index.tsx", import.meta.url), "utf8"),
+    battleLeague: readFileSync(new URL("../src/routes/_authenticated/battle-league.tsx", import.meta.url), "utf8"),
+    calisthenics: readFileSync(new URL("../src/routes/_authenticated/calisthenics.tsx", import.meta.url), "utf8"),
+    clubs: readFileSync(new URL("../src/routes/_authenticated/clubs.tsx", import.meta.url), "utf8"),
+    exercises: readFileSync(new URL("../src/routes/_authenticated/exercises.tsx", import.meta.url), "utf8"),
+    leaderboard: readFileSync(new URL("../src/routes/_authenticated/leaderboard.tsx", import.meta.url), "utf8"),
+    profile: readFileSync(new URL("../src/routes/_authenticated/profile-page-impl.tsx", import.meta.url), "utf8"),
+    programs: readFileSync(new URL("../src/routes/_authenticated/programs.tsx", import.meta.url), "utf8"),
+    run: readFileSync(new URL("../src/routes/_authenticated/run.tsx", import.meta.url), "utf8"),
+    season: readFileSync(new URL("../src/routes/_authenticated/season.tsx", import.meta.url), "utf8"),
+  };
+  for (const [page, hook] of [
+    [routes.alarm, "alo-alarm-page"],
+    [routes.battle, "alo-battle-page"],
+    [routes.battleLeague, "alo-battle-league-page"],
+    [routes.calisthenics, "alo-calisthenics-page"],
+    [routes.clubs, "alo-clubs-page"],
+    [routes.exercises, "alo-exercises-page"],
+    [routes.leaderboard, "alo-leaderboard-page"],
+    [routes.profile, "alo-profile-page"],
+    [routes.programs, "alo-programs-page"],
+    [routes.run, "alo-run-page"],
+    [routes.season, "alo-season-page"],
+  ]) {
+    assert.ok(page.includes(hook), `missing route hook: ${hook}`);
+    assert.ok(css.includes(`.${hook}`), `missing route styling: ${hook}`);
+  }
+  assert.match(css, /\.settings-category-group/);
+  assert.match(css, /\.alo-training-focus/);
+});
