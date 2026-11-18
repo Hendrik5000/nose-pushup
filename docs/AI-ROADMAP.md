@@ -402,3 +402,12 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Änderung, keine SQL-Ausführu
 
 
 - **2026-11-16 – Mira: persönliche App-Entwürfe für alle angemeldeten Nutzer (PR #144, Entwurf).** Neue Alo-Apps können über explizite Mira-Bauanfragen auch ohne Admin-Rechte als lokaler Entwurf erzeugt, im Chat weiterbearbeitet und in der bestehenden Manifest-Vorschau ausprobiert werden. Bearbeitung veröffentlichter Apps und gemeinsames Veröffentlichen bleiben Admin-only; die Veröffentlichung erfordert weiterhin eine erneute Serverprüfung und explizite Bestätigung. Geändert: `src/components/mira/SuperAiPage.tsx`, `tests/marketplace-mira-integration.test.ts`. Branch `gpt6/mira-personal-app-authoring-20261116`, Commit `d59455575bb02a20c23da51ed7f648490b0a0c76`, PR #144. CI #831 läuft. Grenzen: Entwürfe sind noch nicht dauerhaft privat gespeichert/installierbar; Apps verwenden das deklarative Manifest-Schema, keinen beliebigen generierten JS/TS-Code. Keine DB-/Schema-/RLS-/Migrationsänderung.
+
+## 2026-11-18 – Adaptive Layout / Seitenverhältnisse (in Arbeit)
+
+- [ ] Zusätzliche adaptive CSS-Schicht nach den bestehenden Mobile-/Tablet-Regeln integrieren: fließende Seitenabstände, 320-px-Untergrenze, `svh`/`dvh`, schmale Split-Screen-Fenster, große/ultr breite Displays, Hochformat und kurze Querformat-Ansichten.
+- [ ] Root-Import und CSS-Vertragsregression ergänzen; vorhandene vier Navigationslayouts, sechs Designstile, 13 Farbwelten und App-Funktionen unverändert lassen.
+- [ ] Automatisierte Tests, TypeScript, Lint und Produktionsbuild ausführen; anschließend PR-/CI-Status dokumentieren.
+- [ ] Echte Geräte-/Browserabnahme (320/360/390 px, iPad Hoch-/Querformat, Laptop, 16:9/21:9) separat bestätigen; GitHub-Änderung ist keine Live-Veröffentlichung.
+
+**Changelog 2026-11-18:** GPT-6/OpenAI hat den Auftrag zur Verbesserung der Responsivität übernommen. Vorhandene `src/ai-responsive.css`- und `src/alo-mobile.css`-Regeln sowie den Root-Stylesheet-Import geprüft. Es wurde ein eigener Feature-Branch begonnen; die adaptive CSS-Schicht und Regressionen sind zur Umsetzung vorgesehen. Noch keine Geräteabnahme oder Live-Veröffentlichung.
