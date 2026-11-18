@@ -136,3 +136,66 @@
 @media (prefers-reduced-motion: reduce) {
   .alo-system-chrome *, .alo-system-dialog * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+
+/* The glass language extends from system chrome into the existing app surfaces. */
+html[data-design-style="hig"] .authenticated-shell .alo-module-surface main :is(section, article, aside, div)[class*="rounded-2xl"][class*="border"],
+html[data-design-style="hig"] .authenticated-shell .alo-module-surface main :is(section, article, aside, div)[class*="rounded-3xl"][class*="border"] {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent) !important;
+  background-color: color-mix(in srgb, var(--card) 76%, transparent) !important;
+  -webkit-backdrop-filter: saturate(1.3) blur(22px);
+  backdrop-filter: saturate(1.3) blur(22px);
+  box-shadow: 0 10px 30px color-mix(in srgb, #000 9%, transparent);
+}
+
+.alo-theme-mode-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+.alo-theme-mode-options button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--background) 45%, var(--card));
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.alo-theme-mode-options button[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
+}
+.alo-theme-mode-options svg { width: 0.9rem; height: 0.9rem; color: var(--primary); }
+.alo-custom-accent-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+  margin-bottom: 0.65rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.95rem;
+  background: color-mix(in srgb, var(--background) 45%, var(--card));
+}
+.alo-custom-accent-control span { display: grid; gap: 0.15rem; }
+.alo-custom-accent-control strong { font-size: 0.78rem; }
+.alo-custom-accent-control small { color: var(--muted-foreground); font-size: 0.68rem; }
+.alo-custom-accent-control input[type="color"] {
+  width: 2.8rem;
+  min-width: 2.8rem;
+  height: 2.35rem;
+  min-height: 2.35rem;
+  padding: 0.18rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: var(--card);
+  cursor: pointer;
+}

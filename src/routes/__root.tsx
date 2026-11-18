@@ -27,7 +27,7 @@ import aloVisualRefreshCss from "../alo-visual-refresh.css?url";
 import aloSitewideRedesignCss from "../alo-sitewide-redesign.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
-import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
+import { applyTheme, getStoredTheme, getStoredThemeMode, isThemeId } from "@/lib/theme";
 import { applyMenuAccent, getStoredMenuAccent, MENU_ACCENT_STORAGE_KEY } from "@/lib/menu-accent";
 import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
 import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
@@ -215,6 +215,15 @@ function RootComponent() {
       window.removeEventListener("np-theme-change", syncMenuAccent);
       window.removeEventListener("alo-menu-accent-change", syncMenuAccent);
     };
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const syncSystemAppearance = () => {
+      if (getStoredThemeMode() === "system") applyTheme(getStoredTheme());
+    };
+    media.addEventListener("change", syncSystemAppearance);
+    return () => media.removeEventListener("change", syncSystemAppearance);
   }, []);
 
   useEffect(() => {

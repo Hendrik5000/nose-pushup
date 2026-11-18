@@ -25,7 +25,17 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { applyTheme, getStoredTheme, THEMES, type ThemeId } from "@/lib/theme";
+import {
+  applyCustomAccent,
+  applyTheme,
+  applyThemeMode,
+  getStoredCustomAccent,
+  getStoredTheme,
+  getStoredThemeMode,
+  THEMES,
+  type ThemeId,
+  type ThemeMode,
+} from "@/lib/theme";
 
 const APP_SHORTCUTS = [
   { to: "/", label: "Startseite", icon: House, description: "Dein Alo-Homescreen" },
@@ -56,6 +66,10 @@ export function AloSystemChrome() {
   const [appsOpen, setAppsOpen] = useState(false);
   const [controlOpen, setControlOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeId>(getStoredTheme);
+  const [themeMode, setThemeMode] = useState<ThemeMode>(getStoredThemeMode);
+  const [customAccent, setCustomAccent] = useState(
+    () => getStoredCustomAccent() ?? THEMES.find((item) => item.id === getStoredTheme())?.swatch[0] ?? "#9bddff",
+  );
   const [online, setOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine,
   );
@@ -65,7 +79,15 @@ export function AloSystemChrome() {
   useEffect(() => {
     const updateNetwork = () => setOnline(navigator.onLine);
     const updateFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
-    const updateTheme = () => setTheme(getStoredTheme());
+    const updateTheme = () => {
+      setTheme(getStoredTheme());
+      setThemeMode(getStoredThemeMode());
+      setCustomAccent(
+        getStoredCustomAccent() ??
+          THEMES.find((item) => item.id === getStoredTheme())?.swatch[0] ??
+          "#9bddff",
+      );
+    };
     window.addEventListener("online", updateNetwork);
     window.addEventListener("offline", updateNetwork);
     window.addEventListener("np-theme-change", updateTheme);
@@ -100,9 +122,26 @@ export function AloSystemChrome() {
   };
 
   const selectTheme = (id: ThemeId) => {
+    applyCustomAccent(null);
     applyTheme(id);
     setTheme(id);
+    setCustomAccent(THEMES.find((item) => item.id === id)?.swatch[0] ?? "#9bddff");
     setFeedback(`${THEMES.find((item) => item.id === id)?.label ?? "Design"} aktiviert.`);
+  };
+
+  const selectThemeMode = (mode: ThemeMode) => {
+    applyThemeMode(mode);
+    setThemeMode(mode);
+    setFeedback(
+      mode === "system" ? "Alo folgt jetzt deiner Geräteeinstellung." :
+      mode === "light" ? "Heller Modus aktiviert." : "Dunkler Modus aktiviert.",
+    );
+  };
+
+  const selectCustomAccent = (color: string) => {
+    applyCustomAccent(color);
+    setCustomAccent(color);
+    setFeedback("Eigene Akzentfarbe übernommen.");
   };
 
   return (
@@ -182,7 +221,27 @@ export function AloSystemChrome() {
           </section>
 
           <section className="alo-control-section">
-            <div className="alo-control-section-heading"><div><h3>Design & Farben</h3><p>Wähle eine deiner Alo-Farbwelten.</p></div><SunMoon aria-hidden="true" /></div>
+            <div className="alo-control-section-heading"><div><h3>Darstellung</h3><p>Automatisch oder mit festem Hell-/Dunkel-Modus.</p></div><SunMoon aria-hidden="true" /></div>
+            <div className="alo-theme-mode-options" role="group" aria-label="Darstellungsmodus auswählen">
+              {([
+                { id: "system", label: "Automatisch" },
+                { id: "light", label: "Hell" },
+                { id: "dark", label: "Dunkel" },
+              ] as const).map((option) => (
+                <button key={option.id} type="button" onClick={() => selectThemeMode(option.id)} aria-pressed={themeMode === option.id}>
+                  {option.label}
+                  {themeMode === option.id && <Check aria-hidden="true" />}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="alo-control-section">
+            <div className="alo-control-section-heading"><div><h3>Design & Farben</h3><p>Wähle eine Alo-Farbwelt oder eine eigene Akzentfarbe.</p></div><SunMoon aria-hidden="true" /></div>
+            <label className="alo-custom-accent-control">
+              <span><strong>Eigene Akzentfarbe</strong><small>Frei wählbar und auf Alo angewendet</small></span>
+              <input type="color" value={customAccent} onChange={(event) => selectCustomAccent(event.target.value)} aria-label="Eigene Akzentfarbe wählen" />
+            </label>
             <div className="alo-theme-grid" role="group" aria-label="Alo-Farbwelt auswählen">
               {THEMES.map((item) => (
                 <button key={item.id} type="button" className="alo-theme-option" onClick={() => selectTheme(item.id)} aria-pressed={theme === item.id}>

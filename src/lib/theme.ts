@@ -13,7 +13,7 @@ export type ThemeId =
   | "contrast"
   | "glacier";
 
-export type ThemeMode = "light" | "dark";
+export type ThemeMode = "system" | "light" | "dark";
 
 export interface ThemeDefinition {
   id: ThemeId;
@@ -177,11 +177,63 @@ export function getStoredTheme(): ThemeId {
   }
 }
 
-/** Background color for the browser/system UI theme-color metadata. */
+const THEME_MODE_STORAGE_KEY = "alo-theme-mode";
+const CUSTOM_ACCENT_STORAGE_KEY = "alo-custom-accent";
+
+export function isThemeMode(value: unknown): value is ThemeMode {
+  return value === "system" || value === "light" || value === "dark";
+}
+
+export function getStoredThemeMode(): ThemeMode {
+  if (typeof window === "undefined") return "system";
+  try {
+    const value = window.localStorage.getItem(THEME_MODE_STORAGE_KEY);
+    return isThemeMode(value) ? value : "system";
+  } catch {
+    return "system";
+  }
+}
+
+export function isCustomAccentColor(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
+}
+
+export function getStoredCustomAccent(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = window.localStorage.getItem(CUSTOM_ACCENT_STORAGE_KEY);
+    return isCustomAccentColor(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function effectiveMode(mode: ThemeMode, fallback: ThemeMode): "light" | "dark" {
+  if (mode !== "system") return mode;
+  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return fallback === "light" ? "light" : "dark";
+}
+
+function accentForeground(hex: string): string {
+  const channels = hex.slice(1).match(/.{2}/g)?.map((part) => parseInt(part, 16)) ?? [0, 0, 0];
+  const brightness = (channels[0] * 299 + channels[1] * 587 + channels[2] * 114) / 1000;
+  return brightness > 150 ? "#102033" : "#ffffff";
+}
+
+/** Background color for browser/system UI metadata, following the active appearance mode. */
 function updateThemeColorMeta(theme: ThemeId) {
   if (typeof document === "undefined") return;
-  const color = THEMES.find((definition) => definition.id === theme)?.background;
-  if (!color) return;
+  const definition = THEMES.find((item) => item.id === theme);
+  if (!definition) return;
+  const mode = getStoredThemeMode();
+  const color =
+    mode === "system" && typeof window !== "undefined" && typeof window.matchMedia !== "function"
+      ? definition.background
+      : effectiveMode(mode, definition.mode) === "light"
+        ? "#f4f8ff"
+        : "#14181e";
   document.querySelectorAll('meta[name="theme-color"]').forEach((element) => element.remove());
   const meta = document.createElement("meta");
   meta.setAttribute("name", "theme-color");
@@ -191,7 +243,16 @@ function updateThemeColorMeta(theme: ThemeId) {
 
 export function applyTheme(theme: ThemeId) {
   if (typeof document === "undefined") return;
+  const definition = THEMES.find((item) => item.id === theme) ?? THEMES[0]!;
+  const mode = getStoredThemeMode();
+  const customAccent = getStoredCustomAccent();
+  const accent = customAccent ?? definition.swatch[0];
   document.documentElement.dataset["theme"] = theme;
+  document.documentElement.dataset["themeMode"] = mode;
+  document.documentElement.style.setProperty("--primary", accent);
+  document.documentElement.style.setProperty("--ring", accent);
+  document.documentElement.style.setProperty("--glow-1", `color-mix(in srgb, ${accent} 24%, transparent)`);
+  document.documentElement.style.setProperty("--primary-foreground", accentForeground(accent));
   updateThemeColorMeta(theme);
   try {
     window.localStorage.setItem(STORAGE_KEY, theme);
@@ -201,4 +262,25 @@ export function applyTheme(theme: ThemeId) {
   if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
     window.dispatchEvent(new Event("np-theme-change"));
   }
+}
+
+export function applyThemeMode(mode: ThemeMode) {
+  if (!isThemeMode(mode)) return;
+  try {
+    window.localStorage.setItem(THEME_MODE_STORAGE_KEY, mode);
+  } catch {
+    // The current page can still use the selected mode when storage is blocked.
+  }
+  applyTheme(getStoredTheme());
+}
+
+export function applyCustomAccent(color: string | null) {
+  if (color !== null && !isCustomAccentColor(color)) return;
+  try {
+    if (color) window.localStorage.setItem(CUSTOM_ACCENT_STORAGE_KEY, color);
+    else window.localStorage.removeItem(CUSTOM_ACCENT_STORAGE_KEY);
+  } catch {
+    // The accent still applies for this page when storage is blocked.
+  }
+  applyTheme(getStoredTheme());
 }
