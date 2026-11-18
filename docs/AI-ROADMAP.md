@@ -514,3 +514,13 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 - Routen-Verfeinerungen dieser Runde: Marketplace, Health, Nexus Chat, Mira, Training sowie globale Bereichsnavigation und App-Menürahmen.
 - CI-Grün ist noch keine visuelle Freigabe: Browser-/Screenshotabnahme aller 47 Routendateien und Geräteprüfung auf Smartphone, Tablet, Laptop und großen Displays stehen noch aus.
 - Kein PR, kein Merge und kein Live-Publish in diesem Statusupdate.
+
+
+## Abschlussstatus 2026-11-18 – Alo Modern PR-Vorbereitung
+
+- Der endgültige PR-Branch ist `gpt6/alo-modern-synced-20261118`. Er wurde direkt auf dem aktuellen `main` (`9adad0f2a9dfc8cc0dc50b96266a9a9d247e82ce`) aufgebaut, damit der PR keine bereits gemergten Änderungen erneut enthält.
+- Der Vergleich `main...gpt6/alo-modern-synced-20261118` ist sauber: 0 Commits Rückstand, nur die neuen Alo-Modern-Änderungen.
+- Aktueller Code-Stand vor diesem Dokumentationsupdate: `181a17f29888c54d851f6db42932abdd8c022b93`. Geänderte Bereiche: gemeinsames Designsystem, einheitliche Designauswahl, HomeAppMenuLayout, Marketplace, Health, Mira/Nexus/Training-Oberflächen, Profile, Clubs, Ranglisten, Übungen, Calisthenics, Laufen, Battle-/Saison-/Alarmseiten und Spiele-Hub sowie Regressionstests.
+- GitHub Actions Run `44350388516` vollständig erfolgreich: Lint, Regressionstests, TypeScript und Produktionsbuild.
+- Der PR wird als Draft eröffnet, weil die Code-/CI-Prüfung abgeschlossen ist, aber Browser-Screenshots und echte Geräteabnahme (Smartphone, Tablet, Laptop und große Displays) hier nicht durchgeführt werden konnten. Diese Grenze wird im PR ausdrücklich festgehalten.
+- Kein Merge und kein Lovable-Live-Publish; die Veröffentlichung bleibt separat.
