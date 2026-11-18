@@ -474,3 +474,16 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Ãnderung, keine SQL-AusfÃ�
 - Die Navigation erhält eine zurückhaltende, glasartige Oberfläche mit klarer Aktiv-Markierung. Bestehende Farbthemen bleiben erhalten; die neue visuelle Sprache verwendet die vorhandenen Theme-Tokens.
 - Animationen bleiben dezent und schnell; prefers-reduced-motion wird weiterhin respektiert.
 - Offen: CI vollständig grün bekommen, die Marketplace-Textregressionen prüfen und die tatsächlichen Seiten auf verschiedenen Viewports visuell durchgehen. Keine Live-Veröffentlichung ohne Review.
+
+
+## Statusupdate 2026-11-18 – Route-spezifische Verfeinerung Alo Modern
+
+- Das vereinheitlichte Design wird weiter auf tatsächliche App-Oberflächen angewendet, nicht nur als globale CSS-Schicht.
+- `HomeAppMenuLayout` erhält einen aufgeräumten, breiteren Sidebar-/Content-Rahmen; die zugehörige Regressionserwartung wurde an die neue 240-px-Sidebar angepasst.
+- Marketplace: farblich beruhigter Feature-Bereich, bessere Typografie und Korrektur beschädigter Umlaute im Detaildialog.
+- Alo Health: beide vorhandenen Layout-Varianten erhalten denselben Hook für die neue Health-Oberflächenhierarchie; Datenlogik bleibt unverändert.
+- Nexus Chat: ruhigere Arbeitsfläche, klarerer Nachrichten-Header und Composer mit mehr Raum.
+- Globale Bereichsnavigation: gruppierte, zurückhaltende Dialogoberfläche statt stark leuchtender, dichter Menülisten.
+- Mira: die aktive einheitliche Chatansicht erhält auf Desktop mehr nutzbare Breite; mobile Breite und Safe Areas bleiben berücksichtigt.
+- Lint war in Run `44344536375` erfolgreich. Regressionstests zeigten veraltete Sidebar-Breitenannahmen und beschädigte Marketplace-Texte; beide Ursachen wurden bearbeitet. CI für den aktuellen Head `7c0e6593d4a3ec901db2f52425fde904fd37a676` läuft in Run `44345492252`.
+- Noch offen: CI vollständig grün, weitere Routen individuell überarbeiten, visuelle Browser-/Screenshotabnahme bei mehreren Viewports und echte Geräteprüfung. Kein PR, kein Merge und kein Live-Publish.
