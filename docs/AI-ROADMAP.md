@@ -451,3 +451,14 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Ãnderung, keine SQL-AusfÃ�
 - Letzter Code-Commit `909d51e517ccb52ca2b16d980b62602b9b6bed94`; nachfolgender Dokumentations-Commit `440264aed400731662b95b1b5f65fc93f8820a6c`. GitHub-CI für den Code-Commit `909d51e...` läuft im Run `44330185487`; der neue Dokumentations-Commit löst eine weitere CI-Prüfung aus.
 - Noch offen: jede Route einzeln visuell durchgehen; eigene Header-/Hero-/Content-Hierarchie, Filter/Tabellen, Empty-/Loading-/Error-States, Formulare und Detailansichten prüfen; Überlappungen und Kontrast in allen Themes/Styles prüfen; Screenshots und reale Geräteabnahme für Smartphone, Tablet, Laptop und große Displays. Keine Behauptung einer vollständigen visuellen Abnahme, solange diese Schritte fehlen.
 - Änderungen bleiben auf `gpt6/fix-alo-ui-lint-20261118`. Kein PR, kein Merge und kein Live-Publish in diesem Statusupdate.
+
+
+## Statusupdate 2026-11-18 – Motion- und Interaktionssystem
+
+- Ergänzt wurde ein gemeinsames Motion-System für alle Alo-Routen auf Basis der bestehenden Theme-Tokens.
+- Seiteninhalte erhalten einen dezenten, leicht gestaffelten Einstieg; Karten, Verzeichnis-Einträge und interaktive Flächen reagieren mit kurzen, natürlichen Übergängen.
+- Buttons bekommen eine unmittelbare Press-Reaktion; Dialoge und Menüs werden weich eingeblendet.
+- Fortschrittsanzeigen erhalten eine dezente Ankunftsanimation.
+- `prefers-reduced-motion` wird respektiert; Animationen werden bei entsprechender Systemeinstellung deaktiviert.
+- Die bestehende Farbpalette, die sieben Designstile und die vorhandenen App-Funktionen bleiben unverändert.
+- Offen: CI-Ergebnis abwarten, die noch offenen Einzelrouten visuell prüfen und Animationen auf echten Geräten hinsichtlich Performance und Bewegungsgefühl validieren. Dieser Durchgang ist ein gemeinsames Fundament und noch kein abgeschlossener Redesign-Abschluss aller 47 Routen.
