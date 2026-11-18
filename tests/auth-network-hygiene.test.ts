@@ -28,7 +28,10 @@ test("authenticated route uses its persisted client session for the UI gate", ()
 test("sign-in redirect and optional root theme do not force auth user fetches", () => {
   assert.match(authRoute, /supabase\.auth\.getSession\(\)/);
   assert.doesNotMatch(authRoute, /supabase\.auth\.getUser\(\)/);
-  assert.match(authRoute, /const handleOAuth = async[\s\S]*?try \{[\s\S]*?signInWithOAuth[\s\S]*?catch \(err\)[\s\S]*?translateAuthError[\s\S]*?finally \{[\s\S]*?setLoading\(false\)/);
+  assert.match(
+    authRoute,
+    /const handleOAuth = async[\s\S]*?try \{[\s\S]*?signInWithOAuth[\s\S]*?catch \(err\)[\s\S]*?translateAuthError[\s\S]*?finally \{[\s\S]*?setLoading\(false\)/,
+  );
   assert.match(rootRoute, /supabase\.auth\.getSession\(\)/);
   assert.doesNotMatch(rootRoute, /supabase\.auth\.getUser\(\)/);
   assert.match(rootRoute, /Theme loading is optional/);
