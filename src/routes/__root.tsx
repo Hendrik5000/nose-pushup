@@ -24,6 +24,7 @@ import aiReferenceCss from "../ai-reference.css?url";
 import aiResponsiveCss from "../ai-responsive.css?url";
 import adaptiveLayoutCss from "../adaptive-layout.css?url";
 import aloVisualRefreshCss from "../alo-visual-refresh.css?url";
+import aloSitewideRedesignCss from "../alo-sitewide-redesign.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
