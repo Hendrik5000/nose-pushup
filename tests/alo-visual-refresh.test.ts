@@ -77,6 +77,10 @@ test("secondary routes expose explicit hooks for their shared Alo Modern page tr
       new URL("../src/routes/_authenticated/battle-league.tsx", import.meta.url),
       "utf8",
     ),
+    battleDetail: readFileSync(
+      new URL("../src/routes/_authenticated/battle.$id.tsx", import.meta.url),
+      "utf8",
+    ),
     calisthenics: readFileSync(
       new URL("../src/routes/_authenticated/calisthenics.tsx", import.meta.url),
       "utf8",
@@ -114,6 +118,7 @@ test("secondary routes expose explicit hooks for their shared Alo Modern page tr
     [routes.alarm, "alo-alarm-page"],
     [routes.battle, "alo-battle-page"],
     [routes.battleLeague, "alo-battle-league-page"],
+    [routes.battleDetail, "alo-battle-detail-page"],
     [routes.calisthenics, "alo-calisthenics-page"],
     [routes.clubs, "alo-clubs-page"],
     [routes.exercises, "alo-exercises-page"],
