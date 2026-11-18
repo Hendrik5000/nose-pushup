@@ -2,116 +2,70 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const css = readFileSync(new URL("../src/alo-visual-refresh.css", import.meta.url), "utf8");
+const css = readFileSync(new URL("../src/alo-sitewide-redesign.css", import.meta.url), "utf8");
 const root = readFileSync(new URL("../src/routes/__root.tsx", import.meta.url), "utf8");
-const home = readFileSync(
-  new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
-  "utf8",
-);
-const marketplace = readFileSync(
-  new URL("../src/components/marketplace/MarketplaceAppCatalog.tsx", import.meta.url),
-  "utf8",
-);
-const directory = readFileSync(
-  new URL("../src/components/HomeAppMenuLayout.tsx", import.meta.url),
-  "utf8",
-);
-const games = readFileSync(new URL("../src/routes/games.tsx", import.meta.url), "utf8");
+const marketplace = readFileSync(new URL("../src/components/marketplace/MarketplaceAppCatalog.tsx", import.meta.url), "utf8");
 
-test("the visual refresh is loaded after the adaptive layout layer", () => {
-  assert.ok(root.indexOf("adaptiveLayoutCss") < root.indexOf("aloVisualRefreshCss"));
-  assert.ok(root.includes("href: aloVisualRefreshCss"));
+test("site-wide redesign is loaded globally after the existing visual layers", () => {
+  assert.ok(root.indexOf("aloVisualRefreshCss") < root.indexOf("aloSitewideRedesignCss"));
+  assert.match(root, /href: aloSitewideRedesignCss/);
 });
 
-test("the visual refresh follows selected Alo design styles and existing tokens", () => {
-  for (const token of [
-    "html[data-design-style]",
-    "var(--primary)",
-    "var(--card)",
-    "var(--border)",
-    "var(--design-card-radius",
-  ]) {
-    assert.ok(css.includes(token), `missing design token usage: ${token}`);
+test("site-wide surfaces inherit active theme tokens instead of defining a new palette", () => {
+  for (const token of ["--background", "--foreground", "--card", "--border", "--primary", "--ring"]) {
+    assert.ok(css.includes(`var(${token})`), `missing theme token ${token}`);
   }
-  assert.ok(!css.includes("--primary:"));
-  assert.ok(!css.includes("--accent:"));
+  assert.doesNotMatch(css, /#[0-9a-fA-F]{6}/);
 });
 
-test("the home screen has stable hooks for the visual hierarchy and app tiles", () => {
-  assert.ok(home.includes('data-alo-ui-refresh="home"'));
+test("all authenticated pages receive shared layout, card, control and navigation styling", () => {
   for (const selector of [
-    ".alo-visual-refresh .alo-tablet-home-hub",
-    "[data-home-widget-id]",
-    "[data-home-app-id]",
-    '[aria-label="Dein Tag"]',
-  ]) {
-    assert.ok(css.includes(selector), `missing home selector: ${selector}`);
-  }
-});
-
-test("shared navigation, cards and controls receive consistent visual treatment", () => {
-  for (const selector of [
-    ".alo-page-sidebar",
-    ".app-homebar",
-    ".alo-page-sidebar-content :is(",
-    "textarea, select",
+    ".alo-module-surface main",
+    ".alo-page-sidebar-link",
+    ".dashboard-widget-grid",
+    ".app-homebar .homebar-items",
+    '[data-slot=\"dialog-content\"]',
+    '[data-slot=\"sheet-content\"]',
     ":focus-visible",
   ]) {
-    assert.ok(css.includes(selector), `missing shared UI selector: ${selector}`);
+    assert.ok(css.includes(selector), `missing shared site selector ${selector}`);
   }
 });
 
-test("Mira, Nexus Chat and Alo Health receive app-specific visual refinement", () => {
+test("Marketplace, Browser and settings have dedicated discovery and navigation treatments", () => {
   for (const selector of [
-    ".sport-ai-chat-mode .mira-chat-suggestion",
-    ".alo-mira-sketch-header",
-    ".community-conversation",
-    ".community-list-heading",
-    ".community-search",
-    ".health-classic-dashboard .health-classic-hero",
-    ".health-classic-widget-card",
-    ".sport-health-page .health-daily-hero",
-  ]) {
-    assert.ok(css.includes(selector), `missing app-specific selector: ${selector}`);
-  }
-});
-
-test("Admin, Browser, Settings, Profile, Postfach and Training share the refreshed UI", () => {
-  for (const selector of [
-    ".alo-admin-page > header",
+    ".alo-marketplace-section",
     ".alo-marketplace-search",
     ".alo-marketplace-categories",
-    ".alo-marketplace-section",
+    ".alo-marketplace-preview",
     ".alo-browser-tabbar",
-    ".alo-browser-toolbar",
-    ".settings-category-screen",
-    ".settings-category-group",
-    ".settings-profile-card",
-    ".alo-postfach-page article",
-    ".alo-training-page .training-progress",
+    ".settings-category-row",
   ]) {
-    assert.ok(css.includes(selector), `missing app-area selector: ${selector}`);
+    assert.ok(css.includes(selector), `missing page-specific selector ${selector}`);
   }
-  for (const hook of [
-    "alo-marketplace-search",
-    "alo-marketplace-categories",
-    "alo-marketplace-section",
+  assert.match(marketplace, /alo-marketplace-preview/);
+  assert.match(marketplace, /Stilisierte Darstellung — Alo-Apps nutzen keine externen Screenshots\./);
+});
+
+test("sports, football, training, profile and authentication pages share page-specific patterns", () => {
+  for (const selector of [
+    ".sport-page-intro",
+    ".sport-section-label",
+    ".sport-focus-card",
+    ".sport-feature-card",
+    ".alo-training-focus",
+    ".alo-focus-toolbar",
+    ".alo-session-strip",
+    ".sport-public-profile",
+    ".sport-auth-page",
+    ".run-stat-grid",
   ]) {
-    assert.ok(marketplace.includes(hook), `missing Marketplace hook: ${hook}`);
+    assert.ok(css.includes(selector), `missing page family selector ${selector}`);
   }
 });
 
-test("motion stays subtle and respects reduced-motion preferences", () => {
-  assert.ok(css.includes("@media (hover: hover) and (pointer: fine)"));
-  assert.ok(css.includes("prefers-reduced-motion: reduce"));
-});
-
-
-test("shared directory pages and the standalone games hub have explicit whole-site design hooks", () => {
-  assert.match(directory, /alo-site-directory-page/);
-  assert.match(games, /alo-games-page/);
-  assert.match(css, /\.alo-site-directory-page/);
-  assert.match(css, /\.alo-games-page/);
-  assert.match(css, /alo-site-directory-page > header/);
-  assert.match(css, /games-title/);
+test("responsive spacing and reduced-motion preferences remain respected", () => {
+  assert.match(css, /max-width: 640px/);
+  assert.match(css, /min-width: 900px/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
 });
