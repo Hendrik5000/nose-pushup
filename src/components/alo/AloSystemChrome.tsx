@@ -18,6 +18,7 @@ import {
   Wifi,
   WifiOff,
   X,
+  Zap,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -39,6 +40,8 @@ const APP_SHORTCUTS = [
   { to: "/exercises", label: "Alo Health", icon: Dumbbell, description: "Gesundheit und Übungen" },
   { to: "/marketplace", label: "Marketplace", icon: Store, description: "Apps und Erweiterungen" },
   { to: "/profile", label: "Einstellungen", icon: Settings2, description: "Alo anpassen" },
+  { to: "/areas", label: "Alle Bereiche", icon: Grid2X2, description: "Die komplette App-Bibliothek" },
+  { to: "/tools", label: "Alo-Werkzeuge", icon: Zap, description: "Werkzeuge und Schnellzugriffe" },
 ] as const;
 
 function pageLabel(pathname: string) {
