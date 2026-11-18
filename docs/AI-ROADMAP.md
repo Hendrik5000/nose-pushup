@@ -462,3 +462,15 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Ãnderung, keine SQL-AusfÃ�
 - `prefers-reduced-motion` wird respektiert; Animationen werden bei entsprechender Systemeinstellung deaktiviert.
 - Die bestehende Farbpalette, die sieben Designstile und die vorhandenen App-Funktionen bleiben unverändert.
 - Offen: CI-Ergebnis abwarten, die noch offenen Einzelrouten visuell prüfen und Animationen auf echten Geräten hinsichtlich Performance und Bewegungsgefühl validieren. Dieser Durchgang ist ein gemeinsames Fundament und noch kein abgeschlossener Redesign-Abschluss aller 47 Routen.
+
+
+## Statusupdate 2026-11-18 – Alo Modern: einheitliches Premium-Redesign
+
+- Die bisherigen sieben auswählbaren Designvarianten werden durch ein einheitliches Designsystem ersetzt. Bereits gespeicherte Altwerte werden beim Laden auf hig / Alo Modern migriert; alte Kennungen bleiben für Kompatibilität lesbar.
+- Die Einstellungsansicht bietet keine veralteten Stil-Kacheln mehr, sondern zeigt das aktive einheitliche Design.
+- HomeAppMenuLayout rendert Menüseiten nur noch einmal. Die parallelen Classic-/Performance-Varianten werden aus diesem gemeinsamen Menürahmen entfernt.
+- Das globale Layout erhält mehr nutzbaren Weißraum, größere und konsistente Seitenränder, eine klarere Typografie-Hierarchie, ruhigere Karten, modernisierte Eingabefelder und hochwertigere Dialog-/Menüoberflächen.
+- Das bisherige aggressive overflow-wrap: anywhere wird für den App-Shell-Bereich neutralisiert, damit Überschriften und normale Texte nicht unnötig auseinandergerissen oder gequetscht werden.
+- Die Navigation erhält eine zurückhaltende, glasartige Oberfläche mit klarer Aktiv-Markierung. Bestehende Farbthemen bleiben erhalten; die neue visuelle Sprache verwendet die vorhandenen Theme-Tokens.
+- Animationen bleiben dezent und schnell; prefers-reduced-motion wird weiterhin respektiert.
+- Offen: CI vollständig grün bekommen, die Marketplace-Textregressionen prüfen und die tatsächlichen Seiten auf verschiedenen Viewports visuell durchgehen. Keine Live-Veröffentlichung ohne Review.
