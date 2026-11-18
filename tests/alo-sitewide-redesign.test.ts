@@ -4,7 +4,10 @@ import test from "node:test";
 
 const css = readFileSync(new URL("../src/alo-sitewide-redesign.css", import.meta.url), "utf8");
 const root = readFileSync(new URL("../src/routes/__root.tsx", import.meta.url), "utf8");
-const marketplace = readFileSync(new URL("../src/components/marketplace/MarketplaceAppCatalog.tsx", import.meta.url), "utf8");
+const marketplace = readFileSync(
+  new URL("../src/components/marketplace/MarketplaceAppCatalog.tsx", import.meta.url),
+  "utf8",
+);
 
 test("site-wide redesign is loaded globally after the existing visual layers", () => {
   assert.ok(root.indexOf("aloVisualRefreshCss") < root.indexOf("aloSitewideRedesignCss"));
@@ -12,7 +15,14 @@ test("site-wide redesign is loaded globally after the existing visual layers", (
 });
 
 test("site-wide surfaces inherit active theme tokens instead of defining a new palette", () => {
-  for (const token of ["--background", "--foreground", "--card", "--border", "--primary", "--ring"]) {
+  for (const token of [
+    "--background",
+    "--foreground",
+    "--card",
+    "--border",
+    "--primary",
+    "--ring",
+  ]) {
     assert.ok(css.includes(`var(${token})`), `missing theme token ${token}`);
   }
   assert.doesNotMatch(css, /#[0-9a-fA-F]{6}/);
@@ -24,8 +34,8 @@ test("all authenticated pages receive shared layout, card, control and navigatio
     ".alo-page-sidebar-link",
     ".dashboard-widget-grid",
     ".app-homebar .homebar-items",
-    '[data-slot=\"dialog-content\"]',
-    '[data-slot=\"sheet-content\"]',
+    '[data-slot="dialog-content"]',
+    '[data-slot="sheet-content"]',
     ":focus-visible",
   ]) {
     assert.ok(css.includes(selector), `missing shared site selector ${selector}`);
@@ -44,7 +54,10 @@ test("Marketplace, Browser and settings have dedicated discovery and navigation 
     assert.ok(css.includes(selector), `missing page-specific selector ${selector}`);
   }
   assert.match(marketplace, /alo-marketplace-preview/);
-  assert.match(marketplace, /Stilisierte Darstellung — Alo-Apps nutzen keine externen Screenshots\./);
+  assert.match(
+    marketplace,
+    /Stilisierte Darstellung — Alo-Apps nutzen keine externen Screenshots\./,
+  );
 });
 
 test("sports, football, training, profile and authentication pages share page-specific patterns", () => {
