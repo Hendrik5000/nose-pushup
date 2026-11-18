@@ -1625,3 +1625,36 @@ html[data-design-style] .alo-training-focus .alo-training-secondary {
     padding-inline: max(0.9rem, env(safe-area-inset-left));
   }
 }
+
+
+html[data-design-style] .alo-battle-detail-page {
+  width: min(100%, 64rem);
+  max-width: 64rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2rem);
+}
+html[data-design-style] .alo-battle-detail-page > section,
+html[data-design-style] .alo-battle-detail-page > div {
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 1.35rem;
+}
+html[data-design-style] .sport-auth-page {
+  width: min(100%, 78rem);
+  margin-inline: auto;
+  gap: clamp(2rem, 5vw, 4.5rem);
+}
+html[data-design-style] .sport-auth-page > div { min-width: 0; }
+html[data-design-style] .sport-auth-page input,
+html[data-design-style] .sport-auth-page button {
+  min-height: 2.9rem;
+  border-radius: 0.9rem;
+}
+html[data-design-style] .sport-public-profile {
+  width: min(100%, 76rem);
+  max-width: 76rem;
+}
+@media (max-width: 640px) {
+  html[data-design-style] .alo-battle-detail-page {
+    padding-inline: max(0.9rem, env(safe-area-inset-left));
+  }
+}
