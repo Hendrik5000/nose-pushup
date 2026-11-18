@@ -524,3 +524,53 @@ html[data-design-style] .alo-module-surface :is(.settings-category-row, [data-se
     justify-content: flex-start;
   }
 }
+
+
+/* Dynamic battle and workout detail flows. */
+html[data-design-style] .alo-module-surface .sport-only > .sport-focus-card,
+html[data-design-style] .alo-module-surface .alo-training-focus > section {
+  border-color: var(--alo-site-border);
+  border-radius: clamp(1.25rem, 2.8vw, 2rem);
+  background: linear-gradient(150deg, var(--alo-site-panel-raised), var(--alo-site-panel));
+  box-shadow: var(--alo-site-shadow);
+}
+
+html[data-design-style] .alo-module-surface .alo-training-focus {
+  gap: clamp(1rem, 2.5vw, 1.6rem);
+}
+
+html[data-design-style] .alo-module-surface .alo-focus-toolbar {
+  border-color: var(--alo-site-border);
+  background: color-mix(in srgb, var(--card) 92%, var(--background));
+  box-shadow: var(--alo-site-shadow-soft);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+html[data-design-style] .alo-module-surface .alo-session-strip {
+  border-color: var(--alo-site-border);
+  background: var(--alo-site-panel);
+}
+
+html[data-design-style] .alo-module-surface .sport-focus-card :is(button, a) {
+  min-height: 2.8rem;
+}
+
+html[data-design-style] .alo-module-surface main:has(.alo-focus-toolbar) {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+html[data-design-style] .alo-module-surface main:has(.alo-focus-toolbar) :is(h1, h2) {
+  letter-spacing: -0.045em;
+}
+
+html[data-design-style] .alo-module-surface main:has(.alo-focus-toolbar) [role="timer"],
+html[data-design-style] .alo-module-surface main:has(.alo-focus-toolbar) .tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+html[data-design-style] .alo-module-surface main.max-w-md > .sport-only section[class*="rounded-3xl"] {
+  border-color: var(--alo-site-border);
+  box-shadow: var(--alo-site-shadow-soft);
+}
