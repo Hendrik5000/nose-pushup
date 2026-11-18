@@ -396,12 +396,12 @@ export function MarketplaceAppCatalog({
                         ))}
                     </div>
                     <p className="mt-2 px-1 text-[10px] text-muted-foreground">
-                      Stilisierte Darstellung â Alo-Apps nutzen keine externen Screenshots.
+                      Stilisierte Darstellung — Alo-Apps nutzen keine externen Screenshots.
                     </p>
                   </section>
                   {similarApps.length > 0 && (
-                    <section className="mt-7" aria-label={`Ãhnliche Apps wie ${selected.name}`}>
-                      <h3 className="text-sm font-bold">Ãhnliche Apps</h3>
+                    <section className="mt-7" aria-label={`Ähnliche Apps wie ${selected.name}`}>
+                      <h3 className="text-sm font-bold">Ähnliche Apps</h3>
                       <div className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1 pb-1">
                         {similarApps.map((plugin) => (
                           <CarouselCard key={plugin.id} plugin={plugin} />
