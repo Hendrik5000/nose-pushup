@@ -41,18 +41,9 @@ export function mergeHealthEntryMetrics(
   const sleepHours = readDraftNumber(draft.sleepHours, "Schlafdauer");
 
   return {
-    steps:
-      steps === null
-        ? (existing?.steps ?? 0)
-        : Math.max(0, Math.min(200_000, steps)),
-    active_kcal:
-      kcal === null
-        ? (existing?.active_kcal ?? 0)
-        : Math.max(0, Math.min(20_000, kcal)),
-    weight_kg:
-      weight === null
-        ? (existing?.weight_kg ?? null)
-        : Math.max(20, Math.min(400, weight)),
+    steps: steps === null ? (existing?.steps ?? 0) : Math.max(0, Math.min(200_000, steps)),
+    active_kcal: kcal === null ? (existing?.active_kcal ?? 0) : Math.max(0, Math.min(20_000, kcal)),
+    weight_kg: weight === null ? (existing?.weight_kg ?? null) : Math.max(20, Math.min(400, weight)),
     sleep_min:
       sleepHours === null
         ? (existing?.sleep_min ?? 0)

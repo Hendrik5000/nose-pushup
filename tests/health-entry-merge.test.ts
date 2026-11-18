@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import {
-  HealthEntryInputError,
-  mergeHealthEntryMetrics,
-} from "../src/lib/health-entry.ts";
+import { HealthEntryInputError, mergeHealthEntryMetrics } from "../src/lib/health-entry.ts";
 
 const existing = { steps: 8200, active_kcal: 430, weight_kg: 67.5, sleep_min: 455 };
 
@@ -15,10 +12,10 @@ test("blank Health fields preserve previously saved daily metrics", () => {
 });
 
 test("partial manual entries update only the fields the user entered", () => {
-  assert.deepEqual(
-    mergeHealthEntryMetrics(existing, { ...emptyDraft, steps: "9000" }),
-    { ...existing, steps: 9000 },
-  );
+  assert.deepEqual(mergeHealthEntryMetrics(existing, { ...emptyDraft, steps: "9000" }), {
+    ...existing,
+    steps: 9000,
+  });
   assert.deepEqual(
     mergeHealthEntryMetrics(existing, { ...emptyDraft, weight: "68.2", sleepHours: "7.5" }),
     { ...existing, weight_kg: 68.2, sleep_min: 450 },
@@ -26,10 +23,12 @@ test("partial manual entries update only the fields the user entered", () => {
 });
 
 test("a new day gets safe defaults for metrics that were not entered", () => {
-  assert.deepEqual(
-    mergeHealthEntryMetrics(null, { ...emptyDraft, steps: "1200" }),
-    { steps: 1200, active_kcal: 0, weight_kg: null, sleep_min: 0 },
-  );
+  assert.deepEqual(mergeHealthEntryMetrics(null, { ...emptyDraft, steps: "1200" }), {
+    steps: 1200,
+    active_kcal: 0,
+    weight_kg: null,
+    sleep_min: 0,
+  });
 });
 
 test("Health metrics are bounded and malformed values are rejected", () => {

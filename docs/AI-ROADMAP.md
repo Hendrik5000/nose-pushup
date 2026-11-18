@@ -554,7 +554,7 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 - Das KI-Rate-Limit liegt weiterhin pro Serverprozess im Arbeitsspeicher und ist keine globale, dauerhafte Mehrinstanzquote. Vor einer größeren Freigabe sind persistente Quoten und Parallelitäts-/Mehrinstanztests erforderlich.
 
 ### Status und nächste Abhängigkeiten
-- PR #198 bleibt Draft und ungemergt. Kein Livegang ist bestätigt.
+- PR #198 wurde am 18.11.2026 um 19:18:43 UTC gemergt (Merge-Commit `fcb77742ff6ab1bf25c52ac6e885f8a2ebb9c247`). Der Merge enthält den geprüften PR-Head `ab574e526b4ea2bfa62e467437348fcbfeb11a59`; spätere Folgecommits `39c0694`, `53e0a86`, `42319f6` und `fabb722` sind nicht Teil des Merges und müssen als separater PR nachgereicht werden. Kein Livegang ist bestätigt.
 - Phase 0 bleibt teilweise offen: Supabase-Migrations-/RLS-Prüfung, Secret-Hygieneprüfung, reale Kernabläufe auf Geräten und vollständige Live-Abnahme fehlen.
 - Nächster technischer Schritt: neuen Folgepatch vollständig durch CI prüfen, danach unabhängige Sicherheitsprüfung des PRs. Vercel-Preview erst nach Ende des Tageslimits erneut prüfen; Supabase-Audit erst nach Behebung des Datenbankzugriffs fortsetzen.
 
@@ -568,4 +568,11 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 ### Health-Datenintegrität – Schutz partieller manueller Einträge
 - Beim manuellen Speichern in Alo Health wurden nicht ausgefüllte Felder zuvor als `0` bzw. `null` in den Tagesdatensatz geschrieben. Dadurch konnten vorhandene Schritte, Kalorien, Schlaf- oder Gewichtswerte desselben Tages unbeabsichtigt überschrieben werden.
 - Der Folgepatch liest nun den vorhandenen Tagesdatensatz und führt nur explizit eingegebene Werte zusammen; leere Felder bleiben erhalten. Profilgewicht wird nur aktualisiert, wenn tatsächlich ein neuer Gewichtswert eingegeben wurde. Ungültige Zahlen erhalten eine konkrete Eingabemeldung.
-- Neue Unit-/Integrationsabdeckung: `src/lib/health-entry.ts`, `tests/health-entry-merge.test.ts`; die Route `_authenticated/health.tsx` nutzt den Merge vor dem Upsert. CI für den vorigen Provider-Patch `42319f6109e70e9ba1f9d020431c234733d9a1ed` ist mit Run `44379822035` vollständig erfolgreich (Lint, 1.052 Tests: 1.050 bestanden, 1 fehlgeschlagen im vorherigen Lauf? Nein: der korrigierte Lauf `44379822035` ist vollständig erfolgreich; die vorherige Testkorrektur ist enthalten). Der Health-Folgepatch selbst braucht einen neuen CI-Lauf.
+- Neue Unit-/Integrationsabdeckung: `src/lib/health-entry.ts`, `tests/health-entry-merge.test.ts`; die Route `_authenticated/health.tsx` nutzt den Merge vor dem Upsert. Der vorangegangene Provider-Patch `42319f6109e70e9ba1f9d020431c234733d9a1ed` wurde mit Run `44379822035` vollständig erfolgreich geprüft (Lint, Regressionstests, TypeScript und Build). Der Health-Folgepatch `fabb7221d6af217b99804673221ca45c3f119091` scheiterte in Run `44380290158` ausschließlich an Prettier-Formatierungen in `src/lib/health-entry.ts` und `tests/health-entry-merge.test.ts`; die gemeldeten Formatstellen sind korrigiert, ein erneuter CI-Lauf steht aus.
+
+
+## Sicherheits- und Merge-Nachtrag 2026-11-18
+- PR #198 ist in `main` integriert: Merge-Commit `fcb77742ff6ab1bf25c52ac6e885f8a2ebb9c247`; aktueller `main`-Head wurde damit verifiziert. Der Merge enthält PR-Head `ab574e...`, nicht die späteren Follow-up-Commits.
+- GitHub Secret Scanning ist für das Repository deaktiviert; Dependabot Alerts sind ebenfalls deaktiviert. Daher gibt es aus diesen Funktionen keine Aussage „keine offenen Funde“ – es fehlt die Erkennung.
+- `main` ist als protected markiert, aber `required_status_checks.enforcement_level` ist `off`, die Checkliste leer und für `main` wurden keine aktiven Rulesets zurückgegeben. CI ist damit nicht als verpflichtende Merge-Bedingung nachgewiesen.
+- Follow-up-Änderungen (OpenRouter-Endpunkt/Provider-Code-Pruning, Text-only-Anhänge, Health-Teilupdate-Schutz) bleiben auf dem Arbeitsbranch und benötigen einen separaten PR gegen den aktuellen `main`-Head.
