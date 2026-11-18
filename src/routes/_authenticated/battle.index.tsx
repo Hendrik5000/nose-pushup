@@ -167,7 +167,7 @@ function BattleLobby() {
   };
 
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
+    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10 alo-battle-page">
       <header className="classic-only flex items-center justify-between">
         <AloHomeLink className="px-2 text-xs" />
         <span className="text-sm font-medium">⚔️ Battle</span>

@@ -8,7 +8,7 @@ test("HomeAppMenuLayout renders an app action sidebar when provided (Alo 1.157)"
   const layout = readFileSync(resolve(root, "src/components/HomeAppMenuLayout.tsx"), "utf8");
   assert.match(layout, /sidebar\?: ReactNode/);
   assert.match(layout, /aria-label="App-Aktionen"/);
-  assert.match(layout, /lg:grid-cols-\[210px_minmax\(0,1fr\)\]/);
+  assert.match(layout, /lg:grid-cols-\[240px_minmax\(0,1fr\)\]/);
   assert.match(layout, /data-alo-menu-surface="true"/);
   assert.doesNotMatch(layout, /className="alo-launcher"|className="alo-tabs"/);
 });

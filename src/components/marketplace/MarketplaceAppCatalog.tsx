@@ -199,27 +199,26 @@ export function MarketplaceAppCatalog({
             className="alo-marketplace-section space-y-6 rounded-3xl border border-border/70 bg-card/40 p-4 sm:p-6"
             aria-label="Marketplace-Startseite"
           >
-            <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(120deg,#153a37,#182346)] p-5 text-white sm:p-7">
+            <div className="alo-marketplace-feature relative overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-6 sm:p-8">
               <div className="relative z-10 max-w-md">
-                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
+                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
                   <Sparkles className="h-4 w-4" /> Neu im Marketplace
                 </p>
                 <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
                   Deine nÃ¤chsten Lieblings-Apps
                 </h2>
-                <p className="mt-2 text-sm leading-relaxed text-white/75">
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   Entdecke kuratierte Alo-Apps und Spiele. Installieren und Aktivieren bleiben
                   getrennt von deinem Startbildschirm.
                 </p>
                 <button
                   type="button"
                   onClick={() => setActiveCollection("new")}
-                  className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-bold text-slate-900"
+                  className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
                 >
                   Neu entdecken <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
-              <div className="absolute -right-8 -top-12 h-48 w-48 rounded-full border-[22px] border-emerald-300/20" />
             </div>
             {suggestions.length > 0 && (
               <div>

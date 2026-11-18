@@ -8,9 +8,13 @@ import { DESIGN_STYLES, isDesignStyleId } from "../src/lib/design-style";
 
 const read = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 
-test("classic and every previous design remain selectable alongside the redesigned performance UI", () => {
-  assert.equal(DESIGN_STYLES.find((style) => style.id === "soft")?.label, "Klassisch");
-  for (const id of [
+test("Alo Modern is the only selectable design while old preferences remain migratable", () => {
+  assert.deepEqual(
+    DESIGN_STYLES.map((style) => style.id),
+    ["hig"],
+  );
+  assert.equal(DESIGN_STYLES[0]?.label, "Alo Modern");
+  for (const legacyId of [
     "soft",
     "compact",
     "editorial",
@@ -18,15 +22,11 @@ test("classic and every previous design remain selectable alongside the redesign
     "performance",
     "legacy-performance",
   ]) {
-    assert.ok(isDesignStyleId(id));
+    assert.ok(isDesignStyleId(legacyId), `${legacyId} remains readable for migration`);
   }
-  const oldStyles = read("styles.css");
-  assert.match(oldStyles, /\[data-design-style="legacy-performance"\]/);
-  assert.match(oldStyles, /html\[data-design-style="legacy-performance"\] \.training-hero/);
-  assert.match(
-    oldStyles,
-    /html\[data-design-style="legacy-performance"\].*\[data-navigation-layout="floating"\]/,
-  );
+  const picker = read("components/DesignStylePicker.tsx");
+  assert.match(picker, /Alo Modern/);
+  assert.doesNotMatch(picker, /Klassisch|Kompakt|Editorial|Studio|Performance/);
 });
 
 test("new page structures are shared across training, health, community, account and public pages", () => {

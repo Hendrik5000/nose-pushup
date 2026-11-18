@@ -144,7 +144,7 @@ function SeasonPage() {
     : 0;
 
   return (
-    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
+    <main className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 alo-season-page">
       <header className="classic-only flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">

@@ -60,8 +60,8 @@ function GamesHub() {
     <main
       className={
         selectedGame
-          ? "min-h-dvh bg-slate-950 text-foreground"
-          : "min-h-screen bg-background px-3 pb-12 pt-4 text-foreground sm:px-6"
+          ? "alo-games-page min-h-dvh bg-slate-950 text-foreground"
+          : "alo-games-page min-h-screen bg-background px-3 pb-12 pt-4 text-foreground sm:px-6"
       }
     >
       {!selectedGame ? (

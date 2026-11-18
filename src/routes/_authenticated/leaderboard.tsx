@@ -83,7 +83,7 @@ function LeaderboardPage() {
   }, [userId, scope, metric]);
 
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10">
+    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10 alo-leaderboard-page">
       <header className="classic-only flex items-center justify-between">
         <AloHomeLink className="px-2 text-[10px]" />
         <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
