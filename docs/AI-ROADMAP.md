@@ -578,3 +578,5 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 - Follow-up-Änderungen (OpenRouter-Endpunkt/Provider-Code-Pruning, Text-only-Anhänge, Health-Teilupdate-Schutz) liegen in Draft-PR [#199](https://github.com/Hendrik5000/nose-pushup/pull/199) gegen den aktuellen `main`-Head. PR bleibt Draft, bis CI, Review und manuelle Abnahme abgeschlossen sind.
 
 - PR #199 CI: Push-Run `44380831051` und Pull-Request-Run `44380867198` für Head `f08c917b47ccaa8666df44bff7e6c9f96250387f` laufen; kein Ergebnis vorwegnehmen.
+
+- PR #199 lint follow-up: Run `44380867198` failed only on one remaining Prettier line break in `src/lib/health-entry.ts` (line 46). That exact format issue is corrected; another CI run is required.
