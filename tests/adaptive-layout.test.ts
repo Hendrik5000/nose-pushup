@@ -29,18 +29,15 @@ test("fluid rules cover narrow panes, portrait, ultrawide and short landscape ra
   }
 });
 
-test(
-  "content cannot impose fixed minimum widths or overflow its responsive parent",
-  () => {
-    assert.match(
-      css,
-      /#root, \.authenticated-shell, \.authenticated-shell > \*\s*\{[^}]*min-width: 0/s,
-    );
-    assert.match(css, /overflow-wrap: anywhere/);
-    assert.match(css, /max-width: 100%/);
-    assert.match(css, /grid-template-columns: repeat\(auto-fit/);
-  },
-);
+test("content cannot impose fixed minimum widths or overflow its responsive parent", () => {
+  assert.match(
+    css,
+    /#root, \.authenticated-shell, \.authenticated-shell > \*\s*\{[^}]*min-width: 0/s,
+  );
+  assert.match(css, /overflow-wrap: anywhere/);
+  assert.match(css, /max-width: 100%/);
+  assert.match(css, /grid-template-columns: repeat\(auto-fit/);
+});
 
 test("short landscape chat and expanded settings remain scrollable within available height", () => {
   assert.match(css, /max-height: 38dvh/);
