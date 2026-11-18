@@ -218,6 +218,7 @@ async function callOpenAICompat(
     },
     body: JSON.stringify({
       model,
+      max_tokens: 1200,
       messages: [
         { role: "system", content: system },
         ...messages.map((m) => ({

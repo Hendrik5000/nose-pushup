@@ -146,6 +146,7 @@ test("logout cleanup clears sensitive keys from local and session storage", () =
 test("server rejects every provider except the fixed OpenRouter free router", () => {
   const server = readFileSync(new URL("../src/lib/super-ai.functions.ts", import.meta.url), "utf8");
   assert.match(server, /openrouter:\s*\["openrouter\/free"\]/);
+  assert.match(server, /max_tokens: 1200/);
   const guard = server.indexOf('if (p.id !== "openrouter")');
   const providerDispatch = server.indexOf('if (p.id === "lovable")');
   assert.ok(guard >= 0 && guard < providerDispatch);
