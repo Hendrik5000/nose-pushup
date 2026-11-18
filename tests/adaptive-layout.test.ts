@@ -24,15 +24,23 @@ test("fluid rules cover narrow panes, portrait, ultrawide and short landscape ra
     "@media (min-width: 1440px)",
     "@media (min-width: 1800px) and (min-aspect-ratio: 16/9)",
     "@media (orientation: landscape) and (max-height: 700px)",
-  ]) assert.ok(css.includes(query), `missing adaptive viewport rule: ${query}`);
+  ]) {
+    assert.ok(css.includes(query), `missing adaptive viewport rule: ${query}`);
+  }
 });
 
-test("content cannot impose fixed minimum widths or overflow its responsive parent", () => {
-  assert.match(css, /#root, \.authenticated-shell, \.authenticated-shell > \*\s*\{[^}]*min-width: 0/s);
-  assert.match(css, /overflow-wrap: anywhere/);
-  assert.match(css, /max-width: 100%/);
-  assert.match(css, /grid-template-columns: repeat\(auto-fit/);
-});
+test(
+  "content cannot impose fixed minimum widths or overflow its responsive parent",
+  () => {
+    assert.match(
+      css,
+      /#root, \.authenticated-shell, \.authenticated-shell > \*\s*\{[^}]*min-width: 0/s,
+    );
+    assert.match(css, /overflow-wrap: anywhere/);
+    assert.match(css, /max-width: 100%/);
+    assert.match(css, /grid-template-columns: repeat\(auto-fit/);
+  },
+);
 
 test("short landscape chat and expanded settings remain scrollable within available height", () => {
   assert.match(css, /max-height: 38dvh/);
