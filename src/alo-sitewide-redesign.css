@@ -1,0 +1,313 @@
+/*
+ * Alo site-wide UI redesign.
+ * A shared visual language for every route, while retaining each page's own
+ * information architecture, selected theme, accent color and interactions.
+ */
+
+html[data-design-style] {
+  --alo-site-border: color-mix(in srgb, var(--border) 82%, transparent);
+  --alo-site-panel: color-mix(in srgb, var(--card) 94%, var(--background));
+  --alo-site-panel-raised: color-mix(in srgb, var(--card) 98%, var(--background));
+  --alo-site-shadow: 0 12px 34px color-mix(in srgb, var(--foreground) 6%, transparent);
+  --alo-site-shadow-soft: 0 4px 18px color-mix(in srgb, var(--foreground) 4%, transparent);
+  --alo-site-ease: 180ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+/* Shared page canvas and content rhythm across authenticated routes. */
+html[data-design-style] .alo-module-surface {
+  min-width: 0;
+  isolation: isolate;
+}
+
+html[data-design-style] .alo-module-surface main {
+  min-width: 0;
+  scroll-margin-top: 5rem;
+}
+
+html[data-design-style] .alo-module-surface main > :is(header, [data-page-header]) {
+  gap: clamp(0.75rem, 1.8vw, 1.25rem);
+}
+
+html[data-design-style] .alo-module-surface main :is(h1, [data-page-title]) {
+  text-wrap: balance;
+  letter-spacing: -0.04em;
+}
+
+html[data-design-style] .alo-module-surface main :is(h2, h3) {
+  text-wrap: balance;
+  letter-spacing: -0.025em;
+}
+
+html[data-design-style] .alo-module-surface main > :is(section, article) + :is(section, article) {
+  margin-block-start: clamp(0.9rem, 2vw, 1.5rem);
+}
+
+/* Shared card language. Restrict to established card-like bordered surfaces. */
+html[data-design-style] .alo-module-surface :is(
+  [class*="rounded-2xl"][class*="border"],
+  [class*="rounded-3xl"][class*="border"],
+  [class*="rounded-[2rem]"][class*="border"]
+) {
+  border-color: var(--alo-site-border);
+  box-shadow: var(--alo-site-shadow-soft);
+  transition:
+    border-color var(--alo-site-ease),
+    box-shadow var(--alo-site-ease),
+    background-color var(--alo-site-ease),
+    transform var(--alo-site-ease);
+}
+
+html[data-design-style] .alo-module-surface :is(
+  [class*="rounded-2xl"][class*="border"],
+  [class*="rounded-3xl"][class*="border"],
+  [class*="rounded-[2rem]"][class*="border"]
+):focus-within {
+  border-color: color-mix(in srgb, var(--ring) 42%, var(--border));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-design-style] .alo-module-surface :is(
+    [class*="rounded-2xl"][class*="border"],
+    [class*="rounded-3xl"][class*="border"]
+  ):hover {
+    border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
+  }
+}
+
+/* Buttons, links, segmented controls and inputs feel related across the site. */
+html[data-design-style] .alo-module-surface :is(button, a, [role="button"], [role="tab"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-design-style] .alo-module-surface :is(button, [role="button"], [role="tab"]) {
+  transition:
+    color var(--alo-site-ease),
+    background-color var(--alo-site-ease),
+    border-color var(--alo-site-ease),
+    box-shadow var(--alo-site-ease),
+    transform var(--alo-site-ease);
+}
+
+html[data-design-style] .alo-module-surface :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+  min-width: 0;
+  border-color: var(--alo-site-border);
+  border-radius: max(0.75rem, calc(var(--design-card-radius, 1rem) * 0.72));
+  background-color: color-mix(in srgb, var(--background) 82%, var(--card));
+  transition:
+    border-color var(--alo-site-ease),
+    box-shadow var(--alo-site-ease),
+    background-color var(--alo-site-ease);
+}
+
+html[data-design-style] .alo-module-surface :is(input, textarea, select):focus-visible {
+  border-color: var(--ring);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 17%, transparent);
+  background-color: var(--alo-site-panel-raised);
+}
+
+html[data-design-style] .alo-module-surface :is(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline-color: var(--ring);
+  outline-offset: 3px;
+}
+
+html[data-design-style] .alo-module-surface :is([role="tablist"], [role="group"]) {
+  gap: 0.35rem;
+}
+
+html[data-design-style] .alo-module-surface :is([role="tab"][aria-selected="true"], [aria-pressed="true"]) {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+/* Navigation and sidebars: stable hierarchy, clearer active destinations. */
+html[data-design-style] .alo-page-sidebar,
+html[data-design-style] .alo-page-sidebar-content,
+html[data-design-style] .alo-page-sidebar-scroll {
+  min-width: 0;
+}
+
+html[data-design-style] .alo-page-sidebar-link {
+  min-height: 2.65rem;
+  transition:
+    color var(--alo-site-ease),
+    background-color var(--alo-site-ease),
+    border-color var(--alo-site-ease),
+    transform var(--alo-site-ease);
+}
+
+html[data-design-style] .alo-page-sidebar-link[data-active="true"] {
+  background: color-mix(in srgb, var(--primary) 11%, var(--card));
+}
+
+html[data-design-style] .app-homebar .homebar-items {
+  border-color: var(--alo-site-border);
+  box-shadow: var(--alo-site-shadow);
+}
+
+/* Home and dashboard widgets. */
+html[data-design-style] .dashboard-widget-grid > *,
+html[data-design-style] .alo-tablet-home-apps > [data-home-app-id],
+html[data-design-style] [data-home-widget-id] {
+  min-width: 0;
+  transition:
+    border-color var(--alo-site-ease),
+    box-shadow var(--alo-site-ease),
+    transform var(--alo-site-ease),
+    background-color var(--alo-site-ease);
+}
+
+html[data-design-style] .dashboard-customize-bar {
+  border-color: var(--alo-site-border);
+  border-radius: 1.1rem;
+  background: var(--alo-site-panel);
+}
+
+/* Marketplace: catalogue-first layout, better separation of discovery and details. */
+html[data-design-style] .alo-marketplace-section {
+  border-color: var(--alo-site-border);
+  border-radius: calc(var(--design-card-radius, 1rem) + 0.4rem);
+  background: var(--alo-site-panel);
+  box-shadow: var(--alo-site-shadow-soft);
+}
+
+html[data-design-style] .alo-marketplace-section :is(input, [role="searchbox"]) {
+  min-height: 2.8rem;
+}
+
+html[data-design-style] .alo-marketplace-section :is([role="listitem"], article) {
+  min-width: 0;
+}
+
+html[data-design-style] .alo-marketplace-section a:focus-visible,
+html[data-design-style] .alo-marketplace-section button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+/* Browser: product-like chrome, clear toolbar, tabs and content separation. */
+html[data-design-style] .alo-browser {
+  min-height: 0;
+  background: var(--background);
+}
+
+html[data-design-style] .alo-browser :is(.alo-browser-tabbar, .alo-browser-toolbar) {
+  border-color: var(--alo-site-border);
+  background: color-mix(in srgb, var(--card) 90%, var(--background));
+}
+
+html[data-design-style] .alo-browser :is(input, button) {
+  border-radius: 0.75rem;
+}
+
+html[data-design-style] .alo-browser iframe,
+html[data-design-style] .alo-browser [data-browser-viewport] {
+  background: #fff;
+}
+
+/* Sports and football: live-data panels, match rows and competition surfaces. */
+html[data-design-style] :is(.sport-feature-card, .sport-focus-card, .health-classic-hero) {
+  border-color: var(--alo-site-border);
+  box-shadow: var(--alo-site-shadow);
+}
+
+html[data-design-style] .sport-only :is(section, article) {
+  min-width: 0;
+}
+
+html[data-design-style] .sport-only :is([class*="rounded-2xl"][class*="border"], [class*="rounded-3xl"][class*="border"]) {
+  background-color: color-mix(in srgb, var(--card) 92%, var(--background));
+}
+
+html[data-design-style] .sport-only :is(button, a)[class*="rounded-full"] {
+  min-height: 2.35rem;
+}
+
+/* Public pages, public profiles and sign-in screens. */
+html[data-design-style] body:has(.sport-public-profile) main,
+html[data-design-style] body:has(.alo-marketplace-section) main,
+html[data-design-style] body:has(.alo-browser) main {
+  min-width: 0;
+}
+
+html[data-design-style] body:has(.sport-public-profile) .sport-public-profile > section,
+html[data-design-style] body:has(.sport-public-profile) .sport-public-profile > article {
+  border-color: var(--alo-site-border);
+  box-shadow: var(--alo-site-shadow-soft);
+}
+
+html[data-design-style] body:has(main[class*="min-h-[100dvh]"]) main > section[class*="rounded-3xl"][class*="border"] {
+  box-shadow: var(--alo-site-shadow-soft);
+}
+
+html[data-design-style] body:has(main[class*="justify-center"]) main > div > div[class*="rounded-3xl"] {
+  border-color: var(--alo-site-border);
+  background: var(--alo-site-panel);
+  box-shadow: var(--alo-site-shadow);
+  backdrop-filter: blur(18px);
+}
+
+/* Tables, standings, activity feeds and dense information layouts. */
+html[data-design-style] .alo-module-surface table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+html[data-design-style] .alo-module-surface :is(th, [role="columnheader"]) {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.035em;
+}
+
+html[data-design-style] .alo-module-surface :is(tr, [role="row"]) {
+  transition: background-color var(--alo-site-ease);
+}
+
+html[data-design-style] .alo-module-surface :is(tr, [role="row"]):hover {
+  background-color: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+
+/* Drawers, dialogs, popovers and command surfaces. */
+html[data-design-style] [data-slot="dialog-content"],
+html[data-design-style] [data-slot="popover-content"],
+html[data-design-style] [data-slot="sheet-content"],
+html[data-design-style] [cmdk-root] {
+  border-color: var(--alo-site-border);
+  background: var(--alo-site-panel-raised);
+  box-shadow: 0 24px 70px color-mix(in srgb, #000 22%, transparent);
+}
+
+/* Content rhythm and responsive polish on every route. */
+@media (min-width: 900px) {
+  html[data-design-style] .alo-module-surface main {
+    padding-bottom: clamp(2rem, 4vw, 4rem);
+  }
+}
+
+@media (max-width: 640px) {
+  html[data-design-style] .alo-module-surface main {
+    padding-inline: max(1rem, env(safe-area-inset-left));
+  }
+
+  html[data-design-style] .alo-module-surface main :is(h1, [data-page-title]) {
+    font-size: clamp(1.65rem, 1.3rem + 2vw, 2.1rem);
+  }
+
+  html[data-design-style] .alo-marketplace-section {
+    padding: clamp(0.9rem, 3vw, 1.25rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-design-style] :is(
+    .alo-module-surface *,
+    .alo-page-sidebar *,
+    .alo-browser *,
+    .app-homebar *
+  ) {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
