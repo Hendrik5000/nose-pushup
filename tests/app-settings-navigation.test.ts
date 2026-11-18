@@ -61,7 +61,7 @@ test("authenticated full-screen app settings reuse existing Mira and Health cont
   assert.match(settingsPage, /<MiraAppSettingsControls userId=\{userId\} \/>/);
   assert.match(settingsPage, /<MiraContextControls userId=\{userId\} \/>/);
   assert.match(settingsPage, /<HealthConnectPanel \/>/);
-  assert.match(settingsPage, /<SmartwatchPanel \/>/);
+  assert.match(settingsPage, /<SmartwatchPanel userId=\{userId\} \/>/);
   assert.match(settingsPage, /titleRef\.current\?\.focus\(\)/);
   assert.match(settingsPage, /tabIndex=\{-1\}/);
   assert.match(settingsPage, /aria-label="Zur Alo-Startseite"/);

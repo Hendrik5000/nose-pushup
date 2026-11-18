@@ -10,6 +10,9 @@ const notificationsHook = read("hooks/useNotifications.ts");
 const homeRoute = read("routes/_authenticated/index.tsx");
 const readinessHook = read("hooks/useReadiness.ts");
 const trainingRoute = read("routes/_authenticated/training.tsx");
+const exercisesRoute = read("routes/_authenticated/exercises.tsx");
+const healthRoute = read("routes/_authenticated/health.tsx");
+const smartwatchPanel = read("components/SmartwatchPanel.tsx");
 const trainingDashboard = read("components/TrainingDashboard.tsx");
 const miraPage = read("components/mira/SuperAiPage.tsx");
 const miraRoute = read("routes/_authenticated/ai.tsx");
@@ -25,6 +28,10 @@ test("authenticated route uses its persisted client session for the UI gate", ()
 test("sign-in redirect and optional root theme do not force auth user fetches", () => {
   assert.match(authRoute, /supabase\.auth\.getSession\(\)/);
   assert.doesNotMatch(authRoute, /supabase\.auth\.getUser\(\)/);
+  assert.match(
+    authRoute,
+    /const handleOAuth = async[\s\S]*?try \{[\s\S]*?signInWithOAuth[\s\S]*?catch \(err\)[\s\S]*?translateAuthError[\s\S]*?finally \{[\s\S]*?setLoading\(false\)/,
+  );
   assert.match(rootRoute, /supabase\.auth\.getSession\(\)/);
   assert.doesNotMatch(rootRoute, /supabase\.auth\.getUser\(\)/);
   assert.match(rootRoute, /Theme loading is optional/);
@@ -38,6 +45,14 @@ test("Home and the training app reuse the authenticated route user without extra
   assert.doesNotMatch(trainingDashboard, /supabase\.auth\.getUser\(\)/);
   assert.match(trainingDashboard, /useReadiness\(\{ userId: user\.id, streak \}\)/);
   assert.doesNotMatch(homeRoute, /useReadiness|\.from\("workouts"\)|\.from\("health_entries"\)/);
+  assert.match(exercisesRoute, /const \{ user \} = Route\.useRouteContext\(\)/);
+  assert.match(exercisesRoute, /\.eq\("id", user\.id\)/);
+  assert.doesNotMatch(exercisesRoute, /supabase\.auth\.getUser\(\)/);
+  assert.match(healthRoute, /const \{ user \} = Route\.useRouteContext\(\)/);
+  assert.doesNotMatch(healthRoute, /supabase\.auth\.getUser\(\)/);
+  assert.match(healthRoute, /localDateKey\(new Date\(\)\)/);
+  assert.match(smartwatchPanel, /getUserId: async \(\) => userId/);
+  assert.doesNotMatch(smartwatchPanel, /supabase\.auth\.getUser\(\)/);
   assert.match(readinessHook, /userId: string/);
   assert.doesNotMatch(readinessHook, /supabase\.auth\.getUser\(\)/);
 });

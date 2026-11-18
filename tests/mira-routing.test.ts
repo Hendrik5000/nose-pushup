@@ -27,13 +27,15 @@ function disabledProviders() {
 
 test("provider selection reports the configured task preference without a quality claim", () => {
   const providers = disabledProviders();
-  providers[0]!.enabled = true;
-  providers[0]!.apiKey = "configured-key";
-  providers[0]!.tasks = ["training_plan"];
+  const openrouter = providers.find((provider) => provider.id === "openrouter")!;
+  openrouter.enabled = true;
+  openrouter.apiKey = "configured-key";
+  openrouter.model = "openrouter/free";
+  openrouter.tasks = ["training_plan"];
 
   const selection = selectProvider(providers, "training_plan");
 
-  assert.equal(selection.provider?.id, "openai");
+  assert.equal(selection.provider?.id, "openrouter");
   assert.equal(selection.reason, "task_preference");
   assert.match(describeProviderSelection(selection, "training_plan"), /„Trainingsplan“/);
   assert.match(
@@ -48,20 +50,23 @@ test("provider selection reports the configured task preference without a qualit
 
 test("when no enabled provider has the task, selection explains first-enabled list fallback", () => {
   const providers = disabledProviders();
-  providers[0]!.enabled = true;
-  providers[0]!.apiKey = "configured-key";
-  providers[0]!.tasks = ["recovery"];
-  providers[1]!.enabled = true;
-  providers[1]!.apiKey = "configured-key";
-  providers[1]!.tasks = ["form_technique"];
+  const openrouter = providers.find((provider) => provider.id === "openrouter")!;
+  openrouter.enabled = true;
+  openrouter.apiKey = "configured-key";
+  openrouter.model = "openrouter/free";
+  openrouter.tasks = ["recovery"];
+  const openai = providers.find((provider) => provider.id === "openai")!;
+  openai.enabled = true;
+  openai.apiKey = "paid-key";
+  openai.tasks = ["form_technique"];
 
   const selection = selectProvider(providers, "quick_log");
   const reason = describeProviderSelection(selection, "quick_log");
 
-  assert.equal(selection.provider?.id, "openai");
+  assert.equal(selection.provider?.id, "openrouter");
   assert.equal(selection.reason, "first_enabled_fallback");
   assert.match(reason, /schnelles Trainingsprotokoll/);
-  assert.match(reason, /der erste aktivierte Anbieter in der Liste \(OpenAI\)/);
+  assert.match(reason, /der erste aktivierte Anbieter in der Liste \(OpenRouter \(Free Models\)\)/);
 });
 
 test("no enabled providers is reported as no selection", () => {

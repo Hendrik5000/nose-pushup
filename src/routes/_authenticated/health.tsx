@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { DesignView } from "@/components/DesignView";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { localDateKey } from "@/lib/training-dates";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
@@ -130,9 +131,11 @@ type Entry = {
   source: string;
 };
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDateKey(new Date());
 
 function HealthPage() {
+  const { user } = Route.useRouteContext();
+  const userId = user.id;
   const [entries, setEntries] = useState<Entry[]>([]);
   const [day, setDay] = useState(today());
   const [steps, setSteps] = useState("");
@@ -167,38 +170,35 @@ function HealthPage() {
   }, []);
 
   // Konto + Streak nur lesend laden (keine DB-Änderung)
-  const [userId, setUserId] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
   const [showRestTimer, setShowRestTimer] = useState(false);
   useEffect(() => {
     let active = true;
     void (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      const id = u.user?.id ?? null;
-      if (!active) return;
-      setUserId(id);
-      if (!id) return;
-      const { data: p } = await supabase
-        .from("profiles")
-        .select("current_streak")
-        .eq("id", id)
-        .maybeSingle();
-      if (active && p) {
-        setStreak((p as { current_streak: number | null }).current_streak ?? 0);
+      try {
+        const { data: p, error } = await supabase
+          .from("profiles")
+          .select("current_streak")
+          .eq("id", userId)
+          .maybeSingle();
+        if (error) throw error;
+        if (active && p) {
+          setStreak((p as { current_streak: number | null }).current_streak ?? 0);
+        }
+      } catch {
+        // Streak is optional; the health page remains usable without it.
       }
     })();
     return () => {
       active = false;
     };
-  }, []);
+  }, [userId]);
 
   const save = async () => {
     setBusy(true);
     setMsg(null);
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
     const payload = {
-      user_id: u.user.id,
+      user_id: userId,
       day,
       steps: Math.max(0, Math.min(200000, parseInt(steps || "0", 10) || 0)),
       active_kcal: Math.max(0, Math.min(20000, parseInt(kcal || "0", 10) || 0)),
@@ -206,22 +206,33 @@ function HealthPage() {
       sleep_min: Math.max(0, Math.min(1440, Math.round((parseFloat(sleepH || "0") || 0) * 60))),
       source: "manual",
     };
-    const { error } = await supabase
-      .from("health_entries")
-      .upsert(payload, { onConflict: "user_id,day" });
-    setBusy(false);
-    if (error) {
-      setMsg("Speichern fehlgeschlagen.");
-      return;
+    try {
+      const { error } = await supabase
+        .from("health_entries")
+        .upsert(payload, { onConflict: "user_id,day" });
+      if (error) throw error;
+      let profileWeightSaved = true;
+      if (payload.weight_kg) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ weight_kg: payload.weight_kg })
+          .eq("id", userId);
+        profileWeightSaved = !profileError;
+      }
+      setMsg(
+        profileWeightSaved
+          ? "Gesundheitsdaten gespeichert ✓"
+          : "Gesundheitsdaten gespeichert; Profilgewicht konnte nicht aktualisiert werden.",
+      );
+      setSteps("");
+      setKcal("");
+      setSleepH("");
+      void load();
+    } catch {
+      setMsg("Speichern fehlgeschlagen. Verbindung prüfen und erneut versuchen.");
+    } finally {
+      setBusy(false);
     }
-    if (payload.weight_kg) {
-      await supabase.from("profiles").update({ weight_kg: payload.weight_kg }).eq("id", u.user.id);
-    }
-    setMsg("Gesundheitsdaten gespeichert ✓");
-    setSteps("");
-    setKcal("");
-    setSleepH("");
-    void load();
   };
 
   const weekStart = new Date(`${today()}T12:00:00Z`);
@@ -466,7 +477,7 @@ function HealthPage() {
                     <h3 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
                       Smartwatch
                     </h3>
-                    <SmartwatchPanel />
+                    <SmartwatchPanel userId={userId} />
                   </section>
                 </div>
               </section>
@@ -788,7 +799,7 @@ function HealthPage() {
                 </section>
                 <section className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6">
                   <h2 className="mb-4 text-lg font-bold">Smartwatch</h2>
-                  <SmartwatchPanel />
+                  <SmartwatchPanel userId={userId} />
                 </section>
               </div>
               <SportSectionLabel number="04">Eintrag erfassen</SportSectionLabel>

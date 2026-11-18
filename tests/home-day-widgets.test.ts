@@ -65,21 +65,21 @@ test("unread sums only known counts and stays honest about unknowns", () => {
 });
 
 test("ai status reflects the real provider selection", () => {
-  const openai = DEFAULT_PROVIDERS.find((provider) => provider.id === "openai");
-  assert.ok(openai);
+  const openrouter = DEFAULT_PROVIDERS.find((provider) => provider.id === "openrouter");
+  assert.ok(openrouter);
   const enabled: ProviderConfig = {
-    ...openai,
+    ...openrouter,
     enabled: true,
     apiKey: "test-key",
-    model: "gpt-test",
+    model: "openrouter/free",
   };
   const status = aiStatusFromProviders([enabled]);
   assert.ok(status);
   assert.equal(status.provider, enabled.label);
-  assert.equal(status.model, "gpt-test");
+  assert.equal(status.model, "openrouter/free");
 
-  const withoutLovable = DEFAULT_PROVIDERS.filter((provider) => provider.id !== "lovable");
-  assert.equal(aiStatusFromProviders(withoutLovable), null);
+  const withoutOpenRouter = DEFAULT_PROVIDERS.filter((provider) => provider.id !== "openrouter");
+  assert.equal(aiStatusFromProviders(withoutOpenRouter), null);
 });
 
 test("weekly workout lines and the chat summary threshold stay honest", () => {

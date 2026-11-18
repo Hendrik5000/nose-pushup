@@ -37,6 +37,7 @@ const DETECTION_LABEL: Record<ExerciseMeta["detection_type"], string> = {
 };
 
 function ExercisesPage() {
+  const { user } = Route.useRouteContext();
   const [exercises, setExercises] = useState<ExerciseMeta[]>([]);
   const [bests, setBests] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -44,14 +45,13 @@ function ExercisesPage() {
 
   useEffect(() => {
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
       const [{ data: ex }, profileRes] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
-        u.user
+        user
           ? supabase
               .from("profiles")
               .select("personal_bests, best_count")
-              .eq("id", u.user.id)
+              .eq("id", user.id)
               .maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
@@ -64,7 +64,7 @@ function ExercisesPage() {
       }
       setLoading(false);
     })();
-  }, []);
+  }, [user]);
 
   // ── Cali summary stats ──────────────────────────────────────────────────────
   const totalCaliSkills = CALI_PATHS.flatMap((p) => p.skills).length;

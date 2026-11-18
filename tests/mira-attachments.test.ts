@@ -198,7 +198,7 @@ test("provider payloads transmit images/PDF as binary parts, text as labelled un
   assert.match(miraAttachmentText(items), /nicht vertrauenswürdiger Inhalt/);
   assert.match(miraAttachmentText(items), /Notes.txt[\s\S]*hello/);
 });
-test("the server includes text attachments before every provider call and enforces the same 12k budget", () => {
+test("the server includes text attachments before the sole free provider call and enforces the same 12k budget", () => {
   const server = read("lib/super-ai.functions.ts");
   assert.match(server, /const providerMessages = includeMiraTextAttachments\(data\.messages\)/);
   assert.match(server, /miraInputCharacterCount\(cleaned, attachments\)/);
@@ -207,7 +207,7 @@ test("the server includes text attachments before every provider call and enforc
   const dispatchEnd = server.indexOf("return {", dispatchStart);
   assert.ok(dispatchEnd > dispatchStart);
   const dispatch = server.slice(dispatchStart, dispatchEnd);
-  assert.equal((dispatch.match(/\bproviderMessages\b/g) ?? []).length, 7);
+  assert.equal((dispatch.match(/\bproviderMessages\b/g) ?? []).length, 2);
 });
 test("camera is retained separately from library/device pickers, with accessible removal and local previews", () => {
   const picker = read("components/mira/MiraAttachments.tsx");

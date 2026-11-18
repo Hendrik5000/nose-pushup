@@ -142,7 +142,9 @@ test("watch UI only marks confirmed syncs, reports failures, and announces statu
     new URL("../src/components/SmartwatchPanel.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(panel, /getUserId: async \(\) =>[\s\S]*?if \(error\) throw error/);
+  assert.match(panel, /getUserId: async \(\) => userId/);
+  assert.doesNotMatch(panel, /supabase\.auth\.getUser\(\)/);
+  assert.match(panel, /upsert: async \(payload\) =>[\s\S]*?if \(error\) throw error/);
   assert.match(panel, /await syncToCloud\(day,[\s\S]*?\);\s*markWatchSynced/);
   assert.match(panel, /finally \{[\s\S]*?setBusy\(false\)/);
   assert.match(panel, /importWatchRows\(rows\.slice\(0, 31\)/);

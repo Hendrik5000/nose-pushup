@@ -39,7 +39,7 @@ test("Alo-Health behält bestehende Bereiche und den expliziten Timerstart", () 
   for (const marker of [
     'createFileRoute("/_authenticated/health")',
     "<HealthConnectPanel />",
-    "<SmartwatchPanel />",
+    "<SmartwatchPanel userId={userId} />",
     "<WeightTrendCard",
     "<SleepDebtCard",
     "<WeeklyStepsGoal",
