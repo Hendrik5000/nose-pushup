@@ -10,6 +10,7 @@ const notificationsHook = read("hooks/useNotifications.ts");
 const homeRoute = read("routes/_authenticated/index.tsx");
 const readinessHook = read("hooks/useReadiness.ts");
 const trainingRoute = read("routes/_authenticated/training.tsx");
+const exercisesRoute = read("routes/_authenticated/exercises.tsx");
 const trainingDashboard = read("components/TrainingDashboard.tsx");
 const miraPage = read("components/mira/SuperAiPage.tsx");
 const miraRoute = read("routes/_authenticated/ai.tsx");
@@ -38,6 +39,9 @@ test("Home and the training app reuse the authenticated route user without extra
   assert.doesNotMatch(trainingDashboard, /supabase\.auth\.getUser\(\)/);
   assert.match(trainingDashboard, /useReadiness\(\{ userId: user\.id, streak \}\)/);
   assert.doesNotMatch(homeRoute, /useReadiness|\.from\("workouts"\)|\.from\("health_entries"\)/);
+  assert.match(exercisesRoute, /const \{ user \} = Route\.useRouteContext\(\)/);
+  assert.match(exercisesRoute, /\.eq\("id", user\.id\)/);
+  assert.doesNotMatch(exercisesRoute, /supabase\.auth\.getUser\(\)/);
   assert.match(readinessHook, /userId: string/);
   assert.doesNotMatch(readinessHook, /supabase\.auth\.getUser\(\)/);
 });
