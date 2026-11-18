@@ -14,11 +14,13 @@ import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 import { PostfachProvider } from "@/components/postfach/PostfachProvider";
 import { CallProvider } from "@/components/calls/CallProvider";
 import { AppNavigation } from "@/components/TopNav";
+import { AloSystemChrome } from "@/components/alo/AloSystemChrome";
 import { applyNavigationVisibility, getNavigationVisible } from "@/lib/navigation-layout";
 import { installModuleSwipeGesture } from "@/lib/module-swipe-gesture";
 import "@/module-swipe.css";
 import "@/alo-mobile.css";
 import "@/alo-header-layout.css";
+import "@/alo-system-chrome.css";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -66,6 +68,7 @@ function AuthenticatedLayout() {
     <PostfachProvider userId={user.id} isGuest={isGuest}>
       <CallProvider userId={user.id} isGuest={isGuest}>
         <div className="authenticated-shell alo-no-global-header min-h-[100dvh]">
+          <AloSystemChrome />
           <AppNavigation />
           <div ref={surface} className="alo-module-surface">
             <Outlet />

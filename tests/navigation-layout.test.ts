@@ -4,6 +4,7 @@ import {
   applyNavigationLayout,
   DEFAULT_NAVIGATION_LAYOUT,
   getStoredNavigationLayout,
+  getNavigationVisible,
   isNavigationLayoutId,
   NAVIGATION_LAYOUTS,
 } from "../src/lib/navigation-layout";
@@ -12,11 +13,18 @@ const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
 const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
 
 function mockGlobals(
-  options: { stored?: string | null; blockedRead?: boolean; blockedWrite?: boolean } = {},
+  options: {
+    stored?: string | null;
+    navigationVisible?: string | null;
+    blockedRead?: boolean;
+    blockedWrite?: boolean;
+  } = {},
 ) {
   const storage = new Map<string, string>();
   if (options.stored !== undefined && options.stored !== null)
     storage.set("np-navigation-layout", options.stored);
+  if (options.navigationVisible !== undefined && options.navigationVisible !== null)
+    storage.set("alo-navigation-visible", options.navigationVisible);
   const localStorage = {
     getItem(key: string) {
       if (options.blockedRead) throw new Error("blocked storage");
@@ -107,4 +115,16 @@ test("application updates the document and tolerates blocked storage writes", ()
   assert.equal(document.documentElement.dataset.theme, "existing-theme");
   assert.equal(document.documentElement.dataset.designStyle, "existing-style");
   assert.equal(document.documentElement.dataset.widgetLayout, "existing-widget");
+});
+
+
+test("navigation is visible by default but respects an explicit user preference", () => {
+  mockGlobals();
+  assert.equal(getNavigationVisible(), true);
+  mockGlobals({ navigationVisible: "true" });
+  assert.equal(getNavigationVisible(), true);
+  mockGlobals({ navigationVisible: "false" });
+  assert.equal(getNavigationVisible(), false);
+  mockGlobals({ blockedRead: true });
+  assert.equal(getNavigationVisible(), true);
 });
