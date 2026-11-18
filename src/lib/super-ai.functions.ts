@@ -181,12 +181,7 @@ export const superAiChat = createServerFn({ method: "POST" })
     const system = buildMiraSystemPrompt(data.systemExtra ?? "");
 
     if (!p.apiKey) throw new Error("OpenRouter API-Key fehlt");
-    const reply = await callOpenAICompat(
-      p.apiKey,
-      p.model,
-      system,
-      providerMessages,
-    );
+    const reply = await callOpenAICompat(p.apiKey, p.model, system, providerMessages);
 
     return {
       reply: reply || "Keine Antwort erhalten.",

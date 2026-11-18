@@ -79,7 +79,9 @@ export function assertMiraAttachmentProvider(
   _provider: ProviderId,
   attachments: Pick<MiraAttachment, "mime">[],
 ): void {
-  if (attachments.some((item) => item.mime.startsWith("image/") || item.mime === "application/pdf")) {
+  if (
+    attachments.some((item) => item.mime.startsWith("image/") || item.mime === "application/pdf")
+  ) {
     throw new Error(
       "Im aktuellen Free-only-Modus unterstützt Mira nur Textdateien (TXT, MD, CSV, TSV, JSON). Bilder und PDFs werden nicht übertragen. Bitte exportiere die Datei als Text. Es wurde nichts gesendet.",
     );

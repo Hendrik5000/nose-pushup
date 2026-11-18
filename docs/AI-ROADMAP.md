@@ -557,3 +557,7 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 - PR #198 bleibt Draft und ungemergt. Kein Livegang ist bestätigt.
 - Phase 0 bleibt teilweise offen: Supabase-Migrations-/RLS-Prüfung, Secret-Hygieneprüfung, reale Kernabläufe auf Geräten und vollständige Live-Abnahme fehlen.
 - Nächster technischer Schritt: neuen Folgepatch vollständig durch CI prüfen, danach unabhängige Sicherheitsprüfung des PRs. Vercel-Preview erst nach Ende des Tageslimits erneut prüfen; Supabase-Audit erst nach Behebung des Datenbankzugriffs fortsetzen.
+
+
+### CI-Nachtrag zum Free-only-Folgepatch
+- CI-Run `44379257455` stoppte im Lint ausschließlich wegen zweier Prettier-Formatierungen in `src/lib/mira-attachments.ts` und `src/lib/super-ai.functions.ts`; 15 bestehende Warnungen waren nicht blockierend. Regressionstests, TypeScript und Build wurden deshalb übersprungen. Die beiden Formatstellen sind korrigiert; ein erneuter CI-Lauf ist erforderlich.
