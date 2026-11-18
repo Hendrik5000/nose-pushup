@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { House, Dumbbell, Sparkles, MessageCircle, Settings2 } from "lucide-react";
 import {
+  getNavigationVisible,
   getStoredNavigationLayout,
   updateNavigationForScroll,
   type NavigationLayoutId,
@@ -14,27 +15,15 @@ const ITEMS = [
   { to: "/exercises", label: "Übungen", icon: Dumbbell },
   { to: "/profile", label: "Einstellungen", icon: Settings2 },
 ] as const;
-/** Optional bottom navigation; the app-wide upper bar is intentionally absent. */
+/** User-configurable app dock/tab bar; available across all authenticated Alo areas. */
 export function AppNavigation() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const hideModuleChrome =
-    pathname.startsWith("/ai") ||
-    pathname.startsWith("/exercises") ||
-    pathname.startsWith("/chat") ||
-    pathname.startsWith("/profile") ||
-    pathname.startsWith("/settings");
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(getNavigationVisible);
   const [layout, setLayout] = useState<NavigationLayoutId>(getStoredNavigationLayout);
   const [scrollVisible, setScrollVisible] = useState(true);
   useEffect(() => {
     const sync = () => {
-      let value = false;
-      try {
-        value = window.localStorage.getItem("alo-navigation-visible") === "true";
-      } catch {
-        /* use compact default */
-      }
-      setEnabled(value);
+      setEnabled(getNavigationVisible());
       setLayout(getStoredNavigationLayout());
       setScrollVisible(true);
     };
@@ -60,7 +49,7 @@ export function AppNavigation() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [enabled, layout, pathname]);
   const bottomLayout = layout === "bottom" || layout === "floating";
-  const barVisible = enabled && bottomLayout && scrollVisible && !hideModuleChrome;
+  const barVisible = enabled && (!bottomLayout || scrollVisible);
   useEffect(() => {
     document.documentElement.dataset.navigationExpanded = String(barVisible);
   }, [barVisible]);
