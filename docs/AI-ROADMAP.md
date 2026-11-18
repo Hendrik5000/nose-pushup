@@ -487,3 +487,13 @@ Keine DB-/SQL-/DDL-/Migrations-/Schema-/RLS-/Seed-Ãnderung, keine SQL-AusfÃ�
 - Mira: die aktive einheitliche Chatansicht erhält auf Desktop mehr nutzbare Breite; mobile Breite und Safe Areas bleiben berücksichtigt.
 - Lint war in Run `44344536375` erfolgreich. Regressionstests zeigten veraltete Sidebar-Breitenannahmen und beschädigte Marketplace-Texte; beide Ursachen wurden bearbeitet. CI für den aktuellen Head `7c0e6593d4a3ec901db2f52425fde904fd37a676` läuft in Run `44345492252`.
 - Noch offen: CI vollständig grün, weitere Routen individuell überarbeiten, visuelle Browser-/Screenshotabnahme bei mehreren Viewports und echte Geräteprüfung. Kein PR, kein Merge und kein Live-Publish.
+
+
+## Statusupdate 2026-11-18 – CI erfolgreich, route-spezifischer Durchgang
+
+- Aktueller Branch-Head: `80444f8d4e4554b303ea4edc23e233835d9b6557` auf `gpt6/fix-alo-ui-lint-20261118`.
+- GitHub Actions Run `44346485145` ist vollständig erfolgreich: Lint, Regressionstests, TypeScript und Produktionsbuild.
+- Der veraltete Regressionstest, der weiterhin alle alten Designvarianten als auswählbar verlangte, wurde an die neue Entscheidung angepasst: Alo Modern ist die einzige auswählbare Designvariante; alte IDs bleiben ausschließlich für die Migration vorhandener gespeicherter Einstellungen lesbar.
+- Routen-Verfeinerungen dieser Runde: Marketplace, Health, Nexus Chat, Mira, Training sowie globale Bereichsnavigation und App-Menürahmen.
+- CI-Grün ist noch keine visuelle Freigabe: Browser-/Screenshotabnahme aller 47 Routendateien und Geräteprüfung auf Smartphone, Tablet, Laptop und großen Displays stehen noch aus.
+- Kein PR, kein Merge und kein Live-Publish in diesem Statusupdate.
