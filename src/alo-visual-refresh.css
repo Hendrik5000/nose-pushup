@@ -1274,3 +1274,69 @@ html[data-design-style] .sport-menu-trigger {
   html[data-design-style] .sport-area-menu .alo-menu-orientation > p { grid-column: auto; }
   html[data-design-style] .alo-area-sheet { width: calc(100vw - 1rem); max-height: 88dvh; border-radius: 1.2rem; }
 }
+
+
+/* Mira's active unified view: a roomy conversation canvas, not a narrow phone column. */
+html[data-design-style] .alo-classic-mira {
+  width: min(100%, 72rem) !important;
+  max-width: 72rem !important;
+  min-height: max(100dvh, var(--app-viewport-height, 100dvh));
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2.25rem);
+  padding-top: max(1.25rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+html[data-design-style] .alo-classic-mira .alo-mira-sketch-header,
+html[data-design-style] .alo-classic-mira > header {
+  width: min(100%, 66rem);
+  margin-inline: auto;
+}
+html[data-design-style] .alo-classic-mira .alo-classic-mira-messages {
+  width: min(100%, 60rem);
+  margin-inline: auto;
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  scroll-padding-block: 1.5rem;
+}
+html[data-design-style] .alo-classic-mira .mira-chat-welcome {
+  width: min(100%, 44rem);
+  margin-inline: auto;
+  padding-block: clamp(1.5rem, 5vh, 3.5rem);
+}
+html[data-design-style] .alo-classic-mira .alo-classic-composer {
+  width: min(100%, 54rem);
+  margin: 0.75rem auto 0;
+  border-color: color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 1.55rem;
+  background: var(--alo-frosted);
+  padding: 0.65rem;
+  box-shadow: 0 14px 38px color-mix(in srgb, #000 8%, transparent);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+}
+html[data-design-style] .alo-classic-mira .mira-classic-composer-form textarea {
+  min-height: 2.9rem;
+  max-height: 10rem;
+  border-radius: 1.1rem;
+  background: color-mix(in srgb, var(--background) 72%, var(--card));
+  padding: 0.85rem 1rem;
+  line-height: 1.45;
+}
+html[data-design-style] .alo-classic-mira .mira-chat-suggestion {
+  min-height: 3.2rem;
+  border-radius: 1rem;
+  box-shadow: none;
+}
+html[data-design-style] .alo-classic-mira .mira-chat-suggestion:hover {
+  transform: translateY(-1px);
+}
+@media (max-width: 640px) {
+  html[data-design-style] .alo-classic-mira {
+    width: 100% !important;
+    max-width: none !important;
+    padding-inline: max(0.85rem, env(safe-area-inset-left));
+  }
+  html[data-design-style] .alo-classic-mira .alo-classic-composer {
+    border-radius: 1.2rem;
+    padding: 0.5rem;
+  }
+}
