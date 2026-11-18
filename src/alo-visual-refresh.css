@@ -743,3 +743,108 @@ html[data-design-style] main:not(.alo-games-page) :is(button, a[role="button"]):
   outline: 2px solid color-mix(in srgb, var(--primary) 72%, transparent);
   outline-offset: 3px;
 }
+
+
+/* Motion system — lively, restrained and consistent across every Alo route. */
+:root {
+  --alo-motion-fast: 150ms;
+  --alo-motion-base: 220ms;
+  --alo-motion-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --alo-motion-enter: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes alo-page-enter {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes alo-soft-pop {
+  from { opacity: 0; transform: scale(0.975) translateY(5px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes alo-progress-arrive {
+  from { transform: scaleX(0.82); opacity: 0.7; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-design-style] .authenticated-shell main:not(.alo-games-page) > * {
+    animation: alo-page-enter 460ms var(--alo-motion-enter) both;
+  }
+
+  html[data-design-style] .authenticated-shell main:not(.alo-games-page) > *:nth-child(2) { animation-delay: 35ms; }
+  html[data-design-style] .authenticated-shell main:not(.alo-games-page) > *:nth-child(3) { animation-delay: 70ms; }
+  html[data-design-style] .authenticated-shell main:not(.alo-games-page) > *:nth-child(4) { animation-delay: 105ms; }
+
+  html[data-design-style] .authenticated-shell main :is(
+    article[class*="rounded-2xl"], article[class*="rounded-3xl"],
+    section[class*="rounded-2xl"], section[class*="rounded-3xl"],
+    [data-home-widget-id], [data-home-app-id], [data-marketplace-card]
+  ) {
+    transition: transform var(--alo-motion-base) var(--alo-motion-spring),
+      border-color var(--alo-motion-base) ease,
+      box-shadow var(--alo-motion-base) ease,
+      background-color var(--alo-motion-base) ease;
+  }
+
+  html[data-design-style] .authenticated-shell main :is(button, a[role="button"], [role="button"]) {
+    transition: color var(--alo-motion-fast) ease,
+      background-color var(--alo-motion-fast) ease,
+      border-color var(--alo-motion-fast) ease,
+      box-shadow var(--alo-motion-fast) ease,
+      transform var(--alo-motion-fast) var(--alo-motion-spring);
+  }
+
+  html[data-design-style] .authenticated-shell main :is(button, a[role="button"], [role="button"]):active {
+    transform: scale(0.975);
+  }
+
+  html[data-design-style] [data-state="open"][role="dialog"],
+  html[data-design-style] [data-radix-popper-content-wrapper] [data-state="open"],
+  html[data-design-style] [role="menu"][data-state="open"] {
+    animation: alo-soft-pop 190ms var(--alo-motion-enter) both;
+    transform-origin: var(--radix-dropdown-menu-content-transform-origin, center);
+  }
+
+  html[data-design-style] .authenticated-shell main :is(progress, [role="progressbar"])::-webkit-progress-value {
+    animation: alo-progress-arrive 500ms var(--alo-motion-enter) both;
+    transform-origin: left center;
+  }
+
+  html[data-design-style] .alo-site-directory-page > header {
+    padding-block-end: 1rem;
+    border-bottom: 1px solid var(--alo-ui-hairline, var(--border));
+  }
+
+  html[data-design-style] .alo-site-directory-page :is(article, [role="button"]) {
+    transition: transform var(--alo-motion-base) var(--alo-motion-spring),
+      box-shadow var(--alo-motion-base) ease, border-color var(--alo-motion-base) ease;
+  }
+
+  html[data-design-style] .alo-site-directory-page :is(article, [role="button"]):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 32px color-mix(in srgb, var(--foreground) 9%, transparent);
+  }
+
+  html[data-design-style] .alo-games-page:not(:has(iframe)) > * {
+    animation: alo-page-enter 420ms var(--alo-motion-enter) both;
+  }
+}
+
+html[data-design-style] .sport-ai-home,
+html[data-design-style] .sport-ai-primary-card {
+  border-color: var(--alo-ui-hairline, var(--border));
+  border-radius: calc(var(--design-card-radius, 1rem) + 0.2rem);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-design-style] .authenticated-shell main > *,
+  html[data-design-style] .alo-site-directory-page > *,
+  html[data-design-style] .alo-games-page > * {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

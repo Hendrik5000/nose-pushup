@@ -53,3 +53,12 @@ test("Mira, Nexus, Health, Training, Postfach and Admin keep app-specific visual
     assert.ok(css.includes(selector), `missing app visual selector: ${selector}`);
   }
 });
+
+test("the whole-site experience includes restrained motion and honors reduced-motion settings", () => {
+  assert.match(css, /@keyframes alo-page-enter/);
+  assert.match(css, /@keyframes alo-soft-pop/);
+  assert.match(css, /--alo-motion-spring/);
+  assert.match(css, /prefers-reduced-motion: no-preference/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
+  assert.match(css, /:active/);
+});
