@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Dumbbell, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { GymFriendInviteShare } from "@/components/GymFriendInviteShare";
 import { supabase } from "@/integrations/supabase/client";
 import { GymVisitCalendar } from "@/components/GymVisitCalendar";
 import {
@@ -344,6 +345,11 @@ function GymAccountPanel({ userId }: { userId: string }) {
                         Nach Ablauf eine neue Einheit erstellen.
                       </p>
                     )}
+                    <GymFriendInviteShare
+                      userId={userId}
+                      inviteCode={snapshot.inviteCode}
+                      inviteExpiresAt={snapshot.inviteExpiresAt}
+                    />
                   </div>
                 )}
               </div>
