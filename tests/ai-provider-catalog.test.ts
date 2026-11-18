@@ -34,11 +34,7 @@ function memoryStorage(initial: Record<string, string> = {}) {
   } as unknown as Storage;
 }
 
-function withBrowserStorage<T>(
-  localStorage: Storage,
-  sessionStorage: Storage,
-  run: () => T,
-): T {
+function withBrowserStorage<T>(localStorage: Storage, sessionStorage: Storage, run: () => T): T {
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
   Object.defineProperty(globalThis, "window", {
     configurable: true,
@@ -53,7 +49,10 @@ function withBrowserStorage<T>(
 }
 
 test("free provider catalog contains only OpenRouter's zero-cost free router", () => {
-  assert.deepEqual(FREE_PROVIDER_CATALOG.map((entry) => entry.id), ["openrouter"]);
+  assert.deepEqual(
+    FREE_PROVIDER_CATALOG.map((entry) => entry.id),
+    ["openrouter"],
+  );
   assert.deepEqual(FREE_PROVIDER_CATALOG[0].models, ["openrouter/free"]);
   assert.equal(FREE_PROVIDER_CATALOG[0].supportsImages, false);
 });
@@ -87,7 +86,12 @@ test("provider loading migrates old localStorage keys to sessionStorage and stri
   const local = memoryStorage({
     [userKey]: JSON.stringify(legacy),
     "super-ai-providers-v1": JSON.stringify([
-      { id: "openrouter", enabled: true, apiKey: "belongs-to-previous-user", model: "openrouter/free" },
+      {
+        id: "openrouter",
+        enabled: true,
+        apiKey: "belongs-to-previous-user",
+        model: "openrouter/free",
+      },
     ]),
   });
   const session = memoryStorage();
@@ -106,7 +110,10 @@ test("provider loading migrates old localStorage keys to sessionStorage and stri
     assert.ok(session.getItem(userKey));
     assert.doesNotMatch(session.getItem(userKey)!, /belongs-to-previous-user/);
 
-    saveProviders(loaded.map((provider) => ({ ...provider, enabled: true, apiKey: "attempted-key" })), "user-1");
+    saveProviders(
+      loaded.map((provider) => ({ ...provider, enabled: true, apiKey: "attempted-key" })),
+      "user-1",
+    );
     const saved = JSON.parse(session.getItem(userKey)!) as typeof loaded;
     assert.equal(saved.find((provider) => provider.id === "openrouter")?.apiKey, "attempted-key");
     assert.equal(saved.find((provider) => provider.id === "cerebras")?.apiKey, "");
@@ -150,7 +157,10 @@ test("root auth listener clears sensitive browser storage when the signed-in acc
   assert.match(root, /onAuthStateChange\(\(event, session\)/);
   assert.match(root, /event === "INITIAL_SESSION"/);
   assert.match(root, /currentUserId !== nextUserId/);
-  assert.match(root, /if \(currentUserId && nextUserId && currentUserId !== nextUserId\) \{[\s\S]*?clearSensitiveClientStorage\(\)/);
+  assert.match(
+    root,
+    /if \(currentUserId && nextUserId && currentUserId !== nextUserId\) \{[\s\S]*?clearSensitiveClientStorage\(\)/,
+  );
 });
 
 test("OpenRouter account metadata is not added to its payload", () => {
