@@ -213,6 +213,12 @@ html[data-design-style="hig"] .authenticated-shell .alo-module-surface main :is(
 }
 
 
+/* The sticky system bar is in document flow; remove legacy top placeholders for every layout. */
+html:root[data-design-style][data-navigation-layout][data-navigation-visible] .authenticated-shell {
+  --homebar-top-space: 0px !important;
+  padding-top: 0 !important;
+}
+
 /* Stack the selected top navigation below the visible Alo system bar. */
 html:root[data-design-style][data-navigation-visible="false"][data-navigation-layout]
   .authenticated-shell {
