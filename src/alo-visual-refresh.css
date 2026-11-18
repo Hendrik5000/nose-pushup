@@ -702,69 +702,44 @@ html[data-design-style] .sport-public-profile > section {
 }
 
 
-/* Shared shell used by Areas, Tools, Marketplace, Football and Sports catalogues. */
-html[data-design-style] .alo-site-directory-page {
-  width: min(100%, 92rem);
-  padding-inline: clamp(1rem, 3vw, 2.5rem);
-}
-
-html[data-design-style] .alo-site-directory-page > header {
-  align-items: center;
-  padding-block: 0.35rem 1.25rem;
-  border-color: var(--alo-ui-hairline, var(--border));
-}
-
-html[data-design-style] .alo-site-directory-page > header h1 {
-  font-size: clamp(1.8rem, 1.35rem + 1.3vw, 2.55rem);
-  font-weight: 780;
-  letter-spacing: -0.055em;
-}
-
-html[data-design-style] .alo-site-directory-page > div > aside {
-  border-color: var(--alo-ui-hairline, var(--border));
-  border-radius: calc(var(--design-card-radius, 1rem) + 0.3rem);
-  background: var(--alo-ui-surface, var(--card));
-  box-shadow: 0 8px 26px color-mix(in srgb, var(--foreground) 5%, transparent);
-}
-
-html[data-design-style] .alo-site-directory-page > div > div {
+/* Public and unauthenticated routes share the same Alo visual language. */
+html[data-design-style] main:not(.alo-games-page) {
   min-width: 0;
+  color: var(--foreground);
 }
 
-html[data-design-style] .alo-site-directory-page :is(article, [role="listitem"], a[class*="rounded-2xl"]) {
+html[data-design-style] main:not(.alo-games-page) :is(h1, [data-page-title]) {
+  text-wrap: balance;
+  letter-spacing: -0.04em;
+}
+
+html[data-design-style] main:not(.alo-games-page) :is(h2, h3) {
+  text-wrap: balance;
+  letter-spacing: -0.025em;
+}
+
+html[data-design-style] main:not(.alo-games-page) :is(
+  article[class*="rounded-2xl"][class*="border"],
+  article[class*="rounded-3xl"][class*="border"],
+  section[class*="rounded-2xl"][class*="border"],
+  section[class*="rounded-3xl"][class*="border"]
+) {
   border-color: var(--alo-ui-hairline, var(--border));
-  border-radius: calc(var(--design-card-radius, 1rem) + 0.2rem);
+  box-shadow: 0 7px 24px color-mix(in srgb, var(--foreground) 4%, transparent);
 }
 
-html[data-design-style] .alo-site-directory-page :is(button, a) {
-  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
-}
-
-/* Games landing page: a deliberate library layout; fullscreen game runtime is untouched. */
-html[data-design-style] .alo-games-page:not(:has(iframe)) {
-  background-image: radial-gradient(ellipse 52rem 26rem at 50% -12rem, color-mix(in srgb, var(--primary) 12%, transparent), transparent 72%);
-}
-
-html[data-design-style] .alo-games-page:not(:has(iframe)) > div {
-  min-width: 0;
-}
-
-html[data-design-style] .alo-games-page:not(:has(iframe)) [aria-labelledby="games-title"] {
-  padding: clamp(1.25rem, 3vw, 2.25rem);
-  border: 1px solid var(--alo-ui-hairline, var(--border));
-  border-radius: calc(var(--design-card-radius, 1rem) + 0.5rem);
-  background: linear-gradient(145deg, var(--alo-ui-surface, var(--card)), color-mix(in srgb, var(--card) 93%, var(--primary) 7%));
-  box-shadow: 0 12px 34px color-mix(in srgb, var(--foreground) 6%, transparent);
-}
-
-html[data-design-style] .alo-games-page:not(:has(iframe)) a.group {
+html[data-design-style] main:not(.alo-games-page) :is(input, textarea, select) {
   border-color: var(--alo-ui-hairline, var(--border));
-  border-radius: calc(var(--design-card-radius, 1rem) + 0.2rem);
-  background: var(--alo-ui-surface, var(--card));
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 5%, transparent);
+  border-radius: min(var(--design-control-radius, 0.9rem), 1.1rem);
 }
 
-html[data-design-style] .alo-games-page:not(:has(iframe)) a.group:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 13px 30px color-mix(in srgb, var(--foreground) 9%, transparent);
+html[data-design-style] main:not(.alo-games-page) :is(input, textarea, select):focus-visible {
+  border-color: var(--primary);
+  outline: 2px solid color-mix(in srgb, var(--primary) 24%, transparent);
+  outline-offset: 2px;
+}
+
+html[data-design-style] main:not(.alo-games-page) :is(button, a[role="button"]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 72%, transparent);
+  outline-offset: 3px;
 }
