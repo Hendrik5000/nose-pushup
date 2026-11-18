@@ -1,892 +1,394 @@
-import { priorityTasks } from "@/lib/alo-ui";
-import { readAttachment } from "@/lib/alo-attachments";
-import { useEffect, useState, useRef } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { Search, Layers, Plus, CalendarDays, ShieldCheck, Zap } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  ALO_EVENT,
-  ALO_REMOTE_EVENT,
-  cloudEnabled,
-  listAlo,
-  localDay,
-  putAlo,
-  readRecords,
-  removeAlo,
-  safeLink,
-  type AloRecord,
-} from "@/lib/alo-store";
-import { getSyncState, SYNC_EVENT, syncAlo } from "@/lib/alo-sync";
-import { loadRoomsForUser, loadMessages, type LocalRoom } from "@/lib/chat-backend";
-import { aggregateUnread, loadChatPrefs } from "@/lib/chat-extras";
-import { GlobalSearch } from "./GlobalSearch";
-import { QuickCapture } from "./QuickCapture";
-import { AloPrivacy } from "./AloPrivacy";
-import { ContentActions } from "./ContentActions";
-import { MiraHandoff } from "./MiraHandoff";
-import "@/alo-workspace.css";
-const AREA_LABELS: Record<string, string> = {
-  all: "Alo",
-  nose: "Training",
-  mira: "Mira",
-  nexus: "Nexus",
-};
-type Tab = "menu" | "today" | "search" | "capture" | "collections" | "shortcuts" | "privacy";
-const TABS = [
-  { id: "today", label: "Tagesübersicht", icon: CalendarDays },
-  { id: "search", label: "Überall suchen", icon: Search },
-  { id: "capture", label: "Schnell speichern", icon: Plus },
-  { id: "collections", label: "Sammlungen", icon: Layers },
-  { id: "shortcuts", label: "Schnellaktionen", icon: Zap },
-  { id: "privacy", label: "Daten & Datenschutz", icon: ShieldCheck },
-] as const;
-const MENU_LABELS: Record<(typeof TABS)[number]["id"], string> = {
-  today: "Heute",
-  search: "Suchen",
-  capture: "Speichern",
-  collections: "Sammlungen",
-  shortcuts: "Aktionen",
-  privacy: "Datenschutz",
-};
-export function AloWorkspace({ userId }: { userId: string }) {
-  const [open, setOpen] = useState(false);
-  const launcher = useRef<HTMLElement | null>(null);
-  const [tab, setTab] = useState<Tab>("menu");
-  const [, refresh] = useState(0);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    const update = () => refresh((n) => n + 1);
-    const launch = (e: Event) => {
-      launcher.current =
-        document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      const next = (e as CustomEvent<Tab>).detail;
-      if (next === "menu" || TABS.some((t) => t.id === next)) setTab(next);
-      setOpen(true);
-    };
-    const storage = (e: StorageEvent) => {
-      if (e.key?.startsWith("alo-") || e.key?.startsWith("np-chat-drafts")) {
-        update();
-        window.dispatchEvent(new Event(ALO_REMOTE_EVENT));
-      }
-    };
-    const keydown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        launcher.current =
-          document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        setTab("search");
-        setOpen(true);
-      }
-    };
-    window.addEventListener(ALO_EVENT, update);
-    window.addEventListener(ALO_REMOTE_EVENT, update);
-    window.addEventListener(SYNC_EVENT, update);
-    window.addEventListener("alo-open", launch);
-    window.addEventListener("storage", storage);
-    window.addEventListener("keydown", keydown);
-    return () => {
-      window.removeEventListener(ALO_EVENT, update);
-      window.removeEventListener(ALO_REMOTE_EVENT, update);
-      window.removeEventListener(SYNC_EVENT, update);
-      window.removeEventListener("alo-open", launch);
-      window.removeEventListener("storage", storage);
-      window.removeEventListener("keydown", keydown);
-    };
-  }, []);
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    const sync = () => {
-      void syncAlo(userId);
-    };
-    const schedule = () => {
-      clearTimeout(timer);
-      timer = setTimeout(sync, 900);
-    };
-    window.addEventListener(ALO_EVENT, schedule);
-    window.addEventListener("online", sync);
-    window.addEventListener("focus", sync);
-    const interval = setInterval(sync, 30000);
-    sync();
-    return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
-      window.removeEventListener(ALO_EVENT, schedule);
-      window.removeEventListener("online", sync);
-      window.removeEventListener("focus", sync);
-    };
-  }, [userId]);
-  let rows: AloRecord[] = [];
-  try {
-    rows = readRecords(userId).filter((r) => !r.deleted);
-  } catch (e) {
-    if (!error)
-      queueMicrotask(() => setError(e instanceof Error ? e.message : "Alo-Speicher nicht lesbar."));
-  }
-  const sync = getSyncState();
+  Outlet,
+  Link,
+  createRootRouteWithContext,
+  useRouter,
+  useRouterState,
+  HeadContent,
+  Scripts,
+  type ErrorComponentProps,
+} from "@tanstack/react-router";
+import { useEffect, useState, type ReactNode } from "react";
+
+import { Toaster } from "@/components/ui/sonner";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { GlobalAlarmMonitor } from "@/components/AlarmMonitor";
+import { MiraPointerOverlay } from "@/components/mira/MiraPointerOverlay";
+import { setActiveMiraRouter } from "@/lib/mira-computer-use";
+import appCss from "../styles.css?url";
+import sportCss from "../sport.css?url";
+import communityReferenceCss from "../community-reference.css?url";
+import healthReferenceCss from "../health-reference.css?url";
+import aiReferenceCss from "../ai-reference.css?url";
+import aiResponsiveCss from "../ai-responsive.css?url";
+import adaptiveLayoutCss from "../adaptive-layout.css?url";
+import aloVisualRefreshCss from "../alo-visual-refresh.css?url";
+import { reportLovableError } from "../lib/lovable-error-reporting";
+import { installGlobalErrorReporting } from "@/lib/error-reports";
+import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
+import { applyMenuAccent, getStoredMenuAccent, MENU_ACCENT_STORAGE_KEY } from "@/lib/menu-accent";
+import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
+import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
+import { swipeScreenFromPath } from "@/lib/module-navigation";
+import { clearSensitiveClientStorage } from "@/lib/sensitive-storage";
+import { isDynamicImportFetchError } from "@/lib/module-load-error";
+function NotFoundComponent() {
   return (
-    <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
-          className="alo-dialog alo-workspace"
-          data-view={tab}
-          onCloseAutoFocus={(e) => {
-            if (launcher.current?.isConnected) {
-              e.preventDefault();
-              launcher.current.focus();
-            }
-          }}
-        >
-          <header>
-            <DialogTitle>
-              {tab === "menu" ? "Alo · Plus-Menü" : TABS.find((t) => t.id === tab)?.label}
-            </DialogTitle>
-            <DialogDescription>
-              {cloudEnabled(userId)
-                ? sync.message
-                : "Nur auf diesem Gerät · Cloud-Synchronisierung aus"}
-            </DialogDescription>
-          </header>
-          {tab !== "menu" && tab !== "search" && (
-            <label className="alo-tool-switcher">
-              <span className="sr-only">Alo Werkzeug</span>
-              <select
-                aria-label="Alo Werkzeug auswählen"
-                value={tab}
-                onChange={(e) => setTab(e.target.value as Tab)}
-              >
-                <option value="menu">Plus-Menü</option>
-                {TABS.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <div className="alo-workspace-content">
-            {error ? (
-              <p role="alert">{error}</p>
-            ) : (
-              <>
-                {tab === "menu" && (
-                  <div className="alo-command-list">
-                    {[TABS[2], TABS[1], TABS[0], ...TABS.slice(3)].map((t) => (
-                      <button key={t.id} aria-label={t.label} onClick={() => setTab(t.id)}>
-                        <t.icon size={20} aria-hidden="true" />
-                        <span>{MENU_LABELS[t.id]}</span>
-                        <span aria-hidden="true">→</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {tab === "today" && (
-                  <Today
-                    userId={userId}
-                    rows={rows}
-                    onCapture={() => setTab("capture")}
-                    onNavigate={() => setOpen(false)}
-                  />
-                )}
-                {tab === "search" && (
-                  <GlobalSearch
-                    userId={userId}
-                    onNavigate={() => setOpen(false)}
-                    onPrivacy={() => setTab("privacy")}
-                    onOpenAlo={setTab}
-                  />
-                )}
-                {tab === "capture" && <QuickCapture userId={userId} />}
-                {tab === "collections" && (
-                  <Collections userId={userId} rows={rows} onNavigate={() => setOpen(false)} />
-                )}
-                {tab === "shortcuts" && (
-                  <Shortcuts
-                    userId={userId}
-                    rows={rows}
-                    onTab={setTab}
-                    onNavigate={() => setOpen(false)}
-                  />
-                )}
-                {tab === "privacy" && <AloPrivacy userId={userId} />}
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-7xl font-bold text-foreground">404</h1>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Seite nicht gefunden</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Diese Seite gibt es nicht oder sie wurde verschoben.
+        </p>
+        <div className="mt-6">
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Zur Startseite
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
-function Today({
-  userId,
-  rows,
-  onCapture,
-  onNavigate,
-}: {
-  userId: string;
-  rows: AloRecord[];
-  onCapture: () => void;
-  onNavigate: () => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [due, setDue] = useState("");
-  const [status, setStatus] = useState("");
-  const [chatState, setChatState] = useState<"loading" | "ready" | "error">("loading");
-  const [important, setImportant] = useState<
-    Array<{
-      room: LocalRoom;
-      kind: "room";
-      id: string;
-      messages: Array<{ created_at: string; user_id: string; content: string }>;
-      unread: number;
-      text: string;
-    }>
-  >([]);
-  const taskDetails = useRef<HTMLDetailsElement>(null);
-  const [now, setNow] = useState(Date.now());
-  const tasks = rows.filter((r) => r.kind === "task");
-  const upcoming = tasks
-    .filter((r) => !r.body.done && typeof r.body.due === "string")
-    .sort((a, b) => String(a.body.due).localeCompare(String(b.body.due)));
+
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
+  console.error(error);
+  const router = useRouter();
+  const moduleLoadError = isDynamicImportFetchError(error);
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(timer);
-  }, []);
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      const prefs = loadChatPrefs(userId);
-      const rooms = (await loadRoomsForUser(userId)).filter((r) =>
-        prefs.favoriteRoomIds.includes(r.id),
-      );
-      const results = await Promise.all(
-        rooms.map(async (room) => {
-          const { messages, available } = await loadMessages(userId, { kind: "room", id: room.id });
-          if (!available) throw new Error("Raum derzeit nicht verfügbar");
-          return {
-            room,
-            kind: "room" as const,
-            id: room.id,
-            messages,
-            text: messages.at(-1)?.content ?? "Noch keine Nachrichten",
-          };
-        }),
-      );
-      if (active) {
-        setImportant(aggregateUnread(prefs, results, userId).targets);
-        setChatState("ready");
-        setStatus(
-          rooms.length
-            ? "Favorisierte Räume geladen; ungelesene Angaben beziehen sich auf die letzten bis zu 200 Nachrichten."
-            : "Markiere Nexus-Räume als Favoriten, um sie hier zu sehen.",
-        );
-      }
-    })().catch(() => {
-      if (active) {
-        setChatState("error");
-        setStatus("Wichtige Chats derzeit nicht erreichbar.");
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [userId]);
-  const nextTask = priorityTasks(rows, 1)[0];
-  const add = () => {
-    if (!title.trim()) return;
-    const parsed = due ? new Date(due) : null;
-    if (parsed && !Number.isFinite(parsed.getTime())) {
-      setStatus("Datum ungültig.");
-      return;
-    }
-    try {
-      putAlo(
-        "task",
-        {
-          title: title.trim(),
-          done: false,
-          due: parsed?.toISOString() ?? "",
-          source: "Tagesübersicht",
-        },
-        undefined,
-        userId,
-      );
-      setTitle("");
-      setDue("");
-      setStatus(
-        "Aufgabe gespeichert. Erinnerungen erscheinen in Alo, solange die App geöffnet ist.",
-      );
-    } catch {
-      setStatus("Nicht gespeichert. Gerätespeicher prüfen.");
-    }
-  };
+    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+  }, [error]);
+
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="text-xs text-primary">
-          {new Date(now).toLocaleDateString("de-DE", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          })}
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          {moduleLoadError
+            ? "App-Dateien konnten nicht geladen werden"
+            : "Diese Seite konnte nicht geladen werden"}
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {moduleLoadError
+            ? "Möglicherweise ist eine ältere App-Version geöffnet oder die Verbindung wurde unterbrochen. Prüfe deine Verbindung und aktualisiere die App."
+            : "Es ist ein Fehler aufgetreten. Lade die Seite neu oder gehe zurück zur Startseite."}
         </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <button
+            onClick={() => {
+              if (moduleLoadError) {
+                window.location.reload();
+                return;
+              }
+              router.invalidate();
+              reset();
+            }}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            {moduleLoadError ? "App aktualisieren" : "Erneut versuchen"}
+          </button>
+          <a
+            href="/"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            Zur Startseite
+          </a>
+        </div>
       </div>
-      <div className="alo-priority-cards" aria-label="Deine zwei wichtigsten Karten">
-        <article className="alo-card">
-          <p className="text-xs text-primary">
-            {upcoming.filter((t) => new Date(String(t.body.due)).getTime() <= now).length} fällig ·{" "}
-            {tasks.filter((t) => !t.body.done).length} offen
-          </p>
-          <h3 className="font-semibold">
-            {String(nextTask?.body.title ?? "Platz für deinen nächsten Schritt")}
-          </h3>
-          {typeof nextTask?.body.roomId === "string" ? (
-            <Link
-              className="alo-text-action"
-              to="/chat"
-              onClick={() => {
-                window.sessionStorage.setItem(
-                  "alo-open-nexus",
-                  JSON.stringify({ kind: "room", id: nextTask.body.roomId }),
-                );
-                onNavigate();
-              }}
-            >
-              Zum Nexus-Ursprung →
-            </Link>
-          ) : (
+    </div>
+  );
+}
+
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { title: "Alo — All in one" },
+      {
+        name: "description",
+        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+      },
+      { name: "theme-color", content: "#0b0b0f" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Alo" },
+      { name: "author", content: "Lovable" },
+
+      { property: "og:title", content: "Alo — All in one" },
+      {
+        property: "og:description",
+        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Alo — All in one" },
+      {
+        name: "twitter:description",
+        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+      },
+      {
+        property: "og:image",
+        content: "/alo-brand.jpg",
+      },
+      {
+        name: "twitter:image",
+        content: "/alo-brand.jpg",
+      },
+    ],
+    links: [
+      { rel: "icon", type: "image/png", href: "/alo-icon-192.png" },
+      { rel: "apple-touch-icon", href: "/alo-apple-touch-icon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: sportCss },
+      { rel: "stylesheet", href: communityReferenceCss },
+      { rel: "stylesheet", href: healthReferenceCss },
+      { rel: "stylesheet", href: aiReferenceCss },
+      { rel: "stylesheet", href: aiResponsiveCss },
+      { rel: "stylesheet", href: adaptiveLayoutCss },
+      { rel: "stylesheet", href: aloVisualRefreshCss },
+
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap",
+      },
+    ],
+  }),
+  shellComponent: RootShell,
+  component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+  errorComponent: ErrorComponent,
+});
+
+function RootShell({ children }: { children: ReactNode }) {
+  return (
+    <html lang="de">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
+function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  setActiveMiraRouter(router);
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const [installable, setInstallable] = useState(false);
+  const [standalone, setStandalone] = useState(false);
+  const routeKey = swipeScreenFromPath(pathname) ? "alo-swipe-screens" : pathname;
+  const [fullscreenRequested, setFullscreenRequested] = useState(false);
+
+  const updateViewportHeight = () => {
+    const height = window.visualViewport?.height ?? window.innerHeight;
+    document.documentElement.style.setProperty("--app-viewport-height", `${Math.max(height, 0)}px`);
+  };
+
+  useEffect(() => {
+    installGlobalErrorReporting();
+    const syncMenuAccent = () => applyMenuAccent(getStoredMenuAccent(), getStoredTheme(), false);
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "np-theme" && event.newValue && isThemeId(event.newValue))
+        applyTheme(event.newValue);
+      if (event.key === MENU_ACCENT_STORAGE_KEY) syncMenuAccent();
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("np-theme-change", syncMenuAccent);
+    window.addEventListener("alo-menu-accent-change", syncMenuAccent);
+    syncMenuAccent();
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("np-theme-change", syncMenuAccent);
+      window.removeEventListener("alo-menu-accent-change", syncMenuAccent);
+    };
+  }, []);
+
+  useEffect(() => {
+    updateViewportHeight();
+    window.addEventListener("resize", updateViewportHeight);
+    window.addEventListener("orientationchange", updateViewportHeight);
+    window.visualViewport?.addEventListener("resize", updateViewportHeight);
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .catch((err) => console.error("SW reg fail:", err));
+      });
+    }
+
+    applyDesignStyle(getStoredDesignStyle());
+    applyNavigationLayout(getStoredNavigationLayout());
+    applyTheme(getStoredTheme());
+    (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: sessionData } = await supabase.auth.getSession();
+        const uid = sessionData.session?.user.id;
+        if (!uid) return;
+        const { data } = await supabase
+          .from("profiles")
+          .select("theme")
+          .eq("id", uid)
+          .maybeSingle();
+        const t = data?.theme;
+        if (isThemeId(t)) applyTheme(t);
+      } catch {
+        // Theme loading is optional
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    setStandalone(isStandalone);
+
+    const handleDisplayMode = () =>
+      setStandalone(
+        window.matchMedia("(display-mode: standalone)").matches ||
+          (window.navigator as Navigator & { standalone?: boolean }).standalone === true,
+      );
+    window.matchMedia("(display-mode: standalone)").addEventListener("change", handleDisplayMode);
+
+    const onBeforeInstallPrompt = () => {
+      try {
+        if (sessionStorage.getItem("alo-install-hint-dismissed") === "1") return;
+      } catch {
+        // ok
+      }
+      setInstallable(true);
+    };
+    const onAppInstalled = () => {
+      setInstallable(false);
+      setStandalone(true);
+    };
+
+    const tryAutoFullscreen = async () => {
+      if (fullscreenRequested || document.fullscreenElement) return;
+      const inStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+      const inFullscreenMode = window.matchMedia("(display-mode: fullscreen)").matches;
+      if (!inStandalone && !inFullscreenMode) return;
+      setFullscreenRequested(true);
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch {
+        // blocked without gesture
+      }
+    };
+
+    const onFirstInteraction = () => {
+      void tryAutoFullscreen();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        window.setTimeout(() => {
+          void tryAutoFullscreen();
+        }, 200);
+      }
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onAppInstalled);
+    window.addEventListener("pointerdown", onFirstInteraction, { passive: true });
+    window.addEventListener("touchstart", onFirstInteraction, { passive: true });
+    window.addEventListener("keydown", onFirstInteraction, { passive: true });
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.setTimeout(() => {
+      void tryAutoFullscreen();
+    }, 400);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onAppInstalled);
+      window
+        .matchMedia("(display-mode: standalone)")
+        .removeEventListener("change", handleDisplayMode);
+      window.removeEventListener("resize", updateViewportHeight);
+      window.removeEventListener("orientationchange", updateViewportHeight);
+      window.visualViewport?.removeEventListener("resize", updateViewportHeight);
+      window.removeEventListener("pointerdown", onFirstInteraction);
+      window.removeEventListener("touchstart", onFirstInteraction);
+      window.removeEventListener("keydown", onFirstInteraction);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [fullscreenRequested]);
+
+  useEffect(() => {
+    let unsub: { unsubscribe: () => void } | undefined;
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data } = supabase.auth.onAuthStateChange((event) => {
+        if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+        if (event === "SIGNED_OUT") clearSensitiveClientStorage();
+        router.invalidate();
+        if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      });
+      unsub = data.subscription;
+    })();
+    return () => unsub?.unsubscribe();
+  }, [router, queryClient]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <div
+        key={routeKey}
+        className={routeKey === "alo-swipe-screens" ? "alo-swipe-route" : "route-enter"}
+      >
+        <Outlet />
+      </div>
+      <GlobalAlarmMonitor />
+      <MiraPointerOverlay />
+      {installable && !standalone && (
+        <aside
+          aria-label="App installieren"
+          className="mx-auto mb-24 w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-border bg-card/60 px-3 py-2"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <details className="min-w-0 flex-1 text-xs text-muted-foreground">
+              <summary className="flex min-h-11 cursor-pointer items-center font-medium text-foreground">
+                Alo als App installieren
+              </summary>
+              <p className="pb-2 leading-relaxed">
+                Im Browser-Menü „App installieren“ oder „Zum Startbildschirm“ wählen.
+              </p>
+            </details>
             <button
-              className="alo-text-action"
+              type="button"
               onClick={() => {
-                if (taskDetails.current) {
-                  taskDetails.current.open = true;
-                  taskDetails.current.scrollIntoView({ block: "start", behavior: "smooth" });
+                setInstallable(false);
+                try {
+                  sessionStorage.setItem("alo-install-hint-dismissed", "1");
+                } catch {
+                  // ok
                 }
               }}
+              aria-label="Installationshinweis schließen"
+              className="min-h-11 shrink-0 rounded-full px-2 text-[11px] text-muted-foreground transition hover:text-foreground"
             >
-              Aufgaben & Erinnerungen öffnen →
-            </button>
-          )}
-        </article>
-        <article className="alo-card">
-          <p className="text-xs text-primary">
-            {chatState === "loading"
-              ? "Wichtige Chats werden geladen"
-              : chatState === "error"
-                ? "Chat-Status nicht verfügbar"
-                : important.length
-                  ? `${important.reduce((sum, r) => sum + r.unread, 0)} ungelesen in Favoriten (lokal geladene Nachrichten)`
-                  : "Noch keine Favoriten"}
-          </p>
-          <h3 className="font-semibold">
-            {[...important].sort((a, b) => b.unread - a.unread)[0]?.room.name ??
-              "Deine wichtigen Chats"}
-          </h3>
-          <p className="line-clamp-2 text-sm text-muted-foreground">
-            {[...important].sort((a, b) => b.unread - a.unread)[0]?.text ??
-              "Öffne Nexus und markiere einen Raum als Favoriten."}
-          </p>
-          {chatState === "ready" && important.length > 0 && (
-            <ul
-              aria-label="Ungelesene Nachrichten pro favorisiertem Nexus-Raum"
-              className="space-y-1 text-sm"
-            >
-              {important.map(({ room, unread }) => (
-                <li key={room.id}>
-                  {room.name}: {unread} ungelesen
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link
-            className="alo-text-action"
-            to="/chat"
-            onClick={() => {
-              const room = [...important].sort((a, b) => b.unread - a.unread)[0]?.room;
-              if (room)
-                window.sessionStorage.setItem(
-                  "alo-open-nexus",
-                  JSON.stringify({ kind: "room", id: room.id }),
-                );
-              onNavigate();
-            }}
-          >
-            In Nexus öffnen →
-          </Link>
-        </article>
-      </div>
-      <button className="alo-btn-primary w-full" onClick={onCapture}>
-        Etwas festhalten
-      </button>
-      <details ref={taskDetails} className="alo-secondary-details">
-        <summary>Aufgaben & Erinnerungen verwalten</summary>
-        <section className="alo-card space-y-3">
-          <h3 className="font-semibold">Aufgabe oder Erinnerung</h3>
-          <input
-            aria-label="Neue Aufgabe"
-            placeholder="Was steht an?"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={200}
-          />
-          <label>
-            Optional fällig am
-            <input
-              aria-label="Aufgabe fällig am"
-              type="datetime-local"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-            />
-          </label>
-          <button type="button" className="alo-btn-primary" disabled={!title.trim()} onClick={add}>
-            Aufgabe speichern
-          </button>
-          <p className="text-xs text-muted-foreground">
-            Zeitangaben in deiner Gerätezeitzone. Hinweise in der App, keine zugesicherte
-            Push-Benachrichtigung bei geschlossener App.
-          </p>
-        </section>
-        <section className="space-y-2">
-          <h3 className="font-semibold">Heute & offen</h3>
-          {tasks.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              Noch keine Aufgaben. Du kannst oben eine hinzufügen.
-            </p>
-          )}
-          {tasks
-            .sort((a, b) => Number(!!a.body.done) - Number(!!b.body.done))
-            .map((t) => (
-              <div className="alo-card flex items-start gap-3" key={t.id}>
-                <input
-                  type="checkbox"
-                  aria-label={`${String(t.body.title)} erledigt`}
-                  checked={!!t.body.done}
-                  onChange={(e) => {
-                    try {
-                      putAlo("task", { ...t.body, done: e.target.checked }, t.id, userId);
-                    } catch {
-                      setStatus("Änderung nicht gespeichert.");
-                    }
-                  }}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className={t.body.done ? "line-through" : "font-medium"}>
-                    {String(t.body.title)}
-                  </p>
-                  {typeof t.body.roomId === "string" && (
-                    <Link
-                      className="alo-text-action block"
-                      to="/chat"
-                      onClick={() => {
-                        window.sessionStorage.setItem(
-                          "alo-open-nexus",
-                          JSON.stringify({ kind: "room", id: t.body.roomId }),
-                        );
-                        onNavigate();
-                      }}
-                    >
-                      Zum Nexus-Ursprung →
-                    </Link>
-                  )}
-                  {!!t.body.due && (
-                    <p
-                      role={
-                        new Date(String(t.body.due)).getTime() <= now && !t.body.done
-                          ? "status"
-                          : undefined
-                      }
-                      className="text-xs text-muted-foreground"
-                    >
-                      {new Date(String(t.body.due)).toLocaleString("de-DE")}{" "}
-                      {new Date(String(t.body.due)).getTime() <= now && !t.body.done
-                        ? "· Jetzt fällig"
-                        : ""}
-                    </p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="text-xs text-muted-foreground"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Diese Aufgabe löschen? Cloudkopie wird bei aktivem Abgleich ebenfalls gelöscht.",
-                      )
-                    )
-                      removeAlo(t.id, userId);
-                  }}
-                >
-                  Löschen
-                </button>
-              </div>
-            ))}
-        </section>
-      </details>
-      <details className="alo-secondary-details">
-        <summary>Weitere wichtige Chats</summary>
-        <section className="space-y-2">
-          <h3 className="font-semibold">Wichtige Chats · deine Favoriten</h3>
-          {important.map((i) => (
-            <Link
-              key={i.room.id}
-              className="alo-card block"
-              to="/chat"
-              onClick={() => {
-                window.sessionStorage.setItem(
-                  "alo-open-nexus",
-                  JSON.stringify({ kind: "room", id: i.room.id }),
-                );
-                onNavigate();
-              }}
-            >
-              <p className="font-medium">
-                {i.room.name} · {i.unread} ungelesen
-              </p>
-              <p className="line-clamp-2 text-xs text-muted-foreground">{i.text}</p>
-            </Link>
-          ))}
-        </section>
-      </details>
-
-      <p role="status" className="text-xs text-muted-foreground">
-        {status}
-      </p>
-    </div>
-  );
-}
-function Collections({
-  userId,
-  rows,
-  onNavigate,
-}: {
-  userId: string;
-  rows: AloRecord[];
-  onNavigate: () => void;
-}) {
-  const [name, setName] = useState("");
-  const [selected, setSelected] = useState("");
-  const [status, setStatus] = useState("");
-  const collections = rows.filter((r) => r.kind === "collection");
-  const captures = rows.filter((r) => r.kind === "capture");
-  const items = selected ? captures.filter((r) => r.body.collectionId === selected) : captures;
-  const remove = (r: AloRecord) => {
-    if (
-      !window.confirm(
-        r.kind === "collection"
-          ? "Sammlung entfernen? Enthaltene Kopien bleiben in Alle Ablagen und können dort zugeordnet oder gelöscht werden."
-          : "Diese Ablagekopie samt Anhang löschen? Originalquelle bleibt erhalten; Cloudkopie wird bei aktiver Synchronisierung gelöscht.",
-      )
-    )
-      return;
-    try {
-      removeAlo(r.id, userId);
-      if (r.id === selected) setSelected("");
-    } catch {
-      setStatus("Löschen fehlgeschlagen.");
-    }
-  };
-  return (
-    <div className="grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)]">
-      <aside className="space-y-1" aria-label="Notiz-Sammlungen">
-        <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          Notizen
-        </p>
-        <button
-          type="button"
-          onClick={() => setSelected("")}
-          aria-pressed={selected === ""}
-          className={`w-full rounded-lg px-2 py-1.5 text-left text-sm font-medium transition-colors ${selected === "" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/60"}`}
-        >
-          Alle Notizen
-          <span className="ml-1 text-xs opacity-70">{captures.length}</span>
-        </button>
-        {collections.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => setSelected(c.id)}
-            aria-pressed={selected === c.id}
-            className={`w-full truncate rounded-lg px-2 py-1.5 text-left text-sm font-medium transition-colors ${selected === c.id ? "bg-primary/10 text-primary" : "text-foreground/80 hover:bg-muted/60"}`}
-          >
-            {String(c.body.title)}
-            <span className="ml-1 text-xs opacity-70">
-              {captures.filter((r) => r.body.collectionId === c.id).length}
-            </span>
-          </button>
-        ))}
-        <form
-          className="flex gap-1 px-1 pt-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!name.trim()) return;
-            try {
-              const r = putAlo("collection", { title: name.trim() }, undefined, userId);
-              setSelected(r.id);
-              setName("");
-            } catch {
-              setStatus("Sammlung konnte nicht gespeichert werden.");
-            }
-          }}
-        >
-          <input
-            aria-label="Neue Sammlung"
-            placeholder="Neue Sammlung …"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={100}
-          />
-          <button className="alo-btn text-xs" disabled={!name.trim()}>
-            Anlegen
-          </button>
-        </form>
-        {selected && (
-          <button
-            className="mx-1 mt-2 text-xs text-destructive hover:underline"
-            onClick={() => {
-              const c = collections.find((c) => c.id === selected);
-              if (c) remove(c);
-            }}
-          >
-            Sammlung entfernen
-          </button>
-        )}
-      </aside>
-      <div className="space-y-3">
-        <h2 className="text-xl font-semibold">
-          {selected
-            ? String(collections.find((c) => c.id === selected)?.body.title ?? "Sammlung")
-            : "Alle Notizen"}
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          Eine persönliche Sammlung für Inhalte aus allen drei Bereichen: Trainingspläne,
-          Mira-Antworten, Nexus-Nachrichten und Dateien. Keine automatische Freigabe an andere
-          Personen.
-        </p>
-        {!items.length && (
-          <p className="rounded-xl border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
-            Noch keine Inhalte. Nutze „Schnell speichern“ oder „Alo-Aktionen“ an einer Nachricht,
-            Antwort oder einem Trainingsplan.
-          </p>
-        )}
-        {items.map((r) => {
-          const a = readAttachment(r.body.attachment);
-          const url = safeLink(r.body.url);
-          return (
-            <article
-              className="rounded-xl border border-border/60 bg-card/60 p-5 transition-shadow hover:shadow-sm"
-              key={r.id}
-            >
-              <p className="text-xs text-muted-foreground">
-                {String(r.body.source ?? "Schnellablage")} ·{" "}
-                {AREA_LABELS[String(r.body.area)] ?? "Alo"} ·{" "}
-                {r.dirty ? "lokal / Abgleich offen" : "Cloud + lokal"}
-              </p>
-              <h3 className="mt-1 text-lg font-semibold">{String(r.body.title)}</h3>
-              <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground/90">
-                {String(r.body.text ?? "")}
-              </p>
-              {url && (
-                <a
-                  className="mt-2 inline-block text-sm text-primary underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  href={url}
-                >
-                  Link öffnen
-                </a>
-              )}
-              {a && (
-                <>
-                  <p className="mt-2 text-xs">Datei: {a.name}</p>
-                  {a.type.startsWith("image/") && (
-                    <img
-                      loading="lazy"
-                      decoding="async"
-                      src={a.data}
-                      alt={a.name}
-                      className="mt-2 max-h-60 rounded-lg"
-                    />
-                  )}
-                  {a.type.startsWith("audio/") && (
-                    <audio controls src={a.data} className="mt-2 w-full" />
-                  )}
-                  <a className="alo-btn mt-2 inline-block text-xs" href={a.data} download={a.name}>
-                    Datei herunterladen
-                  </a>
-                </>
-              )}
-              <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border/40 pt-3">
-                <label className="text-xs text-muted-foreground">
-                  Zuordnung
-                  <select
-                    aria-label={`Sammlung für ${String(r.body.title)}`}
-                    value={String(r.body.collectionId ?? "")}
-                    onChange={(e) => {
-                      try {
-                        putAlo(
-                          "capture",
-                          { ...r.body, collectionId: e.target.value },
-                          r.id,
-                          userId,
-                        );
-                      } catch {
-                        setStatus("Zuordnung nicht gespeichert.");
-                      }
-                    }}
-                  >
-                    <option value="">Ohne Sammlung</option>
-                    {collections.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {String(c.body.title)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <ContentActions
-                  userId={userId}
-                  text={String(r.body.text ?? "")}
-                  title={String(r.body.title)}
-                  source={String(r.body.source ?? "Alo")}
-                  extra={a ? { attachment: a } : {}}
-                  onMiraNavigate={onNavigate}
-                />
-                <button
-                  className="text-xs text-destructive hover:underline"
-                  onClick={() => remove(r)}
-                >
-                  Ablage löschen
-                </button>
-              </div>
-            </article>
-          );
-        })}
-        <p role="status" className="text-xs">
-          {status}
-        </p>
-      </div>
-    </div>
-  );
-}
-function Shortcuts({
-  userId,
-  rows,
-  onTab,
-  onNavigate,
-}: {
-  userId: string;
-  rows: AloRecord[];
-  onTab: (tab: Tab) => void;
-  onNavigate: () => void;
-}) {
-  const navigate = useNavigate();
-  const [title, setTitle] = useState("");
-  const [target, setTarget] = useState("today");
-  const [prompt, setPrompt] = useState("");
-  const [status, setStatus] = useState("");
-  const shortcuts = rows.filter((r) => r.kind === "shortcut");
-  const execute = (r: AloRecord) => {
-    if (r.body.target === "training") {
-      onNavigate();
-      void navigate({ to: "/programs" });
-    } else if (TABS.some((t) => t.id === r.body.target)) onTab(r.body.target as Tab);
-  };
-  return (
-    <div className="space-y-3">
-      <h2 className="text-xl font-semibold">Schnellaktionen</h2>
-      <p className="text-xs text-muted-foreground">
-        Deine häufigen Abläufe mit einem Tipp. Mira-Prompts werden als Entwurf geöffnet und nie
-        automatisch gesendet.
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        {shortcuts.map((r) => (
-          <div className="alo-card" key={r.id}>
-            {r.body.target === "mira" ? (
-              <MiraHandoff
-                userId={userId}
-                text={String(r.body.prompt ?? "")}
-                source="Schnellaktion"
-                label={`${String(r.body.title)} →`}
-                className="w-full text-left font-semibold"
-                onNavigate={onNavigate}
-              />
-            ) : (
-              <button className="w-full text-left font-semibold" onClick={() => execute(r)}>
-                {String(r.body.title)} →
-              </button>
-            )}
-            <button
-              className="mt-3 text-xs text-muted-foreground"
-              onClick={() => {
-                if (window.confirm("Diese Schnellaktion löschen?")) removeAlo(r.id, userId);
-              }}
-            >
-              Entfernen
+              Schließen
             </button>
           </div>
-        ))}
-      </div>
-      {!shortcuts.length && (
-        <p className="text-sm text-muted-foreground">Noch keine persönlichen Schnellaktionen.</p>
+        </aside>
       )}
-      <form
-        className="alo-card space-y-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!title.trim() || (target === "mira" && !prompt.trim())) return;
-          try {
-            putAlo("shortcut", { title: title.trim(), target, prompt }, undefined, userId);
-            setTitle("");
-            setPrompt("");
-            setStatus("Schnellaktion gespeichert.");
-          } catch {
-            setStatus("Nicht gespeichert.");
-          }
-        }}
-      >
-        <label>
-          Name
-          <input
-            aria-label="Schnellaktion Name"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={100}
-          />
-        </label>
-        <label>
-          Ablauf
-          <select
-            aria-label="Schnellaktion Ablauf"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-          >
-            <option value="today">Tagesübersicht öffnen</option>
-            <option value="capture">Schnell speichern</option>
-            <option value="search">Überall suchen</option>
-            <option value="collections">Sammlungen öffnen</option>
-            <option value="training">Trainingsplan öffnen</option>
-            <option value="mira">Mira-Frage vorbereiten</option>
-          </select>
-        </label>
-        {target === "mira" && (
-          <label>
-            Deine Frage
-            <textarea
-              aria-label="Schnellaktion Mira-Frage"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              maxLength={10000}
-            />
-          </label>
-        )}
-        <button
-          className="alo-btn-primary"
-          disabled={!title.trim() || (target === "mira" && !prompt.trim())}
-        >
-          Schnellaktion anlegen
-        </button>
-      </form>
-      <p role="status" className="text-xs">
-        {status}
-      </p>
-    </div>
+      <OfflineBanner />
+      <Toaster position="top-center" richColors />
+    </QueryClientProvider>
   );
 }
