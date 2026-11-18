@@ -561,3 +561,5 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 
 ### CI-Nachtrag zum Free-only-Folgepatch
 - CI-Run `44379257455` stoppte im Lint ausschließlich wegen zweier Prettier-Formatierungen in `src/lib/mira-attachments.ts` und `src/lib/super-ai.functions.ts`; 15 bestehende Warnungen waren nicht blockierend. Regressionstests, TypeScript und Build wurden deshalb übersprungen. Die beiden Formatstellen sind korrigiert; ein erneuter CI-Lauf ist erforderlich.
+
+- Regression-CI `44379444270`: Lint erfolgreich; 1 von 1.052 Tests fehlgeschlagen (1.050 bestanden, 1 übersprungen). Der alte Test in `tests/mira-attachments.test.ts` erwartete noch vier Provider-Fetches; der Server hat jetzt absichtlich nur noch einen fest gepinnten OpenRouter-Free-Fetch. Assertion und Testname wurden angepasst; nächster CI-Lauf erforderlich. TypeScript und Build wurden wegen des Testfehlers übersprungen.

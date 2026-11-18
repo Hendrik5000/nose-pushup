@@ -263,9 +263,9 @@ test("320/390px composer input has a separate full-width row and removable compa
   assert.match(css, /text-overflow: ellipsis/);
   assert.doesNotMatch(css, /position: fixed/);
 });
-test("all provider calls use the worker-compatible redirect guard", () => {
+test("the sole free provider call uses the worker-compatible redirect guard", () => {
   const server = read("lib/super-ai.functions.ts");
-  assert.equal((server.match(/await fetchAiProvider\(/g) ?? []).length, 4);
+  assert.equal((server.match(/await fetchAiProvider\(/g) ?? []).length, 1);
   assert.doesNotMatch(server, /redirect: "error"|await fetch\(/);
 });
 test("manual provider fetch accepts 2xx and retains normal 4xx/5xx handling without retries", async () => {
