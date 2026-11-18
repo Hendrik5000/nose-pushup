@@ -42,7 +42,8 @@ test("device formats are explicitly allowlisted; Office tables use CSV/TSV", () 
   ]) {
     assert.throws(() => checkMiraFile(new File(["data"], name)), /Format nicht unterstützt/);
   }
-  assert.match(MIRA_FILE_ACCEPT, /application\/pdf/);
+  assert.match(MIRA_FILE_ACCEPT, /\.txt/);
+  assert.doesNotMatch(MIRA_FILE_ACCEPT, /image\/|application\/pdf/);
   assert.throws(
     () => checkMiraFile(new File([png], "fake.png", { type: "text/plain" })),
     /Dateityp/,
@@ -155,20 +156,15 @@ test("text is bounded without silent truncation, and read errors remain actionab
   };
   await assert.rejects(readMiraAttachments([file]), /nicht mehr verfügbar/);
 });
-test("PDF capability is gated, custom image routing rejected; no silently discarded images", () => {
-  assertMiraAttachmentProvider("google", [{ mime: "application/pdf" }]);
-  for (const provider of ["openai", "lovable", "anthropic", "custom"] as const)
+test("Free-only Mira rejects binary attachments before sending them", () => {
+  for (const mime of ["application/pdf", "image/png"]) {
     assert.throws(
-      () => assertMiraAttachmentProvider(provider, [{ mime: "application/pdf" }]),
-      /nur über den Google/,
+      () => assertMiraAttachmentProvider("openrouter", [{ mime }]),
+      /Free-only-Modus[\s\S]*Es wurde nichts gesendet/,
     );
-  assert.throws(
-    () => assertMiraAttachmentProvider("custom", [{ mime: "image/png" }]),
-    /nicht verlässlich/,
-  );
-  for (const provider of ["openai", "google", "lovable", "anthropic"] as const)
-    assertMiraAttachmentProvider(provider, [{ mime: "image/png" }]);
+  }
 });
+
 test("provider payloads transmit images/PDF as binary parts, text as labelled untrusted context", async () => {
   const items = await readMiraAttachments([image(), pdf(), new File(["hello"], "Notes.txt")]);
   const history = [
@@ -267,9 +263,9 @@ test("320/390px composer input has a separate full-width row and removable compa
   assert.match(css, /text-overflow: ellipsis/);
   assert.doesNotMatch(css, /position: fixed/);
 });
-test("all provider calls use the worker-compatible redirect guard", () => {
+test("the sole free provider call uses the worker-compatible redirect guard", () => {
   const server = read("lib/super-ai.functions.ts");
-  assert.equal((server.match(/await fetchAiProvider\(/g) ?? []).length, 4);
+  assert.equal((server.match(/await fetchAiProvider\(/g) ?? []).length, 1);
   assert.doesNotMatch(server, /redirect: "error"|await fetch\(/);
 });
 test("manual provider fetch accepts 2xx and retains normal 4xx/5xx handling without retries", async () => {

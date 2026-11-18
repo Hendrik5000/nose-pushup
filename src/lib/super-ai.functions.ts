@@ -4,16 +4,11 @@ import {
   validateMiraAttachments,
   includeMiraTextAttachments,
   miraInputCharacterCount,
-  openAiAttachmentParts,
-  googleAttachmentParts,
-  anthropicAttachmentParts,
   type MiraAttachment,
 } from "@/lib/mira-attachments";
 import { buildMiraSystemPrompt } from "@/lib/mira-response-policy";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
 
 type ProviderId =
   | "openai"
@@ -28,8 +23,6 @@ type ProviderId =
 type ProviderPayload = {
   id: ProviderId;
   apiKey: string;
-  baseUrl?: string;
-  accountId?: string;
   model: string;
 };
 
@@ -52,109 +45,12 @@ const RATE_WINDOW_MS = 60_000;
 const RATE_MAX_PER_WINDOW = 20;
 const MAX_INPUT_CHARS = 12_000;
 
-const MODEL_ALLOW: Record<Exclude<ProviderId, "custom">, string[]> = {
-  openai: ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "gpt-4.1", "o4-mini"],
-  anthropic: [
-    "claude-3-5-haiku-latest",
-    "claude-3-5-sonnet-latest",
-    "claude-sonnet-4-20250514",
-    "claude-opus-4-20250514",
-  ],
-  google: ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-pro"],
-  lovable: [
-    "google/gemini-3-flash-preview",
-    "google/gemini-2.5-flash",
-    "openai/gpt-5-mini",
-    "openai/gpt-5",
-  ],
-  openrouter: ["openrouter/free"],
-  cerebras: ["gpt-oss-120b"],
-  cloudflare: [
-    "@cf/zai-org/glm-4.7-flash",
-    "@cf/google/gemma-4-26b-a4b-it",
-    "@cf/qwen/qwen3.8-27b",
-  ],
-};
+const OPENROUTER_MODEL = "openrouter/free";
 
-function assertModelAllowed(id: ProviderId, model: string) {
-  if (id === "custom") {
-    if (!model || model.length > 80 || /[^\w./:-]/.test(model)) {
-      throw new Error("Ungültiger Modellname");
-    }
-    return;
-  }
-  const list = MODEL_ALLOW[id];
-  if (!list.includes(model)) {
+function assertModelAllowed(model: string) {
+  if (model !== OPENROUTER_MODEL) {
     throw new Error(`Modell nicht erlaubt: ${model}`);
   }
-}
-
-function isPrivateIp(ip: string): boolean {
-  if (ip === "127.0.0.1" || ip === "::1" || ip === "0.0.0.0") return true;
-  if (ip.startsWith("10.") || ip.startsWith("192.168.") || ip.startsWith("169.254.")) return true;
-  if (ip.startsWith("172.")) {
-    const second = Number(ip.split(".")[1] ?? -1);
-    if (second >= 16 && second <= 31) return true;
-  }
-  const lower = ip.toLowerCase();
-  if (lower.startsWith("fc") || lower.startsWith("fd") || lower.startsWith("fe80")) return true;
-  return false;
-}
-
-async function assertSafeCustomBaseUrl(raw: string): Promise<string> {
-  let url: URL;
-  try {
-    url = new URL(raw.trim());
-  } catch {
-    throw new Error("Custom Base-URL ungültig");
-  }
-  if (url.protocol !== "https:") throw new Error("Custom Base-URL muss https:// nutzen");
-  if (url.username || url.password) throw new Error("URL darf keine Zugangsdaten enthalten");
-  if (url.port && url.port !== "443") throw new Error("Nur Standard-HTTPS-Port erlaubt");
-
-  const host = url.hostname.toLowerCase();
-  if (
-    host === "localhost" ||
-    host.endsWith(".localhost") ||
-    host.endsWith(".local") ||
-    host === "metadata.google.internal"
-  ) {
-    throw new Error("Host nicht erlaubt");
-  }
-
-  if (isIP(host) && isPrivateIp(host)) {
-    throw new Error("Private IP-Adressen sind gesperrt");
-  }
-
-  const allow = (process.env.CUSTOM_AI_HOST_ALLOWLIST ?? "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  if (allow.length === 0) {
-    throw new Error(
-      "Custom-KI ist serverseitig gesperrt (CUSTOM_AI_HOST_ALLOWLIST nicht gesetzt).",
-    );
-  }
-  if (!allow.includes(host)) {
-    throw new Error(`Host nicht in Allowlist: ${host}`);
-  }
-
-  if (!isIP(host)) {
-    try {
-      const results = await lookup(host, { all: true });
-      for (const r of results) {
-        if (isPrivateIp(r.address)) {
-          throw new Error("Host zeigt auf privates Netzwerk");
-        }
-      }
-    } catch (e) {
-      if (e instanceof Error && e.message.includes("privates")) throw e;
-      throw new Error("Host-DNS konnte nicht geprüft werden");
-    }
-  }
-
-  const path = url.pathname.replace(/\/$/, "") || "";
-  return `${url.origin}${path}`;
 }
 
 function checkUserRateLimit(userId: string) {
@@ -173,44 +69,13 @@ function checkUserRateLimit(userId: string) {
   }
 }
 
-async function callLovable(model: string, system: string, messages: InMsg[]): Promise<string> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Lovable API-Key fehlt");
-  const body = {
-    model,
-    messages: [
-      { role: "system", content: system },
-      ...messages.map((m) => ({
-        role: m.role,
-        content: m.attachments?.length
-          ? [{ type: "text", text: m.content }, ...openAiAttachmentParts(m.attachments)]
-          : m.content,
-      })),
-    ],
-  };
-  const res = await fetchAiProvider("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { "content-type": "application/json", "Lovable-API-Key": key },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    if (res.status === 429) throw new Error("Rate limit — bitte kurz warten.");
-    if (res.status === 402) throw new Error("AI-Kredit aufgebraucht.");
-    throw new Error(`Lovable Gateway ${res.status}: ${t.slice(0, 200)}`);
-  }
-  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  return (json.choices?.[0]?.message?.content ?? "").trim();
-}
-
 async function callOpenAICompat(
-  base: string,
   apiKey: string,
   model: string,
   system: string,
   messages: InMsg[],
 ): Promise<string> {
-  const res = await fetchAiProvider(`${base.replace(/\/$/, "")}/chat/completions`, {
+  const res = await fetchAiProvider("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -221,12 +86,7 @@ async function callOpenAICompat(
       max_tokens: 1200,
       messages: [
         { role: "system", content: system },
-        ...messages.map((m) => ({
-          role: m.role,
-          content: m.attachments?.length
-            ? [{ type: "text", text: m.content }, ...openAiAttachmentParts(m.attachments)]
-            : m.content,
-        })),
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
       ],
     }),
   });
@@ -236,77 +96,6 @@ async function callOpenAICompat(
   }
   const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   return (json.choices?.[0]?.message?.content ?? "").trim();
-}
-
-async function callAnthropic(
-  apiKey: string,
-  model: string,
-  system: string,
-  messages: InMsg[],
-): Promise<string> {
-  const res = await fetchAiProvider("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 2048,
-      system,
-      messages: messages.map((m) => ({
-        role: m.role,
-        content: m.attachments?.length
-          ? [{ type: "text", text: m.content }, ...anthropicAttachmentParts(m.attachments)]
-          : m.content,
-      })),
-    }),
-  });
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    throw new Error(`Anthropic ${res.status}: ${t.slice(0, 200)}`);
-  }
-  const json = (await res.json()) as { content?: { type: string; text?: string }[] };
-  return (json.content ?? [])
-    .filter((c) => c.type === "text")
-    .map((c) => c.text ?? "")
-    .join("")
-    .trim();
-}
-
-async function callGoogle(
-  apiKey: string,
-  model: string,
-  system: string,
-  messages: InMsg[],
-): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  const contents = messages.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: m.attachments?.length
-      ? [{ text: m.content }, ...googleAttachmentParts(m.attachments)]
-      : [{ text: m.content }],
-  }));
-  const res = await fetchAiProvider(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: system }] },
-      contents,
-    }),
-  });
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    throw new Error(`Google ${res.status}: ${t.slice(0, 200)}`);
-  }
-  const json = (await res.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  return (json.candidates?.[0]?.content?.parts ?? [])
-    .map((p) => p.text ?? "")
-    .join("")
-    .trim();
 }
 
 export const superAiChat = createServerFn({ method: "POST" })
@@ -360,8 +149,6 @@ export const superAiChat = createServerFn({ method: "POST" })
     const provider: ProviderPayload = {
       id: raw.provider.id,
       apiKey: String(raw.provider.apiKey ?? "").slice(0, 500),
-      baseUrl: raw.provider.baseUrl ? String(raw.provider.baseUrl).slice(0, 300) : undefined,
-      accountId: raw.provider.accountId ? String(raw.provider.accountId).slice(0, 32) : undefined,
       model: String(raw.provider.model ?? "").slice(0, 80),
     };
     return {
@@ -380,7 +167,7 @@ export const superAiChat = createServerFn({ method: "POST" })
       );
     }
     checkUserRateLimit(userId);
-    assertModelAllowed(p.id, p.model);
+    assertModelAllowed(p.model);
 
     const attachments = data.messages.flatMap((m) => m.attachments ?? []);
     if (attachments.some((item) => item.mime.startsWith("image/"))) {
@@ -394,13 +181,7 @@ export const superAiChat = createServerFn({ method: "POST" })
     const system = buildMiraSystemPrompt(data.systemExtra ?? "");
 
     if (!p.apiKey) throw new Error("OpenRouter API-Key fehlt");
-    const reply = await callOpenAICompat(
-      "https://openrouter.ai/api/v1",
-      p.apiKey,
-      p.model,
-      system,
-      providerMessages,
-    );
+    const reply = await callOpenAICompat(p.apiKey, p.model, system, providerMessages);
 
     return {
       reply: reply || "Keine Antwort erhalten.",
