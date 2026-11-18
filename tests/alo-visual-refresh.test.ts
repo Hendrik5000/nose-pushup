@@ -11,9 +11,7 @@ const home = readFileSync(
 const marketplace = readFileSync(
   new URL("../src/components/marketplace/MarketplaceAppCatalog.tsx", import.meta.url),
   "utf8",
-);
-const directory = readFileSync(new URL("../src/components/HomeAppMenuLayout.tsx", import.meta.url), "utf8");
-const games = readFileSync(new URL("../src/routes/games.tsx", import.meta.url), "utf8");
+);\nconst directory = readFileSync(\n  new URL("../src/components/HomeAppMenuLayout.tsx", import.meta.url),\n  "utf8",\n);\nconst games = readFileSync(new URL("../src/routes/games.tsx", import.meta.url), "utf8");
 
 test("the visual refresh is loaded after the adaptive layout layer", () => {
   assert.ok(root.indexOf("adaptiveLayoutCss") < root.indexOf("aloVisualRefreshCss"));
@@ -111,4 +109,4 @@ test("shared directory pages and the standalone games hub have explicit whole-si
   assert.match(css, /\.alo-games-page/);
   assert.match(css, /alo-site-directory-page > header/);
   assert.match(css, /games-title/);
-});
+});\n
