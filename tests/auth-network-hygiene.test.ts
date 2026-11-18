@@ -45,7 +45,7 @@ test("Home and the training app reuse the authenticated route user without extra
 test("background notifications reuse the authenticated user id and contain transient request failures", () => {
   assert.match(notificationsHook, /useNotifications\(userId: string\)/);
   assert.doesNotMatch(notificationsHook, /supabase\.auth\.getUser\(\)/);
-  assert.match(notificationsHook, /profileError \|\| statsError/);
+  assert.match(notificationsHook, /profileRead\.error \|\| statsRead\.error/);
   assert.match(notificationsHook, /best-effort/);
 });
 
