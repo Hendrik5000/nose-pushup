@@ -22,6 +22,8 @@ import communityReferenceCss from "../community-reference.css?url";
 import healthReferenceCss from "../health-reference.css?url";
 import aiReferenceCss from "../ai-reference.css?url";
 import aiResponsiveCss from "../ai-responsive.css?url";
+import adaptiveLayoutCss from "../adaptive-layout.css?url";
+import aloVisualRefreshCss from "../alo-visual-refresh.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
@@ -148,6 +150,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: healthReferenceCss },
       { rel: "stylesheet", href: aiReferenceCss },
       { rel: "stylesheet", href: aiResponsiveCss },
+      { rel: "stylesheet", href: adaptiveLayoutCss },
+      { rel: "stylesheet", href: aloVisualRefreshCss },
 
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },

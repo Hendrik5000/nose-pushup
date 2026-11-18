@@ -1,0 +1,134 @@
+/* Alo adaptive layout layer — fluid sizing across viewport widths, heights and aspect ratios.
+   Loaded after the established mobile/tablet rules so it only fills their remaining gaps. */
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body, #root {
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  max-width: 100%;
+}
+
+#root, .authenticated-shell, .authenticated-shell > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.authenticated-shell {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  overflow-wrap: anywhere;
+}
+
+.authenticated-shell :is(main, section, article, aside, nav, header, footer, form,
+  [role="main"], [role="region"], [role="tabpanel"]) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.authenticated-shell :is(img, video, canvas, svg, iframe) {
+  max-width: 100%;
+}
+
+.authenticated-shell :is(input, textarea, select, button) {
+  max-width: 100%;
+}
+
+.authenticated-shell :is(p, h1, h2, h3, h4, label, a, button, td, th) {
+  overflow-wrap: anywhere;
+}
+
+/* Fluid page gutters: no sudden jump between phone, tablet and desktop breakpoints. */
+.authenticated-shell main {
+  padding-inline: clamp(0.75rem, 2.4vw, 2rem);
+  scroll-margin-block: 1rem;
+}
+
+/* Wide and ultrawide displays: keep reading/chat columns comfortable instead of stretching. */
+@media (min-width: 1440px) {
+  .authenticated-shell main {
+    margin-inline: auto;
+  }
+  .authenticated-shell :is(.sport-health-page, .sport-profile-page, .alo-tablet-training) {
+    width: min(100%, 84rem);
+    margin-inline: auto;
+  }
+  .authenticated-shell :is(.sport-ai-page, .app-chat-shell) {
+    width: min(100%, 88rem);
+    margin-inline: auto;
+  }
+}
+
+@media (min-width: 1800px) and (min-aspect-ratio: 16/9) {
+  .authenticated-shell main {
+    padding-inline: clamp(2rem, 4vw, 4.5rem);
+  }
+  .authenticated-shell :is(.sport-ai-page, .app-chat-shell) {
+    width: min(100%, 92rem);
+  }
+}
+
+/* Tall portrait screens have room for breathing space, but content remains width-led. */
+@media (min-width: 600px) and (orientation: portrait) {
+  .authenticated-shell main {
+    padding-inline: clamp(1rem, 3.2vw, 2.5rem);
+  }
+  .authenticated-shell .alo-tablet-home-apps {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.75rem), 1fr));
+  }
+}
+
+/* Short landscape windows (small laptops, split-screen tablets and phone rotation). */
+@media (orientation: landscape) and (max-height: 700px) {
+  .authenticated-shell {
+    --alo-compact-viewport: 1;
+  }
+  .authenticated-shell main {
+    scroll-padding-block: 0.5rem;
+  }
+  .authenticated-shell :is(.sport-chat-stage, .community-conversation, .sport-ai-chat-main) {
+    min-height: 0;
+  }
+  .authenticated-shell :is(.sport-ai-chat-options[open], .alo-classic-mira-options[open]) {
+    max-height: 38dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Narrow devices and split-screen panes: prevent fixed-width children from forcing overflow. */
+@media (max-width: 480px) {
+  .authenticated-shell main {
+    padding-inline: clamp(0.625rem, 3vw, 0.875rem);
+  }
+  .authenticated-shell :is(.sport-ai-chat-grid, .sport-profile-page, .alo-tablet-home-apps) {
+    min-width: 0;
+  }
+  .authenticated-shell :is(.sport-chat-composer, .community-chat-composer, .sport-ai-chat-composer) {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* The browser's safe areas are additive; avoid hard-coded viewport-height assumptions. */
+@supports (height: 100dvh) {
+  .authenticated-shell { min-height: 100dvh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .authenticated-shell *, .authenticated-shell *::before, .authenticated-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

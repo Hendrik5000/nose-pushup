@@ -81,7 +81,7 @@ function AdminOverview() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-24 pt-5">
+    <main className="alo-admin-page mx-auto w-full max-w-3xl space-y-6 px-4 pb-24 pt-5">
       <AloHomeLink />
       <header className="rounded-3xl border border-border bg-card/70 p-5 shadow-sm sm:p-7">
         <div className="flex items-center gap-3">
