@@ -72,7 +72,7 @@ export function PostfachPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-6">
+    <main className="alo-postfach-page mx-auto w-full max-w-2xl px-4 pb-28 pt-6">
       <header className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Postfach</h1>
