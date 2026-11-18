@@ -1,0 +1,197 @@
+/*
+ * Alo visual refresh — shared polish built on the user's existing design tokens.
+ * This layer intentionally does not define a new palette or override the selected
+ * design style. All app accents, surfaces and radii continue to follow user settings.
+ */
+html[data-design-style] .authenticated-shell {
+  --alo-ui-hairline: color-mix(in srgb, var(--border) 78%, transparent);
+  --alo-ui-surface: color-mix(in srgb, var(--card) 94%, var(--background));
+  --alo-ui-surface-raised: color-mix(in srgb, var(--card) 98%, var(--background));
+  min-width: 0;
+  background-color: var(--background);
+  background-image: radial-gradient(
+    ellipse 72rem 34rem at 50% -18rem,
+    color-mix(in srgb, var(--primary) 7%, transparent),
+    transparent 72%
+  );
+}
+
+html[data-design-style] .alo-module-surface,
+html[data-design-style] .alo-page-sidebar-provider,
+html[data-design-style] .alo-page-sidebar-content {
+  min-width: 0;
+}
+
+html[data-design-style] .alo-tablet-home-page {
+  max-width: 88rem;
+  padding-inline: clamp(1rem, 3.2vw, 2.75rem);
+}
+
+html[data-design-style] .alo-tablet-home-hub {
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+}
+
+html[data-design-style] .alo-visual-refresh .alo-tablet-home-hub > div > header {
+  align-items: center;
+  padding-block: 0.35rem 1.1rem;
+  border-bottom: 1px solid var(--alo-ui-hairline);
+}
+
+html[data-design-style] .alo-visual-refresh #app-hub-title {
+  font-size: clamp(1.9rem, 1.45rem + 1.25vw, 2.45rem);
+  font-weight: 760;
+  letter-spacing: -0.055em;
+}
+
+html[data-design-style] .alo-visual-refresh .alo-tablet-home-hub > div > header :is(button, a) {
+  border-color: var(--alo-ui-hairline);
+  background: var(--alo-ui-surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 5%, transparent);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+html[data-design-style] .alo-visual-refresh .alo-tablet-home-hub > div > header :is(button, a):hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--primary) 38%, var(--border));
+  background: color-mix(in srgb, var(--card) 88%, var(--primary));
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+html[data-design-style] .alo-visual-refresh .alo-tablet-home-hub [aria-label="Dein Tag"] {
+  border-color: var(--alo-ui-hairline);
+  border-radius: calc(var(--design-card-radius, 1rem) + 0.2rem);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--card) 97%, var(--primary)),
+    var(--alo-ui-surface)
+  );
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
+html[data-design-style] .alo-visual-refresh .alo-tablet-home-hub [data-home-widget-id] {
+  border-color: var(--alo-ui-hairline);
+  border-radius: var(--design-card-radius, 1rem);
+  background: var(--alo-ui-surface);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--foreground) 4%, transparent);
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+html[data-design-style] .alo-visual-refresh .alo-tablet-home-apps {
+  column-gap: clamp(0.65rem, 1.8vw, 1.1rem);
+  row-gap: clamp(1.1rem, 2.4vw, 1.65rem);
+}
+
+html[data-design-style] .alo-visual-refresh .alo-tablet-home-apps > [data-home-app-id] {
+  border-radius: calc(var(--design-card-radius, 1rem) + 0.1rem);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    filter 180ms ease,
+    box-shadow 180ms ease;
+}
+
+html[data-design-style] .alo-visual-refresh .alo-tablet-home-apps > [data-home-app-id]:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 4px;
+}
+
+html[data-design-style] .alo-page-sidebar [data-sidebar="sidebar"] {
+  border-color: var(--alo-ui-hairline, color-mix(in srgb, var(--border) 78%, transparent));
+  background-color: color-mix(in srgb, var(--background) 88%, var(--card));
+  -webkit-backdrop-filter: saturate(1.25) blur(18px);
+  backdrop-filter: saturate(1.25) blur(18px);
+}
+
+html[data-design-style] .alo-page-sidebar .alo-page-sidebar-link {
+  border-radius: calc(var(--design-card-radius, 1rem) * 0.78);
+}
+
+html[data-design-style] .alo-page-sidebar .alo-page-sidebar-link[data-active="true"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+html[data-design-style] .alo-page-sidebar-content :is(.rounded-2xl.border, .rounded-3xl.border) {
+  border-color: var(--alo-ui-hairline);
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--foreground) 3.5%, transparent);
+}
+
+html[data-design-style] .authenticated-shell :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+  border-color: var(--alo-ui-hairline);
+  background-color: color-mix(in srgb, var(--background) 84%, var(--card));
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+html[data-design-style] .authenticated-shell :is(input, textarea, select):focus-visible {
+  border-color: var(--ring);
+  background-color: var(--alo-ui-surface-raised);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 16%, transparent);
+}
+
+html[data-design-style] .app-homebar .homebar-items {
+  border: 1px solid var(--alo-ui-hairline, var(--border));
+  background: color-mix(in srgb, var(--card) 84%, var(--background));
+  box-shadow: 0 12px 36px color-mix(in srgb, #000 18%, transparent);
+  -webkit-backdrop-filter: saturate(1.3) blur(22px);
+  backdrop-filter: saturate(1.3) blur(22px);
+}
+
+html[data-design-style] .app-homebar .homebar-link {
+  min-height: 2.9rem;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+html[data-design-style] .authenticated-shell :is(button, a, [role="button"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-design-style] .alo-visual-refresh .alo-tablet-home-apps > [data-home-app-id]:hover {
+    transform: translateY(-2px);
+    filter: saturate(1.04);
+  }
+
+  html[data-design-style] .alo-visual-refresh .alo-tablet-home-hub [data-home-widget-id]:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
+    box-shadow: 0 9px 24px color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+}
+
+@media (max-width: 640px) {
+  html[data-design-style] .alo-tablet-home-page {
+    padding-inline: max(1rem, env(safe-area-inset-left));
+  }
+
+  html[data-design-style] .alo-visual-refresh .alo-tablet-home-hub > div > header {
+    gap: 0.65rem;
+    padding-bottom: 0.9rem;
+  }
+
+  html[data-design-style] .alo-visual-refresh .alo-tablet-home-hub > div > header > div {
+    gap: 0.45rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-design-style] .alo-visual-refresh .alo-tablet-home-apps > [data-home-app-id],
+  html[data-design-style] .alo-visual-refresh .alo-tablet-home-hub [data-home-widget-id],
+  html[data-design-style] .authenticated-shell :is(button, a, [role="button"]) {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

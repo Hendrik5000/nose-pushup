@@ -2876,7 +2876,7 @@ function Dashboard() {
       (user.is_anonymous ? "Gast" : (user.email?.split("@")[0] ?? null)),
   });
   return (
-    <main className="alo-tablet-home-page relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
+    <main data-alo-ui-refresh="home" className="alo-tablet-home-page alo-visual-refresh relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24">
       <HomeAppHub key={user.id} displayName={displayName} avatarUrl={avatarUrl} />
       <MiraOverlayLauncher />
     </main>

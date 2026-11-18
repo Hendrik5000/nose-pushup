@@ -23,6 +23,7 @@ import healthReferenceCss from "../health-reference.css?url";
 import aiReferenceCss from "../ai-reference.css?url";
 import aiResponsiveCss from "../ai-responsive.css?url";
 import adaptiveLayoutCss from "../adaptive-layout.css?url";
+import aloVisualRefreshCss from "../alo-visual-refresh.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { installGlobalErrorReporting } from "@/lib/error-reports";
 import { applyTheme, getStoredTheme, isThemeId } from "@/lib/theme";
@@ -72,8 +73,8 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {moduleLoadError
-            ? "Möglicherweise ist eine ältere App-Version geöffnet oder die Verbindung wurde unterbrochen. Prüfe deine Verbindung und aktualisiere die App."
-            : "Es ist ein Fehler aufgetreten. Lade die Seite neu oder gehe zurück zur Startseite."}
+            ? "MÃ¶glicherweise ist eine Ã¤ltere App-Version geÃ¶ffnet oder die Verbindung wurde unterbrochen. PrÃ¼fe deine Verbindung und aktualisiere die App."
+            : "Es ist ein Fehler aufgetreten. Lade die Seite neu oder gehe zurÃ¼ck zur Startseite."}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -106,10 +107,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Alo — All in one" },
+      { title: "Alo â All in one" },
       {
         name: "description",
-        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+        content: "Alo vereint Training, Mira fÃ¼r Alltag und Wissen sowie Nexus Chat.",
       },
       { name: "theme-color", content: "#0b0b0f" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
@@ -117,18 +118,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "Alo" },
       { name: "author", content: "Lovable" },
 
-      { property: "og:title", content: "Alo — All in one" },
+      { property: "og:title", content: "Alo â All in one" },
       {
         property: "og:description",
-        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+        content: "Alo vereint Training, Mira fÃ¼r Alltag und Wissen sowie Nexus Chat.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Alo — All in one" },
+      { name: "twitter:title", content: "Alo â All in one" },
       {
         name: "twitter:description",
-        content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
+        content: "Alo vereint Training, Mira fÃ¼r Alltag und Wissen sowie Nexus Chat.",
       },
       {
         property: "og:image",
@@ -150,6 +151,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: aiReferenceCss },
       { rel: "stylesheet", href: aiResponsiveCss },
       { rel: "stylesheet", href: adaptiveLayoutCss },
+      { rel: "stylesheet", href: aloVisualRefreshCss },
 
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -364,7 +366,7 @@ function RootComponent() {
                 Alo als App installieren
               </summary>
               <p className="pb-2 leading-relaxed">
-                Im Browser-Menü „App installieren“ oder „Zum Startbildschirm“ wählen.
+                Im Browser-MenÃ¼ âApp installierenâ oder âZum Startbildschirmâ wÃ¤hlen.
               </p>
             </details>
             <button
@@ -377,10 +379,10 @@ function RootComponent() {
                   // ok
                 }
               }}
-              aria-label="Installationshinweis schließen"
+              aria-label="Installationshinweis schlieÃen"
               className="min-h-11 shrink-0 rounded-full px-2 text-[11px] text-muted-foreground transition hover:text-foreground"
             >
-              Schließen
+              SchlieÃen
             </button>
           </div>
         </aside>
