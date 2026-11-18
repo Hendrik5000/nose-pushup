@@ -68,7 +68,7 @@ function AuthenticatedLayout() {
     <PostfachProvider userId={user.id} isGuest={isGuest}>
       <CallProvider userId={user.id} isGuest={isGuest}>
         <div className="authenticated-shell alo-no-global-header min-h-[100dvh]">
-          <AloSystemChrome />
+          {pathname === "/" ? <AloSystemChrome /> : null}
           <AppNavigation />
           <div ref={surface} className="alo-module-surface">
             <Outlet />
