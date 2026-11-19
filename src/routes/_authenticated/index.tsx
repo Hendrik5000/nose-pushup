@@ -1594,7 +1594,13 @@ function HomeAppHub({
                     const startX = homeTouchStartXRef.current;
                     const endX = event.changedTouches[0]?.clientX;
                     homeTouchStartXRef.current = null;
-                    if (startX === null || endX === undefined || Math.abs(endX - startX) < 56) return;
+                    if (
+                      startX === null ||
+                      endX === undefined ||
+                      Math.abs(endX - startX) < 56
+                    ) {
+                      return;
+                    }
                     setActiveHomePage((page) =>
                       Math.max(0, Math.min(homePageCount - 1, page + (endX < startX ? 1 : -1))),
                     );
