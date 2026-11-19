@@ -1141,10 +1141,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                 <span className="alo-nexus-status-dot" aria-hidden="true" />
                 {mode === "supabase" ? "Cloud-Chat" : "Nur auf diesem Gerät"}
               </span>
-              <span
-                className="alo-nexus-status-divider"
-                aria-hidden="true"
-              >
+              <span className="alo-nexus-status-divider" aria-hidden="true">
                 ·
               </span>
               <span className="alo-nexus-status-draft">
