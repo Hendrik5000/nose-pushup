@@ -1,0 +1,7 @@
+# KI-Teamregister – Ergänzung zu PR #203
+
+Dieser Eintrag wird ergänzend zum zentralen Register `docs/AI-TEAM.md` geführt, weil der Merge von PR #202 und PR #203 beide gleichzeitig angehängten Registerzeilen kollidieren ließ. Die zentrale Datei behält den aktuellen `main`-Stand inklusive PR #202; die Arbeit aus PR #203 bleibt hier vollständig nachvollziehbar.
+
+| Assistent | Aufgabe | Ergebnis | Prüfungen | Status |
+| --- | --- | --- | --- | --- |
+| GPT-6 – OpenAI | Alo-Design zuerst: systemweite Designgrundlage nach Notion-Runden 1–13, inklusive sichtbarer Navigation/Kontrollzentrum und responsivem Homescreen | Systemleiste mit Zurück/Home/Suche/App-Wechsel/Kontrollzentrum; App-Bibliothek; alle vier Navigationslayouts; Kontrollzentrum mit echtem Online-Status, Vollbild, 13 Farbwelten, Hell/Dunkel/Automatisch und eigener Akzentfarbe; OS-Farbmodus-Anpassung; Glassmorphism; Storage-Fallbacks. Finale Korrekturen in `src/components/NavigationLayoutPicker.tsx`, `src/components/alo/AloSystemChrome.tsx`, `src/components/TopNav.tsx`, `tests/alo-system-chrome.test.ts`, `tests/theme.test.ts`. | GitHub Actions Run #1301 (`44471444428`) auf Code-Head `6ab5714015b897c0cb6b48f1721c7470491c6cb1`: Lint, Regressionstests, TypeScript und Build grün; 15 bestehende ESLint-Warnungen nicht blockierend. Kein lokaler Node-Testlauf in der Composio-Sandbox (npm fehlt). | PR #203 bleibt offen; nach Synchronisierung mit `main` erneute CI und Review erforderlich. Kein Merge, kein Live-Publish, keine DB-/RLS-Änderung. |

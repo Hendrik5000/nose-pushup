@@ -48,9 +48,10 @@ export function updateNavigationForScroll(
 export function getNavigationVisible(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return window.localStorage.getItem(VISIBILITY_KEY) === "true";
+    const stored = window.localStorage.getItem(VISIBILITY_KEY);
+    return stored === null ? true : stored === "true";
   } catch {
-    return false;
+    return true;
   }
 }
 

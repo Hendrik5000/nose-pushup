@@ -1,17 +1,39 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { afterEach, test } from "node:test";
-import { DEFAULT_THEME, THEMES, applyTheme, getStoredTheme, isThemeId } from "../src/lib/theme";
+import {
+  DEFAULT_THEME,
+  THEMES,
+  applyCustomAccent,
+  applyTheme,
+  applyThemeMode,
+  getStoredCustomAccent,
+  getStoredTheme,
+  getStoredThemeMode,
+  isCustomAccentColor,
+  isThemeId,
+} from "../src/lib/theme";
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
 const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
 
 function mockGlobals(
-  options: { stored?: string | null; blockedRead?: boolean; blockedWrite?: boolean } = {},
+  options: {
+    stored?: string | null;
+    themeMode?: string | null;
+    customAccent?: string | null;
+    blockedRead?: boolean;
+    blockedWrite?: boolean;
+    prefersDark?: boolean;
+  } = {},
 ) {
   const storage = new Map<string, string>();
   if (options.stored !== undefined && options.stored !== null)
     storage.set("np-theme", options.stored);
+  if (options.themeMode !== undefined && options.themeMode !== null)
+    storage.set("alo-theme-mode", options.themeMode);
+  if (options.customAccent !== undefined && options.customAccent !== null)
+    storage.set("alo-custom-accent", options.customAccent);
   const localStorage = {
     getItem(key: string) {
       if (options.blockedRead) throw new Error("blocked storage");
@@ -21,10 +43,22 @@ function mockGlobals(
       if (options.blockedWrite) throw new Error("blocked storage");
       storage.set(key, value);
     },
+    removeItem(key: string) {
+      if (options.blockedWrite) throw new Error("blocked storage");
+      storage.delete(key);
+    },
   };
   const metas: Array<{ attributes: Record<string, string>; removed: boolean }> = [];
   const document = {
-    documentElement: { dataset: {} as Record<string, string> },
+    documentElement: {
+      dataset: {} as Record<string, string>,
+      style: {
+        values: {} as Record<string, string>,
+        setProperty(name: string, value: string) {
+          this.values[name] = value;
+        },
+      },
+    },
     head: { appendChild: (element: (typeof metas)[number]) => metas.push(element) },
     querySelectorAll(selector: string) {
       assert.equal(selector, 'meta[name="theme-color"]');
@@ -47,7 +81,14 @@ function mockGlobals(
       return element;
     },
   };
-  Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage } });
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {
+      localStorage,
+      matchMedia:
+        options.prefersDark === undefined ? undefined : () => ({ matches: options.prefersDark }),
+    },
+  });
   Object.defineProperty(globalThis, "document", { configurable: true, value: document });
   return { storage, metas, document };
 }
@@ -229,4 +270,47 @@ test("new themes define all semantic CSS tokens and readable foreground pairs", 
     assert.ok(primary && primaryForeground, `${id}: primary colors are explicit`);
     assert.ok(contrast(primary, primaryForeground) >= 4.5, `${id}: primary foreground contrast`);
   }
+});
+
+test("appearance mode supports automatic, light and dark without replacing the selected palette", () => {
+  const { storage, document } = mockGlobals({ stored: "neon", prefersDark: true });
+  assert.equal(getStoredThemeMode(), "system");
+  applyTheme("neon");
+  assert.equal(document.documentElement.dataset.theme, "neon");
+  assert.equal(document.documentElement.dataset.themeMode, "system");
+  applyThemeMode("light");
+  assert.equal(storage.get("alo-theme-mode"), "light");
+  assert.equal(document.documentElement.dataset.theme, "neon");
+  assert.equal(document.documentElement.dataset.themeMode, "light");
+  applyThemeMode("dark");
+  assert.equal(document.documentElement.dataset.themeMode, "dark");
+  applyThemeMode("system");
+  assert.equal(document.documentElement.dataset.themeMode, "system");
+});
+
+test("custom accent colors persist, override the selected preset, and can be reset", () => {
+  const { storage, document } = mockGlobals({ stored: "glacier" });
+  assert.equal(getStoredCustomAccent(), null);
+  assert.equal(isCustomAccentColor("#12aBcF"), true);
+  assert.equal(isCustomAccentColor("red"), false);
+  applyCustomAccent("#12abcf");
+  assert.equal(storage.get("alo-custom-accent"), "#12abcf");
+  assert.equal(document.documentElement.style.values["--primary"], "#12abcf");
+  applyTheme("neon");
+  assert.equal(document.documentElement.style.values["--primary"], "#12abcf");
+  applyCustomAccent(null);
+  assert.equal(storage.has("alo-custom-accent"), false);
+  assert.equal(
+    document.documentElement.style.values["--primary"],
+    THEMES.find((item) => item.id === "neon")?.swatch[0],
+  );
+});
+
+test("appearance mode and custom accents still apply when local storage is blocked", () => {
+  const { document, metas } = mockGlobals({ blockedWrite: true });
+  applyThemeMode("light");
+  assert.equal(document.documentElement.dataset.themeMode, "light");
+  assert.equal(metas.filter((meta) => !meta.removed)[0]?.attributes.content, "#f4f8ff");
+  applyCustomAccent("#12abcf");
+  assert.equal(document.documentElement.style.values["--primary"], "#12abcf");
 });
