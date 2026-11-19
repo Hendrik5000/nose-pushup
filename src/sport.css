@@ -2294,3 +2294,76 @@ html[data-design-style="performance"] .app-homebar .homebar-link[aria-current="p
 html[data-design-style="legacy-performance"] .app-homebar .homebar-link[aria-current="page"] .homebar-icon {
   color: var(--menu-accent);
 }
+
+/* Nexus chat UX polish – compact status, grouped messages and a stable mobile composer. */
+html[data-design-style] .alo-tablet-nexus .sport-chat-topbar {
+  padding-top: max(0.7rem, env(safe-area-inset-top, 0px));
+  padding-bottom: 0.7rem;
+  border-color: color-mix(in srgb, var(--border) 78%, transparent);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+html[data-design-style] .alo-tablet-nexus .community-conversation-heading { gap: 0.7rem; min-width: 0; }
+html[data-design-style] .alo-tablet-nexus .community-conversation-heading h1 {
+  overflow: hidden; font-size: clamp(0.95rem, 2vw, 1.1rem); font-weight: 650;
+  letter-spacing: -0.025em; text-overflow: ellipsis; white-space: nowrap;
+}
+html[data-design-style] .alo-tablet-nexus .community-conversation-heading p {
+  margin-top: 0.15rem; color: var(--muted-foreground); font-size: 0.68rem; line-height: 1.3;
+}
+.alo-nexus-status {
+  display: flex; min-width: 0; min-height: 1.85rem; align-items: center; gap: 0.45rem;
+  padding: 0.3rem 1rem; overflow: hidden;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  background: color-mix(in srgb, var(--card) 42%, transparent);
+  color: var(--muted-foreground); font-size: 0.66rem; line-height: 1.35;
+}
+.alo-nexus-status-mode { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 0.38rem; color: var(--foreground); font-weight: 600; }
+.alo-nexus-status-dot {
+  width: 0.38rem; height: 0.38rem; flex: 0 0 auto; border-radius: 50%; background: var(--primary);
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.alo-nexus-status-draft { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alo-nexus-message { min-width: 0; scroll-margin-block: 1rem; }
+html[data-design-style] .alo-tablet-nexus .sport-chat-message-list { min-height: 0; overscroll-behavior: contain; scroll-padding-block: 1rem; }
+html[data-design-style] .alo-tablet-nexus .alo-message-continuation { margin-top: -0.35rem; }
+html[data-design-style] .alo-tablet-nexus .alo-message-continuation > .sport-chat-bubble { border-radius: 1rem; }
+.alo-message-actions > summary {
+  display: inline-flex; width: 2.35rem; min-height: 2.35rem; align-items: center; justify-content: center;
+  padding: 0; border: 1px solid transparent; border-radius: 0.8rem; color: var(--muted-foreground);
+  font-size: 0; list-style: none; transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
+}
+.alo-message-actions > summary::-webkit-details-marker { display: none; }
+.alo-message-actions > summary svg { width: 1.1rem; height: 1.1rem; }
+.alo-message-actions > summary:hover, .alo-message-actions[open] > summary {
+  border-color: var(--border); background: color-mix(in srgb, var(--card) 86%, transparent); color: var(--foreground);
+}
+html[data-design-style] .alo-chat-quick-options {
+  flex: 0 0 auto; max-height: min(11rem, 28dvh);
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  background: color-mix(in srgb, var(--card) 76%, transparent);
+}
+html[data-design-style] .alo-chat-quick-options > summary {
+  display: flex; min-height: 2.75rem; align-items: center; gap: 0.55rem; padding-inline: 0.35rem;
+  color: var(--foreground); font-size: 0.72rem; font-weight: 600; list-style: none;
+}
+html[data-design-style] .alo-chat-quick-options > summary::-webkit-details-marker { display: none; }
+html[data-design-style] .alo-chat-quick-options > summary svg { width: 1rem; height: 1rem; color: var(--primary); }
+html[data-design-style] .alo-tablet-nexus :is(.community-chat-composer, .sport-chat-composer) {
+  position: sticky; z-index: 15; bottom: 0; flex: 0 0 auto;
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: 0 -0.5rem 1.5rem color-mix(in srgb, #000 12%, transparent);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+}
+html[data-design-style] .alo-tablet-nexus :is(.community-chat-composer, .sport-chat-composer) textarea {
+  min-height: 2.85rem; max-height: min(7.5rem, 24dvh); line-height: 1.45;
+}
+html[data-design-style] .alo-tablet-nexus :is(.community-chat-composer, .sport-chat-composer) button { min-width: 2.75rem; min-height: 2.75rem; }
+@media (max-width: 767px) {
+  html[data-design-style] .alo-tablet-nexus .sport-chat-message-list { padding: 0.9rem 0.8rem 1rem; }
+  html[data-design-style] .alo-tablet-nexus :is(.community-chat-composer, .sport-chat-composer) {
+    gap: 0.45rem; padding: 0.65rem 0.7rem max(0.65rem, env(safe-area-inset-bottom, 0px));
+  }
+  html[data-design-style] .alo-tablet-nexus .alo-nexus-status { padding-inline: 0.8rem; }
+}
+@media (prefers-reduced-motion: reduce) { .alo-message-actions > summary { transition: none; } }
