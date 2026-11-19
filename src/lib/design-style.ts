@@ -1,4 +1,5 @@
-export type DesignStyleId = "soft" | "compact" | "editorial" | "studio" | "hig" | "performance" | "legacy-performance";
+export type DesignStyleId =
+  "soft" | "compact" | "editorial" | "studio" | "hig" | "performance" | "legacy-performance";
 
 export interface DesignStyleDefinition {
   id: DesignStyleId;
