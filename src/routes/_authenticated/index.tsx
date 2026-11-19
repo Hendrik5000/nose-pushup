@@ -1594,7 +1594,13 @@ function HomeAppHub({
                     const startX = homeTouchStartXRef.current;
                     const endX = event.changedTouches[0]?.clientX;
                     homeTouchStartXRef.current = null;
-                    if (startX === null || endX === undefined || Math.abs(endX - startX) < 56) return;
+                    if (
+                      startX === null ||
+                      endX === undefined ||
+                      Math.abs(endX - startX) < 56
+                    ) {
+                      return;
+                    }
                     setActiveHomePage((page) =>
                       Math.max(0, Math.min(homePageCount - 1, page + (endX < startX ? 1 : -1))),
                     );
@@ -1602,24 +1608,30 @@ function HomeAppHub({
                 >
                   {renderHomeGroup("launcher", "Apps", currentHomePageTiles)}
                   {homePageCount > 1 && (
-                    <nav className="alo-launcher-page-indicators" aria-label="Startseiten auswählen">
-                      {Array.from({ length: homePageCount }, (_, page) => (
-                        <button
-                          key={page}
-                          type="button"
-                          aria-label={`Startseite ${page + 1}`}
-                          aria-current={currentHomePage === page ? "page" : undefined}
-                          onClick={() => setActiveHomePage(page)}
-                          className="alo-launcher-page-dot"
-                        />
-                      ))}
-                    </nav>
-                  )}
-                </div>
-                <nav className="alo-launcher-dock" aria-label="Favoritenleiste">
+                      <nav
+                        className="alo-launcher-page-indicators"
+                        aria-label="Startseiten auswählen"
+                      >
+                        {Array.from({ length: homePageCount }, (_, page) => (
+                          <button
+                            key={page}
+                            type="button"
+                            aria-label={`Startseite ${page + 1}`}
+                            aria-current={currentHomePage === page ? "page" : undefined}
+                            onClick={() => setActiveHomePage(page)}
+                            className="alo-launcher-page-dot"
+                          />
+                        ))}
+                      </nav>
+                    )}
+                  </div>
+                  <nav className="alo-launcher-dock" aria-label="Favoritenleiste">
                   {homeDockTiles.map((tile) => {
                     const title = settings.nameOverrides[tile.id] ?? tile.title;
-                    const badge = tile.id === "nexus" && nexusUnread !== null && nexusUnread > 0 ? nexusUnread : null;
+                    const badge =
+                      tile.id === "nexus" && nexusUnread !== null && nexusUnread > 0
+                        ? nexusUnread
+                        : null;
                     return (
                       <div key={tile.id} className="alo-launcher-dock-item">
                         {renderTile(tile, title, badge)}
