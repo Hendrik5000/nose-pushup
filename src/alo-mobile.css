@@ -1744,3 +1744,26 @@ html[data-design-style] .alo-launcher-dock-item > :is(a, button, div) {
     max-width: 38rem;
   }
 }
+
+
+html[data-design-style] .alo-launcher-greeting {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 22px;
+  padding: 4px 2px;
+}
+html[data-design-style] .alo-launcher-greeting p {
+  margin: 0;
+  color: var(--foreground);
+  font-size: clamp(1.35rem, 5vw, 1.8rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+}
+html[data-design-style] .alo-launcher-greeting span {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  text-align: right;
+}

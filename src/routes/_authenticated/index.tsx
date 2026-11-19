@@ -1538,125 +1538,16 @@ function HomeAppHub({
             </AloErrorBoundary>
           ) : (
             <div className="flex w-full max-w-[520px] flex-col gap-7">
-              <AloErrorBoundary section="Dein Tag">
-                <section
-                  aria-label="Dein Tag"
-                  className="rounded-2xl border border-border bg-card/60 p-4 backdrop-blur"
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-base font-semibold">
-                      {homeDayGreeting(new Date().getHours())}!
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date().toLocaleDateString("de-DE", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                      })}
-                    </p>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Link to="/ai" className="alo-btn">
-                      Mira fragen
-                    </Link>
-                    <button
-                      type="button"
-                      className="alo-btn"
-                      onClick={() =>
-                        window.dispatchEvent(new CustomEvent("alo-open", { detail: "capture" }))
-                      }
-                    >
-                      Notiz erfassen
-                    </button>
-                    <Link to="/postfach" className="alo-btn">
-                      Postfach
-                    </Link>
-                  </div>
-                  {(() => {
-                    const streakLine = formatStreakLine(streak);
-                    const workoutLine =
-                      weeklyWorkouts !== null ? formatWeeklyWorkoutLine(weeklyWorkouts) : null;
-                    const healthParts =
-                      healthToday && hasMeasuredHealthToday(healthToday)
-                        ? formatHealthTodayParts(healthToday)
-                        : [];
-                    const dailyGoalLine = formatDailyGoalLine(dailyReps, dailyGoal);
-                    const postfachLine = formatPostfachContextLine(
-                      postfach.unreadCount,
-                      postfach.actionableCount,
-                      postfach.available,
-                    );
-                    const offerChatSummary = shouldOfferChatSummary(nexusUnread);
-                    if (
-                      healthParts.length === 0 &&
-                      !streakLine &&
-                      !workoutLine &&
-                      !dailyGoalLine &&
-                      !postfachLine &&
-                      !aiStatus &&
-                      !offerChatSummary
-                    )
-                      return null;
-                    return (
-                      <dl className="mt-3 space-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-                        {healthParts.length > 0 && (
-                          <div className="flex flex-wrap gap-x-2">
-                            <dt className="font-semibold text-foreground">Health heute:</dt>
-                            <dd>{healthParts.join(" · ")}</dd>
-                          </div>
-                        )}
-                        {workoutLine && (
-                          <div className="flex flex-wrap gap-x-2">
-                            <dt className="font-semibold text-foreground">Training:</dt>
-                            <dd>{workoutLine}</dd>
-                          </div>
-                        )}
-                        {streakLine && (
-                          <div className="flex flex-wrap gap-x-2">
-                            <dt className="font-semibold text-foreground">Streak:</dt>
-                            <dd>{streakLine}</dd>
-                          </div>
-                        )}
-                        {offerChatSummary && (
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <dt className="font-semibold text-foreground">Nexus Chat:</dt>
-                            <dd className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                              <span>{nexusUnread} ungelesene Nachrichten</span>
-                              <button
-                                type="button"
-                                onClick={requestChatSummary}
-                                className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-primary hover:border-primary/50"
-                              >
-                                Zusammenfassung bei Mira anfragen
-                              </button>
-                            </dd>
-                          </div>
-                        )}
-                        {dailyGoalLine && (
-                          <div className="flex flex-wrap gap-x-2">
-                            <dt className="font-semibold text-foreground">Tagesziel:</dt>
-                            <dd>{dailyGoalLine}</dd>
-                          </div>
-                        )}
-                        {postfachLine && (
-                          <div className="flex flex-wrap gap-x-2">
-                            <dt className="font-semibold text-foreground">Postfach:</dt>
-                            <dd>{postfachLine}</dd>
-                          </div>
-                        )}
-                        <div className="flex flex-wrap gap-x-2">
-                          <dt className="font-semibold text-foreground">KI:</dt>
-                          <dd>
-                            {aiStatus
-                              ? `${aiStatus.provider} · ${aiStatus.model}`
-                              : "Kein KI-Anbieter aktiv"}
-                          </dd>
-                        </div>
-                      </dl>
-                    );
-                  })()}
-                </section>
-              </AloErrorBoundary>
+              <section className="alo-launcher-greeting" aria-label="Guten Tag">
+                <p>{homeDayGreeting(new Date().getHours())}!</p>
+                <span>
+                  {new Date().toLocaleDateString("de-DE", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </span>
+              </section>
               {settings.widgetOrder.length > 0 && (
                 <AloErrorBoundary section="Widgets">
                   <section
