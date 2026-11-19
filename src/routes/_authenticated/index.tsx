@@ -358,6 +358,8 @@ function HomeAppHub({
   const postfach = usePostfach();
   const [aiStatus, setAiStatus] = useState<HomeAiStatus | null>(null);
   const [isEditingHub, setIsEditingHub] = useState(false);
+  const [activeHomePage, setActiveHomePage] = useState(0);
+  const homeTouchStartXRef = useRef<number | null>(null);
   const isEditingHubRef = useRef(isEditingHub);
   const [renamingAppId, setRenamingAppId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
@@ -656,6 +658,16 @@ function HomeAppHub({
     const tile = tiles.find((candidate) => candidate.id === appId);
     return tile ? [tile] : [];
   });
+  const homePageSize = 12;
+  const homePageCount = Math.max(1, Math.ceil(orderedTiles.length / homePageSize));
+  const currentHomePage = Math.min(activeHomePage, homePageCount - 1);
+  const currentHomePageTiles = orderedTiles.slice(
+    currentHomePage * homePageSize,
+    (currentHomePage + 1) * homePageSize,
+  );
+  const homeDockTiles = ["mira", "nexus", "health", "training"]
+    .map((id) => orderedTiles.find((tile) => tile.id === id))
+    .filter((tile): tile is HomeHubTile => Boolean(tile));
   const favoriteTiles = orderedTiles.filter((tile) => settings.favorites.includes(tile.id));
   const recentTiles = recentAppIds
     .flatMap((appId) => {
@@ -1284,10 +1296,10 @@ function HomeAppHub({
   };
 
   const renderHomeGroup = (groupId: string, label: string, groupTiles: HomeHubTile[]) => {
-    const collapsed = settings.collapsedGroups.includes(groupId);
+    const collapsed = groupId === "launcher" ? false : settings.collapsedGroups.includes(groupId);
     return (
-      <section key={groupId} aria-label={`Alo-Apps: ${label}`}>
-        <button
+      <section key={groupId} aria-label={groupId === "launcher" ? "Alo-Startseite" : `Alo-Apps: ${label}`}>
+        {groupId !== "launcher" && <button
           type="button"
           aria-expanded={!collapsed}
           data-home-group-toggle={groupId}
@@ -1311,7 +1323,7 @@ function HomeAppHub({
           <span className="ml-auto text-[10px] font-medium normal-case tracking-normal">
             {groupTiles.length}
           </span>
-        </button>
+        </button>}
         {!collapsed && (
           <div className="alo-tablet-home-apps grid w-full grid-flow-row-dense grid-cols-4 gap-x-3 gap-y-6">
             {groupTiles.map((tile) => {
@@ -1676,13 +1688,49 @@ function HomeAppHub({
                 </AloErrorBoundary>
               )}
               <AloErrorBoundary section="Apps">
-                {recentTiles.length > 0 &&
-                  renderHomeGroup("recent", "Zuletzt verwendet", recentTiles)}
-                {favoriteTiles.length > 0 &&
-                  renderHomeGroup("favorites", "Favoriten", favoriteTiles)}
-                {homeSections.map((section) =>
-                  renderHomeGroup(section.id, section.label, section.tiles),
-                )}
+                <div
+                  className="alo-launcher-page"
+                  aria-label={`Startseite ${currentHomePage + 1} von ${homePageCount}`}
+                  onTouchStart={(event) => {
+                    homeTouchStartXRef.current = event.touches[0]?.clientX ?? null;
+                  }}
+                  onTouchEnd={(event) => {
+                    const startX = homeTouchStartXRef.current;
+                    const endX = event.changedTouches[0]?.clientX;
+                    homeTouchStartXRef.current = null;
+                    if (startX === null || endX === undefined || Math.abs(endX - startX) < 56) return;
+                    setActiveHomePage((page) =>
+                      Math.max(0, Math.min(homePageCount - 1, page + (endX < startX ? 1 : -1))),
+                    );
+                  }}
+                >
+                  {renderHomeGroup("launcher", "Apps", currentHomePageTiles)}
+                  {homePageCount > 1 && (
+                    <nav className="alo-launcher-page-indicators" aria-label="Startseiten auswählen">
+                      {Array.from({ length: homePageCount }, (_, page) => (
+                        <button
+                          key={page}
+                          type="button"
+                          aria-label={`Startseite ${page + 1}`}
+                          aria-current={currentHomePage === page ? "page" : undefined}
+                          onClick={() => setActiveHomePage(page)}
+                          className="alo-launcher-page-dot"
+                        />
+                      ))}
+                    </nav>
+                  )}
+                </div>
+                <nav className="alo-launcher-dock" aria-label="Favoritenleiste">
+                  {homeDockTiles.map((tile) => {
+                    const title = settings.nameOverrides[tile.id] ?? tile.title;
+                    const badge = tile.id === "nexus" && nexusUnread !== null && nexusUnread > 0 ? nexusUnread : null;
+                    return (
+                      <div key={tile.id} className="alo-launcher-dock-item">
+                        {renderTile(tile, title, badge)}
+                      </div>
+                    );
+                  })}
+                </nav>
               </AloErrorBoundary>
             </div>
           )}
