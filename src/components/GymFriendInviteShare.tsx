@@ -60,9 +60,7 @@ export function GymFriendInviteShare({
       await navigator.clipboard.writeText(message);
     } catch (cause) {
       setError(
-        cause instanceof Error
-          ? cause.message
-          : "Der Einladungstext konnte nicht kopiert werden.",
+        cause instanceof Error ? cause.message : "Der Einladungstext konnte nicht kopiert werden.",
       );
       setBusyFriend(null);
       return;
@@ -92,8 +90,8 @@ export function GymFriendInviteShare({
       {open && (
         <div className="space-y-2 rounded-xl border border-border bg-background/70 p-3">
           <p className="text-xs text-muted-foreground">
-            Wähle einen bestätigten Freund. Der Einladungstext wird kopiert und sein Nexus-Chat geöffnet –
-            gesendet wird erst, wenn du ihn selbst einfügst und abschickst.
+            Wähle einen bestätigten Freund. Der Einladungstext wird kopiert und sein Nexus-Chat
+            geöffnet – gesendet wird erst, wenn du ihn selbst einfügst und abschickst.
           </p>
           {loading && (
             <p role="status" className="text-sm text-muted-foreground">

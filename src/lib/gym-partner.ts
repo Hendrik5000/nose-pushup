@@ -71,9 +71,10 @@ export function normalizeGymInviteCode(code: string): string {
 export function buildGymInviteMessage(code: string, expiresAt?: string | null): string {
   const inviteCode = normalizeGymInviteCode(code);
   const expiry = expiresAt ? new Date(expiresAt) : null;
-  const expiryLine = expiry && Number.isFinite(expiry.getTime())
-    ? `Der Code ist gültig bis ${expiry.toLocaleString("de-DE")}.`
-    : "Der Code ist zeitlich begrenzt gültig.";
+  const expiryLine =
+    expiry && Number.isFinite(expiry.getTime())
+      ? `Der Code ist gültig bis ${expiry.toLocaleString("de-DE")}.`
+      : "Der Code ist zeitlich begrenzt gültig.";
   return [
     "Ich lade dich zu meiner gemeinsamen Gym-Einheit in Alo ein!",
     `Dein Einladungscode: ${inviteCode}`,
