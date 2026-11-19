@@ -67,6 +67,23 @@ export function normalizeGymInviteCode(code: string): string {
   return value;
 }
 
+/** Build a minimal message for a user to review and send manually to an accepted friend. */
+export function buildGymInviteMessage(code: string, expiresAt?: string | null): string {
+  const inviteCode = normalizeGymInviteCode(code);
+  const expiry = expiresAt ? new Date(expiresAt) : null;
+  const expiryLine =
+    expiry && Number.isFinite(expiry.getTime())
+      ? `Der Code ist gültig bis ${expiry.toLocaleString("de-DE")}.`
+      : "Der Code ist zeitlich begrenzt gültig.";
+  return [
+    "Ich lade dich zu meiner gemeinsamen Gym-Einheit in Alo ein!",
+    `Dein Einladungscode: ${inviteCode}`,
+    "Öffne in Alo den Bereich Gym → Zu zweit und gib den Code dort ein.",
+    expiryLine,
+    "Die Einheit ist für genau zwei Konten gedacht. Deine Trainingsdaten bleiben privat, bis du selbst einzelne Freigaben aktivierst.",
+  ].join("\n");
+}
+
 export function normalizeGymExercise(exercise: string): string {
   if (typeof exercise !== "string") throw new Error("Übung muss Text sein");
   const value = exercise.trim();
