@@ -39,7 +39,10 @@ test("all four navigation layouts are rendered globally and only bottom layouts 
     navigation,
     /const hideModuleChrome = pathname\.startsWith\("\/settings"\) \|\| pathname\.startsWith\("\/profile"\)/,
   );
-  assert.match(navigation, /const barVisible = enabled && bottomLayout && scrollVisible && !hideModuleChrome/);
+  assert.match(
+    navigation,
+    /const barVisible = enabled && bottomLayout && scrollVisible && !hideModuleChrome/,
+  );
 });
 
 test("top navigation is stacked below the system bar with safe-area support", () => {
