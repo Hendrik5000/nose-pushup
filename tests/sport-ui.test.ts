@@ -13,14 +13,10 @@ test("all six Alo design styles remain selectable while the retired ID stays mig
     DESIGN_STYLES.map((style) => style.id),
     ["soft", "compact", "editorial", "studio", "hig", "performance"],
   );
-  assert.deepEqual(DESIGN_STYLES.map((style) => style.label), [
-    "Klassisch",
-    "Kompakt",
-    "Editorial",
-    "Studio",
-    "Apple HIG",
-    "Performance",
-  ]);
+  assert.deepEqual(
+    DESIGN_STYLES.map((style) => style.label),
+    ["Klassisch", "Kompakt", "Editorial", "Studio", "Apple HIG", "Performance"],
+  );
   for (const legacyId of [
     "soft",
     "compact",

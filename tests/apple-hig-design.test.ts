@@ -9,14 +9,10 @@ test("Apple HIG remains the default while all six design styles stay selectable"
     DESIGN_STYLES.map((style) => style.id),
     ["soft", "compact", "editorial", "studio", "hig", "performance"],
   );
-  assert.deepEqual(DESIGN_STYLES.map((style) => style.label), [
-    "Klassisch",
-    "Kompakt",
-    "Editorial",
-    "Studio",
-    "Apple HIG",
-    "Performance",
-  ]);
+  assert.deepEqual(
+    DESIGN_STYLES.map((style) => style.label),
+    ["Klassisch", "Kompakt", "Editorial", "Studio", "Apple HIG", "Performance"],
+  );
 });
 
 test("settings renders each design style as an accessible selectable option", () => {
