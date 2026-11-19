@@ -36,13 +36,16 @@ afterEach(() => {
   else Reflect.deleteProperty(globalThis, "document");
 });
 
-test("Alo exposes one current design while recognizing legacy IDs for migration", () => {
+test("Alo exposes six selectable design styles and keeps the legacy identifier readable", () => {
   assert.equal(DEFAULT_DESIGN_STYLE, "hig");
   assert.deepEqual(
     DESIGN_STYLES.map((style) => style.id),
-    ["hig"],
+    ["soft", "compact", "editorial", "studio", "hig", "performance"],
   );
-  assert.equal(DESIGN_STYLES[0]?.label, "Alo Modern");
+  assert.deepEqual(
+    DESIGN_STYLES.map((style) => style.label),
+    ["Klassisch", "Kompakt", "Editorial", "Studio", "Apple HIG", "Performance"],
+  );
   for (const id of [
     "soft",
     "compact",
@@ -58,39 +61,35 @@ test("Alo exposes one current design while recognizing legacy IDs for migration"
   assert.equal(isDesignStyleId(null), false);
 });
 
-test("all previously saved design choices migrate to Alo Modern", () => {
-  for (const oldStyle of [
-    "soft",
-    "compact",
-    "editorial",
-    "studio",
-    "performance",
-    "legacy-performance",
-  ]) {
-    const { storage } = mockGlobals(oldStyle);
-    assert.equal(getStoredDesignStyle(), "hig");
-    assert.equal(storage.get("np-design-style"), "hig");
-    assert.equal(storage.get("np-design-style-unified-v1"), "1");
+test("stored design choices remain selected and the retired performance ID migrates safely", () => {
+  for (const style of ["soft", "compact", "editorial", "studio", "hig", "performance"]) {
+    const { storage } = mockGlobals(style);
+    assert.equal(getStoredDesignStyle(), style);
+    assert.equal(storage.get("np-design-style"), style);
   }
+  const { storage } = mockGlobals("legacy-performance");
+  assert.equal(getStoredDesignStyle(), "performance");
+  assert.equal(storage.get("np-design-style"), "performance");
 });
 
-test("applying any legacy style keeps the single design and persists it", () => {
+test("applying a design style changes the active style and persists the same choice", () => {
   const { storage, document } = mockGlobals();
   applyDesignStyle("editorial");
-  assert.equal(document.documentElement.dataset.designStyle, "hig");
-  assert.equal(storage.get("np-design-style"), "hig");
+  assert.equal(document.documentElement.dataset.designStyle, "editorial");
+  assert.equal(storage.get("np-design-style"), "editorial");
   applyDesignStyle("performance");
-  assert.equal(document.documentElement.dataset.designStyle, "hig");
+  assert.equal(document.documentElement.dataset.designStyle, "performance");
+  assert.equal(storage.get("np-design-style"), "performance");
 });
 
-test("unified design style picker no longer offers legacy design choices", () => {
+test("design style picker renders the complete selectable style catalog", () => {
   const picker = readFileSync(
     new URL("../src/components/DesignStylePicker.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(picker, /Alo Modern/);
-  assert.match(picker, /Einheitliches Design aktiv/);
-  assert.doesNotMatch(picker, /DESIGN_STYLES\.map/);
+  assert.match(picker, /DESIGN_STYLES\.map/);
+  assert.match(picker, /aria-pressed=\{active === style\.id\}/);
+  assert.match(picker, /np-appearance-change/);
 });
 
 test("unified design system provides Apple-like typography, whitespace and motion", () => {

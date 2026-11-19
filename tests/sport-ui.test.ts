@@ -8,12 +8,15 @@ import { DESIGN_STYLES, isDesignStyleId } from "../src/lib/design-style";
 
 const read = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 
-test("Alo Modern is the only selectable design while old preferences remain migratable", () => {
+test("all six Alo design styles remain selectable while the retired ID stays migratable", () => {
   assert.deepEqual(
     DESIGN_STYLES.map((style) => style.id),
-    ["hig"],
+    ["soft", "compact", "editorial", "studio", "hig", "performance"],
   );
-  assert.equal(DESIGN_STYLES[0]?.label, "Alo Modern");
+  assert.deepEqual(
+    DESIGN_STYLES.map((style) => style.label),
+    ["Klassisch", "Kompakt", "Editorial", "Studio", "Apple HIG", "Performance"],
+  );
   for (const legacyId of [
     "soft",
     "compact",
@@ -25,8 +28,7 @@ test("Alo Modern is the only selectable design while old preferences remain migr
     assert.ok(isDesignStyleId(legacyId), `${legacyId} remains readable for migration`);
   }
   const picker = read("components/DesignStylePicker.tsx");
-  assert.match(picker, /Alo Modern/);
-  assert.doesNotMatch(picker, /Klassisch|Kompakt|Editorial|Studio|Performance/);
+  assert.match(picker, /DESIGN_STYLES\.map/);
 });
 
 test("new page structures are shared across training, health, community, account and public pages", () => {
