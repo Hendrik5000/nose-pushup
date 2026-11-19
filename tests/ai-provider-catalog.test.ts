@@ -109,10 +109,12 @@ test("provider memory is cleared on logout and does not survive a fresh module s
   const configured = DEFAULT_PROVIDERS.map((provider) =>
     provider.id === "openrouter" ? { ...provider, enabled: true, apiKey: "temporary-key" } : provider,
   );
-  saveProviders(configured, "user-1");
-  assert.equal(loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey, "temporary-key");
-  clearProviderMemory();
-  assert.equal(loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey, "");
+  withBrowserStorage(memoryStorage(), memoryStorage(), () => {
+    saveProviders(configured, "user-1");
+    assert.equal(loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey, "temporary-key");
+    clearProviderMemory();
+    assert.equal(loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey, "");
+  });
 });
 
 test("logout cleanup clears sensitive keys from local and session storage", () => {
@@ -155,7 +157,8 @@ test("root auth listener clears sensitive browser storage when the signed-in acc
   assert.match(root, /onAuthStateChange\(\(event, session\)/);
   assert.match(root, /event === "INITIAL_SESSION"/);
   assert.match(root, /currentUserId !== nextUserId/);
-  assert.match(root, /clearProviderMemory\\(\\)/);
+  assert.match(root, /clearProviderMemory\(\)/);
+  assert.match(root, /clearProviderStorage\(\)/);
   assert.match(
     root,
     /if \(currentUserId && nextUserId && currentUserId !== nextUserId\) \{[\s\S]*?clearSensitiveClientStorage\(\)/,
