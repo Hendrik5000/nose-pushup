@@ -1633,3 +1633,31 @@ html[data-design-style] .alo-app-header :is(.alo-icon-button, .sport-menu-trigge
     padding-inline: 24px;
   }
 }
+
+
+/* Responsive launcher density: retain Alo's selected design style and icon treatment. */
+@media (max-width: 420px) {
+  html[data-design-style] .alo-tablet-home-apps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem 0.5rem;
+    max-width: 24rem;
+    margin-inline: auto;
+  }
+}
+
+@media (min-width: 421px) and (max-width: 767px) {
+  html[data-design-style] .alo-tablet-home-apps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem 0.75rem;
+    max-width: 34rem;
+    margin-inline: auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  html[data-design-style] .alo-tablet-home-apps {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    max-width: 60rem;
+    gap: 2rem 1.5rem;
+  }
+}
