@@ -38,7 +38,6 @@ export type ProviderConfig = {
   tasks: AiTask[];
 };
 
-
 export type ProviderCatalogEntry = {
   id: "openrouter";
   summary: string;

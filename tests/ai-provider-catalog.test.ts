@@ -94,26 +94,42 @@ test("OpenRouter keys stay only in volatile per-account memory and legacy browse
     assert.equal(local.length, 0);
     assert.equal(session.length, 0);
     const configured = loaded.map((provider) =>
-      provider.id === "openrouter" ? { ...provider, enabled: true, apiKey: "volatile-key" } : provider,
+      provider.id === "openrouter"
+        ? { ...provider, enabled: true, apiKey: "volatile-key" }
+        : provider,
     );
     saveProviders(configured, "user-1");
     assert.equal(local.length, 0);
     assert.equal(session.length, 0);
-    assert.equal(loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey, "volatile-key");
-    assert.equal(loadProviders("user-2").find((provider) => provider.id === "openrouter")?.apiKey, "");
+    assert.equal(
+      loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey,
+      "volatile-key",
+    );
+    assert.equal(
+      loadProviders("user-2").find((provider) => provider.id === "openrouter")?.apiKey,
+      "",
+    );
   });
   clearProviderMemory();
 });
 
 test("provider memory is cleared on logout and does not survive a fresh module session", () => {
   const configured = DEFAULT_PROVIDERS.map((provider) =>
-    provider.id === "openrouter" ? { ...provider, enabled: true, apiKey: "temporary-key" } : provider,
+    provider.id === "openrouter"
+      ? { ...provider, enabled: true, apiKey: "temporary-key" }
+      : provider,
   );
   withBrowserStorage(memoryStorage(), memoryStorage(), () => {
     saveProviders(configured, "user-1");
-    assert.equal(loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey, "temporary-key");
+    assert.equal(
+      loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey,
+      "temporary-key",
+    );
     clearProviderMemory();
-    assert.equal(loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey, "");
+    assert.equal(
+      loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey,
+      "",
+    );
   });
 });
 

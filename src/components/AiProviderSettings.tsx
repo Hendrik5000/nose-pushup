@@ -40,9 +40,9 @@ export function AiProviderSettings({
         Alo ist im Free-only-Modus: Aktuell ist ausschließlich OpenRouter Free freigeschaltet; der
         Router verwendet nur kostenlose Modelle (20 Anfragen/Minute, 50/Tag). Es gibt keinen
         kostenpflichtigen Fallback. Andere Anbieter bleiben gesperrt, solange eine garantierte
-        Nutzung ohne Zahlungsdaten oder Abrechnung nicht nachgewiesen ist. Dein OpenRouter-Key bleibt
-        ausschließlich flüchtig im Arbeitsspeicher dieses Tabs. Er wird weder in localStorage noch
-        sessionStorage geschrieben und geht beim Neuladen, Schließen des Tabs, Abmelden oder
+        Nutzung ohne Zahlungsdaten oder Abrechnung nicht nachgewiesen ist. Dein OpenRouter-Key
+        bleibt ausschließlich flüchtig im Arbeitsspeicher dieses Tabs. Er wird weder in localStorage
+        noch sessionStorage geschrieben und geht beim Neuladen, Schließen des Tabs, Abmelden oder
         Kontowechsel verloren. Während der offenen Sitzung können aktive Seitenskripte ihn weiterhin
         lesen. Nutze deshalb einen separaten Key mit minimalen Berechtigungen.
       </p>
