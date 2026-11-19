@@ -2,18 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-const chrome = readFileSync(
-  new URL("../src/components/alo/AloSystemChrome.tsx", import.meta.url),
-  "utf8",
-);
-const navigation = readFileSync(
-  new URL("../src/components/TopNav.tsx", import.meta.url),
-  "utf8",
-);
-const layouts = readFileSync(
-  new URL("../src/lib/navigation-layout.ts", import.meta.url),
-  "utf8",
-);
+const chrome = readFileSync(new URL("../src/components/alo/AloSystemChrome.tsx", import.meta.url), "utf8");
+const navigation = readFileSync(new URL("../src/components/TopNav.tsx", import.meta.url), "utf8");
+const layouts = readFileSync(new URL("../src/lib/navigation-layout.ts", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/alo-system-chrome.css", import.meta.url), "utf8");
 
 test("Alo system chrome exposes visible system controls and the complete app directory", () => {

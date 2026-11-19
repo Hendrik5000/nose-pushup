@@ -306,7 +306,6 @@ test("custom accent colors persist, override the selected preset, and can be res
   );
 });
 
-
 test("appearance mode and custom accents still apply when local storage is blocked", () => {
   const { document, metas } = mockGlobals({ blockedWrite: true });
   applyThemeMode("light");
