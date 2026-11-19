@@ -620,3 +620,44 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 - **Commits:** UI/Test `6969ad9eccb5f290eb2075a30840b0817e581100`; gezielte Prettier-Korrektur `82e3dab232451a4569ea9518247301e30945db16`.
 - **CI:** Der finale PR-Workflow `44505785155`, Attempt 2, war erfolgreich: Lint, Regressionstests, Typecheck und Produktions-Build bestanden. Geprüfter Produktcode-Commit: `dacf42d0ce0761bbd4143e3ab85f59ebc7fb4da4`. Der spätere Branch-Commit `441bcca6da3f56d8e375fb469d4e646226ab0222` enthält nur Dokumentationsnachträge. Die früheren Prettier-Funde wurden behoben.
 - **Offen:** Manuelle Browser-/Smartphone-Abnahme (320px/390px, Safe Area, Tastatur, Touchflächen, sieben Designstile) durchführen. PR #204 bleibt Draft und ungemergt; kein Lovable-Publish.
+
+## Laufzeitfehler – Chunk-Recovery, Supabase-Auth und Push (2026-11-19)
+
+### Neue Fehlerberichte
+
+- 19.11.: dynamischer Import des Profil-Chunks schlägt auf `/profile` fehl.
+- 07.11.: dynamischer Import des Auth-Chunks schlägt auf `/auth?next=%2F` fehl.
+- 31.10.: dynamischer Import des Postfach-Chunks schlägt auf `/postfach` fehl.
+- 26.10.: dynamischer Import des Exercises-Chunks schlägt auf `/exercises` fehl.
+- 05.–07.11.: Supabase Auth meldet `Failed to fetch` während `getUser`, Session-Initialisierung und Token-Refresh.
+- 31.10.: Browser lehnt den Push-`applicationServerKey` mit `InvalidAccessError` ab.
+
+### Umsetzung: sichere Chunk-Recovery
+
+- Im aktuellen Code bestand bereits eine Root-Error-UI mit manuellem Reload und eine Erkennung von dynamischen Import-Fetch-Fehlern. Es fehlte ein früher Handler für Vites `vite:preloadError`.
+- PR [#205 – recover once from stale route chunks](https://github.com/Hendrik5000/nose-pushup/pull/205) ergänzt die Registrierung beim Router-Start. Bei einem echten Lazy-Chunk-Fetch-Fehler wird genau ein automatischer Reload pro Tab versucht, nur wenn `navigator.onLine` true ist. Ein zweiter Fehler, Offline-Zustand oder nicht verfügbare Session-Storage bleiben beim bestehenden Fehlerbildschirm mit manueller Aktion. Allgemeine `Failed to fetch`-Auth-Fehler werden ausdrücklich nicht als Chunkfehler behandelt.
+- Neue Regressionen prüfen die Unterscheidung, Online-/Offline-Verhalten, einmalige Wiederholung und die Installation des Handlers vor der Router-Erstellung.
+- CI Run [44521368167](https://github.com/Hendrik5000/nose-pushup/actions/runs/44521368167) vollständig erfolgreich: Lint, Regressionstests, Typecheck und Produktions-Build. Produktcode-Commit: `f4d29f53a278f4918cceb23e8269a45c1775865e`.
+- PR #205 bleibt Draft und ungemergt. Kein Production-Publish und keine Live-Geräteabnahme.
+
+### Supabase Auth – nicht blind geändert
+
+- Die Stacktraces zeigen Fehler im Supabase-Client während Session-Refresh/GetUser, aber `TypeError: Failed to fetch` enthält keinen HTTP-Status und beweist weder einen falschen API-Key noch einen Auth-Konfigurationsfehler.
+- Der App-Code und die vorhandenen Repository-Tests referenzieren weiterhin das Legacy-Projekt `dbnlybjlswuvxrccgqah`. Die Management-API verweigert für dieses Projekt den Health-Zugriff mit HTTP 403. Das getrennte Projekt `mujuqmcxhdjwgoeaphpe` meldet über den verbundenen Connector Auth/REST als `UNHEALTHY`, ist aber nicht das in der App konfigurierte Projekt. Es wurde ausdrücklich keine Umschaltung vorgenommen.
+- Keine Auth-Konfiguration, Session-Strategie, Schlüssel, Tabellen oder Daten verändert. Nächster Schritt: Zugriff auf das tatsächlich verwendete Legacy-Projekt read-only herstellen und bei erneuten Fehlern eine Browser-Netzwerkantwort mit HTTP-Status/Request-Pfad prüfen; niemals Tokens oder Schlüssel protokollieren.
+
+### Push/VAPID – vorhandene Validierung, Live-Abnahme offen
+
+- Der aktuelle Code validiert den VAPID-Public-Key vor `PushManager.subscribe()`: Base64URL-Format, 65-Byte-Uncompressed-P-256-Struktur und WebCrypto-Kurvenimport. Die Push-Einstellungsoberfläche unterscheidet fehlende/ungültige Konfiguration.
+- Die gelieferten Push-Fehler stammen vom 31.10. und beweisen nicht, dass die nachfolgende Validierung in der aktuell ausgelieferten App-Version aktiv ist. Die Produktions-Env-Konfiguration und der passende serverseitige Schlüssel-Paar-Status konnten nicht bestätigt werden. `.env` und `.env.production` wurden nicht geöffnet; kein privater Schlüssel wurde gelesen oder ausgegeben.
+- Nächster Schritt nach genehmigtem Merge/Publish: auf Android `/profile` öffnen und Push-Aktivierung testen. Nur falls der Browserfehler weiter besteht, den öffentlichen Build-Key und die serverseitige Übereinstimmung im Secret-Store prüfen, ohne private Werte offenzulegen.
+
+### Abgrenzung und Reihenfolge
+
+1. PR #205 reviewen; nach Freigabe mergen und die tatsächliche Alo-Live-Version gezielt veröffentlichen.
+2. Auf Android die Profil-/Auth-/Postfach-/Exercises-Routen mit frischer Navigation prüfen und neue Fehlerberichte vergleichen.
+3. Bei fortbestehenden Auth-Fehlern zuerst Leserechte für das Legacy-Supabase-Projekt herstellen; keine Refresh-Token-Retries oder Auth-Konfigurationsänderung ohne Beleg.
+4. Bei fortbestehenden Push-Fehlern die ausgelieferte VAPID-Konfiguration und das serverseitige Schlüsselpaar prüfen und Push auf einem realen Android-Gerät testen.
+5. Issue #13 (doppelte Workout-Trigger) bleibt bis zu bestätigtem read-only Datenbankzugriff zurückgestellt.
+
+Stand: Chunk-Recovery implementiert und CI-validiert; Auth- und Push-Produktivursache sowie Live-Abnahme offen. Keine Datenbank-/RLS-Schreibzugriffe, Migrationen, Secrets-Änderungen oder Production-Deployments.

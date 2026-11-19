@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { isDynamicImportFetchError } from "../src/lib/module-load-error";
+import {
+  isDynamicImportFetchError,
+  shouldAutoRetryDynamicImport,
+} from "../src/lib/module-load-error";
 
 const moduleMessages = [
   "Failed to fetch dynamically imported module: https://alo-web.lovable.app/assets/postfach-old.js",
@@ -43,4 +46,26 @@ test("the root boundary refreshes the document only after the module-recovery bu
   );
   assert.match(root, /\{moduleLoadError \? "App aktualisieren" : "Erneut versuchen"\}/);
   assert.equal((root.match(/window\.location\.reload\(\)/g) ?? []).length, 1);
+});
+
+test("retries a dynamic-import fetch failure only once while online", () => {
+  const error = new TypeError(moduleMessages[0]);
+  assert.equal(shouldAutoRetryDynamicImport(error, true, false), true);
+  assert.equal(shouldAutoRetryDynamicImport(error, false, false), false);
+  assert.equal(shouldAutoRetryDynamicImport(error, true, true), false);
+  assert.equal(shouldAutoRetryDynamicImport(new TypeError("Failed to fetch"), true, false), false);
+});
+
+test("installs Vite chunk recovery before the router is created", () => {
+  const router = readFileSync(new URL("../src/router.tsx", import.meta.url), "utf8");
+  const recovery = readFileSync(
+    new URL("../src/lib/dynamic-import-recovery.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(router, /installDynamicImportRecovery\(\);/);
+  assert.match(recovery, /vite:preloadError/);
+  assert.match(recovery, /event\.preventDefault\(\);/);
+  assert.match(recovery, /window\.location\.reload\(\);/);
+  assert.match(recovery, /window\.navigator\.onLine/);
+  assert.match(recovery, /RETRY_KEY/);
 });
