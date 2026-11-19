@@ -674,3 +674,13 @@ Stand: Chunk-Recovery implementiert und CI-validiert; Auth- und Push-Produktivur
 - Validierung zum Dokumentationszeitpunkt: GitHub Actions Run `44573951658` in Arbeit; Dependency-Installation erfolgreich, Lint läuft, Regressionstests/Typecheck/Build noch ausstehend. Vercel Preview des Projekts `nose-pushup` READY; zweiter Preview-Build in Arbeit. Kein Live-Publish und keine echte Geräteabnahme.
 - **Status: TEILWEISE / CI ausstehend.** Erst nach vollständig grüner CI, Code-Review und separater visueller Abnahme als abgeschlossen markieren.
 - **Schutzgrenze eingehalten:** keinerlei Datenbank-, Supabase-, SQL-, Migration-, RLS-, Auth-, Secret- oder Produktionsdatenänderung. Datenbankphase bleibt bis zum Abschluss sämtlicher übriger Roadmap-Phasen gesperrt.
+
+
+## 2026-11-19 – CI-Abschluss und Preview-Blocker für Phase 1
+
+- Finaler Code-Head zum CI-Abschluss: `4fd006b3a35765c46e43e4163ba75de6125d14de`.
+- GitHub Actions Run #1362 vollständig erfolgreich: Lint ✓, Regressionstests ✓ (1.072 bestanden, 1 übersprungen, 0 fehlgeschlagen), TypeScript ✓, Build ✓.
+- Draft-PR [#207](https://github.com/Hendrik5000/nose-pushup/pull/207) bleibt offen und ungemergt.
+- Vercel-Preview für beide Projekte (`nose-pushup`, `nose-pushup-c7wl`) ist am Free-Tier-Limit `api-deployments-free-per-day` gescheitert; laut Vercel erneuter Versuch in 24 Stunden. Deshalb aktuell keine neue Preview-URL und keine visuelle Desktop-/Mobil-Abnahme.
+- Nächster Schritt: nach Ablauf des Limits Preview erzeugen, sechs Stiloptionen und Farbwelten auf Desktop/Mobil visuell abnehmen; danach PR-Review. Kein Merge und kein Live-Publish.
+- Datenbankphase bleibt bis zum Abschluss sämtlicher übriger Roadmap-Phasen gesperrt.
