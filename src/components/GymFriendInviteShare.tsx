@@ -6,7 +6,8 @@ import { BackendNotReadyError } from "@/lib/friends/rpc";
 import { openCloudDm } from "@/lib/nexus-cloud";
 import { buildGymInviteMessage } from "@/lib/gym-partner";
 
-const button = "min-h-11 rounded-xl border border-border px-3 py-2 text-sm font-medium disabled:opacity-50";
+const button =
+  "min-h-11 rounded-xl border border-border px-3 py-2 text-sm font-medium disabled:opacity-50";
 
 /** Share a temporary Gym invite with an accepted Alo friend; the user always sends the DM manually. */
 export function GymFriendInviteShare({
@@ -58,7 +59,11 @@ export function GymFriendInviteShare({
       }
       await navigator.clipboard.writeText(message);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Der Einladungstext konnte nicht kopiert werden.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Der Einladungstext konnte nicht kopiert werden.",
+      );
       setBusyFriend(null);
       return;
     }
@@ -68,7 +73,9 @@ export function GymFriendInviteShare({
       await navigate({ to: "/chat", search: { dm: conversationId } });
       setNotice("Einladungstext kopiert. Füge ihn im Chat ein und sende ihn selbst.");
     } catch (cause) {
-      setNotice("Einladungstext kopiert. Der Chat konnte nicht geöffnet werden – du kannst den Code trotzdem manuell teilen.");
+      setNotice(
+        "Einladungstext kopiert. Der Chat konnte nicht geöffnet werden – du kannst den Code trotzdem manuell teilen.",
+      );
       if (cause instanceof BackendNotReadyError) {
         setError("Der Nexus-Freunde-Chat ist auf dem Server noch nicht eingerichtet.");
       }
@@ -85,11 +92,24 @@ export function GymFriendInviteShare({
       {open && (
         <div className="space-y-2 rounded-xl border border-border bg-background/70 p-3">
           <p className="text-xs text-muted-foreground">
-            Wähle einen bestätigten Freund. Der Einladungstext wird kopiert und sein Nexus-Chat geöffnet – gesendet wird erst, wenn du ihn selbst einfügst und abschickst.
+            Wähle einen bestätigten Freund. Der Einladungstext wird kopiert und sein Nexus-Chat geöffnet –
+            gesendet wird erst, wenn du ihn selbst einfügst und abschickst.
           </p>
-          {loading && <p role="status" className="text-sm text-muted-foreground">Freunde werden geladen …</p>}
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
+          {loading && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Freunde werden geladen …
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          {notice && (
+            <p role="status" className="text-sm text-primary">
+              {notice}
+            </p>
+          )}
           {friends && friends.length === 0 && !loading && (
             <p className="text-sm text-muted-foreground">Keine bestätigten Alo-Freunde gefunden.</p>
           )}
