@@ -1141,7 +1141,12 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                 <span className="alo-nexus-status-dot" aria-hidden="true" />
                 {mode === "supabase" ? "Cloud-Chat" : "Nur auf diesem Gerät"}
               </span>
-              <span className="alo-nexus-status-divider" aria-hidden="true">·</span>
+              <span
+                className="alo-nexus-status-divider"
+                aria-hidden="true"
+              >
+                ·
+              </span>
               <span className="alo-nexus-status-draft">
                 Entwurf: {cloudEnabled(userId) ? getSyncState().message : "nur auf diesem Gerät"}
               </span>
@@ -1311,7 +1316,10 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                     )}
 
                     <details className="alo-message-actions">
-                      <summary aria-label="Weitere Nachrichtenaktionen" title="Weitere Nachrichtenaktionen">
+                      <summary
+                        aria-label="Weitere Nachrichtenaktionen"
+                        title="Weitere Nachrichtenaktionen"
+                      >
                         <MoreVertical aria-hidden="true" />
                         <span className="sr-only">Weitere Nachrichtenaktionen</span>
                       </summary>
