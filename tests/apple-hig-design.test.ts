@@ -9,7 +9,14 @@ test("Apple HIG remains the default while all six design styles stay selectable"
     DESIGN_STYLES.map((style) => style.id),
     ["soft", "compact", "editorial", "studio", "hig", "performance"],
   );
-  assert.equal(DESIGN_STYLES.find((style) => style.id === "hig")?.label, "Apple HIG");
+  assert.deepEqual(DESIGN_STYLES.map((style) => style.label), [
+    "Klassisch",
+    "Kompakt",
+    "Editorial",
+    "Studio",
+    "Apple HIG",
+    "Performance",
+  ]);
 });
 
 test("settings renders each design style as an accessible selectable option", () => {
@@ -20,12 +27,6 @@ test("settings renders each design style as an accessible selectable option", ()
   assert.match(picker, /DESIGN_STYLES\.map/);
   assert.match(picker, /aria-pressed/);
   assert.match(picker, /data-design-style-option/);
-  assert.match(picker, /Klassisch/);
-  assert.match(picker, /Kompakt/);
-  assert.match(picker, /Editorial/);
-  assert.match(picker, /Studio/);
-  assert.match(picker, /Apple HIG/);
-  assert.match(picker, /Performance/);
 });
 
 test("the shared menu layout renders once and uses the spacious modern shell", () => {

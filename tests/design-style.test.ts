@@ -42,7 +42,14 @@ test("Alo exposes six selectable design styles and keeps the legacy identifier r
     DESIGN_STYLES.map((style) => style.id),
     ["soft", "compact", "editorial", "studio", "hig", "performance"],
   );
-  assert.equal(DESIGN_STYLES.find((style) => style.id === "hig")?.label, "Apple HIG");
+  assert.deepEqual(DESIGN_STYLES.map((style) => style.label), [
+    "Klassisch",
+    "Kompakt",
+    "Editorial",
+    "Studio",
+    "Apple HIG",
+    "Performance",
+  ]);
   for (const id of [
     "soft",
     "compact",

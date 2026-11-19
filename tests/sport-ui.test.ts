@@ -13,7 +13,14 @@ test("all six Alo design styles remain selectable while the retired ID stays mig
     DESIGN_STYLES.map((style) => style.id),
     ["soft", "compact", "editorial", "studio", "hig", "performance"],
   );
-  assert.equal(DESIGN_STYLES.find((style) => style.id === "hig")?.label, "Apple HIG");
+  assert.deepEqual(DESIGN_STYLES.map((style) => style.label), [
+    "Klassisch",
+    "Kompakt",
+    "Editorial",
+    "Studio",
+    "Apple HIG",
+    "Performance",
+  ]);
   for (const legacyId of [
     "soft",
     "compact",
@@ -26,12 +33,6 @@ test("all six Alo design styles remain selectable while the retired ID stays mig
   }
   const picker = read("components/DesignStylePicker.tsx");
   assert.match(picker, /DESIGN_STYLES\.map/);
-  assert.match(picker, /Klassisch/);
-  assert.match(picker, /Kompakt/);
-  assert.match(picker, /Editorial/);
-  assert.match(picker, /Studio/);
-  assert.match(picker, /Apple HIG/);
-  assert.match(picker, /Performance/);
 });
 
 test("new page structures are shared across training, health, community, account and public pages", () => {
