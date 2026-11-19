@@ -1828,3 +1828,82 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
 [data-alo-menu-surface="true"] :is(a, button):focus-visible {
   outline-color: var(--menu-accent);
 }
+
+
+/* Appearance mode is independent from the user's selected accent palette. */
+:root[data-theme-mode="light"] {
+  color-scheme: light;
+  --background: #f4f8ff;
+  --foreground: #17243a;
+  --card: rgba(255, 255, 255, 0.86);
+  --card-foreground: #17243a;
+  --secondary: #e6edf7;
+  --secondary-foreground: #26364d;
+  --muted: #eaf0f8;
+  --muted-foreground: #52647d;
+  --accent: color-mix(in srgb, var(--primary) 12%, #f4f8ff);
+  --accent-foreground: #173d68;
+  --border: rgba(38, 65, 96, 0.14);
+  --input: rgba(38, 65, 96, 0.2);
+  --shadow: 0 8px 28px rgba(23, 36, 58, 0.1);
+  --seg-track: #e6edf7;
+  --seg-active: #ffffff;
+}
+:root[data-theme-mode="dark"] {
+  color-scheme: dark;
+  --background: #14181e;
+  --foreground: #f1f6fb;
+  --card: rgba(32, 38, 47, 0.82);
+  --card-foreground: #f1f6fb;
+  --secondary: #2b3440;
+  --secondary-foreground: #edf4fa;
+  --muted: #29323d;
+  --muted-foreground: #b5c4d2;
+  --accent: color-mix(in srgb, var(--primary) 15%, #20262f);
+  --accent-foreground: #f1f6fb;
+  --border: rgba(185, 205, 225, 0.15);
+  --input: rgba(185, 205, 225, 0.22);
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  --seg-track: #252e39;
+  --seg-active: #354452;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-theme-mode="system"] {
+    color-scheme: light;
+    --background: #f4f8ff;
+    --foreground: #17243a;
+    --card: rgba(255, 255, 255, 0.86);
+    --card-foreground: #17243a;
+    --secondary: #e6edf7;
+    --secondary-foreground: #26364d;
+    --muted: #eaf0f8;
+    --muted-foreground: #52647d;
+    --accent: color-mix(in srgb, var(--primary) 12%, #f4f8ff);
+    --accent-foreground: #173d68;
+    --border: rgba(38, 65, 96, 0.14);
+    --input: rgba(38, 65, 96, 0.2);
+    --shadow: 0 8px 28px rgba(23, 36, 58, 0.1);
+    --seg-track: #e6edf7;
+    --seg-active: #ffffff;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme-mode="system"] {
+    color-scheme: dark;
+    --background: #14181e;
+    --foreground: #f1f6fb;
+    --card: rgba(32, 38, 47, 0.82);
+    --card-foreground: #f1f6fb;
+    --secondary: #2b3440;
+    --secondary-foreground: #edf4fa;
+    --muted: #29323d;
+    --muted-foreground: #b5c4d2;
+    --accent: color-mix(in srgb, var(--primary) 15%, #20262f);
+    --accent-foreground: #f1f6fb;
+    --border: rgba(185, 205, 225, 0.15);
+    --input: rgba(185, 205, 225, 0.22);
+    --shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    --seg-track: #252e39;
+    --seg-active: #354452;
+  }
+}

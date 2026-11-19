@@ -32,7 +32,8 @@ export function NavigationLayoutPicker() {
         <div>
           <p className="text-sm font-semibold">Erweiterte Navigation</p>
           <p className="text-xs text-muted-foreground">
-            Standardmäßig ausgeblendet – die drei Alo-Module bleiben oben direkt erreichbar.
+            Direkt erreichbar und frei positionierbar. Du kannst die Homebar hier jederzeit
+            ausblenden.
           </p>
         </div>
         <button
