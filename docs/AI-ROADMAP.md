@@ -681,6 +681,6 @@ Stand: Chunk-Recovery implementiert und CI-validiert; Auth- und Push-Produktivur
 - Finaler Code-Head zum CI-Abschluss: `4fd006b3a35765c46e43e4163ba75de6125d14de`.
 - GitHub Actions Run #1362 vollständig erfolgreich: Lint ✓, Regressionstests ✓ (1.072 bestanden, 1 übersprungen, 0 fehlgeschlagen), TypeScript ✓, Build ✓.
 - Draft-PR [#207](https://github.com/Hendrik5000/nose-pushup/pull/207) bleibt offen und ungemergt.
-- Vercel-Preview für beide Projekte (`nose-pushup`, `nose-pushup-c7wl`) ist am Free-Tier-Limit `api-deployments-free-per-day` gescheitert; laut Vercel erneuter Versuch in 24 Stunden. Deshalb aktuell keine neue Preview-URL und keine visuelle Desktop-/Mobil-Abnahme.
-- Nächster Schritt: nach Ablauf des Limits Preview erzeugen, sechs Stiloptionen und Farbwelten auf Desktop/Mobil visuell abnehmen; danach PR-Review. Kein Merge und kein Live-Publish.
+- **Preview jetzt verfügbar (19.11.2026):** Nach dem vorherigen Free-Tier-Tageslimit wurde ein neuer Vercel-Preview-Build für Head `7ec9f10c23696b7e3bc72268340f11377faf8862` manuell angestoßen. Deployment `dpl_B3cHMT4SqDLib8odeJ3VxNS1t31y` ist `READY`; URL: https://nose-pushup-8c8tkauoj-hendrikkamps2011-6017s-projects.vercel.app. Root und `/profile` antworten mit HTTP 200. `/profile` liefert wegen Auth-Schutz nur die App-Shell; eine angemeldete visuelle Prüfung war mit den verfügbaren Browser-Verbindungen nicht möglich.
+- **Abnahme weiterhin offen:** Sechs Designstile und Farbwelten auf Desktop und Mobil visuell prüfen. PR #207 bleibt Draft und ungemergt; kein Live-Publish.
 - Datenbankphase bleibt bis zum Abschluss sämtlicher übriger Roadmap-Phasen gesperrt.
