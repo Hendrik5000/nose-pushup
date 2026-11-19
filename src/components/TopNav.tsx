@@ -49,7 +49,8 @@ export function AppNavigation() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [enabled, layout, pathname]);
   const bottomLayout = layout === "bottom" || layout === "floating";
-  const barVisible = enabled && (!bottomLayout || scrollVisible);
+  const hideModuleChrome = pathname.startsWith("/settings") || pathname.startsWith("/profile");
+  const barVisible = enabled && bottomLayout && scrollVisible && !hideModuleChrome;
   useEffect(() => {
     document.documentElement.dataset.navigationExpanded = String(barVisible);
   }, [barVisible]);
