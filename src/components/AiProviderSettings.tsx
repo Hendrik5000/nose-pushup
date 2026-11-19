@@ -17,7 +17,6 @@ export function AiProviderSettings({
 }) {
   const [list, setList] = useState<ProviderConfig[]>(DEFAULT_PROVIDERS);
   const [saved, setSaved] = useState(false);
-  const [storageError, setStorageError] = useState<string | null>(null);
 
   useEffect(() => {
     setList(loadProviders(userId));
@@ -30,17 +29,9 @@ export function AiProviderSettings({
   };
 
   const onSave = () => {
-    try {
-      saveProviders(list, userId);
-      setSaved(true);
-      setStorageError(null);
-      onSaved?.();
-    } catch {
-      setSaved(false);
-      setStorageError(
-        "Der Browser-Sitzungsspeicher ist nicht verfügbar. Der API-Key wurde nicht gespeichert.",
-      );
-    }
+    saveProviders(list, userId);
+    setSaved(true);
+    onSaved?.();
   };
 
   return (
@@ -49,10 +40,11 @@ export function AiProviderSettings({
         Alo ist im Free-only-Modus: Aktuell ist ausschließlich OpenRouter Free freigeschaltet; der
         Router verwendet nur kostenlose Modelle (20 Anfragen/Minute, 50/Tag). Es gibt keinen
         kostenpflichtigen Fallback. Andere Anbieter bleiben gesperrt, solange eine garantierte
-        Nutzung ohne Zahlungsdaten oder Abrechnung nicht nachgewiesen ist. Dein OpenRouter-Key wird
-        nur in dieser Browser-Sitzung gespeichert und beim Abmelden gelöscht. Der Key ist nicht
-        verschlüsselt; aktive Seitenskripte können ihn lesen. Nutze einen separaten Key mit
-        minimalen Berechtigungen.
+        Nutzung ohne Zahlungsdaten oder Abrechnung nicht nachgewiesen ist. Dein OpenRouter-Key
+        bleibt ausschließlich flüchtig im Arbeitsspeicher dieses Tabs. Er wird weder in localStorage
+        noch sessionStorage geschrieben und geht beim Neuladen, Schließen des Tabs, Abmelden oder
+        Kontowechsel verloren. Während der offenen Sitzung können aktive Seitenskripte ihn weiterhin
+        lesen. Nutze deshalb einen separaten Key mit minimalen Berechtigungen.
       </p>
       {list.map((p) => {
         const canUseProvider = isFreeOnlyProvider(p.id);
@@ -122,17 +114,12 @@ export function AiProviderSettings({
           </div>
         );
       })}
-      {storageError && (
-        <p role="alert" className="text-xs text-destructive">
-          {storageError}
-        </p>
-      )}
       <button
         type="button"
         onClick={onSave}
         className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
       >
-        {saved ? "Für diese Sitzung gespeichert ✓" : "Sitzung speichern"}
+        {saved ? "Im Arbeitsspeicher dieses Tabs ✓" : "Für diesen Tab merken"}
       </button>
     </div>
   );

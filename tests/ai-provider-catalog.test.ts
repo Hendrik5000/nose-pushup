@@ -12,6 +12,7 @@ import {
   toPayload,
 } from "../src/lib/ai-providers.ts";
 import { clearSensitiveClientStorage } from "../src/lib/sensitive-storage.ts";
+import { clearProviderMemory } from "../src/lib/ai-provider-memory.ts";
 
 function memoryStorage(initial: Record<string, string> = {}) {
   const values = new Map(Object.entries(initial));
@@ -75,49 +76,60 @@ test("only OpenRouter Free can be enabled or selected", () => {
   assert.equal(enabledProviderSummary(configured), "OpenRouter (Free Models)");
 });
 
-test("provider loading migrates old localStorage keys to sessionStorage and strips blocked providers", () => {
+test("OpenRouter keys stay only in volatile per-account memory and legacy browser values are discarded", () => {
   const userKey = "super-ai-providers-v1:user-1";
-  const legacy = DEFAULT_PROVIDERS.map((provider) => ({
-    ...provider,
-    enabled: true,
-    apiKey: `legacy-${provider.id}`,
-    model: provider.id === "openrouter" ? "some-paid-model" : provider.model,
-  }));
   const local = memoryStorage({
-    [userKey]: JSON.stringify(legacy),
+    [userKey]: JSON.stringify([{ id: "openrouter", enabled: true, apiKey: "old-local-key" }]),
     "super-ai-providers-v1": JSON.stringify([
-      {
-        id: "openrouter",
-        enabled: true,
-        apiKey: "belongs-to-previous-user",
-        model: "openrouter/free",
-      },
+      { id: "openrouter", enabled: true, apiKey: "unscoped-previous-user-key" },
     ]),
   });
-  const session = memoryStorage();
-
+  const session = memoryStorage({
+    [userKey]: JSON.stringify([{ id: "openrouter", enabled: true, apiKey: "old-session-key" }]),
+  });
+  clearProviderMemory();
   withBrowserStorage(local, session, () => {
     const loaded = loadProviders("user-1");
-    const openrouter = loaded.find((provider) => provider.id === "openrouter")!;
-    const cerebras = loaded.find((provider) => provider.id === "cerebras")!;
-    assert.equal(openrouter.enabled, true);
-    assert.equal(openrouter.model, "openrouter/free");
-    assert.equal(openrouter.apiKey, "legacy-openrouter");
-    assert.equal(cerebras.enabled, false);
-    assert.equal(cerebras.apiKey, "");
-    assert.equal(local.getItem(userKey), null);
-    assert.equal(local.getItem("super-ai-providers-v1"), null);
-    assert.ok(session.getItem(userKey));
-    assert.doesNotMatch(session.getItem(userKey)!, /belongs-to-previous-user/);
-
-    saveProviders(
-      loaded.map((provider) => ({ ...provider, enabled: true, apiKey: "attempted-key" })),
-      "user-1",
+    assert.equal(loaded.find((provider) => provider.id === "openrouter")?.apiKey, "");
+    assert.equal(local.length, 0);
+    assert.equal(session.length, 0);
+    const configured = loaded.map((provider) =>
+      provider.id === "openrouter"
+        ? { ...provider, enabled: true, apiKey: "volatile-key" }
+        : provider,
     );
-    const saved = JSON.parse(session.getItem(userKey)!) as typeof loaded;
-    assert.equal(saved.find((provider) => provider.id === "openrouter")?.apiKey, "attempted-key");
-    assert.equal(saved.find((provider) => provider.id === "cerebras")?.apiKey, "");
-    assert.equal(saved.find((provider) => provider.id === "cerebras")?.enabled, false);
+    saveProviders(configured, "user-1");
+    assert.equal(local.length, 0);
+    assert.equal(session.length, 0);
+    assert.equal(
+      loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey,
+      "volatile-key",
+    );
+    assert.equal(
+      loadProviders("user-2").find((provider) => provider.id === "openrouter")?.apiKey,
+      "",
+    );
+  });
+  clearProviderMemory();
+});
+
+test("provider memory is cleared on logout and does not survive a fresh module session", () => {
+  const configured = DEFAULT_PROVIDERS.map((provider) =>
+    provider.id === "openrouter"
+      ? { ...provider, enabled: true, apiKey: "temporary-key" }
+      : provider,
+  );
+  withBrowserStorage(memoryStorage(), memoryStorage(), () => {
+    saveProviders(configured, "user-1");
+    assert.equal(
+      loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey,
+      "temporary-key",
+    );
+    clearProviderMemory();
+    assert.equal(
+      loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey,
+      "",
+    );
   });
 });
 
@@ -161,6 +173,8 @@ test("root auth listener clears sensitive browser storage when the signed-in acc
   assert.match(root, /onAuthStateChange\(\(event, session\)/);
   assert.match(root, /event === "INITIAL_SESSION"/);
   assert.match(root, /currentUserId !== nextUserId/);
+  assert.match(root, /clearProviderMemory\(\)/);
+  assert.match(root, /clearProviderStorage\(\)/);
   assert.match(
     root,
     /if \(currentUserId && nextUserId && currentUserId !== nextUserId\) \{[\s\S]*?clearSensitiveClientStorage\(\)/,

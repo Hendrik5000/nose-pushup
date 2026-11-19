@@ -32,7 +32,8 @@ import { applyMenuAccent, getStoredMenuAccent, MENU_ACCENT_STORAGE_KEY } from "@
 import { applyDesignStyle, getStoredDesignStyle } from "@/lib/design-style";
 import { applyNavigationLayout, getStoredNavigationLayout } from "@/lib/navigation-layout";
 import { swipeScreenFromPath } from "@/lib/module-navigation";
-import { clearSensitiveClientStorage } from "@/lib/sensitive-storage";
+import { clearProviderStorage, clearSensitiveClientStorage } from "@/lib/sensitive-storage";
+import { clearProviderMemory } from "@/lib/ai-provider-memory";
 import { isDynamicImportFetchError } from "@/lib/module-load-error";
 function NotFoundComponent() {
   return (
@@ -199,6 +200,7 @@ function RootComponent() {
   };
 
   useEffect(() => {
+    clearProviderStorage();
     installGlobalErrorReporting();
     const syncMenuAccent = () => applyMenuAccent(getStoredMenuAccent(), getStoredTheme(), false);
     const onStorage = (event: StorageEvent) => {
@@ -355,11 +357,13 @@ function RootComponent() {
           const nextUserId = session?.user.id ?? null;
           if (currentUserId && nextUserId && currentUserId !== nextUserId) {
             clearSensitiveClientStorage();
+            clearProviderMemory();
           }
           currentUserId = nextUserId;
         }
         if (event === "SIGNED_OUT") {
           clearSensitiveClientStorage();
+          clearProviderMemory();
           currentUserId = null;
         }
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
