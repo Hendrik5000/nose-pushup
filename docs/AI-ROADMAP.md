@@ -663,3 +663,27 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 5. Issue #13 (doppelte Workout-Trigger) bleibt bis zu bestätigtem read-only Datenbankzugriff zurückgestellt.
 
 Stand: Chunk-Recovery implementiert und CI-validiert; Auth- und Push-Produktivursache sowie Live-Abnahme offen. Keine Datenbank-/RLS-Schreibzugriffe, Migrationen, Secrets-Änderungen oder Production-Deployments.
+
+
+## Aktueller Statusabgleich und verbindliche Reihenfolge (2026-11-19)
+
+### Verifizierter PR-Stand
+
+- PR #198 gemergt: `fcb77742ff6ab1bf25c52ac6e885f8a2ebb9c247`.
+- PR #199 gemergt: `b2d131243aeedec95131589a97bbd479491eeb2c`.
+- PR #200 gemergt: `4493ca93aeb035543e7de5fbe8555285d748ef4e`.
+- PR #202 gemergt: `2a355d6214a7bc806e14f18185cb67d8d548bba8`.
+- PR #203 gemergt: `f18362e600655b3c1d5b1aa4ea71015fa22eb54f`.
+- PR #204 gemergt: `49d3aef4c3f18f200a26d2f2a2e071f783e1182b`.
+- PR #205 gemergt: `ff91409a9c0a434834da39151641e28052c49f5b`; Chunk-Recovery ist in `main`, Live-Auslieferung/Geräteabnahme bleibt separat unbestätigt.
+- PR #206 ist der aktuelle Draft: OpenRouter-BYOK-Key nur im flüchtigen Tab-Arbeitsspeicher; finaler Code- und Dokumentationsstand hat GitHub-CI vollständig bestanden (Runs `44531428210`, `44531416156`, `44531912183`, `44531901951`). Noch nicht gemergt oder live.
+
+### Verbindliche Nutzerentscheidung zur Datenbank-Reihenfolge
+
+**Datenbankarbeiten beginnen erst, wenn die gesamte übrige Alo-Roadmap abgeschlossen ist.** Bis dahin wird keinerlei Datenbankarbeit ausgeführt – auch keine read-only Schema-/Migrations-/Tabellenprüfung. Keine SQL-Abfragen, Migrationen, Schemaänderungen, RLS-/Policy-Änderungen, Triggeränderungen, Datenkorrekturen oder produktiven Schreibzugriffe. Datenbankabhängige Roadmap-Punkte (einschließlich Issue #13 und Freundes-/Marketplace-Freigaben, sofern sie neue Tabellen/Policies benötigen) bleiben ausdrücklich zurückgestellt. Unabhängige Frontend-, UI-, lokale Logik-, Barrierefreiheits-, Sicherheits- und Testaufgaben werden weiter umgesetzt. Erst nach Abschluss der Nicht-Datenbank-Punkte wird die Datenbankphase separat geplant.
+
+### Weiterarbeit ohne Datenbank
+
+- Zuerst die offenen, unabhängigen UI-/Frontend-/Qualitätsaufgaben der Roadmap fortsetzen.
+- Reale Geräteabnahmen als offen markieren, bis sie tatsächlich auf den Zielgeräten durchgeführt wurden.
+- Keine Funktion als live oder vollständig erledigt markieren, nur weil Code gemergt oder CI grün ist.

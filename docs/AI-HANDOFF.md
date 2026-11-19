@@ -73,3 +73,8 @@ Mobile-first prüfen: 320 px und 390 px, Safe Areas, Tastatur, erreichbarer Comp
 ## Vorgehen bei neuen KI-Funktionen
 
 Zuerst mit vorhandenen Abläufen integrieren statt neue Tabs, schwebende Leisten oder parallele Chats zu erzeugen. Jede KI-Aktion muss erklären, welcher Anbieter genutzt wird; die vorhandene regelbasierte Auswahl nicht als echtes Multi-Modell-Routing darstellen. Vor zusätzlichem Modellaufruf den genauen Prompt/Kontext und den zweiten Empfänger offenlegen. Originals beibehalten, Entwürfe editierbar machen und bei Fehlern Eingaben/Anhänge nicht verlieren.
+
+
+## Verbindliche Reihenfolge ab 2026-11-19
+
+Der Nutzer hat festgelegt: **Die Datenbank kommt erst nach Abschluss der kompletten übrigen Alo-Roadmap.** Bis dahin keine Datenbankarbeit, auch nicht read-only: keine Schema-/Tabellen-/Migrationsabfragen, keine SQL-Ausführung, keine Migrationen, RLS-/Policy-/Triggeränderungen oder Datenkorrekturen. Datenbankabhängige Punkte bleiben zurückgestellt. Frontend, UI, lokale Logik, Barrierefreiheit, Sicherheit und Tests ohne Datenbankzugriff laufen weiter. Der aktuelle PR-Stand und die offene Merge-/Live-Abnahme sind in `docs/AI-ROADMAP.md` dokumentiert.
