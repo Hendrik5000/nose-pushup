@@ -1136,10 +1136,16 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                 mode={mode}
               />
             )}
-            <p className="border-b border-border px-4 py-1 text-[10px] text-muted-foreground">
-              Nachrichten: {mode === "supabase" ? "Cloud · Nexus" : "nur auf diesem Gerät"} ·
-              Entwurf: {cloudEnabled(userId) ? getSyncState().message : "nur auf diesem Gerät"}
-            </p>
+            <div className="alo-nexus-status" aria-label="Speicher- und Synchronisierungsstatus">
+              <span className="alo-nexus-status-mode">
+                <span className="alo-nexus-status-dot" aria-hidden="true" />
+                {mode === "supabase" ? "Cloud-Chat" : "Nur auf diesem Gerät"}
+              </span>
+              <span className="alo-nexus-status-divider" aria-hidden="true">·</span>
+              <span className="alo-nexus-status-draft">
+                Entwurf: {cloudEnabled(userId) ? getSyncState().message : "nur auf diesem Gerät"}
+              </span>
+            </div>
             {searchOpen && (
               <div className="border-b border-border bg-card/40 px-3 py-2">
                 <input
@@ -1238,7 +1244,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                   <div
                     key={m.id}
                     id={`msg-${m.id}`}
-                    className={`flex flex-col gap-1 ${own ? "items-end" : "items-start"}`}
+                    className={`alo-nexus-message flex flex-col gap-1 ${own ? "items-end" : "items-start"} ${showAuthor ? "alo-message-start" : "alo-message-continuation"}`}
                   >
                     {showAuthor && (
                       <div className="flex items-center gap-2 px-1 text-[10px] text-muted-foreground">
@@ -1305,7 +1311,10 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                     )}
 
                     <details className="alo-message-actions">
-                      <summary>Nachrichtenaktionen</summary>
+                      <summary aria-label="Weitere Nachrichtenaktionen" title="Weitere Nachrichtenaktionen">
+                        <MoreVertical aria-hidden="true" />
+                        <span className="sr-only">Weitere Nachrichtenaktionen</span>
+                      </summary>
                       <div className={`flex flex-wrap gap-1 px-1 ${own ? "justify-end" : ""}`}>
                         {QUICK_EMOJIS.slice(0, 4).map((e) => (
                           <button
@@ -1408,7 +1417,10 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
 
             {/* Quick replies + workout share */}
             <details className="alo-chat-quick-options">
-              <summary>Schnellantworten & Training teilen</summary>
+              <summary>
+                <Sparkles aria-hidden="true" />
+                <span>Schnell senden</span>
+              </summary>
               <div className="community-quick-replies flex flex-wrap gap-2">
                 {QUICK_REPLIES.map((q) => (
                   <button
