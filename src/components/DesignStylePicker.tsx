@@ -35,11 +35,7 @@ export function DesignStylePicker() {
           bleiben davon unabhängig.
         </p>
       </div>
-      <div
-        role="group"
-        aria-label="Designstil auswählen"
-        className="grid gap-2 sm:grid-cols-2"
-      >
+      <div role="group" aria-label="Designstil auswählen" className="grid gap-2 sm:grid-cols-2">
         {DESIGN_STYLES.map((style) => (
           <button
             key={style.id}
@@ -55,7 +51,9 @@ export function DesignStylePicker() {
                 {style.description}
               </span>
             </span>
-            {active === style.id && <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />}
+            {active === style.id && (
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            )}
           </button>
         ))}
       </div>

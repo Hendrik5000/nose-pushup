@@ -51,10 +51,7 @@ export const DEFAULT_DESIGN_STYLE: DesignStyleId = "hig";
 const STORAGE_KEY = "np-design-style";
 
 export function isDesignStyleId(value: unknown): value is DesignStyleId {
-  return (
-    DESIGN_STYLES.some((style) => style.id === value) ||
-    value === "legacy-performance"
-  );
+  return DESIGN_STYLES.some((style) => style.id === value) || value === "legacy-performance";
 }
 
 export function getStoredDesignStyle(): DesignStyleId {
