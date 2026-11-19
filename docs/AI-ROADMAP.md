@@ -661,3 +661,16 @@ Branch: `gpt6/full-site-ui-redesign-20261118`. Code-/Test-Commits bis `366362d5b
 5. Issue #13 (doppelte Workout-Trigger) bleibt bis zu bestätigtem read-only Datenbankzugriff zurückgestellt.
 
 Stand: Chunk-Recovery implementiert und CI-validiert; Auth- und Push-Produktivursache sowie Live-Abnahme offen. Keine Datenbank-/RLS-Schreibzugriffe, Migrationen, Secrets-Änderungen oder Production-Deployments.
+
+
+## 2026-11-19 – Phase 1: Designstil-Auswahl wiederherstellen
+
+- Ausgangsbefund: `src/lib/design-style.ts` setzte beim Lesen und Anwenden jeden gespeicherten Stil auf `hig` zurück. Die Produktvorgabe und vorhandene CSS-Regeln behalten sechs auswählbare Stile bei; der statische Einstellungsbereich bot nur „Alo Modern“ an.
+- Umsetzung auf `gpt6/alo-phase1-design-foundation-20261119`: sechs Stile (Klassisch, Kompakt, Editorial, Studio, Apple HIG, Performance) sind wieder auswählbar. Apple HIG bleibt Standard; gültige gespeicherte Stile bleiben erhalten; `legacy-performance` wird kontrolliert auf `performance` abgebildet. Die 13 Farbwelten bleiben unabhängig.
+- Einstellungs-UI: echte Buttons aus dem zentralen Katalog, `aria-pressed`, Tastatur-Fokus und Live-Statusmeldung.
+- Regressionen aktualisiert: `tests/design-style.test.ts`, `tests/apple-hig-design.test.ts`, `tests/sport-ui.test.ts`.
+- Dateien: `src/lib/design-style.ts`, `src/components/DesignStylePicker.tsx`, die drei genannten Testdateien sowie `docs/AI-TEAM.md`.
+- Commit `8e79e416f25e6b86f96a6311ca5121d9393a8f2c`; Draft-PR [#207](https://github.com/Hendrik5000/nose-pushup/pull/207).
+- Validierung zum Dokumentationszeitpunkt: GitHub Actions Run `44573951658` in Arbeit; Dependency-Installation erfolgreich, Lint läuft, Regressionstests/Typecheck/Build noch ausstehend. Vercel Preview des Projekts `nose-pushup` READY; zweiter Preview-Build in Arbeit. Kein Live-Publish und keine echte Geräteabnahme.
+- **Status: TEILWEISE / CI ausstehend.** Erst nach vollständig grüner CI, Code-Review und separater visueller Abnahme als abgeschlossen markieren.
+- **Schutzgrenze eingehalten:** keinerlei Datenbank-, Supabase-, SQL-, Migration-, RLS-, Auth-, Secret- oder Produktionsdatenänderung. Datenbankphase bleibt bis zum Abschluss sämtlicher übriger Roadmap-Phasen gesperrt.
