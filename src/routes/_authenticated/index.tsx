@@ -1298,32 +1298,37 @@ function HomeAppHub({
   const renderHomeGroup = (groupId: string, label: string, groupTiles: HomeHubTile[]) => {
     const collapsed = groupId === "launcher" ? false : settings.collapsedGroups.includes(groupId);
     return (
-      <section key={groupId} aria-label={groupId === "launcher" ? "Alo-Startseite" : `Alo-Apps: ${label}`}>
-        {groupId !== "launcher" && <button
-          type="button"
-          aria-expanded={!collapsed}
-          data-home-group-toggle={groupId}
-          onClick={() => {
-            try {
-              persistSettings(
-                toggleHomeAppGroupCollapsed(settings, groupId),
-                collapsed ? "Home-Gruppe eingeblendet." : "Home-Gruppe ausgeblendet.",
-              );
-            } catch {
-              setSettingsError("Diese Gruppe konnte nicht umgeschaltet werden.");
-            }
-          }}
-          className="mb-3 flex w-full items-center gap-2 text-left text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-        >
-          <ChevronDown
-            aria-hidden="true"
-            className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : ""}`}
-          />
-          {label}
-          <span className="ml-auto text-[10px] font-medium normal-case tracking-normal">
-            {groupTiles.length}
-          </span>
-        </button>}
+      <section
+        key={groupId}
+        aria-label={groupId === "launcher" ? "Alo-Startseite" : `Alo-Apps: ${label}`}
+      >
+        {groupId !== "launcher" && (
+          <button
+            type="button"
+            aria-expanded={!collapsed}
+            data-home-group-toggle={groupId}
+            onClick={() => {
+              try {
+                persistSettings(
+                  toggleHomeAppGroupCollapsed(settings, groupId),
+                  collapsed ? "Home-Gruppe eingeblendet." : "Home-Gruppe ausgeblendet.",
+                );
+              } catch {
+                setSettingsError("Diese Gruppe konnte nicht umgeschaltet werden.");
+              }
+            }}
+            className="mb-3 flex w-full items-center gap-2 text-left text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <ChevronDown
+              aria-hidden="true"
+              className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+            />
+            {label}
+            <span className="ml-auto text-[10px] font-medium normal-case tracking-normal">
+              {groupTiles.length}
+            </span>
+          </button>
+        )}
         {!collapsed && (
           <div className="alo-tablet-home-apps grid w-full grid-flow-row-dense grid-cols-4 gap-x-3 gap-y-6">
             {groupTiles.map((tile) => {
