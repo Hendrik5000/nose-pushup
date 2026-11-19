@@ -46,6 +46,21 @@ export function clearSensitiveClientStorage(): void {
   }
 }
 
-export function providersStorageKey(userId: string | null | undefined): string {
-  return userId ? `super-ai-providers-v1:${userId}` : "super-ai-providers-v1";
+/** Remove legacy BYOK values from both browser stores without reading or migrating them. */
+export function clearProviderStorage(): void {
+  if (typeof window === "undefined") return;
+  for (const storageName of ["sessionStorage", "localStorage"] as const) {
+    try {
+      const storage = window[storageName];
+      storage.removeItem("super-ai-providers-v1");
+      const legacyKeys: string[] = [];
+      for (let index = 0; index < storage.length; index += 1) {
+        const key = storage.key(index);
+        if (key?.startsWith("super-ai-providers-v1:")) legacyKeys.push(key);
+      }
+      for (const key of legacyKeys) storage.removeItem(key);
+    } catch {
+      // Storage may be unavailable; the app never reads these legacy values.
+    }
+  }
 }

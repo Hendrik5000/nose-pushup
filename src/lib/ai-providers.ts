@@ -1,6 +1,7 @@
 /** Client-side BYOK multi-provider config for Super-AI. */
 
-import { providersStorageKey } from "@/lib/sensitive-storage";
+import { clearProviderStorage } from "@/lib/sensitive-storage";
+import { getProviderMemory, setProviderMemory } from "@/lib/ai-provider-memory";
 
 export type ProviderId =
   | "openai"
@@ -37,7 +38,6 @@ export type ProviderConfig = {
   tasks: AiTask[];
 };
 
-const STORAGE_KEY = "super-ai-providers-v1";
 
 export type ProviderCatalogEntry = {
   id: "openrouter";
@@ -135,73 +135,38 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
 ];
 
-export function loadProviders(userId?: string | null): ProviderConfig[] {
-  try {
-    const key = providersStorageKey(userId);
-    const session = window.sessionStorage;
-    let raw = session.getItem(key);
-
-    // One-time migration: remove previously persistent BYOK data from localStorage.
-    const legacyKeys = userId ? [key, STORAGE_KEY] : [STORAGE_KEY];
-    for (const legacyKey of legacyKeys) {
-      const legacy = window.localStorage.getItem(legacyKey);
-      const belongsToCurrentAccount = !userId || legacyKey === key;
-      try {
-        if (!raw && legacy && belongsToCurrentAccount) {
-          session.setItem(key, legacy);
-          raw = legacy;
-        }
-      } finally {
-        // Never carry an unscoped legacy key into a newly signed-in account.
-        window.localStorage.removeItem(legacyKey);
-      }
-    }
-
-    if (!raw) return structuredClone(DEFAULT_PROVIDERS);
-    const parsed = JSON.parse(raw) as ProviderConfig[];
-    if (!Array.isArray(parsed) || parsed.length === 0) return structuredClone(DEFAULT_PROVIDERS);
-
-    const normalized = DEFAULT_PROVIDERS.map((defaults) => {
-      const found = parsed.find((provider) => provider.id === defaults.id);
-      if (!found) return { ...defaults };
-      const merged = { ...defaults, ...found, id: defaults.id, label: defaults.label };
-      if (!isFreeOnlyProvider(defaults.id)) {
-        return { ...merged, enabled: false, apiKey: "", baseUrl: undefined, accountId: undefined };
-      }
-      return {
-        ...merged,
-        enabled: Boolean(found.enabled),
-        apiKey: typeof found.apiKey === "string" ? found.apiKey : "",
-        model: "openrouter/free",
-        baseUrl: undefined,
-        accountId: undefined,
-      };
-    });
-
-    // Persist only the free provider and its fixed free-router model for this session.
-    session.setItem(key, JSON.stringify(normalized));
-    return normalized;
-  } catch {
-    return structuredClone(DEFAULT_PROVIDERS);
-  }
-}
-
-export function saveProviders(list: ProviderConfig[], userId?: string | null) {
-  const sanitized = DEFAULT_PROVIDERS.map((defaults) => {
-    const provider = list.find((item) => item.id === defaults.id) ?? defaults;
+function normalizeProviders(list: ProviderConfig[]): ProviderConfig[] {
+  return DEFAULT_PROVIDERS.map((defaults) => {
+    const found = list.find((provider) => provider.id === defaults.id);
+    if (!found) return { ...defaults };
+    const merged = { ...defaults, ...found, id: defaults.id, label: defaults.label };
     if (!isFreeOnlyProvider(defaults.id)) {
-      return { ...defaults, enabled: false, apiKey: "", baseUrl: undefined, accountId: undefined };
+      return { ...merged, enabled: false, apiKey: "", baseUrl: undefined, accountId: undefined };
     }
     return {
-      ...defaults,
-      enabled: Boolean(provider.enabled),
-      apiKey: typeof provider.apiKey === "string" ? provider.apiKey : "",
+      ...merged,
+      enabled: Boolean(found.enabled),
+      apiKey: typeof found.apiKey === "string" ? found.apiKey : "",
       model: "openrouter/free",
       baseUrl: undefined,
       accountId: undefined,
     };
   });
-  window.sessionStorage.setItem(providersStorageKey(userId), JSON.stringify(sanitized));
+}
+
+/** Keys exist only in this tab's live JavaScript memory; reload starts with an empty config. */
+export function loadProviders(userId?: string | null): ProviderConfig[] {
+  if (typeof window === "undefined") return structuredClone(DEFAULT_PROVIDERS);
+  clearProviderStorage();
+  const saved = getProviderMemory<ProviderConfig[]>(userId);
+  return saved ? normalizeProviders(saved) : structuredClone(DEFAULT_PROVIDERS);
+}
+
+export function saveProviders(list: ProviderConfig[], userId?: string | null): void {
+  if (typeof window === "undefined") {
+    throw new Error("Provider-Schlüssel können nur im Browser-Arbeitsspeicher gehalten werden.");
+  }
+  setProviderMemory(userId, normalizeProviders(list));
 }
 
 /** Classify user message into a task for model routing. */
