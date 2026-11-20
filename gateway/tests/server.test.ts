@@ -347,11 +347,36 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     assert.equal(capturedFrame, 'aGVsbG8=');
     assert.equal(capturedSession, deviceId + ':' + (sessionPayload.sessionId as string));
 
+    // Live-Frame kann nur vom Geräteinhaber und nur während der aktiven Sitzung abgerufen werden.
+    const liveFrame = await get(
+      port,
+      '/v1/control/screen-frame?deviceId=' + deviceId + '&userId=' + TEST_USER_ID,
+      ADMIN_HEADERS,
+    );
+    assert.equal(liveFrame.status, 200);
+    assert.equal(liveFrame.body.active, true);
+    assert.equal(liveFrame.body.sessionId, sessionPayload.sessionId);
+    assert.equal(liveFrame.body.frameBase64, 'aGVsbG8=');
+    const foreignFrame = await get(
+      port,
+      '/v1/control/screen-frame?deviceId=' + deviceId + '&userId=' + OTHER_USER_ID,
+      ADMIN_HEADERS,
+    );
+    assert.equal(foreignFrame.status, 404);
+
     // Not-Aus: Routing pausiert, Gert wird informiert
     const notaus = await post(port, '/v1/control/not-aus?userId=' + TEST_USER_ID, { userId: TEST_USER_ID, aktiv: true, grund: 'prfung' }, ADMIN_HEADERS);
     assert.equal(notaus.status, 200);
     const screenStopEnv = await nextEnvelope(ws, 3000, "screen-session-stop");
     assert.equal(screenStopEnv?.type, 'screen.session.stop');
+    const stoppedFrame = await get(
+      port,
+      '/v1/control/screen-frame?deviceId=' + deviceId + '&userId=' + TEST_USER_ID,
+      ADMIN_HEADERS,
+    );
+    assert.equal(stoppedFrame.status, 200);
+    assert.equal(stoppedFrame.body.active, false);
+    assert.equal(stoppedFrame.body.frameBase64, null);
     const notausEnv = await nextEnvelope(ws, 3000, "not-aus");
     assert.equal(notausEnv?.type, 'not-aus');
     const blockedDuringNotAus = await post(
