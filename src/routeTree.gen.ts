@@ -22,6 +22,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
+import { Route as AuthenticatedMiraDevicesRouteImport } from './routes/_authenticated/mira-devices'
 import { Route as AuthenticatedAlarmRouteImport } from './routes/_authenticated/alarm'
 import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
 import { Route as AuthenticatedBattleLeagueRouteImport } from './routes/_authenticated/battle-league'
@@ -115,6 +116,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
 const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
   id: '/ai',
   path: '/ai',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMiraDevicesRoute = AuthenticatedMiraDevicesRouteImport.update({
+  id: '/mira-devices',
+  path: '/mira-devices',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAlarmRoute = AuthenticatedAlarmRouteImport.update({
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
+  '/mira-devices': typeof AuthenticatedMiraDevicesRoute
   '/alarm': typeof AuthenticatedAlarmRoute
   '/areas': typeof AuthenticatedAreasRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
@@ -315,6 +322,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai': typeof AuthenticatedAiRoute
+  '/mira-devices': typeof AuthenticatedMiraDevicesRoute
   '/alarm': typeof AuthenticatedAlarmRoute
   '/areas': typeof AuthenticatedAreasRoute
   '/battle-league': typeof AuthenticatedBattleLeagueRoute
@@ -358,6 +366,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
+  '/_authenticated/mira-devices': typeof AuthenticatedMiraDevicesRoute
   '/_authenticated/alarm': typeof AuthenticatedAlarmRoute
   '/_authenticated/areas': typeof AuthenticatedAreasRoute
   '/_authenticated/battle-league': typeof AuthenticatedBattleLeagueRoute
@@ -402,6 +411,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/ai'
+    | '/mira-devices'
     | '/alarm'
     | '/areas'
     | '/battle-league'
@@ -442,6 +452,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/ai'
+    | '/mira-devices'
     | '/alarm'
     | '/areas'
     | '/battle-league'
@@ -484,6 +495,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
     | '/_authenticated/ai'
+    | '/_authenticated/mira-devices'
     | '/_authenticated/alarm'
     | '/_authenticated/areas'
     | '/_authenticated/battle-league'
@@ -621,6 +633,13 @@ declare module '@tanstack/react-router' {
       path: '/ai'
       fullPath: '/ai'
       preLoaderRoute: typeof AuthenticatedAiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/mira-devices': {
+      id: '/_authenticated/mira-devices'
+      path: '/mira-devices'
+      fullPath: '/mira-devices'
+      preLoaderRoute: typeof AuthenticatedMiraDevicesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/alarm': {
@@ -818,6 +837,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
+  AuthenticatedMiraDevicesRoute: typeof AuthenticatedMiraDevicesRoute
   AuthenticatedAlarmRoute: typeof AuthenticatedAlarmRoute
   AuthenticatedAreasRoute: typeof AuthenticatedAreasRoute
   AuthenticatedBattleLeagueRoute: typeof AuthenticatedBattleLeagueRoute
@@ -848,6 +868,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiRoute: AuthenticatedAiRoute,
+  AuthenticatedMiraDevicesRoute: AuthenticatedMiraDevicesRoute,
   AuthenticatedAlarmRoute: AuthenticatedAlarmRoute,
   AuthenticatedAreasRoute: AuthenticatedAreasRoute,
   AuthenticatedBattleLeagueRoute: AuthenticatedBattleLeagueRoute,

@@ -6,6 +6,7 @@ import {
   House,
   MessageCircle,
   MessageSquarePlus,
+  MonitorSmartphone,
   Moon,
   Plus,
   Search,
@@ -98,6 +99,12 @@ const appMenus: Record<AloPageSection, AppMenu> = {
         label: "Mira-Chat",
         Icon: MessageCircle,
         command: "mira-view-chat",
+      },
+      {
+        id: "mira-view-devices",
+        label: "Geräte",
+        Icon: MonitorSmartphone,
+        href: "/mira-devices",
       },
       {
         id: "mira-view-history",
