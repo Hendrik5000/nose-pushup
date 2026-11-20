@@ -76,6 +76,11 @@ test("Neon Starfighter: responsive Steuerung und Barrierefreiheit", () => {
   assert.match(game, /@media \(max-width:\s*1000px\)/);
   assert.match(game, /@media \(max-width:\s*600px\)/);
   assert.match(game, /aria-live="polite"/);
+  assert.match(game, /keys\.has\("ArrowUp"\).*ship\.y/);
+  assert.match(game, /keys\.has\("ArrowDown"\).*ship\.y/);
+  assert.match(game, /keys\.has\("w"\)/);
+  assert.match(game, /keys\.has\("s"\)/);
+  assert.match(game, /ship\.y=Math\.max\(\.18,Math\.min\(\.92,/);
   assert.match(game, /pointerdown/);
   assert.match(game, /touch-action:none/);
   assert.match(game, /aria-pressed/);
