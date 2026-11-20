@@ -78,7 +78,8 @@ function GamesHub() {
                 [
                   { game: "grid-defense", title: "Grid Defense" },
                   { game: "kupferkern", title: "Kupferkern" },
-                  { game: "neon-starfighter", title: "Neon Starfighter" },\n                  { game: "chess", title: "Alo Schach" },
+                  { game: "neon-starfighter", title: "Neon Starfighter" },
+                  { game: "chess", title: "Alo Schach" },
                 ] as const
               ).map((entry) => (
                 <Link
