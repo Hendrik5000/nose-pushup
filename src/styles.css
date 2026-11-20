@@ -2376,3 +2376,18 @@ body:has(main.alo-oneui9-fullscreen-home) .alo-mira-home-handoff-actions {
   body:has(main.alo-oneui9-fullscreen-home),
   body:has(main.alo-oneui9-fullscreen-home) * { scroll-behavior: auto !important; }
 }
+
+
+/* The actual persistent header is rendered by AloSystemChrome in the authenticated shell. */
+body:has(main.alo-oneui9-fullscreen-home) .alo-system-chrome {
+  display: none !important;
+}
+body:has(main.alo-oneui9-fullscreen-home) .authenticated-shell {
+  --alo-system-chrome-height: 0px !important;
+  --homebar-top-space: 0px !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+body:has(main.alo-oneui9-fullscreen-home) .alo-system-chrome + * {
+  margin-top: 0 !important;
+}
