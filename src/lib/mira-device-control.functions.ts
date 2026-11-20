@@ -189,12 +189,13 @@ function validateActionArgs(
       break;
     case "fenster.fokussieren":
     case "fenster.minimieren":
-    case "fenster.maximieren":
+    case "fenster.maximieren": {
       args = record(v, ["handle"]);
       const handle = string(args.handle, 32);
       if (!/^[0-9a-f]+$/i.test(handle)) throw new Error("Ungültige Fensterkennung.");
       args.handle = handle;
       break;
+    }
     case "eingabe.maus":
       args = record(v, ["action", "x", "y", "button"]);
       if (args.action !== "move" && args.action !== "click")
