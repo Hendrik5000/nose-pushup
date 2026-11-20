@@ -27,6 +27,14 @@ export type MiraDeviceControlMutationRequest =
   | ActionRequest
   | { action: "screen"; deviceId: string; active: boolean };
 
+type GatewayResult = {
+  ok?: boolean;
+  dispatched?: boolean;
+  detail?: string;
+  reason?: string;
+  message?: string;
+};
+
 export type MiraDeviceControlMutationResponse =
   | {
       action: "pairing-code";
@@ -35,9 +43,18 @@ export type MiraDeviceControlMutationResponse =
       deviceName: string;
       platform: MiraDevicePlatform;
     }
-  | { action: "dispatch"; detail?: unknown; dispatched?: unknown; reason?: unknown }
-  | { action: "screen"; ok?: unknown }
-  | { action: "permissions" | "not-aus" | "revoke"; [key: string]: unknown };
+  | { action: "dispatch"; detail?: string; dispatched?: boolean; reason?: string }
+  | { action: "screen" | "permissions" | "not-aus" | "revoke"; ok?: boolean; message?: string };
+
+function gatewayResult(value: RecordValue): GatewayResult {
+  return {
+    ...(typeof value.ok === "boolean" ? { ok: value.ok } : {}),
+    ...(typeof value.dispatched === "boolean" ? { dispatched: value.dispatched } : {}),
+    ...(typeof value.detail === "string" ? { detail: value.detail.slice(0, 500) } : {}),
+    ...(typeof value.reason === "string" ? { reason: value.reason.slice(0, 300) } : {}),
+    ...(typeof value.message === "string" ? { message: value.message.slice(0, 500) } : {}),
+  };
+}
 
 function record(value: unknown, allowed: string[]): RecordValue {
   if (
@@ -362,40 +379,32 @@ export const miraDeviceControlMutation = createServerFn({ method: "POST" })
       };
     }
     if (data.action === "permissions") {
-      return {
-        action: data.action,
-        ...(await requestMiraGateway("permissions", "POST", userId, {
-          deviceId: data.deviceId,
-          permissions: data.permissions,
-        })),
-      };
+      const result = await requestMiraGateway("permissions", "POST", userId, {
+        deviceId: data.deviceId,
+        permissions: data.permissions,
+      });
+      return { action: data.action, ...gatewayResult(result) };
     }
     if (data.action === "not-aus") {
-      return {
-        action: data.action,
-        ...(await requestMiraGateway("not-aus", "POST", userId, {
-          aktiv: data.active,
-          grund: data.reason,
-        })),
-      };
+      const result = await requestMiraGateway("not-aus", "POST", userId, {
+        aktiv: data.active,
+        grund: data.reason,
+      });
+      return { action: data.action, ...gatewayResult(result) };
     }
     if (data.action === "revoke") {
-      return {
-        action: data.action,
-        ...(await requestMiraGateway("revoke", "POST", userId, {
-          deviceId: data.deviceId,
-          grund: data.reason,
-        })),
-      };
+      const result = await requestMiraGateway("revoke", "POST", userId, {
+        deviceId: data.deviceId,
+        grund: data.reason,
+      });
+      return { action: data.action, ...gatewayResult(result) };
     }
     if (data.action === "screen") {
-      return {
-        action: data.action,
-        ...(await requestMiraGateway("screen", "POST", userId, {
-          deviceId: data.deviceId,
-          aktiv: data.active,
-        })),
-      };
+      const result = await requestMiraGateway("screen", "POST", userId, {
+        deviceId: data.deviceId,
+        aktiv: data.active,
+      });
+      return { action: data.action, ...gatewayResult(result) };
     }
     const result = await requestMiraGateway("action", "POST", userId, {
       deviceId: data.deviceId,
@@ -403,5 +412,5 @@ export const miraDeviceControlMutation = createServerFn({ method: "POST" })
       args: data.args,
       confirmation: data.confirmation,
     });
-    return { action: data.action, ...result };
+    return { action: data.action, ...gatewayResult(result) };
   });
