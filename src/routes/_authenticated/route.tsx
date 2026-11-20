@@ -46,9 +46,6 @@ function AuthenticatedLayout() {
   const isGuest = user.is_anonymous === true;
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const currentPath = useRef(pathname);
-  currentPath.current = pathname;
-  const surface = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     applyNavigationVisibility(getNavigationVisible());
