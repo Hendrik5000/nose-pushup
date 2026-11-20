@@ -29,7 +29,11 @@ jobs:
         run: npm run lint
 
       - name: Regression tests
-        run: npm test
+        run: |
+          set -o pipefail
+          echo '<tap-summary>' >> "$GITHUB_STEP_SUMMARY"
+          npm test 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '</tap-summary>' >> "$GITHUB_STEP_SUMMARY"
       - name: Typecheck
         run: npx tsc --noEmit
 
