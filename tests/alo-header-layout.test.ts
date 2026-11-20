@@ -43,15 +43,13 @@ test("authenticated content starts below the body safe area without a reserved h
   assert.doesNotMatch(css, /alo-header-first|alo-top-module-offset/);
 });
 
-test("swipe and bottom-navigation alternatives remain while all former header destinations move into the hub", () => {
+test("horizontal app swipes are disabled while all former header destinations move into the hub", () => {
   const layout = read("routes/_authenticated/route.tsx");
   const hub = read("routes/_authenticated/index.tsx");
   const areas = read("routes/_authenticated/areas.tsx");
   const tools = read("routes/_authenticated/tools.tsx");
   const menus = read("lib/home-app-menus.ts");
-  const swipe = read("lib/module-swipe-gesture.ts");
-  assert.match(layout, /installModuleSwipeGesture/);
-  assert.match(swipe, /getSwipeDestination/);
+  assert.doesNotMatch(layout, /installModuleSwipeGesture|module-swipe-gesture/);
   assert.match(hub, /to="\/tools"/);
   assert.match(tools, /ALO_WORKSPACE_MENU_ORDER/);
   assert.match(hub, /aria-label="Überall suchen"/);

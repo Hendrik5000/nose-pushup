@@ -5,7 +5,7 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
 import { setAloOwner } from "@/lib/alo-store";
@@ -16,8 +16,6 @@ import { CallProvider } from "@/components/calls/CallProvider";
 import { AppNavigation } from "@/components/TopNav";
 import { AloSystemChrome } from "@/components/alo/AloSystemChrome";
 import { applyNavigationVisibility, getNavigationVisible } from "@/lib/navigation-layout";
-import { installModuleSwipeGesture } from "@/lib/module-swipe-gesture";
-import "@/module-swipe.css";
 import "@/alo-mobile.css";
 import "@/alo-header-layout.css";
 import "@/alo-system-chrome.css";
@@ -48,21 +46,10 @@ function AuthenticatedLayout() {
   const isGuest = user.is_anonymous === true;
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const currentPath = useRef(pathname);
-  currentPath.current = pathname;
-  const surface = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     applyNavigationVisibility(getNavigationVisible());
   }, []);
-
-  useEffect(() => {
-    if (!surface.current) return;
-    return installModuleSwipeGesture(surface.current, {
-      getPathname: () => currentPath.current,
-      navigate: (destination) => navigate({ to: destination, viewTransition: false }),
-    });
-  }, [navigate]);
 
   return (
     <PostfachProvider userId={user.id} isGuest={isGuest}>
@@ -70,7 +57,7 @@ function AuthenticatedLayout() {
         <div className="authenticated-shell alo-no-global-header min-h-[100dvh]">
           {pathname === "/" ? <AloSystemChrome /> : null}
           <AppNavigation />
-          <div ref={surface} className="alo-module-surface">
+          <div className="alo-module-surface">
             <Outlet />
           </div>
           <AloWorkspace userId={user.id} />
