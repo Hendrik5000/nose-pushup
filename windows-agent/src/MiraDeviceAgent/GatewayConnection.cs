@@ -186,7 +186,7 @@ public sealed class GatewayConnection : IAsyncDisposable
             try
             {
                 await Task.Delay(TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
-                await SendAsync(Envelope.Create(MessageTypes.Heartbeat), CancellationToken.None).ConfigureAwait(false);
+                await SendAsync(Envelope.Create(MessageTypes.Heartbeat), ct).ConfigureAwait(false);
             }
             catch
             {
