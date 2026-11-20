@@ -163,7 +163,7 @@ h1{margin:2px 0 0;font-size:clamp(15px,2.5vw,20px);letter-spacing:-.01em}
         <button class="button primary" id="start">Mission starten</button>
       </div>
       <p class="help">
-        Steuerung: Pfeiltasten oder A/D bewegen · Leertaste feuern · E für EMP · P für Pause · Mobil: tippen und ziehen
+        Steuerung: Pfeiltasten oder WASD bewegen · Leertaste feuern · E für EMP · P für Pause · Mobil: in alle Richtungen ziehen
         <span class="pub">Alo-Spiel · ohne Anmeldung · Öffentliche Alo-Spielauslieferung · Spielstand nur für diese Sitzung</span>
       </p>
     </div>
@@ -415,6 +415,8 @@ function update(dt){
 
   if(keys.has("ArrowLeft")||keys.has("a"))ship.x=Math.max(.05,ship.x-classCfg().speed*dt);
   if(keys.has("ArrowRight")||keys.has("d"))ship.x=Math.min(.95,ship.x+classCfg().speed*dt);
+  if(keys.has("ArrowUp")||keys.has("w"))ship.y=Math.max(.18,ship.y-classCfg().speed*dt);
+  if(keys.has("ArrowDown")||keys.has("s"))ship.y=Math.min(.92,ship.y+classCfg().speed*dt);
 
   if(cooldown>0)cooldown-=dt*60;
   if(cooldown<=0){
@@ -647,6 +649,7 @@ function frame(t){
 
 const keys=new Set();
 addEventListener("keydown",(e)=>{
+  if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," "].includes(e.key))e.preventDefault();
   if(e.key===" "){e.preventDefault();if(state==="hacking")tryHack();else if(state==="playing"&&!paused)cooldown=Math.min(cooldown,0)}
   if(e.key==="Enter"&&(state==="menu"||state==="gameover"))beginRun();
   if(e.key==="e"||e.key==="E")fireEmp();
@@ -660,6 +663,7 @@ function trackPointer(e){
   if(state!=="playing"||paused)return;
   const r=c.getBoundingClientRect();
   ship.x=Math.max(.05,Math.min(.95,(e.clientX-r.left)/r.width));
+  ship.y=Math.max(.18,Math.min(.92,(e.clientY-r.top)/r.height));
 }
 
 const TABS=[["tab-status","pane-status"],["tab-arsenal","pane-arsenal"],["tab-missions","pane-missions"],["tab-profile","pane-profile"],["tab-ai","pane-ai"]];
