@@ -2255,7 +2255,7 @@ function HubGameAppIcon({
   artwork,
   large = false,
 }: {
-  game: PrivateGameId;
+  game: PublicGameId;
   title: string;
   artwork: "gridDefense" | "kupferkern" | "neonStarfighter" | "chess";
   large?: boolean;
