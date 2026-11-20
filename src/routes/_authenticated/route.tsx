@@ -16,8 +16,6 @@ import { CallProvider } from "@/components/calls/CallProvider";
 import { AppNavigation } from "@/components/TopNav";
 import { AloSystemChrome } from "@/components/alo/AloSystemChrome";
 import { applyNavigationVisibility, getNavigationVisible } from "@/lib/navigation-layout";
-import { installModuleSwipeGesture } from "@/lib/module-swipe-gesture";
-import "@/module-swipe.css";
 import "@/alo-mobile.css";
 import "@/alo-header-layout.css";
 import "@/alo-system-chrome.css";
@@ -55,14 +53,6 @@ function AuthenticatedLayout() {
   useEffect(() => {
     applyNavigationVisibility(getNavigationVisible());
   }, []);
-
-  useEffect(() => {
-    if (!surface.current) return;
-    return installModuleSwipeGesture(surface.current, {
-      getPathname: () => currentPath.current,
-      navigate: (destination) => navigate({ to: destination, viewTransition: false }),
-    });
-  }, [navigate]);
 
   return (
     <PostfachProvider userId={user.id} isGuest={isGuest}>
