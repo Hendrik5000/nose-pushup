@@ -51,6 +51,7 @@ export type MiraDeviceControlMutationResponse =
       detail: string | null;
       reason: string | null;
       message: string | null;
+      sessionId: string | null;
     };
 
 function gatewayResult(value: RecordValue): GatewayResult {
@@ -60,6 +61,7 @@ function gatewayResult(value: RecordValue): GatewayResult {
     detail: typeof value.detail === "string" ? value.detail.slice(0, 500) : null,
     reason: typeof value.reason === "string" ? value.reason.slice(0, 300) : null,
     message: typeof value.message === "string" ? value.message.slice(0, 500) : null,
+    sessionId: typeof value.sessionId === "string" ? value.sessionId.slice(0, 80) : null,
   };
 }
 
