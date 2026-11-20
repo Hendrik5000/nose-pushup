@@ -1630,7 +1630,8 @@ function HomeAppHub({
                         </div>
                       </dl>
                     );
-                  })()}                </section>
+                  })()}
+                </section>
               </AloErrorBoundary>
               {settings.widgetOrder.length > 0 && (
                 <AloErrorBoundary section="Widgets">
