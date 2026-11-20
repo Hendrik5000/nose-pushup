@@ -3,7 +3,7 @@ import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import gridDefenseDocument from "../../private-game-preview/grid-defense.html?raw";
 import kupferkernDocument from "../../private-game-preview/kupferkern.html?raw";
-import neonStarfighterDocument from "../../private-game-preview/neon-starfighter.html?raw";
+import neonStarfighterDocument from "../../private-game-preview/neon-starfighter.html?raw";\nimport chessDocument from "../../private-game-preview/chess.html?raw";
 import {
   PUBLIC_GAME_IDS,
   resolvePublicGameDocument,
@@ -15,7 +15,7 @@ const publicGameRequestSchema = z.object({ game: z.enum(PUBLIC_GAME_IDS) }).stri
 const publicGameDocuments = {
   "grid-defense": gridDefenseDocument,
   kupferkern: kupferkernDocument,
-  "neon-starfighter": neonStarfighterDocument,
+  "neon-starfighter": neonStarfighterDocument,\n  chess: chessDocument,
 } satisfies Record<PublicGameId, string>;
 
 export const getPublicGameDocument = createServerFn({ method: "POST" })

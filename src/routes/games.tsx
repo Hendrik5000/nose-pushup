@@ -78,7 +78,7 @@ function GamesHub() {
                 [
                   { game: "grid-defense", title: "Grid Defense" },
                   { game: "kupferkern", title: "Kupferkern" },
-                  { game: "neon-starfighter", title: "Neon Starfighter" },
+                  { game: "neon-starfighter", title: "Neon Starfighter" },\n                  { game: "chess", title: "Alo Schach" },
                 ] as const
               ).map((entry) => (
                 <Link
@@ -156,7 +156,7 @@ function GameSelection() {
         Alo-Spiele
       </h1>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-        Drei eigenständige Spiele, direkt im Browser und ohne Alo-Konto erreichbar.
+        Vier eigenständige Spiele, direkt im Browser und ohne Alo-Konto erreichbar.
       </p>
       <div className="mt-7 grid gap-4 sm:grid-cols-2">
         <GameChoice
@@ -177,6 +177,7 @@ function GameSelection() {
           description="Arcade-Action: Wellen abwehren, Schilde schützen und deinen Highscore verbessern."
           icon="star"
         />
+        <GameChoice game="chess" title="Alo Schach" description="Spiele eine vollständige Schachpartie mit legalen Zügen und Zugverlauf." icon="chess" />
       </div>
     </section>
   );
@@ -191,7 +192,7 @@ function GameChoice({
   game: PublicGameId;
   title: string;
   description: string;
-  icon: "grid" | "circuit" | "star";
+  icon: "grid" | "circuit" | "star" | "chess";
 }) {
   return (
     <Link
@@ -232,16 +233,9 @@ function GameChoice({
             <circle cx="27" cy="11" r="2" fill="currentColor" />
             <circle cx="27" cy="21" r="2" fill="currentColor" />
           </svg>
-        ) : (
-          <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none">
-            <path
-              d="m16 4 3.7 7.5 8.3 1.2-6 5.8 1.4 8.2-7.4-3.9-7.4 3.9L10.6 18l-6-5.8 8.3-1.2L16 4Z"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
+        ) : icon === "star" ? (
+          <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none"><path d="m16 4 3.7 7.5 8.3 1.2-6 5.8 1.4 8.2-7.4-3.9-7.4 3.9L10.6 18l-6-5.8 8.3-1.2L16 4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
+        ) : <span className="text-3xl leading-none" aria-hidden="true">♞</span>}
       </span>
       <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
       <p className="mt-2 min-h-12 text-sm leading-relaxed text-muted-foreground">{description}</p>
@@ -258,7 +252,9 @@ function GameFrame({ game, gameDocument }: { game: PublicGameId; gameDocument: s
       ? "Grid Defense"
       : game === "kupferkern"
         ? "Kupferkern"
-        : "Neon Starfighter";
+        : game === "neon-starfighter"
+          ? "Neon Starfighter"
+          : "Alo Schach";
 
   return (
     <section className="fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950">
