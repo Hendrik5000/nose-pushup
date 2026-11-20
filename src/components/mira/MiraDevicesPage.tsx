@@ -4,6 +4,10 @@ import {
   miraDeviceControlMutation,
   miraDeviceControlState,
 } from "@/lib/mira-device-control.functions";
+import type {
+  MiraDeviceControlMutationRequest,
+  MiraDeviceControlMutationResponse,
+} from "@/lib/mira-device-control.functions";
 import {
   MIRA_DEVICE_CAPABILITIES,
   MIRA_PLATFORM_LABELS,
@@ -125,7 +129,9 @@ export function MiraDevicesPage() {
   const [resultText, setResultText] = useState<string | null>(null);
 
   const loadState = useServerFn(miraDeviceControlState);
-  const mutate = useServerFn(miraDeviceControlMutation);
+  const mutate = useServerFn(miraDeviceControlMutation) as unknown as (options: {
+    data: MiraDeviceControlMutationRequest;
+  }) => Promise<MiraDeviceControlMutationResponse>;
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -152,7 +158,7 @@ export function MiraDevicesPage() {
     [snapshot.devices, selectedId],
   );
 
-  async function perform(data: Parameters<typeof mutate>[0]["data"]) {
+  async function perform(data: MiraDeviceControlMutationRequest) {
     setBusy(true);
     setError(null);
     setResultText(null);

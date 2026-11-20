@@ -15,7 +15,7 @@ type ActionRequest = {
   args: RecordValue;
   confirmation: boolean;
 };
-type MutationRequest =
+export type MiraDeviceControlMiraDeviceControlMutationRequest =
   | { action: "pairing-code"; name: string; platform: MiraDevicePlatform }
   | {
       action: "permissions";
@@ -179,8 +179,9 @@ function validateActionArgs(
     case "fenster.minimieren":
     case "fenster.maximieren":
       args = record(v, ["handle"]);
-      args.handle = string(args.handle, 32);
-      if (!/^[0-9a-f]+$/i.test(args.handle)) throw new Error("Ungültige Fensterkennung.");
+      const handle = string(args.handle, 32);
+      if (!/^[0-9a-f]+$/i.test(handle)) throw new Error("Ungültige Fensterkennung.");
+      args.handle = handle;
       break;
     case "eingabe.maus":
       args = record(v, ["action", "x", "y", "button"]);
@@ -273,7 +274,7 @@ export const miraDeviceControlState = createServerFn({ method: "GET" })
 
 export const miraDeviceControlMutation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input): MutationRequest => {
+  .inputValidator((input): MiraDeviceControlMutationRequest => {
     const v = record(input, [
       "action",
       "name",
@@ -333,7 +334,7 @@ export const miraDeviceControlMutation = createServerFn({ method: "POST" })
     }
     throw new Error("Unbekannte Geräteaktion.");
   })
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<MiraDeviceControlMutationResponse> => {
     const userId = context.userId;
     if (data.action === "pairing-code") {
       const result = await requestMiraGateway("pairing-code", "POST", userId);
