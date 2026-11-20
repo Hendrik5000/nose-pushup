@@ -10,7 +10,8 @@ test("Alo chess is registered in the public games hub", () => {
   assert.match(policy, /"grid-defense", "kupferkern", "neon-starfighter", "chess"/);
   assert.match(route, /game="chess"/);
   assert.match(route, /title="Alo Schach"/);
-  for (const id of ["grid-defense", "kupferkern", "neon-starfighter"]) assert.ok(route.includes(id));
+  const previousGameIds = ["grid-defense", "kupferkern", "neon-starfighter"];
+  for (const id of previousGameIds) assert.ok(route.includes(id));
 });
 test("chess is isolated and uses legal move validation", () => {
   assert.match(chess, /alo-chess-server-only-v1/);

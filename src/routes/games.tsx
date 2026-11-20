@@ -145,9 +145,7 @@ function GamesHub() {
                 Alo Arcade
               </p>
               <h2 className="mt-1 text-xl font-bold">Spiele</h2>
-              <p className="mt-1 text-xs text-slate-400">
-                Wechsle direkt zu einem anderen Spiel.
-              </p>
+              <p className="mt-1 text-xs text-slate-400">Wechsle direkt zu einem anderen Spiel.</p>
             </div>
             <nav className="flex flex-col gap-2">
               {GAMES.map((entry) => (
