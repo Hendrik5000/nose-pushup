@@ -81,16 +81,18 @@ export function MiraDevicesPage({ userId }: Props) {
           </p>
         </div>
         <span className="rounded-full border border-border bg-muted/40 px-3 py-1 text-[11px] text-muted-foreground">
-          {devices.length} {devices.length === 1 ? "Gerät" : "Geräte"} · {connectedCount} verbunden · Phase 1
+          {devices.length} {devices.length === 1 ? "Gerät" : "Geräte"} · {connectedCount} verbunden ·
+          Phase 1
         </span>
       </header>
 
       <p className="mt-4 rounded-2xl border border-border/70 bg-card/75 p-4 text-xs leading-relaxed text-muted-foreground">
-        <strong className="text-foreground">Status: Planungsvorschau.</strong> Nach dem Entwicklungsauftrag
-        startet Device Control mit der Oberfläche. Es existiert noch kein Device Control Gateway und
-        keine echte Geräteverbindung; gekoppelte Geräte werden deshalb bewusst als <em>gekoppelt
-        (offline)</em> angezeigt und niemals als verbunden. Es werden keine Passwörter oder Geheimnisse
-        gespeichert. Windows 11 ist die erste Plattform, Android und iPad folgen später.
+        <strong className="text-foreground">Status: Planungsvorschau.</strong> Nach dem
+        Entwicklungsauftrag startet Device Control mit der Oberfläche. Es existiert noch kein Device
+        Control Gateway und keine echte Geräteverbindung; gekoppelte Geräte werden deshalb bewusst
+        als <em>gekoppelt (offline)</em> angezeigt und niemals als verbunden. Es werden keine
+        Passwörter oder Geheimnisse gespeichert. Windows 11 ist die erste Plattform, Android und
+        iPad folgen später.
       </p>
 
       {error && (

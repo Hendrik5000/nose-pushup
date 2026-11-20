@@ -22,7 +22,12 @@ export const DEVICE_CONTROL_GATEWAY_AVAILABLE = false;
 
 export type MiraDevicePlatform = "windows" | "android" | "ipad";
 
-export type MiraDeviceState = "nicht-gekoppelt" | "gekoppelt-offline" | "verbunden" | "pausiert" | "fehler";
+export type MiraDeviceState =
+  | "nicht-gekoppelt"
+  | "gekoppelt-offline"
+  | "verbunden"
+  | "pausiert"
+  | "fehler";
 
 export type MiraPermissionLevel = "keine" | "lesen" | "steuern" | "kritisch";
 
@@ -63,7 +68,13 @@ export const MIRA_DEVICE_CAPABILITIES: ReadonlyArray<{
   { id: "audio", label: "Audio", hint: "Lautstaerke und freigegebene Systemfunktionen steuern" },
 ];
 
-export type MiraDeviceActivityKind = "info" | "kopplung" | "status" | "berechtigung" | "widerruf" | "not-aus";
+export type MiraDeviceActivityKind =
+  | "info"
+  | "kopplung"
+  | "status"
+  | "berechtigung"
+  | "widerruf"
+  | "not-aus";
 
 export type MiraDeviceActivity = {
   id: string;
