@@ -1220,7 +1220,7 @@ function HomeAppHub({
       const contents = (
         <>
           <span
-            className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
+            className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[28px] border border-white/10 bg-card shadow-md ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
           >
             <MarketplaceIcon icon={tile.icon} className="h-8 w-8 text-primary" />
           </span>
@@ -1248,7 +1248,7 @@ function HomeAppHub({
       const contents = (
         <>
           <span
-            className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
+            className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[28px] border border-white/10 bg-card shadow-md ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
           >
             <MarketplaceIcon icon={tile.install.icon ?? "hub"} className="h-8 w-8 text-primary" />
           </span>
@@ -2191,7 +2191,7 @@ function HubAppIconContents({
   return (
     <>
       <span
-        className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[20px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
+        className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[28px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
       >
         <HubArtwork kind={artwork} />
       </span>
