@@ -47,11 +47,11 @@ test("Areas and Tools pages offer app-specific sidebar actions", () => {
 test("the games catalog offers app-specific sidebar actions outside fullscreen games", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/games.tsx"), "utf8");
-  assert.match(route, /aria-label="App-Aktionen"/);
+  assert.match(route, /aria-label="Alo-Spiele"/);
   assert.match(route, /search=\{\{ game: entry\.game \}\}/);
-  assert.match(route, /to="\/marketplace"/);
-  assert.match(route, /Marketplace \u00f6ffnen/);
-  assert.match(route, /selectedGame \? \(\s*<div/);
+  assert.match(route, /to="\/"/);
+  assert.match(route, /Zur Alo-Startseite/);
+  assert.match(route, /menuOpen \? \(/);
 });
 
 test("the settings pages do not repeat the full category list next to the content", () => {

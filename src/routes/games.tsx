@@ -74,7 +74,7 @@ function GamesHub() {
   const title = GAMES.find((entry) => entry.game === selectedGame)?.title ?? "Alo-Spiel";
 
   return (
-    <main className="fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950 text-white">
+    <main className="alo-games-page fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950 text-white">
       {loadFailed ? (
         <section
           className="mx-auto mt-24 max-w-xl rounded-3xl border border-white/10 bg-slate-900 p-6"

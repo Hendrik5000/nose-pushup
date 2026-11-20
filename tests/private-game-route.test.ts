@@ -24,8 +24,8 @@ test("direct `/games` navigation is a public top-level route, not an authenticat
     route,
     /beforeLoad|redirect\(|getAdminAreaAccess|requireSupabaseAuth|usePrivateGameAccess|Route\.useRouteContext/,
   );
-  assert.match(route, /Ohne Anmeldung spielbar/);
-  assert.match(route, /direkt im Browser und ohne Alo-Konto erreichbar/);
+  assert.match(route, /Alo Arcade/);
+  assert.match(route, /Zur Alo-Startseite/);
 });
 
 test("the public content endpoint uses a strict two-game allowlist and no auth or database", () => {
@@ -50,8 +50,8 @@ test("the public content endpoint uses a strict two-game allowlist and no auth o
 
 test("game documents only run in a sandboxed srcDoc without same-origin or public URLs", () => {
   assert.match(route, /getPublicGameDocument\(\{ data: \{ game: requestGame \} \}\)/);
-  assert.match(route, /<GameFrame game=\{selectedGame\} gameDocument=\{currentDocument\} \/>/);
-  assert.match(route, /srcDoc=\{gameDocument\}/);
+  assert.match(route, /<iframe/);
+  assert.match(route, /srcDoc=\{currentDocument\}/);
   assert.match(route, /sandbox="allow-scripts"/);
   assert.doesNotMatch(route, /allow-same-origin|VITE_PRIVATE_GAME_PREVIEW_URL|127\.0\.0\.1/);
   assert.doesNotMatch(route, /src=\{(?:frameUrl|gameUrl)\}/);
