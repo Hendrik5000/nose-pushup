@@ -193,9 +193,12 @@ export function MiraDevicesPage() {
         if (frame.frameBase64 && frame.capturedAt) {
           setScreenFrame({ frameBase64: frame.frameBase64, capturedAt: frame.capturedAt });
           setScreenFrameError(null);
+        } else {
+          setScreenFrame(null);
         }
       } catch (cause) {
         if (!cancelled) {
+          setScreenFrame(null);
           setScreenFrameError(
             cause instanceof Error ? cause.message : "Bildschirmbild konnte nicht geladen werden.",
           );
