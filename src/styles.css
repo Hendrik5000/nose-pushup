@@ -1907,3 +1907,251 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
     --seg-active: #354452;
   }
 }
+
+
+/* Alo One UI 9-inspired launcher: full-bleed wallpaper, refined icon grid and glass dock. */
+.alo-oneui9-home {
+  --alo-oneui-ink: #f8faff;
+  --alo-oneui-muted: rgb(240 245 255 / 72%);
+  --alo-oneui-glass: rgb(18 24 38 / 48%);
+  --alo-oneui-glass-strong: rgb(13 19 31 / 68%);
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-height: min(880px, calc(100dvh - var(--homebar-top-space, 0px) - 1.5rem));
+  overflow: visible;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 2rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  color: var(--alo-oneui-ink);
+  background:
+    radial-gradient(ellipse at 16% 10%, rgb(90 130 210 / 32%), transparent 38%),
+    radial-gradient(ellipse at 88% 24%, rgb(115 83 184 / 24%), transparent 35%),
+    linear-gradient(145deg, #18263d 0%, #101b30 48%, #1a2038 100%);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 18%);
+}
+.alo-oneui9-home::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 78% 78%, rgb(89 146 200 / 16%), transparent 30%),
+    linear-gradient(180deg, rgb(255 255 255 / 3%), transparent 46%);
+  content: "";
+  pointer-events: none;
+}
+.alo-oneui9-home > .relative.z-10 {
+  display: flex;
+  min-height: inherit;
+  flex-direction: column;
+}
+.alo-oneui9-home > .relative.z-10 > header {
+  margin-bottom: clamp(1.5rem, 5vh, 3.25rem);
+  min-height: 3rem;
+}
+.alo-oneui9-home > .relative.z-10 > header h1 {
+  color: var(--alo-oneui-ink);
+  font-size: 1.65rem;
+  font-weight: 750;
+  letter-spacing: -0.055em;
+}
+.alo-oneui9-home > .relative.z-10 > header :is(button, a) {
+  width: 2.8rem;
+  height: 2.8rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: var(--alo-oneui-glass);
+  color: white;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 12%);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+}
+.alo-oneui9-home .alo-oneui9-content {
+  gap: clamp(1.5rem, 4vh, 2.75rem);
+  flex: 1;
+}
+.alo-oneui9-home .alo-launcher-greeting {
+  width: min(100%, 32rem);
+  padding: clamp(1rem, 3vw, 1.4rem);
+  border: 1px solid rgb(255 255 255 / 13%);
+  border-radius: 1.55rem;
+  background: linear-gradient(135deg, rgb(255 255 255 / 13%), rgb(255 255 255 / 5%));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 9%), 0 14px 35px rgb(0 0 0 / 12%);
+  color: var(--alo-oneui-ink);
+  backdrop-filter: blur(24px) saturate(1.45);
+  -webkit-backdrop-filter: blur(24px) saturate(1.45);
+}
+.alo-oneui9-home .alo-launcher-greeting > p {
+  font-size: clamp(1.2rem, 4vw, 1.65rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+.alo-oneui9-home .alo-launcher-greeting > span,
+.alo-oneui9-home .alo-launcher-greeting dl,
+.alo-oneui9-home .alo-launcher-greeting dl :is(dt, dd) {
+  color: var(--alo-oneui-muted);
+}
+.alo-oneui9-home .alo-launcher-greeting dl {
+  border-color: rgb(255 255 255 / 13%);
+}
+.alo-oneui9-home .alo-launcher-greeting dl dt {
+  color: white;
+}
+.alo-oneui9-home [aria-label="Widgets"] {
+  gap: 0.65rem;
+}
+.alo-oneui9-home [data-home-widget-id] {
+  min-height: 6rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 1.35rem;
+  padding: 1rem;
+  background: linear-gradient(145deg, rgb(255 255 255 / 14%), rgb(255 255 255 / 6%));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%), 0 10px 24px rgb(0 0 0 / 10%);
+  color: white;
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+}
+.alo-oneui9-home [data-home-widget-id] :is(p, a) {
+  color: white;
+}
+.alo-oneui9-home [data-home-widget-id] p:first-child {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+.alo-oneui9-home .alo-launcher-page {
+  width: 100%;
+  flex: 1;
+  padding: 0.25rem 0 0.5rem;
+}
+.alo-oneui9-home .alo-launcher-page .alo-tablet-home-apps {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(1.35rem, 4vh, 2rem) clamp(0.5rem, 3vw, 1.25rem);
+}
+.alo-oneui9-home .alo-tablet-home-apps > [data-home-app-id] {
+  min-height: 5.8rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.alo-oneui9-home .alo-tablet-home-apps :is(a, button) {
+  color: white;
+}
+.alo-oneui9-home .alo-tablet-home-apps :is(a, button) > span:first-child {
+  width: min(100%, 4.2rem);
+  max-width: 4.2rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 1.32rem;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 20%), inset 0 1px 0 rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 10%);
+}
+.alo-oneui9-home .alo-tablet-home-apps :is(a, button) > span:last-child {
+  max-width: 5.4rem;
+  min-height: 1.7rem;
+  overflow-wrap: anywhere;
+  color: rgb(255 255 255 / 96%);
+  font-size: 0.68rem;
+  font-weight: 550;
+  line-height: 1.2;
+  text-shadow: 0 1px 5px rgb(0 0 0 / 55%);
+}
+.alo-oneui9-home .alo-launcher-page-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 1.4rem 0 0.75rem;
+}
+.alo-oneui9-home .alo-launcher-page-dot {
+  width: 0.38rem;
+  height: 0.38rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 38%);
+}
+.alo-oneui9-home .alo-launcher-page-dot[aria-current="page"] {
+  width: 1.2rem;
+  background: white;
+}
+.alo-oneui9-home .alo-launcher-dock {
+  position: sticky;
+  z-index: 5;
+  bottom: max(0.5rem, env(safe-area-inset-bottom));
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding: 0.75rem 0.65rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 1.75rem;
+  background: rgb(255 255 255 / 13%);
+  box-shadow: 0 14px 35px rgb(0 0 0 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+}
+.alo-oneui9-home .alo-launcher-dock-item {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+.alo-oneui9-home .alo-launcher-dock-item > :is(a, button) {
+  gap: 0.35rem;
+}
+.alo-oneui9-home .alo-launcher-dock-item > :is(a, button) > span:first-child {
+  width: min(100%, 3.65rem);
+  max-width: 3.65rem;
+  border-radius: 1.15rem;
+  box-shadow: 0 5px 14px rgb(0 0 0 / 18%);
+}
+.alo-oneui9-home .alo-launcher-dock-item > :is(a, button) > span:last-child {
+  color: white;
+  font-size: 0.62rem;
+  text-shadow: 0 1px 4px rgb(0 0 0 / 60%);
+}
+.alo-oneui9-home :is(button, a):focus-visible {
+  outline-color: #b7d7ff;
+  outline-offset: 3px;
+}
+@media (min-width: 640px) {
+  .alo-oneui9-home .alo-launcher-page .alo-tablet-home-apps {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    column-gap: 1.25rem;
+  }
+  .alo-oneui9-home .alo-tablet-home-apps :is(a, button) > span:first-child {
+    width: 4.6rem;
+    max-width: 4.6rem;
+  }
+}
+@media (min-width: 960px) {
+  .alo-oneui9-home .alo-launcher-page .alo-tablet-home-apps {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .alo-oneui9-home .alo-launcher-dock {
+    max-width: 38rem;
+    align-self: center;
+  }
+}
+@media (max-width: 380px) {
+  .alo-oneui9-home {
+    padding-inline: 0.8rem;
+    border-radius: 1.5rem;
+  }
+  .alo-oneui9-home .alo-launcher-page .alo-tablet-home-apps {
+    column-gap: 0.25rem;
+  }
+  .alo-oneui9-home .alo-tablet-home-apps :is(a, button) > span:last-child {
+    font-size: 0.62rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alo-oneui9-home *,
+  .alo-oneui9-home *::before,
+  .alo-oneui9-home *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

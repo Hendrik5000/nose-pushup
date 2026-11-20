@@ -1385,7 +1385,7 @@ function HomeAppHub({
   return (
     <>
       <section
-        className={`alo-tablet-home-hub mb-8${backgroundUrl ? " relative isolate overflow-hidden rounded-3xl border border-border/40 p-4 sm:p-6" : ""}`}
+        className={`alo-tablet-home-hub alo-oneui9-home mb-8${backgroundUrl ? " relative isolate overflow-hidden rounded-3xl border border-border/40 p-4 sm:p-6" : ""}`}
         aria-labelledby="app-hub-title"
         aria-describedby="home-hub-edit-help"
         tabIndex={0}
@@ -1551,7 +1551,7 @@ function HomeAppHub({
               </nav>
             </AloErrorBoundary>
           ) : (
-            <div className="flex w-full max-w-[520px] flex-col gap-7">
+            <div className="alo-oneui9-content flex w-full max-w-none flex-col gap-7">
               <AloErrorBoundary section="Dein Tag">
                 <section className="alo-launcher-greeting" aria-label="Dein Tag">
                   <p>{homeDayGreeting(new Date().getHours())}!</p>
