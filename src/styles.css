@@ -2155,3 +2155,224 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
     transition: none !important;
   }
 }
+
+
+/* Full-screen Alo launcher refinements: no top strip, no page scroll, clean app glyphs. */
+body:has(main.alo-oneui9-fullscreen-home) {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+.authenticated-shell:has(main.alo-oneui9-fullscreen-home) {
+  --homebar-top-space: 0px !important;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+body:has(main.alo-oneui9-fullscreen-home) .alo-module-switcher {
+  display: none !important;
+}
+html[data-navigation-layout="top"] body:has(main.alo-oneui9-fullscreen-home) .app-homebar,
+html[data-navigation-layout="top-tabs"] body:has(main.alo-oneui9-fullscreen-home) .app-homebar {
+  display: none !important;
+}
+main.alo-oneui9-fullscreen-home {
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh;
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 0 calc(var(--homebar-bottom-space, 5rem) + 4.4rem) !important;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+.alo-oneui9-fullscreen-home .alo-oneui9-home {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  margin: 0 !important;
+  padding: clamp(0.75rem, 2.2vw, 1.6rem);
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.alo-oneui9-fullscreen-home .alo-oneui9-home > .relative.z-10 {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.alo-oneui9-fullscreen-home .alo-oneui9-home > .relative.z-10 > header {
+  flex: 0 0 auto;
+  min-height: 2.5rem;
+  margin-bottom: clamp(0.55rem, 1.6vh, 1rem);
+}
+.alo-oneui9-fullscreen-home .alo-oneui9-content {
+  min-height: 0;
+  overflow: hidden;
+  gap: clamp(0.55rem, 1.4vh, 1rem);
+}
+.alo-oneui9-fullscreen-home .alo-launcher-greeting {
+  flex: 0 0 auto;
+  padding: 0.65rem 0.9rem;
+  border: 0;
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 7%);
+  box-shadow: none;
+}
+.alo-oneui9-fullscreen-home .alo-launcher-greeting dl {
+  margin-top: 0.35rem;
+}
+.alo-oneui9-fullscreen-home .alo-oneui9-content [aria-label="Widgets"] {
+  flex: 0 0 auto;
+  max-height: 6.5rem;
+  overflow: hidden;
+}
+.alo-oneui9-fullscreen-home .alo-oneui9-content [data-home-widget-id] {
+  min-height: 4.25rem;
+  padding: 0.65rem;
+  border-radius: 1rem;
+}
+.alo-oneui9-fullscreen-home .alo-launcher-page {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0.1rem 0 0;
+}
+.alo-oneui9-fullscreen-home .alo-launcher-page .alo-tablet-home-apps {
+  height: 100%;
+  min-height: 0;
+  grid-auto-rows: minmax(0, 1fr);
+  align-content: space-evenly;
+  gap: clamp(0.35rem, 1.5vh, 0.9rem) clamp(0.35rem, 2vw, 1rem);
+  overflow: hidden;
+}
+.alo-oneui9-fullscreen-home .alo-tablet-home-apps > [data-home-app-id] {
+  min-height: 0;
+  height: 100%;
+  align-items: center;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.alo-oneui9-fullscreen-home .alo-tablet-home-apps > [data-home-app-id] > :is(a, button, div) {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.alo-oneui9-fullscreen-home .alo-tablet-home-apps :is(a, button, div) > span:first-child {
+  display: grid;
+  width: clamp(2.8rem, 7.5vh, 4.2rem);
+  max-width: clamp(2.8rem, 7.5vh, 4.2rem);
+  flex: 0 0 auto;
+  aspect-ratio: 1;
+  place-items: center;
+  overflow: visible;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.alo-oneui9-fullscreen-home .alo-tablet-home-apps :is(a, button, div) > span:last-child {
+  min-height: 1.25rem;
+  max-width: 100%;
+  padding: 0;
+  color: #fff !important;
+  font-size: clamp(0.62rem, 1.35vh, 0.76rem);
+  font-weight: 550;
+  line-height: 1.15;
+  text-align: center;
+  text-shadow: 0 1px 4px rgb(0 0 0 / 65%);
+}
+.alo-oneui9-fullscreen-home .alo-launcher-page-indicators {
+  gap: 0.3rem;
+  padding: 0.35rem 0 0.25rem;
+}
+.alo-oneui9-fullscreen-home .alo-launcher-page-dot {
+  width: 0.22rem;
+  height: 0.22rem;
+  padding: 0;
+  background: rgb(255 255 255 / 42%);
+}
+.alo-oneui9-fullscreen-home .alo-launcher-page-dot[aria-current="page"] {
+  width: 0.62rem;
+  height: 0.22rem;
+}
+.alo-oneui9-fullscreen-home .alo-launcher-dock {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 34rem;
+  align-self: center;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.alo-oneui9-fullscreen-home .alo-launcher-dock-item > :is(a, button) > span:first-child {
+  width: clamp(2.65rem, 6.5vh, 3.5rem);
+  max-width: clamp(2.65rem, 6.5vh, 3.5rem);
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.alo-oneui9-fullscreen-home .alo-launcher-dock-item > :is(a, button) > span:last-child {
+  color: #fff;
+  text-shadow: 0 1px 4px rgb(0 0 0 / 65%);
+}
+/* Mira stays in one predictable floating position, immediately above the bottom home bar. */
+.alo-oneui9-fullscreen-home ~ .alo-mira-home-launcher,
+body:has(main.alo-oneui9-fullscreen-home) .alo-mira-home-launcher {
+  position: fixed !important;
+  z-index: 80 !important;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: calc(var(--homebar-bottom-space, 5rem) + 0.45rem) !important;
+  left: auto !important;
+  display: flex;
+  width: auto;
+  max-width: min(24rem, calc(100vw - 2rem));
+  justify-content: flex-end;
+  margin: 0;
+}
+body:has(main.alo-oneui9-fullscreen-home) .alo-mira-home-launcher-button {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 999px;
+  background: linear-gradient(145deg, #9b75ff, #5b48ce 62%, #34308d);
+  color: white;
+  box-shadow: 0 8px 26px rgb(0 0 0 / 35%), inset 0 1px 0 rgb(255 255 255 / 28%);
+}
+body:has(main.alo-oneui9-fullscreen-home) .alo-mira-home-live-transcript,
+body:has(main.alo-oneui9-fullscreen-home) .alo-mira-home-handoff-actions {
+  position: absolute;
+  right: 4.1rem;
+  bottom: 0.25rem;
+  max-width: min(19rem, calc(100vw - 6rem));
+}
+@media (max-height: 680px) {
+  .alo-oneui9-fullscreen-home .alo-launcher-greeting { padding: 0.4rem 0.7rem; }
+  .alo-oneui9-fullscreen-home .alo-launcher-greeting dl { display: none; }
+  .alo-oneui9-fullscreen-home .alo-oneui9-content [aria-label="Widgets"] { max-height: 4.5rem; }
+  .alo-oneui9-fullscreen-home .alo-launcher-page-indicators { padding-block: 0.15rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:has(main.alo-oneui9-fullscreen-home),
+  body:has(main.alo-oneui9-fullscreen-home) * { scroll-behavior: auto !important; }
+}
