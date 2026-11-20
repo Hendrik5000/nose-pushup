@@ -1628,7 +1628,10 @@ function HomeAppHub({
           )}
 
           {isEditingHub && (
-            <div className="alo-home-edit-panel mt-6 max-w-xl space-y-5" data-home-press-ignore="true">
+            <div
+              className="alo-home-edit-panel mt-6 max-w-xl space-y-5"
+              data-home-press-ignore="true"
+            >
               {renamingTile && (
                 <form
                   onSubmit={saveRename}
