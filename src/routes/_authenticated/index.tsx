@@ -30,7 +30,7 @@ import {
   mergeMarketplaceLocalEdit,
   requestHomeAppAccountSync,
 } from "@/lib/home-app-account-sync";
-import { homeDayGreeting, loadRecentHomeAppIds, rememberHomeAppOpen } from "@/lib/home-recent-apps";
+import { loadRecentHomeAppIds, rememberHomeAppOpen } from "@/lib/home-recent-apps";
 import {
   aiStatusFromProviders,
   formatDailyGoalLine,
@@ -1554,14 +1554,6 @@ function HomeAppHub({
             <div className="alo-oneui9-content flex w-full max-w-none flex-col gap-7">
               <AloErrorBoundary section="Dein Tag">
                 <section className="alo-launcher-greeting" aria-label="Dein Tag">
-                  <p>{homeDayGreeting(new Date().getHours())}!</p>
-                  <span>
-                    {new Date().toLocaleDateString("de-DE", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </span>
                   {(() => {
                     const streakLine = formatStreakLine(streak);
                     const workoutLine =
