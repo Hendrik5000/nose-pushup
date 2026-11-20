@@ -1661,3 +1661,109 @@ html[data-design-style] .alo-app-header :is(.alo-icon-button, .sport-menu-trigge
     gap: 2rem 1.5rem;
   }
 }
+
+
+/* Alo launcher: paged app surface and persistent dock. */
+html[data-design-style] .alo-launcher-page {
+  width: 100%;
+  touch-action: pan-y;
+}
+html[data-design-style] .alo-launcher-page .alo-tablet-home-apps {
+  max-width: 100%;
+  margin-inline: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(1rem, 3.5vw, 1.65rem) clamp(0.5rem, 2vw, 0.9rem);
+}
+html[data-design-style] .alo-launcher-page .alo-tablet-home-apps > :is(a, button, div) {
+  min-height: 112px;
+}
+html[data-design-style] .alo-launcher-page-indicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 34px;
+  margin: 12px auto 18px;
+}
+html[data-design-style] .alo-launcher-page-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--muted-foreground);
+  opacity: 0.42;
+  transition: width 160ms ease, opacity 160ms ease, background 160ms ease;
+}
+html[data-design-style] .alo-launcher-page-dot[aria-current="page"] {
+  width: 22px;
+  background: var(--primary);
+  opacity: 1;
+}
+html[data-design-style] .alo-launcher-dock {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 22px auto 0;
+  padding: 12px 8px 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--foreground) 7%, transparent);
+  backdrop-filter: blur(18px);
+}
+html[data-design-style] .alo-launcher-dock-item {
+  display: flex;
+  min-width: 0;
+  min-height: 76px;
+  align-items: center;
+  justify-content: center;
+}
+html[data-design-style] .alo-launcher-dock-item > :is(a, button, div) {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 72px;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 380px) {
+  html[data-design-style] .alo-launcher-page .alo-tablet-home-apps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 768px) {
+  html[data-design-style] .alo-launcher-page .alo-tablet-home-apps {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    max-width: 48rem;
+    margin-inline: auto;
+  }
+  html[data-design-style] .alo-launcher-dock {
+    max-width: 38rem;
+  }
+}
+
+
+html[data-design-style] .alo-launcher-greeting {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 22px;
+  padding: 4px 2px;
+}
+html[data-design-style] .alo-launcher-greeting p {
+  margin: 0;
+  color: var(--foreground);
+  font-size: clamp(1.35rem, 5vw, 1.8rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+}
+html[data-design-style] .alo-launcher-greeting span {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  text-align: right;
+}

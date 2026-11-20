@@ -63,17 +63,18 @@ test("the home launcher groups apps into task areas instead of one flat grid", (
     assert.match(route, new RegExp(label));
   }
   assert.match(route, /homeTileGroupId/);
-  assert.match(route, /renderHomeGroup\("favorites", "Favoriten", favoriteTiles\)/);
+  assert.match(route, /const homeDockTiles = \["mira", "nexus", "health", "training"\]/);
+  assert.match(route, /alo-launcher-dock/);
   assert.match(route, /aria-expanded=\{!collapsed\}/);
   assert.match(route, /toggleHomeAppGroupCollapsed\(settings, groupId\)/);
 });
 
-test("the launcher keeps the flat drag grid for edit mode and grouped view otherwise", () => {
+test("the launcher keeps the flat drag grid for edit mode and paged app pages otherwise", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/_authenticated/index.tsx"), "utf8");
   assert.match(route, /\{isEditingHub \? \(/);
   assert.match(route, /onPointerMoveCapture=\{moveHomeTileDrag\}/);
-  assert.match(route, /renderHomeGroup\(section\.id, section\.label, section\.tiles\)/);
+  assert.match(route, /renderHomeGroup\("launcher", "Apps", currentHomePageTiles\)/);
 });
 
 test("the app action menu can add and remove favorites", () => {
