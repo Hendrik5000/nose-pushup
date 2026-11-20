@@ -253,11 +253,10 @@ test("swipe boundaries, aliases, exact threshold and protected routes remain unc
   assert.equal(getSwipeDestination("/ai", -120, 120), null);
 });
 const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
-test("direct touch tracking is frame-batched and all native gesture guards remain", () => {
+test("horizontal app swipe tracking is not installed and transition safeguards remain", () => {
   const layout = read("routes/_authenticated/route.tsx");
+  assert.doesNotMatch(layout, /installModuleSwipeGesture|module-swipe-gesture/);
   const gesture = read("lib/module-swipe-gesture.ts");
-  assert.match(layout, /installModuleSwipeGesture/);
-  assert.match(layout, /getPathname: \(\) => currentPath.current/);
   assert.match(layout, /className="alo-module-surface">\s*<Outlet \/>/);
   assert.doesNotMatch(gesture, /useState|setState/);
   assert.match(gesture, /requestAnimationFrame/);
@@ -279,7 +278,7 @@ test("shared upper chrome is removed while module swipes and lower-navigation fa
   const layout = read("alo-header-layout.css");
   assert.doesNotMatch(nav, /alo-module-switcher|moduleMenu/);
   assert.match(nav, /layout === "bottom" \|\| layout === "floating"/);
-  assert.match(shell, /installModuleSwipeGesture/);
+  assert.doesNotMatch(shell, /installModuleSwipeGesture|module-swipe-gesture/);
   assert.doesNotMatch(shell, /SportAppHeader|<TopNav\s*\/>/);
   assert.match(layout, /--homebar-top-space: 0px !important/);
   assert.match(layout, /prefers-reduced-motion: reduce/);
