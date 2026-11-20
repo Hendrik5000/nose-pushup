@@ -307,7 +307,7 @@ export class Gateway {
     }
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/healthz') {
-      json(res, 200, { ok: true, notaus: this.emergencyStopActive });
+      json(res, 200, { ok: true, notaus: this.emergencyStop });
       return;
     }
     if (req.method === 'POST' && url.pathname === '/v1/pair') {

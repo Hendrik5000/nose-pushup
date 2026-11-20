@@ -277,7 +277,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
       capturedSession = frameDevice + ':' + frameSession;
       capturedFrame = frameBase64;
     };
-    const screenStart = await post(port, '/v1/control/screen', { deviceId, aktiv: true }, ADMIN_HEADERS);
+    const screenStart = await post(port, '/v1/control/screen', { userId: TEST_USER_ID, deviceId, aktiv: true }, ADMIN_HEADERS);
     assert.equal(screenStart.status, 200);
     const sessionEnv = await nextEnvelope(ws);
     assert.equal(sessionEnv?.type, 'screen.session.start');
@@ -302,7 +302,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     const blockedDuringNotAus = await post(
       port,
       '/v1/control/action',
-      { deviceId, toolId: 'programme.liste' },
+      { userId: TEST_USER_ID, deviceId, toolId: 'programme.liste' },
       ADMIN_HEADERS,
     );
     assert.equal(blockedDuringNotAus.status, 409);

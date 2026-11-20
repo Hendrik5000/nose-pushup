@@ -7,7 +7,7 @@ namespace MiraDeviceAgent;
 /// </summary>
 public static class AutostartManager
 {
-    private const string RunKeyPath = "Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = "MiraDeviceAgent";
 
     public static bool IsEnabled()

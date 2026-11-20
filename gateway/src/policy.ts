@@ -162,5 +162,8 @@ export function buildActionRequestPayload(
   args: unknown,
   confirmationGranted = false,
 ): ActionRequestPayload {
-  return { requestId, toolId, args: args ?? {}, confirmationGranted };
+  const safeArgs = typeof args === 'object' && args !== null && !Array.isArray(args)
+    ? args as Record<string, unknown>
+    : {};
+  return { requestId, toolId, args: safeArgs, confirmationGranted };
 }
