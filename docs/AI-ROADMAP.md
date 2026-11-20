@@ -690,3 +690,18 @@ Stand: Chunk-Recovery implementiert und CI-validiert; Auth- und Push-Produktivur
 
 
 - 2026-11-20: Alo Schach wird in den bestehenden öffentlichen Spiele-Hub integriert. Eigenständiges HTML-Spiel, Public-Game-Allowlist und serverseitiger Resolver; isoliertes srcDoc-iframe mit sandbox. Lokale Partie mit legalen Zügen, Zugliste, Rücknahme, Neustart, Brett drehen, Rochade, en passant und Bauernumwandlung. Keine Datenbank und keine Spielstandsübertragung. Feature-Branch; CI, Review, Merge und Live-Publish offen.
+
+
+## Mira Device Control – Statusabgleich und nächste Umsetzung (2026-11-20)
+
+- [x] Phase 1 – Geräte-UI im Code und PR #228 gemergt; CI für den finalen Stand erfolgreich (Lint, Regressionstests, Typecheck, Build). Echte Geräteverbindung bleibt nicht abgenommen.
+- [x] Phase 2 – Windows-Agent-Grundgerüst und sichere Kopplungs-/WSS-Logik im PR #229 gemergt. Noch nicht mit `dotnet build/test` oder auf einem realen Windows-11-Gerät nachgewiesen.
+- [ ] Phase 3 – Windows-Steuerungswerkzeuge: in Branch `gpt6/mira-device-control-phase3-7-20261120` umgesetzt, Build und Tests über neuen Windows-CI-Workflow ausstehend. Kein echter Windows-PC-Test.
+- [x] Phase 4 – Gateway-Code in PR #230 in den Phase-2-Branch gemergt; Gateway ist **noch nicht auf `main`**. Dieser Feature-Branch bringt es erstmals als PR gegen `main` ein. Gateway-CI muss über den neuen Workflow laufen; Hosting/Domain/TLS-Betrieb offen.
+- [ ] Phase 5 – Mira-Integration in bestehendes Tool-System; sichere serverseitige Vermittlung ohne Admin-Token im Browser.
+- [ ] Phase 6 – Android Bridge; native Android-App und reale Geräteabnahme.
+- [ ] Phase 7 – iPad Shortcuts-Bridge; iPadOS-Grenzen dokumentieren und auf echtem iPad testen.
+- [ ] Phase 8 – Geräteübergreifende Aufgaben und Übergabe zwischen Geräten.
+- [ ] Live-Abnahme: Gateway deployen, Windows-Agent koppeln, Rechte/Not-Aus/Widerruf, Eingabe, Dateien und Screen-Session auf echten Geräten testen.
+- Verbindliche Sperre: keine Datenbank-, Supabase-, SQL-, Migration- oder RLS-Arbeit bis zum Abschluss der übrigen Alo-Roadmap.
+

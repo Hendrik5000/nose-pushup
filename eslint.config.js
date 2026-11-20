@@ -11,6 +11,7 @@ export default tseslint.config(
       "dist",
       ".output",
       ".vinxi",
+      "gateway",
       "src/routeTree.gen.ts",
       "src/routes/mcp.ts",
       "src/routes/[[].mcp[]]/list-tools.ts",

@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
     <!-- Zielversion vor Live-Einsatz mit der vorhandenen Windows-Umgebung abgleichen
          (Projektregel: .NET 8 war nur ein Architekturvorschlag, keine Endvorgabe). -->
     <Nullable>enable</Nullable>
