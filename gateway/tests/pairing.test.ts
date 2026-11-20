@@ -2,6 +2,10 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { generateKeyPairSync } from 'node:crypto';
+const { publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+const TEST_PUBLIC_KEY_SPKI = (publicKey.export({ type: 'spki', format: 'der' }) as Buffer).toString('base64');
+
 import {
   PairingAttemptLimiter,
   checkPairingCode,
@@ -53,7 +57,7 @@ test('Kopplungs-Body-Validierung:', () => {
         code: '123456',
         deviceName: 'Test-PC',
         platform: 'windows',
-        publicKeySpki: 'A'.repeat(400),
+        publicKeySpki: TEST_PUBLIC_KEY_SPKI,
         agentVersion: '0.2.0-phase2',
       }) ?? {},
     ).sort(),
@@ -63,7 +67,7 @@ test('Kopplungs-Body-Validierung:', () => {
     code: '123456',
     deviceName: 'Test-PC',
     platform: 'windows',
-    publicKeySpki: 'A'.repeat(400),
+    publicKeySpki: TEST_PUBLIC_KEY_SPKI,
     agentVersion: '0.2.0-phase2',
   });
   assert.ok(valid !== null);
@@ -73,7 +77,7 @@ test('Kopplungs-Body-Validierung:', () => {
     code: '123456',
     deviceName: 'Test-PC',
     platform: 'windows',
-    publicKeySpki: 'A'.repeat(400),
+    publicKeySpki: TEST_PUBLIC_KEY_SPKI,
     agentVersion: '0.2.0-phase2',
   };
   assert.equal(validatePairingBody({ ...base, code: '12345' }), null);

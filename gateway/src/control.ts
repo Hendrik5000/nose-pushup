@@ -44,6 +44,20 @@ export async function handleControlRequest(ctx: ControlContext): Promise<void> {
   }
   const url = new URL(ctx.req.url ?? '/', 'http://localhost');
   const route = url.pathname.slice('/v1/control/'.length);
+  const knownRoutes = new Set([
+    'devices',
+    'action-log',
+    'not-aus',
+    'pairing-code',
+    'permissions',
+    'action',
+    'screen',
+    'revoke',
+  ]);
+  if (!knownRoutes.has(route)) {
+    json(ctx.res, 404, { error: 'nicht-gefunden' });
+    return;
+  }
 
   if (ctx.req.method === 'GET' && route === 'devices') {
     const userId = url.searchParams.get('userId');

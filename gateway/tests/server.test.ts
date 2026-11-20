@@ -297,6 +297,8 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     // Not-Aus: Routing pausiert, Gert wird informiert
     const notaus = await post(port, '/v1/control/not-aus?userId=' + TEST_USER_ID, { userId: TEST_USER_ID, aktiv: true, grund: 'prfung' }, ADMIN_HEADERS);
     assert.equal(notaus.status, 200);
+    const screenStopEnv = await nextEnvelope(ws);
+    assert.equal(screenStopEnv?.type, 'screen.session.stop');
     const notausEnv = await nextEnvelope(ws);
     assert.equal(notausEnv?.type, 'not-aus');
     const blockedDuringNotAus = await post(

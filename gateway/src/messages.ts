@@ -107,6 +107,8 @@ export function validateHelloPayload(value: unknown): HelloPayload | null {
   if (typeof v.agentVersion !== 'string' || v.agentVersion.length === 0 || v.agentVersion.length > 50) {
     return null;
   }
+  const allowed = ['deviceId', 'platform', 'agentVersion'];
+  if (Object.keys(v).some((key) => !allowed.includes(key))) return null;
   return { deviceId: v.deviceId, platform: v.platform, agentVersion: v.agentVersion };
 }
 

@@ -1,6 +1,6 @@
 
 
-import { randomInt, timingSafeEqual } from 'node:crypto';
+import { createPublicKey, randomInt, timingSafeEqual } from 'node:crypto';
 
 export type PairingCodeRecord = {
   code: string;
@@ -113,7 +113,17 @@ export function validatePairingBody(value: unknown): PairingRequestBody | null {
   if (typeof v.publicKeySpki !== 'string' || v.publicKeySpki.length < 200 || v.publicKeySpki.length > 4000) {
     return null;
   }
-  if (!/^[A-Za-z0-9+/=]+$/.test(v.publicKeySpki)) return null;
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(v.publicKeySpki)) return null;
+  try {
+    const der = Buffer.from(v.publicKeySpki, 'base64');
+    if (der.toString('base64') !== v.publicKeySpki) return null;
+    const publicKey = createPublicKey({ key: der, format: 'der', type: 'spki' });
+    if (publicKey.asymmetricKeyType !== 'rsa' || (publicKey.asymmetricKeyDetails?.modulusLength ?? 0) < 2048) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
   if (typeof v.agentVersion !== 'string' || v.agentVersion.length < 1 || v.agentVersion.length > 50) return null;
   return {
     code: v.code,
