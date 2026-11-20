@@ -7,6 +7,7 @@ export type PairingCodeRecord = {
   createdAt: string;
   expiresAt: string;
   usedAt: string | null;
+  ownerUserId?: string;
 };
 
 export type PairingAttempt =
@@ -14,7 +15,11 @@ export type PairingAttempt =
   | { ok: false; reason: 'ungueltig' | 'abgelaufen' | 'bereits-verwendet' };
 
 /** 6-stelliger Einmalcode mit TTL (Spezifikation: 5 Minuten). */
-export function generatePairingCode(now: Date = new Date(), ttlMs: number = 5 * 60_000): PairingCodeRecord {
+export function generatePairingCode(
+  now: Date = new Date(),
+  ttlMs: number = 5 * 60_000,
+  ownerUserId?: string,
+): PairingCodeRecord {
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
   const createdAt = now.getTime();
   return {
@@ -22,6 +27,7 @@ export function generatePairingCode(now: Date = new Date(), ttlMs: number = 5 * 
     createdAt: new Date(createdAt).toISOString(),
     expiresAt: new Date(createdAt + ttlMs).toISOString(),
     usedAt: null,
+    ...(ownerUserId ? { ownerUserId } : {}),
   };
 }
 

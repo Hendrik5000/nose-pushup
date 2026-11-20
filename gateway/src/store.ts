@@ -9,6 +9,7 @@ import { defaultPermissions, type Permissions } from './policy.js';
 
 export type DeviceRecord = {
   deviceId: string;
+  ownerUserId?: string;
   name: string;
   platform: string;
   publicKeySpki: string;
@@ -79,7 +80,7 @@ function randomBytesHex(size: number): string {
   return hex;
 }
 
-export type SanitizedDevice = Omit<DeviceRecord, 'tokenHash' | 'tokenSalt'>;
+export type SanitizedDevice = Omit<DeviceRecord, 'tokenHash' | 'tokenSalt' | 'ownerUserId'>;
 
 export function sanitizeDevice(device: DeviceRecord): SanitizedDevice {
   return {
@@ -157,11 +158,15 @@ export class GatewayStore {
     return null;
   }
 
-  createPairingCode(now: Date = new Date(), ttlMs: number = 5 * 60_000): PairingCodeRecord {
+  createPairingCode(
+    now: Date = new Date(),
+    ttlMs: number = 5 * 60_000,
+    ownerUserId?: string,
+  ): PairingCodeRecord {
     this.data.pairingCodes = this.data.pairingCodes.filter(
       (c) => c.usedAt === null && new Date(c.expiresAt).getTime() > now.getTime(),
     );
-    const record = generatePairingCode(now, ttlMs);
+    const record = generatePairingCode(now, ttlMs, ownerUserId);
     this.data.pairingCodes.push(record);
     this.save();
     return record;
@@ -199,12 +204,14 @@ export class GatewayStore {
       agentVersion: string;
       salt: string;
       tokenHash: string;
+      ownerUserId?: string;
     },
     now: Date = new Date(),
   ): DeviceRecord {
     const fingerprint = createHash('sha256').update(input.publicKeySpki, 'utf8').digest('hex').slice(0, 16);
     const device: DeviceRecord = {
       deviceId: randomUUID(),
+      ...(input.ownerUserId ? { ownerUserId: input.ownerUserId } : {}),
       name: input.name,
       platform: input.platform,
       publicKeySpki: input.publicKeySpki,
@@ -239,6 +246,15 @@ export class GatewayStore {
 
   listDevices(): SanitizedDevice[] {
     return this.data.devices.map(sanitizeDevice);
+  }
+
+  listDevicesForOwner(ownerUserId: string): SanitizedDevice[] {
+    return this.data.devices.filter((device) => device.ownerUserId === ownerUserId).map(sanitizeDevice);
+  }
+
+  getActionLogForOwner(ownerUserId: string, limit: number = 100): ActionLogEntry[] {
+    const ownedIds = new Set(this.data.devices.filter((device) => device.ownerUserId === ownerUserId).map((device) => device.deviceId));
+    return this.data.actionLog.filter((entry) => entry.deviceId && ownedIds.has(entry.deviceId)).slice(-limit);
   }
 
   appendLog(entry: Omit<ActionLogEntry, 'at'> & { at?: string }): void {

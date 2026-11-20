@@ -66,7 +66,7 @@ export class Gateway {
   > = new Map();
   private readonly pairingLimiter: PairingAttemptLimiter;
   private readonly watchdog: ReturnType<typeof setInterval>;
-  private emergencyStopActive = false;
+  private readonly emergencyStopOwners = new Set<string>();
 
   /** Rückruf für Live-Bildschirm-Frames; Anbindung an die Mira-UI in Phase 5. */
   onScreenFrame?: (deviceId: string, sessionId: string, frameBase64: string) => void;
@@ -87,7 +87,11 @@ export class Gateway {
   }
 
   get emergencyStop(): boolean {
-    return this.emergencyStopActive;
+    return this.emergencyStopOwners.size > 0;
+  }
+
+  isEmergencyStopActive(ownerUserId: string): boolean {
+    return this.emergencyStopOwners.has(ownerUserId);
   }
 
   start(): Promise<void> {
@@ -123,8 +127,9 @@ export class Gateway {
     await new Promise<void>((resolve) => this.server.close(() => resolve()));
   }
 
-  listDevicesOnline(): OnlineDevice[] {
-    return this.store.listDevices().map((device) => ({
+  listDevicesOnline(ownerUserId?: string): OnlineDevice[] {
+    const devices = ownerUserId ? this.store.listDevicesForOwner(ownerUserId) : this.store.listDevices();
+    return devices.map((device) => ({
       ...device,
       online: this.sessions.get(device.deviceId)?.authenticated === true,
     }));
@@ -143,15 +148,16 @@ export class Gateway {
 
   async dispatchAction(input: {
     deviceId: string;
+    ownerUserId?: string;
     toolId: string;
     args?: unknown;
     confirmationGranted?: boolean;
   }): Promise<DispatchOutcome> {
-    if (this.emergencyStopActive) {
+    if (input.ownerUserId ? this.emergencyStopOwners.has(input.ownerUserId) : this.emergencyStop) {
       return { dispatched: false, reason: 'not-aus-aktiv' };
     }
     const device = this.store.getDevice(input.deviceId);
-    if (!device || device.revokedAt !== null) {
+    if (!device || device.revokedAt !== null || (input.ownerUserId && device.ownerUserId !== input.ownerUserId)) {
       return { dispatched: false, reason: 'geraet-unbekannt' };
     }
     const session = this.sessions.get(input.deviceId);
@@ -201,11 +207,15 @@ export class Gateway {
    * Not-Aus (Spezifikation): Routing pausieren, alle laufenden
    * Bildschirm-Sitzungen beenden, Geräte informieren.
    */
-  setEmergencyStop(aktiv: boolean, grund: string): void {
-    this.emergencyStopActive = aktiv;
+  setEmergencyStop(aktiv: boolean, grund: string, ownerUserId?: string): void {
+    const ownerKey = ownerUserId ?? '__global__';
+    if (aktiv) this.emergencyStopOwners.add(ownerKey);
+    else this.emergencyStopOwners.delete(ownerKey);
     this.store.appendLog({ kind: 'not-aus', status: aktiv ? 'aktiviert' : 'deaktiviert', detail: grund });
     if (!aktiv) return;
     for (const [deviceId, session] of this.sessions) {
+      const device = this.store.getDevice(deviceId);
+      if (ownerUserId && device?.ownerUserId !== ownerUserId) continue;
       if (this.screenSessions.has(deviceId)) {
         this.stopScreenSession(deviceId, 'not-aus');
       }
@@ -236,10 +246,10 @@ export class Gateway {
     return true;
   }
 
-  startScreenSession(deviceId: string): SessionResult {
-    if (this.emergencyStopActive) return { ok: false, reason: 'not-aus-aktiv' };
+  startScreenSession(deviceId: string, ownerUserId?: string): SessionResult {
+    if (ownerUserId ? this.emergencyStopOwners.has(ownerUserId) : this.emergencyStop) return { ok: false, reason: 'not-aus-aktiv' };
     const device = this.store.getDevice(deviceId);
-    if (!device || device.revokedAt !== null) return { ok: false, reason: 'geraet-unbekannt' };
+    if (!device || device.revokedAt !== null || (ownerUserId && device.ownerUserId !== ownerUserId)) return { ok: false, reason: 'geraet-unbekannt' };
     const session = this.sessions.get(deviceId);
     if (!session || !session.authenticated) return { ok: false, reason: 'geraet-offline' };
     const rank: Record<string, number> = { keine: 0, lesen: 1, steuern: 2, kritisch: 3 };
@@ -259,7 +269,9 @@ export class Gateway {
     return { ok: true, sessionId };
   }
 
-  stopScreenSession(deviceId: string, grund: string): SessionResult {
+  stopScreenSession(deviceId: string, grund: string, ownerUserId?: string): SessionResult {
+    const device = this.store.getDevice(deviceId);
+    if (ownerUserId && device?.ownerUserId !== ownerUserId) return { ok: false, reason: 'geraet-unbekannt' };
     const active = this.screenSessions.get(deviceId);
     if (!active) return { ok: false, reason: 'keine-sitzung' };
     this.screenSessions.delete(deviceId);
@@ -334,6 +346,10 @@ export class Gateway {
       json(res, 400, { error: check.reason });
       return;
     }
+    if (!check.record.ownerUserId) {
+      json(res, 400, { error: 'kopplungscode-ohne-konto' });
+      return;
+    }
     const material = createTokenMaterial();
     const device = this.store.pairDevice({
       name: parsed.deviceName,
@@ -342,6 +358,7 @@ export class Gateway {
       agentVersion: parsed.agentVersion,
       salt: material.salt,
       tokenHash: material.tokenHash,
+      ownerUserId: check.record.ownerUserId,
     });
     this.store.markPairingUsed(parsed.code);
     this.pairingLimiter.reset(remote);

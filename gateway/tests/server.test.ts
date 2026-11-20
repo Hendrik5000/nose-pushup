@@ -15,6 +15,8 @@ const { publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const publicKeySpki = (publicKey.export({ type: 'spki', format: 'der' }) as Buffer).toString('base64');
 
 const ADMIN_HEADERS = { authorization: 'Bearer test-admin-token' };
+const TEST_USER_ID = '123e4567-e89b-12d3-a456-426614174000';
+const OTHER_USER_ID = '123e4567-e89b-12d3-a456-426614174001';
 
 type Booted = { gateway: Gateway; store: GatewayStore; port: number; dir: string };
 
@@ -107,7 +109,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     assert.equal(noAuth.status, 401);
 
     // Kopplungscode erzeugen und verbrauchen
-    const codeRes = await post(port, '/v1/control/pairing-code', {}, ADMIN_HEADERS);
+    const codeRes = await post(port, '/v1/control/pairing-code', { userId: TEST_USER_ID }, ADMIN_HEADERS);
     assert.equal(codeRes.status, 200);
     assert.match(codeRes.body.code as string, /^[0-9]{6}$/);
 
@@ -123,6 +125,13 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     const deviceId = pairRes.body.deviceId as string;
     const deviceToken = pairRes.body.deviceToken as string;
     assert.match(pairRes.body.fingerprint as string, /^[0-9a-f]{16}$/);
+
+
+    const foreignDevices = await get(port, '/v1/control/devices?userId=' + OTHER_USER_ID, ADMIN_HEADERS);
+    assert.equal(foreignDevices.status, 200);
+    assert.deepEqual(foreignDevices.body.devices, []);
+    const foreignAction = await post(port, '/v1/control/action', { userId: OTHER_USER_ID, deviceId, toolId: 'programme.liste' }, ADMIN_HEADERS);
+    assert.equal(foreignAction.status, 404);
 
     // Einmalcode ist verbraucht
     const reuse = await post(port, '/v1/pair', {
@@ -159,7 +168,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     assert.deepEqual(welcomePayload.permissions, allPermissions({}));
 
     // Aktion vor Freigabe: Routing verweigert (keine Berechtigungsspiegel gesetzt)
-    const rejected = await post(port, '/v1/control/action', { deviceId, toolId: 'programme.liste' }, ADMIN_HEADERS);
+    const rejected = await post(port, '/v1/control/action', { userId: TEST_USER_ID, deviceId, toolId: 'programme.liste' }, ADMIN_HEADERS);
     assert.equal(rejected.status, 409);
     assert.equal(rejected.body.reason, 'berechtigung-fehlt');
 
@@ -167,7 +176,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     const permRes = await post(
       port,
       '/v1/control/permissions',
-      { deviceId, permissions: allPermissions({ programme: 'steuern' }) },
+      { userId: TEST_USER_ID, deviceId, permissions: allPermissions({ programme: 'steuern' }) },
       ADMIN_HEADERS,
     );
     assert.equal(permRes.status, 200);
@@ -183,7 +192,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     const actionPromise = post(
       port,
       '/v1/control/action',
-      { deviceId, toolId: 'programme.liste', args: {} },
+      { userId: TEST_USER_ID, deviceId, toolId: 'programme.liste', args: {} },
       ADMIN_HEADERS,
     );
     const requestEnv = await nextEnvelope(ws);
@@ -213,14 +222,14 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     await post(
       port,
       '/v1/control/permissions',
-      { deviceId, permissions: allPermissions({ einstellungen: 'kritisch' }) },
+      { userId: TEST_USER_ID, deviceId, permissions: allPermissions({ einstellungen: 'kritisch' }) },
       ADMIN_HEADERS,
     );
     await nextEnvelope(ws);
     const critDenied = await post(
       port,
       '/v1/control/action',
-      { deviceId, toolId: 'einstellungen.herunterfahren' },
+      { userId: TEST_USER_ID, deviceId, toolId: 'einstellungen.herunterfahren' },
       ADMIN_HEADERS,
     );
     assert.equal(critDenied.status, 409);
@@ -230,7 +239,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     const critPromise = post(
       port,
       '/v1/control/action',
-      { deviceId, toolId: 'einstellungen.herunterfahren', confirmation: true },
+      { userId: TEST_USER_ID, deviceId, toolId: 'einstellungen.herunterfahren', confirmation: true },
       ADMIN_HEADERS,
     );
     const critEnv = await nextEnvelope(ws);
@@ -250,7 +259,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     assert.equal(critRes.body.status, 'bestaetigung-erforderlich');
 
     // Bildschirm-Sitzung ohne Freigabe
-    const screenDenied = await post(port, '/v1/control/screen', { deviceId, aktiv: true }, ADMIN_HEADERS);
+    const screenDenied = await post(port, '/v1/control/screen', { userId: TEST_USER_ID, deviceId, aktiv: true }, ADMIN_HEADERS);
     assert.equal(screenDenied.status, 409);
     assert.equal(screenDenied.body.reason, 'berechtigung-fehlt');
 
@@ -258,7 +267,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     await post(
       port,
       '/v1/control/permissions',
-      { deviceId, permissions: allPermissions({ bildschirm: 'steuern' }) },
+      { userId: TEST_USER_ID, deviceId, permissions: allPermissions({ bildschirm: 'steuern' }) },
       ADMIN_HEADERS,
     );
     await nextEnvelope(ws);
@@ -286,7 +295,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     assert.equal(capturedSession, deviceId + ':' + (sessionPayload.sessionId as string));
 
     // Not-Aus: Routing pausiert, Gert wird informiert
-    const notaus = await post(port, '/v1/control/not-aus', { aktiv: true, grund: 'prfung' }, ADMIN_HEADERS);
+    const notaus = await post(port, '/v1/control/not-aus?userId=' + TEST_USER_ID, { userId: TEST_USER_ID, aktiv: true, grund: 'prfung' }, ADMIN_HEADERS);
     assert.equal(notaus.status, 200);
     const notausEnv = await nextEnvelope(ws);
     assert.equal(notausEnv?.type, 'not-aus');
@@ -300,11 +309,11 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     assert.equal(blockedDuringNotAus.body.reason, 'not-aus-aktiv');
     assert.equal(gateway.emergencyStop, true);
 
-    await post(port, '/v1/control/not-aus', { aktiv: false }, ADMIN_HEADERS);
+    await post(port, '/v1/control/not-aus', { userId: TEST_USER_ID, aktiv: false }, ADMIN_HEADERS);
     assert.equal(gateway.emergencyStop, false);
 
     // Widerruf: revoke-Nachricht + Close-Code 4403
-    const revoke = await post(port, '/v1/control/revoke', { deviceId, grund: 'test' }, ADMIN_HEADERS);
+    const revoke = await post(port, '/v1/control/revoke', { userId: TEST_USER_ID, deviceId, grund: 'test' }, ADMIN_HEADERS);
     assert.equal(revoke.status, 200);
     const revokeEnv = await nextEnvelope(ws);
     assert.equal(revokeEnv?.type, 'revoke');
@@ -315,7 +324,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     assert.notEqual(store.getDevice(deviceId)?.revokedAt, null);
 
     // Protokoll führt alles mit (minimiert, ohne Inhalte)
-    const log = await get(port, '/v1/control/action-log?limit=50', ADMIN_HEADERS);
+    const log = await get(port, '/v1/control/action-log?limit=50&userId=' + TEST_USER_ID, ADMIN_HEADERS);
     assert.equal(log.status, 200);
     const entries = log.body.entries as Array<Record<string, unknown>>;
     assert.ok(entries.length >= 5);
