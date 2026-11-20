@@ -51,7 +51,7 @@ test("the games catalog offers app-specific sidebar actions outside fullscreen g
   assert.match(route, /search=\{\{ game: entry\.game \}\}/);
   assert.match(route, /to="\/"/);
   assert.match(route, /Zur Alo-Startseite/);
-  assert.match(route, /menuOpen \? \(/);
+  assert.match(route, /setMenuOpen\(\(open\) => !open\)\)/);
 });
 
 test("the settings pages do not repeat the full category list next to the content", () => {
