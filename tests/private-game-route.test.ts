@@ -15,6 +15,7 @@ const privateServerFunction = readFileSync(
 );
 const gridDefense = readFileSync(resolve(root, "private-game-preview/grid-defense.html"), "utf8");
 const kupferkern = readFileSync(resolve(root, "private-game-preview/kupferkern.html"), "utf8");
+const chess = readFileSync(resolve(root, "private-game-preview/chess.html"), "utf8");
 
 test("direct `/games` navigation is a public top-level route, not an authenticated child", () => {
   assert.match(route, /createFileRoute\("\/games"\)/);
@@ -23,8 +24,8 @@ test("direct `/games` navigation is a public top-level route, not an authenticat
     route,
     /beforeLoad|redirect\(|getAdminAreaAccess|requireSupabaseAuth|usePrivateGameAccess|Route\.useRouteContext/,
   );
-  assert.match(route, /Ohne Anmeldung spielbar/);
-  assert.match(route, /direkt im Browser und ohne Alo-Konto erreichbar/);
+  assert.match(route, /Alo Arcade/);
+  assert.match(route, /Zur Alo-Startseite/);
 });
 
 test("the public content endpoint uses a strict two-game allowlist and no auth or database", () => {
@@ -40,6 +41,7 @@ test("the public content endpoint uses a strict two-game allowlist and no auth o
   assert.match(publicServerFunction, /setResponseHeader\("Cache-Control", "no-store"\)/);
   assert.match(publicServerFunction, /grid-defense\.html\?raw/);
   assert.match(publicServerFunction, /kupferkern\.html\?raw/);
+  assert.match(publicServerFunction, /chess\.html\?raw/);
   assert.doesNotMatch(
     publicServerFunction,
     /middleware|requireSupabaseAuth|has_global_role|supabase/i,
@@ -48,13 +50,15 @@ test("the public content endpoint uses a strict two-game allowlist and no auth o
 
 test("game documents only run in a sandboxed srcDoc without same-origin or public URLs", () => {
   assert.match(route, /getPublicGameDocument\(\{ data: \{ game: requestGame \} \}\)/);
-  assert.match(route, /<GameFrame game=\{selectedGame\} gameDocument=\{currentDocument\} \/>/);
-  assert.match(route, /srcDoc=\{gameDocument\}/);
+  assert.match(route, /<iframe/);
+  assert.match(route, /srcDoc=\{currentDocument\}/);
   assert.match(route, /sandbox="allow-scripts"/);
   assert.doesNotMatch(route, /allow-same-origin|VITE_PRIVATE_GAME_PREVIEW_URL|127\.0\.0\.1/);
   assert.doesNotMatch(route, /src=\{(?:frameUrl|gameUrl)\}/);
   assert.match(gridDefense, /Content-Security-Policy/);
   assert.match(kupferkern, /Content-Security-Policy/);
+  assert.match(chess, /Content-Security-Policy/);
+  assert.match(chess, /alo-chess-server-only-v1/);
 });
 
 test("the legacy private server function remains protected and fail-closed", () => {
@@ -67,9 +71,10 @@ test("the legacy private server function remains protected and fail-closed", () 
 });
 
 test("game documents are not standalone static files under the public directory", () => {
-  for (const filename of ["grid-defense.html", "kupferkern.html"]) {
+  for (const filename of ["grid-defense.html", "kupferkern.html", "chess.html"]) {
     assert.equal(existsSync(resolve(root, "public", filename)), false);
   }
   assert.match(gridDefense, /grid-defense-server-only-v1/);
   assert.match(kupferkern, /kupferkern-server-only-v1/);
+  assert.match(chess, /alo-chess-server-only-v1/);
 });

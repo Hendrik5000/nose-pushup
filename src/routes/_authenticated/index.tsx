@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
-import type { PrivateGameId } from "@/lib/private-game-policy";
+import type { PublicGameId } from "@/lib/public-game-policy";
 import { HOME_OTHER_AREAS } from "@/lib/home-app-menus";
 import { useHomeAppAccountSync } from "@/hooks/use-home-app-account-sync";
 import {
@@ -172,8 +172,8 @@ type HomeHubTile =
       kind: "game";
       id: string;
       title: string;
-      artwork: "gridDefense" | "kupferkern";
-      game: PrivateGameId;
+      artwork: "gridDefense" | "kupferkern" | "neonStarfighter" | "chess";
+      game: PublicGameId;
     }
   | { kind: "marketplace"; id: string; title: string; install: MarketplacePublishedInstall }
   | {
@@ -231,6 +231,20 @@ function buildHomeHubTiles(
       title: "Kupferkern",
       artwork: "kupferkern",
       game: "kupferkern",
+    },
+    {
+      kind: "game",
+      id: "neon-starfighter",
+      title: "Neon Starfighter",
+      artwork: "neonStarfighter",
+      game: "neon-starfighter",
+    },
+    {
+      kind: "game",
+      id: "chess",
+      title: "Alo Schach",
+      artwork: "chess",
+      game: "chess",
     },
   );
   tiles.push(
@@ -2192,6 +2206,8 @@ type HubArtworkKind =
   | "admin"
   | "gridDefense"
   | "kupferkern"
+  | "neonStarfighter"
+  | "chess"
   | "more"
   | "training"
   | "tools"
@@ -2239,9 +2255,9 @@ function HubGameAppIcon({
   artwork,
   large = false,
 }: {
-  game: PrivateGameId;
+  game: PublicGameId;
   title: string;
-  artwork: "gridDefense" | "kupferkern";
+  artwork: "gridDefense" | "kupferkern" | "neonStarfighter" | "chess";
   large?: boolean;
 }) {
   return (
@@ -2298,6 +2314,8 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
     admin: { bg: "#182b3b", accent: "#a5d8ff", glow: "#38bdf8" },
     gridDefense: { bg: "#152b32", accent: "#a7f3d0", glow: "#22c55e" },
     kupferkern: { bg: "#38251c", accent: "#fdba74", glow: "#c2410c" },
+    neonStarfighter: { bg: "#07152c", accent: "#67e8f9", glow: "#2563eb" },
+    chess: { bg: "#18251e", accent: "#d9f99d", glow: "#65a30d" },
     more: { bg: "#172735", accent: "#67e8f9", glow: "#0ea5e9" },
     training: { bg: "#30291d", accent: "#fcd34d", glow: "#f59e0b" },
     tools: { bg: "#25233a", accent: "#c4b5fd", glow: "#8b5cf6" },
@@ -2459,6 +2477,38 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
           <circle cx="140" cy="66" r="18" fill={palette.glow} />
           <circle cx="140" cy="66" r="8" fill={palette.accent} />
           <circle cx="140" cy="66" r="3" fill="#fff" />
+        </>
+      )}
+      {kind === "neonStarfighter" && (
+        <>
+          <path d="m140 27 17 43-17 35-17-35 17-43Z" fill={palette.accent} />
+          <path d="m140 27 7 44-7 14-7-14 7-44Z" fill="#fff" opacity=".9" />
+          <path
+            d="m123 70-29 16 18 3 11-19Zm17 0 29 16-18 3-11-19Z"
+            fill={palette.glow}
+            stroke={palette.accent}
+            strokeWidth="3"
+          />
+          <path
+            d="M134 105 140 120 146 105"
+            stroke="#fbbf24"
+            strokeWidth="5"
+            strokeLinecap="round"
+          />
+          <circle cx="91" cy="35" r="3" fill="#fff" />
+          <circle cx="195" cy="95" r="4" fill="#fff" />
+        </>
+      )}
+      {kind === "chess" && (
+        <>
+          <path
+            d="M140 24c-9 0-15 7-15 15 0 6 3 10 8 13l-5 12h24l-5-12c5-3 8-7 8-13 0-8-6-15-15-15Z"
+            fill={palette.accent}
+          />
+          <path d="M122 67h36l8 14-8 8h-36l-8-8 8-14Z" fill={palette.accent} />
+          <path d="M117 94h46v10h-46z" fill={palette.glow} />
+          <path d="M109 108h62v8h-62z" fill={palette.accent} />
+          <circle cx="140" cy="47" r="4" fill="#fff" />
         </>
       )}
       {kind === "more" && (

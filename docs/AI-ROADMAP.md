@@ -687,3 +687,6 @@ Stand: Chunk-Recovery implementiert und CI-validiert; Auth- und Push-Produktivur
 - Zuerst die offenen, unabhängigen UI-/Frontend-/Qualitätsaufgaben der Roadmap fortsetzen.
 - Reale Geräteabnahmen als offen markieren, bis sie tatsächlich auf den Zielgeräten durchgeführt wurden.
 - Keine Funktion als live oder vollständig erledigt markieren, nur weil Code gemergt oder CI grün ist.
+
+
+- 2026-11-20: Alo Schach wird in den bestehenden öffentlichen Spiele-Hub integriert. Eigenständiges HTML-Spiel, Public-Game-Allowlist und serverseitiger Resolver; isoliertes srcDoc-iframe mit sandbox. Lokale Partie mit legalen Zügen, Zugliste, Rücknahme, Neustart, Brett drehen, Rochade, en passant und Bauernumwandlung. Keine Datenbank und keine Spielstandsübertragung. Feature-Branch; CI, Review, Merge und Live-Publish offen.

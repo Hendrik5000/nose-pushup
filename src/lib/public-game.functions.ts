@@ -4,6 +4,7 @@ import { z } from "zod";
 import gridDefenseDocument from "../../private-game-preview/grid-defense.html?raw";
 import kupferkernDocument from "../../private-game-preview/kupferkern.html?raw";
 import neonStarfighterDocument from "../../private-game-preview/neon-starfighter.html?raw";
+import chessDocument from "../../private-game-preview/chess.html?raw";
 import {
   PUBLIC_GAME_IDS,
   resolvePublicGameDocument,
@@ -16,6 +17,7 @@ const publicGameDocuments = {
   "grid-defense": gridDefenseDocument,
   kupferkern: kupferkernDocument,
   "neon-starfighter": neonStarfighterDocument,
+  chess: chessDocument,
 } satisfies Record<PublicGameId, string>;
 
 export const getPublicGameDocument = createServerFn({ method: "POST" })
