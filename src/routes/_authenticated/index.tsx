@@ -2965,7 +2965,7 @@ function Dashboard() {
   return (
     <main
       data-alo-ui-refresh="home"
-      className="alo-tablet-home-page alo-visual-refresh relative mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-5 pt-6 pb-24"
+      className="alo-tablet-home-page alo-visual-refresh alo-oneui9-fullscreen-home relative flex h-[100dvh] min-h-[100dvh] w-full max-w-none flex-col overflow-hidden p-0"
     >
       <HomeAppHub key={user.id} displayName={displayName} avatarUrl={avatarUrl} />
       <MiraOverlayLauncher />
