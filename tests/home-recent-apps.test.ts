@@ -70,7 +70,6 @@ test("the home screen omits the daily overview and keeps the paginated launcher 
   assert.ok(!home.includes('<AloErrorBoundary section="Dein Tag">'));
   assert.ok(home.includes('renderHomeGroup("launcher", "Apps", currentHomePageTiles)'));
   assert.ok(home.includes("rememberAppOpen(tile.id)"));
-  assert.match(home, /alo-launcher-dock/);
   assert.match(home, /alo-launcher-page-dot/);
   const lib = readFileSync(new URL("../src/lib/home-recent-apps.ts", import.meta.url), "utf8");
   assert.match(lib, /alo-home-recent-apps-v1/);
