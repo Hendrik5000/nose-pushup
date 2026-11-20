@@ -162,6 +162,15 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
       ws.once('open', () => resolve(null));
       ws.once('error', reject);
     });
+    ws.send(
+      JSON.stringify(
+        createEnvelope(MessageTypes.Hello, {
+          deviceId,
+          platform: 'windows',
+          agentVersion: '0.3.0-phase3',
+        }),
+      ),
+    );
     const welcome = await nextEnvelope(ws, 3000, "welcome");
     assert.equal(welcome?.type, 'welcome');
     const welcomePayload = JSON.parse(welcome?.payloadJson ?? '{}') as Record<string, unknown>;
