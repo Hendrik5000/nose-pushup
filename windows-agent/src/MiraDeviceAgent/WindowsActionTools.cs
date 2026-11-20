@@ -125,14 +125,14 @@ public static class WindowsActionTools
     private static string ListWindows()
     {
         var rows = new List<object>();
-        EnumWindows((handle, _) =>
+        EnumWindows((handle, lParam) =>
         {
             if (!IsWindowVisible(handle)) return true;
             var length = GetWindowTextLength(handle);
             if (length <= 0 || rows.Count >= 80) return true;
             var title = new StringBuilder(Math.Min(length + 1, 512));
             _ = GetWindowText(handle, title, title.Capacity);
-            _ = GetWindowThreadProcessId(handle, out var processId);
+            GetWindowThreadProcessId(handle, out var processId);
             rows.Add(new { handle = handle.ToInt64().ToString("X"), processId, title = title.ToString() });
             return true;
         }, IntPtr.Zero);

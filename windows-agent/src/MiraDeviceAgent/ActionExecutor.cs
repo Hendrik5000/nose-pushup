@@ -51,7 +51,6 @@ public static class ActionExecutor
                 _ = screen.StopAsync();
             }
         };
-        connection.NotAusReceived += _ => _ = screen.StopAsync();
     }
 
     private static async Task HandleActionAsync(GatewayConnection connection, Envelope envelope)
