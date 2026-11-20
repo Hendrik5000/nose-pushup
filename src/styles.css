@@ -2652,3 +2652,76 @@ body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo
 @media (max-width: 360px) {
   .alo-oneui9-home .alo-tablet-home-apps .alo-home-app-icon { width: 3.2rem; }
 }
+
+/* Homepage visual-system pass: stronger hierarchy, quieter surfaces and clearer states. */
+.alo-oneui9-home {
+  --alo-home-ink: rgb(239 246 255 / 96%);
+  --alo-home-muted: rgb(206 220 242 / 72%);
+  --alo-home-line: rgb(191 213 245 / 16%);
+  --alo-home-accent: #91bdff;
+  color: var(--alo-home-ink);
+  color-scheme: dark;
+}
+.alo-oneui9-home .alo-home-title { color:#f4f8ff; letter-spacing:-.065em; text-shadow:0 2px 16px rgb(0 0 0 / 22%); }
+.alo-oneui9-home .alo-home-header-action {
+  border-color:var(--alo-home-line);
+  background:linear-gradient(145deg,rgb(255 255 255 / 11%),rgb(255 255 255 / 5%));
+  color:#e5efff; box-shadow:0 5px 16px rgb(0 0 0 / 14%),inset 0 1px 0 rgb(255 255 255 / 10%);
+  transition:transform 150ms ease,border-color 150ms ease,background 150ms ease;
+}
+.alo-oneui9-home .alo-home-header-action:hover { border-color:rgb(145 189 255 / 48%); background:linear-gradient(145deg,rgb(145 189 255 / 17%),rgb(255 255 255 / 6%)); }
+.alo-oneui9-home .alo-home-group-toggle {
+  min-height:2.65rem; padding:.55rem .75rem; border:1px solid transparent;
+  border-bottom-color:var(--alo-home-line); border-radius:.85rem; color:var(--alo-home-muted);
+  letter-spacing:.13em; transition:color 150ms ease,border-color 150ms ease,background 150ms ease;
+}
+.alo-oneui9-home .alo-home-group-toggle:hover,
+.alo-oneui9-home .alo-home-group-toggle[aria-expanded="false"] {
+  border-color:var(--alo-home-line); background:rgb(255 255 255 / 4%); color:#eef5ff;
+}
+.alo-oneui9-home .alo-home-app-tile { isolation:isolate; min-height:6.4rem; border:1px solid transparent; transition:transform 160ms ease,background 160ms ease,border-color 160ms ease; }
+.alo-oneui9-home .alo-home-app-icon {
+  border:1px solid rgb(221 235 255 / 20%);
+  background:linear-gradient(145deg,rgb(255 255 255 / 13%),rgb(255 255 255 / 5%));
+  box-shadow:0 9px 22px rgb(0 0 0 / 24%),inset 0 1px 0 rgb(255 255 255 / 15%);
+}
+.alo-oneui9-home .alo-home-app-icon img,.alo-oneui9-home .alo-home-app-icon svg { max-width:100%; max-height:100%; }
+.alo-oneui9-home .alo-home-app-label {
+  margin-top:.48rem; color:rgb(245 248 255 / 94%); font-size:clamp(.68rem,1.7vw,.76rem);
+  font-weight:560; letter-spacing:-.012em; line-height:1.22; text-shadow:0 1px 5px rgb(0 0 0 / 65%);
+}
+.alo-oneui9-home .alo-home-widget {
+  position:relative; isolation:isolate; border-color:rgb(198 219 250 / 18%);
+  background:linear-gradient(145deg,rgb(38 55 82 / 70%),rgb(17 27 46 / 62%));
+  box-shadow:0 8px 22px rgb(0 0 0 / 13%),inset 0 1px 0 rgb(255 255 255 / 10%);
+  backdrop-filter:blur(18px) saturate(125%); -webkit-backdrop-filter:blur(18px) saturate(125%);
+  transition:transform 160ms ease,border-color 160ms ease,box-shadow 160ms ease;
+}
+.alo-oneui9-home .alo-home-widget-title { color:rgb(209 225 249 / 76%); letter-spacing:.15em; }
+.alo-oneui9-home .alo-home-widget-body { color:#f1f6ff; font-size:clamp(.78rem,1.8vw,.9rem); line-height:1.45; }
+.alo-oneui9-home .alo-home-widget-link { color:var(--alo-home-accent); text-decoration-thickness:1px; text-underline-offset:3px; }
+.alo-oneui9-home .alo-home-edit-panel { padding:.35rem; border-radius:1.4rem; background:linear-gradient(145deg,rgb(145 189 255 / 7%),rgb(255 255 255 / 2%)); }
+.alo-oneui9-home .alo-home-edit-card { border-color:rgb(191 213 245 / 20%); background:linear-gradient(145deg,rgb(34 49 73 / 88%),rgb(17 27 46 / 88%)); box-shadow:0 8px 24px rgb(0 0 0 / 14%),inset 0 1px 0 rgb(255 255 255 / 8%); }
+.alo-oneui9-home .alo-home-background-scrim {
+  background:linear-gradient(180deg,rgb(9 15 27 / 66%),rgb(9 15 27 / 58%)) !important;
+  backdrop-filter:blur(3px) saturate(90%); -webkit-backdrop-filter:blur(3px) saturate(90%);
+}
+.alo-oneui9-home .alo-launcher-page-indicators { border-color:rgb(191 213 245 / 18%); background:rgb(13 23 40 / 56%); box-shadow:0 5px 18px rgb(0 0 0 / 14%),inset 0 1px 0 rgb(255 255 255 / 8%); }
+.alo-oneui9-home .alo-launcher-page-dot[aria-current="page"]::before { background:var(--alo-home-accent); box-shadow:0 0 0 3px rgb(145 189 255 / 18%); }
+.alo-oneui9-home :is(button,a,[role="button"]):focus-visible { outline:2px solid #c1dcff; outline-offset:3px; box-shadow:0 0 0 5px rgb(145 189 255 / 13%); }
+.alo-oneui9-home[data-home-editing="true"] .alo-home-app-tile { border-color:rgb(145 189 255 / 20%); background:rgb(145 189 255 / 4%); }
+.alo-oneui9-home[data-home-editing="true"] .alo-home-app-tile[data-drop-placement="before"],
+.alo-oneui9-home[data-home-editing="true"] .alo-home-app-tile[data-drop-placement="after"] { border-color:rgb(145 189 255 / 70%); background:rgb(93 150 230 / 18%); box-shadow:0 0 0 2px rgb(145 189 255 / 22%),0 12px 28px rgb(0 0 0 / 20%); }
+@media (hover:hover) and (pointer:fine) {
+  .alo-oneui9-home .alo-home-app-tile:hover { transform:translateY(-2px); border-color:rgb(191 213 245 / 14%); background:rgb(255 255 255 / 3%); }
+  .alo-oneui9-home .alo-home-widget:hover { transform:translateY(-2px); border-color:rgb(145 189 255 / 34%); box-shadow:0 12px 28px rgb(0 0 0 / 18%),inset 0 1px 0 rgb(255 255 255 / 12%); }
+}
+@media (max-width:420px) { .alo-oneui9-home .alo-home-header { margin-bottom:1.1rem; } .alo-oneui9-home .alo-home-widget { padding:.72rem; } .alo-oneui9-home .alo-home-app-tile { min-height:5.8rem; } }
+@media (max-height:720px) and (min-width:700px) { .alo-oneui9-home .alo-home-widget { min-height:4.8rem; } .alo-oneui9-home .alo-home-app-tile { min-height:5.5rem; } }
+@media (forced-colors:active) {
+  .alo-oneui9-home .alo-home-app-icon,.alo-oneui9-home .alo-home-widget,.alo-oneui9-home .alo-home-header-action { border:1px solid CanvasText; }
+  .alo-oneui9-home :is(button,a,[role="button"]):focus-visible { outline:2px solid Highlight; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .alo-oneui9-home .alo-home-header-action,.alo-oneui9-home .alo-home-app-tile,.alo-oneui9-home .alo-home-widget,.alo-oneui9-home .alo-home-group-toggle { transition:none !important; }
+}
