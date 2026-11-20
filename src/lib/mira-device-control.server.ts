@@ -28,6 +28,7 @@ export type MiraGatewaySnapshot = {
   devices: MiraGatewayDevice[];
   activity: MiraGatewayActivity[];
   emergencyStopActive: boolean;
+  gatewayUrl?: string;
   message?: string;
 };
 
@@ -235,6 +236,7 @@ export async function fetchMiraGatewaySnapshot(userId: string): Promise<MiraGate
       devices,
       activity,
       emergencyStopActive: stopResult.aktiv === true,
+      gatewayUrl: gatewayConfig()?.baseUrl.origin,
     };
   } catch (error) {
     return {
