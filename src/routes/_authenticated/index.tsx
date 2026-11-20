@@ -1538,16 +1538,18 @@ function HomeAppHub({
             </AloErrorBoundary>
           ) : (
             <div className="flex w-full max-w-[520px] flex-col gap-7">
-              <section className="alo-launcher-greeting" aria-label="Guten Tag">
-                <p>{homeDayGreeting(new Date().getHours())}!</p>
-                <span>
-                  {new Date().toLocaleDateString("de-DE", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
-                </span>
-              </section>
+              <AloErrorBoundary section="Dein Tag">
+                <section className="alo-launcher-greeting" aria-label="Dein Tag">
+                  <p>{homeDayGreeting(new Date().getHours())}!</p>
+                  <span>
+                    {new Date().toLocaleDateString("de-DE", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                    })}
+                  </span>
+                </section>
+              </AloErrorBoundary>
               {settings.widgetOrder.length > 0 && (
                 <AloErrorBoundary section="Widgets">
                   <section
