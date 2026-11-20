@@ -2051,18 +2051,29 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
 .alo-oneui9-home .alo-tablet-home-apps :is(a, button) > span:last-child {
   max-width: 5.4rem;
   min-height: 1.7rem;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
   color: rgb(255 255 255 / 96%);
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: 550;
   line-height: 1.2;
+  text-wrap: balance;
   text-shadow: 0 1px 5px rgb(0 0 0 / 55%);
 }
 .alo-oneui9-home .alo-launcher-page-indicators {
   display: flex;
+  width: fit-content;
+  align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  padding: 1.4rem 0 0.75rem;
+  margin: 1rem auto 0;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 999px;
+  background: rgb(15 23 42 / 34%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 .alo-oneui9-home .alo-launcher-page-dot {
   width: 0.38rem;
@@ -2073,44 +2084,8 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
 }
 .alo-oneui9-home .alo-launcher-page-dot[aria-current="page"] {
   width: 1.2rem;
-  background: white;
-}
-.alo-oneui9-home .alo-launcher-dock {
-  position: sticky;
-  z-index: 5;
-  bottom: max(0.5rem, env(safe-area-inset-bottom));
-  display: grid;
-  width: 100%;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: auto;
-  padding: 0.75rem 0.65rem;
-  border: 1px solid rgb(255 255 255 / 16%);
-  border-radius: 1.75rem;
-  background: rgb(255 255 255 / 13%);
-  box-shadow: 0 14px 35px rgb(0 0 0 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
-  backdrop-filter: blur(28px) saturate(1.6);
-  -webkit-backdrop-filter: blur(28px) saturate(1.6);
-}
-.alo-oneui9-home .alo-launcher-dock-item {
-  min-width: 0;
-  display: flex;
-  justify-content: center;
-}
-.alo-oneui9-home .alo-launcher-dock-item > :is(a, button) {
-  gap: 0.35rem;
-}
-.alo-oneui9-home .alo-launcher-dock-item > :is(a, button) > span:first-child {
-  width: min(100%, 3.65rem);
-  max-width: 3.65rem;
-  border-radius: 1.15rem;
-  box-shadow: 0 5px 14px rgb(0 0 0 / 18%);
-}
-.alo-oneui9-home .alo-launcher-dock-item > :is(a, button) > span:last-child {
-  color: white;
-  font-size: 0.62rem;
-  text-shadow: 0 1px 4px rgb(0 0 0 / 60%);
+  background: #60a5fa;
+  box-shadow: 0 0 0 3px rgb(96 165 250 / 16%);
 }
 .alo-oneui9-home :is(button, a):focus-visible {
   outline-color: #b7d7ff;
@@ -2307,32 +2282,6 @@ main.alo-oneui9-fullscreen-home {
 .alo-oneui9-fullscreen-home .alo-launcher-page-dot[aria-current="page"] {
   width: 0.62rem;
   height: 0.22rem;
-}
-.alo-oneui9-fullscreen-home .alo-launcher-dock {
-  flex: 0 0 auto;
-  width: 100%;
-  max-width: 34rem;
-  align-self: center;
-  margin-top: 0.25rem;
-  padding: 0.25rem 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-.alo-oneui9-fullscreen-home .alo-launcher-dock-item > :is(a, button) > span:first-child {
-  width: clamp(2.65rem, 6.5vh, 3.5rem);
-  max-width: clamp(2.65rem, 6.5vh, 3.5rem);
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-.alo-oneui9-fullscreen-home .alo-launcher-dock-item > :is(a, button) > span:last-child {
-  color: #fff;
-  text-shadow: 0 1px 4px rgb(0 0 0 / 65%);
 }
 /* Mira stays in one predictable floating position, immediately above the bottom home bar. */
 .alo-oneui9-fullscreen-home ~ .alo-mira-home-launcher,

@@ -258,7 +258,7 @@ function buildHomeHubTiles(
     {
       kind: "standard",
       id: "training",
-      title: "Trainingsübersicht & Gym",
+      title: "Training & Gym",
       artwork: "training",
       to: "/training",
     },
@@ -679,9 +679,6 @@ function HomeAppHub({
     currentHomePage * homePageSize,
     (currentHomePage + 1) * homePageSize,
   );
-  const homeDockTiles = ["mira", "nexus", "health", "training"]
-    .map((id) => orderedTiles.find((tile) => tile.id === id))
-    .filter((tile): tile is HomeHubTile => Boolean(tile));
   const favoriteTiles = orderedTiles.filter((tile) => settings.favorites.includes(tile.id));
   const recentTiles = recentAppIds
     .flatMap((appId) => {
@@ -1625,20 +1622,7 @@ function HomeAppHub({
                     </nav>
                   )}
                 </div>
-                <nav className="alo-launcher-dock" aria-label="Favoritenleiste">
-                  {homeDockTiles.map((tile) => {
-                    const title = settings.nameOverrides[tile.id] ?? tile.title;
-                    const badge =
-                      tile.id === "nexus" && nexusUnread !== null && nexusUnread > 0
-                        ? nexusUnread
-                        : null;
-                    return (
-                      <div key={tile.id} className="alo-launcher-dock-item">
-                        {renderTile(tile, title, badge)}
-                      </div>
-                    );
-                  })}
-                </nav>
+          </nav>
               </AloErrorBoundary>
             </div>
           )}

@@ -63,8 +63,6 @@ test("the home launcher groups apps into task areas instead of one flat grid", (
     assert.match(route, new RegExp(label));
   }
   assert.match(route, /homeTileGroupId/);
-  assert.match(route, /const homeDockTiles = \["mira", "nexus", "health", "training"\]/);
-  assert.match(route, /alo-launcher-dock/);
   assert.match(route, /aria-expanded=\{!collapsed\}/);
   assert.match(route, /toggleHomeAppGroupCollapsed\(settings, groupId\)/);
 });
