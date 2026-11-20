@@ -30,12 +30,14 @@ jobs:
 
       - name: Regression tests
         run: |
-          set -o pipefail
-          npm test 2>&1 | tee /tmp/regression.tap || true
-          tail -120 /tmp/regression.tap | while IFS= read -r line; do
-            echo "::error::LOG: $line"
+          npm test > /tmp/regression.tap 2>&1; status=$?
+          echo "::error::summary: $(grep -c "^not ok" /tmp/regression.tap) not-ok; $(grep -E "^# (tests|pass|fail)" /tmp/regression.tap | tr "\n" " ")"
+          grep "^not ok" /tmp/regression.tap | head -8 | while IFS= read -r line; do
+            echo "::error::NOTOK: $line"
           done
-          npm test > /dev/null 2>&1 || exit 1
+          END=$(tail -25 /tmp/regression.tap | sed ":a;N;$!ba;s/\n/%0A/g" | tail -c 1200)
+          echo "::error::LOGEND: $END"
+          exit $status
       - name: Typecheck
         run: npx tsc --noEmit
 
