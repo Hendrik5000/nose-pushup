@@ -85,6 +85,7 @@ export async function handleControlRequest(ctx: ControlContext): Promise<void> {
       json(ctx.res, 404, { error: 'geraet-unbekannt' });
       return;
     }
+    ctx.res.setHeader('Cache-Control', 'no-store, private');
     json(ctx.res, 200, ctx.gateway.getScreenFrame(deviceId, userId));
     return;
   }

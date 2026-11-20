@@ -364,6 +364,41 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     );
     assert.equal(foreignFrame.status, 404);
 
+    // Eine entzogene Bildschirmberechtigung beendet die Freigabe sofort.
+    const downgrade = await post(
+      port,
+      '/v1/control/permissions',
+      { userId: TEST_USER_ID, deviceId, permissions: allPermissions({ bildschirm: 'lesen' }) },
+      ADMIN_HEADERS,
+    );
+    assert.equal(downgrade.status, 200);
+    const permissionStop = await nextEnvelope(ws, 3000, "screen-permission-stop");
+    assert.equal(permissionStop?.type, 'screen.session.stop');
+    await nextEnvelope(ws, 3000, "screen-permission-refresh");
+    const blockedAfterDowngrade = await get(
+      port,
+      '/v1/control/screen-frame?deviceId=' + deviceId + '&userId=' + TEST_USER_ID,
+      ADMIN_HEADERS,
+    );
+    assert.equal(blockedAfterDowngrade.body.active, false);
+
+    // Für den Not-Aus-Test wird die Freigabe erneut erteilt und eine neue Sitzung gestartet.
+    await post(
+      port,
+      '/v1/control/permissions',
+      { userId: TEST_USER_ID, deviceId, permissions: allPermissions({ bildschirm: 'steuern' }) },
+      ADMIN_HEADERS,
+    );
+    await nextEnvelope(ws, 3000, "screen-permission-regrant");
+    const secondScreenStart = await post(
+      port,
+      '/v1/control/screen',
+      { userId: TEST_USER_ID, deviceId, aktiv: true },
+      ADMIN_HEADERS,
+    );
+    assert.equal(secondScreenStart.status, 200);
+    await nextEnvelope(ws, 3000, "screen-session-restart");
+
     // Not-Aus: Routing pausiert, Gert wird informiert
     const notaus = await post(port, '/v1/control/not-aus?userId=' + TEST_USER_ID, { userId: TEST_USER_ID, aktiv: true, grund: 'prfung' }, ADMIN_HEADERS);
     assert.equal(notaus.status, 200);
