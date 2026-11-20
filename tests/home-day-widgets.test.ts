@@ -100,39 +100,9 @@ test("weekly workout lines and the chat summary threshold stay honest", () => {
   assert.match(summaryTool.prompt, /Chat-Nachrichten/);
 });
 
-test("the home screen wires real data into Dein Tag and the nexus badge", () => {
+test("the home screen no longer renders the removed daily overview", () => {
   const home = readFileSync("src/routes/_authenticated/index.tsx", "utf8");
-  assert.match(home, /useHomeDayData\(user\.id\)/);
-  assert.match(home, /useNexusUnread\(user\.id\)/);
-  assert.match(home, /aiStatusFromProviders\(loadProviders\(user\.id\)\)/);
-  assert.match(home, /tile\.id === "nexus" && nexusUnread/);
-  assert.match(home, / ungelesen`/);
-  assert.match(home, /Kein KI-Anbieter aktiv/);
-  assert.match(home, /Health heute:/);
-  assert.match(home, /formatStreakLine\(streak\)/);
-
-  const dayData = readFileSync("src/hooks/useHomeDayData.ts", "utf8");
-  assert.match(dayData, /from\("health_entries"\)/);
-  assert.match(dayData, /\.select\("day, steps, active_kcal, sleep_min"\)/);
-  assert.match(dayData, /from\("profiles"\)/);
-  assert.match(dayData, /current_streak/);
-  assert.match(dayData, /localDateKey/);
-  assert.match(dayData, /from\("workouts"\)/);
-  assert.match(dayData, /count: "exact", head: true/);
-  assert.match(dayData, /weeklyWorkouts/);
-
-  const nexus = readFileSync("src/hooks/useNexusUnread.ts", "utf8");
-  assert.match(nexus, /loadRoomPreview/);
-  assert.match(nexus, /sumKnownUnread/);
-  assert.match(nexus, /aggregateUnread/);
-  assert.match(nexus, /loadChatPrefs/);
-
-  assert.match(home, /formatWeeklyWorkoutLine\(weeklyWorkouts\)/);
-  assert.match(home, /shouldOfferChatSummary\(nexusUnread\)/);
-  assert.match(home, /requestChatSummary/);
-  assert.match(home, /Zusammenfassung bei Mira anfragen/);
-  assert.match(home, /SUPER_TOOLS\.find\(\(tool\) => tool\.id === "chat_summary"\)/);
-  assert.match(home, /alo-mira-autosend/);
+  assert.doesNotMatch(home, /useHomeDayData|useNexusUnread|Health heute:|Dein Tag/);
 });
 
 test("daily goal line only shows with a set goal and known reps", () => {
