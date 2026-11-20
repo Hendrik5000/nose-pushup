@@ -1328,7 +1328,7 @@ function HomeAppHub({
                 setSettingsError("Diese Gruppe konnte nicht umgeschaltet werden.");
               }
             }}
-            className="mb-3 flex w-full items-center gap-2 text-left text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="alo-home-group-toggle mb-3 flex w-full items-center gap-2 text-left text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <ChevronDown
               aria-hidden="true"
@@ -1402,7 +1402,7 @@ function HomeAppHub({
         {backgroundUrl && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-[inherit] bg-background/65 backdrop-blur-[2px]"
+            className="alo-home-background-scrim pointer-events-none absolute inset-0 rounded-[inherit] bg-background/65 backdrop-blur-[2px]"
           />
         )}
         <div className="relative z-10">
@@ -1628,11 +1628,14 @@ function HomeAppHub({
           )}
 
           {isEditingHub && (
-            <div className="mt-6 max-w-xl space-y-5" data-home-press-ignore="true">
+            <div
+              className="alo-home-edit-panel mt-6 max-w-xl space-y-5"
+              data-home-press-ignore="true"
+            >
               {renamingTile && (
                 <form
                   onSubmit={saveRename}
-                  className="space-y-3 rounded-2xl border border-border/70 bg-card/80 p-4"
+                  className="alo-home-edit-card space-y-3 rounded-2xl border border-border/70 bg-card/80 p-4"
                 >
                   <label className="block space-y-2 text-sm font-semibold" htmlFor="home-app-name">
                     <span>{renamingTile.title} – eigener Name</span>
