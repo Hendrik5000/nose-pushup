@@ -28,11 +28,11 @@ export type MiraDeviceControlMutationRequest =
   | { action: "screen"; deviceId: string; active: boolean };
 
 type GatewayResult = {
-  ok?: boolean;
-  dispatched?: boolean;
-  detail?: string;
-  reason?: string;
-  message?: string;
+  ok: boolean | null;
+  dispatched: boolean | null;
+  detail: string | null;
+  reason: string | null;
+  message: string | null;
 };
 
 export type MiraDeviceControlMutationResponse =
@@ -43,16 +43,22 @@ export type MiraDeviceControlMutationResponse =
       deviceName: string;
       platform: MiraDevicePlatform;
     }
-  | { action: "dispatch"; detail?: string; dispatched?: boolean; reason?: string }
-  | { action: "screen" | "permissions" | "not-aus" | "revoke"; ok?: boolean; message?: string };
+  | {
+      action: "dispatch" | "screen" | "permissions" | "not-aus" | "revoke";
+      ok: boolean | null;
+      dispatched: boolean | null;
+      detail: string | null;
+      reason: string | null;
+      message: string | null;
+    };
 
 function gatewayResult(value: RecordValue): GatewayResult {
   return {
-    ...(typeof value.ok === "boolean" ? { ok: value.ok } : {}),
-    ...(typeof value.dispatched === "boolean" ? { dispatched: value.dispatched } : {}),
-    ...(typeof value.detail === "string" ? { detail: value.detail.slice(0, 500) } : {}),
-    ...(typeof value.reason === "string" ? { reason: value.reason.slice(0, 300) } : {}),
-    ...(typeof value.message === "string" ? { message: value.message.slice(0, 500) } : {}),
+    ok: typeof value.ok === "boolean" ? value.ok : null,
+    dispatched: typeof value.dispatched === "boolean" ? value.dispatched : null,
+    detail: typeof value.detail === "string" ? value.detail.slice(0, 500) : null,
+    reason: typeof value.reason === "string" ? value.reason.slice(0, 300) : null,
+    message: typeof value.message === "string" ? value.message.slice(0, 500) : null,
   };
 }
 
