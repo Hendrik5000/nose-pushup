@@ -26,6 +26,7 @@ public sealed class GatewayConnection : IAsyncDisposable
     public event Action<string>? StateChanged; // "verbinde" | "verbunden" | "offline" | "widerrufen"
     public event Action<Envelope>? EnvelopeReceived;
     public event Action<Envelope>? NotAusReceived;
+    public event Action? ConnectionLost;
 
     public string CurrentState { get; private set; } = "offline";
 
@@ -108,6 +109,14 @@ public sealed class GatewayConnection : IAsyncDisposable
             finally
             {
                 _socket = null;
+                try
+                {
+                    ConnectionLost?.Invoke();
+                }
+                catch
+                {
+                    // Fehler in einem lokalen Listener dürfen den Reconnect nicht verhindern.
+                }
             }
 
             try

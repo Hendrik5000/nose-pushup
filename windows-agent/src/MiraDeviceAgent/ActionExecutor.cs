@@ -28,6 +28,7 @@ public static class ActionExecutor
     public static void Register(GatewayConnection connection)
     {
         var screen = new ScreenCaptureService(connection);
+        connection.ConnectionLost += () => _ = screen.StopAsync();
         connection.EnvelopeReceived += envelope =>
         {
             if (envelope.Type == MessageTypes.ActionRequest)
