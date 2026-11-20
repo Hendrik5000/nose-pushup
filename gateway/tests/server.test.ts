@@ -73,13 +73,47 @@ function get(
   });
 }
 
-function nextEnvelope(ws: WebSocket, timeoutMs = 3000, label = 'unbekannt'): Promise<ReturnType<typeof parseEnvelope>> {
+type ParsedEnvelope = ReturnType<typeof parseEnvelope>;
+type MessageWaiter = {
+  resolve: (envelope: ParsedEnvelope) => void;
+  reject: (error: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+};
+type MessageQueue = { messages: ParsedEnvelope[]; waiters: MessageWaiter[] };
+const messageQueues = new WeakMap<WebSocket, MessageQueue>();
+
+function messageQueue(ws: WebSocket): MessageQueue {
+  const existing = messageQueues.get(ws);
+  if (existing) return existing;
+  const queue: MessageQueue = { messages: [], waiters: [] };
+  messageQueues.set(ws, queue);
+  ws.on('message', (data) => {
+    const envelope = parseEnvelope(data.toString('utf8'));
+    const waiter = queue.waiters.shift();
+    if (waiter) {
+      clearTimeout(waiter.timer);
+      waiter.resolve(envelope);
+    } else {
+      queue.messages.push(envelope);
+    }
+  });
+  return queue;
+}
+
+function nextEnvelope(ws: WebSocket, timeoutMs = 3000, label = 'unbekannt'): Promise<ParsedEnvelope> {
+  const queue = messageQueue(ws);
+  if (queue.messages.length > 0) return Promise.resolve(queue.messages.shift() ?? null);
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('keine Nachricht empfangen: ' + label)), timeoutMs);
-    ws.once('message', (data) => {
-      clearTimeout(timer);
-      resolve(parseEnvelope(data.toString('utf8')));
-    });
+    const waiter: MessageWaiter = {
+      resolve,
+      reject,
+      timer: setTimeout(() => {
+        const index = queue.waiters.indexOf(waiter);
+        if (index >= 0) queue.waiters.splice(index, 1);
+        reject(new Error('keine Nachricht empfangen: ' + label));
+      }, timeoutMs),
+    };
+    queue.waiters.push(waiter);
   });
 }
 
