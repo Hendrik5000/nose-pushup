@@ -328,6 +328,16 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     ws.send(
       JSON.stringify(
         createEnvelope(MessageTypes.ScreenFrame, {
+          sessionId: 'stale-session',
+          frameBase64: 'aGVsbG8=',
+        }),
+      ),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.equal(capturedFrame, null);
+    ws.send(
+      JSON.stringify(
+        createEnvelope(MessageTypes.ScreenFrame, {
           sessionId: sessionPayload.sessionId,
           frameBase64: 'aGVsbG8=',
         }),

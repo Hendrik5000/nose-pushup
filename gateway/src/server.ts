@@ -530,7 +530,16 @@ export class Gateway {
     }
     if (typeof frame !== 'object' || frame === null) return;
     const f = frame as Record<string, unknown>;
-    if (typeof f.frameBase64 !== 'string') {
+    if (f.sessionId !== active.sessionId) {
+      this.store.appendLog({ kind: 'ablehnung', deviceId: session.deviceId, status: 'frame-falsche-sitzung' });
+      return;
+    }
+    if (
+      typeof f.frameBase64 !== 'string' ||
+      f.frameBase64.length === 0 ||
+      f.frameBase64.length > 1_500_000 ||
+      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(f.frameBase64)
+    ) {
       this.store.appendLog({ kind: 'ablehnung', deviceId: session.deviceId, status: 'frame-ungueltig' });
       return;
     }
