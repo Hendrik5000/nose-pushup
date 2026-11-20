@@ -85,14 +85,12 @@ export function MiraDevicesPage({ userId }: Props) {
         </span>
       </header>
 
-      <p
-        className="mt-4 rounded-2xl border border-border/70 bg-card/75 p-4 text-xs leading-relaxed text-muted-foreground"
-      >
-        <strong className="text-foreground">Status: Planungsvorschau.</strong> Nach dem
-        Entwicklungsauftrag startet Device Control mit der Oberfläche. Es existiert noch kein Device
-        Control Gateway und keine echte Geräteverbindung; gekoppelte Geräte werden deshalb bewusst als
-        <em>gekoppelt (offline)</em> angezeigt und niemals als verbunden. Es werden keine Passwörter oder
-        Geheimnisse gespeichert. Windows 11 ist die erste Plattform, Android und iPad folgen später.
+      <p className="mt-4 rounded-2xl border border-border/70 bg-card/75 p-4 text-xs leading-relaxed text-muted-foreground">
+        <strong className="text-foreground">Status: Planungsvorschau.</strong> Nach dem Entwicklungsauftrag
+        startet Device Control mit der Oberfläche. Es existiert noch kein Device Control Gateway und
+        keine echte Geräteverbindung; gekoppelte Geräte werden deshalb bewusst als <em>gekoppelt
+        (offline)</em> angezeigt und niemals als verbunden. Es werden keine Passwörter oder Geheimnisse
+        gespeichert. Windows 11 ist die erste Plattform, Android und iPad folgen später.
       </p>
 
       {error && (
@@ -238,11 +236,9 @@ export function MiraDevicesPage({ userId }: Props) {
                   aria-pressed={selectedId === device.id}
                   className={
                     "min-h-11 w-full rounded-2xl border p-3 text-left transition " +
-                    (
-                      selectedId === device.id
-                        ? "border-primary/60 bg-primary/5"
-                        : "border-border/70 bg-card/75"
-                    )
+                    (selectedId === device.id
+                      ? "border-primary/60 bg-primary/5"
+                      : "border-border/70 bg-card/75")
                   }
                 >
                   <span className="flex items-center justify-between gap-2">
@@ -356,8 +352,12 @@ function DeviceDetail({
           </caption>
           <thead>
             <tr className="text-muted-foreground">
-              <th scope="col" className="py-1 font-medium">Funktionsgruppe</th>
-              <th scope="col" className="py-1 font-medium">Stufe</th>
+              <th scope="col" className="py-1 font-medium">
+                Funktionsgruppe
+              </th>
+              <th scope="col" className="py-1 font-medium">
+                Stufe
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -400,8 +400,8 @@ function DeviceDetail({
       </div>
       <p className="mt-2 text-[10px] text-muted-foreground">
         Stufen: keine · lesen (Status anzeigen) · steuern (freigegebene Aktionen) · kritisch (nur
-        nach ausdrücklicher Bestätigung). Kritische Aktionen wie Löschen, Installieren oder Versenden
-        bleiben immer bestätigungspflichtig.
+        nach ausdrücklicher Bestätigung). Kritische Aktionen wie Löschen, Installieren oder
+        Versenden bleiben immer bestätigungspflichtig.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">

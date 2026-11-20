@@ -22,12 +22,7 @@ export const DEVICE_CONTROL_GATEWAY_AVAILABLE = false;
 
 export type MiraDevicePlatform = "windows" | "android" | "ipad";
 
-export type MiraDeviceState =
-  | "nicht-gekoppelt"
-  | "gekoppelt-offline"
-  | "verbunden"
-  | "pausiert"
-  | "fehler";
+export type MiraDeviceState = "nicht-gekoppelt" | "gekoppelt-offline" | "verbunden" | "pausiert" | "fehler";
 
 export type MiraPermissionLevel = "keine" | "lesen" | "steuern" | "kritisch";
 
@@ -50,19 +45,25 @@ export const MIRA_DEVICE_CAPABILITIES: ReadonlyArray<{
   { id: "programme", label: "Programme", hint: "Programme und Browser starten oder schliessen" },
   { id: "fenster", label: "Fenster", hint: "Fenster wechseln und verwalten" },
   { id: "eingaben", label: "Eingaben", hint: "Maus- und Tastatureingaben ausfuehren" },
-  { id: "bildschirm", label: "Bildschirm", hint: "Bildschirm nur auf ausdrueckliche Anfrage uebertragen" },
-  { id: "dateien", label: "Dateien", hint: "Dateien und Ordner suchen, erstellen, umbenennen, verschieben" },
-  { id: "einstellungen", label: "Einstellungen", hint: "Unterstuetzte Windows-Einstellungen oeffnen oder veraendern" },
+  {
+    id: "bildschirm",
+    label: "Bildschirm",
+    hint: "Bildschirm nur auf ausdrueckliche Anfrage uebertragen",
+  },
+  {
+    id: "dateien",
+    label: "Dateien",
+    hint: "Dateien und Ordner suchen, erstellen, umbenennen, verschieben",
+  },
+  {
+    id: "einstellungen",
+    label: "Einstellungen",
+    hint: "Unterstuetzte Windows-Einstellungen oeffnen oder veraendern",
+  },
   { id: "audio", label: "Audio", hint: "Lautstaerke und freigegebene Systemfunktionen steuern" },
 ];
 
-export type MiraDeviceActivityKind =
-  | "info"
-  | "kopplung"
-  | "status"
-  | "berechtigung"
-  | "widerruf"
-  | "not-aus";
+export type MiraDeviceActivityKind = "info" | "kopplung" | "status" | "berechtigung" | "widerruf" | "not-aus";
 
 export type MiraDeviceActivity = {
   id: string;
@@ -157,7 +158,11 @@ export function coupleDevice(
   const next = appendActivity(
     { ...store, devices: [...store.devices, device] },
     "kopplung",
-    "Geraet '" + trimmed + "' (" + MIRA_PLATFORM_LABELS[platform] + ") gekoppelt. Es ist noch offline, bis ein echtes Gateway existiert.",
+    "Geraet '" +
+      trimmed +
+      "' (" +
+      MIRA_PLATFORM_LABELS[platform] +
+      ") gekoppelt. Es ist noch offline, bis ein echtes Gateway existiert.",
     device.id,
     at,
   );
@@ -271,10 +276,17 @@ export function describeDeviceState(state: MiraDeviceState): string {
 function isMiraDeviceStore(value: unknown): value is MiraDeviceStore {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Partial<MiraDeviceStore>;
-  return Array.isArray(v.devices) && Array.isArray(v.activity) && typeof v.emergencyStopActive === "boolean";
+  return (
+    Array.isArray(v.devices) &&
+    Array.isArray(v.activity) &&
+    typeof v.emergencyStopActive === "boolean"
+  );
 }
 
-export function saveMiraDeviceStore(store: MiraDeviceStore, storage: Pick<Storage, "setItem"> | null): void {
+export function saveMiraDeviceStore(
+  store: MiraDeviceStore,
+  storage: Pick<Storage, "setItem"> | null,
+): void {
   if (!storage) return;
   try {
     storage.setItem(MIRA_DEVICE_CONTROL_STORAGE_KEY, JSON.stringify(store));
