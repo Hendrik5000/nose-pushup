@@ -66,7 +66,8 @@ const ACTION_EXAMPLES: Record<string, string> = {
   "dateien.lesen": '{ "root": "Documents", "path": "notiz.txt" }',
   "dateien.schreiben": '{ "root": "Documents", "path": "notiz.txt", "content": "Hallo" }',
   "dateien.umbenennen": '{ "root": "Documents", "path": "alt.txt", "newName": "neu.txt" }',
-  "dateien.verschieben": '{ "sourceRoot": "Documents", "sourcePath": "alt.txt", "destinationRoot": "Downloads", "destinationPath": "alt.txt" }',
+  "dateien.verschieben":
+    '{ "sourceRoot": "Documents", "sourcePath": "alt.txt", "destinationRoot": "Downloads", "destinationPath": "alt.txt" }',
   "einstellungen.oeffnen": '{ "page": "display" }',
   "einstellungen.herunterfahren": "{}",
   "einstellungen.abbrechen-herunterfahren": "{}",
@@ -94,7 +95,12 @@ function deviceStateStyle(device: MiraGatewayDevice): string {
 }
 
 function formatFingerprint(value: string): string {
-  return value.toUpperCase().match(/.{1,4}/g)?.join(" ") ?? value.toUpperCase();
+  return (
+    value
+      .toUpperCase()
+      .match(/.{1,4}/g)
+      ?.join(" ") ?? value.toUpperCase()
+  );
 }
 
 export function MiraDevicesPage() {
@@ -102,7 +108,12 @@ export function MiraDevicesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deviceName, setDeviceName] = useState("");
   const [platform] = useState<MiraDevicePlatform>("windows");
-  const [pairing, setPairing] = useState<{ code: string; expiresAt: string; gatewayUrl: string; deviceName: string } | null>(null);
+  const [pairing, setPairing] = useState<{
+    code: string;
+    expiresAt: string;
+    gatewayUrl: string;
+    deviceName: string;
+  } | null>(null);
   const [toolId, setToolId] = useState<string>("status.info");
   const [argsText, setArgsText] = useState(ACTION_EXAMPLES["status.info"]);
   const [confirmAction, setConfirmAction] = useState(false);
@@ -124,7 +135,9 @@ export function MiraDevicesPage() {
       setError(next.message ?? null);
       if (!selectedId && next.devices[0]) setSelectedId(next.devices[0].deviceId);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gerätestatus konnte nicht geladen werden.");
+      setError(
+        cause instanceof Error ? cause.message : "Gerätestatus konnte nicht geladen werden.",
+      );
     } finally {
       setLoading(false);
     }
@@ -161,7 +174,11 @@ export function MiraDevicesPage() {
               : "Aktion an das Gerät gesendet.",
         );
       } else if (result.action === "screen") {
-        setResultText(result.ok === true ? "Bildschirm-Sitzung gestartet." : "Bildschirm-Sitzung konnte nicht gestartet werden.");
+        setResultText(
+          result.ok === true
+            ? "Bildschirm-Sitzung gestartet."
+            : "Bildschirm-Sitzung konnte nicht gestartet werden.",
+        );
       } else {
         setResultText("Änderung wurde an das Gateway übermittelt.");
       }
@@ -224,14 +241,16 @@ export function MiraDevicesPage() {
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             Die Oberfläche ist mit einem geschützten Server-Zwischendienst vorbereitet. Für echte
             Geräteverbindungen müssen <code>MIRA_DEVICE_GATEWAY_URL</code> und
-            <code> MIRA_DEVICE_GATEWAY_ADMIN_TOKEN</code> als serverseitige Umgebungsvariablen gesetzt
-            werden. Der Admin-Token wird niemals an den Browser übertragen.
+            <code> MIRA_DEVICE_GATEWAY_ADMIN_TOKEN</code> als serverseitige Umgebungsvariablen
+            gesetzt werden. Der Admin-Token wird niemals an den Browser übertragen.
           </p>
         </section>
       ) : !snapshot.reachable ? (
         <section className="mt-5 rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
           <h2 className="text-sm font-bold">Gateway nicht erreichbar</h2>
-          <p className="mt-1 text-xs text-muted-foreground">{snapshot.message ?? "Verbindung fehlgeschlagen."}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {snapshot.message ?? "Verbindung fehlgeschlagen."}
+          </p>
         </section>
       ) : (
         <section className="mt-5 rounded-2xl border border-border/70 bg-card/75 p-4">
@@ -241,14 +260,18 @@ export function MiraDevicesPage() {
               <p className="mt-1 text-xs text-muted-foreground">{snapshot.gatewayUrl}</p>
             </div>
             <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-              {snapshot.devices.filter((device) => device.online).length} online · {snapshot.devices.length} gekoppelt
+              {snapshot.devices.filter((device) => device.online).length} online ·{" "}
+              {snapshot.devices.length} gekoppelt
             </span>
           </div>
         </section>
       )}
 
       {error && (
-        <p role="alert" className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+        <p
+          role="alert"
+          className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+        >
           {error}
         </p>
       )}
@@ -269,7 +292,9 @@ export function MiraDevicesPage() {
           <button
             type="button"
             disabled={busy || !snapshot.reachable}
-            onClick={() => void perform({ action: "not-aus", active: false, reason: "Manuell zurückgesetzt" })}
+            onClick={() =>
+              void perform({ action: "not-aus", active: false, reason: "Manuell zurückgesetzt" })
+            }
             className="mt-3 min-h-11 rounded-xl border border-border px-4 text-sm font-semibold disabled:opacity-40"
           >
             Not-Aus zurücksetzen
@@ -287,7 +312,11 @@ export function MiraDevicesPage() {
             >
               Ja, alle Geräte stoppen
             </button>
-            <button type="button" onClick={() => setConfirmKill(false)} className="min-h-11 rounded-xl border border-border px-4 text-sm">
+            <button
+              type="button"
+              onClick={() => setConfirmKill(false)}
+              className="min-h-11 rounded-xl border border-border px-4 text-sm"
+            >
               Abbrechen
             </button>
           </div>
@@ -306,7 +335,8 @@ export function MiraDevicesPage() {
       <section className="mt-6 rounded-2xl border border-border/70 bg-card/75 p-4">
         <h2 className="text-sm font-bold">Windows-Gerät koppeln</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Erzeuge einen einmaligen sechsstelligen Code. Er ist fünf Minuten gültig und kann nur einmal verwendet werden.
+          Erzeuge einen einmaligen sechsstelligen Code. Er ist fünf Minuten gültig und kann nur
+          einmal verwendet werden.
         </p>
         <form
           className="mt-3 flex flex-wrap gap-2"
@@ -336,10 +366,12 @@ export function MiraDevicesPage() {
           <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-3">
             <p className="text-xs font-semibold">Kopplungscode für {pairing.deviceName}</p>
             <p className="mt-2 text-3xl font-bold tracking-[0.25em] tabular-nums">{pairing.code}</p>
-            <p className="mt-2 break-all text-xs text-muted-foreground">Gateway-URL: {pairing.gatewayUrl}</p>
+            <p className="mt-2 break-all text-xs text-muted-foreground">
+              Gateway-URL: {pairing.gatewayUrl}
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Gültig bis {new Date(pairing.expiresAt).toLocaleTimeString("de-DE")}. Öffne den Mira Device Agent auf Windows,
-              wähle „Kopplung starten“ und gib Gateway-URL sowie Code ein.
+              Gültig bis {new Date(pairing.expiresAt).toLocaleTimeString("de-DE")}. Öffne den Mira
+              Device Agent auf Windows, wähle „Kopplung starten“ und gib Gateway-URL sowie Code ein.
             </p>
             <button
               type="button"
@@ -361,7 +393,9 @@ export function MiraDevicesPage() {
         </div>
         {snapshot.devices.length === 0 ? (
           <p className="mt-2 rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">
-            {snapshot.reachable ? "Noch kein Windows-Gerät gekoppelt." : "Geräte erscheinen hier, sobald das Gateway erreichbar ist."}
+            {snapshot.reachable
+              ? "Noch kein Windows-Gerät gekoppelt."
+              : "Geräte erscheinen hier, sobald das Gateway erreichbar ist."}
           </p>
         ) : (
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -371,11 +405,21 @@ export function MiraDevicesPage() {
                   type="button"
                   onClick={() => setSelectedId(device.deviceId)}
                   aria-pressed={selectedId === device.deviceId}
-                  className={"min-h-16 w-full rounded-2xl border p-3 text-left transition " + (selectedId === device.deviceId ? "border-primary/60 bg-primary/5" : "border-border/70 bg-card/75")}
+                  className={
+                    "min-h-16 w-full rounded-2xl border p-3 text-left transition " +
+                    (selectedId === device.deviceId
+                      ? "border-primary/60 bg-primary/5"
+                      : "border-border/70 bg-card/75")
+                  }
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm font-semibold">{device.name}</span>
-                    <span className={"shrink-0 rounded-full border px-2 py-0.5 text-[10px] " + deviceStateStyle(device)}>
+                    <span
+                      className={
+                        "shrink-0 rounded-full border px-2 py-0.5 text-[10px] " +
+                        deviceStateStyle(device)
+                      }
+                    >
                       {deviceState(device)}
                     </span>
                   </span>
@@ -402,17 +446,25 @@ export function MiraDevicesPage() {
               setConfirmRevoke(true);
               return;
             }
-            void perform({ action: "revoke", deviceId: selected.deviceId, reason: "Vom Nutzer widerrufen" });
+            void perform({
+              action: "revoke",
+              deviceId: selected.deviceId,
+              reason: "Vom Nutzer widerrufen",
+            });
             setConfirmRevoke(false);
             setSelectedId(null);
           }}
           confirmRevoke={confirmRevoke}
           onCancelRevoke={() => setConfirmRevoke(false)}
         >
-          <form onSubmit={dispatchAction} className="mt-5 rounded-xl border border-border/70 bg-muted/20 p-3">
+          <form
+            onSubmit={dispatchAction}
+            className="mt-5 rounded-xl border border-border/70 bg-muted/20 p-3"
+          >
             <h3 className="text-xs font-bold">Mira-Steuerkonsole</h3>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Wähle ein freigegebenes Werkzeug. Argumente werden serverseitig geprüft; keine Shell- oder PowerShell-Befehle.
+              Wähle ein freigegebenes Werkzeug. Argumente werden serverseitig geprüft; keine Shell-
+              oder PowerShell-Befehle.
             </p>
             <label className="mt-3 block text-xs font-medium">
               Aktion
@@ -425,7 +477,11 @@ export function MiraDevicesPage() {
                 }}
                 className="mt-1 min-h-10 w-full rounded-lg border border-border bg-background px-3"
               >
-                {ACTIONS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                {ACTIONS.map(([id, label]) => (
+                  <option key={id} value={id}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="mt-3 block text-xs font-medium">
@@ -440,13 +496,25 @@ export function MiraDevicesPage() {
             </label>
             {CONFIRMATION_REQUIRED.has(toolId) && (
               <label className="mt-3 flex items-start gap-2 text-xs">
-                <input type="checkbox" checked={confirmAction} onChange={(event) => setConfirmAction(event.currentTarget.checked)} />
-                <span>Ich bestätige diese Aktion ausdrücklich. Sie kann Programme schließen oder Dateien verändern.</span>
+                <input
+                  type="checkbox"
+                  checked={confirmAction}
+                  onChange={(event) => setConfirmAction(event.currentTarget.checked)}
+                />
+                <span>
+                  Ich bestätige diese Aktion ausdrücklich. Sie kann Programme schließen oder Dateien
+                  verändern.
+                </span>
               </label>
             )}
             <button
               type="submit"
-              disabled={busy || !snapshot.reachable || !selected.online || (CONFIRMATION_REQUIRED.has(toolId) && !confirmAction)}
+              disabled={
+                busy ||
+                !snapshot.reachable ||
+                !selected.online ||
+                (CONFIRMATION_REQUIRED.has(toolId) && !confirmAction)
+              }
               className="mt-3 min-h-10 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
             >
               Aktion ausführen
@@ -456,7 +524,9 @@ export function MiraDevicesPage() {
             <button
               type="button"
               disabled={busy || !snapshot.reachable || !selected.online}
-              onClick={() => void perform({ action: "screen", deviceId: selected.deviceId, active: true })}
+              onClick={() =>
+                void perform({ action: "screen", deviceId: selected.deviceId, active: true })
+              }
               className="min-h-10 rounded-lg border border-border px-3 text-xs disabled:opacity-40"
             >
               Bildschirmfreigabe starten
@@ -464,7 +534,9 @@ export function MiraDevicesPage() {
             <button
               type="button"
               disabled={busy || !snapshot.reachable}
-              onClick={() => void perform({ action: "screen", deviceId: selected.deviceId, active: false })}
+              onClick={() =>
+                void perform({ action: "screen", deviceId: selected.deviceId, active: false })
+              }
               className="min-h-10 rounded-lg border border-border px-3 text-xs disabled:opacity-40"
             >
               Bildschirmfreigabe beenden
@@ -479,7 +551,9 @@ export function MiraDevicesPage() {
           <p className="mt-2 text-xs text-muted-foreground">Noch keine Gateway-Aktivitäten.</p>
         ) : (
           <ol className="mt-2 flex flex-col gap-1 text-xs">
-            {snapshot.activity.slice(0, 30).map((entry) => <ActivityRow key={entry.id} entry={entry} />)}
+            {snapshot.activity.slice(0, 30).map((entry) => (
+              <ActivityRow key={entry.id} entry={entry} />
+            ))}
           </ol>
         )}
       </section>
@@ -505,31 +579,50 @@ function DeviceDetail({
   children: React.ReactNode;
 }) {
   return (
-    <section aria-label={"Details zu " + device.name} className="mt-6 rounded-2xl border border-border/70 bg-card/75 p-4">
+    <section
+      aria-label={"Details zu " + device.name}
+      className="mt-6 rounded-2xl border border-border/70 bg-card/75 p-4"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold">{device.name}</h2>
-        <span className={"rounded-full border px-2 py-0.5 text-[10px] " + deviceStateStyle(device)}>{deviceState(device)}</span>
+        <span className={"rounded-full border px-2 py-0.5 text-[10px] " + deviceStateStyle(device)}>
+          {deviceState(device)}
+        </span>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        {MIRA_PLATFORM_LABELS[device.platform]} · Agent {device.agentVersion} · gekoppelt am {new Date(device.createdAt).toLocaleString("de-DE")}
+        {MIRA_PLATFORM_LABELS[device.platform]} · Agent {device.agentVersion} · gekoppelt am{" "}
+        {new Date(device.createdAt).toLocaleString("de-DE")}
       </p>
       <p className="mt-1 break-all font-mono text-[10px] text-muted-foreground">
         Geräte-Fingerprint: {formatFingerprint(device.fingerprint)}
       </p>
 
-      <h3 className="mt-4 text-xs font-bold uppercase tracking-wide text-muted-foreground">Berechtigungen</h3>
+      <h3 className="mt-4 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        Berechtigungen
+      </h3>
       <div className="mt-2 overflow-x-auto">
         <table className="w-full min-w-[28rem] text-left text-xs">
-          <thead><tr className="text-muted-foreground"><th className="py-1 font-medium">Funktionsgruppe</th><th className="py-1 font-medium">Stufe</th></tr></thead>
+          <thead>
+            <tr className="text-muted-foreground">
+              <th className="py-1 font-medium">Funktionsgruppe</th>
+              <th className="py-1 font-medium">Stufe</th>
+            </tr>
+          </thead>
           <tbody>
             {MIRA_DEVICE_CAPABILITIES.map((cap) => (
               <tr key={cap.id} className="border-t border-border/50">
                 <th className="py-2 align-top font-medium">
                   {cap.label}
-                  <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground">{cap.hint}</span>
+                  <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground">
+                    {cap.hint}
+                  </span>
                 </th>
                 <td className="py-2">
-                  <div role="group" aria-label={"Berechtigungsstufe für " + cap.label} className="flex flex-wrap gap-1">
+                  <div
+                    role="group"
+                    aria-label={"Berechtigungsstufe für " + cap.label}
+                    className="flex flex-wrap gap-1"
+                  >
                     {LEVELS.map((level) => (
                       <button
                         key={level}
@@ -537,7 +630,12 @@ function DeviceDetail({
                         disabled={busy || !device.online}
                         onClick={() => onPermission(cap.id, level)}
                         aria-pressed={device.permissions[cap.id] === level}
-                        className={"min-h-9 rounded-lg border px-2 text-[11px] transition disabled:opacity-40 " + (device.permissions[cap.id] === level ? "border-primary bg-primary/10 font-semibold" : "border-border")}
+                        className={
+                          "min-h-9 rounded-lg border px-2 text-[11px] transition disabled:opacity-40 " +
+                          (device.permissions[cap.id] === level
+                            ? "border-primary bg-primary/10 font-semibold"
+                            : "border-border")
+                        }
                       >
                         {level}
                       </button>
@@ -550,19 +648,36 @@ function DeviceDetail({
         </table>
       </div>
       <p className="mt-2 text-[10px] text-muted-foreground">
-        „Kritisch“ hebt die zusätzliche Bestätigung im Mira-Server nicht auf. Shell- und PowerShell-Ausführung bleiben gesperrt.
+        „Kritisch“ hebt die zusätzliche Bestätigung im Mira-Server nicht auf. Shell- und
+        PowerShell-Ausführung bleiben gesperrt.
       </p>
       {children}
       <div className="mt-4 flex flex-wrap gap-2">
         {confirmRevoke ? (
           <>
-            <button type="button" disabled={busy} onClick={onRevoke} className="min-h-10 rounded-lg bg-destructive px-3 text-xs font-semibold text-destructive-foreground disabled:opacity-40">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onRevoke}
+              className="min-h-10 rounded-lg bg-destructive px-3 text-xs font-semibold text-destructive-foreground disabled:opacity-40"
+            >
               Kopplung endgültig widerrufen
             </button>
-            <button type="button" onClick={onCancelRevoke} className="min-h-10 rounded-lg border border-border px-3 text-xs">Abbrechen</button>
+            <button
+              type="button"
+              onClick={onCancelRevoke}
+              className="min-h-10 rounded-lg border border-border px-3 text-xs"
+            >
+              Abbrechen
+            </button>
           </>
         ) : (
-          <button type="button" disabled={busy} onClick={onRevoke} className="min-h-10 rounded-lg border border-destructive/40 px-3 text-xs text-destructive disabled:opacity-40">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onRevoke}
+            className="min-h-10 rounded-lg border border-destructive/40 px-3 text-xs text-destructive disabled:opacity-40"
+          >
             Gerät widerrufen
           </button>
         )}
@@ -579,7 +694,9 @@ function ActivityRow({ entry }: { entry: MiraGatewayActivity }) {
         {entry.status ? " · " + entry.status : ""}
       </span>
       <span className="mt-0.5 block break-words">
-        {[entry.toolId, entry.detail].filter(Boolean).join(" — ") || entry.deviceId || "Gateway-Ereignis"}
+        {[entry.toolId, entry.detail].filter(Boolean).join(" — ") ||
+          entry.deviceId ||
+          "Gateway-Ereignis"}
       </span>
     </li>
   );

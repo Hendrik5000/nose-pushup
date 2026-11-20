@@ -1,4 +1,8 @@
-import type { MiraDeviceCapability, MiraPermissionLevel, MiraDevicePlatform } from "./mira-device-control";
+import type {
+  MiraDeviceCapability,
+  MiraPermissionLevel,
+  MiraDevicePlatform,
+} from "./mira-device-control";
 
 export type MiraGatewayDevice = {
   deviceId: string;
@@ -45,7 +49,9 @@ function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function gatewayConfig(env: Record<string, string | undefined> = process.env): GatewayConfig | null {
+function gatewayConfig(
+  env: Record<string, string | undefined> = process.env,
+): GatewayConfig | null {
   const rawUrl = env.MIRA_DEVICE_GATEWAY_URL?.trim();
   const adminToken = env.MIRA_DEVICE_GATEWAY_ADMIN_TOKEN?.trim();
   if (!rawUrl || !adminToken) return null;
@@ -66,7 +72,8 @@ function gatewayConfig(env: Record<string, string | undefined> = process.env): G
   ) {
     throw new Error("Das Gateway muss über eine sichere HTTPS-Adresse erreichbar sein.");
   }
-  if (adminToken.length < 32) throw new Error("Der Gateway-Admin-Token ist nicht ausreichend lang.");
+  if (adminToken.length < 32)
+    throw new Error("Der Gateway-Admin-Token ist nicht ausreichend lang.");
   return { baseUrl, adminToken };
 }
 
@@ -155,7 +162,9 @@ const CAPABILITIES: MiraDeviceCapability[] = [
 ];
 const PERMISSION_LEVELS: MiraPermissionLevel[] = ["keine", "lesen", "steuern", "kritisch"];
 
-function parsePermissions(value: unknown): Record<MiraDeviceCapability, MiraPermissionLevel> | null {
+function parsePermissions(
+  value: unknown,
+): Record<MiraDeviceCapability, MiraPermissionLevel> | null {
   if (!isRecord(value) || Object.keys(value).length !== CAPABILITIES.length) return null;
   const result = {} as Record<MiraDeviceCapability, MiraPermissionLevel>;
   for (const capability of CAPABILITIES) {
@@ -178,7 +187,8 @@ function parseDevice(value: unknown): MiraGatewayDevice | null {
     typeof value.createdAt !== "string" ||
     (value.revokedAt !== null && typeof value.revokedAt !== "string") ||
     typeof value.online !== "boolean"
-  ) return null;
+  )
+    return null;
   const permissions = parsePermissions(value.permissions);
   if (!permissions) return null;
   return {
@@ -195,7 +205,8 @@ function parseDevice(value: unknown): MiraGatewayDevice | null {
 }
 
 function parseActivity(value: unknown, index: number): MiraGatewayActivity | null {
-  if (!isRecord(value) || typeof value.at !== "string" || typeof value.kind !== "string") return null;
+  if (!isRecord(value) || typeof value.at !== "string" || typeof value.kind !== "string")
+    return null;
   return {
     id: value.at + "-" + index,
     at: value.at,
@@ -225,10 +236,17 @@ export async function fetchMiraGatewaySnapshot(userId: string): Promise<MiraGate
       requestMiraGateway("not-aus", "GET", userId),
     ]);
     const devices = Array.isArray(devicesResult.devices)
-      ? devicesResult.devices.map(parseDevice).filter((device): device is MiraGatewayDevice => device !== null && device.revokedAt === null)
+      ? devicesResult.devices
+          .map(parseDevice)
+          .filter(
+            (device): device is MiraGatewayDevice => device !== null && device.revokedAt === null,
+          )
       : [];
     const activity = Array.isArray(activityResult.entries)
-      ? activityResult.entries.map(parseActivity).filter((entry): entry is MiraGatewayActivity => entry !== null).reverse()
+      ? activityResult.entries
+          .map(parseActivity)
+          .filter((entry): entry is MiraGatewayActivity => entry !== null)
+          .reverse()
       : [];
     return {
       configured: true,
