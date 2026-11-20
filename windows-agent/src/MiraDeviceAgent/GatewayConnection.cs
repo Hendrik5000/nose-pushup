@@ -59,9 +59,37 @@ public sealed class GatewayConnection : IAsyncDisposable
                     agentVersion = AgentVersion.Current,
                 }), _lifetime.Token).ConfigureAwait(false);
 
-                var lifetimeToken = _lifetime.Token;
-                await Task.Run(() => HeartbeatLoop(lifetimeToken), lifetimeToken).ConfigureAwait(false);
-                var revoked = await ReceiveLoop(socket, _lifetime.Token).ConfigureAwait(false);
+                using var connectionLifetime = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+                var heartbeatTask = HeartbeatLoop(connectionLifetime.Token);
+                var receiveTask = ReceiveLoop(socket, connectionLifetime.Token);
+                var completedTask = await Task.WhenAny(heartbeatTask, receiveTask).ConfigureAwait(false);
+
+                // Heartbeat und Empfang laufen parallel. Endet einer der beiden
+                // Tasks unerwartet, wird die Verbindung beendet und neu aufgebaut.
+                var heartbeatFailed = completedTask == heartbeatTask && !connectionLifetime.IsCancellationRequested;
+                if (heartbeatFailed) connectionLifetime.Cancel();
+
+                var revoked = false;
+                try
+                {
+                    if (heartbeatFailed)
+                    {
+                        try { await receiveTask.ConfigureAwait(false); }
+                        catch (OperationCanceledException) { }
+                        SetState("offline");
+                    }
+                    else
+                    {
+                        revoked = await receiveTask.ConfigureAwait(false);
+                    }
+                }
+                finally
+                {
+                    connectionLifetime.Cancel();
+                    try { await heartbeatTask.ConfigureAwait(false); }
+                    catch (OperationCanceledException) { }
+                }
+
                 if (revoked)
                 {
                     DeviceIdentityStore.DeleteAll();
@@ -158,7 +186,7 @@ public sealed class GatewayConnection : IAsyncDisposable
             try
             {
                 await Task.Delay(TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
-                await SendAsync(Envelope.Create(MessageTypes.Heartbeat), CancellationToken.None).ConfigureAwait(false);
+                await SendAsync(Envelope.Create(MessageTypes.Heartbeat), ct).ConfigureAwait(false);
             }
             catch
             {
@@ -177,5 +205,5 @@ public sealed class GatewayConnection : IAsyncDisposable
 
 public static class AgentVersion
 {
-    public const string Current = "0.2.0-phase2";
+    public const string Current = "0.3.0-phase3";
 }

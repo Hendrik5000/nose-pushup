@@ -1,0 +1,45 @@
+name: Mira Device Control
+on:
+  pull_request:
+    paths:
+      - "windows-agent/**"
+      - "gateway/**"
+      - "docs/device-control-gateway-spec.md"
+      - ".github/workflows/mira-device-control.yml"
+  push:
+    branches: [main]
+    paths:
+      - "windows-agent/**"
+      - "gateway/**"
+      - "docs/device-control-gateway-spec.md"
+      - ".github/workflows/mira-device-control.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+
+  windows-agent:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Build Windows agent
+        run: dotnet build windows-agent/src/MiraDeviceAgent/MiraDeviceAgent.csproj --configuration Release
+      - name: Run Windows agent tests
+        run: dotnet test windows-agent/test/MiraDeviceAgent.Tests/MiraDeviceAgent.Tests.csproj --configuration Release

@@ -27,16 +27,11 @@ public class MessageTests
     }
 
     [Fact]
-    public void Allowlist_ist_in_phase_2_leer()
+    public void Allowlist_enthaelt_ausgewaehlte_Werkzeuge_und_blockiert_Freiform_Shell()
     {
-        Assert.False(ActionAllowlist.IsAllowed("program.open"));
+        Assert.True(ActionAllowlist.IsAllowed("programme.starten"));
+        Assert.True(ActionAllowlist.IsAllowed("eingabe.tastatur"));
         Assert.False(ActionAllowlist.IsAllowed("shell.execute"));
-    }
-
-    [Fact]
-    public void ActionResult_enthaelt_phase3_hinweis()
-    {
-        var payload = new ActionResultPayload("req-1", "nicht-implementiert", "Phase 3");
-        Assert.Equal("nicht-implementiert", payload.Status);
+        Assert.False(ActionAllowlist.IsAllowed("powershell.execute"));
     }
 }
