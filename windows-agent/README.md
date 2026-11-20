@@ -42,7 +42,7 @@ und hier noch nicht enthalten.
 - RSA-2048-Geräteidentität; privater Schlüssel mit DPAPI verschlüsselt unter
   `%LOCALAPPDATA%\MiraDeviceAgent\identity.json`, niemals im Klartext.
 - Gerätetoken nur verschlüsselt gespeichert (`token.bin`), niemals in Logs.
-- Keine Shell-/PowerShell-Ausführung; Aktionen nur über Allowlist (Phase 3, dort leer).
+- Keine Shell-/PowerShell-Ausführung. Phase 3 stellt eine enge Allowlist für Programme, Fenster, Maus/Tastatur, Benutzerdateien, Windows-Einstellungen und Audio bereit. Dateizugriff ist auf Desktop/Dokumente/Downloads begrenzt; Überschreiben und Löschen sind nicht freigegeben.
 - Protokolle enthalten nur minimale Verbindungsdaten, keine Inhaltsdaten.
 
 ## Tests
@@ -51,6 +51,4 @@ und hier noch nicht enthalten.
 dotnet test test/MiraDeviceAgent.Tests
 ```
 
-Protokolltests (Envelope-Serialisierung, Kopplungsanfrage, Allowlist) laufen
-ohne echte Verbindung. Gerätetests (echte Kopplung, Widerruf, Live-Bildschirm)
-sind Teil der Abnahme und hier noch nicht vorhanden.
+Unit-Tests prüfen Allowlist, kritische Bestätigung und Pfadgrenzen. Echte Eingaben, Bildschirmaufnahme und Geräteverbindung müssen auf Windows 11 abgenommen werden.

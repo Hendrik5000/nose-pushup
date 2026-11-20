@@ -78,8 +78,11 @@ export const TOOL_POLICIES: Record<string, ToolPolicy> = {
   'dateien.auflisten': { capability: 'dateien', minimumLevel: 'lesen' },
   'dateien.lesen': { capability: 'dateien', minimumLevel: 'lesen' },
   'dateien.schreiben': { capability: 'dateien', minimumLevel: 'steuern' },
+  'dateien.umbenennen': { capability: 'dateien', minimumLevel: 'steuern' },
+  'dateien.verschieben': { capability: 'dateien', minimumLevel: 'steuern' },
   'einstellungen.oeffnen': { capability: 'einstellungen', minimumLevel: 'steuern' },
   'einstellungen.herunterfahren': { capability: 'einstellungen', minimumLevel: 'kritisch' },
+  'einstellungen.abbrechen-herunterfahren': { capability: 'einstellungen', minimumLevel: 'steuern' },
   'audio.lautstaerke': { capability: 'audio', minimumLevel: 'steuern' },
   'audio.stummschalten': { capability: 'audio', minimumLevel: 'steuern' },
 };

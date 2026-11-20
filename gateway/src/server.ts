@@ -176,7 +176,7 @@ export class Gateway {
     const requestId = randomUUID();
     const envelope = createEnvelope(
       MessageTypes.ActionRequest,
-      buildActionRequestPayload(requestId, input.toolId, input.args),
+      buildActionRequestPayload(requestId, input.toolId, input.args, input.confirmationGranted === true),
     );
     return await new Promise<DispatchOutcome>((resolve) => {
       const timer = setTimeout(() => {
