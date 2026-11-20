@@ -18,15 +18,15 @@ test("AloErrorBoundary isolates failures with an honest fallback and retry", () 
   assert.doesNotMatch(source, /Demo|Beispiel|Platzhalter/);
 });
 
-test("home page wraps its sections in isolated error boundaries", () => {
+test("home page wraps its remaining sections in isolated error boundaries", () => {
   const home = readRepoFile("src/routes/_authenticated/index.tsx");
   assert.match(home, /import \{ AloErrorBoundary \} from "@\/components\/AloErrorBoundary"/);
-  assert.match(home, /<AloErrorBoundary section="Dein Tag">/);
+  assert.doesNotMatch(home, /<AloErrorBoundary section="Dein Tag">/);
   assert.match(home, /<AloErrorBoundary section="Widgets">/);
   assert.match(home, /<AloErrorBoundary section="Apps">/);
   assert.equal(
     (home.match(/<\/AloErrorBoundary>/g) ?? []).length,
-    4,
-    "Jeder geöffnete Bereich braucht ein schließendes Boundary.",
+    3,
+    "Jeder geöffnete Bereich braucht eine schließende Boundary.",
   );
 });
