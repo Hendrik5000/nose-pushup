@@ -1,7 +1,8 @@
 import { getPublicGameDocument } from "@/lib/public-game.functions";
 import { PUBLIC_GAME_IDS, type PublicGameId } from "@/lib/public-game-policy";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Home, Menu, X } from "lucide-react";
 import { z } from "zod";
 
 const searchSchema = z.object({ game: z.enum(PUBLIC_GAME_IDS).optional() });
@@ -10,16 +11,19 @@ type GameLoadState =
   | { game: PublicGameId; status: "loading" | "failed" }
   | { game: PublicGameId; document: string; status: "loaded" };
 
+const GAMES = [
+  { game: "grid-defense", title: "Grid Defense", description: "Tower Defense" },
+  { game: "kupferkern", title: "Kupferkern", description: "Energiepfad-Puzzle" },
+  { game: "neon-starfighter", title: "Neon Starfighter", description: "Arcade-Shooter" },
+  { game: "chess", title: "Alo Schach", description: "Schach" },
+] as const;
+
 export const Route = createFileRoute("/games")({
   validateSearch: (search) => searchSchema.parse(search),
   head: () => ({
     meta: [
       { title: "Alo-Spiele" },
-      {
-        name: "description",
-        content:
-          "Grid Defense, Kupferkern und Neon Starfighter – eigenständige Alo-Spiele, auch ohne Anmeldung.",
-      },
+      { name: "description", content: "Alo-Spiele – direkt vom Home-Bildschirm erreichbar." },
     ],
   }),
   component: GamesHub,
@@ -27,20 +31,20 @@ export const Route = createFileRoute("/games")({
 
 function GamesHub() {
   const { game: selectedGame } = Route.useSearch();
+  const navigate = useNavigate();
   const [loadState, setLoadState] = useState<GameLoadState | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const currentLoad = loadState?.game === selectedGame ? loadState : null;
   const currentDocument = currentLoad?.status === "loaded" ? currentLoad.document : null;
   const loadFailed = currentLoad?.status === "failed";
 
   useEffect(() => {
-    let active = true;
-    if (!selectedGame) {
-      setLoadState(null);
-      return () => {
-        active = false;
-      };
-    }
+    if (!selectedGame) void navigate({ to: "/", replace: true });
+  }, [navigate, selectedGame]);
 
+  useEffect(() => {
+    let active = true;
+    if (!selectedGame) return () => { active = false; };
     const requestGame = selectedGame;
     setLoadState({ game: requestGame, status: "loading" });
     void getPublicGameDocument({ data: { game: requestGame } })
@@ -50,230 +54,57 @@ function GamesHub() {
       .catch(() => {
         if (active) setLoadState({ game: requestGame, status: "failed" });
       });
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [selectedGame]);
 
+  const title = GAMES.find((entry) => entry.game === selectedGame)?.title ?? "Alo-Spiel";
+
   return (
-    <main
-      className={
-        selectedGame
-          ? "alo-games-page min-h-dvh bg-slate-950 text-foreground"
-          : "alo-games-page min-h-screen bg-background px-3 pb-12 pt-4 text-foreground sm:px-6"
-      }
-    >
-      {!selectedGame ? (
-        <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
-          <aside
-            aria-label="App-Aktionen"
-            className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
-          >
-            <div className="flex flex-col gap-2">
-              <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Spiele
-              </p>
-              {(
-                [
-                  { game: "grid-defense", title: "Grid Defense" },
-                  { game: "kupferkern", title: "Kupferkern" },
-                  { game: "neon-starfighter", title: "Neon Starfighter" },
-                  { game: "chess", title: "Alo Schach" },
-                ] as const
-              ).map((entry) => (
-                <Link
-                  key={entry.game}
-                  to="/games"
-                  search={{ game: entry.game }}
-                  className="rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground hover:bg-card"
-                >
-                  {entry.title}
+    <main className="fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950 text-white">
+      {loadFailed ? (
+        <section className="mx-auto mt-24 max-w-xl rounded-3xl border border-white/10 bg-slate-900 p-6" role="alert">
+          <h1 className="text-xl font-bold">Spiel konnte nicht geladen werden</h1>
+          <p className="mt-3 text-sm text-slate-300">Der Inhalt ist momentan nicht verfügbar. Probiere es später noch einmal.</p>
+          <Link to="/" className="mt-5 inline-flex rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold">Zur Alo-Startseite</Link>
+        </section>
+      ) : currentDocument ? (
+        <iframe title={title} srcDoc={currentDocument} sandbox="allow-scripts" referrerPolicy="no-referrer" className="block h-full min-h-0 w-full border-0" />
+      ) : (
+        <p className="mx-auto mt-24 max-w-3xl rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-slate-300" aria-live="polite">Spielinhalt wird geladen …</p>
+      )}
+
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[60] flex items-start justify-between p-3">
+        <button type="button" aria-label="Seitenmenü öffnen" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)} className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-slate-950/85 text-white shadow-lg backdrop-blur hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300">
+          {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+        <Link to="/" aria-label="Zur Alo-Startseite" className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-xl border border-white/15 bg-slate-950/85 px-4 text-sm font-semibold text-white shadow-lg backdrop-blur hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300">
+          <Home className="h-4 w-4" /> Home
+        </Link>
+      </div>
+
+      {menuOpen && (
+        <>
+          <button type="button" aria-label="Menü schließen" onClick={() => setMenuOpen(false)} className="absolute inset-0 z-[70] bg-black/60" />
+          <aside aria-label="Alo-Spiele" className="absolute bottom-0 left-0 top-0 z-[80] flex w-[min(86vw,320px)] flex-col border-r border-white/10 bg-[#0b1320] p-5 pt-20 shadow-2xl">
+            <div className="mb-6">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Alo Arcade</p>
+              <h2 className="mt-1 text-xl font-bold">Spiele</h2>
+              <p className="mt-1 text-xs text-slate-400">Wechsle direkt zu einem anderen Spiel.</p>
+            </div>
+            <nav className="flex flex-col gap-2">
+              {GAMES.map((entry) => (
+                <Link key={entry.game} to="/games" search={{ game: entry.game }} onClick={() => setMenuOpen(false)} aria-current={selectedGame === entry.game ? "page" : undefined} className={"rounded-xl border px-4 py-3 transition " + (selectedGame === entry.game ? "border-cyan-300/50 bg-cyan-300/10 text-white" : "border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08]")}>
+                  <span className="block text-sm font-semibold">{entry.title}</span>
+                  <span className="mt-0.5 block text-xs text-slate-400">{entry.description}</span>
                 </Link>
               ))}
-              <Link
-                to="/marketplace"
-                className="mt-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary hover:underline"
-              >
-                Marketplace öffnen
-              </Link>
-            </div>
-          </aside>
-          <header className="mb-5 flex items-center justify-between gap-4">
-            <Link
-              to="/games"
-              search={{}}
-              className="rounded-lg text-sm font-semibold uppercase tracking-[0.16em] text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-              aria-label="Zur Alo-Spielauswahl"
-            >
-              Alo · Spiele
+            </nav>
+            <Link to="/" className="mt-auto inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/5">
+              <Home className="h-4 w-4" /> Zur Alo-Startseite
             </Link>
-          </header>
-
-          <div className="flex min-w-0 flex-col gap-6">
-            <GameSelection />
-            <p className="mx-auto max-w-3xl rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
-              Diese Neufassungen sind keine rechtliche Freigabe. Vor einer Weitergabe oder
-              Veröffentlichung sind eigenständige Rechte-, Marken-, Text- und Gestaltungsprüfungen
-              erforderlich.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="min-h-dvh">
-          {loadFailed ? (
-            <section
-              className="mx-auto max-w-3xl rounded-3xl border border-border bg-card/50 p-5 sm:p-8"
-              role="alert"
-            >
-              <h1 className="text-2xl font-bold">Spiel konnte nicht geladen werden</h1>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                Der Inhalt ist momentan nicht verfügbar. Probiere es später noch einmal.
-              </p>
-            </section>
-          ) : currentDocument ? (
-            <GameFrame game={selectedGame} gameDocument={currentDocument} />
-          ) : (
-            <p
-              className="mx-auto max-w-3xl rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground"
-              aria-live="polite"
-            >
-              Spielinhalt wird geladen …
-            </p>
-          )}
-        </div>
+          </aside>
+        </>
       )}
     </main>
-  );
-}
-
-function GameSelection() {
-  return (
-    <section aria-labelledby="games-title" className="mx-auto max-w-3xl pt-5 sm:pt-10">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-        Ohne Anmeldung spielbar
-      </p>
-      <h1 id="games-title" className="text-3xl font-bold tracking-tight sm:text-4xl">
-        Alo-Spiele
-      </h1>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-        Vier eigenständige Spiele, direkt im Browser und ohne Alo-Konto erreichbar.
-      </p>
-      <div className="mt-7 grid gap-4 sm:grid-cols-2">
-        <GameChoice
-          game="grid-defense"
-          title="Grid Defense"
-          description="Tower Defense: Türme platzieren, Wellen abwehren und den Kern schützen."
-          icon="grid"
-        />
-        <GameChoice
-          game="kupferkern"
-          title="Kupferkern"
-          description="Energiepfad-Puzzle: Leitungen drehen und den Kern versorgen."
-          icon="circuit"
-        />
-        <GameChoice
-          game="neon-starfighter"
-          title="Neon Starfighter"
-          description="Arcade-Action: Wellen abwehren, Schilde schützen und deinen Highscore verbessern."
-          icon="star"
-        />
-        <GameChoice game="chess" title="Alo Schach" description="Spiele eine vollständige Schachpartie mit legalen Zügen und Zugverlauf." icon="chess" />
-      </div>
-    </section>
-  );
-}
-
-function GameChoice({
-  game,
-  title,
-  description,
-  icon,
-}: {
-  game: PublicGameId;
-  title: string;
-  description: string;
-  icon: "grid" | "circuit" | "star" | "chess";
-}) {
-  return (
-    <Link
-      to="/games"
-      search={{ game }}
-      aria-label={`${title}, Spiel öffnen`}
-      className="group rounded-2xl border border-border bg-card/50 p-5 transition hover:border-primary/50 hover:bg-card/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-    >
-      <span
-        className="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-cyan-200/15 bg-cyan-200/5 text-cyan-100"
-        aria-hidden="true"
-      >
-        {icon === "grid" ? (
-          <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none">
-            <path
-              d="M5 5h9v9H5zM18 5h9v9h-9zM5 18h9v9H5zM18 18h9v9h-9z"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-          </svg>
-        ) : icon === "circuit" ? (
-          <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none">
-            <path
-              d="M5 9h7l4 7 5-9 6 4"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M5 23h7l4-7 5 9 6-4"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <circle cx="5" cy="9" r="2" fill="currentColor" />
-            <circle cx="27" cy="11" r="2" fill="currentColor" />
-            <circle cx="27" cy="21" r="2" fill="currentColor" />
-          </svg>
-        ) : icon === "star" ? (
-          <svg viewBox="0 0 32 32" className="h-7 w-7" fill="none"><path d="m16 4 3.7 7.5 8.3 1.2-6 5.8 1.4 8.2-7.4-3.9-7.4 3.9L10.6 18l-6-5.8 8.3-1.2L16 4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
-        ) : <span className="text-3xl leading-none" aria-hidden="true">♞</span>}
-      </span>
-      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-      <p className="mt-2 min-h-12 text-sm leading-relaxed text-muted-foreground">{description}</p>
-      <span className="mt-4 inline-flex items-center rounded-lg border border-border bg-background/40 px-3 py-2 text-xs font-medium text-muted-foreground">
-        Ohne Anmeldung
-      </span>
-    </Link>
-  );
-}
-
-function GameFrame({ game, gameDocument }: { game: PublicGameId; gameDocument: string }) {
-  const title =
-    game === "grid-defense"
-      ? "Grid Defense"
-      : game === "kupferkern"
-        ? "Kupferkern"
-        : game === "neon-starfighter"
-          ? "Neon Starfighter"
-          : "Alo Schach";
-
-  return (
-    <section className="fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950">
-      <Link
-        to="/games"
-        search={{}}
-        aria-label="Zur Spielauswahl"
-        className="absolute right-3 top-3 z-10 rounded-lg border border-white/20 bg-slate-950/80 px-3 py-2 text-xs font-semibold text-white/80 shadow-lg backdrop-blur transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300"
-      >
-        Spielauswahl
-      </Link>
-      <iframe
-        title={title}
-        srcDoc={gameDocument}
-        sandbox="allow-scripts"
-        referrerPolicy="no-referrer"
-        className="block h-full min-h-0 w-full border-0"
-      />
-    </section>
   );
 }
