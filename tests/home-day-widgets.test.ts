@@ -102,7 +102,7 @@ test("weekly workout lines and the chat summary threshold stay honest", () => {
 
 test("the home screen no longer renders the removed daily overview", () => {
   const home = readFileSync("src/routes/_authenticated/index.tsx", "utf8");
-  assert.doesNotMatch(home, /useHomeDayData\(user\.id\)|useNexusUnread\(user\.id\)|Health heute:/);
+  assert.doesNotMatch(home, /<AloErrorBoundary section="Dein Tag">|Health heute:/);
 });
 
 test("daily goal line only shows with a set goal and known reps", () => {
