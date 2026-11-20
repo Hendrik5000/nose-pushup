@@ -236,8 +236,13 @@ export class Gateway {
     if (session) {
       this.screenSessions.delete(deviceId);
       try {
-        session.ws.send(JSON.stringify(createEnvelope(MessageTypes.Revoke, { grund: grund || 'widerrufen' })));
-        session.ws.close(4403, 'widerrufen');
+        session.ws.send(
+          JSON.stringify(createEnvelope(MessageTypes.Revoke, { grund: grund || 'widerrufen' })),
+          (error) => {
+            if (error) session.ws.terminate();
+            else session.ws.close(4403, 'widerrufen');
+          },
+        );
       } catch {
         // Fehlschlag beim Schlieen ist unkritisch, Gerät ist bereits widerrufen.
       }

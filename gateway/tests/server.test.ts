@@ -73,9 +73,9 @@ function get(
   });
 }
 
-function nextEnvelope(ws: WebSocket, timeoutMs = 3000): Promise<ReturnType<typeof parseEnvelope>> {
+function nextEnvelope(ws: WebSocket, timeoutMs = 3000, label = 'unbekannt'): Promise<ReturnType<typeof parseEnvelope>> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('keine Nachricht empfangen')), timeoutMs);
+    const timer = setTimeout(() => reject(new Error('keine Nachricht empfangen: ' + label)), timeoutMs);
     ws.once('message', (data) => {
       clearTimeout(timer);
       resolve(parseEnvelope(data.toString('utf8')));
@@ -162,7 +162,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
       ws.once('open', () => resolve(null));
       ws.once('error', reject);
     });
-    const welcome = await nextEnvelope(ws);
+    const welcome = await nextEnvelope(ws, 3000, "welcome");
     assert.equal(welcome?.type, 'welcome');
     const welcomePayload = JSON.parse(welcome?.payloadJson ?? '{}') as Record<string, unknown>;
     assert.deepEqual(welcomePayload.permissions, allPermissions({}));
@@ -180,7 +180,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
       ADMIN_HEADERS,
     );
     assert.equal(permRes.status, 200);
-    const refreshed = await nextEnvelope(ws);
+    const refreshed = await nextEnvelope(ws, 3000, "permission-refresh-program");
     assert.equal(refreshed?.type, 'welcome');
     const refreshedPayload = JSON.parse(refreshed?.payloadJson ?? '{}') as Record<string, unknown>;
     assert.deepEqual(
@@ -195,7 +195,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
       { userId: TEST_USER_ID, deviceId, toolId: 'programme.liste', args: {} },
       ADMIN_HEADERS,
     );
-    const requestEnv = await nextEnvelope(ws);
+    const requestEnv = await nextEnvelope(ws, 3000, "action-request-program");
     assert.equal(requestEnv?.type, 'action.request');
     const requestPayload = JSON.parse(requestEnv?.payloadJson ?? '{}') as Record<string, unknown>;
     assert.equal(requestPayload.toolId, 'programme.liste');
@@ -215,7 +215,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
 
     // Herzschlag wird beantwortet
     ws.send(JSON.stringify(createEnvelope(MessageTypes.Heartbeat)));
-    const beat = await nextEnvelope(ws);
+    const beat = await nextEnvelope(ws, 3000, "heartbeat-reply");
     assert.equal(beat?.type, 'heartbeat');
 
     // Kritisch: ohne Besttigung abgelehnt
@@ -225,7 +225,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
       { userId: TEST_USER_ID, deviceId, permissions: allPermissions({ einstellungen: 'kritisch' }) },
       ADMIN_HEADERS,
     );
-    await nextEnvelope(ws);
+    await nextEnvelope(ws, 3000, "permission-refresh-shutdown");
     const critDenied = await post(
       port,
       '/v1/control/action',
@@ -242,7 +242,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
       { userId: TEST_USER_ID, deviceId, toolId: 'einstellungen.herunterfahren', confirmation: true },
       ADMIN_HEADERS,
     );
-    const critEnv = await nextEnvelope(ws);
+    const critEnv = await nextEnvelope(ws, 3000, "action-request-shutdown");
     assert.equal(critEnv?.type, 'action.request');
     const critPayload = JSON.parse(critEnv?.payloadJson ?? '{}') as Record<string, unknown>;
     ws.send(
@@ -270,7 +270,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
       { userId: TEST_USER_ID, deviceId, permissions: allPermissions({ bildschirm: 'steuern' }) },
       ADMIN_HEADERS,
     );
-    await nextEnvelope(ws);
+    await nextEnvelope(ws, 3000, "permission-refresh-screen");
     let capturedFrame: string | null = null;
     let capturedSession: string | null = null;
     gateway.onScreenFrame = (frameDevice, frameSession, frameBase64) => {
@@ -279,7 +279,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     };
     const screenStart = await post(port, '/v1/control/screen', { userId: TEST_USER_ID, deviceId, aktiv: true }, ADMIN_HEADERS);
     assert.equal(screenStart.status, 200);
-    const sessionEnv = await nextEnvelope(ws);
+    const sessionEnv = await nextEnvelope(ws, 3000, "screen-session-start");
     assert.equal(sessionEnv?.type, 'screen.session.start');
     const sessionPayload = JSON.parse(sessionEnv?.payloadJson ?? '{}') as Record<string, unknown>;
     ws.send(
@@ -297,9 +297,9 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     // Not-Aus: Routing pausiert, Gert wird informiert
     const notaus = await post(port, '/v1/control/not-aus?userId=' + TEST_USER_ID, { userId: TEST_USER_ID, aktiv: true, grund: 'prfung' }, ADMIN_HEADERS);
     assert.equal(notaus.status, 200);
-    const screenStopEnv = await nextEnvelope(ws);
+    const screenStopEnv = await nextEnvelope(ws, 3000, "screen-session-stop");
     assert.equal(screenStopEnv?.type, 'screen.session.stop');
-    const notausEnv = await nextEnvelope(ws);
+    const notausEnv = await nextEnvelope(ws, 3000, "not-aus");
     assert.equal(notausEnv?.type, 'not-aus');
     const blockedDuringNotAus = await post(
       port,
@@ -317,7 +317,7 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     // Widerruf: revoke-Nachricht + Close-Code 4403
     const revoke = await post(port, '/v1/control/revoke', { userId: TEST_USER_ID, deviceId, grund: 'test' }, ADMIN_HEADERS);
     assert.equal(revoke.status, 200);
-    const revokeEnv = await nextEnvelope(ws);
+    const revokeEnv = await nextEnvelope(ws, 3000, "revoke");
     assert.equal(revokeEnv?.type, 'revoke');
     const closeCode = await new Promise<number>((resolve) => {
       ws.once('close', (code) => resolve(code));
