@@ -81,8 +81,7 @@ export function MiraDevicesPage({ userId }: Props) {
           </p>
         </div>
         <span className="rounded-full border border-border bg-muted/40 px-3 py-1 text-[11px] text-muted-foreground">
-          {devices.length} {devices.length === 1 ? "Gerät" : "Geräte"} · {connectedCount} verbunden ·
-            Phase 1
+          Geräte: {devices.length} · Verbunden: {connectedCount}
         </span>
       </header>
 
