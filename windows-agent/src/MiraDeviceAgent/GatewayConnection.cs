@@ -59,9 +59,30 @@ public sealed class GatewayConnection : IAsyncDisposable
                     agentVersion = AgentVersion.Current,
                 }), _lifetime.Token).ConfigureAwait(false);
 
-                var lifetimeToken = _lifetime.Token;
-                await Task.Run(() => HeartbeatLoop(lifetimeToken), lifetimeToken).ConfigureAwait(false);
-                var revoked = await ReceiveLoop(socket, _lifetime.Token).ConfigureAwait(false);
+                using var connectionLifetime = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+                var heartbeatTask = HeartbeatLoop(connectionLifetime.Token);
+                var receiveTask = ReceiveLoop(socket, connectionLifetime.Token);
+                var completedTask = await Task.WhenAny(heartbeatTask, receiveTask).ConfigureAwait(false);
+
+                // Heartbeat und Empfang laufen parallel. Endet einer der beiden
+                // Tasks unerwartet, wird die Verbindung beendet und neu aufgebaut.
+                if (completedTask == heartbeatTask && !connectionLifetime.IsCancellationRequested)
+                {
+                    connectionLifetime.Cancel();
+                }
+
+                var revoked = false;
+                try
+                {
+                    revoked = await receiveTask.ConfigureAwait(false);
+                }
+                finally
+                {
+                    connectionLifetime.Cancel();
+                    try { await heartbeatTask.ConfigureAwait(false); }
+                    catch (OperationCanceledException) { }
+                }
+
                 if (revoked)
                 {
                     DeviceIdentityStore.DeleteAll();
