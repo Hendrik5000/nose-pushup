@@ -197,9 +197,7 @@ export function MiraDevicesPage() {
       } catch (cause) {
         if (!cancelled) {
           setScreenFrameError(
-            cause instanceof Error
-              ? cause.message
-              : "Bildschirmbild konnte nicht geladen werden.",
+            cause instanceof Error ? cause.message : "Bildschirmbild konnte nicht geladen werden.",
           );
         }
       } finally {
