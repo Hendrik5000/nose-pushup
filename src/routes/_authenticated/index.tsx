@@ -2483,14 +2483,28 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
         <>
           <path d="m140 27 17 43-17 35-17-35 17-43Z" fill={palette.accent} />
           <path d="m140 27 7 44-7 14-7-14 7-44Z" fill="#fff" opacity=".9" />
-          <path d="m123 70-29 16 18 3 11-19Zm17 0 29 16-18 3-11-19Z" fill={palette.glow} stroke={palette.accent} strokeWidth="3" />
-          <path d="M134 105 140 120 146 105" stroke="#fbbf24" strokeWidth="5" strokeLinecap="round" />
-          <circle cx="91" cy="35" r="3" fill="#fff" /><circle cx="195" cy="95" r="4" fill="#fff" />
+          <path
+            d="m123 70-29 16 18 3 11-19Zm17 0 29 16-18 3-11-19Z"
+            fill={palette.glow}
+            stroke={palette.accent}
+            strokeWidth="3"
+          />
+          <path
+            d="M134 105 140 120 146 105"
+            stroke="#fbbf24"
+            strokeWidth="5"
+            strokeLinecap="round"
+          />
+          <circle cx="91" cy="35" r="3" fill="#fff" />
+          <circle cx="195" cy="95" r="4" fill="#fff" />
         </>
       )}
       {kind === "chess" && (
         <>
-          <path d="M140 24c-9 0-15 7-15 15 0 6 3 10 8 13l-5 12h24l-5-12c5-3 8-7 8-13 0-8-6-15-15-15Z" fill={palette.accent} />
+          <path
+            d="M140 24c-9 0-15 7-15 15 0 6 3 10 8 13l-5 12h24l-5-12c5-3 8-7 8-13 0-8-6-15-15-15Z"
+            fill={palette.accent}
+          />
           <path d="M122 67h36l8 14-8 8h-36l-8-8 8-14Z" fill={palette.accent} />
           <path d="M117 94h46v10h-46z" fill={palette.glow} />
           <path d="M109 108h62v8h-62z" fill={palette.accent} />
