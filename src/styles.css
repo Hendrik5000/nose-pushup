@@ -2252,11 +2252,11 @@ main.alo-oneui9-fullscreen-home {
   flex: 0 0 auto;
   aspect-ratio: 1;
   place-items: center;
-  overflow: visible;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  overflow: hidden !important;
+  border: 1px solid rgb(255 255 255 / 18%) !important;
+  border-radius: 28px !important;
+  background: rgb(255 255 255 / 8%) !important;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 22%), inset 0 1px 0 rgb(255 255 255 / 10%) !important;
 }
 .alo-oneui9-fullscreen-home .alo-tablet-home-apps :is(a, button, div) > span:last-child {
   min-height: 1.25rem;
