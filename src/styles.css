@@ -2391,3 +2391,47 @@ body:has(main.alo-oneui9-fullscreen-home) .authenticated-shell {
 body:has(main.alo-oneui9-fullscreen-home) .alo-system-chrome + * {
   margin-top: 0 !important;
 }
+
+
+/* True edge-to-edge launcher: remove the shell's reserved navigation areas and
+   anchor the home surface to the actual device viewport. */
+html:has(main.alo-oneui9-fullscreen-home),
+body:has(main.alo-oneui9-fullscreen-home) {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+body:has(main.alo-oneui9-fullscreen-home) .authenticated-shell {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo-oneui9-home {
+  flex: 1 1 auto;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+}
