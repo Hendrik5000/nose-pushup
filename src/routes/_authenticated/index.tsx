@@ -1622,7 +1622,6 @@ function HomeAppHub({
                     </nav>
                   )}
                 </div>
-          </nav>
               </AloErrorBoundary>
             </div>
           )}
