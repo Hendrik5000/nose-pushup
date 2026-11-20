@@ -347,11 +347,71 @@ test('Ende-zu-Ende: Kopplung, Verbindung, Befehle, Not-Aus, Widerruf', { timeout
     assert.equal(capturedFrame, 'aGVsbG8=');
     assert.equal(capturedSession, deviceId + ':' + (sessionPayload.sessionId as string));
 
+    // Live-Frame kann nur vom Geräteinhaber und nur während der aktiven Sitzung abgerufen werden.
+    const liveFrame = await get(
+      port,
+      '/v1/control/screen-frame?deviceId=' + deviceId + '&userId=' + TEST_USER_ID,
+      ADMIN_HEADERS,
+    );
+    assert.equal(liveFrame.status, 200);
+    assert.equal(liveFrame.body.active, true);
+    assert.equal(liveFrame.body.sessionId, sessionPayload.sessionId);
+    assert.equal(liveFrame.body.frameBase64, 'aGVsbG8=');
+    const foreignFrame = await get(
+      port,
+      '/v1/control/screen-frame?deviceId=' + deviceId + '&userId=' + OTHER_USER_ID,
+      ADMIN_HEADERS,
+    );
+    assert.equal(foreignFrame.status, 404);
+
+    // Eine entzogene Bildschirmberechtigung beendet die Freigabe sofort.
+    const downgrade = await post(
+      port,
+      '/v1/control/permissions',
+      { userId: TEST_USER_ID, deviceId, permissions: allPermissions({ bildschirm: 'lesen' }) },
+      ADMIN_HEADERS,
+    );
+    assert.equal(downgrade.status, 200);
+    const permissionStop = await nextEnvelope(ws, 3000, "screen-permission-stop");
+    assert.equal(permissionStop?.type, 'screen.session.stop');
+    await nextEnvelope(ws, 3000, "screen-permission-refresh");
+    const blockedAfterDowngrade = await get(
+      port,
+      '/v1/control/screen-frame?deviceId=' + deviceId + '&userId=' + TEST_USER_ID,
+      ADMIN_HEADERS,
+    );
+    assert.equal(blockedAfterDowngrade.body.active, false);
+
+    // Für den Not-Aus-Test wird die Freigabe erneut erteilt und eine neue Sitzung gestartet.
+    await post(
+      port,
+      '/v1/control/permissions',
+      { userId: TEST_USER_ID, deviceId, permissions: allPermissions({ bildschirm: 'steuern' }) },
+      ADMIN_HEADERS,
+    );
+    await nextEnvelope(ws, 3000, "screen-permission-regrant");
+    const secondScreenStart = await post(
+      port,
+      '/v1/control/screen',
+      { userId: TEST_USER_ID, deviceId, aktiv: true },
+      ADMIN_HEADERS,
+    );
+    assert.equal(secondScreenStart.status, 200);
+    await nextEnvelope(ws, 3000, "screen-session-restart");
+
     // Not-Aus: Routing pausiert, Gert wird informiert
     const notaus = await post(port, '/v1/control/not-aus?userId=' + TEST_USER_ID, { userId: TEST_USER_ID, aktiv: true, grund: 'prfung' }, ADMIN_HEADERS);
     assert.equal(notaus.status, 200);
     const screenStopEnv = await nextEnvelope(ws, 3000, "screen-session-stop");
     assert.equal(screenStopEnv?.type, 'screen.session.stop');
+    const stoppedFrame = await get(
+      port,
+      '/v1/control/screen-frame?deviceId=' + deviceId + '&userId=' + TEST_USER_ID,
+      ADMIN_HEADERS,
+    );
+    assert.equal(stoppedFrame.status, 200);
+    assert.equal(stoppedFrame.body.active, false);
+    assert.equal(stoppedFrame.body.frameBase64, null);
     const notausEnv = await nextEnvelope(ws, 3000, "not-aus");
     assert.equal(notausEnv?.type, 'not-aus');
     const blockedDuringNotAus = await post(

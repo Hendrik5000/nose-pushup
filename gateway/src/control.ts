@@ -52,6 +52,7 @@ export async function handleControlRequest(ctx: ControlContext): Promise<void> {
     'permissions',
     'action',
     'screen',
+    'screen-frame',
     'revoke',
   ]);
   if (!knownRoutes.has(route)) {
@@ -71,6 +72,21 @@ export async function handleControlRequest(ctx: ControlContext): Promise<void> {
     const limitParam = Number.parseInt(url.searchParams.get('limit') ?? '100', 10);
     const limit = Math.min(Math.max(Number.isFinite(limitParam) ? limitParam : 100, 1), 1000);
     json(ctx.res, 200, { entries: ctx.store.getActionLogForOwner(userId, limit) });
+    return;
+  }
+  if (ctx.req.method === 'GET' && route === 'screen-frame') {
+    const userId = url.searchParams.get('userId');
+    const deviceId = url.searchParams.get('deviceId');
+    if (!validUserId(userId) || !deviceId || deviceId.length > 80) {
+      json(ctx.res, 400, { error: 'ungueltige-anfrage' });
+      return;
+    }
+    if (!ownsDevice(ctx, deviceId, userId)) {
+      json(ctx.res, 404, { error: 'geraet-unbekannt' });
+      return;
+    }
+    ctx.res.setHeader('Cache-Control', 'no-store, private');
+    json(ctx.res, 200, ctx.gateway.getScreenFrame(deviceId, userId));
     return;
   }
   if (ctx.req.method === 'GET' && route === 'not-aus') {

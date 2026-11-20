@@ -42,7 +42,7 @@ type JsonRecord = Record<string, unknown>;
 const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
 const REQUEST_TIMEOUT_MS = 10_000;
-const MAX_RESPONSE_BYTES = 256_000;
+const MAX_RESPONSE_BYTES = 2_000_000;
 const requestsByUser = new Map<string, number[]>();
 
 function isRecord(value: unknown): value is JsonRecord {

@@ -33,6 +33,7 @@ type GatewayResult = {
   detail: string | null;
   reason: string | null;
   message: string | null;
+  sessionId: string | null;
 };
 
 export type MiraDeviceControlMutationResponse =
@@ -50,6 +51,7 @@ export type MiraDeviceControlMutationResponse =
       detail: string | null;
       reason: string | null;
       message: string | null;
+      sessionId: string | null;
     };
 
 function gatewayResult(value: RecordValue): GatewayResult {
@@ -59,6 +61,7 @@ function gatewayResult(value: RecordValue): GatewayResult {
     detail: typeof value.detail === "string" ? value.detail.slice(0, 500) : null,
     reason: typeof value.reason === "string" ? value.reason.slice(0, 300) : null,
     message: typeof value.message === "string" ? value.message.slice(0, 500) : null,
+    sessionId: typeof value.sessionId === "string" ? value.sessionId.slice(0, 80) : null,
   };
 }
 
@@ -307,6 +310,26 @@ function validateActionArgs(
 export const miraDeviceControlState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => fetchMiraGatewaySnapshot(context.userId));
+
+export const miraDeviceScreenFrame = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => {
+    const v = record(input, ["deviceId"]);
+    return { deviceId: string(v.deviceId, 80) };
+  })
+  .handler(async ({ data, context }) => {
+    const result = await requestMiraGateway(
+      "screen-frame?deviceId=" + encodeURIComponent(data.deviceId),
+      "GET",
+      context.userId,
+    );
+    return {
+      active: result.active === true,
+      sessionId: typeof result.sessionId === "string" ? result.sessionId : null,
+      frameBase64: typeof result.frameBase64 === "string" ? result.frameBase64 : null,
+      capturedAt: typeof result.capturedAt === "string" ? result.capturedAt : null,
+    };
+  });
 
 export const miraDeviceControlMutation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
