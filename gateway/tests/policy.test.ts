@@ -81,3 +81,10 @@ test('Berechtigungs-Spiegel wird vollständig validiert', () => {
   assert.equal(validatePermissionMap({ ...full, status: 'alles' }), null);
   assert.equal(validatePermissionMap('keine'), null);
 });
+
+
+test('action payload carries explicit critical-action confirmation', async () => {
+  const { buildActionRequestPayload } = await import('../src/policy.js');
+  assert.equal(buildActionRequestPayload('r1', 'einstellungen.herunterfahren', {}, true).confirmationGranted, true);
+  assert.equal(buildActionRequestPayload('r2', 'einstellungen.herunterfahren', {}).confirmationGranted, false);
+});

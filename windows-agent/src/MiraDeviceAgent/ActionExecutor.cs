@@ -41,7 +41,7 @@ public static class ActionExecutor
                 var sessionId = ReadString(envelope.PayloadJson, "sessionId");
                 if (!string.IsNullOrWhiteSpace(sessionId))
                 {
-                    screen.Start(sessionId);
+                    _ = screen.StartAsync(sessionId);
                 }
                 return;
             }

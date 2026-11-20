@@ -17,9 +17,9 @@ public sealed class ScreenCaptureService
 
     public ScreenCaptureService(GatewayConnection connection) => _connection = connection;
 
-    public void Start(string sessionId)
+    public async Task StartAsync(string sessionId)
     {
-        _ = StopAsync();
+        await StopAsync().ConfigureAwait(false);
         _session = new CancellationTokenSource();
         try
         {

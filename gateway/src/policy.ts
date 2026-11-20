@@ -153,12 +153,14 @@ export type ActionRequestPayload = {
   requestId: string;
   toolId: string;
   args: Record<string, unknown>;
+  confirmationGranted: boolean;
 };
 
 export function buildActionRequestPayload(
   requestId: string,
   toolId: string,
   args: unknown,
+  confirmationGranted = false,
 ): ActionRequestPayload {
-  return { requestId, toolId, args: args ?? {} };
+  return { requestId, toolId, args: args ?? {}, confirmationGranted };
 }

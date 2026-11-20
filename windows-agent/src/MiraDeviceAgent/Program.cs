@@ -1,13 +1,12 @@
 using MiraDeviceAgent;
 
-// Mira Device Agent - Phase 2: sichere Identität, Kopplung, Verbindung, Autostart.
-// Der Agent führt in dieser Phase bewusst KEINE Steuerungsaktionen aus (Phase 3).
+// Mira Device Agent - Phase 3: sichere Kopplung und eng begrenzte Windows-Steuerungswerkzeuge.
 
 var version = AgentVersion.Current;
 while (true)
 {
     Console.WriteLine();
-    Console.WriteLine("=== Mira Device Agent (Phase 2, v" + version + ") ===");
+    Console.WriteLine("=== Mira Device Agent (Phase 3, v" + version + ") ===");
     Console.WriteLine("1) Status anzeigen");
     Console.WriteLine("2) Kopplung starten (Gateway-URL + Einmalcode)");
     Console.WriteLine("3) Autostart ein-/ausschalten (aktuell: " + (AutostartManager.IsEnabled() ? "an" : "aus") + ")");

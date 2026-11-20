@@ -177,5 +177,5 @@ public sealed class GatewayConnection : IAsyncDisposable
 
 public static class AgentVersion
 {
-    public const string Current = "0.2.0-phase2";
+    public const string Current = "0.3.0-phase3";
 }

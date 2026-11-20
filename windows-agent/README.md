@@ -29,7 +29,7 @@ Interaktives Menü:
 2. Kopplung starten (Gateway-URL + Einmalcode aus der Mira-UI)
 3. Autostart ein-/ausschalten (HKCU-Registrierungseintrag, jederzeit reversibel)
 4. Identität widerrufen (löscht Identität und Token lokal)
-5. Beenden
+0. Beenden
 
 Nach erfolgreicher Kopplung bleibt der Agent verbunden; die Wiederverbindung
 mit exponentiellem Backoff läuft automatisch. Strg+C beendet sauber. Ein
