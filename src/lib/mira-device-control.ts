@@ -23,11 +23,7 @@ export const DEVICE_CONTROL_GATEWAY_AVAILABLE = false;
 export type MiraDevicePlatform = "windows" | "android" | "ipad";
 
 export type MiraDeviceState =
-  | "nicht-gekoppelt"
-  | "gekoppelt-offline"
-  | "verbunden"
-  | "pausiert"
-  | "fehler";
+  "nicht-gekoppelt" | "gekoppelt-offline" | "verbunden" | "pausiert" | "fehler";
 
 export type MiraPermissionLevel = "keine" | "lesen" | "steuern" | "kritisch";
 
@@ -69,12 +65,7 @@ export const MIRA_DEVICE_CAPABILITIES: ReadonlyArray<{
 ];
 
 export type MiraDeviceActivityKind =
-  | "info"
-  | "kopplung"
-  | "status"
-  | "berechtigung"
-  | "widerruf"
-  | "not-aus";
+  "info" | "kopplung" | "status" | "berechtigung" | "widerruf" | "not-aus";
 
 export type MiraDeviceActivity = {
   id: string;
