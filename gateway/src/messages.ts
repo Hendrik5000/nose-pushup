@@ -1,8 +1,9 @@
 
+
 import { randomUUID } from 'node:crypto';
 
 /**
- * Envelope-Format v1 fr Bridge/Agent, siehe docs/device-control-gateway-spec.md
+ * Envelope-Format v1 für Bridge/Agent, siehe docs/device-control-gateway-spec.md
  * und windows-agent/src/MiraDeviceAgent/Messages.cs. Das Payload ist als
  * JSON-*String* eingebettet (PayloadJson), genau wie im C#-Agent.
  */
@@ -91,7 +92,7 @@ export function parsePayload<T>(
   return validate(parsed);
 }
 
-/** Payload-Form fr hello (Agent -> Gateway). */
+/** Payload-Form für hello (Agent -> Gateway). */
 export type HelloPayload = {
   deviceId: string;
   platform: string;
@@ -109,7 +110,7 @@ export function validateHelloPayload(value: unknown): HelloPayload | null {
   return { deviceId: v.deviceId, platform: v.platform, agentVersion: v.agentVersion };
 }
 
-/** Payload-Form fr action.result (Agent -> Gateway). */
+/** Payload-Form für action.result (Agent -> Gateway). */
 export type ActionResultPayload = {
   requestId: string;
   status: 'ok' | 'error' | 'bestaetigung-erforderlich' | 'nicht-implementiert';

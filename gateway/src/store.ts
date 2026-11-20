@@ -1,5 +1,6 @@
 
 
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -99,7 +100,7 @@ export type StoreOptions = { actionLogMax?: number };
 /**
  * Dateibasierte persistenter Speicher des Gateways. Bewusst kein Anteil an der
  * Supabase-Datenbank des Repos (dort gilt weiterhin Einfrieren von
- * Datenbankaenderungen). Zustand: Geräte, Kopplungscodes, minimiertes Protokoll.
+ * Datenbankänderungen). Zustand: Geräte, Kopplungscodes, minimiertes Protokoll.
  */
 export class GatewayStore {
   private data: GatewayData;
@@ -167,7 +168,7 @@ export class GatewayStore {
   }
 
   /**
-   * Prüft einen Code ohne ihn zu verbrauchen; Grund frs Protokoll.
+   * Prüft einen Code ohne ihn zu verbrauchen; Grund fürs Protokoll.
    * Abgelaufene codes zählen als abgelaufen, alles andere als ungueltig.
    */
   checkPairing(codeInput: unknown, now: Date = new Date()): { record: PairingCodeRecord | null; reason: string } {

@@ -1,5 +1,6 @@
 
 
+
 /**
  * Berechtigungs-Mirror (Phase 4): Das Gateway spiegelt die pro Gerät und
  * Funktionsgruppe gesetzten Stufen (keine / lesen / steuern / kritisch) und
@@ -106,7 +107,7 @@ export type AuthorizationResult = {
  * Zentrale Routing-Entscheidung. Regeln (Spezifikation):
  * - Unbekanntes Werkzeug: nie routen.
  * - Aktivitt benötigt mindestens die Freigabe der Werkzeug-Gruppe.
- * - Kritische Aktionen nur mit ausdrcklicher Bestätigung aus der Mira-UI.
+ * - Kritische Aktionen nur mit ausdrücklicher Bestätigung aus der Mira-UI.
  * - Bildschirm-Aktionen nur in einer laufenden, explizit gestarteten Sitzung.
  */
 export function authorizeAction(input: AuthorizationInput): AuthorizationResult {
@@ -144,7 +145,7 @@ export function validatePermissionMap(value: unknown): Permissions | null {
   return result;
 }
 
-/** Payload-Form fr action.request (Gateway -> Agent). */
+/** Payload-Form für action.request (Gateway -> Agent). */
 export type ActionRequestPayload = {
   requestId: string;
   toolId: string;

@@ -1,5 +1,6 @@
 
 
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -34,7 +35,7 @@ test('Aktivität setzt mindestens lesen voraus', () => {
   assert.equal(allowed.allowed, true);
 });
 
-test('steuern-Tools brauchen steuern oder hoeher', () => {
+test('steuern-Tools brauchen steuern oder höher', () => {
   assert.equal(authorizeAction({ toolId: 'programme.starten', permissions: { programme: 'lesen' } }).allowed, false);
   assert.equal(authorizeAction({ toolId: 'programme.starten', permissions: { programme: 'steuern' } }).allowed, true);
   assert.equal(authorizeAction({ toolId: 'eingabe.maus', permissions: { eingaben: 'kritisch' } }).allowed, true);

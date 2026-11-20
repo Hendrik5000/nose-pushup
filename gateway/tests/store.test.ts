@@ -1,5 +1,6 @@
 
 
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,7 +13,7 @@ function tempStore(actionLogMax = 1000): { store: GatewayStore; dir: string } {
   return { store: new GatewayStore(path.join(dir, 'state.json'), { actionLogMax }), dir };
 }
 
-test('Token-Hash ist deterministisch und salzabhngig', () => {
+test('Token-Hash ist deterministisch und salzabhängig', () => {
   assert.equal(hashToken('t', 's'), hashToken('t', 's'));
   assert.notEqual(hashToken('t', 's1'), hashToken('t', 's2'));
   const material = createTokenMaterial();
@@ -101,7 +102,7 @@ test('Sanitisierte Geräteliste enthält keine Token-Geheimnisse', () => {
   }
 });
 
-test('Protokoll wächst mit und wird auf maximal Gre gekappt', () => {
+test('Protokoll wächst mit und wird auf maximal Gröe gekappt', () => {
   const { store, dir } = tempStore(3);
   try {
     store.appendLog({ kind: 'kopplung', status: 'a' });

@@ -1,5 +1,6 @@
 
 
+
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { Duplex } from 'node:stream';
@@ -67,7 +68,7 @@ export class Gateway {
   private readonly watchdog: ReturnType<typeof setInterval>;
   private emergencyStopActive = false;
 
-  /** Rückruf fr Live-Bildschirm-Frames; Anbindung an die Mira-UI in Phase 5. */
+  /** Rückruf für Live-Bildschirm-Frames; Anbindung an die Mira-UI in Phase 5. */
   onScreenFrame?: (deviceId: string, sessionId: string, frameBase64: string) => void;
 
   constructor(
