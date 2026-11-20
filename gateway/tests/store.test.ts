@@ -1,4 +1,5 @@
 
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -76,7 +77,7 @@ test('Gerät koppeln, Token wiederfinden, widerrufen', () => {
   }
 });
 
-test('Sanitisierte Geräteliste enthlt keine Token-Geheimnisse', () => {
+test('Sanitisierte Geräteliste enthält keine Token-Geheimnisse', () => {
   const { store, dir } = tempStore();
   try {
     const material = createTokenMaterial();
@@ -100,7 +101,7 @@ test('Sanitisierte Geräteliste enthlt keine Token-Geheimnisse', () => {
   }
 });
 
-test('Protokoll wchäe mit und wird auf maximal Gre gekappt', () => {
+test('Protokoll wächst mit und wird auf maximal Gre gekappt', () => {
   const { store, dir } = tempStore(3);
   try {
     store.appendLog({ kind: 'kopplung', status: 'a' });
@@ -118,7 +119,7 @@ test('Protokoll wchäe mit und wird auf maximal Gre gekappt', () => {
   }
 });
 
-test('Zustand berlebt Prozessgrenzen (Datei-Persistenz)', () => {
+test('Zustand überlebt Prozessgrenzen (Datei-Persistenz)', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mira-store-'));
   const filePath = path.join(dir, 'state.json');
   try {

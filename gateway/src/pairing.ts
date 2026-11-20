@@ -1,4 +1,5 @@
 
+
 import { randomInt, timingSafeEqual } from 'node:crypto';
 
 export type PairingCodeRecord = {
@@ -52,8 +53,8 @@ export function checkPairingCode(
 }
 
 /**
- * Schema-Sperre gegen Code-Raten: zhä Fehlversuche pro Schlüssel (z. B. IP)
- * in einem Zeitfenster. Erfolge zhä nicht.
+ * Schema-Sperre gegen Code-Raten: zählt Fehlversuche pro Schlüssel (z. B. IP)
+ * in einem Zeitfenster. Erfolge zählen nicht.
  */
 export class PairingAttemptLimiter {
   private failures: Map<string, number[]> = new Map();
@@ -84,7 +85,7 @@ export class PairingAttemptLimiter {
   }
 }
 
-/** Prfung des Kopplungs- Payloads (POST /v1/pair). */
+/** Prüfung des Kopplungs-Payloads (POST /v1/pair). */
 export type PairingRequestBody = {
   code: string;
   deviceName: string;

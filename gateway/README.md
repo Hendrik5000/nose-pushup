@@ -1,4 +1,5 @@
 
+
 # Mira Device Control Gateway (Phase 4)
 
 Dedizierter WSS-Dienst fr Mira Device Control, umgesetzt nach
@@ -10,7 +11,7 @@ Stabile Langzeit-WebSocket-Verbindungen zu Geräten passen nicht auf Vercel
 Edge. Das Gateway läuft als eigener Node-Prozess (empfohlen: kleiner VPS,
 z. B. Hetzner CX11 oder hnlich) hinter einem TLS-Reverse-Proxy
 (Caddy/nginx) mit eigener Domain und Let's Encrypt. Nur Port 443 nach
-auen, sonst nichts.
+außen, sonst nichts.
 
 ## Sicherheitsmodell
 
@@ -27,7 +28,7 @@ auen, sonst nichts.
 - Protokoll (action-log) speichert nur Ereignisarten und Statuswörter,
   keine Argumente und keine Bildschirminhalte.
 - Kopplungscodes sind Brute-Force-geschtzt: Fehlversuche pro Herkunft
-  werden gezhä, ab Schwelle folgt eine Sperre.
+  werden gezählt, ab Schwelle folgt eine Sperre.
 
 ## Start
 

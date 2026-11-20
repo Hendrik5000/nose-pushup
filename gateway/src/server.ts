@@ -1,4 +1,5 @@
 
+
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { Duplex } from 'node:stream';
@@ -49,7 +50,7 @@ type PendingAction = {
 export type OnlineDevice = import('./store.js').SanitizedDevice & { online: boolean };
 
 /**
- * Device Control Gateway (Phase 4): dedizierter WSS-Dienst gemä
+ * Device Control Gateway (Phase 4): dedizierter WSS-Dienst gemäß
  * docs/device-control-gateway-spec.md. Geräte bauen die Verbindung selbst
  * auf (Bearer + X-Mira-Device), Kontrollzugriff nur über den Admin-Token.
  */

@@ -1,4 +1,5 @@
 
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -166,8 +167,8 @@ export class GatewayStore {
   }
 
   /**
-   * Prft einen Code ohne ihn zu verbrauchen; Grund frs Protokoll.
-   * Abgelaufene codes zhä als abgelaufen, alles andere als ungueltig.
+   * Prüft einen Code ohne ihn zu verbrauchen; Grund frs Protokoll.
+   * Abgelaufene codes zählen als abgelaufen, alles andere als ungueltig.
    */
   checkPairing(codeInput: unknown, now: Date = new Date()): { record: PairingCodeRecord | null; reason: string } {
     for (const candidate of this.data.pairingCodes) {

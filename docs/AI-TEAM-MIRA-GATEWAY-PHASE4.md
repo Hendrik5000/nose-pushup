@@ -1,4 +1,5 @@
 
+
 # Mira Device Control: Phase 4 - Gateway-Server
 
 Nachtrag zu docs/AI-TEAM.md (Register), analog docs/AI-TEAM-MIRA-DEVICES-PHASE1.md.
@@ -10,10 +11,10 @@ mira-device-control-phase2-agent, Basis des zugehrigen Draft-PRs).
 
 Inhalt:
 
-- gateway/: eigenstndiger Node-Dienst (wss), gemä
+- gateway/: eigenstndiger Node-Dienst (wss), gemäß
   docs/device-control-gateway-spec.md: POST /v1/pair (Einmalcode, 6 Ziffern,
   TTL 5 Minuten, nur einmal verwendbar, Fehlversuch-Sperre), GET /v1/ws
-  (Bearer + X-Mira-Device), hand-shake hello/welcome, Aktionsrouting
+  (Bearer + X-Mira-Device), Handshake hello/welcome, Aktionsrouting
   action.request/action.result, Bildschirm-Sitzungen mit Frame-Drossel,
   Not-Aus (Routing-Pause), Widerruf (revoke + Close 4403).
 - Kontroll-API /v1/control/* mit Admin-Token (Grundlage fr Phase 5,
@@ -25,11 +26,11 @@ Inhalt:
 
 ## Wichtig
 
-- Keine Berhrung der Supabase-Datenbank, der Migrationen oder RLS.
-- Keine Berhrung bestehender Mira-Chat-Funktionen, kein Bezug zu PR #227.
+- Keine Berührung der Supabase-Datenbank, der Migrationen oder RLS.
+- Keine Berührung bestehender Mira-Chat-Funktionen, kein Bezug zu PR #227.
 - Der Gateway-Code liegt bewusst neben der App; tsconfig/eslint des Repos
   umfassen ihn nicht (eslint-Ignor-Eintrag fr das eigenstndige Paket).
-- Zustand liegt in gateway/data (git-ignoriert), bewusst auerhalb Supabase.
+- Zustand liegt in gateway/data (git-ignoriert), bewusst auerhalb X Supabase.
 
 ## Offen / nächste Schritte
 

@@ -1,4 +1,5 @@
 
+
 /**
  * Berechtigungs-Mirror (Phase 4): Das Gateway spiegelt die pro Gerät und
  * Funktionsgruppe gesetzten Stufen (keine / lesen / steuern / kritisch) und
@@ -59,7 +60,7 @@ export type ToolPolicy = {
 
 /**
  * Bekannte Werkzeuge des Agents (Phase 3). Alles Unbekannte wird nie geroutet;
- * der Agent leistet zusätzlich seine eigene Allowlist-Prfung.
+ * der Agent leistet zusätzlich seine eigene Allowlist-Prüfung.
  */
 export const TOOL_POLICIES: Record<string, ToolPolicy> = {
   'status.ping': { capability: 'status', minimumLevel: 'lesen' },
@@ -104,7 +105,7 @@ export type AuthorizationResult = {
 /**
  * Zentrale Routing-Entscheidung. Regeln (Spezifikation):
  * - Unbekanntes Werkzeug: nie routen.
- * - Aktivitt bentigt mindestens die Freigabe der Werkzeug-Gruppe.
+ * - Aktivitt benötigt mindestens die Freigabe der Werkzeug-Gruppe.
  * - Kritische Aktionen nur mit ausdrcklicher Bestätigung aus der Mira-UI.
  * - Bildschirm-Aktionen nur in einer laufenden, explizit gestarteten Sitzung.
  */

@@ -1,4 +1,5 @@
 
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -24,7 +25,7 @@ test('Unbekannte Werkzeuge werden nie geroutet', () => {
   assert.equal(policyForTool(undefined), null);
 });
 
-test('Aktivitaet setzt mindestens lesen voraus', () => {
+test('Aktivität setzt mindestens lesen voraus', () => {
   const denied = authorizeAction({ toolId: 'status.info', permissions: { status: 'keine' } });
   assert.equal(denied.allowed, false);
   assert.equal(denied.reason, 'berechtigung-fehlt');
@@ -54,13 +55,13 @@ test('kritisch nur nach Bestätigung', () => {
   assert.equal(withConfirmation.allowed, true);
 });
 
-test('stufen-fremde Stufen fuehren zur Ablehnung', () => {
+test('stufen-fremde Stufen führen zur Ablehnung', () => {
   const result = authorizeAction({ toolId: 'programme.liste', permissions: { programme: 'irgendwas' as never } });
   assert.equal(result.allowed, false);
   assert.equal(result.reason, 'berechtigungs-unbekannt');
 });
 
-test('Berechtigungs-Spiegel wird vollstndig validiert', () => {
+test('Berechtigungs-Spiegel wird vollständig validiert', () => {
   const full = {
     status: 'lesen',
     programme: 'steuern',
