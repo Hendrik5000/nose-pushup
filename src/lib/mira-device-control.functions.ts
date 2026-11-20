@@ -15,7 +15,7 @@ type ActionRequest = {
   args: RecordValue;
   confirmation: boolean;
 };
-export type MiraDeviceControlMiraDeviceControlMutationRequest =
+export type MiraDeviceControlMutationRequest =
   | { action: "pairing-code"; name: string; platform: MiraDevicePlatform }
   | {
       action: "permissions";
@@ -26,6 +26,18 @@ export type MiraDeviceControlMiraDeviceControlMutationRequest =
   | { action: "revoke"; deviceId: string; reason: string }
   | ActionRequest
   | { action: "screen"; deviceId: string; active: boolean };
+
+export type MiraDeviceControlMutationResponse =
+  | {
+      action: "pairing-code";
+      code: string;
+      expiresAt: string;
+      deviceName: string;
+      platform: MiraDevicePlatform;
+    }
+  | { action: "dispatch"; detail?: unknown; dispatched?: unknown; reason?: unknown }
+  | { action: "screen"; ok?: unknown }
+  | { action: "permissions" | "not-aus" | "revoke"; [key: string]: unknown };
 
 function record(value: unknown, allowed: string[]): RecordValue {
   if (
