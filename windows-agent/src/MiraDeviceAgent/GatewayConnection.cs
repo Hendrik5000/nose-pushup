@@ -66,15 +66,22 @@ public sealed class GatewayConnection : IAsyncDisposable
 
                 // Heartbeat und Empfang laufen parallel. Endet einer der beiden
                 // Tasks unerwartet, wird die Verbindung beendet und neu aufgebaut.
-                if (completedTask == heartbeatTask && !connectionLifetime.IsCancellationRequested)
-                {
-                    connectionLifetime.Cancel();
-                }
+                var heartbeatFailed = completedTask == heartbeatTask && !connectionLifetime.IsCancellationRequested;
+                if (heartbeatFailed) connectionLifetime.Cancel();
 
                 var revoked = false;
                 try
                 {
-                    revoked = await receiveTask.ConfigureAwait(false);
+                    if (heartbeatFailed)
+                    {
+                        try { await receiveTask.ConfigureAwait(false); }
+                        catch (OperationCanceledException) { }
+                        SetState("offline");
+                    }
+                    else
+                    {
+                        revoked = await receiveTask.ConfigureAwait(false);
+                    }
                 }
                 finally
                 {
