@@ -2435,3 +2435,12 @@ body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo
   max-height: 100% !important;
   margin: 0 !important;
 }
+
+
+/* Let the device viewport define the physical corner shape in fullscreen mode. */
+body:has(main.alo-oneui9-fullscreen-home) .authenticated-shell,
+body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home,
+body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo-oneui9-home {
+  border-radius: 0 !important;
+  clip-path: none !important;
+}
