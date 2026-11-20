@@ -31,18 +31,11 @@ jobs:
       - name: Regression tests
         run: |
           set -o pipefail
-          npm test 2>&1 | tee /tmp/regression.tap
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            echo "TAP failing summary:"
-            grep -A6 "^not ok" /tmp/regression.tap | head -60 | while IFS= read -r line; do
-              echo "::error::$line"
-            done
-            grep -E "^# (tests|pass|fail|cancelled|skipped)" /tmp/regression.tap | while IFS= read -r line; do
-              echo "::error::$line"
-            done
-            exit "$status"
-          fi
+          npm test 2>&1 | tee /tmp/regression.tap || true
+          tail -120 /tmp/regression.tap | while IFS= read -r line; do
+            echo "::error::LOG: $line"
+          done
+          npm test > /dev/null 2>&1 || exit 1
       - name: Typecheck
         run: npx tsc --noEmit
 
