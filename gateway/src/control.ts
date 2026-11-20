@@ -23,8 +23,8 @@ function tokenOk(provided: string, expected: string): boolean {
 
 /**
  * Kontroll-API fr die Mira-App (Anbindung in Phase 5). Geschuetzt durch den
- * Admin-Token; beim Standard-Host 127.0.0.1 additionally nur lokal erreichbar,
- * im Betrieb hinter dem TLS-Reverse-Proxy.
+ * Admin-Token; bei Standard-Host 127.0.0.1 nur lokal erreichbar, im Betrieb
+ * hinter dem TLS-Reverse-Proxy.
  */
 export async function handleControlRequest(ctx: ControlContext): Promise<void> {
   const provided = bearerToken(ctx.req.headers.authorization);
@@ -104,7 +104,12 @@ export async function handleControlRequest(ctx: ControlContext): Promise<void> {
       json(ctx.res, 409, { dispatched: false, reason: outcome.reason });
       return;
     }
-    json(ctx.res, 200, { dispatched: true, requestId: outcome.requestId, status: outcome.status, detail: outcome.detail });
+    json(ctx.res, 200, {
+      dispatched: true,
+      requestId: outcome.requestId,
+      status: outcome.status,
+      detail: outcome.detail,
+    });
     return;
   }
 
@@ -123,9 +128,11 @@ export async function handleControlRequest(ctx: ControlContext): Promise<void> {
       return;
     }
     const started = b.aktiv !== false;
-    const result = started ? ctx.gateway.startScreenSession(deviceId) : ctx.gateway.stopScreenSession(deviceId, 'beendet-durch-nutzer');
+    const result = started
+      ? ctx.gateway.startScreenSession(deviceId)
+      : ctx.gateway.stopScreenSession(deviceId, 'beendet-durch-nutzer');
     if (result.ok) {
-      json(ctx.res, 200, { ok: true, sessionId: 'sessionId' in result ? result.sessionId : undefined });
+      json(ctx.res, 200, { ok: true, sessionId: result.sessionId });
     } else {
       json(ctx.res, 409, { ok: false, reason: result.reason });
     }

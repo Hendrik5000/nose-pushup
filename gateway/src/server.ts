@@ -13,7 +13,7 @@ import {
   type Envelope,
 } from './messages.js';
 import { isSecureRequest, type GatewayConfig } from './config.js';
-import { createTokenMaterial, GatewayStore, sanitizeDevice, type SanitizedDevice } from './store.js';
+import { createTokenMaterial, GatewayStore } from './store.js';
 import { PairingAttemptLimiter, validatePairingBody } from './pairing.js';
 import {
   authorizeAction,
@@ -37,7 +37,7 @@ export type DispatchOutcome =
   | { dispatched: true; requestId: string; status: string; detail?: string }
   | { dispatched: false; reason: string };
 
-type SessionResult = { ok: true; sessionId?: string } | { ok: false; reason: string };
+export type SessionResult = { ok: true; sessionId?: string } | { ok: false; reason: string };
 
 type PendingAction = {
   deviceId: string;
@@ -45,7 +45,7 @@ type PendingAction = {
   resolve: (payload: { status: string; detail?: string }) => void;
 };
 
-export type OnlineDevice = SanitizedDevice & { online: boolean };
+export type OnlineDevice = import('./store.js').SanitizedDevice & { online: boolean };
 
 /**
  * Device Control Gateway (Phase 4): dedizierter WSS-Dienst gem
@@ -65,7 +65,7 @@ export class Gateway {
   private readonly watchdog: ReturnType<typeof setInterval>;
   private emergencyStopActive = false;
 
-  /** Rueckruf fr Live-Bildschirm-Frames; Anbindung in Phase 5. */
+  /** Rckruf fr Live-Bildschirm-Frames; Anbindung an die Mira-UI in Phase 5. */
   onScreenFrame?: (deviceId: string, sessionId: string, frameBase64: string) => void;
 
   constructor(
@@ -108,7 +108,7 @@ export class Gateway {
       try {
         session.ws.close(1001, 'gateway-herunterfahren');
       } catch {
-        // Verbindungen sind beim Herunterfahren schon weg: bewusst ignoriert.
+        // Verbindungen sind beim Herunterfahren evtl. schon weg: bewusst ignoriert.
       }
     }
     for (const pending of this.pendingActions.values()) {
@@ -134,7 +134,7 @@ export class Gateway {
     try {
       session.ws.send(JSON.stringify(createEnvelope(MessageTypes.Welcome, this.welcomePayload(device.permissions))));
     } catch {
-      // Wenn die Verbindung bricht, bernimmt der Watchdog das Aufrumen.
+      // Bricht die Verbindung, bernimmt der Watchdog das Aufrumen.
     }
   }
 
@@ -186,12 +186,7 @@ export class Gateway {
         timer,
         resolve: (payload) => {
           clearTimeout(timer);
-          resolve({
-            dispatched: true,
-            requestId,
-            status: payload.status === 'bestaetigung-erforderlich' ? payload.status : payload.status,
-            detail: payload.detail,
-          });
+          resolve({ dispatched: true, requestId, status: payload.status, detail: payload.detail });
         },
       });
       session.ws.send(JSON.stringify(envelope));
@@ -199,6 +194,10 @@ export class Gateway {
     });
   }
 
+  /**
+   * Not-Aus (Spezifikation): Routing pausieren, alle laufenden
+   * Bildschirm-Sitzungen beenden, Gerte informieren.
+   */
   setEmergencyStop(aktiv: boolean, grund: string): void {
     this.emergencyStopActive = aktiv;
     this.store.appendLog({ kind: 'not-aus', status: aktiv ? 'aktiviert' : 'deaktiviert', detail: grund });
@@ -210,7 +209,7 @@ export class Gateway {
       try {
         session.ws.send(JSON.stringify(createEnvelope(MessageTypes.NotAus, { grund: grund || 'not-aus' })));
       } catch {
-        // Nicht zustellbar: Verbindung endet ohnehin per Timeout bzw. Agent verwirft.
+        // Nicht zustellbar: Verbindung endet via Timeout, Agent verwirft ebenfalls.
       }
     }
   }
@@ -240,9 +239,8 @@ export class Gateway {
     if (!device || device.revokedAt !== null) return { ok: false, reason: 'geraet-unbekannt' };
     const session = this.sessions.get(deviceId);
     if (!session || !session.authenticated) return { ok: false, reason: 'geraet-offline' };
-    const level = device.permissions.bildschirm;
     const rank: Record<string, number> = { keine: 0, lesen: 1, steuern: 2, kritisch: 3 };
-    if ((rank[level] ?? 0) < rank.steuern) {
+    if ((rank[device.permissions.bildschirm] ?? 0) < rank.steuern) {
       return { ok: false, reason: 'berechtigung-fehlt' };
     }
     if (this.screenSessions.has(deviceId)) return { ok: false, reason: 'sitzung-laeuft-schon' };
@@ -260,13 +258,15 @@ export class Gateway {
 
   stopScreenSession(deviceId: string, grund: string): SessionResult {
     const active = this.screenSessions.get(deviceId);
-    const session = this.sessions.get(deviceId);
-    if (!active) return { ok: false, reason: 'keine-bildschirm-name'.replace('name', 'sitzung') };
+    if (!active) return { ok: false, reason: 'keine-sitzung' };
     this.screenSessions.delete(deviceId);
     this.store.appendLog({ kind: 'sitzung', deviceId, status: 'screen-beendet', detail: grund });
+    const session = this.sessions.get(deviceId);
     if (session) {
       try {
-        session.ws.send(JSON.stringify(createEnvelope(MessageTypes.ScreenSessionStop, { sessionId: active.sessionId })));
+        session.ws.send(
+          JSON.stringify(createEnvelope(MessageTypes.ScreenSessionStop, { sessionId: active.sessionId })),
+        );
       } catch {
         // Verbindungsfehler ndert nichts am Sitzungsstopp.
       }
@@ -278,7 +278,6 @@ export class Gateway {
 
   private welcomePayload(permissions: Permissions): Record<string, unknown> {
     return {
-      deviceIdPermissions: undefined,
       permissions,
       toolAllowlist: Object.keys(TOOL_POLICIES),
       screenSessionRequired: true,
@@ -376,10 +375,7 @@ export class Gateway {
     const deviceIdHeader = headerValue(req, 'x-mira-device') ?? '';
     const token = bearerToken(req.headers.authorization);
     if (!deviceIdHeader || token === '' || !this.tokenMatches(token, deviceIdHeader)) {
-      socket.write('HTTP/1.1 401 Unauthorized
-Connection: close
-
-');
+      socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
       socket.destroy();
       return;
     }
@@ -405,7 +401,7 @@ Connection: close
       try {
         existing.ws.close(1000, 'neue-sitzung');
       } catch {
-        // Alte Verbindung ist eventuell schon weg: bewusst ignoriert.
+        // Alte Verbindung ist evtl. schon weg: bewusst ignoriert.
       }
     }
     const now = Date.now();
@@ -439,7 +435,7 @@ Connection: close
       try {
         ws.terminate();
       } catch {
-        // Nichts mehr zu retten; close-Handler rumt auf.
+        // Nichts mehr zu retten; der close-Handler rumt auf.
       }
     });
   }
@@ -450,7 +446,7 @@ Connection: close
         session.ws.close(1008, 'hello-erwartet');
         return;
       }
-      const hello = envelope.payloadJson === undefined ? null : parsePayload(envelope, validateHelloPayload);
+      const hello = parsePayload(envelope, validateHelloPayload);
       if (!hello || hello.deviceId !== session.deviceId) {
         session.ws.close(1008, 'hello-ungueltig');
         return;
@@ -476,12 +472,7 @@ Connection: close
         const pending = this.pendingActions.get(result.requestId);
         if (!pending || pending.deviceId !== session.deviceId) return;
         this.pendingActions.delete(result.requestId);
-        this.store.appendLog({
-          kind: 'aktion',
-          deviceId: session.deviceId,
-          toolId: '',
-          status: result.status,
-        });
+        this.store.appendLog({ kind: 'aktion', deviceId: session.deviceId, status: result.status });
         pending.resolve({ status: result.status, detail: result.detail });
         return;
       }
