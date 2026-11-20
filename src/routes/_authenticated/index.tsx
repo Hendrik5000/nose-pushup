@@ -1217,11 +1217,11 @@ function HomeAppHub({
       const contents = (
         <>
           <span
-            className={`alo-home-app-icon relative grid aspect-square w-full place-items-center overflow-hidden rounded-[28px] border border-white/10 bg-card shadow-md ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
+            className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[28px] border border-white/10 bg-card shadow-md ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
           >
             <MarketplaceIcon icon={tile.icon} className="h-8 w-8 text-primary" />
           </span>
-          <span className="alo-home-app-label max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
+          <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
             {title}
           </span>
         </>
@@ -1245,11 +1245,11 @@ function HomeAppHub({
       const contents = (
         <>
           <span
-            className={`alo-home-app-icon relative grid aspect-square w-full place-items-center overflow-hidden rounded-[28px] border border-white/10 bg-card shadow-md ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
+            className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[28px] border border-white/10 bg-card shadow-md ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
           >
             <MarketplaceIcon icon={tile.install.icon ?? "hub"} className="h-8 w-8 text-primary" />
           </span>
-          <span className="alo-home-app-label max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
+          <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
             {title}
           </span>
         </>
@@ -1341,7 +1341,7 @@ function HomeAppHub({
           </button>
         )}
         {!collapsed && (
-          <div className="alo-tablet-home-apps alo-home-app-grid grid w-full grid-flow-row-dense grid-cols-4 gap-x-3 gap-y-6">
+          <div className="alo-tablet-home-apps grid w-full grid-flow-row-dense grid-cols-4 gap-x-3 gap-y-6">
             {groupTiles.map((tile) => {
               const title = settings.nameOverrides[tile.id] ?? tile.title;
               const badge =
@@ -1352,7 +1352,7 @@ function HomeAppHub({
                   key={tile.id}
                   data-home-app-id={tile.id}
                   data-home-tile-size={tileSize}
-                  className={`alo-home-app-tile relative min-w-0 select-none rounded-xl transition ${HOME_APP_TILE_SIZE_CLASS_NAMES[tileSize]} ${tileSize === "large" ? "flex flex-col items-center justify-center" : ""}`}
+                  className={`relative min-w-0 select-none rounded-xl transition ${HOME_APP_TILE_SIZE_CLASS_NAMES[tileSize]} ${tileSize === "large" ? "flex flex-col items-center justify-center" : ""}`}
                   onPointerDown={(event) => startHomeLongPress(event, tile.id)}
                   onPointerUp={() => cancelHomeLongPress()}
                   onPointerCancel={() => cancelHomeLongPress()}
@@ -1382,7 +1382,6 @@ function HomeAppHub({
   return (
     <>
       <section
-        data-home-editing={isEditingHub ? "true" : "false"}
         className={`alo-tablet-home-hub alo-oneui9-home mb-8${backgroundUrl ? " relative isolate overflow-hidden rounded-3xl border border-border/40 p-4 sm:p-6" : ""}`}
         aria-labelledby="app-hub-title"
         aria-describedby="home-hub-edit-help"
@@ -1419,16 +1418,16 @@ function HomeAppHub({
             Deinstallation.
           </p>
           <header
-            className="alo-home-header mb-7 flex items-center justify-between gap-3"
+            className="mb-7 flex items-center justify-between gap-3"
             data-home-press-ignore="true"
           >
-            <h1 id="app-hub-title" className="alo-home-title text-2xl font-bold tracking-tight">
+            <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
               Alo
             </h1>
             <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
-                className="alo-home-header-action flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 aria-label="Überall suchen"
                 onClick={() =>
                   window.dispatchEvent(new CustomEvent("alo-open", { detail: "search" }))
@@ -1440,7 +1439,7 @@ function HomeAppHub({
               <Link
                 to="/profile"
                 hash="profile-training"
-                className="alo-home-header-action flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 aria-label="Freunde öffnen"
                 title="Freunde"
               >
@@ -1448,7 +1447,7 @@ function HomeAppHub({
               </Link>
               <Link
                 to="/profile"
-                className="alo-home-header-action alo-home-avatar flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-foreground shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-foreground shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 aria-label="Profil und Einstellungen öffnen"
                 title="Profil und Einstellungen"
               >
@@ -1475,7 +1474,7 @@ function HomeAppHub({
           {isEditingHub ? (
             <AloErrorBoundary section="Apps">
               <nav
-                className="alo-tablet-home-apps alo-home-app-grid grid w-full max-w-[520px] grid-flow-row-dense grid-cols-4 gap-x-3 gap-y-6"
+                className="alo-tablet-home-apps grid w-full max-w-[520px] grid-flow-row-dense grid-cols-4 gap-x-3 gap-y-6"
                 aria-label="Alo-Apps"
                 onPointerMoveCapture={moveHomeTileDrag}
               >
@@ -1500,7 +1499,7 @@ function HomeAppHub({
                       aria-pressed={isEditingHub ? keyboardGrabbedAppId === tile.id : undefined}
                       aria-haspopup={isEditingHub ? "dialog" : undefined}
                       aria-describedby={isEditingHub ? "home-app-edit-help" : undefined}
-                      className={`alo-home-app-tile relative min-w-0 select-none rounded-xl transition ${HOME_APP_TILE_SIZE_CLASS_NAMES[editTileSize]} ${editTileSize === "large" ? "flex flex-col items-center justify-center" : ""} ${isEditingHub ? "touch-none cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:cursor-grabbing" : ""} ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                      className={`relative min-w-0 select-none rounded-xl transition ${HOME_APP_TILE_SIZE_CLASS_NAMES[editTileSize]} ${editTileSize === "large" ? "flex flex-col items-center justify-center" : ""} ${isEditingHub ? "touch-none cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:cursor-grabbing" : ""} ${draggingAppId && dropTargetAppId === tile.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
                       onPointerDown={(event) => {
                         startHomeLongPress(event, tile.id);
                         if (isEditingHub && event.isPrimary && event.button === 0) {
@@ -1554,7 +1553,7 @@ function HomeAppHub({
                 <AloErrorBoundary section="Widgets">
                   <section
                     aria-label="Widgets"
-                    className="alo-home-widgets grid grid-flow-row-dense grid-cols-2 gap-3"
+                    className="grid grid-flow-row-dense grid-cols-2 gap-3"
                   >
                     {settings.widgetOrder.map((widgetId) => {
                       const widget = renderHomeWidget(widgetId as HomeWidgetId);
@@ -1563,18 +1562,18 @@ function HomeAppHub({
                         <div
                           key={widgetId}
                           data-home-widget-id={widgetId}
-                          className={`alo-home-widget rounded-2xl border border-border bg-card/60 p-4 backdrop-blur ${HOME_WIDGET_SIZE_CLASS_NAMES[widgetSize]}`}
+                          className={`rounded-2xl border border-border bg-card/60 p-4 backdrop-blur ${HOME_WIDGET_SIZE_CLASS_NAMES[widgetSize]}`}
                         >
-                          <p className="alo-home-widget-title text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                             {widget.title}
                           </p>
-                          <p className="alo-home-widget-body mt-2 text-sm leading-relaxed text-foreground">
+                          <p className="mt-2 text-sm leading-relaxed text-foreground">
                             {widget.body}
                           </p>
                           {widget.link && (
                             <Link
                               to={widget.link.to}
-                              className="alo-home-widget-link mt-2 inline-block text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                              className="mt-2 inline-block text-xs font-semibold text-primary underline-offset-4 hover:underline"
                             >
                               {widget.link.label}
                             </Link>
@@ -1587,7 +1586,7 @@ function HomeAppHub({
               )}
               <AloErrorBoundary section="Apps">
                 <div
-                  className="alo-launcher-page alo-home-launcher-page"
+                  className="alo-launcher-page"
                   aria-label={`Startseite ${currentHomePage + 1} von ${homePageCount}`}
                   onTouchStart={(event) => {
                     homeTouchStartXRef.current = event.touches[0]?.clientX ?? null;
@@ -2175,7 +2174,7 @@ function HubAppIconContents({
   return (
     <>
       <span
-        className={`alo-home-app-icon relative grid aspect-square w-full place-items-center overflow-hidden rounded-[28px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
+        className={`relative grid aspect-square w-full place-items-center overflow-hidden rounded-[28px] border border-white/10 bg-card shadow-md transition group-hover:scale-105 group-hover:shadow-lg ${large ? "max-w-[160px]" : "max-w-[96px]"}`}
       >
         <HubArtwork kind={artwork} />
       </span>
@@ -2187,7 +2186,7 @@ function HubAppIconContents({
           {badge > 9 ? "9+" : badge}
         </span>
       )}
-      <span className="alo-home-app-label max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
+      <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
         {title}
       </span>
     </>
