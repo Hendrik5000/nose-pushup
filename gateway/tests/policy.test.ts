@@ -1,3 +1,4 @@
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -38,7 +39,7 @@ test('steuern-Tools brauchen steuern oder hoeher', () => {
   assert.equal(authorizeAction({ toolId: 'eingabe.maus', permissions: { eingaben: 'kritisch' } }).allowed, true);
 });
 
-test('kritisch nur nach Besttigung', () => {
+test('kritisch nur nach Bestätigung', () => {
   const without = authorizeAction({
     toolId: 'einstellungen.herunterfahren',
     permissions: { einstellungen: 'kritisch' },

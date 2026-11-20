@@ -1,3 +1,4 @@
+
 # Mira Device Control Gateway (Phase 4)
 
 Dedizierter WSS-Dienst fr Mira Device Control, umgesetzt nach
@@ -5,28 +6,28 @@ docs/device-control-gateway-spec.md (v1). Kein App-Inhalt, kein Mira-Inhalt.
 
 ## Warum ein eigener Dienst?
 
-Stabile Langzeit-WebSocket-Verbindungen zu Gerten passen nicht auf Vercel
-Edge. Das Gateway luft als eigener Node-Prozess (empfohlen: kleiner VPS,
+Stabile Langzeit-WebSocket-Verbindungen zu Geräten passen nicht auf Vercel
+Edge. Das Gateway läuft als eigener Node-Prozess (empfohlen: kleiner VPS,
 z. B. Hetzner CX11 oder hnlich) hinter einem TLS-Reverse-Proxy
 (Caddy/nginx) mit eigener Domain und Let's Encrypt. Nur Port 443 nach
 auen, sonst nichts.
 
 ## Sicherheitsmodell
 
-- Gerte bauen die Verbindung selbst auf: outbound WSS (TLS), Bearer-Token
-  und X-Mira-Device. Kein eingehender Port am Gert, keine Portfreigaben.
-- Kopplung ber Einmalcode (6 Ziffern, TTL 5 Minuten, genau einmal verwendbar).
-- Gertetoken wird serverseitig nur als SHA-256-Hash mit Salt gespeichert,
+- Geräte bauen die Verbindung selbst auf: outbound WSS (TLS), Bearer-Token
+  und X-Mira-Device. Kein eingehender Port am Gerät, keine Portfreigaben.
+- Kopplung über Einmalcode (6 Ziffern, TTL 5 Minuten, genau einmal verwendbar).
+- Gerätetoken wird serverseitig nur als SHA-256-Hash mit Salt gespeichert,
   nie im Klartext, nie in Logs.
 - Kontroll-API (Grundlage fr die Mira-App ab Phase 5) nur mit
   MIRA_GATEWAY_ADMIN_TOKEN.
 - Not-Aus: pausiert das Routing aller Aktionen auf Gateway-Ebene.
 - Widerruf: revoke-Nachricht plus WebSocket-Close-Code 4403; der
-  Windows-Agent (Phase 2) lscht daraufhin Identit und Token.
-- Protokoll (action-log) speichert nur Ereignisarten und Statuswrter,
+  Windows-Agent (Phase 2) löscht daraufhin Identit und Token.
+- Protokoll (action-log) speichert nur Ereignisarten und Statuswörter,
   keine Argumente und keine Bildschirminhalte.
 - Kopplungscodes sind Brute-Force-geschtzt: Fehlversuche pro Herkunft
-  werden gezhlt, ab Schwelle folgt eine Sperre.
+  werden gezhä, ab Schwelle folgt eine Sperre.
 
 ## Start
 
@@ -67,16 +68,16 @@ schreibt ihn einmalig beim Start auf stderr.
 
 ## Endpunkte
 
-- POST /v1/pair: Einmalcode plus Gertedaten und ffentlicher Schlssel
-  ergibt deviceId und deviceToken. Nur ber HTTPS bzw. localhost.
-- GET /v1/ws (Upgrade): Gerteverbindung (Bearer und X-Mira-Device),
+- POST /v1/pair: Einmalcode plus Gerätedaten und fföentlicher Schlüssel
+  ergibt deviceId und deviceToken. Nur über HTTPS bzw. localhost.
+- GET /v1/ws (Upgrade): Geräteverbindung (Bearer und X-Mira-Device),
   Handshake hello/welcome, danach action.request/action.result,
   screen.session/screen.frame, not-aus und revoke (Close 4403).
 - /v1/control/*: Kontroll-API fr die Mira-App (Admin-Token): devices,
   pairing-code, permissions, action, not-aus, screen, revoke, action-log.
 - GET /healthz: Betriebsstatus und Not-Aus-Zustand.
 
-## Tests und Typprfung
+## Tests und Typprüfung
 
 ~~~bash
 cd gateway
@@ -85,7 +86,7 @@ npm test
 ~~~
 
 Hinweis: In der Umgebung, die diesen Pull Request erstellt hat, konnten
-weder Node noch npm ausgefhrt werden. Typprfung und Tests sind beim
+weder Node noch npm ausgefhürt werden. Typprüfung und Tests sind beim
 grnen CI bzw. lokal nachzuholen.
 
 ## Referenzen

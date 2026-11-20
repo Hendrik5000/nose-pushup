@@ -1,3 +1,4 @@
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -29,7 +30,7 @@ test('checkPairingCode: richtig, falsch, abgelaufen, bereits verwendet', () => {
   assert.deepEqual(checkPairingCode(used, used.code, now), { ok: false, reason: 'bereits-verwendet' });
 });
 
-test('Versuch-Sperre blockiert nach zu vielen Fehlversuchen, Erfolg zhlt nicht', () => {
+test('Versuch-Sperre blockiert nach zu vielen Fehlversuchen, Erfolg zhä nicht', () => {
   const limiter = new PairingAttemptLimiter(3, 60_000);
   const now = 1_000_000;
   assert.equal(limiter.isBlocked('ip', now), false);

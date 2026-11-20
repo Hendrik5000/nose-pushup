@@ -1,3 +1,4 @@
+
 import { randomUUID } from 'node:crypto';
 
 /**
@@ -73,7 +74,7 @@ export function parseEnvelope(raw: string): Envelope | null {
   return { version: 1, id: o.id, type: o.type, at: o.at, payloadJson };
 }
 
-/** Payload-String auspacken und gegen eine Validierungsfunktion pruefen. */
+/** Payload-String auspacken und gegen eine Validierungsfunktion prüfen. */
 export function parsePayload<T>(
   envelope: Envelope,
   validate: (value: unknown) => T | null,

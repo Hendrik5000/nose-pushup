@@ -1,3 +1,4 @@
+
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { Duplex } from 'node:stream';
@@ -48,9 +49,9 @@ type PendingAction = {
 export type OnlineDevice = import('./store.js').SanitizedDevice & { online: boolean };
 
 /**
- * Device Control Gateway (Phase 4): dedizierter WSS-Dienst gem
- * docs/device-control-gateway-spec.md. Gerte bauen die Verbindung selbst
- * auf (Bearer + X-Mira-Device), Kontrollzugriff nur ber den Admin-Token.
+ * Device Control Gateway (Phase 4): dedizierter WSS-Dienst gemä
+ * docs/device-control-gateway-spec.md. Geräte bauen die Verbindung selbst
+ * auf (Bearer + X-Mira-Device), Kontrollzugriff nur über den Admin-Token.
  */
 export class Gateway {
   private readonly server: http.Server;
@@ -65,7 +66,7 @@ export class Gateway {
   private readonly watchdog: ReturnType<typeof setInterval>;
   private emergencyStopActive = false;
 
-  /** Rckruf fr Live-Bildschirm-Frames; Anbindung an die Mira-UI in Phase 5. */
+  /** Rückruf fr Live-Bildschirm-Frames; Anbindung an die Mira-UI in Phase 5. */
   onScreenFrame?: (deviceId: string, sessionId: string, frameBase64: string) => void;
 
   constructor(
@@ -196,7 +197,7 @@ export class Gateway {
 
   /**
    * Not-Aus (Spezifikation): Routing pausieren, alle laufenden
-   * Bildschirm-Sitzungen beenden, Gerte informieren.
+   * Bildschirm-Sitzungen beenden, Geräte informieren.
    */
   setEmergencyStop(aktiv: boolean, grund: string): void {
     this.emergencyStopActive = aktiv;
@@ -226,7 +227,7 @@ export class Gateway {
         session.ws.send(JSON.stringify(createEnvelope(MessageTypes.Revoke, { grund: grund || 'widerrufen' })));
         session.ws.close(4403, 'widerrufen');
       } catch {
-        // Fehlschlag beim Schlieen ist unkritisch, Gert ist bereits widerrufen.
+        // Fehlschlag beim Schlieen ist unkritisch, Gerät ist bereits widerrufen.
       }
       this.sessions.delete(deviceId);
     }
@@ -435,7 +436,7 @@ export class Gateway {
       try {
         ws.terminate();
       } catch {
-        // Nichts mehr zu retten; der close-Handler rumt auf.
+        // Nichts mehr zu retten; der close-Handler räumt auf.
       }
     });
   }
@@ -522,7 +523,7 @@ export class Gateway {
         try {
           this.onScreenFrame(session.deviceId, active.sessionId, f.frameBase64);
         } catch {
-          // Konsumentenfehler darf die Gerteverbindung nicht beenden.
+          // Konsumentenfehler darf die Geräteverbindung nicht beenden.
         }
       }
     }

@@ -1,7 +1,8 @@
+
 /**
- * Berechtigungs-Mirror (Phase 4): Das Gateway spiegelt die pro Gert und
+ * Berechtigungs-Mirror (Phase 4): Das Gateway spiegelt die pro Gerät und
  * Funktionsgruppe gesetzten Stufen (keine / lesen / steuern / kritisch) und
- * entscheidet ber das Routing von Aktionen. Quellen: Spezifikation v1 und
+ * entscheidet über das Routing von Aktionen. Quellen: Spezifikation v1 und
  * Phase-1-Datenmodell (src/lib/mira-device-control.ts).
  */
 export type PermissionLevel = 'keine' | 'lesen' | 'steuern' | 'kritisch';
@@ -58,7 +59,7 @@ export type ToolPolicy = {
 
 /**
  * Bekannte Werkzeuge des Agents (Phase 3). Alles Unbekannte wird nie geroutet;
- * der Agent leistet zustzlich seine eigene Allowlist-Prfung.
+ * der Agent leistet zusätzlich seine eigene Allowlist-Prfung.
  */
 export const TOOL_POLICIES: Record<string, ToolPolicy> = {
   'status.ping': { capability: 'status', minimumLevel: 'lesen' },
@@ -104,7 +105,7 @@ export type AuthorizationResult = {
  * Zentrale Routing-Entscheidung. Regeln (Spezifikation):
  * - Unbekanntes Werkzeug: nie routen.
  * - Aktivitt bentigt mindestens die Freigabe der Werkzeug-Gruppe.
- * - Kritische Aktionen nur mit ausdrcklicher Besttigung aus der Mira-UI.
+ * - Kritische Aktionen nur mit ausdrcklicher Bestätigung aus der Mira-UI.
  * - Bildschirm-Aktionen nur in einer laufenden, explizit gestarteten Sitzung.
  */
 export function authorizeAction(input: AuthorizationInput): AuthorizationResult {

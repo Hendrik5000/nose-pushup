@@ -1,3 +1,4 @@
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -23,7 +24,7 @@ test('Envelope erzeugt Payload als eingebetteten JSON-String (wie C#-Agent)', ()
   assert.equal(payload.agentVersion, '0.2.0-phase2');
 });
 
-test('Envelope ohne Payload laesst payloadJson weg', () => {
+test('Envelope ohne Payload lässt payloadJson weg', () => {
   const envelope = createEnvelope(MessageTypes.Heartbeat);
   assert.equal(envelope.payloadJson, undefined);
   const parsed = parseEnvelope(JSON.stringify(envelope));
@@ -32,7 +33,7 @@ test('Envelope ohne Payload laesst payloadJson weg', () => {
   assert.equal(parsed?.payloadJson, undefined);
 });
 
-test('Rundreise: eigener Envelope laesst sich exakt zurueckparsen', () => {
+test('Rundreise: eigener Envelope lässt sich exakt zurückparsen', () => {
   const envelope = createEnvelope(MessageTypes.ActionRequest, { requestId: 'r1', toolId: 'status.ping', args: {} });
   const parsed = parseEnvelope(JSON.stringify(envelope));
   assert.ok(parsed !== null);
@@ -61,7 +62,7 @@ test('Hello-Payload-Validierung verlangt die drei Felder', () => {
   assert.equal(validateHelloPayload('text'), null);
 });
 
-test('ActionResult-Status ist auf die vier erlaubten Werte beschraenkt', () => {
+test('ActionResult-Status ist auf die vier erlaubten Werte beschränkt', () => {
   assert.ok(validateActionResultPayload({ requestId: 'r1', status: 'ok' }) !== null);
   assert.ok(
     validateActionResultPayload({ requestId: 'r1', status: 'bestaetigung-erforderlich', detail: 'kurz' }) !== null,

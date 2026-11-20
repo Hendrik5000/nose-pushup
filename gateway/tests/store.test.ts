@@ -1,3 +1,4 @@
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -33,7 +34,7 @@ test('Kopplungscode: erzeugen, finden, verbrauchen', () => {
   }
 });
 
-test('Gert kopplen, Token wiederfinden, widerrufen', () => {
+test('Gerät koppeln, Token wiederfinden, widerrufen', () => {
   const { store, dir } = tempStore();
   try {
     const material = createTokenMaterial();
@@ -75,7 +76,7 @@ test('Gert kopplen, Token wiederfinden, widerrufen', () => {
   }
 });
 
-test('Sanitisierte Gerteliste enthlt keine Token-Geheimnisse', () => {
+test('Sanitisierte Geräteliste enthlt keine Token-Geheimnisse', () => {
   const { store, dir } = tempStore();
   try {
     const material = createTokenMaterial();
@@ -99,7 +100,7 @@ test('Sanitisierte Gerteliste enthlt keine Token-Geheimnisse', () => {
   }
 });
 
-test('Protokoll wchst mit und wird auf maximal Gre gekappt', () => {
+test('Protokoll wchäe mit und wird auf maximal Gre gekappt', () => {
   const { store, dir } = tempStore(3);
   try {
     store.appendLog({ kind: 'kopplung', status: 'a' });

@@ -1,3 +1,4 @@
+
 import http from 'node:http';
 
 export function json(res: http.ServerResponse, status: number, body: unknown): void {
@@ -10,7 +11,7 @@ export function json(res: http.ServerResponse, status: number, body: unknown): v
   res.end(data);
 }
 
-/** JSON-Body unter Groessenlimit lesen; null bei Ungueltigkeit/Zu-Gross. */
+/** JSON-Body unter Groessenlimit lesen; null bei Ungueltigkeit/Zu-Groß. */
 export function readJsonBody(req: http.IncomingMessage, maxBytes: number): Promise<unknown> {
   return new Promise((resolve) => {
     const chunks: Buffer[] = [];

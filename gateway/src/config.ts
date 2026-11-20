@@ -1,6 +1,7 @@
+
 /**
  * Konfiguration des Device Control Gateways (Phase 4).
- * Alles ber Umgebungsvariablen, siehe gateway/README.md.
+ * Alles über Umgebungsvariablen, siehe gateway/README.md.
  */
 export type GatewayConfig = {
   port: number;
@@ -78,8 +79,8 @@ export function isLocalAddress(address: string | undefined): boolean {
 }
 
 /**
- * Sicherheitsentscheidung: Darf diese Anfrage (Kopplung/Steuerung) ber
- * unverschlsseltes HTTP kommen? Standard: nur localhost. Hinter einem
+ * Sicherheitsentscheidung: Darf diese Anfrage (Kopplung/Steuerung) über
+ * unverschlüsseltes HTTP kommen? Standard: nur localhost. Hinter einem
  * TLS-Reverse-Proxy entscheidet X-Forwarded-Proto, wenn TRUST_PROXY gesetzt ist.
  */
 export function isSecureRequest(

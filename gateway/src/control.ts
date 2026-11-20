@@ -1,3 +1,4 @@
+
 import { timingSafeEqual } from 'node:crypto';
 import type http from 'node:http';
 import type { Gateway } from './server.js';
@@ -22,7 +23,7 @@ function tokenOk(provided: string, expected: string): boolean {
 }
 
 /**
- * Kontroll-API fr die Mira-App (Anbindung in Phase 5). Geschuetzt durch den
+ * Kontroll-API fr die Mira-App (Anbindung in Phase 5). Geschützt durch den
  * Admin-Token; bei Standard-Host 127.0.0.1 nur lokal erreichbar, im Betrieb
  * hinter dem TLS-Reverse-Proxy.
  */

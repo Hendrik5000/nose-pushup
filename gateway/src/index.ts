@@ -1,3 +1,4 @@
+
 import path from 'node:path';
 import { loadConfig } from './config.js';
 import { GatewayStore } from './store.js';
@@ -11,7 +12,7 @@ async function run(): Promise<void> {
   });
   const gateway = new Gateway(config, store);
   await gateway.start();
-  process.stderr.write('Mira Device Control Gateway luft (Phase 4) auf ' + config.host + ':' + gateway.getPort() + '\n');
+  process.stderr.write('Mira Device Control Gateway läuft (Phase 4) auf ' + config.host + ':' + gateway.getPort() + '\n');
   if (config.adminTokenGenerated) {
     process.stderr.write(
       'HINWEIS: kein MIRA_GATEWAY_ADMIN_TOKEN gesetzt. Automatisch erzeugter Admin-Token (jetzt sicher notieren): ' +

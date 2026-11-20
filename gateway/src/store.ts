@@ -1,3 +1,4 @@
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -97,7 +98,7 @@ export type StoreOptions = { actionLogMax?: number };
 /**
  * Dateibasierte persistenter Speicher des Gateways. Bewusst kein Anteil an der
  * Supabase-Datenbank des Repos (dort gilt weiterhin Einfrieren von
- * Datenbankaenderungen). Zustand: Gerte, Kopplungscodes, minimiertes Protokoll.
+ * Datenbankaenderungen). Zustand: Geräte, Kopplungscodes, minimiertes Protokoll.
  */
 export class GatewayStore {
   private data: GatewayData;
@@ -126,7 +127,7 @@ export class GatewayStore {
         actionLog: Array.isArray(parsed.actionLog) ? parsed.actionLog.slice(-this.actionLogMax) : [],
       };
     } catch {
-      // Kaputten Zustand nicht nachschaufeln: neu starten, Protokoll im Auge behalten.
+      // Kaputten Zustand nicht weiterschleppen: mit leerem Zustand neu starten.
       return fallback;
     }
   }
@@ -141,7 +142,7 @@ export class GatewayStore {
     return this.data.devices.find((d) => d.deviceId === deviceId) ?? null;
   }
 
-  /** Findet ein nicht widerrufenes Gert anhand des Klartext-Tokens (timing-sicher). */
+  /** Findet ein nicht widerrufenes Gerät anhand des Klartext-Tokens (timing-sicher). */
   getDeviceByToken(token: string): DeviceRecord | null {
     for (const device of this.data.devices) {
       if (device.revokedAt !== null) continue;
@@ -166,7 +167,7 @@ export class GatewayStore {
 
   /**
    * Prft einen Code ohne ihn zu verbrauchen; Grund frs Protokoll.
-   * Abgelaufene codes zhlen als abgelaufen, alles andere als ungueltig.
+   * Abgelaufene codes zhä als abgelaufen, alles andere als ungueltig.
    */
   checkPairing(codeInput: unknown, now: Date = new Date()): { record: PairingCodeRecord | null; reason: string } {
     for (const candidate of this.data.pairingCodes) {
