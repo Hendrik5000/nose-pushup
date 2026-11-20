@@ -47,15 +47,14 @@ test("optional bar hides after intentional downward scroll, returns upward, and 
   assert.equal(state.visible, true, "near the top it is available");
 });
 
-test("onboarding, swipe, hidden-by-default bottom navigation, and optional context remain explicit", () => {
+test("onboarding, hidden-by-default bottom navigation, and optional context remain explicit", () => {
   const tutorials = read("lib/tutorials.ts");
   assert.match(tutorials, /nose-push:tour-seen:/);
   assert.match(tutorials, /alo-tutorial-state-v1/);
   const shell = read("routes/_authenticated/route.tsx");
   assert.match(shell, /TutorialOverlay/);
   assert.doesNotMatch(shell, /WelcomeTour/);
-  assert.match(shell, /installModuleSwipeGesture/);
-  assert.match(read("lib/module-swipe-gesture.ts"), /getSwipeDestination/);
+  assert.doesNotMatch(shell, /installModuleSwipeGesture|module-swipe-gesture/);
   const nav = read("components/TopNav.tsx");
   assert.doesNotMatch(nav, /alo-module-switcher|moduleMenu/);
   assert.match(nav, /layout === "bottom" \|\| layout === "floating"/);
