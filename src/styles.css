@@ -2598,3 +2598,57 @@ body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo
     transition: none !important;
   }
 }
+
+
+/* Final cascade alignment: the launcher-specific rules above must win over legacy grid selectors. */
+.alo-oneui9-home .alo-launcher-page .alo-home-app-grid,
+.alo-oneui9-home[data-home-editing="true"] .alo-home-app-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.alo-oneui9-home .alo-tablet-home-apps .alo-home-app-icon {
+  width: clamp(3.45rem, 13vw, 4.4rem);
+  max-width: 4.4rem;
+  border-radius: 28px;
+}
+.alo-oneui9-home .alo-tablet-home-apps .alo-home-app-label {
+  display: -webkit-box;
+  min-height: 2.35em;
+  max-width: 6.2rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 430px) {
+  .alo-oneui9-home .alo-launcher-page .alo-home-app-grid,
+  .alo-oneui9-home[data-home-editing="true"] .alo-home-app-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (min-width: 640px) {
+  .alo-oneui9-home .alo-launcher-page .alo-home-app-grid,
+  .alo-oneui9-home[data-home-editing="true"] .alo-home-app-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+@media (min-width: 960px) {
+  .alo-oneui9-home .alo-launcher-page .alo-home-app-grid,
+  .alo-oneui9-home[data-home-editing="true"] .alo-home-app-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+@media (max-width: 360px) {
+  .alo-oneui9-home .alo-tablet-home-apps .alo-home-app-icon { width: 3.2rem; }
+}
+@media (max-width: 380px) {
+  .alo-oneui9-home .alo-tablet-home-apps .alo-home-app-label { font-size: 0.62rem; }
+}
+@media (min-width: 640px) {
+  .alo-oneui9-home .alo-tablet-home-apps .alo-home-app-icon { width: 4.6rem; max-width: 4.6rem; }
+}
+@media (max-width: 360px) {
+  .alo-oneui9-home .alo-tablet-home-apps .alo-home-app-icon { width: 3.2rem; }
+}
