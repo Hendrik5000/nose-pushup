@@ -145,6 +145,13 @@ export class Gateway {
     const session = this.sessions.get(deviceId);
     const device = this.store.getDevice(deviceId);
     if (!session || !session.authenticated || !device) return;
+    const permissionRank: Record<string, number> = { keine: 0, lesen: 1, steuern: 2, kritisch: 3 };
+    if (
+      this.screenSessions.has(deviceId) &&
+      (permissionRank[device.permissions.bildschirm] ?? 0) < permissionRank.steuern
+    ) {
+      this.stopScreenSession(deviceId, 'bildschirmberechtigung-entfernt');
+    }
     try {
       session.ws.send(JSON.stringify(createEnvelope(MessageTypes.Welcome, this.welcomePayload(device.permissions))));
     } catch {
@@ -312,6 +319,10 @@ export class Gateway {
   ): { active: boolean; sessionId: string | null; frameBase64: string | null; capturedAt: string | null } {
     const device = this.store.getDevice(deviceId);
     if (!device || device.ownerUserId !== ownerUserId || device.revokedAt !== null) {
+      return { active: false, sessionId: null, frameBase64: null, capturedAt: null };
+    }
+    const permissionRank: Record<string, number> = { keine: 0, lesen: 1, steuern: 2, kritisch: 3 };
+    if ((permissionRank[device.permissions.bildschirm] ?? 0) < permissionRank.steuern) {
       return { active: false, sessionId: null, frameBase64: null, capturedAt: null };
     }
     const active = this.screenSessions.get(deviceId);
