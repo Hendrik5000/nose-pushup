@@ -1552,7 +1552,6 @@ function HomeAppHub({
             </AloErrorBoundary>
           ) : (
             <div className="alo-oneui9-content flex w-full max-w-none flex-col gap-7">
-
               {settings.widgetOrder.length > 0 && (
                 <AloErrorBoundary section="Widgets">
                   <section
