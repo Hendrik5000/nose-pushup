@@ -46,7 +46,9 @@ const EMPTY: MiraDeviceStore = { devices: [], activity: [], emergencyStopActive:
  */
 export function MiraDevicesPage({ userId }: Props) {
   const [store, setStore] = useState<MiraDeviceStore>(() =>
-    typeof window === "undefined" || !("localStorage" in window) ? EMPTY : loadMiraDeviceStore(window.localStorage),
+    typeof window === "undefined" || !("localStorage" in window)
+      ? EMPTY
+      : loadMiraDeviceStore(window.localStorage),
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deviceName, setDeviceName] = useState("");
@@ -83,26 +85,35 @@ export function MiraDevicesPage({ userId }: Props) {
         </span>
       </header>
 
-      <p className="mt-4 rounded-2xl border border-border/70 bg-card/75 p-4 text-xs leading-relaxed text-muted-foreground">
-        <strong className="text-foreground">Status: Planungsvorschau.</strong> Nach dem Entwicklungsauftrag
-        startet Device Control mit der Oberfläche. Es existiert noch kein Device Control Gateway und keine
-        echte Geräteverbindung; gekoppelte Geräte werden deshalb bewusst als{" "}
+      <p
+        className="mt-4 rounded-2xl border border-border/70 bg-card/75 p-4 text-xs leading-relaxed text-muted-foreground"
+      >
+        <strong className="text-foreground">Status: Planungsvorschau.</strong> Nach dem
+        Entwicklungsauftrag startet Device Control mit der Oberfläche. Es existiert noch kein Device
+        Control Gateway und keine echte Geräteverbindung; gekoppelte Geräte werden deshalb bewusst als
         <em>gekoppelt (offline)</em> angezeigt und niemals als verbunden. Es werden keine Passwörter oder
         Geheimnisse gespeichert. Windows 11 ist die erste Plattform, Android und iPad folgen später.
       </p>
 
       {error && (
-        <p role="alert" className="mt-4 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+        <p
+          role="alert"
+          className="mt-4 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+        >
           {error}
         </p>
       )}
 
-      <section aria-labelledby="kill-switch-heading" className="mt-6 rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
+      <section
+        aria-labelledby="kill-switch-heading"
+        className="mt-6 rounded-2xl border border-destructive/40 bg-destructive/5 p-4"
+      >
         <h2 id="kill-switch-heading" className="text-sm font-bold">
           Not-Aus
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Pausiert sofort alle Geräteverbindungen. Aktionen sind danach erst nach manueller Freigabe wieder möglich.
+          Pausiert sofort alle Geräteverbindungen. Aktionen sind danach erst nach manueller Freigabe
+          wieder möglich.
           {store.emergencyStopActive && " Not-Aus ist aktiv, alle Geräte sind pausiert."}
         </p>
         {confirmKill ? (
@@ -147,7 +158,10 @@ export function MiraDevicesPage({ userId }: Props) {
         )}
       </section>
 
-      <section aria-labelledby="couple-heading" className="mt-6 rounded-2xl border border-border/70 bg-card/75 p-4">
+      <section
+        aria-labelledby="couple-heading"
+        className="mt-6 rounded-2xl border border-border/70 bg-card/75 p-4"
+      >
         <h2 id="couple-heading" className="text-sm font-bold">
           Gerät koppeln
         </h2>
@@ -211,8 +225,8 @@ export function MiraDevicesPage({ userId }: Props) {
         </h2>
         {devices.length === 0 ? (
           <p className="mt-2 rounded-2xl border border-dashed border-border/70 p-4 text-xs text-muted-foreground">
-            Noch kein Gerät gekoppelt. Sobald ein Gerät gekoppelt ist, erscheint es hier mit Verbindungsstatus
-            und Berechtigungen.
+            Noch kein Gerät gekoppelt. Sobald ein Gerät gekoppelt ist, erscheint es hier mit
+            Verbindungsstatus und Berechtigungen.
           </p>
         ) : (
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -224,12 +238,20 @@ export function MiraDevicesPage({ userId }: Props) {
                   aria-pressed={selectedId === device.id}
                   className={
                     "min-h-11 w-full rounded-2xl border p-3 text-left transition " +
-                    (selectedId === device.id ? "border-primary/60 bg-primary/5" : "border-border/70 bg-card/75")
+                    (
+                      selectedId === device.id
+                        ? "border-primary/60 bg-primary/5"
+                        : "border-border/70 bg-card/75"
+                    )
                   }
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="text-sm font-semibold">{device.name}</span>
-                    <span className={"rounded-full border px-2 py-0.5 text-[10px] " + STATE_STYLES[device.state]}>
+                    <span
+                      className={
+                        "rounded-full border px-2 py-0.5 text-[10px] " + STATE_STYLES[device.state]
+                      }
+                    >
                       {describeDeviceState(device.state)}
                     </span>
                   </span>
@@ -251,7 +273,9 @@ export function MiraDevicesPage({ userId }: Props) {
               update(setDevicePermission(store, selected.id, capability, level));
               setError(null);
             } catch (err) {
-              setError(err instanceof Error ? err.message : "Berechtigung konnte nicht geändert werden.");
+              setError(
+                err instanceof Error ? err.message : "Berechtigung konnte nicht geändert werden.",
+              );
             }
           }}
           onPause={() => update(pauseDevice(store, selected.id))}
@@ -263,7 +287,10 @@ export function MiraDevicesPage({ userId }: Props) {
         />
       )}
 
-      <section aria-labelledby="activity-heading" className="mt-6 rounded-2xl border border-border/70 bg-card/75 p-4">
+      <section
+        aria-labelledby="activity-heading"
+        className="mt-6 rounded-2xl border border-border/70 bg-card/75 p-4"
+      >
         <h2 id="activity-heading" className="text-sm font-bold">
           Aktivitäten- und Ausführungsprotokoll
         </h2>
@@ -300,16 +327,22 @@ function DeviceDetail({
   onRevoke: () => void;
 }) {
   return (
-    <section aria-label={"Details zu " + device.name} className="mt-6 rounded-2xl border border-border/70 bg-card/75 p-4">
+    <section
+      aria-label={"Details zu " + device.name}
+      className="mt-6 rounded-2xl border border-border/70 bg-card/75 p-4"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold">{device.name}</h2>
-        <span className={"rounded-full border px-2 py-0.5 text-[10px] " + STATE_STYLES[device.state]}>
+        <span
+          className={"rounded-full border px-2 py-0.5 text-[10px] " + STATE_STYLES[device.state]}
+        >
           {describeDeviceState(device.state)}
         </span>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         {MIRA_PLATFORM_LABELS[device.platform]}
-        {device.coupledAt && " · gekoppelt am " + new Date(device.coupledAt).toLocaleDateString("de-DE")}
+        {device.coupledAt &&
+          " · gekoppelt am " + new Date(device.coupledAt).toLocaleDateString("de-DE")}
         {device.couplingCode && " · lokaler Kopplungscode: " + device.couplingCode}
       </p>
 
@@ -332,10 +365,16 @@ function DeviceDetail({
               <tr key={cap.id} className="border-t border-border/50">
                 <th scope="row" className="py-2 align-top font-medium">
                   {cap.label}
-                  <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground">{cap.hint}</span>
+                  <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground">
+                    {cap.hint}
+                  </span>
                 </th>
                 <td className="py-2">
-                  <div role="group" aria-label={"Berechtigungsstufe für " + cap.label} className="flex flex-wrap gap-1">
+                  <div
+                    role="group"
+                    aria-label={"Berechtigungsstufe für " + cap.label}
+                    className="flex flex-wrap gap-1"
+                  >
                     {PERMISSION_LEVELS.map((level) => (
                       <button
                         key={level}
@@ -360,9 +399,9 @@ function DeviceDetail({
         </table>
       </div>
       <p className="mt-2 text-[10px] text-muted-foreground">
-        Stufen: keine · lesen (Status anzeigen) · steuern (freigegebene Aktionen) · kritisch (nur nach
-        ausdrücklicher Bestätigung). Kritische Aktionen wie Löschen, Installieren oder Versenden bleiben
-        immer bestätigungspflichtig.
+        Stufen: keine · lesen (Status anzeigen) · steuern (freigegebene Aktionen) · kritisch (nur
+        nach ausdrücklicher Bestätigung). Kritische Aktionen wie Löschen, Installieren oder Versenden
+        bleiben immer bestätigungspflichtig.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
