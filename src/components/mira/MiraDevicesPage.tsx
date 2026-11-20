@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   miraDeviceControlMutation,
   miraDeviceControlState,
+  miraDeviceScreenFrame,
 } from "@/lib/mira-device-control.functions";
 import type {
   MiraDeviceControlMutationRequest,
@@ -127,8 +128,20 @@ export function MiraDevicesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resultText, setResultText] = useState<string | null>(null);
+  const [screenDeviceId, setScreenDeviceId] = useState<string | null>(null);
+  const [screenSessionId, setScreenSessionId] = useState<string | null>(null);
+  const [screenFrame, setScreenFrame] = useState<{ frameBase64: string; capturedAt: string } | null>(null);
+  const [screenFrameError, setScreenFrameError] = useState<string | null>(null);
 
   const loadState = useServerFn(miraDeviceControlState);
+  const loadScreenFrame = useServerFn(miraDeviceScreenFrame) as unknown as (options: {
+    data: { deviceId: string };
+  }) => Promise<{
+    active: boolean;
+    sessionId: string | null;
+    frameBase64: string | null;
+    capturedAt: string | null;
+  }>;
   const mutate = useServerFn(miraDeviceControlMutation) as unknown as (options: {
     data: MiraDeviceControlMutationRequest;
   }) => Promise<MiraDeviceControlMutationResponse>;
@@ -158,6 +171,42 @@ export function MiraDevicesPage() {
     [snapshot.devices, selectedId],
   );
 
+  useEffect(() => {
+    if (!screenDeviceId || !screenSessionId) return;
+    let cancelled = false;
+    let polling = false;
+    const poll = async () => {
+      if (polling || cancelled) return;
+      polling = true;
+      try {
+        const frame = await loadScreenFrame({ data: { deviceId: screenDeviceId } });
+        if (cancelled) return;
+        if (!frame.active || frame.sessionId !== screenSessionId) {
+          setScreenDeviceId(null);
+          setScreenSessionId(null);
+          setScreenFrame(null);
+          return;
+        }
+        if (frame.frameBase64 && frame.capturedAt) {
+          setScreenFrame({ frameBase64: frame.frameBase64, capturedAt: frame.capturedAt });
+          setScreenFrameError(null);
+        }
+      } catch (cause) {
+        if (!cancelled) {
+          setScreenFrameError(cause instanceof Error ? cause.message : "Bildschirmbild konnte nicht geladen werden.");
+        }
+      } finally {
+        polling = false;
+      }
+    };
+    void poll();
+    const timer = window.setInterval(() => void poll(), 1500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [loadScreenFrame, screenDeviceId, screenSessionId]);
+
   async function perform(data: MiraDeviceControlMutationRequest) {
     setBusy(true);
     setError(null);
@@ -180,10 +229,22 @@ export function MiraDevicesPage() {
               : "Aktion an das Gerät gesendet.",
         );
       } else if (result.action === "screen") {
+        if (data.action === "screen" && data.active && result.ok === true && result.sessionId) {
+          setScreenDeviceId(data.deviceId);
+          setScreenSessionId(result.sessionId);
+          setScreenFrame(null);
+          setScreenFrameError(null);
+        } else if (data.action === "screen" && !data.active) {
+          setScreenDeviceId(null);
+          setScreenSessionId(null);
+          setScreenFrame(null);
+        }
         setResultText(
           result.ok === true
-            ? "Bildschirm-Sitzung gestartet."
-            : "Bildschirm-Sitzung konnte nicht gestartet werden.",
+            ? data.action === "screen" && data.active
+              ? "Bildschirm-Sitzung gestartet."
+              : "Bildschirm-Sitzung beendet."
+            : "Bildschirm-Sitzung konnte nicht geändert werden.",
         );
       } else {
         setResultText("Änderung wurde an das Gateway übermittelt.");
@@ -548,6 +609,33 @@ export function MiraDevicesPage() {
               Bildschirmfreigabe beenden
             </button>
           </div>
+          {screenSessionId && screenDeviceId === selected.deviceId && (
+            <section className="mt-4 overflow-hidden rounded-xl border border-emerald-500/40 bg-black/95 p-3 text-white" aria-label="Live-Bildschirmfreigabe">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs font-semibold">Live-Bildschirm</p>
+                  <p className="text-[10px] text-emerald-300">Freigabe aktiv · Verbindung wird regelmäßig geprüft</p>
+                </div>
+                <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] text-emerald-300">LIVE</span>
+              </div>
+              {screenFrame ? (
+                <img
+                  src={"data:image/jpeg;base64," + screenFrame.frameBase64}
+                  alt={"Aktueller Bildschirm von " + selected.name}
+                  className="block max-h-[70vh] w-full rounded-lg object-contain"
+                />
+              ) : (
+                <div className="flex min-h-40 items-center justify-center rounded-lg bg-white/5 px-4 text-center text-xs text-white/70">
+                  {screenFrameError ?? "Warte auf das erste Bildschirmbild vom Windows-Agent …"}
+                </div>
+              )}
+              {screenFrame && (
+                <p className="mt-2 text-right text-[10px] text-white/60">
+                  Letztes Bild: {new Date(screenFrame.capturedAt).toLocaleTimeString("de-DE")}
+                </p>
+              )}
+            </section>
+          )}
         </DeviceDetail>
       )}
 

@@ -62,7 +62,13 @@ export class Gateway {
   private readonly pendingActions: Map<string, PendingAction> = new Map();
   private readonly screenSessions: Map<
     string,
-    { sessionId: string; startedAt: string; frameTimes: number[] }
+    {
+      sessionId: string;
+      startedAt: string;
+      frameTimes: number[];
+      frameBase64: string | null;
+      frameAt: string | null;
+    }
   > = new Map();
   private readonly pairingLimiter: PairingAttemptLimiter;
   private readonly watchdog: ReturnType<typeof setInterval>;
@@ -263,7 +269,13 @@ export class Gateway {
     }
     if (this.screenSessions.has(deviceId)) return { ok: false, reason: 'sitzung-laeuft-schon' };
     const sessionId = randomUUID();
-    this.screenSessions.set(deviceId, { sessionId, startedAt: new Date().toISOString(), frameTimes: [] });
+    this.screenSessions.set(deviceId, {
+      sessionId,
+      startedAt: new Date().toISOString(),
+      frameTimes: [],
+      frameBase64: null,
+      frameAt: null,
+    });
     this.store.appendLog({ kind: 'sitzung', deviceId, status: 'screen-gestartet' });
     try {
       session.ws.send(JSON.stringify(createEnvelope(MessageTypes.ScreenSessionStart, { sessionId })));
@@ -292,6 +304,25 @@ export class Gateway {
       }
     }
     return { ok: true, sessionId: active.sessionId };
+  }
+
+  getScreenFrame(
+    deviceId: string,
+    ownerUserId: string,
+  ): { active: boolean; sessionId: string | null; frameBase64: string | null; capturedAt: string | null } {
+    const device = this.store.getDevice(deviceId);
+    if (!device || device.ownerUserId !== ownerUserId || device.revokedAt !== null) {
+      return { active: false, sessionId: null, frameBase64: null, capturedAt: null };
+    }
+    const active = this.screenSessions.get(deviceId);
+    if (!active) return { active: false, sessionId: null, frameBase64: null, capturedAt: null };
+    const frameIsFresh = active.frameAt !== null && Date.now() - Date.parse(active.frameAt) <= 5000;
+    return {
+      active: true,
+      sessionId: active.sessionId,
+      frameBase64: frameIsFresh ? active.frameBase64 : null,
+      capturedAt: frameIsFresh ? active.frameAt : null,
+    };
   }
 
   // ---- Intern -------------------------------------------------------------
@@ -552,6 +583,8 @@ export class Gateway {
     }
     if (active.frameTimes.length < this.config.screenMaxFramesPerSecond) {
       active.frameTimes.push(now);
+      active.frameBase64 = f.frameBase64;
+      active.frameAt = new Date(now).toISOString();
       if (this.onScreenFrame) {
         try {
           this.onScreenFrame(session.deviceId, active.sessionId, f.frameBase64);

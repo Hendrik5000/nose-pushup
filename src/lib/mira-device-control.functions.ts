@@ -33,6 +33,7 @@ type GatewayResult = {
   detail: string | null;
   reason: string | null;
   message: string | null;
+  sessionId: string | null;
 };
 
 export type MiraDeviceControlMutationResponse =
@@ -307,6 +308,26 @@ function validateActionArgs(
 export const miraDeviceControlState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => fetchMiraGatewaySnapshot(context.userId));
+
+export const miraDeviceScreenFrame = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => {
+    const v = record(input, ["deviceId"]);
+    return { deviceId: string(v.deviceId, 80) };
+  })
+  .handler(async ({ data, context }) => {
+    const result = await requestMiraGateway(
+      "screen-frame?deviceId=" + encodeURIComponent(data.deviceId),
+      "GET",
+      context.userId,
+    );
+    return {
+      active: result.active === true,
+      sessionId: typeof result.sessionId === "string" ? result.sessionId : null,
+      frameBase64: typeof result.frameBase64 === "string" ? result.frameBase64 : null,
+      capturedAt: typeof result.capturedAt === "string" ? result.capturedAt : null,
+    };
+  });
 
 export const miraDeviceControlMutation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
