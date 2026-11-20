@@ -66,11 +66,11 @@ test("the home screen omits the time-based greeting and keeps the paginated laun
     new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(home, /from "@\\/lib\\/home-recent-apps"/);
+  assert.ok(home.includes('from "@/lib/home-recent-apps"'));
   assert.match(home, /aria-label="Dein Tag"/);
-  assert.doesNotMatch(home, /homeDayGreeting\\(new Date\\(\\)\\.getHours\\(\\)\\)/);
-  assert.match(home, /renderHomeGroup\\("launcher", "Apps", currentHomePageTiles\\)/);
-  assert.match(home, /rememberAppOpen\\(tile\\.id\\)/);
+  assert.ok(!home.includes("homeDayGreeting(new Date().getHours())"));
+  assert.ok(home.includes('renderHomeGroup("launcher", "Apps", currentHomePageTiles)'));
+  assert.ok(home.includes("rememberAppOpen(tile.id)"));
   assert.match(home, /alo-launcher-dock/);
   assert.match(home, /alo-launcher-page-dot/);
   const lib = readFileSync(new URL("../src/lib/home-recent-apps.ts", import.meta.url), "utf8");
