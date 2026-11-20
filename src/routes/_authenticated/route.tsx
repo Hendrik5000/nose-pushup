@@ -5,7 +5,7 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
 import { setAloOwner } from "@/lib/alo-store";
@@ -57,7 +57,7 @@ function AuthenticatedLayout() {
         <div className="authenticated-shell alo-no-global-header min-h-[100dvh]">
           {pathname === "/" ? <AloSystemChrome /> : null}
           <AppNavigation />
-          <div ref={surface} className="alo-module-surface">
+          <div className="alo-module-surface">
             <Outlet />
           </div>
           <AloWorkspace userId={user.id} />
