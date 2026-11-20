@@ -130,7 +130,10 @@ export function MiraDevicesPage() {
   const [resultText, setResultText] = useState<string | null>(null);
   const [screenDeviceId, setScreenDeviceId] = useState<string | null>(null);
   const [screenSessionId, setScreenSessionId] = useState<string | null>(null);
-  const [screenFrame, setScreenFrame] = useState<{ frameBase64: string; capturedAt: string } | null>(null);
+  const [screenFrame, setScreenFrame] = useState<{
+    frameBase64: string;
+    capturedAt: string;
+  } | null>(null);
   const [screenFrameError, setScreenFrameError] = useState<string | null>(null);
 
   const loadState = useServerFn(miraDeviceControlState);
@@ -193,7 +196,11 @@ export function MiraDevicesPage() {
         }
       } catch (cause) {
         if (!cancelled) {
-          setScreenFrameError(cause instanceof Error ? cause.message : "Bildschirmbild konnte nicht geladen werden.");
+          setScreenFrameError(
+            cause instanceof Error
+              ? cause.message
+              : "Bildschirmbild konnte nicht geladen werden.",
+          );
         }
       } finally {
         polling = false;
@@ -610,13 +617,20 @@ export function MiraDevicesPage() {
             </button>
           </div>
           {screenSessionId && screenDeviceId === selected.deviceId && (
-            <section className="mt-4 overflow-hidden rounded-xl border border-emerald-500/40 bg-black/95 p-3 text-white" aria-label="Live-Bildschirmfreigabe">
+            <section
+              className="mt-4 overflow-hidden rounded-xl border border-emerald-500/40 bg-black/95 p-3 text-white"
+              aria-label="Live-Bildschirmfreigabe"
+            >
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-xs font-semibold">Live-Bildschirm</p>
-                  <p className="text-[10px] text-emerald-300">Freigabe aktiv · Verbindung wird regelmäßig geprüft</p>
+                  <p className="text-[10px] text-emerald-300">
+                    Freigabe aktiv · Verbindung wird regelmäßig geprüft
+                  </p>
                 </div>
-                <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] text-emerald-300">LIVE</span>
+                <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] text-emerald-300">
+                  LIVE
+                </span>
               </div>
               {screenFrame ? (
                 <img
