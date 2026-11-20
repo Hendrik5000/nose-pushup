@@ -61,14 +61,13 @@ test("the greeting stays honest around the clock and rejects garbage", () => {
   assert.equal(homeDayGreeting(Number.NaN), "Guten Tag");
 });
 
-test("the home screen omits the time-based greeting and keeps the paginated launcher actions", () => {
+test("the home screen omits the daily overview and keeps the paginated launcher actions", () => {
   const home = readFileSync(
     new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
     "utf8",
   );
   assert.ok(home.includes('from "@/lib/home-recent-apps"'));
-  assert.match(home, /aria-label="Dein Tag"/);
-  assert.ok(!home.includes("homeDayGreeting(new Date().getHours())"));
+  assert.ok(!home.includes('<AloErrorBoundary section="Dein Tag">'));
   assert.ok(home.includes('renderHomeGroup("launcher", "Apps", currentHomePageTiles)'));
   assert.ok(home.includes("rememberAppOpen(tile.id)"));
   assert.match(home, /alo-launcher-dock/);
