@@ -29,16 +29,7 @@ jobs:
         run: npm run lint
 
       - name: Regression tests
-        run: |
-          status=0
-          npm test > /tmp/regression.tap 2>&1 || status=$?
-          echo "::error::summary: $(grep -c "^not ok" /tmp/regression.tap) not-ok; $(grep -E "^# (tests|pass|fail)" /tmp/regression.tap | tr "\n" " ")"
-          grep "^not ok" /tmp/regression.tap | head -8 | while IFS= read -r line; do
-            echo "::error::NOTOK: $line"
-          done
-          END=$(tail -25 /tmp/regression.tap | sed ":a;N;$!ba;s/\n/%0A/g" | tail -c 1200)
-          echo "::error::LOGEND: $END"
-          exit $status
+        run: npm test
       - name: Typecheck
         run: npx tsc --noEmit
 
