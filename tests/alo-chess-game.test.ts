@@ -8,8 +8,8 @@ const policy = readFileSync(resolve(root, "src/lib/public-game-policy.ts"), "utf
 const route = readFileSync(resolve(root, "src/routes/games.tsx"), "utf8");
 test("Alo chess is registered in the public games hub", () => {
   assert.match(policy, /"grid-defense", "kupferkern", "neon-starfighter", "chess"/);
-  assert.match(route, /game="chess"/);
-  assert.match(route, /title="Alo Schach"/);
+  assert.match(route, /game: "chess"/);
+  assert.match(route, /title: "Alo Schach"/);
   const previousGameIds = ["grid-defense", "kupferkern", "neon-starfighter"];
   for (const id of previousGameIds) assert.ok(route.includes(id));
 });
