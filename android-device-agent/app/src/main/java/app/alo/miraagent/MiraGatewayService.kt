@@ -85,7 +85,7 @@ class MiraGatewayService : Service() {
         try {
             val envelope = JSONObject(raw)
             when (envelope.optString("type")) {
-                "heartbeat" -> sendEnvelope(webSocket, "heartbeat")
+                "heartbeat" -> Unit
                 "not-aus" -> { updateNotification("Not-Aus aktiv – Verbindung gestoppt"); stopConnection(); stopSelf() }
                 "revoke" -> { DeviceIdentityStore.clear(this); updateNotification("Kopplung widerrufen"); stopConnection(); stopSelf() }
                 "action.request" -> {
