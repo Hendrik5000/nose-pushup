@@ -462,3 +462,74 @@ test('Unbekannte Routen ergeben 404', async () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+
+test('Reconnect: closing a superseded socket keeps the replacement device online', { timeout: 10000 }, async () => {
+  const { gateway, port, dir } = await boot();
+  let first: WebSocket | null = null;
+  let second: WebSocket | null = null;
+  try {
+    const codeRes = await post(
+      port,
+      '/v1/control/pairing-code',
+      { userId: TEST_USER_ID },
+      ADMIN_HEADERS,
+    );
+    assert.equal(codeRes.status, 200);
+    const pairRes = await post(port, '/v1/pair', {
+      code: codeRes.body.code,
+      deviceName: 'Reconnect-Testgerät',
+      platform: 'android',
+      publicKeySpki,
+      agentVersion: '0.1.0',
+    });
+    assert.equal(pairRes.status, 200);
+    const deviceId = pairRes.body.deviceId as string;
+    const deviceToken = pairRes.body.deviceToken as string;
+
+    const connectAndAuthenticate = async (): Promise<WebSocket> => {
+      const ws = new WebSocket('ws://127.0.0.1:' + port + '/v1/ws', {
+        headers: {
+          'x-mira-device': deviceId,
+          authorization: 'Bearer ' + deviceToken,
+        },
+      });
+      await new Promise<void>((resolve, reject) => {
+        ws.once('open', resolve);
+        ws.once('error', reject);
+      });
+      const welcomePromise = nextEnvelope(ws, 3000, 'reconnect-welcome');
+      ws.send(JSON.stringify(createEnvelope(MessageTypes.Hello, {
+        deviceId,
+        platform: 'android',
+        agentVersion: '0.1.0',
+      })));
+      const welcome = await welcomePromise;
+      assert.equal(welcome?.type, 'welcome');
+      return ws;
+    };
+
+    first = await connectAndAuthenticate();
+    const firstClosed = new Promise<void>((resolve) => {
+      first?.once('close', () => resolve());
+    });
+    second = await connectAndAuthenticate();
+    await firstClosed;
+
+    const devices = await get(
+      port,
+      '/v1/control/devices?userId=' + TEST_USER_ID,
+      ADMIN_HEADERS,
+    );
+    assert.equal(devices.status, 200);
+    const device = (devices.body.devices as Array<Record<string, unknown>>).find(
+      (entry) => entry.deviceId === deviceId,
+    );
+    assert.equal(device?.online, true);
+  } finally {
+    first?.terminate();
+    second?.terminate();
+    await gateway.stop();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

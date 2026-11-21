@@ -494,6 +494,9 @@ export class Gateway {
       }
     });
     ws.on('close', () => {
+      // A superseded socket may close after its replacement has already been
+      // registered. Only the currently registered session may clear device state.
+      if (this.sessions.get(deviceId) !== session) return;
       this.sessions.delete(deviceId);
       this.screenSessions.delete(deviceId);
       this.store.appendLog({ kind: 'verbindung', deviceId, status: 'getrennt' });
