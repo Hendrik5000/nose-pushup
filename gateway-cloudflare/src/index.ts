@@ -26,6 +26,7 @@ type DeviceRecord = {
   tokenSalt: string;
   createdAt: string;
   revokedAt: string | null;
+  lastSeenAt: number | null;
   permissions: Record<string, string>;
 };
 type LogEntry = { at: string; kind: string; deviceId?: string; status?: string };
@@ -177,6 +178,8 @@ export class DeviceSession extends DurableObject<Env> {
         return;
       }
       socket.serializeAttachment({ deviceId, authenticated: true });
+      device.lastSeenAt = Date.now();
+      await this.ctx.storage.put("device:" + deviceId, device);
       await this.appendLog({ kind: "verbindung", deviceId, status: "aufgebaut" });
       socket.send(JSON.stringify(this.envelope("welcome", {
         permissions: device.permissions,
@@ -188,7 +191,9 @@ export class DeviceSession extends DurableObject<Env> {
     }
 
     if (envelope.type === "heartbeat") {
-      socket.send(JSON.stringify(this.envelope("heartbeat")));
+      device.lastSeenAt = Date.now();
+      await this.ctx.storage.put("device:" + deviceId, device);
+      socket.send(JSON.stringify(this.envelope("heartbeat", { serverTime: new Date().toISOString() })));
       return;
     }
     if (envelope.type === "action.result") {
@@ -200,12 +205,20 @@ export class DeviceSession extends DurableObject<Env> {
 
   async webSocketClose(socket: WebSocket, code: number, reason: string): Promise<void> {
     const attachment = socket.deserializeAttachment() as { deviceId?: string } | null;
-    if (attachment?.deviceId) await this.appendLog({ kind: "verbindung", deviceId: attachment.deviceId, status: "getrennt" });
+    if (attachment?.deviceId) {
+      const device = await this.ctx.storage.get<DeviceRecord>("device:" + attachment.deviceId);
+      if (device) { device.lastSeenAt = null; await this.ctx.storage.put("device:" + attachment.deviceId, device); }
+      await this.appendLog({ kind: "verbindung", deviceId: attachment.deviceId, status: "getrennt" });
+    }
   }
 
   async webSocketError(socket: WebSocket): Promise<void> {
     const attachment = socket.deserializeAttachment() as { deviceId?: string } | null;
-    if (attachment?.deviceId) await this.appendLog({ kind: "verbindung", deviceId: attachment.deviceId, status: "fehler" });
+    if (attachment?.deviceId) {
+      const device = await this.ctx.storage.get<DeviceRecord>("device:" + attachment.deviceId);
+      if (device) { device.lastSeenAt = null; await this.ctx.storage.put("device:" + attachment.deviceId, device); }
+      await this.appendLog({ kind: "verbindung", deviceId: attachment.deviceId, status: "fehler" });
+    }
   }
 
   private envelope(type: string, payload?: unknown): Record<string, unknown> {
@@ -298,7 +311,9 @@ export class DeviceSession extends DurableObject<Env> {
       const userId = url.searchParams.get("userId");
       if (!validUserId(userId)) return json({ error: "ungueltige-anfrage" }, 400);
       const all = await this.ctx.storage.list<DeviceRecord>({ prefix: "device:" });
-      return json({ devices: Array.from(all.values()).filter((d) => d.ownerUserId === userId).map((d) => ({ ...sanitizeDevice(d), online: false })) });
+      const timeout = Math.min(Math.max(Number(this.env.MIRA_GATEWAY_HEARTBEAT_TIMEOUT_MS ?? 90000), 30000), 300000);
+      const now = Date.now();
+      return json({ devices: Array.from(all.values()).filter((d) => d.ownerUserId === userId).map((d) => ({ ...sanitizeDevice(d), online: d.revokedAt === null && d.lastSeenAt !== null && now - d.lastSeenAt <= timeout })) });
     }
     if (route === "action-log" && request.method === "GET") {
       const userId = url.searchParams.get("userId");
@@ -342,7 +357,12 @@ export class DeviceSession extends DurableObject<Env> {
       if (!device || device.ownerUserId !== userId) return json({ error: "geraet-unbekannt" }, 404);
       if (device.revokedAt === null) {
         device.revokedAt = new Date().toISOString();
+        device.lastSeenAt = null;
         await this.ctx.storage.put("device:" + deviceId, device);
+        for (const socket of this.ctx.getWebSockets(deviceId)) {
+          try { socket.send(JSON.stringify(this.envelope("revoke", { reason: "widerrufen" }))); } catch { /* socket may already be closed */ }
+          try { socket.close(4403, "widerrufen"); } catch { /* socket may already be closed */ }
+        }
         await this.appendLog({ kind: "widerruf", deviceId, status: "widerrufen" });
       }
       return json({ ok: true });
@@ -352,6 +372,16 @@ export class DeviceSession extends DurableObject<Env> {
       const active = body.aktiv === true;
       if (active) owners.add(userId); else owners.delete(userId);
       await this.ctx.storage.put("emergencyStopOwners", Array.from(owners));
+      if (active) {
+        for (const socket of this.ctx.getWebSockets()) {
+          const attachment = socket.deserializeAttachment() as { deviceId?: string } | null;
+          if (!attachment?.deviceId) continue;
+          try { socket.send(JSON.stringify(this.envelope("not-aus", { reason: "vom-benutzer-aktiviert" }))); } catch { /* socket may already be closed */ }
+          try { socket.close(4001, "not-aus"); } catch { /* socket may already be closed */ }
+          const device = await this.ctx.storage.get<DeviceRecord>("device:" + attachment.deviceId);
+          if (device) { device.lastSeenAt = null; await this.ctx.storage.put("device:" + attachment.deviceId, device); }
+        }
+      }
       await this.appendLog({ kind: "not-aus", status: active ? "aktiviert" : "deaktiviert" });
       return json({ ok: true, aktiv: active });
     }
