@@ -722,3 +722,10 @@ Der Abschnitt vom 20.11. oben ist durch die inzwischen gemergten PRs überholt. 
 - [ ] Live-Abnahme – Gateway auf eigenem Host mit TLS betreiben, Windows-Agent und Android-Agent auf echten Geräten koppeln, Berechtigungen/Not-Aus/Widerruf und erlaubte Aktionen testen.
 
 Phase 6 CI für Draft-PR #239: [Run 44898052823](https://github.com/Hendrik5000/nose-pushup/actions/runs/44898052823) erfolgreich (Android-Unit-Tests, Debug-APK-Build, Lint, Regressionstests, Typecheck, Web-Build). Das ist keine reale Geräteabnahme. Keine Datenbank-, Supabase-, SQL-, Migrations- oder RLS-Arbeiten bis zum Abschluss der übrigen Alo-Roadmap.
+
+
+### 2026-11-21 – Android-WebSocket-Reconnect gegen veraltete Callbacks absichern
+
+- [ ] **IN CI ZU PRÜFEN:** Der Android-Foreground-Agent erhält eine monotone Verbindungs-Generation. Callbacks, Heartbeats und verzögerte Reconnects einer abgelösten WebSocket-Generation dürfen den aktuellen Socket nicht mehr beeinflussen. Wiederholte Service-Starts erzeugen keine parallelen Verbindungen. Regressionstests prüfen Generation-Wechsel und Invalidierung.
+- Umfang: `android-device-agent/app/src/main/java/app/alo/miraagent/ConnectionGeneration.kt`, `MiraGatewayService.kt` und `ConnectionGenerationTest.kt`. Keine Android-Fernsteuerungsaktionen, keine Bildschirmaufnahme und keine Datenbankzugriffe ergänzt.
+- Status bleibt offen, bis Android-CI erfolgreich ist. Echte Android-Geräteabnahme und Gateway-Livebetrieb bleiben separat offen.
