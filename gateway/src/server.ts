@@ -117,19 +117,49 @@ export class Gateway {
 
   async stop(): Promise<void> {
     clearInterval(this.watchdog);
-    for (const session of this.sessions.values()) {
-      try {
-        session.ws.close(1001, 'gateway-herunterfahren');
-      } catch {
-        // Verbindungen sind beim Herunterfahren evtl. schon weg: bewusst ignoriert.
-      }
-    }
+    const closingSessions = [...this.sessions.values()].map(
+      (session) =>
+        new Promise<void>((resolve) => {
+          const ws = session.ws;
+          if (ws.readyState === WebSocket.CLOSED) {
+            resolve();
+            return;
+          }
+
+          let settled = false;
+          const finish = (): void => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+            resolve();
+          };
+          const timeout = setTimeout(() => {
+            try {
+              ws.terminate();
+            } catch {
+              // Bereits geschlossene Verbindungen müssen nicht weiter behandelt werden.
+            }
+            finish();
+          }, 1000);
+
+          ws.once('close', finish);
+          if (ws.readyState !== WebSocket.CLOSING) {
+            try {
+              ws.close(1001, 'gateway-herunterfahren');
+            } catch {
+              finish();
+            }
+          }
+        }),
+    );
+
     for (const pending of this.pendingActions.values()) {
       clearTimeout(pending.timer);
       pending.resolve({ status: 'error', detail: 'gateway-herunterfahren' });
     }
     this.pendingActions.clear();
     this.screenSessions.clear();
+    await Promise.all(closingSessions);
     await new Promise<void>((resolve) => this.server.close(() => resolve()));
   }
 
@@ -465,6 +495,14 @@ export class Gateway {
   private registerSession(deviceId: string, ws: WebSocket): void {
     const existing = this.sessions.get(deviceId);
     if (existing) {
+      // A screen session belongs to the old transport and must not survive reconnect.
+      this.stopScreenSession(deviceId, 'geraet-neu-verbunden');
+      for (const [requestId, pending] of this.pendingActions) {
+        if (pending.deviceId !== deviceId) continue;
+        clearTimeout(pending.timer);
+        this.pendingActions.delete(requestId);
+        pending.resolve({ status: 'error', detail: 'geraet-neu-verbunden' });
+      }
       try {
         existing.ws.close(1000, 'neue-sitzung');
       } catch {
@@ -494,6 +532,9 @@ export class Gateway {
       }
     });
     ws.on('close', () => {
+      // A superseded socket may close after its replacement has already been
+      // registered. Only the currently registered session may clear device state.
+      if (this.sessions.get(deviceId) !== session) return;
       this.sessions.delete(deviceId);
       this.screenSessions.delete(deviceId);
       this.store.appendLog({ kind: 'verbindung', deviceId, status: 'getrennt' });

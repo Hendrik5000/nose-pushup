@@ -35,3 +35,11 @@ gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon
 The URL-validation tests cover HTTPS-only operation and reject paths, credentials, query strings and fragments.
 
 This foundation is not a production-ready remote-control client. Device pairing and online presence can be tested; remote actions intentionally remain disabled.
+
+
+## Reconnect-Schutz (Phase 6 follow-up)
+
+The foreground service assigns a monotonically increasing generation to each
+connection attempt. Callbacks from replaced sockets and delayed reconnect tasks
+are ignored, and repeated service starts do not create parallel connections.
+This protects connection state only; Android remote actions remain disabled.
