@@ -117,19 +117,49 @@ export class Gateway {
 
   async stop(): Promise<void> {
     clearInterval(this.watchdog);
-    for (const session of this.sessions.values()) {
-      try {
-        session.ws.close(1001, 'gateway-herunterfahren');
-      } catch {
-        // Verbindungen sind beim Herunterfahren evtl. schon weg: bewusst ignoriert.
-      }
-    }
+    const closingSessions = [...this.sessions.values()].map(
+      (session) =>
+        new Promise<void>((resolve) => {
+          const ws = session.ws;
+          if (ws.readyState === WebSocket.CLOSED) {
+            resolve();
+            return;
+          }
+
+          let settled = false;
+          const finish = (): void => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+            resolve();
+          };
+          const timeout = setTimeout(() => {
+            try {
+              ws.terminate();
+            } catch {
+              // Bereits geschlossene Verbindungen müssen nicht weiter behandelt werden.
+            }
+            finish();
+          }, 1000);
+
+          ws.once('close', finish);
+          if (ws.readyState !== WebSocket.CLOSING) {
+            try {
+              ws.close(1001, 'gateway-herunterfahren');
+            } catch {
+              finish();
+            }
+          }
+        }),
+    );
+
     for (const pending of this.pendingActions.values()) {
       clearTimeout(pending.timer);
       pending.resolve({ status: 'error', detail: 'gateway-herunterfahren' });
     }
     this.pendingActions.clear();
     this.screenSessions.clear();
+    await Promise.all(closingSessions);
     await new Promise<void>((resolve) => this.server.close(() => resolve()));
   }
 
