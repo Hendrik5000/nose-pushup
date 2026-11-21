@@ -29,8 +29,8 @@ type DeviceRecord = {
 type LogEntry = { at: string; kind: string; deviceId?: string; status?: string };
 
 interface GatewayDeviceSessions {
-  idFromName(name: string): DurableObjectId;
-  get(id: DurableObjectId): Promise<{ fetch(request: Request): Promise<Response> }>;
+  idFromName(name: string): unknown;
+  get(id: unknown): Promise<{ fetch(request: Request): Promise<Response> }>;
 }
 
 const json = (body: unknown, status = 200): Response =>
