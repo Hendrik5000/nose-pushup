@@ -705,3 +705,20 @@ Stand: Chunk-Recovery implementiert und CI-validiert; Auth- und Push-Produktivur
 - [ ] Live-Abnahme: Gateway deployen, Windows-Agent koppeln, Rechte/Not-Aus/Widerruf, Eingabe, Dateien und Screen-Session auf echten Geräten testen.
 - Verbindliche Sperre: keine Datenbank-, Supabase-, SQL-, Migration- oder RLS-Arbeit bis zum Abschluss der übrigen Alo-Roadmap.
 
+
+
+## Mira Device Control – Statuskorrektur (2026-11-21)
+
+Der Abschnitt vom 20.11. oben ist durch die inzwischen gemergten PRs überholt. Verifizierter Stand auf `main`:
+
+- [x] Phase 1 – Geräteoberfläche (PR #228 gemergt).
+- [x] Phase 2 – Windows-Agent-Grundgerüst mit sicherer Kopplung und ausgehendem WSS (PR #229 gemergt; echte Windows-Geräteabnahme offen).
+- [x] Phase 3 – Windows-Allowlist-Steuerungswerkzeuge und Agent-Integration (PR #231 gemergt; echter Windows-PC-Test offen).
+- [x] Phase 4 – eigenständiger Gateway-Dienst und Kontroll-API (PR #231 gemergt; VPS/Domain/TLS-Deployment offen).
+- [x] Phase 5 – sichere serverseitige Gateway-Anbindung in Mira, inklusive Geräteübersicht, Kopplung, Berechtigungen, Not-Aus, Widerruf und Bildschirm-Session (PR #234 gemergt; Gateway-Umgebungsvariablen und Live-Betrieb offen).
+- [ ] Phase 6 – Android-Agent-Grundlage: Draft-PR #239 offen. Native App, sichere Identität/Tokenablage, HTTPS-Kopplung und sichtbarer WSS-Foreground-Service umgesetzt. Remote-Aktionen sind absichtlich deaktiviert; echte Installation und Android-Geräteabnahme fehlen.
+- [ ] Phase 7 – iPad Shortcuts-Bridge; iPadOS-Grenzen und sichere, nutzerbestätigte Aktionen noch zu spezifizieren und zu testen.
+- [ ] Phase 8 – geräteübergreifende Aufgaben und Übergabe.
+- [ ] Live-Abnahme – Gateway auf eigenem Host mit TLS betreiben, Windows-Agent und Android-Agent auf echten Geräten koppeln, Berechtigungen/Not-Aus/Widerruf und erlaubte Aktionen testen.
+
+Phase 6 CI für Draft-PR #239: [Run 44898052823](https://github.com/Hendrik5000/nose-pushup/actions/runs/44898052823) erfolgreich (Android-Unit-Tests, Debug-APK-Build, Lint, Regressionstests, Typecheck, Web-Build). Das ist keine reale Geräteabnahme. Keine Datenbank-, Supabase-, SQL-, Migrations- oder RLS-Arbeiten bis zum Abschluss der übrigen Alo-Roadmap.
