@@ -465,6 +465,14 @@ export class Gateway {
   private registerSession(deviceId: string, ws: WebSocket): void {
     const existing = this.sessions.get(deviceId);
     if (existing) {
+      // A screen session belongs to the old transport and must not survive reconnect.
+      this.stopScreenSession(deviceId, 'geraet-neu-verbunden');
+      for (const [requestId, pending] of this.pendingActions) {
+        if (pending.deviceId !== deviceId) continue;
+        clearTimeout(pending.timer);
+        this.pendingActions.delete(requestId);
+        pending.resolve({ status: 'error', detail: 'geraet-neu-verbunden' });
+      }
       try {
         existing.ws.close(1000, 'neue-sitzung');
       } catch {

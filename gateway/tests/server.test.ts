@@ -464,7 +464,7 @@ test('Unbekannte Routen ergeben 404', async () => {
 });
 
 
-test('Reconnect: closing a superseded socket keeps the replacement device online', { timeout: 10000 }, async () => {
+test('Reconnect: old socket cannot clear replacement or keep its screen session alive', { timeout: 10000 }, async () => {
   const { gateway, port, dir } = await boot();
   let first: WebSocket | null = null;
   let second: WebSocket | null = null;
@@ -510,6 +510,29 @@ test('Reconnect: closing a superseded socket keeps the replacement device online
     };
 
     first = await connectAndAuthenticate();
+    const permissions = await post(
+      port,
+      '/v1/control/permissions',
+      {
+        userId: TEST_USER_ID,
+        deviceId,
+        permissions: allPermissions({ bildschirm: 'steuern' }),
+      },
+      ADMIN_HEADERS,
+    );
+    assert.equal(permissions.status, 200);
+    await nextEnvelope(first, 3000, 'initial-screen-permissions');
+
+    const screenStart = await post(
+      port,
+      '/v1/control/screen',
+      { userId: TEST_USER_ID, deviceId, aktiv: true },
+      ADMIN_HEADERS,
+    );
+    assert.equal(screenStart.status, 200);
+    const screenStartEnvelope = await nextEnvelope(first, 3000, 'initial-screen-start');
+    assert.equal(screenStartEnvelope?.type, 'screen.session.start');
+
     const firstClosed = new Promise<void>((resolve) => {
       first?.once('close', () => resolve());
     });
@@ -526,6 +549,15 @@ test('Reconnect: closing a superseded socket keeps the replacement device online
       (entry) => entry.deviceId === deviceId,
     );
     assert.equal(device?.online, true);
+
+    const screenFrame = await get(
+      port,
+      '/v1/control/screen-frame?deviceId=' + deviceId + '&userId=' + TEST_USER_ID,
+      ADMIN_HEADERS,
+    );
+    assert.equal(screenFrame.status, 200);
+    assert.equal(screenFrame.body.active, false);
+    assert.equal(screenFrame.body.frameBase64, null);
   } finally {
     first?.terminate();
     second?.terminate();
