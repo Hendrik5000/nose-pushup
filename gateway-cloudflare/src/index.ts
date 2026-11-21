@@ -80,6 +80,36 @@ const readBody = async (
     return null;
   }
 };
+const TOOL_POLICIES: Record<string, { capability: string; minimumLevel: string }> = {
+  "status.ping": { capability: "status", minimumLevel: "lesen" },
+  "status.info": { capability: "status", minimumLevel: "lesen" },
+  "programme.liste": { capability: "programme", minimumLevel: "lesen" },
+  "programme.starten": { capability: "programme", minimumLevel: "steuern" },
+  "programme.beenden": { capability: "programme", minimumLevel: "steuern" },
+  "fenster.liste": { capability: "fenster", minimumLevel: "lesen" },
+  "fenster.fokussieren": { capability: "fenster", minimumLevel: "steuern" },
+  "fenster.minimieren": { capability: "fenster", minimumLevel: "steuern" },
+  "fenster.maximieren": { capability: "fenster", minimumLevel: "steuern" },
+  "eingabe.maus": { capability: "eingaben", minimumLevel: "steuern" },
+  "eingabe.tastatur": { capability: "eingaben", minimumLevel: "steuern" },
+  "dateien.auflisten": { capability: "dateien", minimumLevel: "lesen" },
+  "dateien.lesen": { capability: "dateien", minimumLevel: "lesen" },
+  "dateien.schreiben": { capability: "dateien", minimumLevel: "steuern" },
+  "dateien.umbenennen": { capability: "dateien", minimumLevel: "steuern" },
+  "dateien.verschieben": { capability: "dateien", minimumLevel: "steuern" },
+  "einstellungen.oeffnen": { capability: "einstellungen", minimumLevel: "steuern" },
+  "einstellungen.herunterfahren": { capability: "einstellungen", minimumLevel: "kritisch" },
+  "einstellungen.abbrechen-herunterfahren": { capability: "einstellungen", minimumLevel: "steuern" },
+  "audio.lautstaerke": { capability: "audio", minimumLevel: "steuern" },
+  "audio.stummschalten": { capability: "audio", minimumLevel: "steuern" },
+};
+const LEVEL_RANK: Record<string, number> = { keine: 0, lesen: 1, steuern: 2, kritisch: 3 };
+type PendingAction = {
+  deviceId: string;
+  resolve: (value: { status: string; detail?: string }) => void;
+  timer: ReturnType<typeof setTimeout>;
+};
+
 const defaultPermissions = (): Record<string, string> => ({
   status: "keine", programme: "keine", fenster: "keine", eingaben: "keine",
   bildschirm: "keine", dateien: "keine", einstellungen: "keine", audio: "keine",
@@ -104,6 +134,7 @@ export default {
 };
 
 export class DeviceSession extends DurableObject<Env> {
+  private pendingActions = new Map<string, PendingAction>();
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     if (request.method === "POST" && url.pathname === "/v1/pair") return this.pair(request);
@@ -186,7 +217,7 @@ export class DeviceSession extends DurableObject<Env> {
       await this.appendLog({ kind: "verbindung", deviceId, status: "aufgebaut" });
       socket.send(JSON.stringify(this.envelope("welcome", {
         permissions: device.permissions,
-        toolAllowlist: [],
+        toolAllowlist: Object.keys(TOOL_POLICIES),
         screenSessionRequired: true,
         heartbeatTimeoutSeconds: Math.round(Number(this.env.MIRA_GATEWAY_HEARTBEAT_TIMEOUT_MS ?? 90000) / 1000),
       })));
@@ -200,7 +231,24 @@ export class DeviceSession extends DurableObject<Env> {
       return;
     }
     if (envelope.type === "action.result") {
-      await this.appendLog({ kind: "aktion", deviceId, status: "ergebnis-empfangen" });
+      if (typeof envelope.payloadJson !== "string") return;
+      let result: Record<string, unknown>;
+      try {
+        const parsed: unknown = JSON.parse(envelope.payloadJson);
+        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return;
+        result = parsed as Record<string, unknown>;
+      } catch { return; }
+      const statuses = ["ok", "error", "bestaetigung-erforderlich", "nicht-implementiert"];
+      if (typeof result.requestId !== "string" || typeof result.status !== "string" ||
+        !statuses.includes(result.status) ||
+        (result.detail !== undefined && typeof result.detail !== "string")) return;
+      const pending = this.pendingActions.get(result.requestId);
+      if (!pending || pending.deviceId !== deviceId) return;
+      this.pendingActions.delete(result.requestId);
+      clearTimeout(pending.timer);
+      const detail = typeof result.detail === "string" ? result.detail.slice(0, 500) : undefined;
+      await this.appendLog({ kind: "aktion", deviceId, status: result.status });
+      pending.resolve({ status: result.status, detail });
       return;
     }
     await this.appendLog({ kind: "ablehnung", deviceId, status: "typ-unbekannt" });
@@ -388,7 +436,62 @@ export class DeviceSession extends DurableObject<Env> {
       await this.appendLog({ kind: "not-aus", status: active ? "aktiviert" : "deaktiviert" });
       return json({ ok: true, aktiv: active });
     }
-    if (route === "action" || route === "screen" || route === "screen-frame") {
+    if (route === "action") {
+      const deviceId = typeof body.deviceId === "string" ? body.deviceId : "";
+      const toolId = typeof body.toolId === "string" ? body.toolId : "";
+      if (!deviceId || deviceId.length > 80 || !toolId || toolId.length > 64) {
+        return json({ error: "ungueltige-anfrage" }, 400);
+      }
+      const device = await this.ctx.storage.get<DeviceRecord>("device:" + deviceId);
+      if (!device || device.ownerUserId !== userId || device.revokedAt !== null) {
+        return json({ error: "geraet-unbekannt" }, 404);
+      }
+      const stopped = (await this.ctx.storage.get<string[]>("emergencyStopOwners")) ?? [];
+      if (stopped.includes(userId)) return json({ dispatched: false, reason: "not-aus-aktiv" }, 409);
+      const policy = TOOL_POLICIES[toolId];
+      if (!policy) {
+        await this.appendLog({ kind: "ablehnung", deviceId, status: "tool-unbekannt" });
+        return json({ dispatched: false, reason: "tool-unbekannt" }, 409);
+      }
+      const level = device.permissions[policy.capability];
+      if (LEVEL_RANK[level] === undefined || LEVEL_RANK[level] < LEVEL_RANK[policy.minimumLevel]) {
+        await this.appendLog({ kind: "ablehnung", deviceId, status: "berechtigung-fehlt" });
+        return json({ dispatched: false, reason: "berechtigung-fehlt" }, 409);
+      }
+      const confirmation = body.confirmation === true;
+      if (policy.minimumLevel === "kritisch" && !confirmation) {
+        return json({ dispatched: false, reason: "bestaetigung-erforderlich" }, 409);
+      }
+      const socket = this.ctx.getWebSockets(deviceId).find((candidate) => {
+        const attachment = candidate.deserializeAttachment() as { authenticated?: boolean } | null;
+        return attachment?.authenticated === true && candidate.readyState === WebSocket.READY_STATE_OPEN;
+      });
+      if (!socket) return json({ dispatched: false, reason: "geraet-offline" }, 409);
+      const args = typeof body.args === "object" && body.args !== null && !Array.isArray(body.args)
+        ? body.args : {};
+      const requestId = crypto.randomUUID();
+      const envelope = this.envelope("action.request", {
+        requestId, toolId, args, confirmationGranted: confirmation,
+      });
+      const result = await new Promise<{ status: string; detail?: string }>((resolve) => {
+        const timer = setTimeout(() => {
+          this.pendingActions.delete(requestId);
+          void this.appendLog({ kind: "aktion", deviceId, status: "timeout" });
+          resolve({ status: "timeout" });
+        }, 15000);
+        this.pendingActions.set(requestId, { deviceId, timer, resolve });
+        try {
+          socket.send(JSON.stringify(envelope));
+          void this.appendLog({ kind: "aktion", deviceId, status: "gesendet" });
+        } catch {
+          clearTimeout(timer);
+          this.pendingActions.delete(requestId);
+          resolve({ status: "error", detail: "senden-fehlgeschlagen" });
+        }
+      });
+      return json({ dispatched: true, requestId, ...result });
+    }
+    if (route === "screen" || route === "screen-frame") {
       return json({ error: "geraet-offline", feature: route }, 503);
     }
     return json({ error: "control-route-not-yet-ported" }, 503);
