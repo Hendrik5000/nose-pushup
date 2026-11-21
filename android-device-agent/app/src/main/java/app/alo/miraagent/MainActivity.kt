@@ -31,6 +31,17 @@ class MainActivity : Activity() {
         code = field("6-stelliger Kopplungscode")
         deviceName = field("Android-Gerät")
         val pairButton = Button(this).apply { text = "Sicher koppeln"; setOnClickListener { pairDevice() } }
+        val connectButton = Button(this).apply {
+            text = "Verbindung starten"
+            setOnClickListener {
+                if (DeviceIdentityStore.load(this@MainActivity) == null) {
+                    status.text = "Dieses Gerät ist noch nicht gekoppelt."
+                } else {
+                    ContextCompat.startForegroundService(this@MainActivity, Intent(this@MainActivity, MiraGatewayService::class.java))
+                    status.text = "Verbindung wird gestartet."
+                }
+            }
+        }
         val stopButton = Button(this).apply {
             text = "Verbindung trennen"
             setOnClickListener { stopService(Intent(this@MainActivity, MiraGatewayService::class.java)); status.text = "Verbindung getrennt." }
@@ -38,9 +49,12 @@ class MainActivity : Activity() {
         layout.addView(TextView(this).apply { text = "Mira Geräte-Agent"; textSize = 24f })
         layout.addView(TextView(this).apply { text = "Kopple dieses Android-Gerät über einen einmaligen Code aus Alo → Mira → Gerätesteuerung."; textSize = 14f })
         layout.addView(gateway); layout.addView(code); layout.addView(deviceName)
-        layout.addView(pairButton); layout.addView(stopButton); layout.addView(status)
+        layout.addView(pairButton); layout.addView(connectButton); layout.addView(stopButton); layout.addView(status)
         setContentView(layout)
-        DeviceIdentityStore.load(this)?.let { status.text = "Gerät gekoppelt (${it.first.take(8)}…). Die Verbindung kann gestartet werden." }
+        DeviceIdentityStore.load(this)?.let {
+            gateway.setText(it.third)
+            status.text = "Gerät gekoppelt (${it.first.take(8)}…). Die Verbindung kann gestartet werden."
+        }
     }
 
     private fun field(hintText: String) = EditText(this).apply {

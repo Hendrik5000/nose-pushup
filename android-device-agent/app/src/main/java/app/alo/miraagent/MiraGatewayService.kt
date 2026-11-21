@@ -32,6 +32,7 @@ class MiraGatewayService : Service() {
     private var socket: WebSocket? = null
     private var retryMs = 1_000L
     private var stopped = false
+    private var reconnectPending = false
 
     override fun onCreate() { super.onCreate(); createNotificationChannel() }
 
@@ -52,9 +53,12 @@ class MiraGatewayService : Service() {
         socket?.cancel()
         socket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
+                handler.removeCallbacksAndMessages(null)
+                reconnectPending = false
                 retryMs = 1_000L
                 updateNotification("Mit Mira Gateway verbunden")
                 sendEnvelope(webSocket, "hello", JSONObject().put("deviceId", deviceId).put("platform", "android").put("agentVersion", "0.1.0"))
+                scheduleHeartbeat(webSocket)
             }
             override fun onMessage(webSocket: WebSocket, text: String) { handleEnvelope(webSocket, text) }
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) { webSocket.close(1000, null) }
@@ -64,6 +68,17 @@ class MiraGatewayService : Service() {
                 scheduleReconnect(deviceId, token, gatewayUrl)
             }
         })
+    }
+
+    private fun scheduleHeartbeat(webSocket: WebSocket) {
+        val heartbeat = object : Runnable {
+            override fun run() {
+                if (stopped || socket !== webSocket) return
+                sendEnvelope(webSocket, "heartbeat")
+                handler.postDelayed(this, 30_000L)
+            }
+        }
+        handler.postDelayed(heartbeat, 30_000L)
     }
 
     private fun handleEnvelope(webSocket: WebSocket, raw: String) {
@@ -92,15 +107,22 @@ class MiraGatewayService : Service() {
     }
 
     private fun scheduleReconnect(deviceId: String, token: String, gatewayUrl: String) {
-        if (stopped) return
+        if (stopped || reconnectPending) return
+        reconnectPending = true
         val delay = retryMs
         retryMs = (retryMs * 2).coerceAtMost(60_000L)
-        handler.postDelayed({ if (!stopped) connect(deviceId, token, gatewayUrl) }, delay)
+        handler.postDelayed({
+            reconnectPending = false
+            if (!stopped) connect(deviceId, token, gatewayUrl)
+        }, delay)
     }
 
     private fun stopConnection() {
-        stopped = true; handler.removeCallbacksAndMessages(null)
-        socket?.close(1000, "vom-nutzer-getrennt"); socket = null
+        stopped = true
+        handler.removeCallbacksAndMessages(null)
+        reconnectPending = false
+        socket?.close(1000, "vom-nutzer-getrennt")
+        socket = null
     }
 
     private fun notification(text: String): Notification {
