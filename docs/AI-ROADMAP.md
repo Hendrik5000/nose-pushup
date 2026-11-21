@@ -729,3 +729,12 @@ Phase 6 CI für Draft-PR #239: [Run 44898052823](https://github.com/Hendrik5000/
 - [ ] **IN CI ZU PRÜFEN:** Der Android-Foreground-Agent erhält eine monotone Verbindungs-Generation. Callbacks, Heartbeats und verzögerte Reconnects einer abgelösten WebSocket-Generation dürfen den aktuellen Socket nicht mehr beeinflussen. Wiederholte Service-Starts erzeugen keine parallelen Verbindungen. Regressionstests prüfen Generation-Wechsel und Invalidierung.
 - Umfang: `android-device-agent/app/src/main/java/app/alo/miraagent/ConnectionGeneration.kt`, `MiraGatewayService.kt` und `ConnectionGenerationTest.kt`. Keine Android-Fernsteuerungsaktionen, keine Bildschirmaufnahme und keine Datenbankzugriffe ergänzt.
 - Status bleibt offen, bis Android-CI erfolgreich ist. Echte Android-Geräteabnahme und Gateway-Livebetrieb bleiben separat offen.
+
+
+### 2026-11-21 – Android Read-only-Aktionen und lokale Allowlist
+
+- [ ] **IN CI ZU PRÜFEN:** Android beantwortet ausschließlich `status.ping` und `status.info`. `status.info` gibt nur Hersteller, Modell und Android-Version zurück. Request-ID, Tool-ID, Argumentobjekt und Bestätigungsflag werden lokal validiert. Unbekannte und zustandsändernde Werkzeuge bleiben blockiert.
+- Kritische Aktion `einstellungen.herunterfahren` ohne Bestätigungsflag wird als `bestaetigung-erforderlich` abgelehnt; mit Flag bleibt sie mangels Implementierung ausdrücklich `nicht-implementiert`. Das Flag allein führt niemals eine Aktion aus.
+- Tests: `ActionRequestPolicyTest.kt` deckt Read-only-Allowlist, fehlerhafte IDs/Argumente, unbekannte und mutierende Tools sowie Bestätigung ab.
+- Keine Shell-/PowerShell-Ausführung, AccessibilityService, Bildschirmaufnahme, Dateioperation, Eingabesteuerung, Datenbankänderung oder Live-Veröffentlichung.
+- Status bleibt offen bis Android-CI erfolgreich ist; echte Geräteabnahme und serverseitiger Livebetrieb bleiben getrennt offen.

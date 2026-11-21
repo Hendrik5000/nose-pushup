@@ -11,7 +11,7 @@ This is a separate native Android companion, not the Alo PWA/TWA.
 - Requires app notifications to be enabled before pairing or connecting, so the persistent connection indicator cannot be silently hidden by a denied notification permission.
 - Shows a persistent notification with an explicit disconnect action.
 - Handles heartbeat, Not-Aus and gateway revocation.
-- Rejects all remote action requests as `nicht-implementiert` until Android-specific actions have been designed and reviewed.
+- Executes only the two explicitly implemented read-only requests: `status.ping` and `status.info`. The latter returns only manufacturer/model and Android version when requested. All unknown, malformed and state-changing requests remain blocked.
 
 ## Security boundaries
 
@@ -43,3 +43,13 @@ The foreground service assigns a monotonically increasing generation to each
 connection attempt. Callbacks from replaced sockets and delayed reconnect tasks
 are ignored, and repeated service starts do not create parallel connections.
 This protects connection state only; Android remote actions remain disabled.
+
+
+## Android action allowlist (2026-11-21)
+
+- `status.ping`: returns a simple reachability acknowledgement.
+- `status.info`: returns manufacturer/model and Android version only when explicitly requested.
+- Every other action, including app launch, input, files, settings and shutdown, remains `nicht-implementiert`.
+- The agent independently validates request ID, tool ID, argument object and confirmation flag. The gateway permission check remains mandatory as a separate layer.
+- A critical shutdown request without the Mira confirmation flag returns `bestaetigung-erforderlich`; even with that flag, shutdown is still not implemented and cannot execute.
+- No shell, AccessibilityService, screen capture, file access or remote input was added.
