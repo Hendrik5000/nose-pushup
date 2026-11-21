@@ -46,7 +46,13 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: gateway-cloudflare/package.json
-      - run: npm install --no-audit --no-fund
+      - name: Install dependencies (diag)
+        run: |
+          npm install --no-audit --no-fund >/tmp/npm-out.txt 2>/tmp/npm-err.txt || {
+            TAIL=$(tail -n 6 /tmp/npm-err.txt | tr '\n' '|' | cut -c1-500)
+            echo "::error::NPM_INSTALL_CLOUDFLARE_FEHLER: $TAIL"
+            exit 1
+          }
       - run: npm run typecheck
       - run: npm test
 
