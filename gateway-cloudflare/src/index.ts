@@ -106,8 +106,117 @@ export class DeviceSession extends DurableObject<Env> {
     const url = new URL(request.url);
     if (request.method === "POST" && url.pathname === "/v1/pair") return this.pair(request);
     if (url.pathname.startsWith("/v1/control/")) return this.control(request, url);
-    if (url.pathname === "/v1/ws") return json({ error: "websocket-not-enabled" }, 503);
+    if (url.pathname === "/v1/ws") return this.connectDevice(request);
     return json({ error: "not-found" }, 404);
+  }
+
+  private async connectDevice(request: Request): Promise<Response> {
+    if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
+      return json({ error: "websocket-upgrade-erforderlich" }, 426);
+    }
+    const deviceId = request.headers.get("X-Mira-Device") ?? "";
+    const authorization = request.headers.get("Authorization") ?? "";
+    const token = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
+    if (!deviceId || deviceId.length > 80 || token.length < 32 || token.length > 256) {
+      return json({ error: "unauthorisiert" }, 401);
+    }
+    const device = await this.ctx.storage.get<DeviceRecord>("device:" + deviceId);
+    if (!device || device.revokedAt !== null) return json({ error: "geraet-unbekannt" }, 401);
+    const suppliedHash = await sha256(device.tokenSalt + ":" + token);
+    if (!timingSafeEqual(suppliedHash, device.tokenHash)) return json({ error: "unauthorisiert" }, 401);
+
+    const pair = new WebSocketPair();
+    const client = pair[0];
+    const server = pair[1];
+    this.ctx.acceptWebSocket(server, [deviceId]);
+    server.serializeAttachment({ deviceId, authenticated: false });
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async webSocketMessage(socket: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    const attachment = socket.deserializeAttachment() as { deviceId?: string; authenticated?: boolean } | null;
+    const deviceId = attachment?.deviceId ?? "";
+    if (!deviceId) { socket.close(1008, "geraet-unbekannt"); return; }
+    const raw = typeof message === "string"
+      ? message
+      : new TextDecoder().decode(message instanceof ArrayBuffer ? message : new Uint8Array(message));
+    if (raw.length > 2_000_000) { socket.close(1009, "nachricht-zu-gross"); return; }
+    let envelope: Record<string, unknown>;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error("invalid");
+      envelope = parsed as Record<string, unknown>;
+    } catch {
+      await this.appendLog({ kind: "ablehnung", deviceId, status: "ungueltiger-umschlag" });
+      socket.close(1008, "ungueltiger-umschlag");
+      return;
+    }
+    if (envelope.version !== 1 || typeof envelope.id !== "string" || envelope.id.length < 1 || envelope.id.length > 64 ||
+      typeof envelope.type !== "string" || envelope.type.length < 1 || envelope.type.length > 64 ||
+      typeof envelope.at !== "string" || envelope.at.length > 64 ||
+      (envelope.payloadJson !== undefined && typeof envelope.payloadJson !== "string")) {
+      socket.close(1008, "ungueltiger-umschlag");
+      return;
+    }
+    const device = await this.ctx.storage.get<DeviceRecord>("device:" + deviceId);
+    if (!device || device.revokedAt !== null) { socket.close(4403, "widerrufen"); return; }
+
+    if (attachment?.authenticated !== true) {
+      if (envelope.type !== "hello" || typeof envelope.payloadJson !== "string") {
+        socket.close(1008, "hello-erwartet");
+        return;
+      }
+      let hello: unknown;
+      try { hello = JSON.parse(envelope.payloadJson); } catch { socket.close(1008, "hello-ungueltig"); return; }
+      if (typeof hello !== "object" || hello === null || Array.isArray(hello)) { socket.close(1008, "hello-ungueltig"); return; }
+      const value = hello as Record<string, unknown>;
+      if (value.deviceId !== deviceId || value.platform !== device.platform ||
+        typeof value.agentVersion !== "string" || value.agentVersion.length < 1 || value.agentVersion.length > 50 ||
+        Object.keys(value).some((key) => !["deviceId", "platform", "agentVersion"].includes(key))) {
+        socket.close(1008, "hello-ungueltig");
+        return;
+      }
+      socket.serializeAttachment({ deviceId, authenticated: true });
+      await this.appendLog({ kind: "verbindung", deviceId, status: "aufgebaut" });
+      socket.send(JSON.stringify(this.envelope("welcome", {
+        permissions: device.permissions,
+        toolAllowlist: [],
+        screenSessionRequired: true,
+        heartbeatTimeoutSeconds: Math.round(Number(this.env.MIRA_GATEWAY_HEARTBEAT_TIMEOUT_MS ?? 90000) / 1000),
+      })));
+      return;
+    }
+
+    if (envelope.type === "heartbeat") {
+      socket.send(JSON.stringify(this.envelope("heartbeat")));
+      return;
+    }
+    if (envelope.type === "action.result") {
+      await this.appendLog({ kind: "aktion", deviceId, status: "ergebnis-empfangen" });
+      return;
+    }
+    await this.appendLog({ kind: "ablehnung", deviceId, status: "typ-unbekannt" });
+  }
+
+  async webSocketClose(socket: WebSocket, code: number, reason: string): Promise<void> {
+    const attachment = socket.deserializeAttachment() as { deviceId?: string } | null;
+    if (attachment?.deviceId) await this.appendLog({ kind: "verbindung", deviceId: attachment.deviceId, status: "getrennt" });
+  }
+
+  async webSocketError(socket: WebSocket): Promise<void> {
+    const attachment = socket.deserializeAttachment() as { deviceId?: string } | null;
+    if (attachment?.deviceId) await this.appendLog({ kind: "verbindung", deviceId: attachment.deviceId, status: "fehler" });
+  }
+
+  private envelope(type: string, payload?: unknown): Record<string, unknown> {
+    const result: Record<string, unknown> = {
+      version: 1,
+      id: crypto.randomUUID(),
+      type,
+      at: new Date().toISOString(),
+    };
+    if (payload !== undefined) result.payloadJson = JSON.stringify(payload);
+    return result;
   }
 
   private async authorized(request: Request): Promise<boolean> {
