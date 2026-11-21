@@ -26,7 +26,8 @@ object DeviceIdentityStore {
         if (!store.containsAlias(KEY_ALIAS)) {
             val generator = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore")
             generator.initialize(KeyGenParameterSpec.Builder(KEY_ALIAS, KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY)
-                .setKeySize(2048).setDigests(KeyProperties.DIGEST_SHA256).build())
+                .setKeySize(2048).setDigests(KeyProperties.DIGEST_SHA256)
+                .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1).build())
             generator.generateKeyPair()
         }
         val certificate = store.getCertificate(KEY_ALIAS) ?: error("Geräteschlüssel konnte nicht geladen werden.")
