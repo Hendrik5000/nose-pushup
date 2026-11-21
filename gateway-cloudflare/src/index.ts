@@ -1,5 +1,5 @@
 export interface Env {
-  DEVICE_SESSIONS: DurableObjectNamespace<DeviceSession>;
+  DEVICE_SESSIONS: GatewayDeviceSessions;
   MIRA_GATEWAY_ADMIN_TOKEN: string;
   MIRA_GATEWAY_PAIRING_TTL_MS?: string;
   MIRA_GATEWAY_HEARTBEAT_TIMEOUT_MS?: string;
@@ -27,6 +27,11 @@ type DeviceRecord = {
   permissions: Record<string, string>;
 };
 type LogEntry = { at: string; kind: string; deviceId?: string; status?: string };
+
+interface GatewayDeviceSessions {
+  idFromName(name: string): DurableObjectId;
+  get(id: DurableObjectId): Promise<{ fetch(request: Request): Promise<Response> }>;
+}
 
 const json = (body: unknown, status = 200): Response =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
@@ -108,7 +113,8 @@ export default {
     }
     if (!url.pathname.startsWith("/v1/")) return json({ error: "not-found" }, 404);
     const id = env.DEVICE_SESSIONS.idFromName("mira-gateway-global-v1");
-    return env.DEVICE_SESSIONS.get(id).fetch(request);
+    const stub = await env.DEVICE_SESSIONS.get(id);
+    return stub.fetch(request);
   },
 };
 
@@ -186,6 +192,7 @@ export class DeviceSession {
 
     const pairing = await this.state.storage.get<PairingRecord>("pairing:" + body.code);
     if (!pairing || pairing.usedAt !== null || pairing.expiresAt <= now) {
+      if (pairing) await this.state.storage.delete("pairing:" + body.code);
       failures.push(now);
       await this.state.storage.put(rateKey, failures);
       return json({ error: "kopplungscode-ungueltig" }, 401);
@@ -224,9 +231,10 @@ export class DeviceSession {
     if (route === "pairing-code" && request.method === "POST") {
       const body = await readBody(request);
       if (!body || !validUserId(body.userId)) return json({ error: "ungueltige-anfrage" }, 400);
-      const code = String(
-        crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000,
-      ).padStart(6, "0");
+      const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(
+        6,
+        "0",
+      );
       const ttl = Math.min(
         Math.max(Number(this.env.MIRA_GATEWAY_PAIRING_TTL_MS ?? 300000), 10000),
         300000,
@@ -239,9 +247,7 @@ export class DeviceSession {
         expiresAt: now + ttl,
         usedAt: null,
       };
-      await this.state.storage.put("pairing:" + code, record, {
-        expirationTtl: Math.ceil(ttl / 1000),
-      });
+      await this.state.storage.put("pairing:" + code, record);
       await this.appendLog({ kind: "kopplung", status: "code-erzeugt" });
       return json({ code, expiresAt: new Date(record.expiresAt).toISOString() });
     }

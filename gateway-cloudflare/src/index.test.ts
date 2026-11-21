@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import worker, { DeviceSession } from "./index";
+import worker from "./index";
 
 describe("Mira Cloudflare gateway", () => {
   it("exposes a no-store health endpoint", async () => {
     const response = await worker.fetch(new Request("https://example.test/healthz"), {
-      DEVICE_SESSIONS: {} as DurableObjectNamespace<DeviceSession>,
+      DEVICE_SESSIONS: {
+        idFromName: () => "global",
+        get: async () => ({ fetch: async () => new Response("unused") }),
+      },
       MIRA_GATEWAY_ADMIN_TOKEN: "unused",
     });
     expect(response.status).toBe(200);
@@ -15,10 +18,10 @@ describe("Mira Cloudflare gateway", () => {
     const response = await worker.fetch(new Request("https://example.test/v1/ws"), {
       DEVICE_SESSIONS: {
         idFromName: () => "global",
-        get: () => ({
+        get: async () => ({
           fetch: async () => Response.json({ error: "websocket-not-enabled" }, { status: 503 }),
         }),
-      } as unknown as DurableObjectNamespace<DeviceSession>,
+      },
       MIRA_GATEWAY_ADMIN_TOKEN: "unused",
     });
     expect(response.status).toBe(503);
