@@ -132,7 +132,8 @@ export default {
   },
 };
 
-export class DeviceSession extends DurableObject<Env> {\n  private pendingActions = new Map<string, PendingAction>();
+export class DeviceSession extends DurableObject<Env> {
+  private pendingActions = new Map<string, PendingAction>();
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     if (request.method === "POST" && url.pathname === "/v1/pair") return this.pair(request);
