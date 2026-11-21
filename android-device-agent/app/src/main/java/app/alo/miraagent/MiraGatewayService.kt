@@ -161,27 +161,68 @@ class MiraGatewayService : Service() {
                     stopConnection()
                     stopSelf()
                 }
-                "action.request" -> {
-                    val payload = JSONObject(envelope.optString("payloadJson", "{}"))
-                    val requestId = payload.optString("requestId")
-                    if (requestId.isNotBlank()) {
-                        sendEnvelope(
-                            webSocket,
-                            "action.result",
-                            JSONObject()
-                                .put("requestId", requestId)
-                                .put("status", "nicht-implementiert")
-                                .put(
-                                    "detail",
-                                    "Android-Agent: Steuerungswerkzeuge sind noch nicht freigegeben.",
-                                ),
-                        )
-                    }
-                }
+                "action.request" -> handleActionRequest(webSocket, envelope.optString("payloadJson", "{}"))
             }
         } catch (_: Exception) {
             // Unknown or malformed messages never trigger a device action.
         }
+    }
+
+    private fun handleActionRequest(webSocket: WebSocket, rawPayload: String) {
+        try {
+            val payload = JSONObject(rawPayload)
+            val requestId = payload.optString("requestId").takeIf { it.isNotBlank() }
+            val toolId = payload.optString("toolId").takeIf { it.isNotBlank() }
+            val argsValue = payload.opt("args")
+            val args = payload.optJSONObject("args")
+            val argumentKeys = if (args == null) emptySet() else args.keys().asSequence().toSet()
+            val confirmationValue = payload.opt("confirmationGranted")
+            val confirmationGranted = confirmationValue is Boolean && confirmationValue
+            val decision = ActionRequestPolicy.validate(
+                requestId = requestId,
+                toolId = toolId,
+                argsAreObject = argsValue is JSONObject,
+                argumentKeys = argumentKeys,
+                confirmationGranted = confirmationGranted,
+            )
+            when (decision) {
+                is ActionRequestDecision.ReadOnly -> {
+                    val detail = when (decision.toolId) {
+                        "status.ping" -> "Android-Agent erreichbar."
+                        "status.info" -> deviceInfoSummary()
+                        else -> return
+                    }
+                    sendActionResult(webSocket, decision.requestId, "ok", detail)
+                }
+                is ActionRequestDecision.Rejected -> {
+                    if (requestId != null) {
+                        sendActionResult(webSocket, requestId, decision.status, decision.detail)
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            // Ungültige Requests lösen niemals eine Geräteaktion aus.
+        }
+    }
+
+    private fun deviceInfoSummary(): String {
+        val manufacturer = Build.MANUFACTURER.orEmpty().take(60)
+        val model = Build.MODEL.orEmpty().take(80)
+        val release = Build.VERSION.RELEASE.orEmpty().take(30)
+        return "$manufacturer $model · Android $release (API ${Build.VERSION.SDK_INT}) · Agent 0.1.0"
+            .replace(Regex("[\\r\\n\\t]"), " ")
+            .take(240)
+    }
+
+    private fun sendActionResult(webSocket: WebSocket, requestId: String, status: String, detail: String) {
+        sendEnvelope(
+            webSocket,
+            "action.result",
+            JSONObject()
+                .put("requestId", requestId)
+                .put("status", status)
+                .put("detail", detail.take(500)),
+        )
     }
 
     private fun sendEnvelope(webSocket: WebSocket, type: String, payload: JSONObject? = null) {
