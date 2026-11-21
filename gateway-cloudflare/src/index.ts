@@ -123,6 +123,8 @@ export class DeviceSession extends DurableObject<Env> {
     }
     const device = await this.ctx.storage.get<DeviceRecord>("device:" + deviceId);
     if (!device || device.revokedAt !== null) return json({ error: "geraet-unbekannt" }, 401);
+    const stoppedOwners = (await this.ctx.storage.get<string[]>("emergencyStopOwners")) ?? [];
+    if (stoppedOwners.includes(device.ownerUserId)) return json({ error: "not-aus-aktiv", retryable: false }, 423);
     const suppliedHash = await sha256(device.tokenSalt + ":" + token);
     if (!timingSafeEqual(suppliedHash, device.tokenHash)) return json({ error: "unauthorisiert" }, 401);
 
