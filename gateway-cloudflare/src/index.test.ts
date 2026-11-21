@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import worker from "./index";
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import worker from "./index.ts";
 
 describe("Mira Cloudflare gateway", () => {
   it("exposes a no-store health endpoint", async () => {
@@ -10,9 +11,11 @@ describe("Mira Cloudflare gateway", () => {
       },
       MIRA_GATEWAY_ADMIN_TOKEN: "unused",
     });
-    expect(response.status).toBe(200);
-    expect(response.headers.get("Cache-Control")).toBe("no-store");
-    expect(await response.json()).toMatchObject({ ok: true, phase: "pairing-preview" });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+    const body = (await response.json()) as { ok: boolean; phase: string };
+    assert.equal(body.ok, true);
+    assert.equal(body.phase, "pairing-preview");
   });
   it("rejects device WebSockets until protocol parity exists", async () => {
     const response = await worker.fetch(new Request("https://example.test/v1/ws"), {
@@ -24,6 +27,6 @@ describe("Mira Cloudflare gateway", () => {
       },
       MIRA_GATEWAY_ADMIN_TOKEN: "unused",
     });
-    expect(response.status).toBe(503);
+    assert.equal(response.status, 503);
   });
 });

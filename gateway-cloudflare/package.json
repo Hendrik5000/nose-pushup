@@ -4,14 +4,13 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "node --experimental-strip-types --test src/index.test.ts",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261121.1",
+    "@cloudflare/workers-types": "^4.20261121.0",
     "typescript": "^5.8.3",
-    "vitest": "^3.2.4",
     "wrangler": "^4.45.0"
   }
 }
