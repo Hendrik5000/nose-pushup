@@ -726,15 +726,22 @@ Phase 6 CI für Draft-PR #239: [Run 44898052823](https://github.com/Hendrik5000/
 
 ### 2026-11-21 – Android-WebSocket-Reconnect gegen veraltete Callbacks absichern
 
-- [ ] **IN CI ZU PRÜFEN:** Der Android-Foreground-Agent erhält eine monotone Verbindungs-Generation. Callbacks, Heartbeats und verzögerte Reconnects einer abgelösten WebSocket-Generation dürfen den aktuellen Socket nicht mehr beeinflussen. Wiederholte Service-Starts erzeugen keine parallelen Verbindungen. Regressionstests prüfen Generation-Wechsel und Invalidierung.
+- [x] **CODE-CI BESTANDEN:** Der Android-Foreground-Agent erhält eine monotone Verbindungs-Generation. Callbacks, Heartbeats und verzögerte Reconnects einer abgelösten WebSocket-Generation dürfen den aktuellen Socket nicht mehr beeinflussen. Wiederholte Service-Starts erzeugen keine parallelen Verbindungen. Regressionstests prüfen Generation-Wechsel und Invalidierung.
 - Umfang: `android-device-agent/app/src/main/java/app/alo/miraagent/ConnectionGeneration.kt`, `MiraGatewayService.kt` und `ConnectionGenerationTest.kt`. Keine Android-Fernsteuerungsaktionen, keine Bildschirmaufnahme und keine Datenbankzugriffe ergänzt.
-- Status bleibt offen, bis Android-CI erfolgreich ist. Echte Android-Geräteabnahme und Gateway-Livebetrieb bleiben separat offen.
+- Android-Unit-Tests, Debug-APK-Build, Web-Lint, Regressionstests, Typecheck und Build erfolgreich in [CI-Run 44900738004](https://github.com/Hendrik5000/nose-pushup/actions/runs/44900738004), Commit `d303cb701808d93ddb45b0ad0c4fee3d4175e43b`. Echte Android-Geräteabnahme und Gateway-Livebetrieb bleiben separat offen.
 
 
 ### 2026-11-21 – Android Read-only-Aktionen und lokale Allowlist
 
-- [ ] **IN CI ZU PRÜFEN:** Android beantwortet ausschließlich `status.ping` und `status.info`. `status.info` gibt nur Hersteller, Modell und Android-Version zurück. Request-ID, Tool-ID, Argumentobjekt und Bestätigungsflag werden lokal validiert. Unbekannte und zustandsändernde Werkzeuge bleiben blockiert.
+- [x] **CODE-CI BESTANDEN:** Android beantwortet ausschließlich `status.ping` und `status.info`. `status.info` gibt nur Hersteller, Modell und Android-Version zurück. Request-ID, Tool-ID, Argumentobjekt und Bestätigungsflag werden lokal validiert. Unbekannte und zustandsändernde Werkzeuge bleiben blockiert.
 - Kritische Aktion `einstellungen.herunterfahren` ohne Bestätigungsflag wird als `bestaetigung-erforderlich` abgelehnt; mit Flag bleibt sie mangels Implementierung ausdrücklich `nicht-implementiert`. Das Flag allein führt niemals eine Aktion aus.
 - Tests: `ActionRequestPolicyTest.kt` deckt Read-only-Allowlist, fehlerhafte IDs/Argumente, unbekannte und mutierende Tools sowie Bestätigung ab.
 - Keine Shell-/PowerShell-Ausführung, AccessibilityService, Bildschirmaufnahme, Dateioperation, Eingabesteuerung, Datenbankänderung oder Live-Veröffentlichung.
-- Status bleibt offen bis Android-CI erfolgreich ist; echte Geräteabnahme und serverseitiger Livebetrieb bleiben getrennt offen.
+- Android-Unit-Tests (einschließlich acht neuer Policy-Tests), Debug-APK-Build, Web-Lint, Regressionstests, Typecheck und Build erfolgreich in [CI-Run 44903438415](https://github.com/Hendrik5000/nose-pushup/actions/runs/44903438415), Code-Commit `f546086d82d43194a60e83049861af16625858aa`. Draft-PR [#242](https://github.com/Hendrik5000/nose-pushup/pull/242) basiert auf dem Reconnect-PR #241. Echte Android-Geräteabnahme, Review/Merge und Gateway-Livebetrieb bleiben getrennt offen.
+
+
+### Statusnachtrag – Mira Device Control (2026-11-21)
+
+- Reconnect-Folgefix in Draft-PR [#241](https://github.com/Hendrik5000/nose-pushup/pull/241), Commit `d303cb701808d93ddb45b0ad0c4fee3d4175e43b`: Android-Unit-Tests und Debug-APK-Build sowie Web-Lint, Regressionstests, Typecheck und Build in CI-Run `44900738004` erfolgreich.
+- Read-only-Folgefix in Draft-PR [#242](https://github.com/Hendrik5000/nose-pushup/pull/242), Commit `f546086d82d43194a60e83049861af16625858aa`: dieselben CI-Prüfungen in Run `44903438415` erfolgreich. Nur `status.ping` und `status.info` sind für Android implementiert; alle mutierenden Aktionen bleiben gesperrt.
+- Beide PRs sind gestapelt und nicht gemergt. Keine echte Android-Geräteabnahme, kein Gateway-Deployment und kein Lovable-Publish. Keine Datenbank-/Supabase-/SQL-/Migrations-/RLS-Änderung.
