@@ -1,0 +1,16 @@
+name = "mira-device-control-gateway"
+main = "src/index.ts"
+compatibility_date = "2026-11-21"
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "DEVICE_SESSIONS"
+class_name = "DeviceSession"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DeviceSession"]
+
+[vars]
+MIRA_GATEWAY_PAIRING_TTL_MS = "300000"
+MIRA_GATEWAY_HEARTBEAT_TIMEOUT_MS = "90000"
