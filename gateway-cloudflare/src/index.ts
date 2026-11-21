@@ -189,7 +189,65 @@ export class DeviceSession extends DurableObject<Env> {
       const userId = url.searchParams.get("userId");
       if (!validUserId(userId)) return json({ error: "ungueltige-anfrage" }, 400);
       const all = await this.ctx.storage.list<DeviceRecord>({ prefix: "device:" });
-      return json({ devices: Array.from(all.values()).filter((d) => d.ownerUserId === userId).map(sanitizeDevice) });
+      return json({ devices: Array.from(all.values()).filter((d) => d.ownerUserId === userId).map((d) => ({ ...sanitizeDevice(d), online: false })) });
+    }
+    if (route === "action-log" && request.method === "GET") {
+      const userId = url.searchParams.get("userId");
+      if (!validUserId(userId)) return json({ error: "ungueltige-anfrage" }, 400);
+      const limitValue = Number.parseInt(url.searchParams.get("limit") ?? "100", 10);
+      const limit = Math.min(Math.max(Number.isFinite(limitValue) ? limitValue : 100, 1), 1000);
+      const entries = (await this.ctx.storage.get<LogEntry[]>("actionLog")) ?? [];
+      const devices = await this.ctx.storage.list<DeviceRecord>({ prefix: "device:" });
+      const owned = new Set(Array.from(devices.values()).filter((d) => d.ownerUserId === userId).map((d) => d.deviceId));
+      return json({ entries: entries.filter((entry) => entry.deviceId && owned.has(entry.deviceId)).slice(-limit) });
+    }
+    if (route === "not-aus" && request.method === "GET") {
+      const userId = url.searchParams.get("userId");
+      if (!validUserId(userId)) return json({ error: "ungueltige-anfrage" }, 400);
+      const owners = (await this.ctx.storage.get<string[]>("emergencyStopOwners")) ?? [];
+      return json({ aktiv: owners.includes(userId) });
+    }
+    if (request.method !== "POST") return json({ error: "methode-nicht-erlaubt" }, 405);
+    const body = await readBody(request);
+    if (!body || !validUserId(body.userId)) return json({ error: "ungueltige-anfrage" }, 400);
+    const userId = body.userId;
+    if (route === "permissions") {
+      const deviceId = typeof body.deviceId === "string" ? body.deviceId : "";
+      const permissions = body.permissions;
+      const keys = ["status", "programme", "fenster", "eingaben", "bildschirm", "dateien", "einstellungen", "audio"];
+      const levels = ["keine", "lesen", "steuern", "kritisch"];
+      if (!deviceId || typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) return json({ error: "ungueltige-anfrage" }, 400);
+      const map = permissions as Record<string, unknown>;
+      if (Object.keys(map).length !== keys.length || keys.some((key) => !levels.includes(String(map[key])))) return json({ error: "ungueltige-anfrage" }, 400);
+      const device = await this.ctx.storage.get<DeviceRecord>("device:" + deviceId);
+      if (!device || device.ownerUserId !== userId || device.revokedAt !== null) return json({ error: "geraet-unbekannt" }, 404);
+      device.permissions = Object.fromEntries(keys.map((key) => [key, map[key]]));
+      await this.ctx.storage.put("device:" + deviceId, device);
+      await this.appendLog({ kind: "sitzung", deviceId, status: "berechtigungen-aktualisiert" });
+      return json({ ok: true, fingerprint: device.fingerprint });
+    }
+    if (route === "revoke") {
+      const deviceId = typeof body.deviceId === "string" ? body.deviceId : "";
+      if (!deviceId) return json({ error: "ungueltige-anfrage" }, 400);
+      const device = await this.ctx.storage.get<DeviceRecord>("device:" + deviceId);
+      if (!device || device.ownerUserId !== userId) return json({ error: "geraet-unbekannt" }, 404);
+      if (device.revokedAt === null) {
+        device.revokedAt = new Date().toISOString();
+        await this.ctx.storage.put("device:" + deviceId, device);
+        await this.appendLog({ kind: "widerruf", deviceId, status: "widerrufen" });
+      }
+      return json({ ok: true });
+    }
+    if (route === "not-aus") {
+      const owners = new Set((await this.ctx.storage.get<string[]>("emergencyStopOwners")) ?? []);
+      const active = body.aktiv === true;
+      if (active) owners.add(userId); else owners.delete(userId);
+      await this.ctx.storage.put("emergencyStopOwners", Array.from(owners));
+      await this.appendLog({ kind: "not-aus", status: active ? "aktiviert" : "deaktiviert" });
+      return json({ ok: true, aktiv: active });
+    }
+    if (route === "action" || route === "screen" || route === "screen-frame") {
+      return json({ error: "geraet-offline", feature: route }, 503);
     }
     return json({ error: "control-route-not-yet-ported" }, 503);
   }
