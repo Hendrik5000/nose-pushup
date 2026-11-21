@@ -7,7 +7,7 @@ describe("Mira Cloudflare gateway", () => {
     const response = await worker.fetch(new Request("https://example.test/healthz"), {
       DEVICE_SESSIONS: {
         idFromName: () => "global",
-        get: async () => ({ fetch: async () => new Response("unused") }),
+        get: () => ({ fetch: async () => new Response("unused") }),
       },
       MIRA_GATEWAY_ADMIN_TOKEN: "unused",
     });
@@ -17,16 +17,33 @@ describe("Mira Cloudflare gateway", () => {
     assert.equal(body.ok, true);
     assert.equal(body.phase, "pairing-preview");
   });
-  it("rejects device WebSockets until protocol parity exists", async () => {
+
+  it("forwards versioned API requests to the Durable Object", async () => {
+    let receivedPath = "";
     const response = await worker.fetch(new Request("https://example.test/v1/ws"), {
       DEVICE_SESSIONS: {
         idFromName: () => "global",
-        get: async () => ({
-          fetch: async () => Response.json({ error: "websocket-not-enabled" }, { status: 503 }),
+        get: () => ({
+          fetch: async (request) => {
+            receivedPath = new URL(request.url).pathname;
+            return Response.json({ error: "websocket-upgrade-erforderlich" }, { status: 426 });
+          },
         }),
       },
       MIRA_GATEWAY_ADMIN_TOKEN: "unused",
     });
-    assert.equal(response.status, 503);
+    assert.equal(receivedPath, "/v1/ws");
+    assert.equal(response.status, 426);
+  });
+
+  it("does not expose non-versioned internal routes", async () => {
+    const response = await worker.fetch(new Request("https://example.test/internal"), {
+      DEVICE_SESSIONS: {
+        idFromName: () => "global",
+        get: () => ({ fetch: async () => new Response("unexpected") }),
+      },
+      MIRA_GATEWAY_ADMIN_TOKEN: "unused",
+    });
+    assert.equal(response.status, 404);
   });
 });
