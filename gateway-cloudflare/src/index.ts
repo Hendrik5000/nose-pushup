@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier -- keep the gateway source formatting stable until the isolated package has a formatter step. */
 import { DurableObject } from "cloudflare:workers";
 
 export interface Env {
@@ -53,7 +54,7 @@ const randomToken = (): string => {
   crypto.getRandomValues(bytes);
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/, "");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 };
 const sha256 = async (value: string): Promise<string> =>
   bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))));
@@ -262,7 +263,7 @@ export class DeviceSession extends DurableObject<Env> {
       const publicKeyBytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
       if (btoa(binary) !== body.publicKeySpki) return json({ error: "ungueltiger-schluessel" }, 400);
       const publicKey = await crypto.subtle.importKey("spki", publicKeyBytes, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
-      if (publicKey.algorithm.name !== "RSASSA-PKCS1-v1_5" || (publicKey.algorithm as RsaHashedKeyAlgorithm).modulusLength < 2048)
+      if (publicKey.algorithm.name !== "RSASSA-PKCS1-v1_5" || ("modulusLength" in publicKey.algorithm && publicKey.algorithm.modulusLength < 2048))
         return json({ error: "ungueltiger-schluessel" }, 400);
     } catch {
       return json({ error: "ungueltiger-schluessel" }, 400);
@@ -286,7 +287,7 @@ export class DeviceSession extends DurableObject<Env> {
     const device: DeviceRecord = {
       deviceId, ownerUserId: pairing.ownerUserId, name: body.deviceName.trim(), platform: body.platform,
       publicKeySpki: body.publicKeySpki, fingerprint, agentVersion: body.agentVersion,
-      tokenHash, tokenSalt: salt, createdAt: new Date(now).toISOString(), revokedAt: null,
+      tokenHash, tokenSalt: salt, createdAt: new Date(now).toISOString(), revokedAt: null, lastSeenAt: null,
       permissions: defaultPermissions(),
     };
     await this.ctx.storage.put("device:" + deviceId, device);
@@ -347,7 +348,7 @@ export class DeviceSession extends DurableObject<Env> {
       if (Object.keys(map).length !== keys.length || keys.some((key) => !levels.includes(String(map[key])))) return json({ error: "ungueltige-anfrage" }, 400);
       const device = await this.ctx.storage.get<DeviceRecord>("device:" + deviceId);
       if (!device || device.ownerUserId !== userId || device.revokedAt !== null) return json({ error: "geraet-unbekannt" }, 404);
-      device.permissions = Object.fromEntries(keys.map((key) => [key, map[key]]));
+      device.permissions = Object.fromEntries(keys.map((key) => [key, String(map[key])]));
       await this.ctx.storage.put("device:" + deviceId, device);
       await this.appendLog({ kind: "sitzung", deviceId, status: "berechtigungen-aktualisiert" });
       return json({ ok: true, fingerprint: device.fingerprint });
