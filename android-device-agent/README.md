@@ -35,4 +35,4 @@ Run locally:
 gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon
 ```
 
-Minimum Android version: 8.0 (API 26). This is an early companion app; production rollout still requires end-to-end pairing, owner-scoped emergency-stop verification, permissions/UI integration and real-device acceptance tests.
+Minimum Android version: 8.0 (API 26). Android pairing can be initiated from Alo → Mira → Gerätesteuerung by selecting Android, creating a one-time code and entering the gateway URL and code in this app. Grant the `audio` permission as `steuern` before testing volume actions. The gateway must already be deployed and configured; no production endpoint is included in this repository change. A real-device acceptance test is still required.

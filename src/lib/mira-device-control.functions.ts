@@ -200,6 +200,10 @@ function validateActionArgs(
     case "programme.liste":
     case "fenster.liste":
     case "audio.stummschalten":
+      args = record(v, ["muted"]);
+      if (args.muted !== undefined && typeof args.muted !== "boolean")
+        throw new Error("muted muss true oder false sein.");
+      break;
     case "einstellungen.abbrechen-herunterfahren":
       args = record(v, []);
       break;
@@ -296,10 +300,16 @@ function validateActionArgs(
       args = record(v, []);
       break;
     case "audio.lautstaerke":
-      args = record(v, ["direction", "steps"]);
-      if (args.direction !== "up" && args.direction !== "down")
-        throw new Error("Ungültige Lautstärkeaktion.");
-      args.steps = integer(args.steps, 1, 10);
+      args = record(v, ["direction", "steps", "volumePercent"]);
+      if (args.volumePercent !== undefined) {
+        args.volumePercent = integer(args.volumePercent, 0, 100);
+        if (args.direction !== undefined || args.steps !== undefined)
+          throw new Error("Nur volumePercent oder direction/steps senden.");
+      } else {
+        if (args.direction !== "up" && args.direction !== "down")
+          throw new Error("Ungültige Lautstärkeaktion.");
+        args.steps = integer(args.steps, 1, 10);
+      }
       break;
     default:
       throw new Error("Dieses Mira-Werkzeug ist nicht freigegeben.");
