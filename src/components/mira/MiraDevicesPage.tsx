@@ -55,6 +55,8 @@ const ACTIONS = [
   ["audio.stummschalten", "Stummschaltung umschalten"],
 ] as const;
 
+const ANDROID_ACTION_IDS = new Set(["status.ping", "status.info", "audio.lautstaerke", "audio.stummschalten"]);
+
 const ACTION_EXAMPLES: Record<string, string> = {
   "status.ping": "{}",
   "status.info": "{}",
@@ -76,8 +78,8 @@ const ACTION_EXAMPLES: Record<string, string> = {
   "einstellungen.oeffnen": '{ "page": "display" }',
   "einstellungen.herunterfahren": "{}",
   "einstellungen.abbrechen-herunterfahren": "{}",
-  "audio.lautstaerke": '{ "direction": "up", "steps": 2 }',
-  "audio.stummschalten": "{}",
+  "audio.lautstaerke": '{ "volumePercent": 50 }',
+  "audio.stummschalten": '{ "muted": true }',
 };
 
 const CONFIRMATION_REQUIRED = new Set([
@@ -112,7 +114,7 @@ export function MiraDevicesPage() {
   const [snapshot, setSnapshot] = useState<MiraGatewaySnapshot>(EMPTY_SNAPSHOT);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deviceName, setDeviceName] = useState("");
-  const [platform] = useState<MiraDevicePlatform>("windows");
+  const [platform, setPlatform] = useState<MiraDevicePlatform>("android");
   const [pairing, setPairing] = useState<{
     code: string;
     expiresAt: string;
@@ -173,6 +175,16 @@ export function MiraDevicesPage() {
     () => snapshot.devices.find((device) => device.deviceId === selectedId) ?? null,
     [snapshot.devices, selectedId],
   );
+  const availableActions = selected?.platform === "android"
+    ? ACTIONS.filter(([id]) => ANDROID_ACTION_IDS.has(id))
+    : ACTIONS;
+
+  useEffect(() => {
+    if (selected?.platform === "android" && !ANDROID_ACTION_IDS.has(toolId)) {
+      setToolId("status.info");
+      setArgsText("{}");
+    }
+  }, [selected?.platform, toolId]);
 
   useEffect(() => {
     if (!screenDeviceId || !screenSessionId) return;
@@ -297,7 +309,7 @@ export function MiraDevicesPage() {
         <div>
           <h1 className="text-xl font-bold">Gerätesteuerung</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Windows-Geräte koppeln, Berechtigungen verwalten und Mira-Aktionen ausführen.
+            Android- und Windows-Geräte koppeln, Berechtigungen verwalten und Mira-Aktionen ausführen.
           </p>
         </div>
         <button
@@ -408,10 +420,10 @@ export function MiraDevicesPage() {
       </section>
 
       <section className="mt-6 rounded-2xl border border-border/70 bg-card/75 p-4">
-        <h2 className="text-sm font-bold">Windows-Gerät koppeln</h2>
+        <h2 className="text-sm font-bold">Neues Gerät koppeln</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Erzeuge einen einmaligen sechsstelligen Code. Er ist fünf Minuten gültig und kann nur
-          einmal verwendet werden.
+          einmal verwendet werden. Wähle zuerst die Plattform des Geräts.
         </p>
         <form
           className="mt-3 flex flex-wrap gap-2"
@@ -421,10 +433,19 @@ export function MiraDevicesPage() {
             void perform({ action: "pairing-code", name: deviceName.trim(), platform });
           }}
         >
+          <select
+            value={platform}
+            onChange={(event) => setPlatform(event.currentTarget.value as MiraDevicePlatform)}
+            aria-label="Geräteplattform"
+            className="min-h-11 rounded-xl border border-border bg-background px-3 text-sm"
+          >
+            <option value="android">Android</option>
+            <option value="windows">Windows</option>
+          </select>
           <input
             value={deviceName}
             onChange={(event) => setDeviceName(event.currentTarget.value)}
-            placeholder="Gerätename (z. B. Hendriks PC)"
+            placeholder={platform === "android" ? "Gerätename (z. B. Galaxy S24 Ultra)" : "Gerätename (z. B. PC)"}
             aria-label="Gerätename"
             maxLength={80}
             className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm"
@@ -445,8 +466,9 @@ export function MiraDevicesPage() {
               Gateway-URL: {pairing.gatewayUrl}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Gültig bis {new Date(pairing.expiresAt).toLocaleTimeString("de-DE")}. Öffne den Mira
-              Device Agent auf Windows, wähle „Kopplung starten“ und gib Gateway-URL sowie Code ein.
+              Gültig bis {new Date(pairing.expiresAt).toLocaleTimeString("de-DE")}. {platform === "android"
+                ? "Öffne Mira Geräte-Agent auf Android, trage Gateway-URL und Code ein und tippe auf „Sicher koppeln“."
+                : "Öffne den Mira Device Agent auf Windows, wähle „Kopplung starten“ und gib Gateway-URL sowie Code ein."}
             </p>
             <button
               type="button"
@@ -469,7 +491,7 @@ export function MiraDevicesPage() {
         {snapshot.devices.length === 0 ? (
           <p className="mt-2 rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">
             {snapshot.reachable
-              ? "Noch kein Windows-Gerät gekoppelt."
+              ? "Noch kein Gerät gekoppelt."
               : "Geräte erscheinen hier, sobald das Gateway erreichbar ist."}
           </p>
         ) : (
@@ -552,7 +574,7 @@ export function MiraDevicesPage() {
                 }}
                 className="mt-1 min-h-10 w-full rounded-lg border border-border bg-background px-3"
               >
-                {ACTIONS.map(([id, label]) => (
+                {availableActions.map(([id, label]) => (
                   <option key={id} value={id}>
                     {label}
                   </option>

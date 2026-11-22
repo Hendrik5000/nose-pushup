@@ -92,9 +92,9 @@ export type MiraDeviceStore = {
 };
 
 export const MIRA_PLATFORM_LABELS: Record<MiraDevicePlatform, string> = {
-  windows: "Windows 11 (erste Plattform)",
-  android: "Android (geplant)",
-  ipad: "iPad (geplant)",
+  windows: "Windows 11",
+  android: "Android",
+  ipad: "iPad (noch nicht verfügbar)",
 };
 
 const DEFAULT_PERMISSIONS: Record<MiraDeviceCapability, MiraPermissionLevel> = {
