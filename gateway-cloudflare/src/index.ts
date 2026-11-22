@@ -428,10 +428,12 @@ export class DeviceSession extends DurableObject<Env> {
         for (const socket of this.ctx.getWebSockets()) {
           const attachment = socket.deserializeAttachment() as { deviceId?: string } | null;
           if (!attachment?.deviceId) continue;
+          const device = await this.ctx.storage.get<DeviceRecord>("device:" + attachment.deviceId);
+          if (!device || device.ownerUserId !== userId) continue;
           try { socket.send(JSON.stringify(this.envelope("not-aus", { reason: "vom-benutzer-aktiviert" }))); } catch { /* socket may already be closed */ }
           try { socket.close(4001, "not-aus"); } catch { /* socket may already be closed */ }
-          const device = await this.ctx.storage.get<DeviceRecord>("device:" + attachment.deviceId);
-          if (device) { device.lastSeenAt = null; await this.ctx.storage.put("device:" + attachment.deviceId, device); }
+          device.lastSeenAt = null;
+          await this.ctx.storage.put("device:" + attachment.deviceId, device);
         }
       }
       await this.appendLog({ kind: "not-aus", status: active ? "aktiviert" : "deaktiviert" });
