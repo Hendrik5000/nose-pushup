@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - "windows-agent/**"
+      - "android-device-agent/**"
       - "gateway/**"
       - "gateway-cloudflare/**"
       - "docs/device-control-gateway-spec.md"
@@ -11,6 +12,7 @@ on:
     branches: [main]
     paths:
       - "windows-agent/**"
+      - "android-device-agent/**"
       - "gateway/**"
       - "gateway-cloudflare/**"
       - "docs/device-control-gateway-spec.md"
@@ -49,6 +51,32 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run typecheck
       - run: npm test
+
+  android-agent:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-device-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Run Android unit tests
+        run: gradle :app:testDebugUnitTest --no-daemon
+      - name: Build Android debug APK
+        run: gradle :app:assembleDebug --no-daemon
+      - name: Upload Android debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mira-android-agent-debug
+          path: android-device-agent/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
 
   windows-agent:
     runs-on: windows-latest
