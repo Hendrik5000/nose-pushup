@@ -120,6 +120,7 @@ export function MiraDevicesPage() {
     expiresAt: string;
     gatewayUrl: string;
     deviceName: string;
+    platform: MiraDevicePlatform;
   } | null>(null);
   const [toolId, setToolId] = useState<string>("status.info");
   const [argsText, setArgsText] = useState(ACTION_EXAMPLES["status.info"]);
@@ -239,6 +240,7 @@ export function MiraDevicesPage() {
           expiresAt: result.expiresAt,
           gatewayUrl: snapshot.gatewayUrl ?? "",
           deviceName: result.deviceName,
+          platform: result.platform,
         });
       } else if (result.action === "dispatch") {
         setResultText(
@@ -466,7 +468,7 @@ export function MiraDevicesPage() {
               Gateway-URL: {pairing.gatewayUrl}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Gültig bis {new Date(pairing.expiresAt).toLocaleTimeString("de-DE")}. {platform === "android"
+              Gültig bis {new Date(pairing.expiresAt).toLocaleTimeString("de-DE")}. {pairing.platform === "android"
                 ? "Öffne Mira Geräte-Agent auf Android, trage Gateway-URL und Code ein und tippe auf „Sicher koppeln“."
                 : "Öffne den Mira Device Agent auf Windows, wähle „Kopplung starten“ und gib Gateway-URL sowie Code ein."}
             </p>
