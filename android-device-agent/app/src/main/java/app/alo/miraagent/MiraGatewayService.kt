@@ -5,6 +5,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.media.AudioManager
+import android.os.BatteryManager
 import android.content.Intent
 import android.os.Build
 import android.os.Handler
@@ -165,22 +167,72 @@ class MiraGatewayService : Service() {
                     val payload = JSONObject(envelope.optString("payloadJson", "{}"))
                     val requestId = payload.optString("requestId")
                     if (requestId.isNotBlank()) {
+                        val result = executeAllowedAction(payload)
                         sendEnvelope(
                             webSocket,
                             "action.result",
                             JSONObject()
                                 .put("requestId", requestId)
-                                .put("status", "nicht-implementiert")
-                                .put(
-                                    "detail",
-                                    "Android-Agent: Steuerungswerkzeuge sind noch nicht freigegeben.",
-                                ),
+                                .put("status", result.first)
+                                .put("detail", result.second),
                         )
                     }
                 }
             }
         } catch (_: Exception) {
             // Unknown or malformed messages never trigger a device action.
+        }
+    }
+
+    /**
+     * Android-safe first action set. Unsupported desktop-oriented tools are rejected
+     * explicitly; no shell, AccessibilityService, arbitrary file access or app killing.
+     */
+    private fun executeAllowedAction(payload: JSONObject): Pair<String, String> {
+        val toolId = payload.optString("toolId")
+        val args = payload.optJSONObject("args") ?: JSONObject()
+        return try {
+            when (toolId) {
+                "status.ping" -> "ok" to "online"
+                "status.info" -> {
+                    val battery = getSystemService(BATTERY_SERVICE) as BatteryManager
+                    val batteryPercent = battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                    val info = "Android ${Build.VERSION.RELEASE}; ${Build.MANUFACTURER} ${Build.MODEL}; " +
+                        "API ${Build.VERSION.SDK_INT}; Akku ${batteryPercent.coerceIn(0, 100)}%"
+                    "ok" to info
+                }
+                "audio.lautstaerke" -> {
+                    val percent = args.optInt("volumePercent", -1)
+                    if (percent !in 0..100) {
+                        "error" to "volumePercent muss zwischen 0 und 100 liegen."
+                    } else {
+                        val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+                        val maximum = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                        val target = (maximum * percent / 100.0).toInt()
+                        audio.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0)
+                        "ok" to "Lautstärke auf ${percent}% gesetzt."
+                    }
+                }
+                "audio.stummschalten" -> {
+                    if (!args.has("muted")) {
+                        "error" to "Der Parameter 'muted' (true/false) fehlt."
+                    } else {
+                        val muted = args.optBoolean("muted")
+                        val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+                        audio.adjustStreamVolume(
+                            AudioManager.STREAM_MUSIC,
+                            if (muted) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE,
+                            0,
+                        )
+                        "ok" to if (muted) "Medienlautstärke stummgeschaltet." else "Stummschaltung aufgehoben."
+                    }
+                }
+                else -> "nicht-implementiert" to "Dieses Werkzeug ist auf Android noch nicht verfügbar."
+            }
+        } catch (error: SecurityException) {
+            "error" to "Android hat die Aktion aus Sicherheitsgründen verweigert."
+        } catch (_: Exception) {
+            "error" to "Die Aktion konnte auf diesem Android-Gerät nicht ausgeführt werden."
         }
     }
 
