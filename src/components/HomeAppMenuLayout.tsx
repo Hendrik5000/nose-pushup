@@ -6,6 +6,7 @@ type HomeAppMenuLayoutProps = {
   title?: string;
   description?: string;
   sidebar?: ReactNode;
+  sidebarClassName?: string;
   children: ReactNode;
 };
 
@@ -30,6 +31,7 @@ export function HomeAppMenuLayout({
   title,
   description,
   sidebar,
+  sidebarClassName,
   children,
 }: HomeAppMenuLayoutProps) {
   const showHeader = Boolean(title);
@@ -66,7 +68,9 @@ export function HomeAppMenuLayout({
       )}
       {sidebar ? (
         <div className="grid min-w-0 gap-7 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
-          <HomeAppMenuSidebar className="min-w-0 rounded-2xl border border-border/60 p-3 lg:sticky lg:top-6">
+          <HomeAppMenuSidebar
+            className={`min-w-0 rounded-2xl border border-border/60 p-3 lg:sticky lg:top-6 ${sidebarClassName ?? ""}`}
+          >
             {sidebar}
           </HomeAppMenuSidebar>
           <div className="flex min-w-0 flex-col gap-7">{children}</div>

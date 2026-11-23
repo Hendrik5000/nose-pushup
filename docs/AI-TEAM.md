@@ -20,6 +20,12 @@ Eine detaillierte ÃÂbersicht ÃÂ¼ber Aufbau, Routen, Datenbank, Mira, 
 
 Das Register hÃÂ`lt fest, was die Assistenten selbst melden. Ein Eintrag allein ist kein Beleg fÃÂ¼r einen erfolgreichen Push, Test oder Live-Deploy; solche Ergebnisse mÃÂ¼ssen separat geprÃÂ¼ft werden.
 
+## Laufender Arbeitsnachweis – 2026-11-24
+
+| Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |
+|---|---|---|---|---|---|
+| Cue Coding Assistant | unbekannt | Alo-Roadmap P2 Punkt 7: Marketplace-Kategorien responsiv in die gemeinsame App-Seitenleiste integrieren; mobile Filter beibehalten | Lokal umgesetzt und fokussiert getestet; Push/PR, CI, Merge und Publish ausstehend | 2026-11-24 | Bestätigte Basis `main` `4b99f0500ca42168d6f6747919b205a69f30a08c`; Remote-`main` weiterhin identisch; Branch `cue/marketplace-responsive-sidebar-20261124`. Geändert: `src/components/HomeAppMenuLayout.tsx`, `src/components/marketplace/MarketplaceAppCatalog.tsx`, `src/routes/marketplace.tsx`, `tests/app-sidebar.test.ts`, `docs/AI-TEAM.md` und `docs/AI-ROADMAP.md`. Die vier vorhandenen Marketplace-Kollektionen sind auf Desktop in der gemeinsamen Sidebar, mobil bleiben die Pills; derselbe kontrollierte Zustand wird in Gäste- und angemeldener Ansicht verwendet. `node --experimental-strip-types --test tests/app-sidebar.test.ts tests/marketplace-detail.test.ts`: 12/12 bestanden; `git diff --check` bestanden. Ein direkter Node-Lauf von `tests/marketplace-categories.test.ts` und `tests/marketplace.test.ts` konnte deren extensionlose `src/lib/marketplace`-Imports ohne Projekt-Runner `tsx` nicht auflösen (`ERR_MODULE_NOT_FOUND`). Vollsuite, TypeScript, Lint und Build lokal nicht ausgeführt: `node_modules` fehlt, Inode-Auslastung 98 %; keine Dependency-Installation versucht. Keine DB-/Auth-/Migrations-/Policy-/Secret-Änderung. Noch kein Commit, Push, PR, Merge, Publish oder Live-Nachweis. |
+
 ## Laufender Arbeitsnachweis – 2026-11-23
 
 | Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowRight, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 import {
   getMarketplaceCollectionPlugins,
+  MARKETPLACE_COLLECTIONS,
   type MarketplaceCollectionId,
 } from "@/lib/marketplace-collections";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -28,8 +29,46 @@ type Props = Readonly<{
   onToggle: (pluginId: string, name: string, enabled: boolean) => void;
   onRemove: (pluginId: string, name: string) => void;
   onOpen: (pluginId: string) => void;
+  activeCollection: MarketplaceCollectionId;
+  onCollectionChange: (collection: MarketplaceCollectionId) => void;
   userId?: string | null;
 }>;
+
+export function MarketplaceCollectionSidebar({
+  activeCollection,
+  onSelect,
+}: {
+  activeCollection: MarketplaceCollectionId;
+  onSelect: (collection: MarketplaceCollectionId) => void;
+}) {
+  return (
+    <nav aria-label="Marketplace-Kategorien" className="space-y-2">
+      <p className="px-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        Entdecken
+      </p>
+      <div className="space-y-1">
+        {MARKETPLACE_COLLECTIONS.map((collection) => {
+          const selected = activeCollection === collection.id;
+          return (
+            <button
+              key={collection.id}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onSelect(collection.id)}
+              className={`flex min-h-12 w-full items-center justify-between rounded-xl border px-3 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${selected ? "border-primary/30 bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:border-border hover:bg-card/70 hover:text-foreground"}`}
+            >
+              <span>{collection.label}</span>
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 rounded-full ${selected ? "bg-primary" : "bg-muted-foreground/30"}`}
+              />
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
 
 export function MarketplaceAppCatalog({
   plugins,
@@ -39,10 +78,11 @@ export function MarketplaceAppCatalog({
   onToggle,
   onRemove,
   onOpen,
+  activeCollection,
+  onCollectionChange,
   userId = null,
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [activeCollection, setActiveCollection] = useState<MarketplaceCollectionId>("official");
   const [query, setQuery] = useState("");
   const isInstalled = (pluginId: string) => installState.installedPluginIds.includes(pluginId);
   const availablePlugins = plugins.filter((plugin) => !isInstalled(plugin.id));
@@ -153,28 +193,21 @@ export function MarketplaceAppCatalog({
         )}
       </form>
       <nav
-        className="alo-marketplace-categories -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+        className="alo-marketplace-categories -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden"
         aria-label="Marketplace-Kategorien"
       >
-        {(
-          [
-            ["official", "Offiziell"],
-            ["recommended", "Empfohlen"],
-            ["new", "Neu"],
-            ["friends", "Von Freunden"],
-          ] as const
-        ).map(([id, label]) => (
+        {MARKETPLACE_COLLECTIONS.map((collection) => (
           <button
-            key={id}
+            key={collection.id}
             type="button"
-            aria-pressed={activeCollection === id}
+            aria-pressed={activeCollection === collection.id}
             onClick={() => {
-              setActiveCollection(id);
+              onCollectionChange(collection.id);
               setQuery("");
             }}
-            className={`min-h-10 shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeCollection === id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card/70 text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}
+            className={`min-h-10 shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeCollection === collection.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card/70 text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}
           >
-            {label}
+            {collection.label}
           </button>
         ))}
       </nav>
@@ -213,7 +246,7 @@ export function MarketplaceAppCatalog({
                 </p>
                 <button
                   type="button"
-                  onClick={() => setActiveCollection("new")}
+                  onClick={() => onCollectionChange("new")}
                   className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
                 >
                   Neu entdecken <ArrowRight className="h-4 w-4" />
@@ -226,7 +259,7 @@ export function MarketplaceAppCatalog({
                   <h2 className="text-lg font-bold">Vorschläge für dich</h2>
                   <button
                     type="button"
-                    onClick={() => setActiveCollection("recommended")}
+                    onClick={() => onCollectionChange("recommended")}
                     className="rounded-full p-2 text-muted-foreground hover:bg-background hover:text-foreground"
                     aria-label="Empfehlungen anzeigen"
                   >
