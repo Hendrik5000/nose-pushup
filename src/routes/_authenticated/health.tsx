@@ -295,9 +295,7 @@ function HealthPage() {
             <p>Schritte, Schlaf und Aktivität – mit deinen echten Messwerten an einem Ort.</p>
           </header>
           <div className="grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
-            <HomeAppMenuSidebar
-              className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
-            >
+            <HomeAppMenuSidebar className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6">
               <HealthActionsSidebar />
             </HomeAppMenuSidebar>
             <div className="flex min-w-0 flex-col gap-5">
@@ -606,9 +604,7 @@ function HealthPage() {
             </SportPageIntro>
           </div>
           <div className="grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
-            <HomeAppMenuSidebar
-              className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
-            >
+            <HomeAppMenuSidebar className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6">
               <HealthActionsSidebar />
             </HomeAppMenuSidebar>
             <div className="flex min-w-0 flex-col gap-5">
