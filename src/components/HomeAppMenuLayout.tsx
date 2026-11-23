@@ -12,12 +12,14 @@ type HomeAppMenuLayoutProps = {
 export function HomeAppMenuSidebar({
   children,
   className,
+  ariaLabel = "App-Aktionen",
 }: {
   children: ReactNode;
   className?: string;
+  ariaLabel?: string;
 }) {
   return (
-    <aside aria-label="App-Aktionen" className={className}>
+    <aside aria-label={ariaLabel} className={className}>
       {children}
     </aside>
   );
