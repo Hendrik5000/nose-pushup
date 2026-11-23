@@ -152,6 +152,7 @@ type HubAppRoute =
   | "/ai"
   | "/chat"
   | "/exercises"
+  | "/health"
   | "/profile"
   | "/admin"
   | "/marketplace"
@@ -315,6 +316,7 @@ const HOME_ROUTE_GROUPS: Record<string, HomeAppGroupId> = {
   "/ai": "intelligence",
   "/chat": "intelligence",
   "/exercises": "sport",
+  "/health": "sport",
   "/sports": "sport",
   "/football": "sport",
   "/training": "sport",
@@ -2116,6 +2118,7 @@ function HubAppIcon({
     | "/ai"
     | "/chat"
     | "/exercises"
+    | "/health"
     | "/profile"
     | "/admin"
     | "/training"

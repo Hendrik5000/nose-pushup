@@ -42,6 +42,7 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
     );
   }
 
+  assert.match(home, /"\/health": "sport"/);
   assert.match(hub, /grid-cols-4/);
   assert.match(hub, /aria-label="Freunde öffnen"/);
   assert.match(hub, /to="\/profile"\s+hash="profile-training"/);
