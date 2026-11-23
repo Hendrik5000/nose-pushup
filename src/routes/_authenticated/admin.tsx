@@ -205,7 +205,9 @@ function AdminOverview() {
                       className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/50 p-3 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="min-w-0">
-                        <code className="break-all text-sm text-foreground">{assignment.userId}</code>
+                        <code className="break-all text-sm text-foreground">
+                          {assignment.userId}
+                        </code>
                         <p className="mt-1 text-xs text-muted-foreground">
                           Admin seit {new Date(assignment.grantedAt).toLocaleString("de-DE")}
                         </p>
