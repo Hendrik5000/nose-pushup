@@ -101,6 +101,26 @@ test("Alo Trainingsprogramme offer app-specific sidebar actions in both design v
   assert.match(route, /min-h-11/);
 });
 
+test("Marketplace shares responsive collection navigation without displaying duplicate controls", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/marketplace.tsx"), "utf8");
+  const catalog = readFileSync(
+    resolve(root, "src/components/marketplace/MarketplaceAppCatalog.tsx"),
+    "utf8",
+  );
+  assert.equal((route.match(/<MarketplaceCollectionSidebar/g) ?? []).length, 2);
+  assert.equal((route.match(/sidebarClassName="hidden lg:block"/g) ?? []).length, 2);
+  assert.equal((route.match(/activeCollection=\{activeCollection\}/g) ?? []).length, 4);
+  assert.equal((route.match(/onSelect=\{setActiveCollection\}/g) ?? []).length, 2);
+  assert.equal((route.match(/onCollectionChange=\{setActiveCollection\}/g) ?? []).length, 2);
+  assert.match(catalog, /export function MarketplaceCollectionSidebar/);
+  assert.match(catalog, /className="alo-marketplace-categories[^"]*lg:hidden"/);
+  assert.equal((catalog.match(/MARKETPLACE_COLLECTIONS\.map/g) ?? []).length, 2);
+  assert.match(catalog, /aria-pressed=\{selected\}/);
+  assert.match(catalog, /onClick=\{\(\) => onSelect\(collection\.id\)\}/);
+  assert.match(catalog, /onCollectionChange\(collection\.id\)/);
+});
+
 test("Alo Health uses the shared app sidebar in both design views", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/_authenticated/health.tsx"), "utf8");
