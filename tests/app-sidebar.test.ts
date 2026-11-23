@@ -114,7 +114,7 @@ test("Marketplace shares responsive collection navigation without displaying dup
   assert.equal((route.match(/onSelect=\{setActiveCollection\}/g) ?? []).length, 2);
   assert.equal((route.match(/onCollectionChange=\{setActiveCollection\}/g) ?? []).length, 2);
   assert.match(catalog, /export function MarketplaceCollectionSidebar/);
-  assert.match(catalog, /className="alo-marketplace-categories[^\"]*lg:hidden"/);
+  assert.match(catalog, /className="alo-marketplace-categories[^"]*lg:hidden"/);
   assert.equal((catalog.match(/MARKETPLACE_COLLECTIONS\.map/g) ?? []).length, 2);
   assert.match(catalog, /aria-pressed=\{selected\}/);
   assert.match(catalog, /onClick=\{\(\) => onSelect\(collection\.id\)\}/);
