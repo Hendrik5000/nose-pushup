@@ -30,7 +30,7 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
   for (const [id, destination, routeFile] of [
     ["mira", "/ai", "ai.tsx"],
     ["nexus", "/chat", "chat.tsx"],
-    ["health", "/exercises", "exercises.tsx"],
+    ["health", "/health", "health.tsx"],
     ["settings", "/profile", "profile.tsx"],
     ["training", "/training", "training.tsx"],
   ] as const) {

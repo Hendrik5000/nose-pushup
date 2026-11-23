@@ -192,7 +192,7 @@ function buildHomeHubTiles(
   const tiles: HomeHubTile[] = [
     { kind: "standard", id: "mira", title: "Mira", artwork: "mira", to: "/ai" },
     { kind: "standard", id: "nexus", title: "Nexus Chat", artwork: "nexus", to: "/chat" },
-    { kind: "standard", id: "health", title: "Alo Health", artwork: "health", to: "/exercises" },
+    { kind: "standard", id: "health", title: "Alo Health", artwork: "health", to: "/health" },
     {
       kind: "standard",
       id: "settings",
