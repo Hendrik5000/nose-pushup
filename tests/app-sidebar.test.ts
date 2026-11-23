@@ -85,6 +85,22 @@ test("settings keep the existing hub and add a compact sidebar to category pages
   assert.doesNotMatch(page, /Alo \u00b7 Einstellungen/);
 });
 
+test("Alo Trainingsprogramme offer app-specific sidebar actions in both design views", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/_authenticated/programs.tsx"), "utf8");
+  assert.equal((route.match(/<HomeAppMenuSidebar/g) ?? []).length, 2);
+  assert.equal((route.match(/<ProgramsActionsSidebar/g) ?? []).length, 2);
+  assert.equal((route.match(/ariaLabel="Training"/g) ?? []).length, 2);
+  assert.match(route, /aria-label="Trainingsnavigation"/);
+  assert.match(route, /to="\/training"/);
+  assert.match(route, /to="\/programs"/);
+  assert.match(route, /to="\/exercises"/);
+  assert.match(route, /to="\/coach"/);
+  assert.match(route, /aria-current="page"/);
+  assert.match(route, /grid-cols-2 gap-1 lg:grid-cols-1/);
+  assert.match(route, /min-h-11/);
+});
+
 test("Alo Health uses the shared app sidebar in both design views", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/_authenticated/health.tsx"), "utf8");

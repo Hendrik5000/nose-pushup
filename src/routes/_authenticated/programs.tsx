@@ -1,5 +1,6 @@
 import { ContentActions } from "@/components/alo/ContentActions";
 import { DesignView } from "@/components/DesignView";
+import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +65,46 @@ const LEVEL_LABEL: Record<string, string> = {
   intermediate: "Mittelstufe",
   advanced: "Fortgeschritten",
 };
+
+function ProgramsActionsSidebar() {
+  const linkClass =
+    "flex min-h-11 min-w-0 items-center rounded-xl px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:text-sm";
+
+  return (
+    <nav aria-label="Trainingsnavigation">
+      <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        Training
+      </p>
+      <div className="mt-2 grid grid-cols-2 gap-1 lg:grid-cols-1">
+        <Link
+          to="/training"
+          className={`${linkClass} text-muted-foreground hover:bg-card hover:text-foreground`}
+        >
+          Trainingsübersicht
+        </Link>
+        <Link
+          to="/programs"
+          aria-current="page"
+          className={`${linkClass} bg-primary/15 text-primary`}
+        >
+          Programme
+        </Link>
+        <Link
+          to="/exercises"
+          className={`${linkClass} text-muted-foreground hover:bg-card hover:text-foreground`}
+        >
+          Übungen
+        </Link>
+        <Link
+          to="/coach"
+          className={`${linkClass} text-muted-foreground hover:bg-card hover:text-foreground`}
+        >
+          Coach
+        </Link>
+      </div>
+    </nav>
+  );
+}
 
 function ProgramsPage() {
   const navigate = useNavigate();
@@ -195,21 +236,29 @@ function ProgramsPage() {
   return (
     <>
       <DesignView variant="sport">
-        <main className="sport-only relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-7 px-5 py-6 sm:px-8 alo-programs-page">
-          <SportPageIntro
-            eyebrow="TRAININGSBEREICH · 02"
-            title="Trainingsprogramme"
-            description="Ein klarer Plan, ein Tag nach dem anderen. Starte eine Progression oder setze dein laufendes Programm fort."
+        <main className="sport-only relative mx-auto grid min-h-[100dvh] w-full max-w-6xl grid-cols-1 gap-7 px-5 py-6 sm:px-8 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start alo-programs-page">
+          <div className="lg:col-span-2">
+            <SportPageIntro
+              eyebrow="TRAININGSBEREICH · 02"
+              title="Trainingsprogramme"
+              description="Ein klarer Plan, ein Tag nach dem anderen. Starte eine Progression oder setze dein laufendes Programm fort."
+            >
+              <AloHomeLink />
+            </SportPageIntro>
+          </div>
+          <HomeAppMenuSidebar
+            ariaLabel="Training"
+            className="min-w-0 rounded-2xl border border-border/60 bg-card/60 p-4 lg:row-start-2 lg:sticky lg:top-6"
           >
-            <AloHomeLink />
-          </SportPageIntro>
+            <ProgramsActionsSidebar />
+          </HomeAppMenuSidebar>
           {loading && (
-            <div className="rounded-3xl border border-border bg-card/50 p-8 text-center text-sm text-muted-foreground">
+            <div className="min-w-0 rounded-3xl border border-border bg-card/50 p-8 text-center text-sm text-muted-foreground lg:col-start-2">
               Programme werden geladen …
             </div>
           )}
           {!loading && active && activeProgram && (
-            <section className="sport-focus-card rounded-[2rem] border border-primary/30 bg-card/70 p-6 sm:p-8">
+            <section className="sport-focus-card min-w-0 rounded-[2rem] border border-primary/30 bg-card/70 p-6 sm:p-8 lg:col-start-2">
               <SportSectionLabel number="01">Dein aktueller Block</SportSectionLabel>
               <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -349,7 +398,7 @@ function ProgramsPage() {
             </section>
           )}
           {!loading && (
-            <section className="space-y-4">
+            <section className="min-w-0 space-y-4 lg:col-start-2">
               <SportSectionLabel number={active ? "02" : "01"}>
                 {active ? "Weitere Programme" : "Programm wählen"}
               </SportSectionLabel>
@@ -425,8 +474,8 @@ function ProgramsPage() {
         </main>
       </DesignView>
       <DesignView variant="classic">
-        <main className="classic-only relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 alo-programs-page">
-          <header className="flex items-center justify-between">
+        <main className="classic-only relative mx-auto grid min-h-[100dvh] w-full max-w-6xl grid-cols-1 gap-x-5 px-5 pt-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start alo-programs-page">
+          <header className="flex items-center justify-between lg:col-span-2">
             <div className="programs-header-title min-w-0 flex-1">
               <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
                 Programme
@@ -437,16 +486,22 @@ function ProgramsPage() {
             </div>
             <AloHomeLink className="px-2 text-xs" />
           </header>
+          <HomeAppMenuSidebar
+            ariaLabel="Training"
+            className="mt-5 min-w-0 rounded-2xl border border-border/60 bg-card/60 p-4 lg:col-start-1 lg:row-start-2 lg:sticky lg:top-6"
+          >
+            <ProgramsActionsSidebar />
+          </HomeAppMenuSidebar>
 
           {loading && (
-            <div className="mt-6 rounded-2xl border border-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
+            <div className="mt-6 min-w-0 rounded-2xl border border-border bg-card/40 p-6 text-center text-sm text-muted-foreground lg:col-start-2">
               Lade…
             </div>
           )}
 
           {/* Aktives Programm */}
           {!loading && active && activeProgram && (
-            <section className="mt-5 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur">
+            <section className="mt-5 min-w-0 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur lg:col-start-2">
               <div className="flex items-start justify-between">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.25em] text-primary">
@@ -594,7 +649,7 @@ function ProgramsPage() {
 
           {/* Programmauswahl */}
           {!loading && (
-            <section className="mt-6">
+            <section className="mt-6 min-w-0 lg:col-start-2">
               <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
                 {active ? "Andere Programme" : "Programm wählen"}
               </h2>
