@@ -56,14 +56,25 @@ test("the games catalog offers app-specific sidebar actions outside fullscreen g
   assert.match(route, /setMenuOpen\(\(open\) => !open\)/);
 });
 
-test("the settings pages do not repeat the full category list next to the content", () => {
+test("settings keep the existing hub and add a compact sidebar to category pages", () => {
   const root = process.cwd();
   const page = readFileSync(
     resolve(root, "src/routes/_authenticated/profile-page-impl.tsx"),
     "utf8",
   );
-  assert.doesNotMatch(page, /SettingsActionsSidebar/);
-  assert.doesNotMatch(page, /aria-label="App-Aktionen"/);
+  const sidebar = readFileSync(
+    resolve(root, "src/components/settings/SettingsActionsSidebar.tsx"),
+    "utf8",
+  );
+  assert.equal(
+    (page.match(/<SettingsActionsSidebar activeCategoryId=\{sectionId\} \/>/g) ?? []).length,
+    2,
+  );
+  assert.match(sidebar, /PROFILE_SETTINGS_CATEGORIES\.map/);
+  assert.match(sidebar, /to="\/settings\/\$category"/);
+  assert.match(sidebar, /params=\{\{ category: category\.id \}\}/);
+  assert.match(sidebar, /aria-current=\{activeCategoryId === category\.id \? "page" : undefined\}/);
+  assert.match(sidebar, /grid-cols-2 gap-1 lg:grid-cols-1/);
   assert.equal((page.match(/PROFILE_SETTINGS_GROUPS\.map/g) ?? []).length, 1);
   assert.match(page, /data-settings-category-list="true"/);
   assert.doesNotMatch(page, /Alo \u00b7 Einstellungen/);
