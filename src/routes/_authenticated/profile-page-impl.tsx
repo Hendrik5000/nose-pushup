@@ -30,6 +30,7 @@ import { PublicProfileSettings } from "@/components/PublicProfileSettings";
 import { AppsSettingsList } from "@/components/settings/AppsSettingsList";
 import { MenuAccentPicker } from "@/components/settings/MenuAccentPicker";
 import { SettingsCategoryRow } from "@/components/settings/SettingsCategoryRow";
+import { SettingsActionsSidebar } from "@/components/settings/SettingsActionsSidebar";
 import {
   ALL_TUTORIALS,
   getTutorial,
@@ -346,11 +347,23 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
             title={category?.title ?? "Einstellungen"}
             profile={profile}
           />
-          <div className="flex min-w-0 flex-col gap-4">
+          <div
+            className={
+              sectionId && category
+                ? "grid min-w-0 gap-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start"
+                : "flex min-w-0 flex-col gap-4"
+            }
+          >
             {sectionId && category ? (
-              <SettingsCategoryScreen subtitle={category.subtitle}>
-                {categoryContent}
-              </SettingsCategoryScreen>
+              <>
+                <SettingsActionsSidebar activeCategoryId={sectionId} />
+                <div className="flex min-w-0 flex-col gap-4">
+                  <SettingsCategoryScreen subtitle={category.subtitle}>
+                    {categoryContent}
+                  </SettingsCategoryScreen>
+                  <BottomNav />
+                </div>
+              </>
             ) : (
               <>
                 <ProfileSummaryCard
@@ -367,9 +380,9 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
                   streakActive={streakActive}
                 />
                 <SettingsCategoryGroups />
+                <BottomNav />
               </>
             )}
-            <BottomNav />
           </div>
         </main>
       </DesignView>
@@ -381,11 +394,23 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
             profile={profile}
             sport
           />
-          <div className="flex min-w-0 flex-col gap-5">
+          <div
+            className={
+              sectionId && category
+                ? "grid min-w-0 gap-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start"
+                : "flex min-w-0 flex-col gap-5"
+            }
+          >
             {sectionId && category ? (
-              <SettingsCategoryScreen subtitle={category.subtitle}>
-                {categoryContent}
-              </SettingsCategoryScreen>
+              <>
+                <SettingsActionsSidebar activeCategoryId={sectionId} />
+                <div className="flex min-w-0 flex-col gap-5">
+                  <SettingsCategoryScreen subtitle={category.subtitle}>
+                    {categoryContent}
+                  </SettingsCategoryScreen>
+                  <BottomNav />
+                </div>
+              </>
             ) : (
               <>
                 <ProfileSummaryCard
@@ -402,9 +427,9 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
                   streakActive={streakActive}
                 />
                 <SettingsCategoryGroups />
+                <BottomNav />
               </>
             )}
-            <BottomNav />
           </div>
         </main>
       </DesignView>
