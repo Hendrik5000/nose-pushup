@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
 import { setAloOwner } from "@/lib/alo-store";
+import { authRedirectHref } from "@/lib/safe-next";
 import { AloWorkspace } from "@/components/alo/AloWorkspace";
 import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 import { PostfachProvider } from "@/components/postfach/PostfachProvider";
@@ -22,7 +23,7 @@ import "@/alo-system-chrome.css";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     // This is a client-side UI gate. getUser() performs a network request on
     // every navigation; the backend still validates the JWT and enforces RLS.
     let user = null;
@@ -33,7 +34,7 @@ export const Route = createFileRoute("/_authenticated")({
       // If refreshing an expired session needs the network, show sign-in
       // instead of letting a transient fetch failure break route loading.
     }
-    if (!user) throw redirect({ to: "/auth" });
+    if (!user) throw redirect({ href: authRedirectHref(location.href) });
     setAloOwner(user.id);
     return { user };
   },
