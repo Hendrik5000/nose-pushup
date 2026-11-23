@@ -8,6 +8,8 @@ test("HomeAppMenuLayout renders an app action sidebar when provided (Alo 1.157)"
   const layout = readFileSync(resolve(root, "src/components/HomeAppMenuLayout.tsx"), "utf8");
   assert.match(layout, /sidebar\?: ReactNode/);
   assert.match(layout, /aria-label="App-Aktionen"/);
+  assert.match(layout, /export function HomeAppMenuSidebar/);
+  assert.match(layout, /<HomeAppMenuSidebar/);
   assert.match(layout, /lg:grid-cols-\[240px_minmax\(0,1fr\)\]/);
   assert.match(layout, /data-alo-menu-surface="true"/);
   assert.doesNotMatch(layout, /className="alo-launcher"|className="alo-tabs"/);
@@ -67,10 +69,10 @@ test("the settings pages do not repeat the full category list next to the conten
   assert.doesNotMatch(page, /Alo \u00b7 Einstellungen/);
 });
 
-test("Alo Health offers app-specific sidebar actions in both design views", () => {
+test("Alo Health uses the shared app sidebar in both design views", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/_authenticated/health.tsx"), "utf8");
-  assert.equal((route.match(/aria-label="App-Aktionen"/g) ?? []).length, 2);
+  assert.equal((route.match(/<HomeAppMenuSidebar/g) ?? []).length, 2);
   assert.match(route, /function HealthActionsSidebar/);
   assert.match(route, /href="#health-today"/);
   assert.match(route, /to="\/sports"/);

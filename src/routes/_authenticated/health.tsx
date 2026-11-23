@@ -19,6 +19,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import { AppSettingsGear } from "@/components/settings/AppSettingsGear";
 import { AloPageSidebar, AloPageSidebarTrigger } from "@/components/alo/AloPageSidebar";
+import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
 import { SmartwatchPanel } from "@/components/SmartwatchPanel";
 import { HealthConnectPanel } from "@/components/HealthConnectPanel";
 import { WeightTrendCard } from "@/components/WeightTrendCard";
@@ -294,12 +295,9 @@ function HealthPage() {
             <p>Schritte, Schlaf und Aktivität – mit deinen echten Messwerten an einem Ort.</p>
           </header>
           <div className="grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
-            <aside
-              aria-label="App-Aktionen"
-              className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
-            >
+            <HomeAppMenuSidebar className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6">
               <HealthActionsSidebar />
-            </aside>
+            </HomeAppMenuSidebar>
             <div className="flex min-w-0 flex-col gap-5">
               <nav
                 className="health-category-nav health-classic-category-nav"
@@ -606,12 +604,9 @@ function HealthPage() {
             </SportPageIntro>
           </div>
           <div className="grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
-            <aside
-              aria-label="App-Aktionen"
-              className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
-            >
+            <HomeAppMenuSidebar className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6">
               <HealthActionsSidebar />
-            </aside>
+            </HomeAppMenuSidebar>
             <div className="flex min-w-0 flex-col gap-5">
               <nav className="health-category-nav" aria-label="Gesundheitsbereiche">
                 <a href="#health-today">
