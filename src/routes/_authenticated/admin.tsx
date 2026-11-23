@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { ShieldCheck } from "lucide-react";
 import { AloHomeLink } from "@/components/AloHomeLink";
+import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
 import { FeatureReleaseDigestPanel } from "@/components/admin/FeatureReleaseDigestPanel";
 import {
   getAdminAreaAccess,
@@ -81,7 +82,7 @@ function AdminOverview() {
   }
 
   return (
-    <main className="alo-admin-page mx-auto w-full max-w-3xl space-y-6 px-4 pb-24 pt-5">
+    <main className="alo-admin-page mx-auto w-full max-w-6xl space-y-6 px-4 pb-24 pt-5">
       <AloHomeLink />
       <header className="rounded-3xl border border-border bg-card/70 p-5 shadow-sm sm:p-7">
         <div className="flex items-center gap-3">
@@ -99,111 +100,139 @@ function AdminOverview() {
         </p>
       </header>
 
-      <section
-        aria-labelledby="admin-sections-title"
-        className="rounded-3xl border border-border bg-card/45 p-5 sm:p-7"
-      >
-        <h2 id="admin-sections-title" className="text-lg font-semibold">
-          Verwaltungsbereiche
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Veröffentlichungen für alle Konten erfordern eine eigene Vorschau und ausdrückliche
-          Bestätigung.
-        </p>
-      </section>
-
-      <FeatureReleaseDigestPanel />
-
-      {roleLoadError && (
-        <p className="text-sm text-destructive" role="alert">
-          Adminrollen konnten nicht geladen werden.
-        </p>
-      )}
-
-      {roleAccess?.canManage && (
-        <section
-          aria-labelledby="admin-role-management-title"
-          className="rounded-3xl border border-border bg-card/45 p-5 sm:p-7"
+      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start">
+        <HomeAppMenuSidebar
+          ariaLabel="Admin-Navigation"
+          className="rounded-3xl border border-border bg-card/45 p-4 lg:sticky lg:top-6"
         >
-          <h2 id="admin-role-management-title" className="text-lg font-semibold">
-            Adminzugriffe verwalten
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Nur du kannst Adminzugriff vergeben oder entziehen. Verwende dafür die Alo-Konto-ID.
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Bereiche
           </p>
-
-          <form className="mt-5 flex flex-col gap-3 sm:flex-row" onSubmit={handleGrant}>
-            <label className="sr-only" htmlFor="admin-target-user-id">
-              Alo-Konto-ID für neuen Adminzugriff
-            </label>
-            <input
-              id="admin-target-user-id"
-              autoComplete="off"
-              className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground"
-              maxLength={36}
-              onChange={(event) => setTargetUserId(event.target.value)}
-              pattern="[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"
-              placeholder="Alo-Konto-ID (UUID)"
-              required
-              value={targetUserId}
-            />
-            <button
-              className="alo-btn min-h-11 shrink-0"
-              disabled={roleMutationPending}
-              type="submit"
+          <nav aria-label="Admin-Bereiche" className="mt-3 flex flex-wrap gap-2 lg:flex-col">
+            <a
+              href="#feature-release-digest-title"
+              className="inline-flex min-h-11 items-center rounded-xl border border-border/70 bg-background/50 px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 lg:w-full"
             >
-              Adminzugriff gewähren
-            </button>
-          </form>
+              Feature-Digest
+            </a>
+            {roleAccess?.canManage && (
+              <a
+                href="#admin-role-management-title"
+                className="inline-flex min-h-11 items-center rounded-xl border border-border/70 bg-background/50 px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 lg:w-full"
+              >
+                Adminzugriffe
+              </a>
+            )}
+          </nav>
+        </HomeAppMenuSidebar>
+        <div className="min-w-0 space-y-6">
+          <section
+            aria-labelledby="admin-sections-title"
+            className="rounded-3xl border border-border bg-card/45 p-5 sm:p-7"
+          >
+            <h2 id="admin-sections-title" className="text-lg font-semibold">
+              Verwaltungsbereiche
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Veröffentlichungen für alle Konten erfordern eine eigene Vorschau und ausdrückliche
+              Bestätigung.
+            </p>
+          </section>
 
-          {roleActionError && (
-            <p className="mt-4 text-sm text-destructive" role="alert">
-              {roleActionError}
+          <FeatureReleaseDigestPanel />
+
+          {roleLoadError && (
+            <p className="text-sm text-destructive" role="alert">
+              Adminrollen konnten nicht geladen werden.
             </p>
           )}
-          {roleActionNotice && (
-            <p className="mt-4 text-sm text-foreground" aria-live="polite">
-              {roleActionNotice}
-            </p>
-          )}
 
-          <h3 className="mt-7 text-sm font-semibold">Aktuelle Admin-Konten</h3>
-          {roleAccess.assignments.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">Keine Admin-Konten gefunden.</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {roleAccess.assignments.map((assignment) => (
-                <li
-                  key={assignment.userId}
-                  className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/50 p-3 sm:flex-row sm:items-center sm:justify-between"
+          {roleAccess?.canManage && (
+            <section
+              aria-labelledby="admin-role-management-title"
+              className="rounded-3xl border border-border bg-card/45 p-5 sm:p-7"
+            >
+              <h2 id="admin-role-management-title" className="text-lg font-semibold">
+                Adminzugriffe verwalten
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Nur du kannst Adminzugriff vergeben oder entziehen. Verwende dafür die Alo-Konto-ID.
+              </p>
+
+              <form className="mt-5 flex flex-col gap-3 sm:flex-row" onSubmit={handleGrant}>
+                <label className="sr-only" htmlFor="admin-target-user-id">
+                  Alo-Konto-ID für neuen Adminzugriff
+                </label>
+                <input
+                  id="admin-target-user-id"
+                  autoComplete="off"
+                  className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm text-foreground"
+                  maxLength={36}
+                  onChange={(event) => setTargetUserId(event.target.value)}
+                  pattern="[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"
+                  placeholder="Alo-Konto-ID (UUID)"
+                  required
+                  value={targetUserId}
+                />
+                <button
+                  className="alo-btn min-h-11 shrink-0"
+                  disabled={roleMutationPending}
+                  type="submit"
                 >
-                  <div className="min-w-0">
-                    <code className="break-all text-sm text-foreground">{assignment.userId}</code>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Admin seit {new Date(assignment.grantedAt).toLocaleString("de-DE")}
-                    </p>
-                  </div>
-                  {assignment.canRevoke ? (
-                    <button
-                      aria-label={`Adminzugriff für ${assignment.userId} entziehen`}
-                      className="alo-btn min-h-10 shrink-0"
-                      disabled={roleMutationPending}
-                      onClick={() => void handleRevoke(assignment.userId)}
-                      type="button"
+                  Adminzugriff gewähren
+                </button>
+              </form>
+
+              {roleActionError && (
+                <p className="mt-4 text-sm text-destructive" role="alert">
+                  {roleActionError}
+                </p>
+              )}
+              {roleActionNotice && (
+                <p className="mt-4 text-sm text-foreground" aria-live="polite">
+                  {roleActionNotice}
+                </p>
+              )}
+
+              <h3 className="mt-7 text-sm font-semibold">Aktuelle Admin-Konten</h3>
+              {roleAccess.assignments.length === 0 ? (
+                <p className="mt-2 text-sm text-muted-foreground">Keine Admin-Konten gefunden.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {roleAccess.assignments.map((assignment) => (
+                    <li
+                      key={assignment.userId}
+                      className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/50 p-3 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      Entziehen
-                    </button>
-                  ) : (
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Eigener Zugriff
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
+                      <div className="min-w-0">
+                        <code className="break-all text-sm text-foreground">{assignment.userId}</code>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Admin seit {new Date(assignment.grantedAt).toLocaleString("de-DE")}
+                        </p>
+                      </div>
+                      {assignment.canRevoke ? (
+                        <button
+                          aria-label={`Adminzugriff für ${assignment.userId} entziehen`}
+                          className="alo-btn min-h-10 shrink-0"
+                          disabled={roleMutationPending}
+                          onClick={() => void handleRevoke(assignment.userId)}
+                          type="button"
+                        >
+                          Entziehen
+                        </button>
+                      ) : (
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Eigener Zugriff
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           )}
-        </section>
-      )}
+        </div>
+      </div>
     </main>
   );
 }
