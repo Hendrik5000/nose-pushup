@@ -92,7 +92,7 @@ export function MarketplaceAppCatalog({
       <span className="w-full min-w-0">
         <span className="block truncate text-sm font-semibold">{plugin.name}</span>
         <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-          {CATEGORY_LABELS[plugin.category]} Â· {plugin.publisher}
+          {CATEGORY_LABELS[plugin.category]} · {plugin.publisher}
         </span>
       </span>
     </button>
@@ -102,7 +102,7 @@ export function MarketplaceAppCatalog({
     <div className="flex items-center gap-3 rounded-2xl px-1 py-2 transition hover:bg-card/70 sm:gap-4 sm:px-2">
       <button
         type="button"
-        aria-label={`${plugin.name}. Details Ã¶ffnen`}
+        aria-label={`${plugin.name}. Details öffnen`}
         onClick={() => setSelectedId(plugin.id)}
         className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:gap-4"
       >
@@ -110,7 +110,7 @@ export function MarketplaceAppCatalog({
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold">{plugin.name}</span>
           <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-            {CATEGORY_LABELS[plugin.category]} Â· {plugin.publisher} Â· Version {plugin.version}
+            {CATEGORY_LABELS[plugin.category]} · {plugin.publisher} · Version {plugin.version}
           </span>
         </span>
       </button>
@@ -145,7 +145,7 @@ export function MarketplaceAppCatalog({
           <button
             type="button"
             onClick={() => setQuery("")}
-            aria-label="Suche zurÃ¼cksetzen"
+            aria-label="Suche zurücksetzen"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-background hover:text-foreground"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -189,7 +189,7 @@ export function MarketplaceAppCatalog({
           ))}
           {searchResults.length === 0 && (
             <p className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-8 text-center text-sm text-muted-foreground">
-              Keine Alo-App passt zu â{query}â. Versuche einen anderen Begriff.
+              Keine Alo-App passt zu „{query}“. Versuche einen anderen Begriff.
             </p>
           )}
         </section>
@@ -205,7 +205,7 @@ export function MarketplaceAppCatalog({
                   <Sparkles className="h-4 w-4" /> Neu im Marketplace
                 </p>
                 <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
-                  Deine nÃ¤chsten Lieblings-Apps
+                  Deine nächsten Lieblings-Apps
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   Entdecke kuratierte Alo-Apps und Spiele. Installieren und Aktivieren bleiben
@@ -223,7 +223,7 @@ export function MarketplaceAppCatalog({
             {suggestions.length > 0 && (
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-lg font-bold">VorschlÃ¤ge fÃ¼r dich</h2>
+                  <h2 className="text-lg font-bold">Vorschläge für dich</h2>
                   <button
                     type="button"
                     onClick={() => setActiveCollection("recommended")}
@@ -322,7 +322,7 @@ export function MarketplaceAppCatalog({
                     </DialogTitle>
                     <p className="mt-1 text-sm font-semibold text-primary">{selected.publisher}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {CATEGORY_LABELS[selected.category]} Â· Version {selected.version}
+                      {CATEGORY_LABELS[selected.category]} · Version {selected.version}
                     </p>
                   </div>
                   <div className="mt-6 flex justify-center">
@@ -352,7 +352,7 @@ export function MarketplaceAppCatalog({
                             onClick={() => onOpen(selected.id)}
                             className="min-h-12 rounded-full border border-primary/40 px-6 text-sm font-bold text-primary"
                           >
-                            App Ã¶ffnen
+                            App öffnen
                           </button>
                         )}
                         <button
@@ -371,7 +371,7 @@ export function MarketplaceAppCatalog({
                   </DialogDescription>
                   <section
                     className="alo-marketplace-preview mt-7"
-                    aria-label={`Stilisierte Vorschau von ${selected.name} â keine echten Screenshots`}
+                    aria-label={`Stilisierte Vorschau von ${selected.name} — keine echten Screenshots`}
                   >
                     <h3 className="text-sm font-bold">Vorschau</h3>
                     <div className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1 pb-1">
@@ -425,7 +425,7 @@ export function MarketplaceAppCatalog({
                   </section>
                   <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                     Alo-Apps sind fest registrierte Funktionen. Installieren speichert deine Auswahl
-                    lokal auf diesem Gerät; es wird kein ausfÃ¼hrbarer Plugin-Code geladen.
+                    lokal auf diesem Gerät; es wird kein ausführbarer Plugin-Code geladen.
                   </p>
                 </section>
               );

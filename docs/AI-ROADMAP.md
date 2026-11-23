@@ -733,3 +733,12 @@ Phase 6 CI für Draft-PR #239: [Run 44898052823](https://github.com/Hendrik5000/
 - [ ] **IN CI ZU PRÜFEN:** Der Android-Foreground-Agent erhält eine monotone Verbindungs-Generation. Callbacks, Heartbeats und verzögerte Reconnects einer abgelösten WebSocket-Generation dürfen den aktuellen Socket nicht mehr beeinflussen. Wiederholte Service-Starts erzeugen keine parallelen Verbindungen. Regressionstests prüfen Generation-Wechsel und Invalidierung.
 - Umfang: `android-device-agent/app/src/main/java/app/alo/miraagent/ConnectionGeneration.kt`, `MiraGatewayService.kt` und `ConnectionGenerationTest.kt`. Keine Android-Fernsteuerungsaktionen, keine Bildschirmaufnahme und keine Datenbankzugriffe ergänzt.
 - Status bleibt offen, bis Android-CI erfolgreich ist. Echte Android-Geräteabnahme und Gateway-Livebetrieb bleiben separat offen.
+
+## 2026-11-23 – Marketplace-Katalog: deutsche Texte und Beschriftungen
+
+- Der Marketplace-Detailseiten-Schritt aus PR #177 ist bereits auf `main`; dieser kleine Folgepatch korrigiert verbliebene fehlerhaft codierte deutsche Katalog- und Accessibility-Texte und ergänzt einen Regressionstest.
+- Geändert: `src/components/marketplace/MarketplaceAppCatalog.tsx`, `tests/marketplace-detail.test.ts`, `docs/AI-TEAM.md` und diese Roadmap.
+- Prüfungen lokal bestanden: Marketplace-Regression 3/3; `TZ=UTC npm test` mit 1.086 bestanden, 0 fehlgeschlagen und 1 Skip; `npx tsc --noEmit`; `npm run lint` mit 0 Fehlern/15 Warnungen; `npm run build`; `git diff --check`.
+- Zeitzonenhinweis: Ohne TZ-Override liefen drei zeitabhängige Fußballtests in CET fehl; unter `TZ=UTC` bestand die vollständige Suite. Fußballcode und -tests wurden nicht geändert.
+- Build-Nebenwirkung `src/routeTree.gen.ts` wurde zurückgesetzt; `package-lock.json` blieb unverändert. Keine Datenbank-, Supabase-, Migrations- oder Policy-Arbeit. PR #253 und Draft-PR #255 blieben unberührt.
+- PR-/GitHub-Status: [PR #260](https://github.com/Hendrik5000/nose-pushup/pull/260) offen gegen `main`; Code-/Test-Commit `017df91cde7344ff3873b8ac2473f4cdf79a0b3f` auf `fix/marketplace-german-copy-20261123` ist gepusht. GitHub-CI läuft, Merge noch nicht erfolgt. Kein Lovable-Publish; Live-Stand nicht geprüft.
