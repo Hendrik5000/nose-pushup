@@ -7,7 +7,8 @@ test("HomeAppMenuLayout renders an app action sidebar when provided (Alo 1.157)"
   const root = process.cwd();
   const layout = readFileSync(resolve(root, "src/components/HomeAppMenuLayout.tsx"), "utf8");
   assert.match(layout, /sidebar\?: ReactNode/);
-  assert.match(layout, /aria-label="App-Aktionen"/);
+  assert.match(layout, /ariaLabel = "App-Aktionen"/);
+  assert.match(layout, /aria-label=\{ariaLabel\}/);
   assert.match(layout, /export function HomeAppMenuSidebar/);
   assert.match(layout, /<HomeAppMenuSidebar/);
   assert.match(layout, /lg:grid-cols-\[240px_minmax\(0,1fr\)\]/);
@@ -49,7 +50,11 @@ test("Areas and Tools pages offer app-specific sidebar actions", () => {
 test("the games catalog offers app-specific sidebar actions outside fullscreen games", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/games.tsx"), "utf8");
-  assert.match(route, /aria-label="Alo-Spiele"/);
+  assert.match(route, /import \{ HomeAppMenuSidebar \} from "@\/components\/HomeAppMenuLayout"/);
+  assert.match(route, /<HomeAppMenuSidebar/);
+  assert.match(route, /ariaLabel="Alo-Spiele"/);
+  assert.match(route, /className="absolute bottom-0 left-0 top-0 z-\[80\]/);
+  assert.match(route, /<\/HomeAppMenuSidebar>/);
   assert.match(route, /search=\{\{ game: entry\.game \}\}/);
   assert.match(route, /to="\/"/);
   assert.match(route, /Zur Alo-Startseite/);

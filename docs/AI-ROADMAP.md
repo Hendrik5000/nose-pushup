@@ -742,3 +742,12 @@ Phase 6 CI für Draft-PR #239: [Run 44898052823](https://github.com/Hendrik5000/
 - Zeitzonenhinweis: Ohne TZ-Override liefen drei zeitabhängige Fußballtests in CET fehl; unter `TZ=UTC` bestand die vollständige Suite. Fußballcode und -tests wurden nicht geändert.
 - Build-Nebenwirkung `src/routeTree.gen.ts` wurde zurückgesetzt; `package-lock.json` blieb unverändert. Keine Datenbank-, Supabase-, Migrations- oder Policy-Arbeit. PR #253 und Draft-PR #255 blieben unberührt.
 - PR-/Merge-Status: [PR #260](https://github.com/Hendrik5000/nose-pushup/pull/260) wurde am 2026-11-23 in `main` gemergt; Merge-Commit `9021dfd48d0df538150eec7144ebb33852b44296` enthält den Code-/Test-Commit `017df91cde7344ff3873b8ac2473f4cdf79a0b3f`. Der vorgeschriebene GitHub-Check `Lint & Build` und alle übrigen ausführbaren Checks bestanden (7 erfolgreich, Supabase Preview übersprungen). Kein Lovable-Publish; Live-Stand nicht geprüft.
+
+
+## 2026-11-23 – Alo-Spiele: gemeinsame App-Menü-Seitenleiste
+
+- Auf dem verifizierten `main`-Stand `cb9501eda9e5975b2e989135658ff8068a798062` wurde die Spiele-Katalog-Seitenleiste bereits als eigenständiges Menü angeboten, nutzte aber noch ihr eigenes `<aside>` statt der gemeinsamen `HomeAppMenuSidebar`-Hülle. Die kleinste sichere Folgeänderung behält `Alo-Spiele` als Accessible Name sowie Drawer-Klassen, Spielwechsel, Home-Link und Menüinteraktion bei; es wurde keine Zugriffs- oder Spiellogik verändert.
+- Geändert: `src/components/HomeAppMenuLayout.tsx` (optionales `ariaLabel`, Standard bleibt `App-Aktionen`), `src/routes/games.tsx` und `tests/app-sidebar.test.ts`.
+- Lokal bestanden: fokussierter Test `node --experimental-strip-types --test tests/app-sidebar.test.ts` (7/7); `git diff --check`.
+- Vollsuite, TypeScript, Lint und Build sind lokal noch nicht gelaufen: frischer Checkout ohne `node_modules`, Inode-Auslastung 96 %; eine Dependency-Installation wurde vermieden. Diese Prüfungen müssen vor Merge durch GitHub-CI bestätigt werden.
+- Status: Implementierung auf Branch `cue/games-shared-sidebar-20261123`; PR/CI/Merge ausstehend. PR #253 und Draft-PR #255 blieben unberührt; kein Lovable-Publish und kein Live-Status behauptet. Der Gesamtpunkt „App-spezifische Seitenleisten“ bleibt teilweise offen, insbesondere für den separat geschützten Browser.
