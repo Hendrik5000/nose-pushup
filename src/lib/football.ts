@@ -164,7 +164,6 @@ export function parseFootballMatches(value: unknown): FootballMatch[] {
       if (!homeName || !awayName) return [];
       const group = asRecord(entry.group);
       const result = goalsOf(entry);
-      const finished = entry.matchIsFinished === true;
       const kickOffUtc =
         typeof entry.matchDateTimeUTC === "string"
           ? entry.matchDateTimeUTC
@@ -177,12 +176,12 @@ export function parseFootballMatches(value: unknown): FootballMatch[] {
           home: homeName,
           away: awayName,
           kickOffUtc,
-          finished,
+          finished: entry.matchIsFinished === true,
           homeGoals: result?.home ?? null,
           awayGoals: result?.away ?? null,
           groupName: typeof group.groupName === "string" ? group.groupName : "",
           groupOrder: numberOf(group.groupOrderID),
-          status: finished ? "FT" : null,
+          status: null,
           venue: null,
           round: null,
         },

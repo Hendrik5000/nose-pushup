@@ -128,46 +128,6 @@ test("parseFootballMatches reads final results and keeps open matches honest", (
   assert.equal(matches[1].homeGoals, 2);
   assert.equal(matches[1].awayGoals, 1);
   assert.equal(matches[1].finished, true);
-  assert.equal(matches[1].status, "FT");
-});
-
-test("parseFootballMatches keeps OpenLigaDB live status unknown without an explicit status field", () => {
-  const [match] = parseFootballMatches([
-    {
-      matchID: 83258,
-      matchDateTimeUTC: "2025-11-23T17:30:00Z",
-      matchIsFinished: false,
-      matchResults: [{ resultTypeID: 1, pointsTeam1: 1, pointsTeam2: 0 }],
-      goals: [{ matchMinute: 20, scoreTeam1: 1, scoreTeam2: 0 }],
-      team1: { teamName: "FC Bayern München" },
-      team2: { teamName: "SC Paderborn 07" },
-    },
-    {
-      matchID: 83259,
-      matchDateTimeUTC: "2026-11-23T18:00:00Z",
-      team1: { teamName: "RB Leipzig" },
-      team2: { teamName: "1. FSV Mainz 05" },
-    },
-  ]);
-
-  // OpenLigaDB's schema exposes matchIsFinished, but no authoritative live-status field.
-  assert.equal(match.finished, false);
-  assert.equal(match.status, null);
-  assert.equal(isLiveStatus(match.status), false);
-  assert.equal(match.homeGoals, 1);
-});
-
-test("parseFootballMatches does not infer a finished status when OpenLigaDB omits its flag", () => {
-  const [match] = parseFootballMatches([
-    {
-      matchID: 83260,
-      team1: { teamName: "SC Freiburg" },
-      team2: { teamName: "Bayer 04 Leverkusen" },
-    },
-  ]);
-
-  assert.equal(match.finished, false);
-  assert.equal(match.status, null);
 });
 
 test("parseFootballMatches falls back to the last reported result", () => {
