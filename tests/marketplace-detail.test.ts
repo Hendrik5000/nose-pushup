@@ -28,3 +28,25 @@ test("the marketplace detail page suggests similar apps of the same category", (
   assert.match(catalog, /similarApps\.map\(\(plugin\) => \(/);
   assert.match(catalog, /<CarouselCard key=\{plugin\.id\} plugin=\{plugin\} \/>/);
 });
+
+test("the marketplace catalog displays correctly encoded German copy", () => {
+  const root = process.cwd();
+  const catalog = readFileSync(
+    resolve(root, "src/components/marketplace/MarketplaceAppCatalog.tsx"),
+    "utf8",
+  );
+  const expectedCopy = [
+    "Details öffnen",
+    "Suche zurücksetzen",
+    "Keine Alo-App passt zu „{query}“. Versuche einen anderen Begriff.",
+    "Deine nächsten Lieblings-Apps",
+    "Vorschläge für dich",
+    "App öffnen",
+    "Stilisierte Vorschau von ${selected.name} — keine echten Screenshots",
+    "ausführbarer Plugin-Code",
+  ];
+  for (const copy of expectedCopy) {
+    assert.ok(catalog.includes(copy), `missing expected German copy: ${copy}`);
+  }
+  assert.doesNotMatch(catalog, /Ã|Â|\u00e2[\u0080-\u009f]/u);
+});

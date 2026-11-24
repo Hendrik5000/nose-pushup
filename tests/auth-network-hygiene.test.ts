@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { authRedirectHref } from "../src/lib/safe-next.ts";
 
 const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
 const authenticatedRoute = read("routes/_authenticated/route.tsx");
@@ -23,6 +24,21 @@ test("authenticated route uses its persisted client session for the UI gate", ()
   assert.doesNotMatch(authenticatedRoute, /supabase\.auth\.getUser\(\)/);
   assert.match(authenticatedRoute, /useNotifications\(user\.id\)/);
   assert.match(authenticatedRoute, /catch\s*\{/);
+});
+
+test("unauthenticated protected routes return to their safe internal destination after sign-in", () => {
+  assert.match(authenticatedRoute, /beforeLoad: async \(\{ location \}\) =>/);
+  assert.match(
+    authenticatedRoute,
+    /if \(!user\) throw redirect\(\{ href: authRedirectHref\(location\.href\) \}\);/,
+  );
+  assert.equal(authRedirectHref("/ai"), "/auth?next=%2Fai");
+  assert.equal(
+    authRedirectHref("/chat?conversation=latest#reply"),
+    "/auth?next=%2Fchat%3Fconversation%3Dlatest%23reply",
+  );
+  assert.equal(authRedirectHref("//attacker.example/steal"), "/auth?next=%2F");
+  assert.equal(authRedirectHref("https://attacker.example/steal"), "/auth?next=%2F");
 });
 
 test("sign-in redirect and optional root theme do not force auth user fetches", () => {

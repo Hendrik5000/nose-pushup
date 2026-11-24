@@ -22,3 +22,7 @@ export function safeNext(raw: unknown): string {
     return "/";
   }
 }
+
+export function authRedirectHref(raw: unknown): string {
+  return `/auth?next=${encodeURIComponent(safeNext(raw))}`;
+}
