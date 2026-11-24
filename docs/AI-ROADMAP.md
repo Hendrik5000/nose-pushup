@@ -813,3 +813,10 @@ Phase 6 CI für Draft-PR #239: [Run 44898052823](https://github.com/Hendrik5000/
 - Draft-PR [#255](https://github.com/Hendrik5000/nose-pushup/pull/255) „Revert #254: restore OpenLigaDB status parser behavior“ wurde nach ausdrücklicher Freigabe aus Draft genommen und mit Merge-Commit `d3224b523fee2cb41ca84a59ab1615295813f795` gemergt. Damit ist die in #254 ergänzte `FT`-Statusableitung zurückgenommen. Geändert: `src/lib/football.ts`, `tests/football-app.test.ts` sowie die historischen Registerzeilen zu #254. Finaler PR-Head `3c86896b3de697cccf764d4e4ed1baeac92e919e`; PR-CI 7 erfolgreich, 1 optionale Supabase Preview übersprungen.
 - Finaler `main`-Head: `d3224b523fee2cb41ca84a59ab1615295813f795`; Post-Merge-CI Run [45353492998](https://github.com/Hendrik5000/nose-pushup/actions/runs/45353492998) erfolgreich. Keine offenen Pull Requests.
 - Getrennte Release-Angaben: Kein Lovable-/Production-Publish ausgeführt; Live-Stand nicht verifiziert. Keine Datenbank-, Migration-, Policy-, Secret- oder Supabase-Änderungen in diesen vier PRs.
+
+
+## 2026-11-24 – UX-Issue #12: Kameraberechtigung und manueller Fallback
+
+- Lokaler Regressionsteil: `tests/workout-ui-followup.test.ts` schützt, dass `NotAllowedError`/`SecurityError` eine verständliche deutsche Meldung erzeugen und beide Trainingslayouts „Ohne Kamera manuell trainieren“ anbieten, das in den manuellen Modus navigiert. Die vorhandene Produktlogik in `src/hooks/useCameraDetection.ts` und `src/routes/_authenticated/workout.$exerciseId.tsx` blieb unverändert.
+- Gezielte Prüfungen bestanden: `node --experimental-strip-types --test tests/workout-plans.test.ts tests/workout-ui-followup.test.ts` (13/13) und `git diff --check`. Dies ist ein statischer UI-/Quellcodevertrag, keine simulierte Browserberechtigungsentscheidung.
+- Der vollständige Issue-#12-Durchlauf bleibt offen: In diesem Arbeitsschritt wurden weder Browser-/Gerätetests noch echte mobile oder Desktop-Abnahme ausgeführt; die echte Smartphone-Abnahme ist weiterhin unbelegt. PR-/CI-/Merge-Status folgen separat. Kein Lovable-Publish; Live-Stand nicht verifiziert. Keine Datenbank-/Supabase-/SQL-/Migrations-/Policy-/Secret-Änderung.
