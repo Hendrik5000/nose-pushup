@@ -57,7 +57,14 @@ test("choosing a settings category opens a dedicated page instead of expanding a
 
 test("keeps the existing profile summary and real settings features available", () => {
   assert.equal((profile.match(/<ProfileSummaryCard/g) ?? []).length, 2);
-  assert.equal((profile.match(/<SettingsCategoryGroups \/>/g) ?? []).length, 2);
+  assert.equal(
+    (
+      profile.match(
+        /<SettingsCategoryGroups query=\{settingsSearch\} onQueryChange=\{setSettingsSearch\} \/>/g,
+      ) ?? []
+    ).length,
+    2,
+  );
   for (const component of [
     "<AppsSettingsList />",
     "<MenuAccentPicker />",

@@ -80,7 +80,8 @@ test("settings keep the existing hub and add a compact sidebar to category pages
   assert.match(sidebar, /params=\{\{ category: category\.id \}\}/);
   assert.match(sidebar, /aria-current=\{activeCategoryId === category\.id \? "page" : undefined\}/);
   assert.match(sidebar, /grid-cols-2 gap-1 lg:grid-cols-1/);
-  assert.equal((page.match(/PROFILE_SETTINGS_GROUPS\.map/g) ?? []).length, 1);
+  assert.match(page, /const groups = filterProfileSettingsGroups\(query\)/);
+  assert.equal((page.match(/groups\.map\(\(group, index\) =>/g) ?? []).length, 1);
   assert.match(page, /data-settings-category-list="true"/);
   assert.doesNotMatch(page, /Alo \u00b7 Einstellungen/);
 });

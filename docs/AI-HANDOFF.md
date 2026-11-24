@@ -28,6 +28,8 @@ Alo soll sich wie eine sorgfältig gestaltete mobile App anfühlen, nicht wie ei
 
 Mobile-first prüfen: 320 px und 390 px, Safe Areas, Tastatur, erreichbarer Composer, 44×44-px-nahe Touchflächen, lesbare Labels, keine horizontalen Überläufe und keine durch feste Navigation verdeckten Inhalte. Drei Hauptbereiche sollen gleichwertig bleiben. Bestehende Auswahloptionen unbedingt erhalten: vier Navigationslayouts, sechs Designstile, 13 Farbwelten, „Klassisch“ und persönliche Widgets.
 
+Für jede neue Funktion ist die Darstellung in Light-/Dark-Mode verbindlich; beide Modi müssen ohne Verlust von Kontrast, Lesbarkeit oder erkennbaren Zuständen funktionieren. Layouts müssen sich sorgfältig an relevante Bildschirmgrößen anpassen. Mobile-Web und Desktop-Web sind unterschiedliche Nutzungskontexte und müssen jeweils passend gestaltet und geprüft werden, statt ein Desktoplayout nur zu verkleinern. Automatisierte oder statische Prüfung ersetzt keine ausstehende echte Geräteabnahme.
+
 ## Nutzerentscheidungen und Verhaltensregeln
 
 - Hendrik möchte offene Aufgaben weiterverfolgt sehen, bis sie tatsächlich erledigt oder ausdrücklich zurückgestellt sind. Status immer ehrlich benennen.

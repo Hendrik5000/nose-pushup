@@ -76,3 +76,22 @@ export function isProfileSettingsCategory(value: unknown): value is ProfileSetti
 export function getProfileSettingsCategory(value: unknown) {
   return PROFILE_SETTINGS_CATEGORIES.find((category) => category.id === value) ?? null;
 }
+
+/** Filter only the existing settings categories by their visible title and subtitle. */
+export function filterProfileSettingsGroups(query: string) {
+  const normalizedQuery = query.trim().toLocaleLowerCase("de-DE");
+  const groups = PROFILE_SETTINGS_GROUPS.map((group) => ({
+    title: group.title,
+    categories: group.categories.filter((categoryId) => {
+      const category = getProfileSettingsCategory(categoryId);
+      return (
+        !normalizedQuery ||
+        (category !== null &&
+          `${category.title} ${category.subtitle}`
+            .toLocaleLowerCase("de-DE")
+            .includes(normalizedQuery))
+      );
+    }),
+  }));
+  return groups.filter((group) => group.categories.length > 0);
+}

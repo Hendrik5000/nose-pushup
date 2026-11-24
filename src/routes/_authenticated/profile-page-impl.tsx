@@ -4,6 +4,7 @@ import {
   Fragment,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -30,6 +31,7 @@ import { PublicProfileSettings } from "@/components/PublicProfileSettings";
 import { AppsSettingsList } from "@/components/settings/AppsSettingsList";
 import { MenuAccentPicker } from "@/components/settings/MenuAccentPicker";
 import { SettingsCategoryRow } from "@/components/settings/SettingsCategoryRow";
+import { Input } from "@/components/ui/input";
 import { SettingsActionsSidebar } from "@/components/settings/SettingsActionsSidebar";
 import {
   ALL_TUTORIALS,
@@ -39,8 +41,8 @@ import {
   startTutorial,
 } from "@/lib/tutorials";
 import {
+  filterProfileSettingsGroups,
   getProfileSettingsCategory,
-  PROFILE_SETTINGS_GROUPS,
   type ProfileSettingsCategoryId,
 } from "@/lib/profile-settings";
 import { AloPageSidebarTrigger, useAloPageSidebarCommands } from "@/components/alo/AloPageSidebar";
@@ -92,6 +94,7 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
   const [hapticsOn, setHapticsOn] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [settingsSearch, setSettingsSearch] = useState("");
   const [upgradeEmail, setUpgradeEmail] = useState("");
   const [upgradePassword, setUpgradePassword] = useState("");
   const [upgrading, setUpgrading] = useState(false);
@@ -379,7 +382,7 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
                   streak={streak}
                   streakActive={streakActive}
                 />
-                <SettingsCategoryGroups />
+                <SettingsCategoryGroups query={settingsSearch} onQueryChange={setSettingsSearch} />
                 <BottomNav />
               </>
             )}
@@ -426,7 +429,7 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
                   streak={streak}
                   streakActive={streakActive}
                 />
-                <SettingsCategoryGroups />
+                <SettingsCategoryGroups query={settingsSearch} onQueryChange={setSettingsSearch} />
                 <BottomNav />
               </>
             )}
@@ -623,33 +626,75 @@ function ProfileSummaryCard({
   );
 }
 
-function SettingsCategoryGroups() {
+function SettingsCategoryGroups({
+  query,
+  onQueryChange,
+}: {
+  query: string;
+  onQueryChange: (query: string) => void;
+}) {
+  const searchId = useId();
+  const groups = filterProfileSettingsGroups(query);
+
   return (
-    <nav aria-label="Einstellungsbereiche" className="space-y-5" data-settings-category-list="true">
-      {PROFILE_SETTINGS_GROUPS.map((group, index) => {
-        const headingId = `settings-group-${index}`;
-        return (
-          <section key={group.title} aria-labelledby={headingId}>
-            <h2
-              id={headingId}
-              className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground"
-            >
-              {group.title}
-            </h2>
-            <div className="settings-category-group overflow-hidden rounded-2xl border border-border/70 bg-card/70">
-              {group.categories.map((categoryId, rowIndex) => (
-                <Fragment key={categoryId}>
-                  {rowIndex > 0 && (
-                    <div className="mx-3 h-px bg-border/70 sm:mx-4" aria-hidden="true" />
-                  )}
-                  <SettingsCategoryRow categoryId={categoryId} />
-                </Fragment>
-              ))}
-            </div>
-          </section>
-        );
-      })}
-    </nav>
+    <div className="space-y-5">
+      <div className="w-full space-y-1.5 sm:max-w-xl">
+        <label htmlFor={searchId} className="block px-1 text-sm font-semibold">
+          Einstellungsbereiche durchsuchen
+        </label>
+        <Input
+          id={searchId}
+          type="search"
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          placeholder="z. B. Datenschutz"
+          autoComplete="off"
+          aria-describedby={`${searchId}-hint`}
+          className="min-h-11"
+        />
+        <p id={`${searchId}-hint`} className="px-1 text-xs text-muted-foreground">
+          Suche nach Namen oder Kurzbeschreibung.
+        </p>
+      </div>
+      {groups.length > 0 ? (
+        <nav
+          aria-label="Einstellungsbereiche"
+          className="space-y-5"
+          data-settings-category-list="true"
+        >
+          {groups.map((group, index) => {
+            const headingId = `settings-group-${index}`;
+            return (
+              <section key={group.title} aria-labelledby={headingId}>
+                <h2
+                  id={headingId}
+                  className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground"
+                >
+                  {group.title}
+                </h2>
+                <div className="settings-category-group overflow-hidden rounded-2xl border border-border/70 bg-card/70">
+                  {group.categories.map((categoryId, rowIndex) => (
+                    <Fragment key={categoryId}>
+                      {rowIndex > 0 && (
+                        <div className="mx-3 h-px bg-border/70 sm:mx-4" aria-hidden="true" />
+                      )}
+                      <SettingsCategoryRow categoryId={categoryId} />
+                    </Fragment>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </nav>
+      ) : (
+        <p
+          className="rounded-xl border border-border/70 bg-card/60 p-4 text-sm text-muted-foreground"
+          role="status"
+        >
+          Keine passenden Einstellungsbereiche.
+        </p>
+      )}
+    </div>
   );
 }
 
