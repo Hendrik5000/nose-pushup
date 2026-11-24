@@ -53,7 +53,13 @@ class MiraGatewayService : Service() {
             return START_NOT_STICKY
         }
 
-        if (!stopped && (socket != null || reconnectPending)) {
+        if (
+            ConnectionStartPolicy.shouldIgnoreStart(
+                stopped = stopped,
+                hasSocket = socket != null,
+                reconnectPending = reconnectPending,
+            )
+        ) {
             updateNotification("Mira-Verbindung ist bereits aktiv")
             return START_STICKY
         }
