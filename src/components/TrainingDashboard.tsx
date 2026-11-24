@@ -614,7 +614,8 @@ export function TrainingDashboard({ user }: { user: User }) {
               </div>
               <h2 id="sport-today-plan-title">{recommendation.headline}</h2>
               <p>
-                Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter Fortschritt.
+                Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter
+                Fortschritt.
               </p>
             </div>
             <div className="training-plan-metrics grid grid-cols-3 gap-2 text-center">
@@ -661,8 +662,8 @@ export function TrainingDashboard({ user }: { user: User }) {
               />
             </div>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell erfasst du
-              selbst.
+              Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell
+              erfasst du selbst.
             </p>
             <Link
               to="/workout/$exerciseId"
@@ -685,7 +686,8 @@ export function TrainingDashboard({ user }: { user: User }) {
               <summary className="cursor-pointer">Warum dieser Plan?</summary>
               <p className="mt-2 leading-relaxed">{recommendation.detail}</p>
               <p className="alo-mobile-plan-context mt-2">
-                Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter Fortschritt.
+                Dein Fokus: Liegestütze. Ein klarer Plan, saubere Wiederholungen, echter
+                Fortschritt.
               </p>
               {weekReps === 0 && todayReps === 0 && (
                 <p className="mt-2">Starte entspannt – saubere Technik geht vor Tempo.</p>
@@ -765,8 +767,8 @@ export function TrainingDashboard({ user }: { user: User }) {
               />
             </div>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell erfasst du
-              selbst.
+              Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell
+              erfasst du selbst.
             </p>
             <Link
               to="/workout/$exerciseId"
@@ -823,7 +825,9 @@ export function TrainingDashboard({ user }: { user: User }) {
                   <p className="mt-1 text-sm text-muted-foreground">
                     Liegestütze erfassen: Nase tippt den Zähler, alternativ Kamera oder manuell.
                   </p>
-                  <span className="mt-3 inline-block text-sm font-semibold">Training starten →</span>
+                  <span className="mt-3 inline-block text-sm font-semibold">
+                    Training starten →
+                  </span>
                 </Link>
                 <Link
                   to="/ai"
