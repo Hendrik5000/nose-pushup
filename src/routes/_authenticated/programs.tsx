@@ -1,6 +1,7 @@
 import { ContentActions } from "@/components/alo/ContentActions";
 import { DesignView } from "@/components/DesignView";
 import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
+import { TrainingActionsSidebar } from "@/components/training/TrainingActionsSidebar";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,46 +66,6 @@ const LEVEL_LABEL: Record<string, string> = {
   intermediate: "Mittelstufe",
   advanced: "Fortgeschritten",
 };
-
-function ProgramsActionsSidebar() {
-  const linkClass =
-    "flex min-h-11 min-w-0 items-center rounded-xl px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:text-sm";
-
-  return (
-    <nav aria-label="Trainingsnavigation">
-      <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-        Training
-      </p>
-      <div className="mt-2 grid grid-cols-2 gap-1 lg:grid-cols-1">
-        <Link
-          to="/training"
-          className={`${linkClass} text-muted-foreground hover:bg-card hover:text-foreground`}
-        >
-          Trainingsübersicht
-        </Link>
-        <Link
-          to="/programs"
-          aria-current="page"
-          className={`${linkClass} bg-primary/15 text-primary`}
-        >
-          Programme
-        </Link>
-        <Link
-          to="/exercises"
-          className={`${linkClass} text-muted-foreground hover:bg-card hover:text-foreground`}
-        >
-          Übungen
-        </Link>
-        <Link
-          to="/coach"
-          className={`${linkClass} text-muted-foreground hover:bg-card hover:text-foreground`}
-        >
-          Coach
-        </Link>
-      </div>
-    </nav>
-  );
-}
 
 function ProgramsPage() {
   const navigate = useNavigate();
@@ -250,7 +211,7 @@ function ProgramsPage() {
             ariaLabel="Training"
             className="min-w-0 rounded-2xl border border-border/60 bg-card/60 p-4 lg:row-start-2 lg:sticky lg:top-6"
           >
-            <ProgramsActionsSidebar />
+            <TrainingActionsSidebar activePage="programs" />
           </HomeAppMenuSidebar>
           {loading && (
             <div className="min-w-0 rounded-3xl border border-border bg-card/50 p-8 text-center text-sm text-muted-foreground lg:col-start-2">
@@ -490,7 +451,7 @@ function ProgramsPage() {
             ariaLabel="Training"
             className="mt-5 min-w-0 rounded-2xl border border-border/60 bg-card/60 p-4 lg:col-start-1 lg:row-start-2 lg:sticky lg:top-6"
           >
-            <ProgramsActionsSidebar />
+            <TrainingActionsSidebar activePage="programs" />
           </HomeAppMenuSidebar>
 
           {loading && (

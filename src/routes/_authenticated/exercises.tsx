@@ -1,4 +1,6 @@
 import { DesignView } from "@/components/DesignView";
+import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
+import { TrainingActionsSidebar } from "@/components/training/TrainingActionsSidebar";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,17 +84,25 @@ function ExercisesPage() {
   return (
     <>
       <DesignView variant="sport">
-        <main className="sport-only alo-tablet-training alo-exercises-page mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-7 px-5 py-6 sm:px-8">
-          <SportPageIntro
-            eyebrow="TRAININGSBEREICH · 01"
-            title="Wähle deinen Fokus"
-            description="Jede Wiederholung zählt. Entscheide dich für einen Skill oder starte eine klassische Session."
+        <main className="sport-only alo-tablet-training alo-exercises-page mx-auto grid min-h-[100dvh] w-full max-w-6xl grid-cols-1 gap-7 px-5 py-6 sm:px-8 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
+          <HomeAppMenuSidebar
+            ariaLabel="Training"
+            className="min-w-0 rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
           >
-            <Link to="/" className="sport-back-link">
-              ← Startseite
-            </Link>
-          </SportPageIntro>
-          <section className="sport-feature-card rounded-[2rem] border border-border bg-card/70 p-6 sm:p-8">
+            <TrainingActionsSidebar activePage="exercises" />
+          </HomeAppMenuSidebar>
+          <div className="lg:col-start-2">
+            <SportPageIntro
+              eyebrow="TRAININGSBEREICH · 01"
+              title="Wähle deinen Fokus"
+              description="Jede Wiederholung zählt. Entscheide dich für einen Skill oder starte eine klassische Session."
+            >
+              <Link to="/" className="sport-back-link">
+                ← Startseite
+              </Link>
+            </SportPageIntro>
+          </div>
+          <section className="sport-feature-card rounded-[2rem] border border-border bg-card/70 p-6 sm:p-8 lg:col-start-2">
             <SportSectionLabel number="01">Skill-Progression</SportSectionLabel>
             <Link
               to="/calisthenics"
@@ -162,7 +172,7 @@ function ExercisesPage() {
               </div>
             </Link>
           </section>
-          <section className="space-y-4">
+          <section className="space-y-4 lg:col-start-2">
             <SportSectionLabel number="02">Klassische Übungen</SportSectionLabel>
             <label className="block">
               <span className="sr-only">Übungen durchsuchen</span>
@@ -246,12 +256,14 @@ function ExercisesPage() {
               })}
             </div>
           </section>
-          <BottomNav />
+          <div className="lg:col-start-2">
+            <BottomNav />
+          </div>
         </main>
       </DesignView>
       <DesignView variant="classic">
-        <main className="classic-only alo-tablet-training alo-exercises-page mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6">
-          <header className="flex items-center justify-between">
+        <main className="classic-only alo-tablet-training alo-exercises-page mx-auto grid min-h-[100dvh] w-full max-w-6xl grid-cols-1 gap-x-5 px-5 pt-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
+          <header className="flex items-center justify-between lg:col-span-2">
             <Link
               to="/"
               className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
@@ -264,7 +276,13 @@ function ExercisesPage() {
             <span className="w-12" />
           </header>
 
-          <section className="mt-6">
+          <HomeAppMenuSidebar
+            ariaLabel="Training"
+            className="mt-5 min-w-0 rounded-2xl border border-border/60 bg-card/60 p-4 lg:col-start-1 lg:row-start-2 lg:sticky lg:top-6"
+          >
+            <TrainingActionsSidebar activePage="exercises" />
+          </HomeAppMenuSidebar>
+          <section className="mt-6 lg:col-start-2">
             <h1 className="text-2xl font-bold tracking-tight text-balance">Wähle deine Übung</h1>
             <p className="mt-1 text-sm text-muted-foreground text-pretty">
               Jede Übung zählt automatisch — per Nase, Bewegungssensor oder Timer.
@@ -272,7 +290,7 @@ function ExercisesPage() {
           </section>
 
           {/* ── Calisthenics Hero Card ──────────────────────────────────────────── */}
-          <section className="mt-5">
+          <section className="mt-5 lg:col-start-2">
             <Link
               to="/calisthenics"
               className="group relative flex flex-col overflow-hidden rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/20 via-card/70 to-card/60 p-5 backdrop-blur transition active:scale-[0.99] hover:border-primary/60"
@@ -351,7 +369,7 @@ function ExercisesPage() {
           </section>
 
           {/* ── Standard Exercises ─────────────────────────────────────────────── */}
-          <section className="mt-5 flex-1 space-y-3">
+          <section className="mt-5 flex-1 space-y-3 lg:col-start-2">
             <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
               Klassische Übungen
             </h2>
@@ -426,7 +444,9 @@ function ExercisesPage() {
             })}
           </section>
 
-          <BottomNav />
+          <div className="lg:col-start-2">
+            <BottomNav />
+          </div>
         </main>
       </DesignView>
     </>
