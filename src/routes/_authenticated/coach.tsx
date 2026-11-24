@@ -1,5 +1,7 @@
 import { SuperAiPage } from "@/components/mira/SuperAiPage";
 import { DesignView } from "@/components/DesignView";
+import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
+import { TrainingActionsSidebar } from "@/components/training/TrainingActionsSidebar";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
@@ -108,8 +110,8 @@ function CoachChatPage() {
   return (
     <>
       <DesignView variant="classic">
-        <main className="classic-only mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-4">
-          <header className="flex items-center justify-between">
+        <main className="classic-only mx-auto grid min-h-[100dvh] w-full max-w-6xl grid-cols-1 gap-x-5 px-5 pt-6 pb-4 lg:h-[100dvh] lg:grid-cols-[210px_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:items-stretch lg:overflow-hidden">
+          <header className="flex items-center justify-between lg:col-span-2">
             <AloHomeLink className="px-2 text-xs" />
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">🧠 Smart Coach</span>
@@ -123,127 +125,145 @@ function CoachChatPage() {
             </button>
           </header>
 
-          <div
-            ref={scrollRef}
-            className="mt-4 flex-1 space-y-4 overflow-y-auto rounded-3xl border border-border bg-card/40 p-4 backdrop-blur"
+          <HomeAppMenuSidebar
+            ariaLabel="Training"
+            className="mt-5 min-w-0 rounded-2xl border border-border/60 bg-card/60 p-4 lg:col-start-1 lg:row-start-2 lg:sticky lg:top-6"
           >
-            {messages.length === 0 && (
-              <div className="flex flex-col items-center gap-3 py-6 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-2xl">
-                  🧠
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Dein Fitness-Coach</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Ich kenne deine Werte. Frag nach Tipps, log dein Training per Text oder frag
-                    nach Progress.
-                  </p>
-                </div>
-                <div className="mt-2 grid w-full gap-2">
-                  {SUGGESTIONS.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => submit(s)}
-                      className="rounded-xl border border-border bg-background/60 px-3 py-2 text-left text-xs text-foreground transition hover:border-primary/40"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
-              >
-                <div
-                  className={
-                    m.role === "user"
-                      ? "max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground"
-                      : "max-w-[92%] space-y-2 text-sm leading-relaxed text-foreground"
-                  }
-                >
-                  <p className="whitespace-pre-wrap">{m.content}</p>
-                  {m.actions && m.actions.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {m.actions.map((a, j) => (
-                        <span
-                          key={j}
-                          className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
-                        >
-                          ✓ {a}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {loading && (
-              <div className="flex justify-start">
-                <div className="flex items-center gap-1.5 rounded-2xl bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
-                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
-                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
-                  <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" />
-                  <span className="ml-1.5">Coach denkt…</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {error && (
-            <div className="mt-2 rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
-              {error}
-            </div>
-          )}
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              submit();
-            }}
-            className="mt-3 flex items-end gap-2 rounded-2xl border border-border bg-card/60 p-2 backdrop-blur"
-          >
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Nachricht an den Coach…"
-              rows={1}
-              className="min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2 text-sm text-foreground outline-none placeholder:truncate placeholder:text-muted-foreground/60"
-              style={{ maxHeight: 140 }}
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition active:scale-[0.95] disabled:opacity-40"
-              aria-label="Senden"
+            <TrainingActionsSidebar activePage="coach" />
+          </HomeAppMenuSidebar>
+          <section className="mt-4 flex min-h-[65dvh] min-w-0 flex-col lg:col-start-2 lg:row-start-2 lg:mt-0 lg:min-h-0">
+            <div
+              ref={scrollRef}
+              className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto rounded-3xl border border-border bg-card/40 p-4 backdrop-blur"
             >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              {messages.length === 0 && (
+                <div className="flex flex-col items-center gap-3 py-6 text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-2xl">
+                    🧠
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Dein Fitness-Coach</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Ich kenne deine Werte. Frag nach Tipps, log dein Training per Text oder frag
+                      nach Progress.
+                    </p>
+                  </div>
+                  <div className="mt-2 grid w-full gap-2">
+                    {SUGGESTIONS.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => submit(s)}
+                        className="rounded-xl border border-border bg-background/60 px-3 py-2 text-left text-xs text-foreground transition hover:border-primary/40"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {messages.map((m, i) => (
+                <div
+                  key={i}
+                  className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
+                >
+                  <div
+                    className={
+                      m.role === "user"
+                        ? "max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground"
+                        : "max-w-[92%] space-y-2 text-sm leading-relaxed text-foreground"
+                    }
+                  >
+                    <p className="whitespace-pre-wrap">{m.content}</p>
+                    {m.actions && m.actions.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {m.actions.map((a, j) => (
+                          <span
+                            key={j}
+                            className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+                          >
+                            ✓ {a}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="flex items-center gap-1.5 rounded-2xl bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
+                    <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
+                    <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
+                    <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" />
+                    <span className="ml-1.5">Coach denkt…</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {error && (
+              <div className="mt-2 rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+                {error}
+              </div>
+            )}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                submit();
+              }}
+              className="mt-3 flex items-end gap-2 rounded-2xl border border-border bg-card/60 p-2 backdrop-blur"
+            >
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Nachricht an den Coach…"
+                rows={1}
+                className="min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2 text-sm text-foreground outline-none placeholder:truncate placeholder:text-muted-foreground/60"
+                style={{ maxHeight: 140 }}
+                disabled={loading}
+              />
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition active:scale-[0.95] disabled:opacity-40"
+                aria-label="Senden"
               >
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            </button>
-          </form>
-          <BottomNav />
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              </button>
+            </form>
+            <BottomNav />
+          </section>
         </main>
       </DesignView>
       <DesignView variant="sport">
-        <SuperAiPage userId={user.id} />
+        <div className="sport-only mx-auto grid min-h-[100dvh] w-full max-w-7xl grid-cols-1 gap-7 px-5 py-6 sm:px-8 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
+          <HomeAppMenuSidebar
+            ariaLabel="Training"
+            className="min-w-0 rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
+          >
+            <TrainingActionsSidebar activePage="coach" />
+          </HomeAppMenuSidebar>
+          <div className="min-w-0 lg:col-start-2">
+            <SuperAiPage userId={user.id} />
+          </div>
+        </div>
       </DesignView>
     </>
   );

@@ -134,6 +134,18 @@ test("Alo Trainingsübersicht shares responsive active training navigation", () 
   assert.match(dashboard, /lg:grid-cols-\[210px_minmax\(0,1fr\)\]/);
 });
 
+test("Alo Coach shares responsive active training navigation across Classic and Sport views", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/_authenticated/coach.tsx"), "utf8");
+  assert.equal((route.match(/<HomeAppMenuSidebar/g) ?? []).length, 2);
+  assert.equal((route.match(/<TrainingActionsSidebar activePage="coach" \/>/g) ?? []).length, 2);
+  assert.equal((route.match(/ariaLabel="Training"/g) ?? []).length, 2);
+  assert.match(route, /lg:grid-cols-\[210px_minmax\(0,1fr\)\]/);
+  assert.match(route, /lg:row-start-2/);
+  assert.match(route, /min-h-\[65dvh\]/);
+  assert.match(route, /<SuperAiPage userId=\{user\.id\} \/>/);
+});
+
 test("Marketplace shares responsive collection navigation without displaying duplicate controls", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/marketplace.tsx"), "utf8");
