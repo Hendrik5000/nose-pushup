@@ -193,3 +193,19 @@ test("Alo Health uses the shared app sidebar in both design views", () => {
   assert.match(route, /to="\/coach"/);
   assert.match(route, /Sport verbinden/);
 });
+
+test("Postfach offers an accessible route home and keeps the friends link", () => {
+  const root = process.cwd();
+  const postfach = readFileSync(resolve(root, "src/components/postfach/PostfachPage.tsx"), "utf8");
+  const homeLink = readFileSync(resolve(root, "src/components/AloHomeLink.tsx"), "utf8");
+  assert.match(postfach, /import \{ AloHomeLink \} from "@\/components\/AloHomeLink";/);
+  assert.match(
+    postfach,
+    /<nav aria-label="Postfach-Navigation" className="flex flex-wrap items-center gap-2">/,
+  );
+  assert.match(postfach, /<AloHomeLink \/>/);
+  assert.match(postfach, /to="\/profile"[\s\S]*?>\s*Freunde\s*<\/Link>/);
+  assert.match(postfach, /flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between/);
+  assert.match(homeLink, /to="\/"/);
+  assert.match(homeLink, /aria-label="Zur Alo-Startseite"/);
+});

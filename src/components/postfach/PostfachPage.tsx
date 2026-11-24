@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { FriendCodeCard } from "@/components/friends/FriendCodeCard";
 import { useCalls } from "@/components/calls/CallProvider";
 import { usePostfach } from "./PostfachProvider";
@@ -73,19 +74,22 @@ export function PostfachPage() {
 
   return (
     <main className="alo-postfach-page mx-auto w-full max-w-2xl px-4 pb-28 pt-6">
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Postfach</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Einladungen, Anrufe und Neuigkeiten zu Alo-Funktionen.
           </p>
         </div>
-        <Link
-          to="/profile"
-          className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-border px-3 py-2 text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground"
-        >
-          Freunde
-        </Link>
+        <nav aria-label="Postfach-Navigation" className="flex flex-wrap items-center gap-2">
+          <AloHomeLink />
+          <Link
+            to="/profile"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-border px-3 py-2 text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground"
+          >
+            Freunde
+          </Link>
+        </nav>
       </header>
 
       {!postfach.available && !postfach.loading && (
