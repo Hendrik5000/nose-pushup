@@ -79,6 +79,29 @@ test("the three routes retain their pages, Health data sources and new Classic d
   assert.match(health, /id="health-entry"/);
 });
 
+test("Mira devices route retains its menu and accessible Alo-home return links", () => {
+  const route = read("routes/_authenticated/mira-devices.tsx");
+  const sidebar = read("components/alo/AloPageSidebar.tsx");
+
+  assert.match(route, /createFileRoute\("\/_authenticated\/mira-devices"\)/);
+  assert.match(
+    route,
+    /<AloPageSidebar active="mira">[\s\S]*?<MiraDevicesPage \/>[\s\S]*?<\/AloPageSidebar>/,
+  );
+  assert.match(
+    sidebar,
+    /id: "mira-view-devices",\s*label: "Geräte",\s*Icon: MonitorSmartphone,\s*href: "\/mira-devices"/,
+  );
+  assert.match(
+    sidebar,
+    /<Link\s+to="\/"\s+className="alo-page-sidebar-brand"\s+aria-label="Zur Alo-Startseite"/,
+  );
+  assert.match(
+    sidebar,
+    /<SidebarFooter className="alo-page-sidebar-footer">[\s\S]*?<Link to="\/" onClick=\{\(\) => setOpenMobile\(false\)\}>[\s\S]*?<House aria-hidden="true" \/>[\s\S]*?<span>Alle Apps<\/span>/,
+  );
+});
+
 test("Mira sidebar actions reuse its existing session, view and settings handlers", () => {
   const mira = read("components/mira/SuperAiPage.tsx");
   assert.match(mira, /useAloPageSidebarCommands\(sidebarCommands, activeSidebarItem\)/);
