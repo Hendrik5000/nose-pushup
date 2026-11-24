@@ -1,4 +1,5 @@
 import { getPublicGameDocument } from "@/lib/public-game.functions";
+import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
 import { PUBLIC_GAME_IDS, type PublicGameId } from "@/lib/public-game-policy";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -136,8 +137,8 @@ function GamesHub() {
             onClick={() => setMenuOpen(false)}
             className="absolute inset-0 z-[70] bg-black/60"
           />
-          <aside
-            aria-label="Alo-Spiele"
+          <HomeAppMenuSidebar
+            ariaLabel="Alo-Spiele"
             className="absolute bottom-0 left-0 top-0 z-[80] flex w-[min(86vw,320px)] flex-col border-r border-white/10 bg-[#0b1320] p-5 pt-20 shadow-2xl"
           >
             <div className="mb-6">
@@ -174,7 +175,7 @@ function GamesHub() {
               <Home className="h-4 w-4" />
               Zur Alo-Startseite
             </Link>
-          </aside>
+          </HomeAppMenuSidebar>
         </>
       )}
     </main>

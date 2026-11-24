@@ -2,7 +2,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
-import { MarketplaceAppCatalog } from "@/components/marketplace/MarketplaceAppCatalog";
+import {
+  MarketplaceAppCatalog,
+  MarketplaceCollectionSidebar,
+} from "@/components/marketplace/MarketplaceAppCatalog";
 import { MarketplaceCustomApps } from "@/components/marketplace/MarketplaceCustomApps";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +24,7 @@ import {
   saveMarketplaceInstallState,
   type MarketplaceInstallState,
 } from "@/lib/marketplace";
+import type { MarketplaceCollectionId } from "@/lib/marketplace-collections";
 
 export const Route = createFileRoute("/marketplace")({
   ssr: false,
@@ -75,8 +79,18 @@ function MarketplacePage() {
 }
 
 function MarketplaceGuestView({ sessionChecked }: { sessionChecked: boolean }) {
+  const [activeCollection, setActiveCollection] = useState<MarketplaceCollectionId>("official");
+
   return (
-    <HomeAppMenuLayout>
+    <HomeAppMenuLayout
+      sidebar={
+        <MarketplaceCollectionSidebar
+          activeCollection={activeCollection}
+          onSelect={setActiveCollection}
+        />
+      }
+      sidebarClassName="hidden lg:block"
+    >
       {sessionChecked ? (
         <MarketplaceAppCatalog
           plugins={MARKETPLACE_CATALOG}
@@ -86,6 +100,8 @@ function MarketplaceGuestView({ sessionChecked }: { sessionChecked: boolean }) {
           onToggle={() => {}}
           onRemove={() => {}}
           onOpen={() => {}}
+          activeCollection={activeCollection}
+          onCollectionChange={setActiveCollection}
         />
       ) : (
         <p className="text-center text-xs text-muted-foreground" role="status">
@@ -126,6 +142,7 @@ function MarketplaceFooterInfo({ description }: { description: string }) {
 
 function MarketplaceContent({ userId }: { userId: string }) {
   const navigate = useNavigate();
+  const [activeCollection, setActiveCollection] = useState<MarketplaceCollectionId>("official");
   const [adminAccess, setAdminAccess] = useState<{ userId: string; isAdmin: boolean } | null>(null);
   const isMarketplaceAdmin = isMarketplaceAdminForUser(adminAccess, userId);
   const [accountState, setAccountState] = useState<AccountMarketplaceState | null>(null);
@@ -223,7 +240,15 @@ function MarketplaceContent({ userId }: { userId: string }) {
   };
 
   return (
-    <HomeAppMenuLayout>
+    <HomeAppMenuLayout
+      sidebar={
+        <MarketplaceCollectionSidebar
+          activeCollection={activeCollection}
+          onSelect={setActiveCollection}
+        />
+      }
+      sidebarClassName="hidden lg:block"
+    >
       <MarketplaceAppCatalog
         plugins={MARKETPLACE_CATALOG}
         installState={state}
@@ -232,6 +257,8 @@ function MarketplaceContent({ userId }: { userId: string }) {
         onToggle={onToggle}
         onRemove={onRemove}
         onOpen={onOpenPlugin}
+        activeCollection={activeCollection}
+        onCollectionChange={setActiveCollection}
         userId={userId}
       />
 

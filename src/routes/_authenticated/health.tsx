@@ -19,6 +19,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import { AppSettingsGear } from "@/components/settings/AppSettingsGear";
 import { AloPageSidebar, AloPageSidebarTrigger } from "@/components/alo/AloPageSidebar";
+import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
 import { SmartwatchPanel } from "@/components/SmartwatchPanel";
 import { HealthConnectPanel } from "@/components/HealthConnectPanel";
 import { WeightTrendCard } from "@/components/WeightTrendCard";
@@ -132,6 +133,11 @@ type Entry = {
   source: string;
 };
 
+type HealthSaveFeedbackState = {
+  kind: "success" | "warning" | "error";
+  message: string;
+};
+
 const today = () => localDateKey(new Date());
 
 function HealthPage() {
@@ -143,7 +149,7 @@ function HealthPage() {
   const [kcal, setKcal] = useState("");
   const [weight, setWeight] = useState("");
   const [sleepH, setSleepH] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<HealthSaveFeedbackState | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -197,7 +203,7 @@ function HealthPage() {
 
   const save = async () => {
     setBusy(true);
-    setMsg(null);
+    setFeedback(null);
     try {
       const { data: existing, error: readError } = await supabase
         .from("health_entries")
@@ -232,21 +238,24 @@ function HealthPage() {
           .eq("id", userId);
         profileWeightSaved = !profileError;
       }
-      setMsg(
-        profileWeightSaved
+      setFeedback({
+        kind: profileWeightSaved ? "success" : "warning",
+        message: profileWeightSaved
           ? "Gesundheitsdaten gespeichert ✓"
           : "Gesundheitsdaten gespeichert; Profilgewicht konnte nicht aktualisiert werden.",
-      );
+      });
       setSteps("");
       setKcal("");
       setSleepH("");
       void load();
     } catch (error) {
-      setMsg(
-        error instanceof HealthEntryInputError
-          ? error.message
-          : "Speichern fehlgeschlagen. Verbindung prüfen und erneut versuchen.",
-      );
+      setFeedback({
+        kind: "error",
+        message:
+          error instanceof HealthEntryInputError
+            ? error.message
+            : "Speichern fehlgeschlagen. Verbindung prüfen und erneut versuchen.",
+      });
     } finally {
       setBusy(false);
     }
@@ -294,12 +303,9 @@ function HealthPage() {
             <p>Schritte, Schlaf und Aktivität – mit deinen echten Messwerten an einem Ort.</p>
           </header>
           <div className="grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
-            <aside
-              aria-label="App-Aktionen"
-              className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
-            >
+            <HomeAppMenuSidebar className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6">
               <HealthActionsSidebar />
-            </aside>
+            </HomeAppMenuSidebar>
             <div className="flex min-w-0 flex-col gap-5">
               <nav
                 className="health-category-nav health-classic-category-nav"
@@ -538,7 +544,7 @@ function HealthPage() {
                     placeholder="78"
                   />
                 </div>
-                {msg && <p className="mt-3 text-xs text-muted-foreground">{msg}</p>}
+                <HealthSaveFeedback feedback={feedback} className="mt-3 text-xs" />
                 <button
                   onClick={save}
                   disabled={busy}
@@ -606,12 +612,9 @@ function HealthPage() {
             </SportPageIntro>
           </div>
           <div className="grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
-            <aside
-              aria-label="App-Aktionen"
-              className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6"
-            >
+            <HomeAppMenuSidebar className="rounded-2xl border border-border/60 bg-card/60 p-4 lg:sticky lg:top-6">
               <HealthActionsSidebar />
-            </aside>
+            </HomeAppMenuSidebar>
             <div className="flex min-w-0 flex-col gap-5">
               <nav className="health-category-nav" aria-label="Gesundheitsbereiche">
                 <a href="#health-today">
@@ -866,7 +869,7 @@ function HealthPage() {
                     />,
                   ]}
                 </div>
-                {msg && <p className="mt-4 text-sm text-muted-foreground">{msg}</p>}
+                <HealthSaveFeedback feedback={feedback} className="mt-4 text-sm" />
                 <button
                   onClick={save}
                   disabled={busy}
@@ -924,6 +927,32 @@ function HealthPage() {
         </main>
       </DesignView>
     </AloPageSidebar>
+  );
+}
+
+function HealthSaveFeedback({
+  feedback,
+  className,
+}: {
+  feedback: HealthSaveFeedbackState | null;
+  className: string;
+}) {
+  if (!feedback) return null;
+
+  return (
+    <p
+      role={feedback.kind === "error" ? "alert" : "status"}
+      aria-atomic="true"
+      className={`${className} rounded-xl border px-3 py-2 ${
+        feedback.kind === "success"
+          ? "border-primary/30 bg-primary/5 text-primary"
+          : feedback.kind === "warning"
+            ? "border-amber-500/30 bg-amber-500/5 text-foreground"
+            : "border-destructive/30 bg-destructive/5 text-destructive"
+      }`}
+    >
+      {feedback.message}
+    </p>
   );
 }
 
