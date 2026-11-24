@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowRight, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 import {
   getMarketplaceCollectionPlugins,
+  MARKETPLACE_COLLECTIONS,
   type MarketplaceCollectionId,
 } from "@/lib/marketplace-collections";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -28,8 +29,46 @@ type Props = Readonly<{
   onToggle: (pluginId: string, name: string, enabled: boolean) => void;
   onRemove: (pluginId: string, name: string) => void;
   onOpen: (pluginId: string) => void;
+  activeCollection: MarketplaceCollectionId;
+  onCollectionChange: (collection: MarketplaceCollectionId) => void;
   userId?: string | null;
 }>;
+
+export function MarketplaceCollectionSidebar({
+  activeCollection,
+  onSelect,
+}: {
+  activeCollection: MarketplaceCollectionId;
+  onSelect: (collection: MarketplaceCollectionId) => void;
+}) {
+  return (
+    <nav aria-label="Marketplace-Kategorien" className="space-y-2">
+      <p className="px-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        Entdecken
+      </p>
+      <div className="space-y-1">
+        {MARKETPLACE_COLLECTIONS.map((collection) => {
+          const selected = activeCollection === collection.id;
+          return (
+            <button
+              key={collection.id}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onSelect(collection.id)}
+              className={`flex min-h-12 w-full items-center justify-between rounded-xl border px-3 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${selected ? "border-primary/30 bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:border-border hover:bg-card/70 hover:text-foreground"}`}
+            >
+              <span>{collection.label}</span>
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 rounded-full ${selected ? "bg-primary" : "bg-muted-foreground/30"}`}
+              />
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
 
 export function MarketplaceAppCatalog({
   plugins,
@@ -39,10 +78,11 @@ export function MarketplaceAppCatalog({
   onToggle,
   onRemove,
   onOpen,
+  activeCollection,
+  onCollectionChange,
   userId = null,
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [activeCollection, setActiveCollection] = useState<MarketplaceCollectionId>("official");
   const [query, setQuery] = useState("");
   const isInstalled = (pluginId: string) => installState.installedPluginIds.includes(pluginId);
   const availablePlugins = plugins.filter((plugin) => !isInstalled(plugin.id));
@@ -92,7 +132,7 @@ export function MarketplaceAppCatalog({
       <span className="w-full min-w-0">
         <span className="block truncate text-sm font-semibold">{plugin.name}</span>
         <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-          {CATEGORY_LABELS[plugin.category]} Â· {plugin.publisher}
+          {CATEGORY_LABELS[plugin.category]} · {plugin.publisher}
         </span>
       </span>
     </button>
@@ -102,7 +142,7 @@ export function MarketplaceAppCatalog({
     <div className="flex items-center gap-3 rounded-2xl px-1 py-2 transition hover:bg-card/70 sm:gap-4 sm:px-2">
       <button
         type="button"
-        aria-label={`${plugin.name}. Details Ã¶ffnen`}
+        aria-label={`${plugin.name}. Details öffnen`}
         onClick={() => setSelectedId(plugin.id)}
         className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:gap-4"
       >
@@ -110,7 +150,7 @@ export function MarketplaceAppCatalog({
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold">{plugin.name}</span>
           <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-            {CATEGORY_LABELS[plugin.category]} Â· {plugin.publisher} Â· Version {plugin.version}
+            {CATEGORY_LABELS[plugin.category]} · {plugin.publisher} · Version {plugin.version}
           </span>
         </span>
       </button>
@@ -145,7 +185,7 @@ export function MarketplaceAppCatalog({
           <button
             type="button"
             onClick={() => setQuery("")}
-            aria-label="Suche zurÃ¼cksetzen"
+            aria-label="Suche zurücksetzen"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-background hover:text-foreground"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -153,28 +193,21 @@ export function MarketplaceAppCatalog({
         )}
       </form>
       <nav
-        className="alo-marketplace-categories -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+        className="alo-marketplace-categories -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden"
         aria-label="Marketplace-Kategorien"
       >
-        {(
-          [
-            ["official", "Offiziell"],
-            ["recommended", "Empfohlen"],
-            ["new", "Neu"],
-            ["friends", "Von Freunden"],
-          ] as const
-        ).map(([id, label]) => (
+        {MARKETPLACE_COLLECTIONS.map((collection) => (
           <button
-            key={id}
+            key={collection.id}
             type="button"
-            aria-pressed={activeCollection === id}
+            aria-pressed={activeCollection === collection.id}
             onClick={() => {
-              setActiveCollection(id);
+              onCollectionChange(collection.id);
               setQuery("");
             }}
-            className={`min-h-10 shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeCollection === id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card/70 text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}
+            className={`min-h-10 shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeCollection === collection.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card/70 text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}
           >
-            {label}
+            {collection.label}
           </button>
         ))}
       </nav>
@@ -189,7 +222,7 @@ export function MarketplaceAppCatalog({
           ))}
           {searchResults.length === 0 && (
             <p className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-8 text-center text-sm text-muted-foreground">
-              Keine Alo-App passt zu â{query}â. Versuche einen anderen Begriff.
+              Keine Alo-App passt zu „{query}“. Versuche einen anderen Begriff.
             </p>
           )}
         </section>
@@ -205,7 +238,7 @@ export function MarketplaceAppCatalog({
                   <Sparkles className="h-4 w-4" /> Neu im Marketplace
                 </p>
                 <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
-                  Deine nÃ¤chsten Lieblings-Apps
+                  Deine nächsten Lieblings-Apps
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   Entdecke kuratierte Alo-Apps und Spiele. Installieren und Aktivieren bleiben
@@ -213,7 +246,7 @@ export function MarketplaceAppCatalog({
                 </p>
                 <button
                   type="button"
-                  onClick={() => setActiveCollection("new")}
+                  onClick={() => onCollectionChange("new")}
                   className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
                 >
                   Neu entdecken <ArrowRight className="h-4 w-4" />
@@ -223,10 +256,10 @@ export function MarketplaceAppCatalog({
             {suggestions.length > 0 && (
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-lg font-bold">VorschlÃ¤ge fÃ¼r dich</h2>
+                  <h2 className="text-lg font-bold">Vorschläge für dich</h2>
                   <button
                     type="button"
-                    onClick={() => setActiveCollection("recommended")}
+                    onClick={() => onCollectionChange("recommended")}
                     className="rounded-full p-2 text-muted-foreground hover:bg-background hover:text-foreground"
                     aria-label="Empfehlungen anzeigen"
                   >
@@ -322,7 +355,7 @@ export function MarketplaceAppCatalog({
                     </DialogTitle>
                     <p className="mt-1 text-sm font-semibold text-primary">{selected.publisher}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {CATEGORY_LABELS[selected.category]} Â· Version {selected.version}
+                      {CATEGORY_LABELS[selected.category]} · Version {selected.version}
                     </p>
                   </div>
                   <div className="mt-6 flex justify-center">
@@ -352,7 +385,7 @@ export function MarketplaceAppCatalog({
                             onClick={() => onOpen(selected.id)}
                             className="min-h-12 rounded-full border border-primary/40 px-6 text-sm font-bold text-primary"
                           >
-                            App Ã¶ffnen
+                            App öffnen
                           </button>
                         )}
                         <button
@@ -371,7 +404,7 @@ export function MarketplaceAppCatalog({
                   </DialogDescription>
                   <section
                     className="alo-marketplace-preview mt-7"
-                    aria-label={`Stilisierte Vorschau von ${selected.name} â keine echten Screenshots`}
+                    aria-label={`Stilisierte Vorschau von ${selected.name} — keine echten Screenshots`}
                   >
                     <h3 className="text-sm font-bold">Vorschau</h3>
                     <div className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1 pb-1">
@@ -425,7 +458,7 @@ export function MarketplaceAppCatalog({
                   </section>
                   <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                     Alo-Apps sind fest registrierte Funktionen. Installieren speichert deine Auswahl
-                    lokal auf diesem Gerät; es wird kein ausfÃ¼hrbarer Plugin-Code geladen.
+                    lokal auf diesem Gerät; es wird kein ausführbarer Plugin-Code geladen.
                   </p>
                 </section>
               );

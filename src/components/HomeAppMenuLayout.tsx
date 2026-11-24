@@ -6,14 +6,32 @@ type HomeAppMenuLayoutProps = {
   title?: string;
   description?: string;
   sidebar?: ReactNode;
+  sidebarClassName?: string;
   children: ReactNode;
 };
+
+export function HomeAppMenuSidebar({
+  children,
+  className,
+  ariaLabel = "App-Aktionen",
+}: {
+  children: ReactNode;
+  className?: string;
+  ariaLabel?: string;
+}) {
+  return (
+    <aside aria-label={ariaLabel} className={className}>
+      {children}
+    </aside>
+  );
+}
 
 export function HomeAppMenuLayout({
   eyebrow,
   title,
   description,
   sidebar,
+  sidebarClassName,
   children,
 }: HomeAppMenuLayoutProps) {
   const showHeader = Boolean(title);
@@ -50,12 +68,11 @@ export function HomeAppMenuLayout({
       )}
       {sidebar ? (
         <div className="grid min-w-0 gap-7 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
-          <aside
-            aria-label="App-Aktionen"
-            className="min-w-0 rounded-2xl border border-border/60 p-3 lg:sticky lg:top-6"
+          <HomeAppMenuSidebar
+            className={`min-w-0 rounded-2xl border border-border/60 p-3 lg:sticky lg:top-6 ${sidebarClassName ?? ""}`}
           >
             {sidebar}
-          </aside>
+          </HomeAppMenuSidebar>
           <div className="flex min-w-0 flex-col gap-7">{children}</div>
         </div>
       ) : (
