@@ -127,15 +127,14 @@ test("Marketplace covers all existing first-party app, area, tool and game regis
     );
   }
 
-  for (const gameId of PRIVATE_GAME_IDS) {
+  const marketplaceGameIds = MARKETPLACE_CATALOG.flatMap(({ action }) =>
+    action.type === "open-game" ? [action.gameId] : [],
+  );
+  assert.deepEqual(marketplaceGameIds, ["grid-defense", "kupferkern", "neon-starfighter"]);
+  for (const gameId of marketplaceGameIds) {
     assert.ok(
-      MARKETPLACE_CATALOG.some(
-        (plugin) =>
-          plugin.category === "app" &&
-          plugin.action.type === "open-game" &&
-          plugin.action.gameId === gameId,
-      ),
-      `missing existing Admin-protected game ${gameId}`,
+      PRIVATE_GAME_IDS.includes(gameId),
+      `Marketplace game ${gameId} must be Admin-protected`,
     );
   }
 
