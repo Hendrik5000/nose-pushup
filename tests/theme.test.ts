@@ -219,9 +219,9 @@ function contrast(a: string, b: string) {
   return (bright! + 0.05) / (dark! + 0.05);
 }
 
-test("new themes define all semantic CSS tokens and readable foreground pairs", () => {
+test("all themes define semantic CSS tokens and readable foreground pairs", () => {
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-  const newIds = ["daylight", "sand", "forest", "midnight", "rose", "contrast", "glacier"] as const;
+  const themeIds = THEMES.map((theme) => theme.id);
   const requiredTokens = [
     "background",
     "foreground",
@@ -245,7 +245,7 @@ test("new themes define all semantic CSS tokens and readable foreground pairs", 
     "glow-1",
     "glow-2",
   ];
-  for (const id of newIds) {
+  for (const id of themeIds) {
     const theme = THEMES.find((item) => item.id === id)!;
     const block = css.match(new RegExp(`\\[data-theme="${id}"\\]\\s*\\{([^}]*)\\}`))?.[1];
     assert.ok(block, `missing CSS block for ${id}`);
