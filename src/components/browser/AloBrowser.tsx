@@ -10,6 +10,8 @@
  * „Im neuen Tab öffnen“ erreichbar.
  */
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import { Link } from "@tanstack/react-router";
+import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
 import {
   browserProxyUrls,
   browserReaderUrl,
@@ -92,6 +94,44 @@ const QUICK_LINKS = [
     url: "https://de.m.wikipedia.org/wiki/Krafttraining",
   },
 ];
+
+const BROWSER_APP_LINKS = [
+  { label: "Startseite", to: "/" },
+  { label: "Mira", to: "/ai" },
+  { label: "Nexus Chat", to: "/chat" },
+  { label: "Training", to: "/training" },
+  { label: "Weitere Bereiche", to: "/areas" },
+] as const;
+
+function BrowserAppNavigation({ layout }: { layout: "sidebar" | "mobile" }) {
+  const isSidebar = layout === "sidebar";
+  const linkClass =
+    "flex min-h-11 shrink-0 items-center rounded-xl px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:text-sm";
+
+  return (
+    <nav aria-label="Alo-Bereiche" className={isSidebar ? "" : "w-max min-w-full"}>
+      {isSidebar && (
+        <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Alo · Apps
+        </p>
+      )}
+      <div className={isSidebar ? "mt-2 grid gap-1" : "flex items-center gap-1"}>
+        <span aria-current="page" className={`${linkClass} bg-primary/15 text-primary`}>
+          Browser
+        </span>
+        {BROWSER_APP_LINKS.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            className={`${linkClass} text-muted-foreground hover:bg-muted hover:text-foreground`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
+    </nav>
+  );
+}
 
 // Bekannte Seiten für Sprachbefehle wie "Öffne YouTube", "Öffne Spiegel" usw.
 const KNOWN_SITES: Record<string, string> = {
@@ -808,6 +848,10 @@ export default function AloBrowser() {
         </button>
       </div>
 
+      <div className="shrink-0 overflow-x-auto border-b border-border/80 bg-background px-2 py-1 lg:hidden">
+        <BrowserAppNavigation layout="mobile" />
+      </div>
+
       {/* Sub-Bar nur wenn eine Webseite aktiv ist */}
       {activeTab.url && (
         <div className="flex items-center justify-between border-b border-border/80 bg-card/60 px-3 py-1.5 text-xs">
@@ -861,7 +905,13 @@ export default function AloBrowser() {
 
       {/* Hauptbereich */}
       <div className="relative flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-y-auto bg-background">
+        <HomeAppMenuSidebar
+          ariaLabel="Alo-Browser-Navigation"
+          className="hidden w-56 shrink-0 border-r border-border/60 bg-card/40 p-3 lg:block"
+        >
+          <BrowserAppNavigation layout="sidebar" />
+        </HomeAppMenuSidebar>
+        <div className="min-w-0 flex-1 overflow-y-auto bg-background">
           {activeTab.loading &&
           !(
             (activeTab.mode === "web" && activeTab.htmlDoc) ||

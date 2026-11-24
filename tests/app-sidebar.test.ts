@@ -166,6 +166,19 @@ test("Marketplace shares responsive collection navigation without displaying dup
   assert.match(catalog, /onCollectionChange\(collection\.id\)/);
 });
 
+test("Alo Browser offers shared desktop and mobile app navigation", () => {
+  const root = process.cwd();
+  const browser = readFileSync(resolve(root, "src/components/browser/AloBrowser.tsx"), "utf8");
+  assert.match(browser, /import \{ HomeAppMenuSidebar \} from "@\/components\/HomeAppMenuLayout"/);
+  assert.equal((browser.match(/<BrowserAppNavigation layout="mobile" \/>/g) ?? []).length, 1);
+  assert.equal((browser.match(/<BrowserAppNavigation layout="sidebar" \/>/g) ?? []).length, 1);
+  assert.match(browser, /ariaLabel="Alo-Browser-Navigation"/);
+  assert.match(browser, /aria-current="page"/);
+  for (const target of ['to: "/"', 'to: "/ai"', 'to: "/chat"', 'to: "/training"', 'to: "/areas"']) {
+    assert.ok(browser.includes(target), `Missing browser app link ${target}`);
+  }
+});
+
 test("Alo Health uses the shared app sidebar in both design views", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/_authenticated/health.tsx"), "utf8");
