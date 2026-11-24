@@ -93,10 +93,7 @@ test("Alo Trainingsprogramme offer app-specific sidebar actions in both design v
     "utf8",
   );
   assert.equal((route.match(/<HomeAppMenuSidebar/g) ?? []).length, 2);
-  assert.equal(
-    (route.match(/<TrainingActionsSidebar activePage="programs" \/>/g) ?? []).length,
-    2,
-  );
+  assert.equal((route.match(/<TrainingActionsSidebar activePage="programs" \/>/g) ?? []).length, 2);
   assert.equal((route.match(/ariaLabel="Training"/g) ?? []).length, 2);
   assert.match(sidebar, /aria-label="Trainingsnavigation"/);
   assert.match(sidebar, /to: "\/training"/);
@@ -117,7 +114,7 @@ test("Alo Übungen share active training navigation across Classic and Sport lay
     2,
   );
   assert.equal((route.match(/ariaLabel="Training"/g) ?? []).length, 2);
-  assert.match(route, /max-w-6xl[^\"]*lg:grid-cols-\[210px_minmax\(0,1fr\)\]/);
+  assert.match(route, /max-w-6xl[^"]*lg:grid-cols-\[210px_minmax\(0,1fr\)\]/);
   assert.match(route, /className="lg:col-start-2"/);
   assert.match(route, /mt-6 lg:col-start-2/);
   assert.match(route, /mt-5 flex-1 space-y-3 lg:col-start-2/);
