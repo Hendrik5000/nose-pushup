@@ -44,8 +44,25 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
 
   assert.match(home, /"\/health": "sport"/);
   assert.match(hub, /grid-cols-4/);
-  assert.match(hub, /aria-label="Freunde öffnen"/);
-  assert.match(hub, /to="\/profile"\s+hash="profile-training"/);
+  assert.match(
+    tileBuilder,
+    /kind: "community"[\s\S]*?id: "friends"[\s\S]*?title: "Freunde"[\s\S]*?artwork: "friends"/,
+  );
+  const communityRoutePath = resolve(root, "src/routes/_authenticated/settings.$category.tsx");
+  const communityRoute = readFileSync(communityRoutePath, "utf8");
+  const profilePage = readFileSync(
+    resolve(root, "src/routes/_authenticated/profile-page-impl.tsx"),
+    "utf8",
+  );
+  assert.ok(existsSync(communityRoutePath));
+  assert.match(communityRoute, /isProfileSettingsCategory\(params\.category\)/);
+  assert.match(
+    hub,
+    /if \(tile\.kind === "community"\)[\s\S]*?to="\/settings\/\$category"[\s\S]*?params=\{\{ category: "community" \}\}/,
+  );
+  assert.match(home, /if \(tile\.kind === "community"\) return "communication";/);
+  assert.match(profilePage, /case "community"[\s\S]*?<FriendsPanel userId=\{profile\.id\} \/>/);
+  assert.doesNotMatch(home, /aria-label="Freunde öffnen"|hash="profile-training"/);
   assert.match(hub, /aria-label="Profil und Einstellungen öffnen"/);
   assert.match(hub, /avatarUrl\s*\?/);
 });
@@ -159,6 +176,7 @@ test("app artwork is square and original, and training is no longer a collapsibl
     "mira",
     "nexus",
     "health",
+    "friends",
     "settings",
     "more",
     "training",

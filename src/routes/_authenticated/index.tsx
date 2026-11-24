@@ -66,7 +66,6 @@ import {
   Mic,
   Search,
   Trash2,
-  Users,
   X,
 } from "lucide-react";
 import {
@@ -170,6 +169,12 @@ type HomeHubTile =
       to: HubAppRoute;
     }
   | {
+      kind: "community";
+      id: string;
+      title: string;
+      artwork: "friends";
+    }
+  | {
       kind: "game";
       id: string;
       title: string;
@@ -193,6 +198,7 @@ function buildHomeHubTiles(
   const tiles: HomeHubTile[] = [
     { kind: "standard", id: "mira", title: "Mira", artwork: "mira", to: "/ai" },
     { kind: "standard", id: "nexus", title: "Nexus Chat", artwork: "nexus", to: "/chat" },
+    { kind: "community", id: "friends", title: "Freunde", artwork: "friends" },
     { kind: "standard", id: "health", title: "Alo Health", artwork: "health", to: "/health" },
     {
       kind: "standard",
@@ -328,6 +334,7 @@ const HOME_ROUTE_GROUPS: Record<string, HomeAppGroupId> = {
 };
 
 function homeTileGroupId(tile: HomeHubTile): HomeAppGroupId {
+  if (tile.kind === "community") return "communication";
   if (tile.kind === "game") return "entertainment";
   if (tile.kind === "marketplace") return "own";
   if (tile.kind === "plugin") {
@@ -1275,6 +1282,18 @@ function HomeAppHub({
         </div>
       );
     }
+    if (tile.kind === "community") {
+      return (
+        <Link
+          to="/settings/$category"
+          params={{ category: "community" }}
+          className={`${HUB_APP_ICON_CLASS_NAME} ${large ? "justify-center" : ""}`}
+          aria-label={`${title} öffnen`}
+        >
+          <HubAppIconContents title={title} artwork={tile.artwork} large={large} />
+        </Link>
+      );
+    }
     if (tile.kind === "game") {
       return <HubGameAppIcon game={tile.game} title={title} artwork={tile.artwork} large={large} />;
     }
@@ -1435,15 +1454,6 @@ function HomeAppHub({
                 <Search className="h-5 w-5" aria-hidden="true" />
               </button>
               <PostfachBell />
-              <Link
-                to="/profile"
-                hash="profile-training"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                aria-label="Freunde öffnen"
-                title="Freunde"
-              >
-                <Users className="h-5 w-5" aria-hidden="true" />
-              </Link>
               <Link
                 to="/profile"
                 className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-sm font-semibold text-foreground shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
@@ -2089,6 +2099,7 @@ type HubArtworkKind =
   | "mira"
   | "nexus"
   | "health"
+  | "friends"
   | "settings"
   | "admin"
   | "gridDefense"
@@ -2198,6 +2209,7 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
     mira: { bg: "#211c37", accent: "#c4b5fd", glow: "#8b5cf6" },
     nexus: { bg: "#122d3a", accent: "#67e8f9", glow: "#0ea5e9" },
     health: { bg: "#15352e", accent: "#86efac", glow: "#10b981" },
+    friends: { bg: "#18283a", accent: "#bfdbfe", glow: "#38bdf8" },
     settings: { bg: "#3a2e1e", accent: "#fcd34d", glow: "#f59e0b" },
     admin: { bg: "#182b3b", accent: "#a5d8ff", glow: "#38bdf8" },
     gridDefense: { bg: "#152b32", accent: "#a7f3d0", glow: "#22c55e" },
@@ -2222,6 +2234,29 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
       <rect width="280" height="132" rx="18" fill={palette.bg} />
       <circle cx="232" cy="28" r="47" fill={palette.glow} opacity=".18" />
       <circle cx="35" cy="112" r="54" fill={palette.accent} opacity=".08" />
+      {kind === "friends" && (
+        <>
+          <path
+            d="M96 51c10-16 25-25 44-25s34 9 44 25"
+            fill="none"
+            stroke={palette.accent}
+            strokeWidth="3"
+            strokeLinecap="round"
+            opacity=".42"
+          />
+          <circle cx="101" cy="59" r="12" fill="#dbeafe" />
+          <circle cx="179" cy="59" r="12" fill="#bfdbfe" />
+          <circle cx="140" cy="47" r="17" fill={palette.accent} />
+          <path
+            d="M81 108c2-17 13-28 28-28 9 0 16 4 20 11 4-7 11-11 20-11 15 0 26 11 28 28v12H81v-12Z"
+            fill={palette.glow}
+            opacity=".72"
+          />
+          <path d="M114 111c0-22 10-34 26-34s26 12 26 34v9h-52v-9Z" fill={palette.accent} />
+          <circle cx="199" cy="88" r="3" fill="#fff" opacity=".8" />
+          <circle cx="79" cy="87" r="2.5" fill={palette.accent} opacity=".9" />
+        </>
+      )}
       {kind === "mira" && (
         <>
           <ellipse
