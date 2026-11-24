@@ -39,6 +39,16 @@ test("both manual layouts expose large, labelled controls and neutral save guida
   assert.doesNotMatch(workout, /"Training speichern"|Nosy Push-Ups|placeholder="0"/);
 });
 
+test("denied camera permission explains recovery and both layouts keep a manual fallback", () => {
+  const camera = read("hooks/useCameraDetection.ts");
+  const workout = read("routes/_authenticated/workout.$exerciseId.tsx");
+
+  assert.match(camera, /name === "NotAllowedError" \|\| name === "SecurityError"/);
+  assert.match(camera, /Kamerazugriff wurde nicht erlaubt\. Du kannst sofort manuell fortfahren/);
+  assert.equal((workout.match(/>\s*Ohne Kamera manuell trainieren\s*<\/button>/g) ?? []).length, 2);
+  assert.equal((workout.match(/search: \{ \.\.\.search, mode: "manual" \}/g) ?? []).length, 2);
+});
+
 test("no-history coach names the lack of evidence and labels any entry plan as non-personal", () => {
   const coach = read("components/CoachPanel.tsx");
   assert.match(coach, /if \(workouts.length === 0\)/);
