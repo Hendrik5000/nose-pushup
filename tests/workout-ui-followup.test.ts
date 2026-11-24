@@ -45,10 +45,7 @@ test("denied camera permission explains recovery and both layouts keep a manual 
 
   assert.match(camera, /name === "NotAllowedError" \|\| name === "SecurityError"/);
   assert.match(camera, /Kamerazugriff wurde nicht erlaubt\. Du kannst sofort manuell fortfahren/);
-  assert.equal(
-    (workout.match(/>\s*Ohne Kamera manuell trainieren\s*<\/button>/g) ?? []).length,
-    2,
-  );
+  assert.equal((workout.match(/>\s*Ohne Kamera manuell trainieren\s*<\/button>/g) ?? []).length, 2);
   assert.equal((workout.match(/search: \{ \.\.\.search, mode: "manual" \}/g) ?? []).length, 2);
 });
 
