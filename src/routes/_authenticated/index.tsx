@@ -2252,10 +2252,7 @@ function HubArtwork({ kind }: { kind: HubArtworkKind }) {
             fill={palette.glow}
             opacity=".72"
           />
-          <path
-            d="M114 111c0-22 10-34 26-34s26 12 26 34v9h-52v-9Z"
-            fill={palette.accent}
-          />
+          <path d="M114 111c0-22 10-34 26-34s26 12 26 34v9h-52v-9Z" fill={palette.accent} />
           <circle cx="199" cy="88" r="3" fill="#fff" opacity=".8" />
           <circle cx="79" cy="87" r="2.5" fill={palette.accent} opacity=".9" />
         </>

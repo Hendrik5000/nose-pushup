@@ -61,10 +61,7 @@ test("Alo Home uses compact square app icons that open existing routes", () => {
     /if \(tile\.kind === "community"\)[\s\S]*?to="\/settings\/\$category"[\s\S]*?params=\{\{ category: "community" \}\}/,
   );
   assert.match(home, /if \(tile\.kind === "community"\) return "communication";/);
-  assert.match(
-    profilePage,
-    /case "community"[\s\S]*?<FriendsPanel userId=\{profile\.id\} \/>/,
-  );
+  assert.match(profilePage, /case "community"[\s\S]*?<FriendsPanel userId=\{profile\.id\} \/>/);
   assert.doesNotMatch(home, /aria-label="Freunde öffnen"|hash="profile-training"/);
   assert.match(hub, /aria-label="Profil und Einstellungen öffnen"/);
   assert.match(hub, /avatarUrl\s*\?/);
