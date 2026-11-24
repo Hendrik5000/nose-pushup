@@ -122,6 +122,18 @@ test("Alo Übungen share active training navigation across Classic and Sport lay
   assert.match(route, /to="\/calisthenics"/);
 });
 
+test("Alo Trainingsübersicht shares responsive active training navigation", () => {
+  const root = process.cwd();
+  const dashboard = readFileSync(resolve(root, "src/components/TrainingDashboard.tsx"), "utf8");
+  assert.match(dashboard, /<HomeAppMenuSidebar/);
+  assert.match(dashboard, /ariaLabel="Training"/);
+  assert.equal(
+    (dashboard.match(/<TrainingActionsSidebar activePage="training" \/>/g) ?? []).length,
+    1,
+  );
+  assert.match(dashboard, /lg:grid-cols-\[210px_minmax\(0,1fr\)\]/);
+});
+
 test("Marketplace shares responsive collection navigation without displaying duplicate controls", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/marketplace.tsx"), "utf8");
