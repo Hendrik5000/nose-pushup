@@ -58,6 +58,26 @@ test("no-history coach names the lack of evidence and labels any entry plan as n
   assert.doesNotMatch(coach, /label="Freezes"/);
 });
 
+test("coach set labels match the three-set plan handed to the workout route", () => {
+  const coach = read("components/CoachPanel.tsx");
+  const setList = coach.match(/const reps = \[([\s\S]*?)\];/);
+  const routePlan = coach.match(
+    /search=\{\{\s*sets:\s*(\d+),\s*reps:\s*repsPerSet,\s*rest_s:\s*90,\s*title:\s*"Techniktraining"\s*\}\}/,
+  );
+
+  assert.ok(setList, "the Coach panel should define its displayed set list");
+  assert.ok(routePlan, "the start action should pass its plan to the workout route");
+  const displayedSetNumbers = [
+    ...setList[1].matchAll(/label: `Satz (\d+) · \$\{repsPerSet\}`/g),
+  ].map((match) => Number(match[1]));
+  const plannedSets = Number(routePlan[1]);
+
+  assert.deepEqual(
+    displayedSetNumbers,
+    Array.from({ length: plannedSets }, (_, index) => index + 1),
+  );
+});
+
 test("AI coach checks actual workout history before any automatic advice call", () => {
   const ai = read("components/AiCoachCard.tsx");
   const guard = ai.indexOf("if (!hasWorkouts)");
