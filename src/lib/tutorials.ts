@@ -232,13 +232,13 @@ export const APP_TUTORIALS: readonly Tutorial[] = [
   {
     id: "games",
     title: "Spiele-Tutorial",
-    description: "Grid Defense, Kupferkern und Neon Starfighter.",
+    description: "Vier Alo-Spiele, nur für Admin-Konten.",
     route: "/games",
     steps: [
       {
         id: "selection",
-        title: "Drei Alo-Spiele",
-        text: "Grid Defense, Kupferkern und Neon Starfighter laufen direkt im Vollbild — ohne Anmeldung, ohne Downloads, Spielstand nur für die jeweilige Sitzung.",
+        title: "Vier Alo-Spiele",
+        text: "Alo-Spiele sind nur für Admin-Konten verfügbar. Grid Defense, Kupferkern, Neon Starfighter und Alo Schach laufen im Vollbild; Spielstände gelten nur für die Sitzung.",
       },
       {
         id: "starfighter",

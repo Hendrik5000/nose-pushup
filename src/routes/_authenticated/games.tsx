@@ -1,82 +1,136 @@
-import { getPublicGameDocument } from "@/lib/public-game.functions";
 import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
-import { PUBLIC_GAME_IDS, type PublicGameId } from "@/lib/public-game-policy";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { getAdminAreaAccess } from "@/lib/admin.functions";
+import { getPrivateGameDocument } from "@/lib/private-game.functions";
+import { isCurrentPrivateGameDocument } from "@/lib/private-game-access-policy";
+import { usePrivateGameAccess } from "@/lib/use-private-game-access";
+import { PRIVATE_GAME_IDS, type PrivateGameId } from "@/lib/private-game-policy";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Home, Menu, X } from "lucide-react";
 import { z } from "zod";
 
-const searchSchema = z.object({ game: z.enum(PUBLIC_GAME_IDS).optional() });
-
+const searchSchema = z.object({ game: z.enum(PRIVATE_GAME_IDS).optional() });
 type GameLoadState =
-  | { game: PublicGameId; status: "loading" | "failed" }
-  | { game: PublicGameId; document: string; status: "loaded" };
-
+  | {
+      game: PrivateGameId;
+      userId: string;
+      revision: number;
+      status: "loading" | "failed";
+    }
+  | {
+      game: PrivateGameId;
+      userId: string;
+      revision: number;
+      document: string;
+      status: "loaded";
+    };
 const GAMES = [
   { game: "grid-defense", title: "Grid Defense", description: "Tower Defense" },
   { game: "kupferkern", title: "Kupferkern", description: "Energiepfad-Puzzle" },
   { game: "neon-starfighter", title: "Neon Starfighter", description: "Arcade-Shooter" },
   { game: "chess", title: "Alo Schach", description: "Schach" },
 ] as const;
-
-export const Route = createFileRoute("/games")({
+export const Route = createFileRoute("/_authenticated/games")({
+  ssr: false,
   validateSearch: (search) => searchSchema.parse(search),
+  beforeLoad: async () => {
+    if (!(await getAdminAreaAccess())) throw redirect({ to: "/" });
+  },
   head: () => ({
     meta: [
       { title: "Alo-Spiele" },
-      { name: "description", content: "Alo-Spiele – direkt vom Home-Bildschirm erreichbar." },
+      { name: "description", content: "Alo-Spiele – nur für Admin-Konten." },
     ],
   }),
   component: GamesHub,
 });
-
 function GamesHub() {
   const { game: selectedGame } = Route.useSearch();
+  const { user } = Route.useRouteContext();
+  const { state: accessState, status: accessStatus, hasAccess } = usePrivateGameAccess(user.id);
   const navigate = useNavigate();
   const [loadState, setLoadState] = useState<GameLoadState | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const currentLoad = loadState?.game === selectedGame ? loadState : null;
-  const currentDocument = currentLoad?.status === "loaded" ? currentLoad.document : null;
+  const currentLoad =
+    loadState?.userId === user.id && loadState.game === selectedGame ? loadState : null;
+  const currentDocument =
+    currentLoad?.status === "loaded" &&
+    isCurrentPrivateGameDocument(currentLoad, user.id, selectedGame, accessState)
+      ? currentLoad.document
+      : null;
   const loadFailed = currentLoad?.status === "failed";
-
   useEffect(() => {
     if (!selectedGame) {
       void navigate({ to: "/", replace: true });
     }
   }, [navigate, selectedGame]);
-
   useEffect(() => {
     let active = true;
-    if (!selectedGame) {
+    if (!selectedGame || !hasAccess) {
+      setLoadState(null);
       return () => {
         active = false;
       };
     }
-
     const requestGame = selectedGame;
-    setLoadState({ game: requestGame, status: "loading" });
-    void getPublicGameDocument({ data: { game: requestGame } })
+    const requestUserId = user.id;
+    const requestRevision = accessState.revision;
+    setLoadState({
+      game: requestGame,
+      userId: requestUserId,
+      revision: requestRevision,
+      status: "loading",
+    });
+    void getPrivateGameDocument({ data: { game: requestGame } })
       .then((document) => {
         if (active) {
-          setLoadState({ game: requestGame, document, status: "loaded" });
+          setLoadState({
+            game: requestGame,
+            userId: requestUserId,
+            revision: requestRevision,
+            document,
+            status: "loaded",
+          });
         }
       })
       .catch(() => {
         if (active) {
-          setLoadState({ game: requestGame, status: "failed" });
+          setLoadState({
+            game: requestGame,
+            userId: requestUserId,
+            revision: requestRevision,
+            status: "failed",
+          });
         }
       });
-
     return () => {
       active = false;
     };
-  }, [selectedGame]);
-
+  }, [accessState.revision, hasAccess, selectedGame, user.id]);
   const title = GAMES.find((entry) => entry.game === selectedGame)?.title ?? "Alo-Spiel";
-
   return (
     <main className="alo-games-page fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950 text-white">
-      {loadFailed ? (
+      {accessStatus === "checking" ? (
+        <p className="mx-auto mt-24 max-w-xl rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-slate-300">
+          Adminzugriff wird geprüft …
+        </p>
+      ) : accessStatus === "denied" ? (
+        <section
+          className="mx-auto mt-24 max-w-xl rounded-3xl border border-white/10 bg-slate-900 p-6"
+          role="alert"
+        >
+          <h1 className="text-xl font-bold">Adminzugriff erforderlich</h1>
+          <p className="mt-3 text-sm text-slate-300">
+            Alo-Spiele sind nur für Konten mit Adminrolle verfügbar.
+          </p>
+          <Link
+            to="/"
+            className="mt-5 inline-flex rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold"
+          >
+            Zur Alo-Startseite
+          </Link>
+        </section>
+      ) : loadFailed ? (
         <section
           className="mx-auto mt-24 max-w-xl rounded-3xl border border-white/10 bg-slate-900 p-6"
           role="alert"
@@ -108,7 +162,6 @@ function GamesHub() {
           Spielinhalt wird geladen …
         </p>
       )}
-
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[60] flex items-start justify-between p-3">
         <button
           type="button"
@@ -128,7 +181,6 @@ function GamesHub() {
           Home
         </Link>
       </div>
-
       {menuOpen && (
         <>
           <button

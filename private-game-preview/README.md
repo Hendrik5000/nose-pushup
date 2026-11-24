@@ -1,20 +1,17 @@
-# Grid Defense und Kupferkern: öffentlicher Spielezugang
+# Alo-Spiele: Admin-geschützter Zugriff
 
 ## Zugriff und Auslieferung
 
-Die Route `/games` liegt außerhalb des angemeldeten Layouts und ist direkt ohne Alo-Konto erreichbar. Im angemeldeten Home erscheinen beide Spielkacheln für alle Nutzer; der separate Admin-Einstieg bleibt weiterhin von der vorhandenen serverbestätigten Adminprüfung abhängig.
+Die Route `/games` liegt im authentifizierten App-Bereich und ist nur für Konten mit der bestehenden Admin-Rolle verfügbar. Das Home-Raster zeigt Spielkacheln ebenfalls nur nach bestätigter Adminprüfung; Marketplace-Einträge sind als Admin-only gekennzeichnet. Serverseitig wird jedes Spieldokument über die vorhandene geschützte Serverfunktion mit `requireSupabaseAuth`, `withAdminGameAccess` und der Rolle `admin` abgerufen. Die Prüfung verweigert Zugriff bei anonymem Nutzerstatus, Rollenfehlern oder fehlender Adminrolle.
 
-Die öffentliche Serverfunktion akzeptiert ausschließlich die beiden festgelegten IDs `grid-defense` und `kupferkern`. Der strikte Validator verwirft unbekannte Werte; es gibt keine dynamische Dateipfadauswahl. Diese bewusst öffentliche Auslieferung enthält keine Nutzer-, Rollen- oder Kontodaten und ruft weder Supabase Auth noch eine Datenbank oder Rollen-RPC auf. Antworten werden nicht gespeichert und erhalten `X-Content-Type-Options: nosniff`.
+Die private Serverfunktion akzeptiert ausschließlich die vier festgelegten IDs `grid-defense`, `kupferkern`, `neon-starfighter` und `chess`. Der strikte Validator verwirft unbekannte Werte; es gibt keine dynamische Dateipfadauswahl. Antworten sind `private, no-store` und setzen `X-Content-Type-Options: nosniff`.
 
-Die eigenständigen HTML-Quellen liegen weiter in `private-game-preview/`, nicht in `public/`. Der Build soll sie nicht als statische Website-Assets ausliefern; nur die öffentliche, allowlistgebundene Serverfunktion liefert die Spiele an Besucher aus. Das ist beabsichtigte öffentliche Spielauslieferung, kein Schutz vor Kopieren oder Herunterladen.
+Die eigenständigen HTML-Quellen liegen in `private-game-preview/`, nicht in `public/`. Build-Ausgaben sollen keine dieser Spieldateien als statische öffentliche Website-Assets ausliefern. Jede HTML-Datei wird ausschließlich nach Authentifizierung und erfolgreicher Adminprüfung von der Serverfunktion geladen.
 
-Beide Dokumente laufen als `srcDoc` in einem `sandbox="allow-scripts"`-Iframe ohne `allow-same-origin`. Ihre Content-Security-Policy blockiert Netzwerkverbindungen und externe Assets. Datenbank, Auth-Provider-Konfiguration, Rollen, RLS und die vorhandene Admin-Serverfunktion wurden nicht geändert; diese bleibt für ihre eigenen Aufrufer fail-closed.
+Die Dokumente laufen als `srcDoc` in einem `sandbox="allow-scripts"`-Iframe ohne `allow-same-origin`. Die bestehenden Content-Security-Policies und Sandbox-Grenzen bleiben erhalten. Diese Änderung nimmt keine Datenbank-, Migration-, RLS-/Policy-, Secret- oder geschützte Supabase-Konfigurationsänderung vor.
 
-## Grenzen und Veröffentlichung
+## Grenzen und Status
 
-Die zwei Spiele laufen im Browser und verwenden für die Darstellung keine Anmeldung. Weil der Spielcode an öffentliche Besucher ausgeliefert wird, kann ein bereits geladener Spielinhalt nicht zurückgerufen werden. Die öffentliche Zusage gilt ausschließlich für Grid Defense und Kupferkern, nicht für andere Admin-Apps oder Bereiche.
+Die Home-Kacheln sind eine Komfortmaßnahme und ersetzen keine Serverprüfung. Auch ein direkter Aufruf der URL oder der Serverfunktion muss an Authentifizierung und Adminrolle scheitern. Bereits in einem aktiven Tab geladener Inhalt kann erst bei einer erneuten Zugriffsprüfung verborgen werden; ein sofortiger Widerruf auf dem Gerät wird nicht behauptet.
 
-Vor Merge oder Lovable-Veröffentlichung müssen die bestehenden ungeklärten Sicherheitsbefunde und die unerwartete „Veröffentlicht“-Anzeige separat geklärt werden. Dieser Feature-Branch wird nicht nach `main` gemergt und nicht veröffentlicht.
-
-Diese Neufassungen sind keine rechtliche Freigabe. Vor einer Weitergabe oder Veröffentlichung sind eigenständige Rechte-, Marken-, Text- und Gestaltungsprüfungen erforderlich.
-
+Ein Merge, eine Produktionsveröffentlichung und ein Lovable-Publish sind getrennte Schritte. Diese Dokumentation behauptet keinen dieser Schritte; der tatsächliche PR-, CI-, Merge- und Live-Status wird im Projektregister und in der Roadmap nachgetragen.

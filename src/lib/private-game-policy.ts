@@ -1,4 +1,9 @@
-export const PRIVATE_GAME_IDS = ["grid-defense", "kupferkern"] as const;
+export const PRIVATE_GAME_IDS = [
+  "grid-defense",
+  "kupferkern",
+  "neon-starfighter",
+  "chess",
+] as const;
 
 export type PrivateGameId = (typeof PRIVATE_GAME_IDS)[number];
 
