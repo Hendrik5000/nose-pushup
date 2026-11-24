@@ -88,17 +88,38 @@ test("settings keep the existing hub and add a compact sidebar to category pages
 test("Alo Trainingsprogramme offer app-specific sidebar actions in both design views", () => {
   const root = process.cwd();
   const route = readFileSync(resolve(root, "src/routes/_authenticated/programs.tsx"), "utf8");
+  const sidebar = readFileSync(
+    resolve(root, "src/components/training/TrainingActionsSidebar.tsx"),
+    "utf8",
+  );
   assert.equal((route.match(/<HomeAppMenuSidebar/g) ?? []).length, 2);
-  assert.equal((route.match(/<ProgramsActionsSidebar/g) ?? []).length, 2);
+  assert.equal((route.match(/<TrainingActionsSidebar activePage="programs" \/>/g) ?? []).length, 2);
   assert.equal((route.match(/ariaLabel="Training"/g) ?? []).length, 2);
-  assert.match(route, /aria-label="Trainingsnavigation"/);
-  assert.match(route, /to="\/training"/);
-  assert.match(route, /to="\/programs"/);
-  assert.match(route, /to="\/exercises"/);
-  assert.match(route, /to="\/coach"/);
-  assert.match(route, /aria-current="page"/);
-  assert.match(route, /grid-cols-2 gap-1 lg:grid-cols-1/);
-  assert.match(route, /min-h-11/);
+  assert.match(sidebar, /aria-label="Trainingsnavigation"/);
+  assert.match(sidebar, /to: "\/training"/);
+  assert.match(sidebar, /to: "\/programs"/);
+  assert.match(sidebar, /to: "\/exercises"/);
+  assert.match(sidebar, /to: "\/coach"/);
+  assert.match(sidebar, /aria-current=\{isActive \? "page" : undefined\}/);
+  assert.match(sidebar, /grid-cols-2 gap-1 lg:grid-cols-1/);
+  assert.match(sidebar, /min-h-11/);
+});
+
+test("Alo Übungen share active training navigation across Classic and Sport layouts", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/_authenticated/exercises.tsx"), "utf8");
+  assert.equal((route.match(/<HomeAppMenuSidebar/g) ?? []).length, 2);
+  assert.equal(
+    (route.match(/<TrainingActionsSidebar activePage="exercises" \/>/g) ?? []).length,
+    2,
+  );
+  assert.equal((route.match(/ariaLabel="Training"/g) ?? []).length, 2);
+  assert.match(route, /max-w-6xl[^"]*lg:grid-cols-\[210px_minmax\(0,1fr\)\]/);
+  assert.match(route, /className="lg:col-start-2"/);
+  assert.match(route, /mt-6 lg:col-start-2/);
+  assert.match(route, /mt-5 flex-1 space-y-3 lg:col-start-2/);
+  assert.match(route, /Übungen durchsuchen/);
+  assert.match(route, /to="\/calisthenics"/);
 });
 
 test("Marketplace shares responsive collection navigation without displaying duplicate controls", () => {
