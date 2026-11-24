@@ -10,7 +10,15 @@
  * „Im neuen Tab öffnen“ erreichbar.
  */
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
-import { fetchBrowserPage, fetchFirstUsable, looksLikeJsShell } from "@/lib/browser-fetch";
+import {
+  browserProxyUrls,
+  browserReaderUrl,
+  cacheBrowserPage,
+  fetchFirstUsable,
+  looksLikeJsShell,
+  readCachedBrowserPage,
+} from "@/lib/browser-fetch";
+import { loadBrowserPageInParallel } from "@/lib/browser-page-loading";
 import { parseJinaSearchResults, takeBrowserOpenUrl } from "@/lib/mira-browser";
 import { miraServePage, miraServePageText, runMiraSiteAction } from "@/lib/mira-browser-agent";
 import { emitMiraPointer } from "@/lib/mira-computer-use";
@@ -352,6 +360,8 @@ export default function AloBrowser() {
       title: domain,
       loading: true,
       mode: "web",
+      htmlDoc: "",
+      readerText: "",
       notice: "",
       history: nextHistory,
       historyIndex: nextIndex,
@@ -370,10 +380,46 @@ export default function AloBrowser() {
       return;
     }
 
-    const [{ html: rawHtml, reader: readerTxt }, servedPage] = await Promise.all([
-      fetchBrowserPage(targetUrl),
-      miraServePage(targetUrl),
-    ]);
+    const cachedPage = readCachedBrowserPage(targetUrl);
+    let hasUsableHtml = Boolean(cachedPage?.html && !looksLikeJsShell(cachedPage.html));
+    const pagePromise = loadBrowserPageInParallel(
+      async () => {
+        if (cachedPage) return cachedPage.html;
+        try {
+          return await fetchFirstUsable(browserProxyUrls(targetUrl), { minLength: 200 });
+        } catch {
+          return "";
+        }
+      },
+      async () => {
+        if (cachedPage) return cachedPage.reader;
+        try {
+          return await fetchFirstUsable([browserReaderUrl(targetUrl)], {
+            minLength: 40,
+            headers: { Accept: "text/plain" },
+          });
+        } catch {
+          return "";
+        }
+      },
+      (html) => {
+        if (!looksLikeJsShell(html)) {
+          hasUsableHtml = true;
+          updateTab(tabId, { htmlDoc: buildSafeSrcDoc(html, targetUrl), mode: "web" });
+        }
+      },
+      (reader) => {
+        updateTab(
+          tabId,
+          hasUsableHtml ? { readerText: reader } : { readerText: reader, mode: "reader" },
+        );
+      },
+    ).then((page) => {
+      if (page.html || page.reader) cacheBrowserPage(targetUrl, page.html, page.reader);
+      return page;
+    });
+    const [page, servedPage] = await Promise.all([pagePromise, miraServePage(targetUrl)]);
+    const { html: rawHtml, reader: readerTxt } = page;
     const shell = rawHtml ? looksLikeJsShell(rawHtml) : false;
     const frameBlocked = Boolean(servedPage?.frameBlocked);
     const reader = readerTxt || servedPage?.text || "";
@@ -816,7 +862,11 @@ export default function AloBrowser() {
       {/* Hauptbereich */}
       <div className="relative flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto bg-background">
-          {activeTab.loading ? (
+          {activeTab.loading &&
+          !(
+            (activeTab.mode === "web" && activeTab.htmlDoc) ||
+            (activeTab.mode === "reader" && activeTab.readerText)
+          ) ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
               <Loader2 className="h-7 w-7 animate-spin text-primary" />
               <p className="text-sm">Wird im Alo-Browser geladen …</p>

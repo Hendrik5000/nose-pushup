@@ -72,13 +72,25 @@ test("Alo-Browser: nutzt Alo-Theme-Tokens statt fester Dunkelfarben (Apple-HIG-f
 });
 
 test("Alo-Browser: l\u00e4dt \u00fcber die parallele Proxy-Race-Schicht mit Cache", () => {
-  assert.match(component, /fetchBrowserPage/);
+  assert.match(component, /loadBrowserPageInParallel/);
+  assert.match(component, /browserProxyUrls/);
+  assert.match(component, /browserReaderUrl/);
   assert.match(component, /fetchFirstUsable/);
+  assert.match(component, /readCachedBrowserPage/);
+  assert.match(component, /cacheBrowserPage/);
   const lib = readFileSync(new URL("../src/lib/browser-fetch.ts", import.meta.url), "utf8");
   assert.match(lib, /fetchFirstUsable/);
   assert.match(lib, /AbortController/);
   assert.match(lib, /BROWSER_FETCH_TIMEOUT_MS/);
   assert.match(lib, /cacheBrowserPage/);
+});
+
+test("Alo-Browser: zeigt HTML und Reader-Text bereits bei ihrem jeweiligen Eintreffen", () => {
+  assert.match(component, /loadBrowserPageInParallel\([\s\S]*\(html\)\s*=>/);
+  assert.match(component, /htmlDoc:\s*buildSafeSrcDoc\(html,\s*targetUrl\),\s*mode:\s*"web"/);
+  assert.match(component, /readerText:\s*reader,\s*mode:\s*"reader"/);
+  assert.match(component, /activeTab\.loading\s*&&[\s\S]*activeTab\.readerText/);
+  assert.match(component, /htmlDoc:\s*"",\s*readerText:\s*""/);
 });
 
 test("Alo-Browser: blockierte Seiten bleiben \u00fcber externen Tab erreichbar", () => {
