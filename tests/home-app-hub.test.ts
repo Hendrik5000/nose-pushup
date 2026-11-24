@@ -107,15 +107,19 @@ function adminGateBlock(source: string): string {
   return source.slice(start);
 }
 
-test("the Home game tiles are public and the Admin tile stays server-gated", () => {
+test("the Home game tiles and Admin tile stay server-gated", () => {
   assert.match(hub, /getAdminAreaAccess\(\)/);
   assert.match(hub, /setCanSeeAdmin\(false\)/);
   assert.match(tileBuilder, /if \(canSeeAdmin\)[\s\S]*?id: "admin"[\s\S]*?to: "\/admin"/);
-  const gate = adminGateBlock(tileBuilder);
-  assert.doesNotMatch(gate, /grid-defense|kupferkern|marketplace/);
-  assert.match(tileBuilder, /id: "grid-defense"[\s\S]*?game: "grid-defense"/);
-  assert.match(tileBuilder, /id: "kupferkern"[\s\S]*?game: "kupferkern"/);
-  assert.ok(existsSync(resolve(root, "src/routes/games.tsx")));
+  const marketplaceIndex = tileBuilder.indexOf('id: "marketplace"');
+  const gamesGateStart = tileBuilder.indexOf("if (canSeeAdmin)", marketplaceIndex);
+  const gamesGate = adminGateBlock(tileBuilder.slice(gamesGateStart));
+  for (const id of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {
+    assert.ok(gamesGate.includes(`id: "${id}"`), `${id} should be gated to Admins`);
+  }
+  assert.ok(existsSync(resolve(root, "src/routes/_authenticated/games.tsx")));
+  assert.equal(existsSync(resolve(root, "src/routes/games.tsx")), false);
+  assert.match(tileBuilder, /if \(plugin\.action\.type === "open-game"\) continue/);
   assert.match(home, /to="\/games"[\s\S]*search=\{\{ game \}\}/);
   assert.doesNotMatch(hub, /grid-defense\.html|kupferkern\.html|srcDoc=/);
 });
@@ -136,6 +140,7 @@ test("installed Marketplace catalog apps become Home tiles for every account (Al
   assert.match(tileBuilder, /installedPluginIds\.includes\(plugin\.id\)/);
   assert.match(tileBuilder, /enabledPluginIds\.includes\(plugin\.id\)/);
   assert.match(tileBuilder, /standardRoutes\.has\(plugin\.action\.to\)\) continue/);
+  assert.match(tileBuilder, /plugin\.action\.type === "open-game"\) continue/);
   assert.doesNotMatch(adminGateBlock(tileBuilder), /MARKETPLACE_CATALOG/);
   assert.match(hub, /loadMarketplaceInstallState\(window\.localStorage, user\.id\)/);
   assert.match(hub, /marketplaceInstallStorageKey\(user\.id\)/);

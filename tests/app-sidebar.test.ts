@@ -49,7 +49,7 @@ test("Areas and Tools pages offer app-specific sidebar actions", () => {
 
 test("the games catalog offers app-specific sidebar actions outside fullscreen games", () => {
   const root = process.cwd();
-  const route = readFileSync(resolve(root, "src/routes/games.tsx"), "utf8");
+  const route = readFileSync(resolve(root, "src/routes/_authenticated/games.tsx"), "utf8");
   assert.match(route, /import \{ HomeAppMenuSidebar \} from "@\/components\/HomeAppMenuLayout"/);
   assert.match(route, /<HomeAppMenuSidebar/);
   assert.match(route, /ariaLabel="Alo-Spiele"/);

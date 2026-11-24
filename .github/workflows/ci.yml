@@ -40,6 +40,11 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_PROJECT_ID: ${{ vars.VITE_SUPABASE_PROJECT_ID }}
 
+      - name: Verify private game payloads stay out of public build
+        run: npx tsx --test tests/private-games-build.test.ts
+        env:
+          REQUIRE_PRIVATE_GAME_BUILD: "1"
+
   android-agent:
     name: Android Agent Build
     runs-on: ubuntu-latest

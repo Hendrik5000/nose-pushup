@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
-import type { PublicGameId } from "@/lib/public-game-policy";
+import type { PrivateGameId } from "@/lib/private-game-policy";
 import { HOME_OTHER_AREAS } from "@/lib/home-app-menus";
 import { useHomeAppAccountSync } from "@/hooks/use-home-app-account-sync";
 import {
@@ -174,7 +174,7 @@ type HomeHubTile =
       id: string;
       title: string;
       artwork: "gridDefense" | "kupferkern" | "neonStarfighter" | "chess";
-      game: PublicGameId;
+      game: PrivateGameId;
     }
   | { kind: "marketplace"; id: string; title: string; install: MarketplacePublishedInstall }
   | {
@@ -218,36 +218,38 @@ function buildHomeHubTiles(
     artwork: "marketplace",
     to: "/marketplace",
   });
-  tiles.push(
-    {
-      kind: "game",
-      id: "grid-defense",
-      title: "Grid Defense",
-      artwork: "gridDefense",
-      game: "grid-defense",
-    },
-    {
-      kind: "game",
-      id: "kupferkern",
-      title: "Kupferkern",
-      artwork: "kupferkern",
-      game: "kupferkern",
-    },
-    {
-      kind: "game",
-      id: "neon-starfighter",
-      title: "Neon Starfighter",
-      artwork: "neonStarfighter",
-      game: "neon-starfighter",
-    },
-    {
-      kind: "game",
-      id: "chess",
-      title: "Alo Schach",
-      artwork: "chess",
-      game: "chess",
-    },
-  );
+  if (canSeeAdmin) {
+    tiles.push(
+      {
+        kind: "game",
+        id: "grid-defense",
+        title: "Grid Defense",
+        artwork: "gridDefense",
+        game: "grid-defense",
+      },
+      {
+        kind: "game",
+        id: "kupferkern",
+        title: "Kupferkern",
+        artwork: "kupferkern",
+        game: "kupferkern",
+      },
+      {
+        kind: "game",
+        id: "neon-starfighter",
+        title: "Neon Starfighter",
+        artwork: "neonStarfighter",
+        game: "neon-starfighter",
+      },
+      {
+        kind: "game",
+        id: "chess",
+        title: "Alo Schach",
+        artwork: "chess",
+        game: "chess",
+      },
+    );
+  }
   tiles.push(
     {
       kind: "standard",
@@ -284,12 +286,7 @@ function buildHomeHubTiles(
     if (!pluginState.installedPluginIds.includes(plugin.id)) continue;
     if (!pluginState.enabledPluginIds.includes(plugin.id)) continue;
     if (plugin.action.type === "navigate" && standardRoutes.has(plugin.action.to)) continue;
-    if (
-      plugin.action.type === "open-game" &&
-      (plugin.action.gameId === "grid-defense" || plugin.action.gameId === "kupferkern")
-    ) {
-      continue;
-    }
+    if (plugin.action.type === "open-game") continue;
     tiles.push({
       kind: "plugin",
       id: `plugin:${plugin.id}`,
@@ -2146,7 +2143,7 @@ function HubGameAppIcon({
   artwork,
   large = false,
 }: {
-  game: PublicGameId;
+  game: PrivateGameId;
   title: string;
   artwork: "gridDefense" | "kupferkern" | "neonStarfighter" | "chess";
   large?: boolean;

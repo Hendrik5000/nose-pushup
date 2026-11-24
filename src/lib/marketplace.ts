@@ -1,5 +1,5 @@
 import { ALO_WORKSPACE_TOOLS, HOME_OTHER_AREAS, type AloWorkspaceToolId } from "./home-app-menus";
-import { PUBLIC_GAME_IDS, type PublicGameId } from "./public-game-policy";
+import { PRIVATE_GAME_IDS, type PrivateGameId } from "./private-game-policy";
 import { scopedStorageKey } from "../integrations/supabase/backendScope";
 
 export type MarketplaceCategory = "app" | "area" | "tool";
@@ -51,7 +51,7 @@ const MARKETPLACE_APP_ROUTES = [
 export type MarketplaceRouteTarget =
   (typeof MARKETPLACE_APP_ROUTES)[number] | (typeof HOME_OTHER_AREAS)[number]["to"];
 export type MarketplaceToolTarget = AloWorkspaceToolId;
-export type MarketplaceGameTarget = PublicGameId;
+export type MarketplaceGameTarget = PrivateGameId;
 
 export type MarketplaceHostAction =
   | { type: "navigate"; to: MarketplaceRouteTarget }
@@ -206,7 +206,7 @@ const BUNDLED_MARKETPLACE_CATALOG = [
     version: "1.0.0",
     publisher: "Alo",
     category: "app",
-    description: "Öffnet das vorhandene Grid-Defense-Spiel – auch ohne Anmeldung spielbar.",
+    description: "Öffnet Grid Defense; Alo-Spiele sind nur für Admin-Konten verfügbar.",
     icon: "game",
     permissions: ["alo.navigate"],
     action: { type: "open-game", gameId: "grid-defense" },
@@ -217,7 +217,7 @@ const BUNDLED_MARKETPLACE_CATALOG = [
     version: "1.0.0",
     publisher: "Alo",
     category: "app",
-    description: "Öffnet das vorhandene Kupferkern-Spiel – auch ohne Anmeldung spielbar.",
+    description: "Öffnet Kupferkern; Alo-Spiele sind nur für Admin-Konten verfügbar.",
     icon: "game",
     permissions: ["alo.navigate"],
     action: { type: "open-game", gameId: "kupferkern" },
@@ -252,8 +252,7 @@ const BUNDLED_MARKETPLACE_CATALOG = [
     version: "1.0.0",
     publisher: "Alo",
     category: "app",
-    description:
-      "Ein schnelles Arcade-Spiel mit Missionen, Upgrades und lokalem Highscore – isoliert in einer Sandbox.",
+    description: "Neon Starfighter ist nur für Admin-Konten verfügbar und läuft isoliert in einer Sandbox.",
     icon: "game",
     permissions: ["alo.navigate"],
     action: { type: "open-game", gameId: "neon-starfighter" },
@@ -492,7 +491,7 @@ const KNOWN_ROUTES = new Set<MarketplaceRouteTarget>([
   ...HOME_OTHER_AREAS.map(({ to }) => to),
 ]);
 const REGISTERED_TOOLS = new Set<MarketplaceToolTarget>(ALO_WORKSPACE_TOOLS.map(({ id }) => id));
-const REGISTERED_GAMES = new Set<MarketplaceGameTarget>(PUBLIC_GAME_IDS);
+const REGISTERED_GAMES = new Set<MarketplaceGameTarget>(PRIVATE_GAME_IDS);
 
 export const EMPTY_MARKETPLACE_INSTALL_STATE: MarketplaceInstallState = Object.freeze({
   schemaVersion: 1,

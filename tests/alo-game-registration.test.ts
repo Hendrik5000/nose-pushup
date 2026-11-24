@@ -9,68 +9,63 @@ const homeTileBuilder = home.slice(
   home.indexOf("function buildHomeHubTiles"),
   home.indexOf("function HomeAppHub"),
 );
-const route = readFileSync(resolve(root, "src/routes/games.tsx"), "utf8");
-const publicServerFunction = readFileSync(
-  resolve(root, "src/lib/public-game.functions.ts"),
-  "utf8",
-);
+const route = readFileSync(resolve(root, "src/routes/_authenticated/games.tsx"), "utf8");
 const privateServerFunction = readFileSync(
   resolve(root, "src/lib/private-game.functions.ts"),
   "utf8",
 );
+const privatePolicy = readFileSync(resolve(root, "src/lib/private-game-policy.ts"), "utf8");
 const accessHook = readFileSync(resolve(root, "src/lib/use-private-game-access.ts"), "utf8");
 
-function adminGateRange(source: string): [number, number] {
-  const start = source.indexOf("if (canSeeAdmin)");
-  assert.ok(start >= 0, "the canSeeAdmin gate should exist");
+function blockAt(source: string, start: number): string {
   const open = source.indexOf("{", start);
   let depth = 0;
   for (let i = open; i < source.length; i += 1) {
     if (source[i] === "{") depth += 1;
     else if (source[i] === "}") {
       depth -= 1;
-      if (depth === 0) return [start, i];
+      if (depth === 0) return source.slice(start, i + 1);
     }
   }
-  return [start, -1];
+  return "";
 }
 
-test("Home surfaces both game tiles for every signed-in user without an Admin gate", () => {
-  assert.match(
-    homeTileBuilder,
-    /id: "grid-defense"[\s\S]*?game: "grid-defense"[\s\S]*?id: "kupferkern"[\s\S]*?game: "kupferkern"/,
-  );
-  const [gateStart, gateEnd] = adminGateRange(homeTileBuilder);
-  assert.ok(gateEnd > gateStart, "the Admin gate block should be closed");
-  const gateBlock = homeTileBuilder.slice(gateStart, gateEnd + 1);
-  assert.match(gateBlock, /id: "admin"/);
-  assert.doesNotMatch(gateBlock, /marketplace|grid-defense|kupferkern/);
-  assert.ok(homeTileBuilder.indexOf('id: "grid-defense"') > gateEnd);
-  assert.ok(homeTileBuilder.indexOf('id: "marketplace"') > gateEnd);
+test("all four Home game tiles are inside the Admin-only visibility gate", () => {
+  const marketplaceIndex = homeTileBuilder.indexOf('id: "marketplace"');
+  const gateStart = homeTileBuilder.indexOf("if (canSeeAdmin)", marketplaceIndex);
+  assert.ok(gateStart > marketplaceIndex, "game tiles should be behind a gate after Marketplace");
+  const gameGate = blockAt(homeTileBuilder, gateStart);
+  for (const id of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {
+    assert.ok(gameGate.includes(`id: "${id}"`), `${id} tile should be inside the Admin gate`);
+  }
+  assert.match(homeTileBuilder, /if \(plugin\.action\.type === "open-game"\) continue/);
   assert.match(home, /setCanSeeAdmin\(false\)/);
 });
 
-test("the public games route delivers documents without authentication", () => {
-  assert.match(route, /createFileRoute\("\/games"\)/);
-  assert.doesNotMatch(route, /getAdminAreaAccess|beforeLoad/);
-  assert.match(route, /getPublicGameDocument\(\{ data: \{ game: requestGame \} \}\)/);
-  assert.match(publicServerFunction, /createServerFn\(\{ method: "POST" \}\)/);
-  assert.doesNotMatch(publicServerFunction, /requireSupabaseAuth|withAdminGameAccess/);
-  assert.match(publicServerFunction, /z\.enum\(PUBLIC_GAME_IDS\)/);
-  assert.match(publicServerFunction, /Cache-Control", "no-store/);
-});
-
-test("the admin-only private game delivery stays server-authorized", () => {
+test("the authenticated route serves game content through the private server function", () => {
+  assert.match(route, /createFileRoute\("\/_authenticated\/games"\)/);
+  assert.match(route, /getAdminAreaAccess\(\)/);
+  assert.match(route, /usePrivateGameAccess\(user\.id\)/);
+  assert.match(route, /getPrivateGameDocument\(\{ data: \{ game: requestGame \} \}\)/);
   assert.match(privateServerFunction, /middleware\(\[requireSupabaseAuth\]\)/);
+  assert.match(privateServerFunction, /withAdminGameAccess/);
   assert.match(privateServerFunction, /has_global_role/);
   assert.match(privateServerFunction, /p_role_name: "admin"/);
   assert.match(privateServerFunction, /Cache-Control", "private, no-store/);
+  assert.match(privatePolicy, /roleResult\.error \|\| roleResult\.data !== true/);
   assert.match(accessHook, /onAuthStateChange/);
 });
 
-test("both named games render only through the sandboxed public games route", () => {
-  assert.match(route, /Grid Defense/);
-  assert.match(route, /Kupferkern/);
+test("the four game documents are listed and only rendered in a sandboxed frame", () => {
+  for (const [id, title] of [
+    ["grid-defense", "Grid Defense"],
+    ["kupferkern", "Kupferkern"],
+    ["neon-starfighter", "Neon Starfighter"],
+    ["chess", "Alo Schach"],
+  ] as const) {
+    assert.match(route, new RegExp(`game: "${id}"`));
+    assert.match(route, new RegExp(title));
+  }
   assert.match(route, /sandbox="allow-scripts"/);
   assert.doesNotMatch(route, /allow-same-origin|src=\{(?:frameUrl|gameUrl)\}/);
 });

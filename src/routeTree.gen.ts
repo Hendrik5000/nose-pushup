@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as FootballRouteImport } from './routes/football'
-import { Route as GamesRouteImport } from './routes/games'
+import { Route as AuthenticatedGamesRouteImport } from './routes/_authenticated/games'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as SportsRouteImport } from './routes/sports'
@@ -65,10 +65,10 @@ const FootballRoute = FootballRouteImport.update({
   path: '/football',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GamesRoute = GamesRouteImport.update({
-  id: '/games',
+const AuthenticatedGamesRoute = AuthenticatedGamesRouteImport.update({
+  id: '/_authenticated/games',
   path: '/games',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const MarketplaceRoute = MarketplaceRouteImport.update({
   id: '/marketplace',
@@ -272,7 +272,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/football': typeof FootballRoute
-  '/games': typeof GamesRoute
+  '/games': typeof AuthenticatedGamesRoute
   '/marketplace': typeof MarketplaceRoute
   '/mcp': typeof McpRoute
   '/sports': typeof SportsRoute
@@ -313,7 +313,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/football': typeof FootballRoute
-  '/games': typeof GamesRoute
+  '/games': typeof AuthenticatedGamesRoute
   '/marketplace': typeof MarketplaceRoute
   '/mcp': typeof McpRoute
   '/sports': typeof SportsRoute
@@ -357,7 +357,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/football': typeof FootballRoute
-  '/games': typeof GamesRoute
+  '/_authenticated/games': typeof AuthenticatedGamesRoute
   '/marketplace': typeof MarketplaceRoute
   '/mcp': typeof McpRoute
   '/sports': typeof SportsRoute
@@ -486,7 +486,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/football'
-    | '/games'
+    | '/_authenticated/games'
     | '/marketplace'
     | '/mcp'
     | '/sports'
@@ -530,7 +530,6 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   FootballRoute: typeof FootballRoute
-  GamesRoute: typeof GamesRoute
   MarketplaceRoute: typeof MarketplaceRoute
   McpRoute: typeof McpRoute
   SportsRoute: typeof SportsRoute
@@ -565,12 +564,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FootballRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/games': {
-      id: '/games'
+    '/_authenticated/games': {
+      id: '/_authenticated/games'
       path: '/games'
       fullPath: '/games'
-      preLoaderRoute: typeof GamesRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedGamesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/marketplace': {
       id: '/marketplace'
@@ -847,6 +846,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClubsRoute: typeof AuthenticatedClubsRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedExercisesRoute: typeof AuthenticatedExercisesRoute
+  AuthenticatedGamesRoute: typeof AuthenticatedGamesRoute
   AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedPostfachRoute: typeof AuthenticatedPostfachRoute
@@ -878,6 +878,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClubsRoute: AuthenticatedClubsRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedExercisesRoute: AuthenticatedExercisesRoute,
+  AuthenticatedGamesRoute: AuthenticatedGamesRoute,
   AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedPostfachRoute: AuthenticatedPostfachRoute,
@@ -903,7 +904,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   FootballRoute: FootballRoute,
-  GamesRoute: GamesRoute,
   MarketplaceRoute: MarketplaceRoute,
   McpRoute: McpRoute,
   SportsRoute: SportsRoute,

@@ -10,7 +10,7 @@ import { FOOTBALL_LEAGUES } from "@/lib/football";
 import { EXERCISE_CONFIG } from "@/lib/exercises";
 import { listMiraMarketplaceDrafts } from "@/lib/mira-marketplace-drafts";
 import type { AloWorkspaceToolId } from "@/lib/home-app-menus";
-import type { PublicGameId } from "@/lib/public-game-policy";
+import type { PrivateGameId } from "@/lib/private-game-policy";
 import {
   MARKETPLACE_CATALOG,
   type MarketplaceCategory,
@@ -27,7 +27,7 @@ type Hit = {
   sessionId?: string;
   roomId?: string;
   messageId?: string;
-  gameId?: PublicGameId;
+  gameId?: PrivateGameId;
   toolId?: AloWorkspaceToolId;
   exerciseId?: string;
 };

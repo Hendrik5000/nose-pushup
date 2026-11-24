@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 const game = readFileSync(resolve(process.cwd(), "private-game-preview/grid-defense.html"), "utf8");
 
-test("the standalone game has public Alo branding and a complete tower-defense loop", () => {
+test("the standalone game has private Alo branding and a complete tower-defense loop", () => {
   assert.match(game, /<title>Grid Defense — Alo-Spiel<\/title>/);
   assert.match(game, /grid-defense-server-only-v1/);
   assert.match(game, /<h1>Grid Defense<\/h1>/);
@@ -38,13 +38,14 @@ test("the game uses only its original canvas drawing with no external assets, au
   assert.doesNotMatch(game, /localStorage|sessionStorage/i);
 });
 
-test("the public game keeps responsive controls and clearly says no sign-in is needed", () => {
+test("the game keeps responsive controls and clearly requires an Admin account", () => {
   assert.match(game, /@media \(max-width:\s*1000px\)/);
   assert.match(game, /@media \(max-width:\s*600px\)/);
   assert.match(game, /aria-live="polite"/);
   assert.match(game, /pointerdown/);
-  assert.match(game, /Alo-Spiel · ohne Anmeldung/);
-  assert.match(game, /Öffentliche Alo-Spielauslieferung/);
-  assert.doesNotMatch(game, /Geschützte Admin-Auslieferung/);
+  assert.match(game, /Alo-Spiel · Admin-Konto erforderlich/);
+  assert.match(game, /Geschützte Admin-Auslieferung/);
+  assert.doesNotMatch(game, /ohne Anmeldung|Öffentliche Alo-Spielauslieferung/);
+  assert.match(game, /Spielstand nur für diese Sitzung/);
   assert.match(game, /Spielstand nur für diese Sitzung/);
 });
