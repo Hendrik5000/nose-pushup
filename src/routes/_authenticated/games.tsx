@@ -109,13 +109,9 @@ function GamesHub() {
   }, [accessState.revision, hasAccess, selectedGame, user.id]);
   const title = GAMES.find((entry) => entry.game === selectedGame)?.title ?? "Alo-Spiel";
   return (
-    <main
-      className="alo-games-page fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950 text-white"
-    >
+    <main className="alo-games-page fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950 text-white">
       {accessStatus === "checking" ? (
-        <p
-          className="mx-auto mt-24 max-w-xl rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-slate-300"
-        >
+        <p className="mx-auto mt-24 max-w-xl rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-slate-300">
           Adminzugriff wird geprüft …
         </p>
       ) : accessStatus === "denied" ? (
@@ -166,9 +162,7 @@ function GamesHub() {
           Spielinhalt wird geladen …
         </p>
       )}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-[60] flex items-start justify-between p-3"
-      >
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[60] flex items-start justify-between p-3">
         <button
           type="button"
           aria-label="Seitenmenü öffnen"

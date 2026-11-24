@@ -16,7 +16,10 @@ const directory = readFileSync(
   new URL("../src/components/HomeAppMenuLayout.tsx", import.meta.url),
   "utf8",
 );
-const games = readFileSync(new URL("../src/routes/_authenticated/games.tsx", import.meta.url), "utf8");
+const games = readFileSync(
+  new URL("../src/routes/_authenticated/games.tsx", import.meta.url),
+  "utf8",
+);
 
 test("the shared Alo visual layer is loaded after the adaptive layout", () => {
   assert.ok(root.indexOf("adaptiveLayoutCss") < root.indexOf("aloVisualRefreshCss"));

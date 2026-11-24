@@ -252,7 +252,8 @@ const BUNDLED_MARKETPLACE_CATALOG = [
     version: "1.0.0",
     publisher: "Alo",
     category: "app",
-    description: "Neon Starfighter ist nur für Admin-Konten verfügbar und läuft isoliert in einer Sandbox.",
+    description:
+      "Neon Starfighter ist nur für Admin-Konten verfügbar und läuft isoliert in einer Sandbox.",
     icon: "game",
     permissions: ["alo.navigate"],
     action: { type: "open-game", gameId: "neon-starfighter" },

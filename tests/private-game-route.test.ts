@@ -20,7 +20,10 @@ const gameDocuments = Object.fromEntries(
 
 test("`/games` is an authenticated child route with a server-confirmed Admin gate", () => {
   assert.match(route, /createFileRoute\("\/_authenticated\/games"\)/);
-  assert.match(route, /beforeLoad: async \(\) => \{[\s\S]*?getAdminAreaAccess\(\)[\s\S]*?throw redirect/);
+  assert.match(
+    route,
+    /beforeLoad: async \(\) => \{[\s\S]*?getAdminAreaAccess\(\)[\s\S]*?throw redirect/,
+  );
   assert.match(route, /usePrivateGameAccess\(user\.id\)/);
   assert.match(route, /isCurrentPrivateGameDocument\(/);
   assert.ok(
@@ -43,7 +46,10 @@ test("`/games` is an authenticated child route with a server-confirmed Admin gat
 test("the private content endpoint validates four IDs and fails closed through existing auth", () => {
   assert.match(privateServerFunction, /createServerFn\(\{ method: "POST" \}\)/);
   assert.match(privateServerFunction, /\.middleware\(\[requireSupabaseAuth\]\)/);
-  assert.match(privateServerFunction, /z\.object\(\{ game: z\.enum\(PRIVATE_GAME_IDS\) \}\)\.strict\(\)/);
+  assert.match(
+    privateServerFunction,
+    /z\.object\(\{ game: z\.enum\(PRIVATE_GAME_IDS\) \}\)\.strict\(\)/,
+  );
   assert.match(privateServerFunction, /withAdminGameAccess\(/);
   assert.match(privateServerFunction, /has_global_role/);
   assert.match(privateServerFunction, /p_role_name: "admin"/);
