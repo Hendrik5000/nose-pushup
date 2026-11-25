@@ -109,6 +109,106 @@ test("Home restores Areas, Training/Gym, Tools, and the curated Marketplace as a
   assert.match(areasPage, /to=\{to\}/);
 });
 
+test("fullscreen Home stays wide and black with a minimal lower pager", () => {
+  const styles = readFileSync(resolve(root, "src/styles.css"), "utf8");
+  const mobileStyles = readFileSync(resolve(root, "src/alo-mobile.css"), "utf8");
+  const ruleBlock = (selector: string) => {
+    const selectorStart = styles.indexOf(selector);
+    assert.notEqual(selectorStart, -1, `fullscreen width rule should exist: ${selector}`);
+    const openBrace = styles.indexOf("{", selectorStart);
+    const closeBrace = styles.indexOf("}", openBrace);
+    assert.ok(openBrace >= 0 && closeBrace > openBrace, `rule should be complete: ${selector}`);
+    return styles.slice(openBrace + 1, closeBrace);
+  };
+
+  const rootRule = ruleBlock("main.alo-oneui9-fullscreen-home {");
+  assert.match(rootRule, /max-width:\s*none !important/);
+  assert.match(rootRule, /width:\s*100% !important/);
+  const viewport = ruleBlock(
+    "body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home {",
+  );
+  assert.match(viewport, /width:\s*100vw !important/);
+  assert.match(viewport, /background:\s*#000 !important/);
+
+  const home = ruleBlock(
+    "body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo-tablet-home-hub {",
+  );
+  assert.match(home, /max-width:\s*none/);
+
+  const homeSurface = ruleBlock(
+    "body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo-oneui9-home {",
+  );
+  assert.match(homeSurface, /background:\s*#000 !important/);
+  const homeBackdrop = ruleBlock(
+    "body:has(main.alo-oneui9-fullscreen-home) .alo-oneui9-home::before {",
+  );
+  assert.match(homeBackdrop, /background:\s*none !important/);
+
+  const apps = ruleBlock(
+    "body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home .alo-tablet-home-apps {",
+  );
+  assert.match(apps, /max-width:\s*none/);
+
+  const icon = ruleBlock(
+    ".alo-oneui9-fullscreen-home .alo-tablet-home-apps :is(a, button, div) > span:first-child {",
+  );
+  assert.match(icon, /border-radius:\s*10px !important/);
+
+  const page = ruleBlock(".alo-oneui9-fullscreen-home .alo-launcher-page {");
+  assert.match(page, /grid-template-rows:\s*minmax\(0,\s*1fr\)\s+auto/);
+  const pager = ruleBlock(
+    "body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-indicators {",
+  );
+  assert.match(pager, /min-height:\s*0 !important/);
+  assert.match(pager, /margin:\s*0 !important/);
+  assert.match(pager, /padding:\s*0 !important/);
+  assert.match(pager, /background:\s*transparent !important/);
+  assert.match(pager, /box-shadow:\s*none !important/);
+  assert.match(pager, /align-self:\s*end/);
+  const pageDot = ruleBlock(
+    "body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot {",
+  );
+  assert.match(pageDot, /width:\s*0\.25rem !important/);
+  const activePageDot = ruleBlock(
+    "body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot[aria-current=\"page\"] {",
+  );
+  assert.match(activePageDot, /width:\s*0\.55rem !important/);
+
+  const gridStart = styles.indexOf(".alo-oneui9-home .alo-launcher-page .alo-tablet-home-apps");
+  const gridEnd = styles.indexOf("@media (prefers-reduced-motion: reduce)", gridStart);
+  const responsiveGridRules = styles.slice(gridStart, gridEnd);
+  for (const columns of [4, 5, 6]) {
+    assert.ok(
+      responsiveGridRules.includes(`grid-template-columns: repeat(${columns}, minmax(0, 1fr))`),
+      `${columns}-column One UI app-grid rule should remain intact`,
+    );
+  }
+
+  const mobileGridSelector = "html[data-design-style] .alo-launcher-page .alo-tablet-home-apps {";
+  const mobileGridStart = mobileStyles.indexOf(mobileGridSelector);
+  const mobileGridEnd = mobileStyles.indexOf("}", mobileGridStart);
+  assert.ok(mobileGridStart >= 0 && mobileGridEnd > mobileGridStart);
+  assert.match(
+    mobileStyles.slice(mobileGridStart, mobileGridEnd),
+    /grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/,
+  );
+
+  const narrowBreakpoint = mobileStyles.indexOf("@media (max-width: 380px)", mobileGridStart);
+  const wideBreakpoint = mobileStyles.indexOf("@media (min-width: 768px)", narrowBreakpoint);
+  assert.ok(narrowBreakpoint >= 0 && wideBreakpoint > narrowBreakpoint);
+  assert.match(
+    mobileStyles.slice(narrowBreakpoint, wideBreakpoint),
+    /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/,
+  );
+  const wideGridStart = mobileStyles.indexOf(mobileGridSelector, wideBreakpoint);
+  const wideGridEnd = mobileStyles.indexOf("}", wideGridStart);
+  assert.ok(wideGridStart >= 0 && wideGridEnd > wideGridStart);
+  assert.match(
+    mobileStyles.slice(wideGridStart, wideGridEnd),
+    /grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)/,
+  );
+});
+
 function adminGateBlock(source: string): string {
   const start = source.indexOf("if (canSeeAdmin)");
   assert.ok(start >= 0, "the canSeeAdmin gate should exist");
