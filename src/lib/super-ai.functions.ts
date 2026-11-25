@@ -7,6 +7,7 @@ import {
   type MiraAttachment,
 } from "@/lib/mira-attachments";
 import { buildMiraSystemPrompt } from "@/lib/mira-response-policy";
+import { buildMarketplaceMiraSystemInstructions } from "@/lib/marketplace-authoring";
 import { runGeminiChat } from "@/lib/gemini.server";
 import { isGeminiModelMode } from "@/lib/gemini-models";
 import { normalizeProviderApiKey, safeOpenRouterErrorMessage } from "@/lib/ai-provider-errors";
@@ -106,6 +107,7 @@ export const superAiChat = createServerFn({ method: "POST" })
       attachments?: unknown;
       provider?: ProviderPayload;
       task?: string;
+      generationMode?: unknown;
       systemExtra?: string;
     };
     const messages = Array.isArray(raw.messages) ? raw.messages : [];
@@ -163,6 +165,8 @@ export const superAiChat = createServerFn({ method: "POST" })
       messages: cleaned,
       provider,
       task: String(raw.task ?? "general").slice(0, 40),
+      generationMode:
+        raw.generationMode === "marketplace-authoring" ? "marketplace-authoring" : "general",
       systemExtra: String(raw.systemExtra ?? "").slice(0, 12000),
     };
   })
@@ -177,7 +181,12 @@ export const superAiChat = createServerFn({ method: "POST" })
     const attachments = data.messages.flatMap((message) => message.attachments ?? []);
     assertMiraAttachmentProvider(provider.id, attachments);
     const providerMessages = includeMiraTextAttachments(data.messages);
-    const system = buildMiraSystemPrompt(data.systemExtra ?? "");
+    const marketplaceAuthoring = data.generationMode === "marketplace-authoring";
+    const system = buildMiraSystemPrompt(
+      marketplaceAuthoring ? "" : (data.systemExtra ?? ""),
+      new Date(),
+      marketplaceAuthoring ? buildMarketplaceMiraSystemInstructions() : "",
+    );
 
     if (!provider.apiKey) {
       throw new Error(
