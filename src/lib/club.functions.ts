@@ -19,9 +19,14 @@ function checkJoinRateLimit(userId: string) {
 
 function makeCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
+  const bytes = new Uint8Array(6);
+  const secureCrypto = globalThis.crypto;
+  if (!secureCrypto?.getRandomValues) {
+    throw new Error("Sichere Zufallsquelle nicht verfügbar");
+  }
+  secureCrypto.getRandomValues(bytes);
+  // The alphabet has 32 symbols, so each byte maps evenly through modulo 32.
+  return Array.from(bytes, (byte) => chars[byte % chars.length]).join("");
 }
 
 /** Club gründen: erzeugt Code, Club und Owner-Mitgliedschaft in einem Schritt. */
