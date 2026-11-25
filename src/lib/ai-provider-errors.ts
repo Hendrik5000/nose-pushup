@@ -1,7 +1,11 @@
 export function normalizeProviderApiKey(value: unknown): string {
   if (typeof value !== "string") return "";
   const key = value.trim();
-  if (key.length > 500 || /[\u0000-\u001f\u007f]/.test(key)) {
+  const hasControlCharacters = Array.from(key).some((character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return codePoint <= 0x1f || codePoint === 0x7f;
+  });
+  if (key.length > 500 || hasControlCharacters) {
     throw new Error("API-Key ungültig oder zu lang.");
   }
   return key;

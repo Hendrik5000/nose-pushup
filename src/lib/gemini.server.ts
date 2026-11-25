@@ -16,10 +16,7 @@ const DEEP_REASONING_TASKS = new Set([
 
 function buildBinaryParts(attachments: readonly MiraAttachment[]): Part[] {
   return attachments.flatMap((item) => {
-    if (
-      !item.dataUrl ||
-      (!item.mime.startsWith("image/") && item.mime !== "application/pdf")
-    ) {
+    if (!item.dataUrl || (!item.mime.startsWith("image/") && item.mime !== "application/pdf")) {
       return [];
     }
     const commaIndex = item.dataUrl.indexOf(",");
@@ -63,7 +60,9 @@ export async function runGeminiChat({
     ...(model === "gemini-4-hydrogen"
       ? {
           thinkingConfig: {
-            thinkingLevel: DEEP_REASONING_TASKS.has(task) ? ThinkingLevel.HIGH : ThinkingLevel.MEDIUM,
+            thinkingLevel: DEEP_REASONING_TASKS.has(task)
+              ? ThinkingLevel.HIGH
+              : ThinkingLevel.MEDIUM,
           },
         }
       : {}),

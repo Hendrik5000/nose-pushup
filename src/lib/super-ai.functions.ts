@@ -110,9 +110,10 @@ export const superAiChat = createServerFn({ method: "POST" })
     };
     const messages = Array.isArray(raw.messages) ? raw.messages : [];
     const cleaned = messages
-      .filter((message) =>
-        (message.role === "user" || message.role === "assistant") &&
-        typeof message.content === "string",
+      .filter(
+        (message) =>
+          (message.role === "user" || message.role === "assistant") &&
+          typeof message.content === "string",
       )
       .slice(-16)
       .map((message, index, all) => {
@@ -209,12 +210,7 @@ export const superAiChat = createServerFn({ method: "POST" })
         "OpenRouter ist in Alo nur für Text und Textdateien freigeschaltet. Es wurde kein Bild gesendet.",
       );
     }
-    const reply = await callOpenAICompat(
-      provider.apiKey,
-      provider.model,
-      system,
-      providerMessages,
-    );
+    const reply = await callOpenAICompat(provider.apiKey, provider.model, system, providerMessages);
     return {
       reply: reply || "Keine Antwort erhalten.",
       provider: provider.id,

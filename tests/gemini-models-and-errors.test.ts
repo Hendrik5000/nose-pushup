@@ -34,7 +34,10 @@ test("automatic task routing maps only quick tasks to Flash-Lite and other work 
   for (const task of ["general", "vision", "science", "coding", "unknown"]) {
     assert.equal(resolveGeminiModelForTask(task), "gemini-4-hydrogen");
   }
-  assert.equal(resolveGeminiModelForTask("general", "gemini-3.1-flash-lite"), "gemini-3.1-flash-lite");
+  assert.equal(
+    resolveGeminiModelForTask("general", "gemini-3.1-flash-lite"),
+    "gemini-3.1-flash-lite",
+  );
   assert.equal(resolveGeminiModelForTask("general", "gemini-4-hydrogen"), "gemini-4-hydrogen");
 });
 

@@ -57,15 +57,22 @@ test("only Google Gemini and OpenRouter Free are in the supported provider catal
     SUPPORTED_PROVIDER_CATALOG.map((entry) => entry.id),
     ["google", "openrouter"],
   );
-  assert.deepEqual(
-    SUPPORTED_PROVIDER_CATALOG.find((entry) => entry.id === "google")?.models,
-    ["auto", "gemini-4-hydrogen", "gemini-3.1-flash-lite"],
-  );
-  assert.deepEqual(
-    SUPPORTED_PROVIDER_CATALOG.find((entry) => entry.id === "openrouter")?.models,
-    ["openrouter/free"],
-  );
-  for (const id of ["openai", "anthropic", "lovable", "custom", "cerebras", "cloudflare"] as const) {
+  assert.deepEqual(SUPPORTED_PROVIDER_CATALOG.find((entry) => entry.id === "google")?.models, [
+    "auto",
+    "gemini-4-hydrogen",
+    "gemini-3.1-flash-lite",
+  ]);
+  assert.deepEqual(SUPPORTED_PROVIDER_CATALOG.find((entry) => entry.id === "openrouter")?.models, [
+    "openrouter/free",
+  ]);
+  for (const id of [
+    "openai",
+    "anthropic",
+    "lovable",
+    "custom",
+    "cerebras",
+    "cloudflare",
+  ] as const) {
     assert.equal(isSupportedProvider(id), false);
   }
 });
@@ -75,7 +82,10 @@ test("Gemini task routing uses only the two approved models", () => {
   assert.equal(resolveGeminiModelForTask("motivation", "auto"), "gemini-3.1-flash-lite");
   assert.equal(resolveGeminiModelForTask("general", "auto"), "gemini-4-hydrogen");
   assert.equal(resolveGeminiModelForTask("coding", "auto"), "gemini-4-hydrogen");
-  assert.equal(resolveGeminiModelForTask("general", "gemini-3.1-flash-lite"), "gemini-3.1-flash-lite");
+  assert.equal(
+    resolveGeminiModelForTask("general", "gemini-3.1-flash-lite"),
+    "gemini-3.1-flash-lite",
+  );
   assert.equal(resolveGeminiModelForTask("general", "gemini-4-hydrogen"), "gemini-4-hydrogen");
 });
 
@@ -94,7 +104,10 @@ test("enabled Gemini is selected only after the user has configured a key", () =
   assert.equal(selection.provider?.id, "google");
   assert.equal(selection.provider?.model, "auto");
   assert.equal(enabledProviderSummary(configured), "Google Gemini (eigener API-Key)");
-  assert.equal(classifyTask("Erkläre mir bitte dieses Foto", { hasVisionAttachment: true }), "vision");
+  assert.equal(
+    classifyTask("Erkläre mir bitte dieses Foto", { hasVisionAttachment: true }),
+    "vision",
+  );
 });
 
 test("BYOK keys stay in volatile account-scoped tab memory and legacy browser values are discarded", () => {
@@ -127,10 +140,7 @@ test("BYOK keys stay in volatile account-scoped tab memory and legacy browser va
       loadProviders("user-1").find((provider) => provider.id === "google")?.apiKey,
       "volatile-test-key",
     );
-    assert.equal(
-      loadProviders("user-2").find((provider) => provider.id === "google")?.apiKey,
-      "",
-    );
+    assert.equal(loadProviders("user-2").find((provider) => provider.id === "google")?.apiKey, "");
   });
   clearProviderMemory();
 });
@@ -148,10 +158,7 @@ test("provider memory is cleared on logout and absent from a fresh module sessio
       "temporary-test-key",
     );
     clearProviderMemory();
-    assert.equal(
-      loadProviders("user-1").find((provider) => provider.id === "google")?.apiKey,
-      "",
-    );
+    assert.equal(loadProviders("user-1").find((provider) => provider.id === "google")?.apiKey, "");
   });
 });
 

@@ -42,7 +42,9 @@ export function MiraAttachmentPicker({
           return mime.startsWith("image/") || mime === "application/pdf";
         })
       ) {
-        throw new Error("Bilder und PDFs können nur mit aktiviertem Google Gemini gesendet werden.");
+        throw new Error(
+          "Bilder und PDFs können nur mit aktiviertem Google Gemini gesendet werden.",
+        );
       }
       checkMiraSelection([...items, ...added].map((item) => item.file));
       onChange([...items, ...added]);

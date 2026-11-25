@@ -32,7 +32,9 @@ export function AiProviderSettings({
 
   const update = (id: ProviderId, patch: Partial<ProviderConfig>) => {
     if (!isSupportedProvider(id)) return;
-    setList((previous) => previous.map((provider) => (provider.id === id ? { ...provider, ...patch } : provider)));
+    setList((previous) =>
+      previous.map((provider) => (provider.id === id ? { ...provider, ...patch } : provider)),
+    );
     setSaved(false);
   };
 
@@ -91,7 +93,9 @@ export function AiProviderSettings({
                 spellCheck={false}
                 value={provider.apiKey}
                 onChange={(event) => update(provider.id, { apiKey: event.target.value })}
-                placeholder={isGemini ? "Gemini API-Key (nur für diesen Tab)" : "OpenRouter API-Key"}
+                placeholder={
+                  isGemini ? "Gemini API-Key (nur für diesen Tab)" : "OpenRouter API-Key"
+                }
                 aria-label={isGemini ? "Google Gemini API-Key" : "OpenRouter API-Key"}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
               />
