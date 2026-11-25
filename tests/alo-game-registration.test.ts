@@ -77,3 +77,10 @@ test("the four game documents are listed and only rendered in a sandboxed frame"
   assert.match(route, /sandbox="allow-scripts"/);
   assert.doesNotMatch(route, /allow-same-origin|src=\{(?:frameUrl|gameUrl)\}/);
 });
+
+test("game documents do not claim that an Admin account is required", () => {
+  for (const id of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {
+    const document = readFileSync(resolve(root, `private-game-preview/${id}.html`), "utf8");
+    assert.doesNotMatch(document, /Admin-Konto erforderlich|Geschützte Admin-Auslieferung/i);
+  }
+});
