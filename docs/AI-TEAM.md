@@ -20,6 +20,12 @@ Eine detaillierte ÃÂbersicht ÃÂ¼ber Aufbau, Routen, Datenbank, Mira, 
 
 Das Register hÃÂ`lt fest, was die Assistenten selbst melden. Ein Eintrag allein ist kein Beleg fÃÂ¼r einen erfolgreichen Push, Test oder Live-Deploy; solche Ergebnisse mÃÂ¼ssen separat geprÃÂ¼ft werden.
 
+## Laufender Arbeitsnachweis – 2026-11-25
+
+| Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |
+|---|---|---|---|---|---|
+| Cue Coding Assistant | unbekannt | Alo-Sicherheit: kryptografische Einladungscodes für Battles und Clubs | Lokaler Web-Crypto-Patch manuell geprüft; Nutzer hat normale PR-Pflicht-CI für genau diesen Sicherheitsfix freigegeben; lokal keine Tests/TypeScript/Build/Lint; PR-CI noch ausstehend; Befunde offen | 2026-11-25 | Geprüfte Basis: GitHub-`main` `50198a1b43f6eaa612ad77a9012eb5ae64f2b368`; frischer Clone direkt von GitHub. Branch `fix/secure-battle-club-invite-codes-20261125`. Geändert: `src/lib/battle.functions.ts`, `src/lib/club.functions.ts`, `docs/AI-TEAM.md`, `docs/AI-ROADMAP.md`. Beide Generatoren verwenden jetzt `globalThis.crypto.getRandomValues`; das Alphabet mit 32 Zeichen wird gleichmäßig abgebildet und bei fehlender Web-Crypto-Quelle wird abgebrochen. `git diff --check` bestanden. Tests, TypeScript, Build und Lint wurden lokal nicht ausgeführt; PR-Pflicht-CI wurde am 2026-11-25 vom Nutzer freigegeben. GitHub-`main` bleibt bis zur Integration unverändert; kein Datenbank-, Supabase-, SQL-, Migrations-, Policy- oder Secret-Zugriff. Kein Publish; Live unverändert/unverifiziert. |
+
 ## Laufender Arbeitsnachweis – 2026-11-24
 
 | Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |
