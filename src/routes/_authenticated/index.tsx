@@ -30,6 +30,7 @@ import {
   mergeMarketplaceLocalEdit,
   requestHomeAppAccountSync,
 } from "@/lib/home-app-account-sync";
+import { rememberHomeAppOpen } from "@/lib/home-recent-apps";
 import {
   aiStatusFromProviders,
   formatDailyGoalLine,
@@ -548,6 +549,14 @@ function HomeAppHub({
   useEffect(() => {
     setAiStatus(aiStatusFromProviders(loadProviders(user.id)));
   }, [user.id]);
+
+  const rememberAppOpen = (appId: string) => {
+    try {
+      rememberHomeAppOpen(window.localStorage, user.id, appId);
+    } catch {
+      return;
+    }
+  };
 
   const renderHomeWidget = (
     widgetId: HomeWidgetId,
@@ -1350,6 +1359,7 @@ function HomeAppHub({
                   onPointerUp={() => cancelHomeLongPress()}
                   onPointerCancel={() => cancelHomeLongPress()}
                   onClickCapture={(event) => suppressLongPressClick(event, tile.id)}
+                  onClick={() => rememberAppOpen(tile.id)}
                   onContextMenu={(event) => {
                     event.preventDefault();
                     if (
