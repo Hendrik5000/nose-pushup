@@ -10,12 +10,12 @@
 
 export type HealthConnectSummary = {
   day: string;
-  steps: number;
-  activeKcal: number;
-  sleepMin: number;
-  weightKg: number | null;
-  restingHr: number | null;
-  distanceM: number | null;
+  steps?: number;
+  activeKcal?: number;
+  sleepMin?: number;
+  weightKg?: number | null;
+  restingHr?: number | null;
+  distanceM?: number | null;
   source: "health_connect" | "bridge" | "manual";
 };
 
@@ -137,9 +137,8 @@ export function openHealthConnectPlayStore(): void {
   window.open(HC_PLAY_STORE, "_blank", "noopener,noreferrer");
 }
 
-function normalizeSummary(raw: unknown): HealthConnectSummary | null {
-  if (!raw || typeof raw !== "object") return null;
-  const o = raw as Record<string, unknown>;
+export function normalizeSummary(raw: unknown): HealthConnectSummary | null {
+  if (!raw) return null;
   // Bridge may return string JSON
   if (typeof raw === "string") {
     try {
@@ -148,17 +147,32 @@ function normalizeSummary(raw: unknown): HealthConnectSummary | null {
       return null;
     }
   }
-  const steps = Number(o.steps ?? o.stepCount ?? 0) || 0;
-  const activeKcal = Number(o.activeKcal ?? o.active_kcal ?? o.calories ?? 0) || 0;
-  const sleepMin =
-    Number(o.sleepMin ?? o.sleep_min ?? (o.sleepHours != null ? Number(o.sleepHours) * 60 : 0)) ||
-    0;
+  if (typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const steps = normalizeMetric(o.steps ?? o.stepCount, 0, 200000, true);
+  const activeKcal = normalizeMetric(o.activeKcal ?? o.active_kcal ?? o.calories, 0, 20000, true);
+  const sleepRaw =
+    o.sleepMin ??
+    o.sleep_min ??
+    (o.sleepHours != null ? Number(o.sleepHours) * 60 : undefined);
+  const sleepMin = normalizeMetric(sleepRaw, 0, 1440, true);
+  const normalizedWeight = normalizeMetric(o.weightKg ?? o.weight_kg, 20, 400);
   const weightKg =
-    o.weightKg != null ? Number(o.weightKg) : o.weight_kg != null ? Number(o.weight_kg) : null;
+    normalizedWeight !== undefined && normalizedWeight > 20 && normalizedWeight < 400
+      ? normalizedWeight
+      : undefined;
+  const normalizedRestingHr = normalizeMetric(o.restingHr ?? o.resting_hr, 30, 220);
   const restingHr =
-    o.restingHr != null ? Number(o.restingHr) : o.resting_hr != null ? Number(o.resting_hr) : null;
+    normalizedRestingHr !== undefined && normalizedRestingHr > 30 && normalizedRestingHr < 220
+      ? normalizedRestingHr
+      : undefined;
+  const normalizedDistance = normalizeMetric(
+    o.distanceM ?? o.distance_m,
+    0,
+    Number.POSITIVE_INFINITY,
+  );
   const distanceM =
-    o.distanceM != null ? Number(o.distanceM) : o.distance_m != null ? Number(o.distance_m) : null;
+    normalizedDistance !== undefined && normalizedDistance > 0 ? normalizedDistance : undefined;
   const day =
     typeof o.day === "string"
       ? o.day.slice(0, 10)
@@ -166,18 +180,39 @@ function normalizeSummary(raw: unknown): HealthConnectSummary | null {
         ? o.date.slice(0, 10)
         : new Date().toISOString().slice(0, 10);
 
-  if (!steps && !activeKcal && !sleepMin && weightKg == null) return null;
+  if (
+    steps === undefined &&
+    activeKcal === undefined &&
+    sleepMin === undefined &&
+    weightKg === undefined &&
+    restingHr === undefined &&
+    distanceM === undefined
+  ) {
+    return null;
+  }
 
   return {
     day,
-    steps: Math.max(0, Math.min(200000, Math.round(steps))),
-    activeKcal: Math.max(0, Math.min(20000, Math.round(activeKcal))),
-    sleepMin: Math.max(0, Math.min(1440, Math.round(sleepMin))),
-    weightKg: weightKg != null && weightKg > 20 && weightKg < 400 ? weightKg : null,
-    restingHr: restingHr != null && restingHr > 30 && restingHr < 220 ? restingHr : null,
-    distanceM: distanceM != null && distanceM > 0 ? distanceM : null,
+    ...(steps !== undefined ? { steps } : {}),
+    ...(activeKcal !== undefined ? { activeKcal } : {}),
+    ...(sleepMin !== undefined ? { sleepMin } : {}),
+    ...(weightKg !== undefined ? { weightKg } : {}),
+    ...(restingHr !== undefined ? { restingHr } : {}),
+    ...(distanceM !== undefined ? { distanceM } : {}),
     source: "health_connect",
   };
+}
+
+function normalizeMetric(
+  value: unknown,
+  min: number,
+  max: number,
+  round = false,
+): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) return undefined;
+  return round ? Math.round(parsed) : parsed;
 }
 
 /**
@@ -249,21 +284,13 @@ export async function persistHealthConnectSummary(
     if (!u.user) return { error: "Nicht angemeldet" };
 
     const { error } = await supabase.from("health_entries").upsert(
-      {
-        user_id: u.user.id,
-        day: summary.day,
-        steps: summary.steps,
-        active_kcal: summary.activeKcal,
-        sleep_min: summary.sleepMin,
-        weight_kg: summary.weightKg,
-        source: "health_connect",
-      },
+      buildHealthConnectEntryPayload(u.user.id, summary),
       { onConflict: "user_id,day" },
     );
 
     if (error) return { error: error.message };
 
-    if (summary.weightKg) {
+    if (summary.weightKg !== undefined && summary.weightKg !== null) {
       await supabase.from("profiles").update({ weight_kg: summary.weightKg }).eq("id", u.user.id);
     }
 
@@ -298,7 +325,9 @@ export async function syncHealthConnect(): Promise<{
     return {
       ok: true,
       summary,
-      message: `Sync OK: ${summary.steps.toLocaleString("de-DE")} Schritte`,
+      message: `Sync OK${
+        summary.steps !== undefined ? `: ${summary.steps.toLocaleString("de-DE")} Schritte` : ""
+      }`,
     };
   }
 
@@ -313,23 +342,80 @@ export async function syncHealthConnect(): Promise<{
 }
 
 /** Apply a user-entered snapshot as Health Connect-sourced data. */
+export function buildManualHealthConnectSummary(input: {
+  day?: string;
+  steps?: number;
+  activeKcal?: number;
+  sleepHours?: number;
+  weightKg?: number | null;
+}): HealthConnectSummary {
+  const steps = normalizeMetric(input.steps, 0, 200_000, true);
+  const activeKcal = normalizeMetric(input.activeKcal, 0, 20_000, true);
+  const sleepHours = normalizeMetric(input.sleepHours, 0, 24);
+  const sleepMin =
+    sleepHours === undefined ? undefined : normalizeMetric(sleepHours * 60, 0, 1440, true);
+  const normalizedWeight =
+    input.weightKg === undefined || input.weightKg === null
+      ? undefined
+      : normalizeMetric(input.weightKg, 20, 400);
+  const weightKg =
+    normalizedWeight !== undefined && normalizedWeight > 20 && normalizedWeight < 400
+      ? normalizedWeight
+      : undefined;
+
+  return {
+    day: input.day ?? new Date().toISOString().slice(0, 10),
+    ...(steps !== undefined ? { steps } : {}),
+    ...(activeKcal !== undefined ? { activeKcal } : {}),
+    ...(sleepMin !== undefined ? { sleepMin } : {}),
+    ...(weightKg !== undefined ? { weightKg } : {}),
+    source: "health_connect",
+  };
+}
+
 export async function saveManualAsHealthConnect(input: {
   day?: string;
-  steps: number;
+  steps?: number;
   activeKcal?: number;
   sleepHours?: number;
   weightKg?: number | null;
 }): Promise<{ error: string | null; summary: HealthConnectSummary }> {
-  const summary: HealthConnectSummary = {
-    day: input.day ?? new Date().toISOString().slice(0, 10),
-    steps: Math.max(0, Math.round(input.steps)),
-    activeKcal: Math.max(0, Math.round(input.activeKcal ?? 0)),
-    sleepMin: Math.max(0, Math.round((input.sleepHours ?? 0) * 60)),
-    weightKg: input.weightKg ?? null,
-    restingHr: null,
-    distanceM: null,
-    source: "health_connect",
-  };
+  const summary = buildManualHealthConnectSummary(input);
+  if (
+    summary.steps === undefined &&
+    summary.activeKcal === undefined &&
+    summary.sleepMin === undefined &&
+    summary.weightKg === undefined
+  ) {
+    return { error: "Mindestens einen gültigen Gesundheitswert eingeben", summary };
+  }
+
   const { error } = await persistHealthConnectSummary(summary);
   return { error, summary };
+}
+
+/** Build the partial row used for the health_entries upsert. */
+export function buildHealthConnectEntryPayload(
+  userId: string,
+  summary: HealthConnectSummary,
+): {
+  user_id: string;
+  day: string;
+  source: "health_connect";
+  steps?: number;
+  active_kcal?: number;
+  sleep_min?: number;
+  weight_kg?: number;
+} {
+  return {
+    user_id: userId,
+    day: summary.day,
+    ...(summary.steps !== undefined ? { steps: summary.steps } : {}),
+    ...(summary.activeKcal !== undefined ? { active_kcal: summary.activeKcal } : {}),
+    ...(summary.sleepMin !== undefined ? { sleep_min: summary.sleepMin } : {}),
+    ...(summary.weightKg !== undefined && summary.weightKg !== null
+      ? { weight_kg: summary.weightKg }
+      : {}),
+    source: "health_connect",
+  };
 }

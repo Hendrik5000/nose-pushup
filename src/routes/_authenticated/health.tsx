@@ -158,13 +158,20 @@ function HealthPage() {
     setHistoryLoading(true);
     setHistoryError(null);
     try {
-      const { data, error } = await supabase
-        .from("health_entries")
-        .select("day, steps, active_kcal, weight_kg, sleep_min, source")
-        .order("day", { ascending: false })
-        .limit(14);
-      if (error) throw error;
-      setEntries((data ?? []) as Entry[]);
+      const allEntries: Entry[] = [];
+      const pageSize = 500;
+      for (let start = 0; ; start += pageSize) {
+        const { data, error } = await supabase
+          .from("health_entries")
+          .select("day, steps, active_kcal, weight_kg, sleep_min, source")
+          .order("day", { ascending: false })
+          .range(start, start + pageSize - 1);
+        if (error) throw error;
+        const page = (data ?? []) as Entry[];
+        allEntries.push(...page);
+        if (page.length < pageSize) break;
+      }
+      setEntries(allEntries);
     } catch {
       setHistoryError("Der Verlauf konnte nicht geladen werden.");
     } finally {

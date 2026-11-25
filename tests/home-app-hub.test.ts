@@ -166,11 +166,17 @@ test("fullscreen Home stays wide and black with a minimal lower pager", () => {
   assert.match(pager, /box-shadow:\s*none !important/);
   assert.match(pager, /align-self:\s*end/);
   const pageDot = ruleBlock("body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot {");
-  assert.match(pageDot, /width:\s*0\.25rem !important/);
-  const activePageDot = ruleBlock(
-    'body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot[aria-current="page"] {',
+  assert.match(pageDot, /width:\s*44px !important/);
+  assert.match(pageDot, /height:\s*44px !important/);
+  const pageDotMark = ruleBlock(
+    "body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot::before {",
   );
-  assert.match(activePageDot, /width:\s*0\.55rem !important/);
+  assert.match(pageDotMark, /width:\s*0\.25rem/);
+  assert.match(pageDotMark, /height:\s*0\.25rem/);
+  const activePageDot = ruleBlock(
+    'body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot[aria-current="page"]::before {',
+  );
+  assert.match(activePageDot, /width:\s*0\.55rem/);
 
   const gridStart = styles.indexOf(".alo-oneui9-home .alo-launcher-page .alo-tablet-home-apps");
   const gridEnd = styles.indexOf("@media (prefers-reduced-motion: reduce)", gridStart);
@@ -205,6 +211,51 @@ test("fullscreen Home stays wide and black with a minimal lower pager", () => {
     mobileStyles.slice(wideGridStart, wideGridEnd),
     /grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)/,
   );
+});
+
+test("short and zoomed fullscreen Home scrolls instead of clipping widgets and app rows", () => {
+  const styles = readFileSync(resolve(root, "src/styles.css"), "utf8");
+  const query = "@media (max-height: 680px), (max-width: 480px) and (max-height: 820px)";
+  assert.ok(styles.includes(query), "short-height and narrow-zoom fallback should be present");
+
+  const fallbackStart = styles.indexOf(query);
+  assert.ok(fallbackStart >= 0, "short viewport fallback should be present");
+  const fallback = styles.slice(fallbackStart);
+  const ruleBlock = (selector: string) => {
+    const selectorStart = fallback.indexOf(selector);
+    assert.notEqual(selectorStart, -1, `fallback rule should exist: ${selector}`);
+    const openBrace = fallback.indexOf("{", selectorStart);
+    const closeBrace = fallback.indexOf("}", openBrace);
+    assert.ok(
+      openBrace >= 0 && closeBrace > openBrace,
+      `rule should be complete: ${selector}`,
+    );
+    return fallback.slice(openBrace + 1, closeBrace);
+  };
+
+  const scroller = ruleBlock(
+    "body:has(main.alo-oneui9-fullscreen-home) .alo-oneui9-home > .relative.z-10 {",
+  );
+  assert.match(scroller, /overflow-y:\s*auto/);
+  assert.match(scroller, /overscroll-behavior-y:\s*contain/);
+
+  const widgets = ruleBlock(
+    'body:has(main.alo-oneui9-fullscreen-home) .alo-oneui9-content [aria-label="Widgets"] {',
+  );
+  assert.match(widgets, /max-height:\s*none/);
+  assert.match(widgets, /overflow:\s*visible/);
+  assert.match(
+    ruleBlock(
+      "body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page .alo-tablet-home-apps {",
+    ),
+    /grid-auto-rows:\s*minmax\(5\.8rem, auto\)/,
+  );
+  assert.match(
+    ruleBlock("body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page > section {"),
+    /overflow:\s*visible/,
+  );
+  assert.match(styles, /border-radius:\s*10px !important/);
+  assert.match(styles, /background:\s*#000 !important/);
 });
 
 function adminGateBlock(source: string): string {

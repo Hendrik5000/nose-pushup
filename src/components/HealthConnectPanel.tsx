@@ -63,7 +63,11 @@ export function HealthConnectPanel() {
     if (res.summary) setSummary(res.summary);
     setMsg(
       res.ok && res.summary
-        ? `Health Connect aktualisiert: ${res.summary.steps.toLocaleString("de-DE")} Schritte.`
+        ? `Health Connect aktualisiert${
+            res.summary.steps !== undefined
+              ? `: ${res.summary.steps.toLocaleString("de-DE")} Schritte`
+              : ""
+          }.`
         : res.message.includes("Bridge")
           ? "Automatischer Abruf nicht verfügbar. Werte bitte manuell übernehmen."
           : res.message,
@@ -73,17 +77,30 @@ export function HealthConnectPanel() {
   };
 
   const onManualSave = async () => {
-    const s = parseInt(steps || "0", 10);
-    if (!s && !kcal && !sleepH) {
-      setMsg("Mindestens Schritte, kcal oder Schlaf eingeben");
+    const parseNumericInput = (value: string): number | undefined => {
+      if (!value.trim()) return undefined;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+    const suppliedSteps = parseNumericInput(steps);
+    const suppliedKcal = parseNumericInput(kcal);
+    const suppliedSleep = parseNumericInput(sleepH);
+    if (suppliedSteps === undefined && suppliedKcal === undefined && suppliedSleep === undefined) {
+      setMsg("Mindestens einen gültigen Wert für Schritte, kcal oder Schlaf eingeben");
       return;
     }
     setBusy(true);
     setMsg(null);
     const { error, summary: saved } = await saveManualAsHealthConnect({
-      steps: s || 0,
-      activeKcal: parseInt(kcal || "0", 10) || 0,
-      sleepHours: parseFloat(sleepH || "0") || 0,
+      ...(suppliedSteps !== undefined && Number.isFinite(suppliedSteps)
+        ? { steps: suppliedSteps }
+        : {}),
+      ...(suppliedKcal !== undefined && Number.isFinite(suppliedKcal)
+        ? { activeKcal: suppliedKcal }
+        : {}),
+      ...(suppliedSleep !== undefined && Number.isFinite(suppliedSleep)
+        ? { sleepHours: suppliedSleep }
+        : {}),
     });
     setBusy(false);
     if (error) setMsg(error);
@@ -135,11 +152,16 @@ export function HealthConnectPanel() {
 
         {summary && (
           <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-            <Metric label="Schritte" value={summary.steps.toLocaleString("de-DE")} />
-            <Metric label="kcal" value={String(summary.activeKcal)} />
+            <Metric label="Schritte" value={summary.steps?.toLocaleString("de-DE") ?? "—"} />
+            <Metric
+              label="kcal"
+              value={summary.activeKcal === undefined ? "—" : String(summary.activeKcal)}
+            />
             <Metric
               label="Schlaf"
-              value={summary.sleepMin ? `${(summary.sleepMin / 60).toFixed(1)}h` : "—"}
+              value={
+                summary.sleepMin === undefined ? "—" : `${(summary.sleepMin / 60).toFixed(1)}h`
+              }
             />
           </div>
         )}

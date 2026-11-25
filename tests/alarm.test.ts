@@ -32,6 +32,20 @@ test("disabled alarm is never due", () => {
   );
 });
 
+test("muting today's ring keeps the daily alarm active for tomorrow; disabling stops recurrence", () => {
+  const settings = { ...DEFAULT_ALARM_SETTINGS, time: "07:00", enabled: true };
+  const today = new Date(2026, 0, 12, 7, 0);
+  const todayToken = getDueAlarm(settings, today);
+  assert.equal(todayToken, localAlarmDateKey(today));
+
+  // The monitor records today's occurrence before the user mutes its sound.
+  const muted = { ...settings, lastTriggeredFor: todayToken! };
+  assert.equal(muted.enabled, true);
+  const tomorrow = new Date(2026, 0, 13, 7, 0);
+  assert.equal(getDueAlarm(muted, tomorrow), localAlarmDateKey(tomorrow));
+  assert.equal(getDueAlarm({ ...muted, enabled: false }, tomorrow), null);
+});
+
 test("snooze alarm is due once and expires after the grace period", () => {
   const snooze = new Date(2026, 0, 12, 7, 5, 0);
   const settings = {
