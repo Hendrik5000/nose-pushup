@@ -76,7 +76,7 @@ test("new gym data is not wired to the automatic Mira context or tools", () => {
   assert.doesNotMatch(source, /buildAppContext|miraSend|aiContext/);
 });
 
-test("Gym partners appear only in the training app and still precede the training plan", () => {
+test("Gym partners appear only in the training app after the primary training plan", () => {
   const home = readFileSync(
     new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
     "utf8",
@@ -88,14 +88,11 @@ test("Gym partners appear only in the training app and still precede the trainin
   assert.doesNotMatch(home, /<GymPartnerPanel/);
   assert.equal((training.match(/<GymPartnerPanel \/>/g) ?? []).length, 1);
   assert.ok(
-    training.indexOf("<GymPartnerPanel />") <
-      training.indexOf('className="classic-only dashboard-header'),
+    training.indexOf("<GymPartnerPanel />") >
+      training.indexOf('className="classic-only training-hero mt-6'),
   );
   assert.ok(
-    training.indexOf("<GymPartnerPanel />") <
-      training.indexOf('className="sport-only sport-dashboard-welcome"'),
-  );
-  assert.ok(
-    training.indexOf("<GymPartnerPanel />") < training.indexOf('number="01">Dein Plan heute'),
+    training.indexOf("<GymPartnerPanel />") >
+      training.indexOf('className="sport-only training-hero rounded-3xl'),
   );
 });

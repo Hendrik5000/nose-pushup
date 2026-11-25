@@ -288,6 +288,21 @@ test("appearance mode supports automatic, light and dark without replacing the s
   assert.equal(document.documentElement.dataset.themeMode, "system");
 });
 
+test("light-mode primary text colors meet AA contrast while dark accents stay unchanged", () => {
+  const { document } = mockGlobals({ stored: "glacier", themeMode: "light" });
+  applyTheme("glacier");
+  const lightPrimary = document.documentElement.style.values["--primary"]!;
+  assert.ok(contrast(lightPrimary, "#ffffff") >= 4.5);
+  assert.notEqual(lightPrimary, "#9bddff");
+
+  applyCustomAccent("#64d2ff");
+  const customLightPrimary = document.documentElement.style.values["--primary"]!;
+  assert.ok(contrast(customLightPrimary, "#ffffff") >= 4.5);
+
+  applyThemeMode("dark");
+  assert.equal(document.documentElement.style.values["--primary"], "#64d2ff");
+});
+
 test("custom accent colors persist, override the selected preset, and can be reset", () => {
   const { storage, document } = mockGlobals({ stored: "glacier" });
   assert.equal(getStoredCustomAccent(), null);

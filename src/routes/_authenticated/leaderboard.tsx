@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Medal, Users } from "lucide-react";
+import { filterProfilesByName } from "@/lib/leaderboard-search";
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
   head: () => ({
@@ -40,6 +41,7 @@ function LeaderboardPage() {
   const [metric, setMetric] = useState<Metric>("xp");
   const [userId, setUserId] = useState<string | null>(null);
   const [rows, setRows] = useState<PublicProfile[]>([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -81,6 +83,8 @@ function LeaderboardPage() {
       setLoading(false);
     })();
   }, [userId, scope, metric]);
+
+  const filteredRows = filterProfilesByName(rows, search);
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pt-6 pb-10 alo-leaderboard-page">
@@ -156,18 +160,32 @@ function LeaderboardPage() {
         <SportSectionLabel number="03">Volle Athleten-Rangliste</SportSectionLabel>
       </div>
       <section className="mt-5 space-y-2">
+        <label className="block">
+          <span className="sr-only">Rangliste nach Namen durchsuchen</span>
+          <input
+            type="search"
+            aria-label="Rangliste nach Namen durchsuchen"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Name suchen …"
+            className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm"
+          />
+        </label>
         {loading && (
           <p className="rounded-2xl border border-border bg-card/40 p-4 text-center text-sm text-muted-foreground">
             Lade…
           </p>
         )}
-        {!loading && rows.length === 0 && (
+        {!loading && filteredRows.length === 0 && (
           <p className="rounded-2xl border border-border bg-card/40 p-4 text-center text-sm text-muted-foreground">
-            Noch keine Einträge.
+            {search.trim()
+              ? "Keine passenden Profile in den geladenen Ergebnissen."
+              : "Noch keine Einträge."}
           </p>
         )}
         {!loading &&
-          rows.map((p, i) => {
+          filteredRows.map((p) => {
+            const i = rows.findIndex((row) => row.id === p.id);
             const isMe = p.id === userId;
             const value = (p[metric] ?? 0) as number;
             const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`;

@@ -72,8 +72,15 @@ test("the Alo sports route stays honest with loading, error and empty states", (
   assert.match(route, /Fu\u00dfball-Daten von OpenLigaDB und TheSportsDB/);
   assert.match(route, /Keine Tabellendaten verf\u00fcgbar\./);
   assert.match(route, /Keine angesetzten Spiele in den geladenen Daten\./);
-  assert.match(route, /Noch kein Spiel beendet/);
+  assert.match(route, /Am ausgew\u00e4hlten Spieltag wurde noch kein Spiel beendet\./);
   assert.match(route, /OpenLigaDB/);
+});
+
+test("the Alo sports route has one league selector and no repeated matchday statistics", () => {
+  const root = process.cwd();
+  const route = readFileSync(resolve(root, "src/routes/sports.tsx"), "utf8");
+  assert.equal([...route.matchAll(/FOOTBALL_LEAGUES\.map/g)].length, 1);
+  assert.doesNotMatch(route, /Spieltag-Statistik/);
 });
 
 test("the Alo sports route shows live matches with status, venue and refresh", () => {

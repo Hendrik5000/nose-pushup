@@ -9,6 +9,7 @@ import {
   formatKickOff,
   parseFootballMatches,
   parseFootballTable,
+  selectFootballMatchdayMatches,
   type FootballMatch,
   type FootballTableRow,
 } from "@/lib/football";
@@ -73,6 +74,7 @@ function FootballPage() {
   }, [season, groupOrder]);
 
   const activeGroup = groupOrder ?? matches[0]?.groupOrder ?? null;
+  const matchdayMatches = selectFootballMatchdayMatches(matches, activeGroup);
   const matchdayLabel = matches[0]?.groupName || (activeGroup ? `${activeGroup}. Spieltag` : "");
   const stepMatchday = (delta: number) => {
     const base = activeGroup ?? FIRST_MATCHDAY;
@@ -146,7 +148,7 @@ function FootballPage() {
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {matches.map((match) => (
+            {matchdayMatches.map((match) => (
               <article
                 key={match.id}
                 className="rounded-2xl border border-border/70 bg-card/70 p-4"

@@ -1209,7 +1209,7 @@ function HomeAppHub({
           >
             <MarketplaceIcon icon={tile.icon} className="h-8 w-8 text-primary" />
           </span>
-          <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
+          <span className="max-w-full text-xs font-medium leading-tight text-foreground">
             {title}
           </span>
         </>
@@ -1237,7 +1237,7 @@ function HomeAppHub({
           >
             <MarketplaceIcon icon={tile.install.icon ?? "hub"} className="h-8 w-8 text-primary" />
           </span>
-          <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
+          <span className="max-w-full text-xs font-medium leading-tight text-foreground">
             {title}
           </span>
         </>
@@ -2259,9 +2259,7 @@ function HubAppIconContents({
           {badge > 9 ? "9+" : badge}
         </span>
       )}
-      <span className="max-w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
-        {title}
-      </span>
+      <span className="max-w-full text-xs font-medium leading-tight text-foreground">{title}</span>
     </>
   );
 }

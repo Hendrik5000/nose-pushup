@@ -166,8 +166,7 @@ export function QuickCapture({ userId, onSaved }: { userId: string; onSaved?: ()
           className="mt-2 w-full resize-y border-0 bg-transparent px-0 text-sm leading-relaxed text-foreground shadow-none outline-none placeholder:text-muted-foreground/40 focus:outline-none focus-visible:outline-none focus-visible:ring-0"
         />
         <p className="mt-3 border-t border-border/40 pt-3 text-xs text-muted-foreground">
-          Privat für dein Konto. Keine automatische Übergabe an Mira oder Nexus. Dateien bis 1 MB;
-          größere Dateien bitte als Link ablegen.
+          Privat für dein Konto. Keine automatische Übergabe an Mira oder Nexus.
         </p>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -214,7 +213,7 @@ export function QuickCapture({ userId, onSaved }: { userId: string; onSaved?: ()
       </div>
       <div className="flex flex-wrap gap-2">
         <label className="alo-btn cursor-pointer text-xs">
-          Foto, Audio oder Datei
+          Foto, Audio oder Datei <span className="ml-1 font-semibold">· max. 1 MB je Datei</span>
           <input
             aria-label="Datei zur Schnellablage"
             type="file"

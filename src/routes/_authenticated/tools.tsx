@@ -1,8 +1,19 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
-import { ALO_WORKSPACE_MENU_ORDER, ALO_WORKSPACE_TOOLS } from "@/lib/home-app-menus";
+import {
+  ALO_WORKSPACE_MENU_ORDER,
+  ALO_WORKSPACE_TOOLS,
+  type AloWorkspaceToolId,
+} from "@/lib/home-app-menus";
+
+function isWorkspaceToolId(value: unknown): value is AloWorkspaceToolId {
+  return ALO_WORKSPACE_TOOLS.some((tool) => tool.id === value);
+}
 
 export const Route = createFileRoute("/_authenticated/tools")({
+  validateSearch: (search: Record<string, unknown>): { tool?: AloWorkspaceToolId } =>
+    isWorkspaceToolId(search.tool) ? { tool: search.tool } : {},
   head: () => ({
     meta: [
       { title: "Alo-Werkzeuge — Alo" },
@@ -17,9 +28,14 @@ const orderedTools = ALO_WORKSPACE_MENU_ORDER.map((id) =>
 );
 
 function AloToolsPage() {
-  const openTool = (toolId: (typeof orderedTools)[number]["id"]) => {
-    window.dispatchEvent(new CustomEvent("alo-open", { detail: toolId }));
-  };
+  const { tool } = Route.useSearch();
+  useEffect(() => {
+    if (!tool) return;
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("alo-open", { detail: tool }));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [tool]);
 
   return (
     <HomeAppMenuLayout
@@ -48,10 +64,10 @@ function AloToolsPage() {
     >
       <nav className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4" aria-label="Alo-Werkzeuge">
         {orderedTools.map(({ id, label, icon: Icon, description }) => (
-          <button
+          <Link
             key={id}
-            type="button"
-            onClick={() => openTool(id)}
+            to="/tools"
+            search={{ tool: id }}
             aria-label={`${label} öffnen`}
             className="group flex min-h-24 items-center gap-4 rounded-2xl border border-border/70 bg-card/75 p-4 text-left shadow-sm transition hover:border-primary/45 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-h-28 sm:p-5"
           >
@@ -64,7 +80,7 @@ function AloToolsPage() {
                 {description}
               </span>
             </span>
-          </button>
+          </Link>
         ))}
       </nav>
     </HomeAppMenuLayout>

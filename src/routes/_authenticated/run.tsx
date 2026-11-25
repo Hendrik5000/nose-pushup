@@ -260,6 +260,7 @@ function RunPage() {
               {active ? (gpsFix ? "GPS bereit" : "GPS sucht") : "Bereit"}
             </span>
           </SportPageIntro>
+          <RunInstructions />
           <section
             id="run-console"
             data-nav-target="run-console"
@@ -381,6 +382,7 @@ function RunPage() {
             </span>
             <span className="w-12" />
           </header>
+          <RunInstructions />
 
           <section
             id="run-console-classic"
@@ -510,5 +512,29 @@ function Metric({ label, value, unit }: { label: string; value: string; unit?: s
         {unit && <span className="text-[10px] text-muted-foreground">{unit}</span>}
       </div>
     </div>
+  );
+}
+
+function RunInstructions() {
+  return (
+    <aside
+      aria-label="Hilfe zur Laufaufzeichnung"
+      className="rounded-2xl border border-border/60 bg-card/35 px-4 py-3 text-sm"
+    >
+      <p className="text-xs font-semibold uppercase tracking-[0.16em]">Kurz erklärt</p>
+      <ol className="mt-2 list-decimal space-y-1 pl-5 leading-relaxed text-muted-foreground">
+        <li>
+          Tippe auf „Lauf starten“. Dein Browser fragt eventuell nach Standortzugriff; die
+          GPS-Strecke wird mit dem Lauf gespeichert.
+        </li>
+        <li>
+          Warte draußen, bis „GPS bereit“ erscheint. Bei „GPS sucht“ wird noch ein Signal gesucht.
+        </li>
+        <li>
+          Mit „Pause“ und „Fortsetzen“ steuerst du die Aufzeichnung. „Beenden“ speichert Läufe ab 10
+          Metern.
+        </li>
+      </ol>
+    </aside>
   );
 }

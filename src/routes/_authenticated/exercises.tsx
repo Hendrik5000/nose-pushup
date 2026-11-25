@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { searchExerciseCatalog } from "@/lib/exercise-catalog";
 import { BottomNav } from "@/components/BottomNav";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { CALI_PATHS, getSkillStatus } from "@/lib/calisthenics";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Activity, ArrowUpRight, Dumbbell, Footprints, Timer, Zap } from "lucide-react";
@@ -32,9 +33,9 @@ export const Route = createFileRoute("/_authenticated/exercises")({
 type Profile = { personal_bests: Record<string, number> | null; best_count: number };
 
 const DETECTION_LABEL: Record<ExerciseMeta["detection_type"], string> = {
-  touch: "Touch",
-  motion_vertical: "Sensor",
-  timer: "Timer",
+  touch: "Berührung",
+  motion_vertical: "Bewegungssensor",
+  timer: "Zeitmessung",
   combo: "Kombi",
 };
 
@@ -97,13 +98,11 @@ function ExercisesPage() {
               title="Wähle deinen Fokus"
               description="Jede Wiederholung zählt. Entscheide dich für einen Skill oder starte eine klassische Session."
             >
-              <Link to="/" className="sport-back-link">
-                ← Startseite
-              </Link>
+              <AloHomeLink />
             </SportPageIntro>
           </div>
           <section className="sport-feature-card rounded-[2rem] border border-border bg-card/70 p-6 sm:p-8 lg:col-start-2">
-            <SportSectionLabel number="01">Skill-Progression</SportSectionLabel>
+            <SportSectionLabel number="01">Skill-Fortschritt</SportSectionLabel>
             <Link
               to="/calisthenics"
               className="group mt-5 block rounded-3xl border border-primary/40 bg-gradient-to-br from-primary/20 via-card/70 to-card/50 p-6 transition hover:border-primary/70 sm:p-7"
@@ -111,15 +110,15 @@ function ExercisesPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                    <Activity size={16} /> Progression System{" "}
-                    <span className="rounded-full bg-primary/15 px-2 py-1 text-[9px]">NEU</span>
+                    <Activity size={16} /> Skill-Fortschrittssystem{" "}
+                    <span className="rounded-full bg-primary/15 px-2 py-1 text-xs">NEU</span>
                   </div>
                   <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
                     Calisthenics
                   </h2>
                   <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-                    Planche · Front Lever · Handstand — strukturiertes Skill-Training mit
-                    Progression Gates, Belastungssteuerung und täglichem Check-in.
+                    Planche · Front Lever · Handstand — strukturiertes Fertigkeitstraining mit
+                    Freischaltregeln, Belastungssteuerung und täglichem Check-in.
                   </p>
                 </div>
                 <ArrowUpRight className="mt-1 shrink-0 text-primary" size={24} />
@@ -227,7 +226,7 @@ function ExercisesPage() {
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="text-lg font-bold">{ex.name}</span>
-                        <span className="rounded-full border border-border bg-secondary/60 px-2 py-1 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                        <span className="rounded-full border border-border bg-secondary/60 px-2 py-1 text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
                           {DETECTION_LABEL[ex.detection_type]}
                         </span>
                       </span>
@@ -236,10 +235,10 @@ function ExercisesPage() {
                           {ex.description}
                         </span>
                       )}
-                      <span className="mt-3 block text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                      <span className="mt-3 block text-xs uppercase tracking-[0.08em] text-muted-foreground">
                         {best > 0 ? (
                           <>
-                            Best{" "}
+                            Bestwert{" "}
                             <b className="ml-1 tabular-nums text-foreground">{`${best}${ex.unit === "seconds" ? "s" : ""}`}</b>
                           </>
                         ) : (
@@ -264,12 +263,7 @@ function ExercisesPage() {
       <DesignView variant="classic">
         <main className="classic-only alo-tablet-training alo-exercises-page mx-auto grid min-h-[100dvh] w-full max-w-6xl grid-cols-1 gap-x-5 px-5 pt-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
           <header className="flex items-center justify-between lg:col-span-2">
-            <Link
-              to="/"
-              className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
-            >
-              ← Startseite
-            </Link>
+            <AloHomeLink />
             <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
               Übungen
             </span>
@@ -301,17 +295,17 @@ function ExercisesPage() {
               <div className="relative flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary">
-                      Skill Progression
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+                      Skill-Fortschritt
                     </span>
-                    <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-primary">
+                    <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-primary">
                       NEU
                     </span>
                   </div>
                   <h2 className="mt-1.5 text-3xl font-bold tracking-tight">Calisthenics 🤸</h2>
                   <p className="mt-1.5 text-sm text-muted-foreground text-pretty leading-relaxed">
-                    Planche · Front Lever · Handstand — strukturiertes Skill-Training mit
-                    Progression Gates, Belastungssteuerung und täglichem Check-in.
+                    Planche · Front Lever · Handstand — strukturiertes Fertigkeitstraining mit
+                    Freischaltregeln, Belastungssteuerung und täglichem Check-in.
                   </p>
                 </div>
               </div>
@@ -340,7 +334,7 @@ function ExercisesPage() {
               {/* Progress row */}
               <div className="relative mt-4 flex items-center gap-3">
                 <div className="flex-1">
-                  <div className="mb-1 flex justify-between text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                  <div className="mb-1 flex justify-between text-xs uppercase tracking-[0.08em] text-muted-foreground">
                     <span>Skills gemeistert</span>
                     <span className="font-semibold text-foreground tabular-nums">
                       {masteredCaliSkills} / {totalCaliSkills}
@@ -370,7 +364,7 @@ function ExercisesPage() {
 
           {/* ── Standard Exercises ─────────────────────────────────────────────── */}
           <section className="mt-5 flex-1 space-y-3 lg:col-start-2">
-            <h2 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Klassische Übungen
             </h2>
             <label className="block">
@@ -420,7 +414,7 @@ function ExercisesPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-base font-semibold text-foreground">{ex.name}</span>
-                      <span className="rounded-full border border-border bg-secondary/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.15em] text-muted-foreground">
+                      <span className="rounded-full border border-border bg-secondary/60 px-2 py-0.5 text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
                         {DETECTION_LABEL[ex.detection_type]}
                       </span>
                     </div>
@@ -429,8 +423,8 @@ function ExercisesPage() {
                         {ex.description}
                       </p>
                     )}
-                    <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                      Best:{" "}
+                    <div className="mt-1 text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                      Bestwert:{" "}
                       <span className="tabular-nums text-foreground">
                         {best > 0 ? `${best}${ex.unit === "seconds" ? "s" : ""}` : "—"}
                       </span>

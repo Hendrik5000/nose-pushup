@@ -15,6 +15,7 @@ import {
   parseFootballTable,
   parseNationalEvents,
   parseSportsDbTable,
+  selectFootballMatchdayMatches,
   sportsDbSeason,
 } from "../src/lib/football";
 
@@ -23,6 +24,49 @@ test("currentFootballSeason follows the Bundesliga season turn in August", () =>
   assert.equal(currentFootballSeason(new Date("2026-08-01T00:00:00Z")), 2026);
   assert.equal(currentFootballSeason(new Date("2026-07-31T23:59:00Z")), 2025);
   assert.equal(currentFootballSeason(new Date("2027-05-15T12:00:00Z")), 2026);
+});
+
+test("selectFootballMatchdayMatches limits the visible cards to the active matchday", () => {
+  const matches = [
+    {
+      id: 1,
+      home: "A",
+      away: "B",
+      kickOffUtc: null,
+      finished: true,
+      homeGoals: 1,
+      awayGoals: 0,
+      groupName: "1. Spieltag",
+      groupOrder: 1,
+    },
+    {
+      id: 2,
+      home: "C",
+      away: "D",
+      kickOffUtc: null,
+      finished: false,
+      homeGoals: null,
+      awayGoals: null,
+      groupName: "1. Spieltag",
+      groupOrder: 1,
+    },
+    {
+      id: 3,
+      home: "E",
+      away: "F",
+      kickOffUtc: null,
+      finished: false,
+      homeGoals: null,
+      awayGoals: null,
+      groupName: "2. Spieltag",
+      groupOrder: 2,
+    },
+  ];
+  assert.deepEqual(
+    selectFootballMatchdayMatches(matches, 1).map((match) => match.id),
+    [1, 2],
+  );
+  assert.deepEqual(selectFootballMatchdayMatches(matches, null), matches);
 });
 
 test("footballApiUrl targets the OpenLigaDB host without double slashes", () => {
@@ -327,6 +371,8 @@ test("the Alo football route exists and loads real Bundesliga data", () => {
   assert.match(route, /getmatchdata\/bl1\/\$\{season\}/);
   assert.match(route, /parseFootballTable/);
   assert.match(route, /parseFootballMatches/);
+  assert.match(route, /selectFootballMatchdayMatches\(matches, activeGroup\)/);
+  assert.match(route, /matchdayMatches\.map/);
   assert.match(route, /aria-label="Vorheriger Spieltag"/);
   assert.match(route, /aria-label="Nächster Spieltag"/);
   assert.match(route, /Keine Tabellendaten verfügbar\./);

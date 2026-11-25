@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Swords, Trophy } from "lucide-react";
+import { filterProfilesByName } from "@/lib/leaderboard-search";
 
 export const Route = createFileRoute("/_authenticated/battle-league")({
   head: () => ({
@@ -50,6 +51,7 @@ function BattleLeaguePage() {
   const [names, setNames] = useState<Map<string, { name: string; avatar: string | null }>>(
     new Map(),
   );
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -102,6 +104,7 @@ function BattleLeaguePage() {
 
   const myRank = useMemo(() => leaders.findIndex((l) => l.id === userId) + 1, [leaders, userId]);
   const me = leaders.find((l) => l.id === userId);
+  const filteredLeaders = useMemo(() => filterProfilesByName(leaders, search), [leaders, search]);
 
   const rivals = useMemo<Rival[]>(() => {
     if (!userId) return [];
@@ -225,13 +228,25 @@ function BattleLeaguePage() {
         <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Rangliste
         </h2>
+        <label className="mb-3 block">
+          <span className="sr-only">Battle-Rangliste nach Namen durchsuchen</span>
+          <input
+            type="search"
+            aria-label="Battle-Rangliste nach Namen durchsuchen"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Name suchen …"
+            className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-sm"
+          />
+        </label>
         {loading ? (
           <p className="rounded-2xl border border-border bg-card/40 p-4 text-center text-sm text-muted-foreground">
             Lade…
           </p>
-        ) : (
+        ) : filteredLeaders.length > 0 ? (
           <ul className="space-y-2">
-            {leaders.slice(0, 20).map((p, i) => {
+            {filteredLeaders.slice(0, 20).map((p) => {
+              const i = leaders.findIndex((leader) => leader.id === p.id);
               const isMe = p.id === userId;
               const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`;
               return (
@@ -276,6 +291,12 @@ function BattleLeaguePage() {
               );
             })}
           </ul>
+        ) : (
+          <p className="rounded-2xl border border-border bg-card/40 p-4 text-center text-sm text-muted-foreground">
+            {search.trim()
+              ? "Keine passenden Profile in den geladenen Ergebnissen."
+              : "Noch keine Profile in der Rangliste."}
+          </p>
         )}
       </section>
 

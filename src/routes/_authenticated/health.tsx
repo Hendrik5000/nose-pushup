@@ -558,6 +558,9 @@ function HealthPage() {
                 <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
                   Verlauf
                 </h2>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Ein Gedankenstrich (—) bedeutet: Für diesen Tag ist der Wert nicht erfasst.
+                </p>
                 {historyLoading || historyError || entries.length === 0 ? (
                   <HistoryNotice
                     loading={historyLoading}

@@ -628,6 +628,15 @@ html:not([data-design-style="performance"]) .health-classic-dashboard .health-cl
   color: var(--primary);
 }
 
+@media (max-width: 480px) {
+  .health-classic-category-nav a {
+    min-width: 2.75rem;
+    flex: 1 1 0;
+    padding-inline: 0.2rem;
+    font-size: 0.65rem;
+  }
+}
+
 .health-classic-hero {
   display: grid;
   min-width: 0;

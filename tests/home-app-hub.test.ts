@@ -316,7 +316,7 @@ test("every primary app offers a visible route back to the Alo home screen", () 
       /to="\/"[\s\S]*?Startseite|aria-label="Zur Alo-Startseite"/,
     ],
     ["src/components/chat/LocalChatShell.tsx", /aria-label="Zur Alo-Startseite"[\s\S]*?Startseite/],
-    ["src/routes/_authenticated/exercises.tsx", /to="\/"[\s\S]*?← Startseite/],
+    ["src/routes/_authenticated/exercises.tsx", /<AloHomeLink \/>/],
     ["src/routes/_authenticated/profile-page-impl.tsx", /to="\/"[\s\S]*?← Startseite/],
   ] as const;
   for (const [relativePath, homeLinkPattern] of primaryPages) {
@@ -329,7 +329,7 @@ test("every authenticated section keeps a clearly named route to Alo Home", () =
   const homeSources = [
     ["Mira", "src/components/mira/SuperAiPage.tsx", /mira-chat-home-action|<AloHomeLink/],
     ["Nexus Chat", "src/components/chat/LocalChatShell.tsx", /aria-label="Zur Alo-Startseite"/],
-    ["Übungen", "src/routes/_authenticated/exercises.tsx", /Startseite/],
+    ["Übungen", "src/routes/_authenticated/exercises.tsx", /<AloHomeLink/],
     ["Profil", "src/routes/_authenticated/profile-page-impl.tsx", /Startseite/],
     ["Smart Coach", "src/routes/_authenticated/coach.tsx", /<AloHomeLink/],
     ["Health", "src/routes/_authenticated/health.tsx", /<AloHomeLink/],

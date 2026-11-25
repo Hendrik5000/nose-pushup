@@ -109,7 +109,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Alo — All in one" },
+      { title: "Alo" },
       {
         name: "description",
         content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
@@ -120,7 +120,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "Alo" },
       { name: "author", content: "Lovable" },
 
-      { property: "og:title", content: "Alo — All in one" },
+      { property: "og:title", content: "Alo" },
       {
         property: "og:description",
         content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",
@@ -128,7 +128,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Alo — All in one" },
+      { name: "twitter:title", content: "Alo" },
       {
         name: "twitter:description",
         content: "Alo vereint Training, Mira für Alltag und Wissen sowie Nexus Chat.",

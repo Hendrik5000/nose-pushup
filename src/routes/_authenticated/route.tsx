@@ -58,7 +58,10 @@ function AuthenticatedLayout() {
         <div className="authenticated-shell alo-no-global-header min-h-[100dvh]">
           {pathname === "/" ? <AloSystemChrome /> : null}
           <AppNavigation />
-          <div className="alo-module-surface">
+          <a className="alo-skip-link" href="#alo-main-content">
+            Zum Inhalt springen
+          </a>
+          <div id="alo-main-content" tabIndex={-1} className="alo-module-surface">
             <Outlet />
           </div>
           <AloWorkspace userId={user.id} />

@@ -72,26 +72,24 @@ export function PostfachPage() {
     }
   };
 
+  if (postfach.isGuest) {
+    return (
+      <main className="alo-postfach-page mx-auto w-full max-w-2xl px-4 pb-28 pt-6">
+        <PostfachHeader isGuest />
+        <p
+          role="status"
+          className="mt-6 rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground"
+        >
+          Freundeseinladungen und Freundescodes sind für Gäste nicht verfügbar. Sichere dein Konto,
+          um die Freunde-Funktion zu nutzen.
+        </p>
+      </main>
+    );
+  }
+
   return (
     <main className="alo-postfach-page mx-auto w-full max-w-2xl px-4 pb-28 pt-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Postfach</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Einladungen, Anrufe und Neuigkeiten zu Alo-Funktionen.
-          </p>
-        </div>
-        <nav aria-label="Postfach-Navigation" className="flex flex-wrap items-center gap-2">
-          <AloHomeLink />
-          <Link
-            to="/profile"
-            className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-border px-3 py-2 text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground"
-          >
-            Freunde
-          </Link>
-        </nav>
-      </header>
-
+      <PostfachHeader isGuest={false} />
       {!postfach.available && !postfach.loading && (
         <p
           role="status"
@@ -252,6 +250,38 @@ export function PostfachPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function PostfachHeader({ isGuest }: { isGuest: boolean }) {
+  return (
+    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h1 className="text-2xl font-semibold">Postfach</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Einladungen, Anrufe und Neuigkeiten zu Alo-Funktionen.
+        </p>
+      </div>
+      <nav aria-label="Postfach-Navigation" className="flex flex-wrap items-center gap-2">
+        <AloHomeLink />
+        {isGuest ? (
+          <Link
+            to="/settings/$category"
+            params={{ category: "profile" }}
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-border px-3 py-2 text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground"
+          >
+            Konto sichern
+          </Link>
+        ) : (
+          <Link
+            to="/profile"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-border px-3 py-2 text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground"
+          >
+            Freunde
+          </Link>
+        )}
+      </nav>
+    </header>
   );
 }
 
