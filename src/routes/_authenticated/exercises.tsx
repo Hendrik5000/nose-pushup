@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ExerciseMeta } from "@/lib/exercises";
 import { searchExerciseCatalog } from "@/lib/exercise-catalog";
 import { BottomNav } from "@/components/BottomNav";
+import { AloHomeLink } from "@/components/AloHomeLink";
 import { CALI_PATHS, getSkillStatus } from "@/lib/calisthenics";
 import { SportPageIntro, SportSectionLabel } from "@/components/SportPageIntro";
 import { Activity, ArrowUpRight, Dumbbell, Footprints, Timer, Zap } from "lucide-react";
@@ -97,9 +98,7 @@ function ExercisesPage() {
               title="Wähle deinen Fokus"
               description="Jede Wiederholung zählt. Entscheide dich für einen Skill oder starte eine klassische Session."
             >
-              <Link to="/" className="sport-back-link">
-                ← Startseite
-              </Link>
+              <AloHomeLink />
             </SportPageIntro>
           </div>
           <section className="sport-feature-card rounded-[2rem] border border-border bg-card/70 p-6 sm:p-8 lg:col-start-2">
@@ -264,12 +263,7 @@ function ExercisesPage() {
       <DesignView variant="classic">
         <main className="classic-only alo-tablet-training alo-exercises-page mx-auto grid min-h-[100dvh] w-full max-w-6xl grid-cols-1 gap-x-5 px-5 pt-6 lg:grid-cols-[210px_minmax(0,1fr)] lg:items-start">
           <header className="flex items-center justify-between lg:col-span-2">
-            <Link
-              to="/"
-              className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground transition"
-            >
-              ← Startseite
-            </Link>
+            <AloHomeLink />
             <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
               Übungen
             </span>

@@ -885,7 +885,7 @@ html[data-design-style="hig"] .alo-tablet-home-apps > :is(a, button, div) > span
 }
 
 html[data-design-style="hig"] .alo-tablet-home-apps > :is(a, button) > span:last-child {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.01em;
 }

@@ -1715,7 +1715,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                 Neu generieren
               </SmallAction>
               <SmallAction onClick={exportChat} disabled={messages.length === 0}>
-                Export
+                Chat exportieren
               </SmallAction>
               <SmallAction
                 onClick={() => {

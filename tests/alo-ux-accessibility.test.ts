@@ -36,6 +36,7 @@ test("login forms use German validation and large enough password toggles", () =
 
 test("training start actions appear before optional counting controls and partner content", () => {
   const training = read("components/TrainingDashboard.tsx");
+  const mobileCss = read("alo-mobile.css");
   const sportStart = training.indexOf(
     'className="mt-4 flex min-h-12 w-full items-center justify-center gap-2',
   );
@@ -43,7 +44,9 @@ test("training start actions appear before optional counting controls and partne
   const classicStart = training.indexOf(
     'className="mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl bg-primary',
   );
-  const classicModes = training.indexOf('className="mt-3 grid grid-cols-3 gap-2"');
+  const classicModes = training.indexOf(
+    'className="alo-counting-options mt-3 grid grid-cols-3 gap-2"',
+  );
   assert.ok(sportStart >= 0 && sportStart < sportModes);
   assert.ok(classicStart >= 0 && classicStart < classicModes);
   assert.ok(
@@ -52,15 +55,42 @@ test("training start actions appear before optional counting controls and partne
   );
   assert.match(training, /Trainingsplan · heute/);
   assert.doesNotMatch(training, /Dein Start heute · \{recommendation\.title\}/);
+  assert.match(mobileCss, /\.training-hero > a \{\s*order: 1;/);
+  assert.match(
+    mobileCss,
+    /\.training-hero > \.alo-counting-select \{\s*display: flex;\s*order: 2;/,
+  );
+  assert.match(mobileCss, /\.training-hero > \.alo-counting-options \{\s*order: 2;/);
 });
 
-test("the zoom-equivalent narrow health navigation can fit all tabs while retaining labels", () => {
+test("narrow health context tabs avoid clipping and preserve accessible labels", () => {
   const nav = read("components/TopNav.tsx");
   const css = read("alo-sitewide-redesign.css");
-  const healthCss = read("health-reference.css");
+  assert.match(
+    nav,
+    /if \(pathname === "\/health"\)[\s\S]*?id: "health"[\s\S]*?tab\("entry", "Erfassen"/,
+  );
   assert.match(nav, /<span>\{item\.label\}<\/span>/);
-  assert.match(css, /max-width: 480px[\s\S]*?flex: 1 1 0[\s\S]*?width: 1px/);
-  assert.match(healthCss, /max-width: 480px[\s\S]*?min-width: 2\.75rem[\s\S]*?flex: 1 1 0/);
+  assert.match(
+    nav,
+    /document\.documentElement\.dataset\.contextNavigation = String\(contextVisible\)/,
+  );
+  assert.match(
+    css,
+    /@media \(max-width: 480px\) \{\s*html\[data-context-navigation="true"\] \.app-homebar\.alo-context-tabbar \{\s*inset-inline: 0\.35rem !important;\s*width: calc\(100% - 0\.7rem\);/,
+  );
+  assert.match(
+    css,
+    /html\[data-context-navigation="true"\] \.alo-context-tab-item \{\s*flex: 1 1 0;\s*min-width: 0;/,
+  );
+  assert.match(
+    css,
+    /html\[data-context-navigation="true"\] \.alo-context-tab-item > :is\(a, button\) > span \{\s*position: absolute;\s*width: 1px;[\s\S]*?clip: rect\(0, 0, 0, 0\);/,
+  );
+  assert.match(
+    css,
+    /html\[data-context-navigation="true"\] \.alo-context-tab-item \.homebar-icon \{\s*width: 1\.2rem;\s*height: 1\.2rem;/,
+  );
 });
 
 test("confirmed mixed-language labels and tiny controls are corrected", () => {
@@ -68,6 +98,8 @@ test("confirmed mixed-language labels and tiny controls are corrected", () => {
   const cali = read("components/CaliSkillTree.tsx");
   const repository = read("components/mira/MiraGithubRepository.tsx");
   const chat = read("components/chat/LocalChatShell.tsx");
+  const topNav = read("components/TopNav.tsx");
+  const mira = read("components/mira/SuperAiPage.tsx");
   const communityCss = read("community-reference.css");
   assert.match(exercises, /touch: "Berührung"/);
   assert.match(exercises, /Bestwert/);
@@ -88,8 +120,12 @@ test("confirmed mixed-language labels and tiny controls are corrected", () => {
   assert.match(githubDisclosure[2] ?? "", /\{panel\}/);
   assert.match(repository, /const panel = \([\s\S]*?id="mira-github-prompt"/);
   assert.match(repository, /if \(!consented\) return;/);
-  assert.match(chat, /Online · Supabase/);
+  assert.match(topNav, /tab\("export", "Exportieren", ClipboardList/);
+  assert.match(mira, /Chat exportieren/);
+  assert.match(chat, /Online · Cloud/);
+  assert.doesNotMatch(chat, /Online · Supabase/);
   assert.match(chat, /Chat exportieren/);
+  assert.match(chat, /className="community-new-chat min-h-11 min-w-11"/);
   assert.match(
     communityCss,
     /html\[data-design-style="performance"\] \.community-mobile-list \.community-new-chat \{\s*min-width: 44px;\s*min-height: 44px;/,
@@ -108,6 +144,16 @@ test("home launcher labels stay at least 12px in narrow and fullscreen layouts",
     /@media \(max-width: 380px\)[\s\S]*?\.alo-oneui9-home \.alo-tablet-home-apps :is\(a, button\) > span:last-child \{\s*font-size: 0\.75rem;/,
   );
   assert.match(css, /font-size: clamp\(0\.75rem, 1\.45vh, 0\.78rem\);/);
+  assert.match(
+    css,
+    /html\[data-design-style="hig"\] \.alo-tablet-home-apps > :is\(a, button\) > span:last-child \{\s*font-size: 0\.75rem;/,
+  );
+});
+
+test("exercise routes use the shared, large Alo home navigation", () => {
+  const exercises = read("routes/_authenticated/exercises.tsx");
+  assert.equal((exercises.match(/<AloHomeLink \/>/g) ?? []).length, 2);
+  assert.doesNotMatch(exercises, /← Startseite|className="sport-back-link"/);
 });
 
 test("workout loading and root document fallback are useful and localized", () => {

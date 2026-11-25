@@ -161,7 +161,7 @@ function getAppTabs(pathname: string): AppTabConfig | null {
         tab("search", "Suchen", Search, { command: "nexus-open-search" }),
         tab("room", "Neuer Raum", Users, { command: "nexus-new-room" }),
         tab("dm", "Neue DM", MessageCircle, { command: "nexus-new-dm" }),
-        tab("export", "Export", ClipboardList, { command: "nexus-export-current" }),
+        tab("export", "Exportieren", ClipboardList, { command: "nexus-export-current" }),
       ],
     };
 

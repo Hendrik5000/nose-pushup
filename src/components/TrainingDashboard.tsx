@@ -761,7 +761,10 @@ export function TrainingDashboard({ user }: { user: User }) {
                 ? "Leichte Einheit (optional) →"
                 : "Training nach Plan starten →"}
             </Link>
-            <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Zählmethode">
+            <div
+              className="alo-counting-options mt-3 grid grid-cols-3 gap-2"
+              aria-label="Zählmethode"
+            >
               <ModeChip
                 active={mode === "nose"}
                 onClick={() => setMode("nose")}

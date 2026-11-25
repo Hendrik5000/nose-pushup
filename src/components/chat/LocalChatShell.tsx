@@ -668,7 +668,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
         : "nexus-open-list";
   useAloPageSidebarCommands(sidebarCommands, activeSidebarItem);
 
-  const modeLabel = mode === "supabase" ? "Online · Supabase" : "Lokal · Gerät";
+  const modeLabel = mode === "supabase" ? "Online · Cloud" : "Lokal · Gerät";
 
   const visibleRooms = sortedRooms.filter(
     (room) =>
@@ -996,7 +996,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
         {sidebar}
         <button
           type="button"
-          className="community-new-chat"
+          className="community-new-chat min-h-11 min-w-11"
           aria-label="Neuen Gruppenraum erstellen"
           onClick={(event) => {
             newRoomTriggerRef.current = event.currentTarget;
