@@ -2629,6 +2629,13 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                           >
                             Runware · Text & Medien
                           </button>
+                          <Link
+                            to="/settings/$category"
+                            params={{ category: "community" }}
+                            className="inline-flex min-h-11 items-center rounded-xl px-3 py-2 text-sm font-medium transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          >
+                            Freunde verwalten
+                          </Link>
                           {(["chat", "history", "coach"] as const).map((view) => (
                             <button
                               key={view}
