@@ -165,12 +165,10 @@ test("fullscreen Home stays wide and black with a minimal lower pager", () => {
   assert.match(pager, /background:\s*transparent !important/);
   assert.match(pager, /box-shadow:\s*none !important/);
   assert.match(pager, /align-self:\s*end/);
-  const pageDot = ruleBlock(
-    "body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot {",
-  );
+  const pageDot = ruleBlock("body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot {");
   assert.match(pageDot, /width:\s*0\.25rem !important/);
   const activePageDot = ruleBlock(
-    "body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot[aria-current=\"page\"] {",
+    'body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot[aria-current="page"] {',
   );
   assert.match(activePageDot, /width:\s*0\.55rem !important/);
 
