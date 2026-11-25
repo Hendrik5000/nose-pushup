@@ -185,9 +185,7 @@ test("the local Mira bot returns legal moves without mutating the current positi
   assert.ok(
     game
       .moves({ verbose: true })
-      .some(
-        (move) => move.from === opening.from && move.to === opening.to,
-      ),
+      .some((move) => move.from === opening.from && move.to === opening.to),
   );
   assert.equal(game.fen(), originalFen);
 
