@@ -4,6 +4,7 @@ import { ShieldCheck } from "lucide-react";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
 import { FeatureReleaseDigestPanel } from "@/components/admin/FeatureReleaseDigestPanel";
+import { markAdminAccessDeniedNotice } from "@/lib/admin-access-notice";
 import {
   getAdminAreaAccess,
   getAdminRoleManagement,
@@ -15,7 +16,10 @@ import {
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
   beforeLoad: async () => {
-    if (!(await getAdminAreaAccess())) throw redirect({ to: "/" });
+    if (!(await getAdminAreaAccess())) {
+      markAdminAccessDeniedNotice(() => window.sessionStorage);
+      throw redirect({ to: "/" });
+    }
   },
   component: AdminOverview,
 });

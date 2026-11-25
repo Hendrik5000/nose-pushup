@@ -21,6 +21,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
+import {
+  ADMIN_ACCESS_DENIED_NOTICE,
+  consumeAdminAccessDeniedNotice,
+} from "@/lib/admin-access-notice";
 import type { PrivateGameId } from "@/lib/private-game-policy";
 import { HOME_OTHER_AREAS } from "@/lib/home-app-menus";
 import { useHomeAppAccountSync } from "@/hooks/use-home-app-account-sync";
@@ -384,6 +388,7 @@ function HomeAppHub({
   const [renamingAppId, setRenamingAppId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [homeStatus, setHomeStatus] = useState("");
+  const [adminAccessNoticeVisible, setAdminAccessNoticeVisible] = useState(false);
   const [runningMarketplaceAppId, setRunningMarketplaceAppId] = useState<string | null>(null);
   const [customBackgroundUrl, setCustomBackgroundUrl] = useState<string | null>(null);
   const [backgroundBusy, setBackgroundBusy] = useState(false);
@@ -426,6 +431,12 @@ function HomeAppHub({
     },
     [],
   );
+
+  useEffect(() => {
+    if (consumeAdminAccessDeniedNotice(() => window.sessionStorage)) {
+      setAdminAccessNoticeVisible(true);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1417,6 +1428,15 @@ function HomeAppHub({
             ab; Escape beendet das Verschieben. Umschalt+F10 oder F2 öffnet Umbenennen und lokale
             Deinstallation.
           </p>
+          {adminAccessNoticeVisible && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="mb-4 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm leading-relaxed text-foreground"
+            >
+              {ADMIN_ACCESS_DENIED_NOTICE}
+            </div>
+          )}
           <header
             className="mb-7 flex items-center justify-between gap-3"
             data-home-press-ignore="true"
