@@ -174,8 +174,17 @@ function SeasonPage() {
       )}
 
       {!loading && !season && (
-        <div className="mt-6 rounded-2xl border border-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
-          Gerade läuft keine Saison.
+        <div className="mt-6 rounded-2xl border border-border bg-card/40 p-6 text-center">
+          <p className="text-sm text-muted-foreground">Gerade läuft keine Saison.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Du kannst weiter trainieren und deine Fortschritte in Alo festhalten.
+          </p>
+          <Link
+            to="/programs"
+            className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          >
+            Trainingsprogramme öffnen
+          </Link>
         </div>
       )}
 

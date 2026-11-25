@@ -453,6 +453,10 @@ function ClubsPage() {
             <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Club beitreten
             </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Bitte ein Mitglied um den 4–8 Zeichen langen Einladungscode aus Buchstaben und Zahlen.
+              Gib ihn hier ein und tippe auf „Join“, um diesem Club beizutreten.
+            </p>
             <div className="club-join-row mt-3 flex min-w-0 gap-2">
               <input
                 value={code}

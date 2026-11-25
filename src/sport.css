@@ -2367,3 +2367,18 @@ html[data-design-style] .alo-tablet-nexus :is(.community-chat-composer, .sport-c
   html[data-design-style] .alo-tablet-nexus .alo-nexus-status { padding-inline: 0.8rem; }
 }
 @media (prefers-reduced-motion: reduce) { .alo-message-actions > summary { transition: none; } }
+
+/* Keep the shared Sport navigation and section labels readable at 12px or larger. */
+html[data-design-style="performance"] :is(
+  .sport-brand small,
+  .sport-menu-label,
+  .sport-eyebrow,
+  .sport-section-number,
+  .sport-section-label h2,
+  .sport-kicker,
+  .sport-overview-metrics dt,
+  .sport-overview-metrics dd small,
+  .sport-hero-mark
+) {
+  font-size: 0.75rem;
+}

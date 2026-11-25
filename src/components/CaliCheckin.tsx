@@ -63,6 +63,9 @@ export function CaliCheckin({ existing, onSave }: Props) {
           {[1, 2, 3, 4, 5].map((v) => (
             <button
               key={v}
+              type="button"
+              aria-label={`Energie ${v}: ${ENERGY_LABELS[v]}`}
+              aria-pressed={energy === v}
               onClick={() => setEnergy(v)}
               className={`h-8 flex-1 rounded-lg border text-sm font-semibold transition ${
                 energy === v
@@ -90,6 +93,9 @@ export function CaliCheckin({ existing, onSave }: Props) {
           {[1, 2, 3, 4, 5].map((v) => (
             <button
               key={v}
+              type="button"
+              aria-label={`Gelenke / Schmerz ${v}: ${SORENESS_LABELS[v]}`}
+              aria-pressed={soreness === v}
               onClick={() => setSoreness(v)}
               className={`h-8 flex-1 rounded-lg border text-sm font-semibold transition ${
                 soreness === v
