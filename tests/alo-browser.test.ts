@@ -87,10 +87,13 @@ test("Alo-Browser: l\u00e4dt \u00fcber die parallele Proxy-Race-Schicht mit Cach
 
 test("Alo-Browser: zeigt HTML und Reader-Text bereits bei ihrem jeweiligen Eintreffen", () => {
   assert.match(component, /loadBrowserPageInParallel\([\s\S]*\(html\)\s*=>/);
-  assert.match(component, /htmlDoc:\s*buildSafeSrcDoc\(html,\s*targetUrl\),\s*mode:\s*"web"/);
+  assert.match(
+    component,
+    /htmlDoc:\s*buildSafeSrcDoc\(html,\s*targetUrl,\s*frameToken\),\s*frameToken,\s*mode:\s*"web"/,
+  );
   assert.match(component, /readerText:\s*reader,\s*mode:\s*"reader"/);
   assert.match(component, /activeTab\.loading\s*&&[\s\S]*activeTab\.readerText/);
-  assert.match(component, /htmlDoc:\s*"",\s*readerText:\s*""/);
+  assert.match(component, /htmlDoc:\s*"",\s*frameToken:\s*"",\s*readerText:\s*""/);
 });
 
 test("Alo-Browser: blockierte Seiten bleiben \u00fcber externen Tab erreichbar", () => {
