@@ -13,8 +13,8 @@ test("Neon Starfighter: Alo-Branding, CSP und server-only-Marker", () => {
   assert.match(game, /neon-starfighter-server-only-v2/);
   assert.match(game, /Content-Security-Policy/);
   assert.match(game, /Alo Arcade/);
-  assert.match(game, /Alo-Spiel · Admin-Konto erforderlich/);
-  assert.match(game, /Geschützte Admin-Auslieferung/);
+  assert.match(game, /Alo-Spiel · Alo-Konto erforderlich/);
+  assert.match(game, /Geschützte Auslieferung/);
   assert.match(game, /Spielstand nur für diese Sitzung/);
 });
 

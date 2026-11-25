@@ -38,13 +38,13 @@ test("the game uses only its original canvas drawing with no external assets, au
   assert.doesNotMatch(game, /localStorage|sessionStorage/i);
 });
 
-test("the game keeps responsive controls and clearly requires an Admin account", () => {
+test("the game keeps responsive controls and clearly requires an Alo account", () => {
   assert.match(game, /@media \(max-width:\s*1000px\)/);
   assert.match(game, /@media \(max-width:\s*600px\)/);
   assert.match(game, /aria-live="polite"/);
   assert.match(game, /pointerdown/);
-  assert.match(game, /Alo-Spiel · Admin-Konto erforderlich/);
-  assert.match(game, /Geschützte Admin-Auslieferung/);
+  assert.match(game, /Alo-Spiel · Alo-Konto erforderlich/);
+  assert.match(game, /Geschützte Auslieferung/);
   assert.doesNotMatch(game, /ohne Anmeldung|Öffentliche Alo-Spielauslieferung/);
   assert.match(game, /Spielstand nur für diese Sitzung/);
   assert.match(game, /Spielstand nur für diese Sitzung/);
