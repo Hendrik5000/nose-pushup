@@ -10,6 +10,21 @@ const policy = readFileSync(resolve(root, "src/lib/private-game-policy.ts"), "ut
 const route = readFileSync(resolve(root, "src/routes/_authenticated/games.tsx"), "utf8");
 const scriptBlocks = [...chess.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
 
+type ChessTestMove = { from: string; to: string; promotion?: string };
+type ChessTestGame = {
+  fen: () => string;
+  moves: (options: { verbose: true }) => Array<{ from: string; to: string }>;
+  move: (move: ChessTestMove) => unknown;
+  history: () => unknown[];
+};
+type ChessTestWindow = {
+  setTimeout: (callback: () => void) => void;
+  AloChess?: { Chess: new () => ChessTestGame };
+  AloChessBot?: {
+    chooseMove: (game: ChessTestGame, color?: string) => ChessTestMove | null;
+  };
+};
+
 class FakeElement {
   children: FakeElement[] = [];
   listeners = new Map<string, (event?: { currentTarget: FakeElement }) => void>();
@@ -62,7 +77,11 @@ class FakeElement {
 }
 
 function bootChessPage() {
-  assert.equal(scriptBlocks.length, 2, "the game should have only its bundled engine and game scripts");
+  assert.equal(
+    scriptBlocks.length,
+    2,
+    "the game should have only its bundled engine and game scripts",
+  );
   const ids = [
     "board",
     "status",
@@ -94,8 +113,10 @@ function bootChessPage() {
     createElement: (tagName: string) => new FakeElement(tagName),
   };
   const timers: Array<() => void> = [];
-  const window: Record<string, any> = {
-    setTimeout: (callback: () => void) => timers.push(callback),
+  const window: ChessTestWindow = {
+    setTimeout: (callback: () => void) => {
+      timers.push(callback);
+    },
   };
   const context = { document, window };
   runInNewContext(scriptBlocks[0], context);
@@ -157,19 +178,21 @@ test("the bundled page draws all 64 squares immediately and Mira can make an ope
 
 test("the local Mira bot returns legal moves without mutating the current position", () => {
   const { window } = bootChessPage();
-  const game = new window.AloChess.Chess();
+  const game = new window.AloChess!.Chess();
   const originalFen = game.fen();
-  const opening = window.AloChessBot.chooseMove(game, "w");
+  const opening = window.AloChessBot!.chooseMove(game, "w");
   assert.ok(opening);
   assert.ok(
-    game.moves({ verbose: true }).some((move: { from: string; to: string }) =>
-      move.from === opening.from && move.to === opening.to,
-    ),
+    game
+      .moves({ verbose: true })
+      .some(
+        (move) => move.from === opening.from && move.to === opening.to,
+      ),
   );
   assert.equal(game.fen(), originalFen);
 
   for (const color of ["w", "b", "w", "b"]) {
-    const move = window.AloChessBot.chooseMove(game, color);
+    const move = window.AloChessBot!.chooseMove(game, color);
     assert.ok(move, `the bot should choose a legal move for ${color}`);
     assert.ok(game.move({ from: move.from, to: move.to, promotion: move.promotion }));
   }

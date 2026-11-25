@@ -9,7 +9,10 @@ const settingsRoute = readFileSync(
   resolve(root, "src/routes/_authenticated/settings.$category.tsx"),
   "utf8",
 );
-const profile = readFileSync(resolve(root, "src/routes/_authenticated/profile-page-impl.tsx"), "utf8");
+const profile = readFileSync(
+  resolve(root, "src/routes/_authenticated/profile-page-impl.tsx"),
+  "utf8",
+);
 
 test("Mira provides a direct link to the existing Friends community page", () => {
   const menuStart = mira.indexOf('<details className="mira-chat-view-menu">');
