@@ -1,77 +1,36 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { withAdminGameAccess } from "../src/lib/private-game-policy";
+import { withAuthenticatedGameAccess } from "../src/lib/private-game-policy";
 
-test("an authenticated admin receives the requested private game document", async () => {
-  let roleChecks = 0;
+test("an authenticated account receives the requested private game document", async () => {
   let documentLoads = 0;
-  const document = await withAdminGameAccess(
-    false,
-    async () => {
-      roleChecks += 1;
-      return { data: true, error: null };
-    },
-    () => {
-      documentLoads += 1;
-      return "admin-only-game-payload";
-    },
-  );
+  const document = await withAuthenticatedGameAccess(false, () => {
+    documentLoads += 1;
+    return "private-game-html";
+  });
 
-  assert.equal(document, "admin-only-game-payload");
-  assert.equal(roleChecks, 1);
+  assert.equal(document, "private-game-html");
   assert.equal(documentLoads, 1);
 });
 
-test("a signed-in non-admin cannot load the game document", async () => {
-  let documentLoads = 0;
-  await assert.rejects(
-    withAdminGameAccess(
-      false,
-      async () => ({ data: false, error: null }),
-      () => {
-        documentLoads += 1;
-        return "must-not-leak";
-      },
-    ),
-    /Not authorized/,
-  );
-  assert.equal(documentLoads, 0);
-});
-
-test("anonymous users are rejected before the role RPC or document loader runs", async () => {
-  for (const claim of [true, "true"]) {
-    let roleChecks = 0;
-    let documentLoads = 0;
-    await assert.rejects(
-      withAdminGameAccess(
-        claim,
-        async () => {
-          roleChecks += 1;
-          return { data: true, error: null };
-        },
-        () => {
-          documentLoads += 1;
-          return "must-not-leak";
-        },
-      ),
-      /Not authorized/,
-    );
-    assert.equal(roleChecks, 0);
-    assert.equal(documentLoads, 0);
+test("an authenticated account can load any registered game without an admin-role check", async () => {
+  const loadedGames: string[] = [];
+  for (const game of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {
+    const document = await withAuthenticatedGameAccess(false, () => {
+      loadedGames.push(game);
+      return `${game}-html`;
+    });
+    assert.equal(document, `${game}-html`);
   }
+
+  assert.deepEqual(loadedGames, ["grid-defense", "kupferkern", "neon-starfighter", "chess"]);
 });
 
-test("role RPC errors and thrown failures deny access without exposing a document", async () => {
-  const checks = [
-    async () => ({ data: true, error: new Error("role service unavailable") }),
-    async () => {
-      throw new Error("network unavailable");
-    },
-  ];
-  for (const check of checks) {
+test("anonymous sessions are rejected before private game documents are loaded", async () => {
+  for (const claim of [true, "true"]) {
     let documentLoads = 0;
     await assert.rejects(
-      withAdminGameAccess(false, check, () => {
+      withAuthenticatedGameAccess(claim, () => {
         documentLoads += 1;
         return "must-not-leak";
       }),

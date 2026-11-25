@@ -124,15 +124,25 @@ function adminGateBlock(source: string): string {
   return source.slice(start);
 }
 
-test("the Home game tiles and Admin tile stay server-gated", () => {
+test("Home game tiles are visible to every signed-in account and the Admin tile stays server-gated", () => {
   assert.match(hub, /getAdminAreaAccess\(\)/);
   assert.match(hub, /setCanSeeAdmin\(false\)/);
   assert.match(tileBuilder, /if \(canSeeAdmin\)[\s\S]*?id: "admin"[\s\S]*?to: "\/admin"/);
-  const marketplaceIndex = tileBuilder.indexOf('id: "marketplace"');
-  const gamesGateStart = tileBuilder.indexOf("if (canSeeAdmin)", marketplaceIndex);
-  const gamesGate = adminGateBlock(tileBuilder.slice(gamesGateStart));
+  const adminGates: string[] = [];
+  let searchFrom = 0;
+  while (true) {
+    const gateStart = tileBuilder.indexOf("if (canSeeAdmin)", searchFrom);
+    if (gateStart < 0) break;
+    const gate = adminGateBlock(tileBuilder.slice(gateStart));
+    adminGates.push(gate);
+    searchFrom = gateStart + gate.length;
+  }
   for (const id of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {
-    assert.ok(gamesGate.includes(`id: "${id}"`), `${id} should be gated to Admins`);
+    assert.ok(tileBuilder.includes(`id: "${id}"`), `${id} should be registered as a Home game tile`);
+    assert.ok(
+      adminGates.every((gate) => !gate.includes(`id: "${id}"`)),
+      `${id} should not be gated to Admins`,
+    );
   }
   assert.ok(existsSync(resolve(root, "src/routes/_authenticated/games.tsx")));
   assert.equal(existsSync(resolve(root, "src/routes/games.tsx")), false);

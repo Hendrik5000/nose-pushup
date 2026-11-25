@@ -124,12 +124,13 @@ function bootChessPage() {
   return { elements, timers, window };
 }
 
-test("Alo chess remains registered in the authenticated Admin-only games hub", () => {
+test("Alo chess remains registered in the authenticated games hub for every account", () => {
   assert.match(policy, /PRIVATE_GAME_IDS = \[/);
   for (const id of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {
     assert.ok(policy.includes(`"${id}"`));
   }
-  assert.match(route, /getAdminAreaAccess\(\)/);
+  assert.match(route, /createFileRoute\("\/_authenticated\/games"\)/);
+  assert.doesNotMatch(route, /getAdminAreaAccess|Adminzugriff/);
   assert.match(route, /game: "chess"/);
   assert.match(route, /title: "Alo Schach"/);
   for (const id of ["grid-defense", "kupferkern", "neon-starfighter"])
