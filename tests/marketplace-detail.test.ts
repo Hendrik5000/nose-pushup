@@ -37,10 +37,7 @@ test("a successful list installation opens the details where separate activation
   );
   const marketplaceRoute = readFileSync(resolve(root, "src/routes/marketplace.tsx"), "utf8");
   assert.match(catalog, /onInstall: \(pluginId: string, name: string\) => boolean/);
-  assert.match(
-    catalog,
-    /if \(onInstall\(plugin\.id, plugin\.name\)\) setSelectedId\(plugin\.id\)/,
-  );
+  assert.match(catalog, /if \(onInstall\(plugin\.id, plugin\.name\)\) setSelectedId\(plugin\.id\)/);
   assert.match(catalog, /\{enabled \? "Deaktivieren" : "Aktivieren"\}/);
   const listRowStart = catalog.indexOf("const ListRow");
   const listRowEnd = catalog.indexOf("\n\n  return (", listRowStart);

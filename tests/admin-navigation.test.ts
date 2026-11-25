@@ -42,8 +42,5 @@ test("Admin offers responsive links to existing sections without weakening its a
   assert.match(homeNotice, /role="status"/);
   assert.match(homeNotice, /aria-live="polite"/);
   assert.match(homeNotice, /ADMIN_ACCESS_DENIED_NOTICE/);
-  assert.match(
-    homeRoute,
-    /consumeAdminAccessDeniedNotice\(\(\) => window\.sessionStorage\)/,
-  );
+  assert.match(homeRoute, /consumeAdminAccessDeniedNotice\(\(\) => window\.sessionStorage\)/);
 });

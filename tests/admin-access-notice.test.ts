@@ -19,8 +19,14 @@ test("admin denial notice is stored once and consumed once", () => {
 
   markAdminAccessDeniedNotice(() => storage);
 
-  assert.equal(consumeAdminAccessDeniedNotice(() => storage), true);
-  assert.equal(consumeAdminAccessDeniedNotice(() => storage), false);
+  assert.equal(
+    consumeAdminAccessDeniedNotice(() => storage),
+    true,
+  );
+  assert.equal(
+    consumeAdminAccessDeniedNotice(() => storage),
+    false,
+  );
 });
 
 test("admin denial notice helpers tolerate unavailable browser storage", () => {
