@@ -477,7 +477,11 @@ export function SuperAiPage({
   const [lastTask, setLastTask] = useState<AiTask | null>(null);
   const [sportAiView, setSportAiView] = useState<SportAiView>("chat");
   const [, refreshProviderStatus] = useState(0);
-  const previewTask = attachments.some(({ file }) => checkMiraFile(file).startsWith("image/"))
+  const hasVisionAttachment = attachments.some(({ file }) => {
+    const mime = checkMiraFile(file);
+    return mime.startsWith("image/") || mime === "application/pdf";
+  });
+  const previewTask = hasVisionAttachment
     ? "vision"
     : input.trim()
       ? classifyTask(input)
@@ -1159,7 +1163,10 @@ export function SuperAiPage({
     setError(null);
     setReplyAnimation(null);
     const task: AiTask = classifyTask(text, {
-      hasImage: submittedAttachments.some((item) => checkMiraFile(item.file).startsWith("image/")),
+      hasVisionAttachment: submittedAttachments.some(({ file }) => {
+        const mime = checkMiraFile(file);
+        return mime.startsWith("image/") || mime === "application/pdf";
+      }),
     });
     setLastTask(task);
     const selection = selectProvider(loadProviders(userId), task);
@@ -3099,6 +3106,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                       <MiraAttachmentPicker
                         items={attachments}
                         compact={sketchLayout}
+                        allowGoogleAttachments={activeProvider?.id === "google"}
                         onChange={setAttachments}
                         onError={setError}
                         disabled={loading}

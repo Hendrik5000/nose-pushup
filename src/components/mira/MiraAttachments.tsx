@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, FilePlus2, Images, Paperclip, X } from "lucide-react";
 import {
+  checkMiraFile,
   checkMiraSelection,
   MIRA_FILE_ACCEPT,
+  MIRA_GEMINI_FILE_ACCEPT,
   MIRA_IMAGE_ACCEPT,
   removeMiraAttachment,
   type LocalMiraAttachment,
@@ -13,13 +15,16 @@ type Props = {
   onChange: (items: LocalMiraAttachment[]) => void;
   onError: (error: string) => void;
   disabled: boolean;
+  allowGoogleAttachments?: boolean;
   compact?: boolean;
 };
+
 export function MiraAttachmentPicker({
   items,
   onChange,
   onError,
   disabled,
+  allowGoogleAttachments = false,
   compact = false,
 }: Props) {
   const camera = useRef<HTMLInputElement>(null);
@@ -30,6 +35,15 @@ export function MiraAttachmentPicker({
     if (!list?.length || disabled) return;
     const added = Array.from(list).map((file) => ({ id: crypto.randomUUID(), file }));
     try {
+      if (
+        !allowGoogleAttachments &&
+        added.some(({ file }) => {
+          const mime = checkMiraFile(file);
+          return mime.startsWith("image/") || mime === "application/pdf";
+        })
+      ) {
+        throw new Error("Bilder und PDFs können nur mit aktiviertem Google Gemini gesendet werden.");
+      }
       checkMiraSelection([...items, ...added].map((item) => item.file));
       onChange([...items, ...added]);
       menu.current?.removeAttribute("open");
@@ -46,7 +60,7 @@ export function MiraAttachmentPicker({
         capture="environment"
         className="hidden"
         aria-label="Kamera-Foto auswählen"
-        disabled={disabled}
+        disabled={disabled || !allowGoogleAttachments}
         onChange={(event) => {
           choose(event.currentTarget.files);
           event.currentTarget.value = "";
@@ -59,7 +73,7 @@ export function MiraAttachmentPicker({
         multiple
         className="hidden"
         aria-label="Fotos aus der Mediathek auswählen"
-        disabled={disabled}
+        disabled={disabled || !allowGoogleAttachments}
         onChange={(event) => {
           choose(event.currentTarget.files);
           event.currentTarget.value = "";
@@ -68,7 +82,7 @@ export function MiraAttachmentPicker({
       <input
         ref={files}
         type="file"
-        accept={MIRA_FILE_ACCEPT}
+        accept={allowGoogleAttachments ? MIRA_GEMINI_FILE_ACCEPT : MIRA_FILE_ACCEPT}
         multiple
         className="hidden"
         aria-label="Dateien vom Gerät auswählen"
@@ -98,11 +112,19 @@ export function MiraAttachmentPicker({
           <Paperclip aria-hidden="true" className="alo-mira-attachment-icon" />
         </summary>
         <div className="mira-attachment-menu" role="group" aria-label="Anhang auswählen">
-          <button type="button" disabled={disabled} onClick={() => camera.current?.click()}>
+          <button
+            type="button"
+            disabled={disabled || !allowGoogleAttachments}
+            onClick={() => camera.current?.click()}
+          >
             <Camera aria-hidden="true" />
             Foto aufnehmen
           </button>
-          <button type="button" disabled={disabled} onClick={() => photos.current?.click()}>
+          <button
+            type="button"
+            disabled={disabled || !allowGoogleAttachments}
+            onClick={() => photos.current?.click()}
+          >
             <Images aria-hidden="true" />
             Mediathek
           </button>
@@ -110,22 +132,30 @@ export function MiraAttachmentPicker({
             <FilePlus2 aria-hidden="true" />
             Dateien vom Gerät
           </button>
+          {!allowGoogleAttachments && (
+            <p className="px-3 py-2 text-[10px] text-muted-foreground">
+              Bilder und PDFs benötigen einen aktivierten Gemini-Key.
+            </p>
+          )}
         </div>
       </details>
     </>
   );
 }
+
 export function MiraAttachmentPolicy() {
   return (
     <details className="mira-file-help text-[10px] text-muted-foreground">
       <summary>Anhänge bleiben lokal, bis du sendest · Dateilimits</summary>
       <p>
         Bis 4 Anhänge, zusammen 3 MB. Bilder/PDF je 1 MB; Text je 128 KB, zusammen 10.000 Zeichen.
-        PDF: Google. Word/Excel als PDF, TXT oder CSV exportieren.
+        Bilder und PDFs werden nur über aktiviertes Google Gemini gesendet; OpenRouter erhält nur
+        Text und Textdateien. Word/Excel bitte als PDF, TXT oder CSV exportieren.
       </p>
     </details>
   );
 }
+
 function LocalPreview({ item }: { item: LocalMiraAttachment }) {
   const [url, setUrl] = useState<string>();
   useEffect(() => {
@@ -140,11 +170,12 @@ function LocalPreview({ item }: { item: LocalMiraAttachment }) {
     <FilePlus2 aria-hidden="true" />
   );
 }
+
 export function MiraAttachmentPreview({
   items,
   onChange,
   disabled,
-}: Omit<Props, "onError" | "compact">) {
+}: Omit<Props, "onError" | "compact" | "allowGoogleAttachments">) {
   if (!items.length) return null;
   return (
     <section className="mira-attachment-preview" aria-label="Lokale Anhänge vor dem Senden">

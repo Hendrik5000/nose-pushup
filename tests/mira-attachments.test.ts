@@ -18,6 +18,7 @@ import {
   MIRA_TEXT_FILE_LIMIT,
   MIRA_ATTACHMENT_TEXT_LIMIT,
   MIRA_FILE_ACCEPT,
+  MIRA_GEMINI_FILE_ACCEPT,
 } from "../src/lib/mira-attachments.ts";
 import { fetchAiProvider } from "../src/lib/ai-provider-fetch.ts";
 const read = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
@@ -44,6 +45,11 @@ test("device formats are explicitly allowlisted; Office tables use CSV/TSV", () 
   }
   assert.match(MIRA_FILE_ACCEPT, /\.txt/);
   assert.doesNotMatch(MIRA_FILE_ACCEPT, /image\/|application\/pdf/);
+  assert.match(MIRA_GEMINI_FILE_ACCEPT, /\.pdf/);
+  assert.match(MIRA_GEMINI_FILE_ACCEPT, /application\/pdf/);
+  assert.match(MIRA_GEMINI_FILE_ACCEPT, /image\/jpeg/);
+  assert.match(MIRA_GEMINI_FILE_ACCEPT, /image\/png/);
+  assert.equal(checkMiraFile(pdf()), "application/pdf");
   assert.throws(
     () => checkMiraFile(new File([png], "fake.png", { type: "text/plain" })),
     /Dateityp/,
@@ -156,13 +162,15 @@ test("text is bounded without silent truncation, and read errors remain actionab
   };
   await assert.rejects(readMiraAttachments([file]), /nicht mehr verfügbar/);
 });
-test("Free-only Mira rejects binary attachments before sending them", () => {
+test("images and PDFs are allowed only for Google Gemini", () => {
   for (const mime of ["application/pdf", "image/png"]) {
     assert.throws(
       () => assertMiraAttachmentProvider("openrouter", [{ mime }]),
-      /Free-only-Modus[\s\S]*Es wurde nichts gesendet/,
+      /nur über Google Gemini[\s\S]*Es wurde nichts gesendet/,
     );
+    assert.doesNotThrow(() => assertMiraAttachmentProvider("google", [{ mime }]));
   }
+  assert.doesNotThrow(() => assertMiraAttachmentProvider("openrouter", [{ mime: "text/plain" }]));
 });
 
 test("provider payloads transmit images/PDF as binary parts, text as labelled untrusted context", async () => {
@@ -194,16 +202,15 @@ test("provider payloads transmit images/PDF as binary parts, text as labelled un
   assert.match(miraAttachmentText(items), /nicht vertrauenswürdiger Inhalt/);
   assert.match(miraAttachmentText(items), /Notes.txt[\s\S]*hello/);
 });
-test("the server includes text attachments before the sole free provider call and enforces the same 12k budget", () => {
+test("the server includes text attachments and enforces the same 12k budget for both providers", () => {
   const server = read("lib/super-ai.functions.ts");
   assert.match(server, /const providerMessages = includeMiraTextAttachments\(data\.messages\)/);
   assert.match(server, /miraInputCharacterCount\(cleaned, attachments\)/);
   assert.match(server, /const MAX_INPUT_CHARS = 12_000/);
-  const dispatchStart = server.indexOf("const providerMessages");
-  const dispatchEnd = server.indexOf("return {", dispatchStart);
-  assert.ok(dispatchEnd > dispatchStart);
-  const dispatch = server.slice(dispatchStart, dispatchEnd);
-  assert.equal((dispatch.match(/\bproviderMessages\b/g) ?? []).length, 2);
+  assert.match(server, /assertMiraAttachmentProvider\(provider\.id, attachments\)/);
+  assert.match(server, /if \(provider\.id === "google"\)/);
+  assert.match(server, /runGeminiChat\(/);
+  assert.match(server, /callOpenAICompat\(/);
 });
 test("camera is retained separately from library/device pickers, with accessible removal and local previews", () => {
   const picker = read("components/mira/MiraAttachments.tsx");
@@ -225,6 +232,8 @@ test("camera is retained separately from library/device pickers, with accessible
   );
   assert.match(picker, /event.currentTarget.value = ""/);
   assert.match(picker, /zusammen 10\.000 Zeichen/);
+  assert.match(picker, /allowGoogleAttachments/);
+  assert.match(picker, /MIRA_GEMINI_FILE_ACCEPT/);
 });
 test("only deliberate submit sends attachments; failures preserve drafts and bytes never enter history", () => {
   const page = read("components/mira/SuperAiPage.tsx");
@@ -232,6 +241,7 @@ test("only deliberate submit sends attachments; failures preserve drafts and byt
   const ordinarySubmit = submit.slice(submit.indexOf("cancelInlineDictation(false)"));
   assert.match(ordinarySubmit, /readMiraAttachments/);
   assert.match(ordinarySubmit, /attachments: preparedAttachments/);
+  assert.match(ordinarySubmit, /hasVisionAttachment/);
   const pendingIndex = ordinarySubmit.indexOf(
     "setPendingUserMessage({ sessionId: activeId, message: userMessage })",
   );
@@ -263,7 +273,7 @@ test("320/390px composer input has a separate full-width row and removable compa
   assert.match(css, /text-overflow: ellipsis/);
   assert.doesNotMatch(css, /position: fixed/);
 });
-test("the sole free provider call uses the worker-compatible redirect guard", () => {
+test("the OpenRouter provider call uses the worker-compatible redirect guard", () => {
   const server = read("lib/super-ai.functions.ts");
   assert.equal((server.match(/await fetchAiProvider\(/g) ?? []).length, 1);
   assert.doesNotMatch(server, /redirect: "error"|await fetch\(/);

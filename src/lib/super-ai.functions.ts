@@ -7,6 +7,9 @@ import {
   type MiraAttachment,
 } from "@/lib/mira-attachments";
 import { buildMiraSystemPrompt } from "@/lib/mira-response-policy";
+import { runGeminiChat } from "@/lib/gemini.server";
+import { isGeminiModelMode } from "@/lib/gemini-models";
+import { normalizeProviderApiKey, safeOpenRouterErrorMessage } from "@/lib/ai-provider-errors";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -44,27 +47,25 @@ const rateBuckets = new Map<string, number[]>();
 const RATE_WINDOW_MS = 60_000;
 const RATE_MAX_PER_WINDOW = 20;
 const MAX_INPUT_CHARS = 12_000;
-
+const MAX_API_KEY_CHARS = 500;
 const OPENROUTER_MODEL = "openrouter/free";
 
-function assertModelAllowed(model: string) {
-  if (model !== OPENROUTER_MODEL) {
-    throw new Error(`Modell nicht erlaubt: ${model}`);
-  }
+function assertOpenRouterModelAllowed(model: string) {
+  if (model !== OPENROUTER_MODEL) throw new Error("Modell nicht erlaubt.");
 }
 
 function checkUserRateLimit(userId: string) {
   const now = Date.now();
   const prev = rateBuckets.get(userId) ?? [];
-  const recent = prev.filter((t) => now - t < RATE_WINDOW_MS);
+  const recent = prev.filter((time) => now - time < RATE_WINDOW_MS);
   if (recent.length >= RATE_MAX_PER_WINDOW) {
     throw new Error("Rate limit — bitte kurz warten (max. 20 Anfragen / Minute).");
   }
   recent.push(now);
   rateBuckets.set(userId, recent);
   if (rateBuckets.size > 5000) {
-    for (const [k, v] of rateBuckets) {
-      if (!v.some((t) => now - t < RATE_WINDOW_MS)) rateBuckets.delete(k);
+    for (const [key, values] of rateBuckets) {
+      if (!values.some((time) => now - time < RATE_WINDOW_MS)) rateBuckets.delete(key);
     }
   }
 }
@@ -75,7 +76,7 @@ async function callOpenAICompat(
   system: string,
   messages: InMsg[],
 ): Promise<string> {
-  const res = await fetchAiProvider("https://openrouter.ai/api/v1/chat/completions", {
+  const response = await fetchAiProvider("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -86,15 +87,14 @@ async function callOpenAICompat(
       max_tokens: 1200,
       messages: [
         { role: "system", content: system },
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        ...messages.map((message) => ({ role: message.role, content: message.content })),
       ],
     }),
   });
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    throw new Error(`Provider ${res.status}: ${t.slice(0, 200)}`);
+  if (!response.ok) {
+    throw new Error(safeOpenRouterErrorMessage(response.status));
   }
-  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const json = (await response.json()) as { choices?: { message?: { content?: string } }[] };
   return (json.choices?.[0]?.message?.content ?? "").trim();
 }
 
@@ -110,24 +110,29 @@ export const superAiChat = createServerFn({ method: "POST" })
     };
     const messages = Array.isArray(raw.messages) ? raw.messages : [];
     const cleaned = messages
-      .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .filter((message) =>
+        (message.role === "user" || message.role === "assistant") &&
+        typeof message.content === "string",
+      )
       .slice(-16)
-      .map((m, idx, arr) => {
-        const base: InMsg = { role: m.role, content: m.content.slice(0, 6000) };
-        if (idx === arr.length - 1 && m.imageDataUrl !== undefined) {
-          if (m.role !== "user" || typeof m.imageDataUrl !== "string")
+      .map((message, index, all) => {
+        const base: InMsg = { role: message.role, content: message.content.slice(0, 6000) };
+        if (index === all.length - 1 && message.imageDataUrl !== undefined) {
+          if (message.role !== "user" || typeof message.imageDataUrl !== "string")
             throw new Error("Ungültiger Bildanhang.");
-          const match = /^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/.exec(m.imageDataUrl);
+          const match = /^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/.exec(
+            message.imageDataUrl,
+          );
           if (!match) throw new Error("Ungültiger Bildanhang.");
-          const ext = match[1].split("/")[1];
+          const extension = match[1].split("/")[1];
           base.attachments = validateMiraAttachments([
             {
-              name: `Foto.${ext}`,
+              name: `Foto.${extension}`,
               mime: match[1],
               size:
                 Math.floor((match[2].length * 3) / 4) -
                 (match[2].endsWith("==") ? 2 : match[2].endsWith("=") ? 1 : 0),
-              dataUrl: m.imageDataUrl,
+              dataUrl: message.imageDataUrl,
             },
           ]);
         }
@@ -146,9 +151,11 @@ export const superAiChat = createServerFn({ method: "POST" })
       throw new Error(`Eingabe zu lang (max. ${MAX_INPUT_CHARS} Zeichen insgesamt)`);
     }
     if (!raw.provider?.id) throw new Error("Kein Provider gewählt");
+    const apiKey = normalizeProviderApiKey(raw.provider.apiKey);
+    if (apiKey.length > MAX_API_KEY_CHARS) throw new Error("API-Key ungültig oder zu lang.");
     const provider: ProviderPayload = {
       id: raw.provider.id,
-      apiKey: String(raw.provider.apiKey ?? "").slice(0, 500),
+      apiKey,
       model: String(raw.provider.model ?? "").slice(0, 80),
     };
     return {
@@ -160,33 +167,58 @@ export const superAiChat = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }): Promise<SuperAiResult> => {
     const { userId } = context as { userId: string };
-    const p = data.provider;
-    if (p.id !== "openrouter") {
-      throw new Error(
-        "Alo ist im Free-only-Modus. Aktuell ist ausschließlich OpenRouter Free freigeschaltet; andere Anbieter sind gesperrt, um kostenpflichtige Nutzung auszuschließen.",
-      );
+    const provider = data.provider;
+    if (provider.id !== "openrouter" && provider.id !== "google") {
+      throw new Error("Dieser KI-Anbieter ist in Alo nicht freigeschaltet.");
     }
     checkUserRateLimit(userId);
-    assertModelAllowed(p.model);
 
-    const attachments = data.messages.flatMap((m) => m.attachments ?? []);
-    if (attachments.some((item) => item.mime.startsWith("image/"))) {
-      throw new Error(
-        "Dieser Anbieter ist in Alo derzeit nur für Text und Textdateien freigeschaltet. Es wurde kein Bild gesendet.",
-      );
-    }
-    assertMiraAttachmentProvider(p.id, attachments);
-
+    const attachments = data.messages.flatMap((message) => message.attachments ?? []);
+    assertMiraAttachmentProvider(provider.id, attachments);
     const providerMessages = includeMiraTextAttachments(data.messages);
     const system = buildMiraSystemPrompt(data.systemExtra ?? "");
 
-    if (!p.apiKey) throw new Error("OpenRouter API-Key fehlt");
-    const reply = await callOpenAICompat(p.apiKey, p.model, system, providerMessages);
+    if (!provider.apiKey) {
+      throw new Error(
+        provider.id === "google"
+          ? "Gemini-API-Key fehlt. Öffne die Mira-Einstellungen und trage deinen eigenen Key ein."
+          : "OpenRouter API-Key fehlt",
+      );
+    }
 
+    if (provider.id === "google") {
+      if (!isGeminiModelMode(provider.model)) throw new Error("Gemini-Modell nicht freigegeben.");
+      const response = await runGeminiChat({
+        apiKey: provider.apiKey,
+        messages: providerMessages,
+        systemInstruction: system,
+        task: data.task,
+        requestedModel: provider.model,
+      });
+      return {
+        reply: response.reply || "Keine Antwort erhalten.",
+        provider: provider.id,
+        model: response.model,
+        task: data.task,
+      };
+    }
+
+    assertOpenRouterModelAllowed(provider.model);
+    if (attachments.some((item) => item.mime.startsWith("image/"))) {
+      throw new Error(
+        "OpenRouter ist in Alo nur für Text und Textdateien freigeschaltet. Es wurde kein Bild gesendet.",
+      );
+    }
+    const reply = await callOpenAICompat(
+      provider.apiKey,
+      provider.model,
+      system,
+      providerMessages,
+    );
     return {
       reply: reply || "Keine Antwort erhalten.",
-      provider: p.id,
-      model: p.model,
+      provider: provider.id,
+      model: provider.model,
       task: data.task,
     };
   });

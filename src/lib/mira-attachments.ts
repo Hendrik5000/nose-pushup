@@ -7,6 +7,7 @@ export const MIRA_TEXT_FILE_LIMIT = 128 * 1024;
 export const MIRA_ATTACHMENT_TEXT_LIMIT = 10_000;
 export const MIRA_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 export const MIRA_FILE_ACCEPT = ".txt,.md,.csv,.tsv,.json";
+export const MIRA_GEMINI_FILE_ACCEPT = `${MIRA_FILE_ACCEPT},${MIRA_IMAGE_ACCEPT},.pdf,application/pdf`;
 const formats: Record<string, string> = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
@@ -76,14 +77,15 @@ export function removeMiraAttachment(items: LocalMiraAttachment[], id: string) {
   return items.filter((item) => item.id !== id);
 }
 export function assertMiraAttachmentProvider(
-  _provider: ProviderId,
+  provider: ProviderId,
   attachments: Pick<MiraAttachment, "mime">[],
 ): void {
   if (
+    provider !== "google" &&
     attachments.some((item) => item.mime.startsWith("image/") || item.mime === "application/pdf")
   ) {
     throw new Error(
-      "Im aktuellen Free-only-Modus unterstützt Mira nur Textdateien (TXT, MD, CSV, TSV, JSON). Bilder und PDFs werden nicht übertragen. Bitte exportiere die Datei als Text. Es wurde nichts gesendet.",
+      "Bilder und PDFs werden nur über Google Gemini übertragen. Aktiviere Gemini oder entferne diese Anhänge. Es wurde nichts gesendet.",
     );
   }
 }
