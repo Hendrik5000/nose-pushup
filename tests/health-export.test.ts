@@ -39,7 +39,7 @@ test("health CSV includes records older than 14 days in ascending order and esca
 });
 
 test("health history is paginated to load every saved record rather than capped at 14", () => {
-  const load = healthRoute.match(/const load = async \(\) => \{([\s\S]*?)\n  \};/);
+  const load = healthRoute.match(/const load = async \(\) => \{([\s\S]*?)\n\s{2}\};/);
   assert.ok(load, "health history load function exists");
   assert.match(load[1], /const pageSize = 500/);
   assert.match(load[1], /\.range\(start, start \+ pageSize - 1\)/);

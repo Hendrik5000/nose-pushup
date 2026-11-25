@@ -152,8 +152,7 @@ export function normalizeSummary(raw: unknown): HealthConnectSummary | null {
   const steps = normalizeMetric(o.steps ?? o.stepCount, 0, 200000, true);
   const activeKcal = normalizeMetric(o.activeKcal ?? o.active_kcal ?? o.calories, 0, 20000, true);
   const sleepRaw =
-    o.sleepMin ??
-    o.sleep_min ??
+    o.sleepMin ?? o.sleep_min ??
     (o.sleepHours != null ? Number(o.sleepHours) * 60 : undefined);
   const sleepMin = normalizeMetric(sleepRaw, 0, 1440, true);
   const normalizedWeight = normalizeMetric(o.weightKg ?? o.weight_kg, 20, 400);
@@ -283,10 +282,9 @@ export async function persistHealthConnectSummary(
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return { error: "Nicht angemeldet" };
 
-    const { error } = await supabase.from("health_entries").upsert(
-      buildHealthConnectEntryPayload(u.user.id, summary),
-      { onConflict: "user_id,day" },
-    );
+    const { error } = await supabase
+      .from("health_entries")
+      .upsert(buildHealthConnectEntryPayload(u.user.id, summary), { onConflict: "user_id,day" });
 
     if (error) return { error: error.message };
 

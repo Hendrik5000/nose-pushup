@@ -70,7 +70,6 @@ test("Health Connect treats null provider metrics as omitted", () => {
   });
 });
 
-
 test("manual Health Connect input omits malformed, out-of-range and null metrics", () => {
   const summary = buildManualHealthConnectSummary({
     day: "2026-11-25",

@@ -226,10 +226,7 @@ test("short and zoomed fullscreen Home scrolls instead of clipping widgets and a
     assert.notEqual(selectorStart, -1, `fallback rule should exist: ${selector}`);
     const openBrace = fallback.indexOf("{", selectorStart);
     const closeBrace = fallback.indexOf("}", openBrace);
-    assert.ok(
-      openBrace >= 0 && closeBrace > openBrace,
-      `rule should be complete: ${selector}`,
-    );
+    assert.ok(openBrace >= 0 && closeBrace > openBrace, `rule should be complete: ${selector}`);
     return fallback.slice(openBrace + 1, closeBrace);
   };
 

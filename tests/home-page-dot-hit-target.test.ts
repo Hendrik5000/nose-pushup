@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-const home = readFileSync(new URL("../src/routes/_authenticated/index.tsx", import.meta.url), "utf8");
+const home = readFileSync(
+  new URL("../src/routes/_authenticated/index.tsx", import.meta.url),
+  "utf8",
+);
 
 function getRule(selector: RegExp, source = styles) {
   const match = source.match(selector);

@@ -118,8 +118,8 @@ export function AlarmMonitor({ userId }: { userId: string }) {
             Guten Morgen — Zeit aufzustehen.
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Der sanft ansteigende Weckton läuft. Stummschalten beendet nur diesen Alarm; der tägliche
-            Wecker bleibt aktiv.
+            Der sanft ansteigende Weckton läuft. Stummschalten beendet nur diesen Alarm; der
+            tägliche Wecker bleibt aktiv.
           </p>
         </div>
       </div>
