@@ -21,6 +21,12 @@ import {
   readCachedBrowserPage,
 } from "@/lib/browser-fetch";
 import { loadBrowserPageInParallel } from "@/lib/browser-page-loading";
+import {
+  createBrowserNavigationGuard,
+  nextBrowserHistory,
+  type BrowserHistoryEntry,
+} from "@/lib/browser-navigation-guard";
+import { isCurrentBrowserFrameMessage } from "@/lib/browser-frame-messages";
 import { parseJinaSearchResults, takeBrowserOpenUrl } from "@/lib/mira-browser";
 import { miraServePage, miraServePageText, runMiraSiteAction } from "@/lib/mira-browser-agent";
 import { emitMiraPointer } from "@/lib/mira-computer-use";
@@ -64,11 +70,12 @@ interface Tab {
   input: string;
   mode: ViewMode;
   htmlDoc: string;
+  frameToken: string;
   readerText: string;
   aiOverview: string;
   results: SearchResult[];
   loading: boolean;
-  history: string[];
+  history: BrowserHistoryEntry[];
   historyIndex: number;
   notice: string;
 }
@@ -243,6 +250,7 @@ export default function AloBrowser() {
       input: "",
       mode: "home",
       htmlDoc: "",
+      frameToken: "",
       readerText: "",
       aiOverview: "",
       results: [],
@@ -268,9 +276,13 @@ export default function AloBrowser() {
   const activeTab = tabs.find((t) => t.id === activeId) || tabs[0];
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
+  const navigationGuard = useRef(createBrowserNavigationGuard()).current;
+  const browserFrameRef = useRef<HTMLIFrameElement | null>(null);
 
-  const updateTab = (id: string, patch: Partial<Tab>) => {
-    setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  const updateTab = (id: string, patch: Partial<Tab>, isCurrent?: () => boolean) => {
+    setTabs((prev) =>
+      prev.map((t) => (t.id === id && (!isCurrent || isCurrent()) ? { ...t, ...patch } : t)),
+    );
   };
 
   const logMiraActivity = (text: string) => {
@@ -305,6 +317,17 @@ export default function AloBrowser() {
 
   useEffect(() => {
     const onMessage = (ev: MessageEvent) => {
+      if (
+        !isCurrentBrowserFrameMessage(
+          ev.source,
+          ev.origin,
+          ev.data?.frameToken,
+          browserFrameRef.current?.contentWindow,
+          activeTabRef.current.frameToken,
+        )
+      ) {
+        return;
+      }
       if (ev.data?.type === "ALO_NAVIGATE" && typeof ev.data.url === "string") {
         openUrl(activeTabRef.current.id, ev.data.url, true);
       }
@@ -328,7 +351,7 @@ export default function AloBrowser() {
     return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   };
 
-  const buildSafeSrcDoc = (rawHtml: string, baseUrl: string) => {
+  const buildSafeSrcDoc = (rawHtml: string, baseUrl: string, frameToken: string) => {
     const cleaned = rawHtml
       .replace(/<meta[^>]*http-equiv=["']?Content-Security-Policy["']?[^>]*>/gi, "")
       .replace(/<meta[^>]*http-equiv=["']?X-Frame-Options["']?[^>]*>/gi, "");
@@ -337,11 +360,12 @@ export default function AloBrowser() {
     <base href="${baseUrl}">
     <style>html,body{max-width:100vw!important;overflow-x:hidden!important}</style>
     <script>
+      var aloFrameToken = ${JSON.stringify(frameToken)};
       document.addEventListener('click', function(e) {
         var a = e.target && e.target.closest ? e.target.closest('a') : null;
         if (a && a.href && /^https?:/i.test(a.href)) {
           e.preventDefault();
-          parent.postMessage({ type: 'ALO_NAVIGATE', url: a.href }, '*');
+          parent.postMessage({ type: 'ALO_NAVIGATE', url: a.href, frameToken: aloFrameToken }, '*');
         }
       }, true);
     </script>
@@ -353,16 +377,23 @@ export default function AloBrowser() {
   };
 
   const openGoogleMode = (tabId: string) => {
+    navigationGuard.invalidate(tabId);
     updateTab(tabId, {
       title: "Google Suche",
       url: "",
       input: "https://google.com",
       mode: "google",
       loading: false,
+      frameToken: "",
     });
   };
 
-  const openUrl = async (tabId: string, rawTarget: string, pushHistory = true) => {
+  const openUrl = async (
+    tabId: string,
+    rawTarget: string,
+    pushHistory = true,
+    historyIndex?: number,
+  ) => {
     const targetUrl = normalizeUrl(rawTarget);
 
     if (SEARCH_DOMAINS.test(targetUrl)) {
@@ -373,19 +404,13 @@ export default function AloBrowser() {
     try {
       const u = new URL(targetUrl);
       if (u.hostname.includes("google.") && u.searchParams.get("q")) {
-        runSearch(tabId, u.searchParams.get("q") || "");
+        runSearch(tabId, u.searchParams.get("q") || "", pushHistory, historyIndex);
         return;
       }
     } catch (_) {
       /* normale URL-Behandlung */
     }
-
-    const current = tabs.find((t) => t.id === tabId);
-    const nextHistory =
-      pushHistory && current
-        ? [...current.history.slice(0, current.historyIndex + 1), targetUrl]
-        : current?.history || [targetUrl];
-    const nextIndex = pushHistory ? nextHistory.length - 1 : (current?.historyIndex ?? 0);
+    const isCurrent = navigationGuard.begin(tabId);
 
     let domain = targetUrl;
     try {
@@ -394,24 +419,37 @@ export default function AloBrowser() {
       /* Fallback: volle URL als Titel */
     }
 
-    updateTab(tabId, {
-      url: targetUrl,
-      input: targetUrl,
-      title: domain,
-      loading: true,
-      mode: "web",
-      htmlDoc: "",
-      readerText: "",
-      notice: "",
-      history: nextHistory,
-      historyIndex: nextIndex,
-    });
+    setTabs((prev) =>
+      prev.map((tab) => {
+        if (tab.id !== tabId) return tab;
+        return {
+          ...tab,
+          url: targetUrl,
+          input: targetUrl,
+          title: domain,
+          loading: true,
+          mode: "web",
+          htmlDoc: "",
+          frameToken: "",
+          readerText: "",
+          notice: "",
+          ...nextBrowserHistory(
+            tab.history,
+            tab.historyIndex,
+            { kind: "url", value: targetUrl },
+            pushHistory,
+            historyIndex,
+          ),
+        };
+      }),
+    );
 
     const ytMatch = targetUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (ytMatch) {
       const ytDoc = `<!DOCTYPE html><html style="height:100%;margin:0;background:#000"><body style="height:100%;margin:0"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1" style="width:100%;height:100%;border:0" allow="autoplay; fullscreen"></iframe></body></html>`;
       updateTab(tabId, {
         htmlDoc: ytDoc,
+        frameToken: "",
         readerText: `YouTube Video: ${targetUrl}`,
         loading: false,
         mode: "web",
@@ -443,72 +481,117 @@ export default function AloBrowser() {
         }
       },
       (html) => {
-        if (!looksLikeJsShell(html)) {
+        if (isCurrent() && !looksLikeJsShell(html)) {
           hasUsableHtml = true;
-          updateTab(tabId, { htmlDoc: buildSafeSrcDoc(html, targetUrl), mode: "web" });
+          const frameToken = crypto.randomUUID();
+          updateTab(
+            tabId,
+            { htmlDoc: buildSafeSrcDoc(html, targetUrl, frameToken), frameToken, mode: "web" },
+            isCurrent,
+          );
         }
       },
       (reader) => {
         updateTab(
           tabId,
           hasUsableHtml ? { readerText: reader } : { readerText: reader, mode: "reader" },
+          isCurrent,
         );
       },
     ).then((page) => {
-      if (page.html || page.reader) cacheBrowserPage(targetUrl, page.html, page.reader);
+      if (isCurrent() && (page.html || page.reader)) {
+        cacheBrowserPage(targetUrl, page.html, page.reader);
+      }
       return page;
     });
     const [page, servedPage] = await Promise.all([pagePromise, miraServePage(targetUrl)]);
+    if (!isCurrent()) return;
     const { html: rawHtml, reader: readerTxt } = page;
     const shell = rawHtml ? looksLikeJsShell(rawHtml) : false;
     const frameBlocked = Boolean(servedPage?.frameBlocked);
     const reader = readerTxt || servedPage?.text || "";
 
     if (rawHtml && !shell && !frameBlocked) {
-      updateTab(tabId, {
-        htmlDoc: buildSafeSrcDoc(rawHtml, targetUrl),
-        readerText: reader || "Kein separater Reader-Text gefunden.",
-        mode: "web",
-        notice: "",
-        loading: false,
-      });
+      const frameToken = crypto.randomUUID();
+      updateTab(
+        tabId,
+        {
+          htmlDoc: buildSafeSrcDoc(rawHtml, targetUrl, frameToken),
+          frameToken,
+          readerText: reader || "Kein separater Reader-Text gefunden.",
+          mode: "web",
+          notice: "",
+          loading: false,
+        },
+        isCurrent,
+      );
     } else if (reader) {
-      updateTab(tabId, {
-        htmlDoc: "",
-        readerText: reader,
-        mode: "reader",
-        loading: false,
-        notice: frameBlocked
-          ? "Diese Seite blockiert das Einbetten — ich habe sie als Text gelesen."
-          : shell
-            ? "Diese Seite baut ihren Inhalt erst per JavaScript auf — ich habe sie als Text gelesen."
-            : "",
-      });
+      updateTab(
+        tabId,
+        {
+          htmlDoc: "",
+          frameToken: "",
+          readerText: reader,
+          mode: "reader",
+          loading: false,
+          notice: frameBlocked
+            ? "Diese Seite blockiert das Einbetten — ich habe sie als Text gelesen."
+            : shell
+              ? "Diese Seite baut ihren Inhalt erst per JavaScript auf — ich habe sie als Text gelesen."
+              : "",
+        },
+        isCurrent,
+      );
     } else {
-      updateTab(tabId, {
-        htmlDoc: "",
-        readerText: "",
-        mode: "visual",
-        loading: false,
-        notice: frameBlocked ? "Diese Seite blockiert das Einbetten." : "",
-      });
+      updateTab(
+        tabId,
+        {
+          htmlDoc: "",
+          frameToken: "",
+          readerText: "",
+          mode: "visual",
+          loading: false,
+          notice: frameBlocked ? "Diese Seite blockiert das Einbetten." : "",
+        },
+        isCurrent,
+      );
     }
   };
 
-  const runSearch = async (tabId: string, query: string) => {
+  const runSearch = async (
+    tabId: string,
+    query: string,
+    pushHistory = true,
+    historyIndex?: number,
+  ) => {
     const q = query.trim();
     if (!q) return;
+    const isCurrent = navigationGuard.begin(tabId);
 
-    updateTab(tabId, {
-      title: `${q} – Suche`,
-      input: q,
-      url: "",
-      mode: "search",
-      loading: true,
-      aiOverview: "",
-      results: [],
-      notice: "",
-    });
+    setTabs((prev) =>
+      prev.map((tab) => {
+        if (tab.id !== tabId) return tab;
+        return {
+          ...tab,
+          title: `${q} – Suche`,
+          input: q,
+          url: "",
+          mode: "search",
+          loading: true,
+          frameToken: "",
+          aiOverview: "",
+          results: [],
+          notice: "",
+          ...nextBrowserHistory(
+            tab.history,
+            tab.historyIndex,
+            { kind: "search", value: q },
+            pushHistory,
+            historyIndex,
+          ),
+        };
+      }),
+    );
 
     const fetchResults = async (): Promise<SearchResult[]> => {
       try {
@@ -545,13 +628,18 @@ export default function AloBrowser() {
       ),
     ]);
 
-    updateTab(tabId, {
-      results: found,
-      aiOverview: overview,
-      readerText:
-        `Suche: ${q}\n\n${overview}\n\n` + found.map((f) => `${f.title}: ${f.snippet}`).join("\n"),
-      loading: false,
-    });
+    updateTab(
+      tabId,
+      {
+        results: found,
+        aiOverview: overview,
+        readerText:
+          `Suche: ${q}\n\n${overview}\n\n` +
+          found.map((f) => `${f.title}: ${f.snippet}`).join("\n"),
+        loading: false,
+      },
+      isCurrent,
+    );
   };
 
   // Prüft, ob der Nutzer Mira einen direkten Browser-Befehl gibt ("Öffne Google", "Suche nach X" ...)
@@ -692,15 +780,20 @@ export default function AloBrowser() {
 
   const goBack = () => {
     if (activeTab.historyIndex > 0) {
-      const prev = activeTab.history[activeTab.historyIndex - 1];
-      updateTab(activeTab.id, { historyIndex: activeTab.historyIndex - 1 });
-      openUrl(activeTab.id, prev, false);
+      const targetIndex = activeTab.historyIndex - 1;
+      const target = activeTab.history[targetIndex];
+      if (target.kind === "search") runSearch(activeTab.id, target.value, false, targetIndex);
+      else openUrl(activeTab.id, target.value, false, targetIndex);
     } else {
+      navigationGuard.invalidate(activeTab.id);
       updateTab(activeTab.id, {
         mode: "home",
         url: "",
         input: "",
         title: "Start",
+        loading: false,
+        frameToken: "",
+        historyIndex: -1,
         notice: "",
       });
     }
@@ -708,10 +801,34 @@ export default function AloBrowser() {
 
   const goForward = () => {
     if (activeTab.historyIndex < activeTab.history.length - 1) {
-      const next = activeTab.history[activeTab.historyIndex + 1];
-      updateTab(activeTab.id, { historyIndex: activeTab.historyIndex + 1 });
-      openUrl(activeTab.id, next, false);
+      const targetIndex = activeTab.historyIndex + 1;
+      const target = activeTab.history[targetIndex];
+      if (target.kind === "search") runSearch(activeTab.id, target.value, false, targetIndex);
+      else openUrl(activeTab.id, target.value, false, targetIndex);
     }
+  };
+
+  const reloadActiveTab = () => {
+    if (activeTab.mode === "search") {
+      const currentEntry = activeTab.history[activeTab.historyIndex];
+      const query = currentEntry?.kind === "search" ? currentEntry.value : activeTab.input;
+      runSearch(activeTab.id, query, false, activeTab.historyIndex);
+      return;
+    }
+    if (activeTab.url) {
+      void openUrl(activeTab.id, activeTab.url, false);
+      return;
+    }
+    navigationGuard.invalidate(activeTab.id);
+    updateTab(activeTab.id, {
+      mode: "home",
+      title: "Start",
+      input: "",
+      frameToken: "",
+      historyIndex: -1,
+      notice: "",
+      loading: false,
+    });
   };
 
   const addTab = () => {
@@ -725,6 +842,7 @@ export default function AloBrowser() {
         input: "",
         mode: "home",
         htmlDoc: "",
+        frameToken: "",
         readerText: "",
         aiOverview: "",
         results: [],
@@ -739,6 +857,7 @@ export default function AloBrowser() {
 
   const closeTab = (id: string, e: MouseEvent) => {
     e.stopPropagation();
+    navigationGuard.invalidate(id);
     if (tabs.length === 1) {
       updateTab(id, {
         title: "Start",
@@ -746,7 +865,12 @@ export default function AloBrowser() {
         input: "",
         mode: "home",
         htmlDoc: "",
+        frameToken: "",
         readerText: "",
+        loading: false,
+        history: [],
+        historyIndex: -1,
+        notice: "",
       });
       return;
     }
@@ -802,11 +926,15 @@ export default function AloBrowser() {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <button
-          onClick={() =>
-            activeTab.url
-              ? openUrl(activeTab.id, activeTab.url, false)
-              : updateTab(activeTab.id, { mode: "home", input: "" })
-          }
+          onClick={goForward}
+          disabled={activeTab.historyIndex >= activeTab.history.length - 1}
+          className="shrink-0 rounded-lg p-2 text-muted-foreground hover:text-foreground disabled:opacity-30"
+          aria-label="Vorwärts"
+        >
+          <ArrowRight className="h-4 w-4" />
+        </button>
+        <button
+          onClick={reloadActiveTab}
           className="shrink-0 rounded-lg p-2 text-muted-foreground hover:text-foreground"
           aria-label="Neu laden"
         >
@@ -882,14 +1010,6 @@ export default function AloBrowser() {
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={goForward}
-              disabled={activeTab.historyIndex >= activeTab.history.length - 1}
-              className="p-1 text-muted-foreground disabled:opacity-30"
-              aria-label="Vorwärts"
-            >
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
             <a
               href={activeTab.url}
               target="_blank"
@@ -1066,6 +1186,7 @@ export default function AloBrowser() {
             </div>
           ) : activeTab.mode === "web" && activeTab.htmlDoc ? (
             <iframe
+              ref={browserFrameRef}
               srcDoc={activeTab.htmlDoc}
               title={activeTab.title}
               className="h-full w-full border-none bg-white"
