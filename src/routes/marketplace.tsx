@@ -105,7 +105,7 @@ function MarketplaceGuestView({ sessionChecked }: { sessionChecked: boolean }) {
           plugins={MARKETPLACE_CATALOG}
           installState={EMPTY_MARKETPLACE_INSTALL_STATE}
           ready={false}
-          onInstall={() => {}}
+          onInstall={() => false}
           onToggle={() => {}}
           onRemove={() => {}}
           onOpen={() => {}}
@@ -203,17 +203,20 @@ function MarketplaceContent({ userId }: { userId: string }) {
       setAccountState({ userId, state: next });
       setStorageError(null);
       setStatus(message);
+      return true;
     } catch {
       setStorageError("Änderung nicht gespeichert. Bitte prüfe den lokalen Browserspeicher.");
       setStatus("");
+      return false;
     }
   };
 
   const onInstall = (pluginId: string, name: string) => {
     try {
-      persist(installMarketplacePlugin(state, pluginId), `${name} wurde lokal installiert.`);
+      return persist(installMarketplacePlugin(state, pluginId), `${name} wurde lokal installiert.`);
     } catch {
       setStatus("Dieses Alo-Plugin kann nicht installiert werden.");
+      return false;
     }
   };
 

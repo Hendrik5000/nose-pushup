@@ -29,6 +29,27 @@ test("the marketplace detail page suggests similar apps of the same category", (
   assert.match(catalog, /<CarouselCard key=\{plugin\.id\} plugin=\{plugin\} \/>/);
 });
 
+test("a successful list installation opens the details where separate activation is available", () => {
+  const root = process.cwd();
+  const catalog = readFileSync(
+    resolve(root, "src/components/marketplace/MarketplaceAppCatalog.tsx"),
+    "utf8",
+  );
+  const marketplaceRoute = readFileSync(resolve(root, "src/routes/marketplace.tsx"), "utf8");
+  assert.match(catalog, /onInstall: \(pluginId: string, name: string\) => boolean/);
+  assert.match(
+    catalog,
+    /if \(onInstall\(plugin\.id, plugin\.name\)\) setSelectedId\(plugin\.id\)/,
+  );
+  assert.match(catalog, /\{enabled \? "Deaktivieren" : "Aktivieren"\}/);
+  const listRowStart = catalog.indexOf("const ListRow");
+  const listRowEnd = catalog.indexOf("\n\n  return (", listRowStart);
+  assert.ok(listRowStart >= 0 && listRowEnd > listRowStart);
+  assert.doesNotMatch(catalog.slice(listRowStart, listRowEnd), /onToggle|enabledPluginIds/);
+  assert.match(marketplaceRoute, /onInstall=\{\(\) => false\}/);
+  assert.match(marketplaceRoute, /return persist\(installMarketplacePlugin\(state, pluginId\)/);
+});
+
 test("the marketplace catalog displays correctly encoded German copy", () => {
   const root = process.cwd();
   const catalog = readFileSync(

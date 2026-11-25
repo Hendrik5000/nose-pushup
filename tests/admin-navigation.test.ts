@@ -5,6 +5,7 @@ import test from "node:test";
 
 const root = process.cwd();
 const adminRoute = readFileSync(resolve(root, "src/routes/_authenticated/admin.tsx"), "utf8");
+const homeRoute = readFileSync(resolve(root, "src/routes/_authenticated/index.tsx"), "utf8");
 const releasePanel = readFileSync(
   resolve(root, "src/components/admin/FeatureReleaseDigestPanel.tsx"),
   "utf8",
@@ -27,8 +28,22 @@ test("Admin offers responsive links to existing sections without weakening its a
   );
   assert.match(adminRoute, /id="admin-role-management-title"/);
   assert.equal((adminRoute.match(/roleAccess\?\.canManage && \(/gu) ?? []).length, 2);
+  const deniedGuardStart = adminRoute.indexOf("beforeLoad: async");
+  const deniedGuardEnd = adminRoute.indexOf("component: AdminOverview", deniedGuardStart);
+  const deniedGuard = adminRoute.slice(deniedGuardStart, deniedGuardEnd);
+  assert.ok(deniedGuardStart >= 0 && deniedGuardEnd > deniedGuardStart);
+  assert.match(deniedGuard, /getAdminAreaAccess\(\)/);
+  assert.match(deniedGuard, /markAdminAccessDeniedNotice\(\(\) => window\.sessionStorage\)/);
+  assert.match(deniedGuard, /throw redirect\(\{\s*to: "\/"\s*\}\)/);
+  const noticeStart = homeRoute.indexOf("adminAccessNoticeVisible && (");
+  const noticeEnd = homeRoute.indexOf("<header", noticeStart);
+  const homeNotice = homeRoute.slice(noticeStart, noticeEnd);
+  assert.ok(noticeStart >= 0 && noticeEnd > noticeStart);
+  assert.match(homeNotice, /role="status"/);
+  assert.match(homeNotice, /aria-live="polite"/);
+  assert.match(homeNotice, /ADMIN_ACCESS_DENIED_NOTICE/);
   assert.match(
-    adminRoute,
-    /beforeLoad: async \(\) => \{\s*if \(!\(await getAdminAreaAccess\(\)\)\) throw redirect\(\{\s*to: "\/"\s*\}\);/,
+    homeRoute,
+    /consumeAdminAccessDeniedNotice\(\(\) => window\.sessionStorage\)/,
   );
 });

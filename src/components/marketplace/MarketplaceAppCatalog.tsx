@@ -25,7 +25,7 @@ type Props = Readonly<{
   plugins: readonly MarketplacePluginManifest[];
   installState: MarketplaceInstallState;
   ready: boolean;
-  onInstall: (pluginId: string, name: string) => void;
+  onInstall: (pluginId: string, name: string) => boolean;
   onToggle: (pluginId: string, name: string, enabled: boolean) => void;
   onRemove: (pluginId: string, name: string) => void;
   onOpen: (pluginId: string) => void;
@@ -157,7 +157,9 @@ export function MarketplaceAppCatalog({
       <button
         type="button"
         disabled={!ready}
-        onClick={() => onInstall(plugin.id, plugin.name)}
+        onClick={() => {
+          if (onInstall(plugin.id, plugin.name)) setSelectedId(plugin.id);
+        }}
         className="min-h-11 shrink-0 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
       >
         Installieren
