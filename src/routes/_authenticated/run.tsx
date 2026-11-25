@@ -260,7 +260,11 @@ function RunPage() {
               {active ? (gpsFix ? "GPS bereit" : "GPS sucht") : "Bereit"}
             </span>
           </SportPageIntro>
-          <section className="sport-focus-card rounded-[2rem] border border-border bg-card/70 p-5 text-center sm:p-8">
+          <section
+            id="run-console"
+            data-nav-target="run-console"
+            className="sport-focus-card rounded-[2rem] border border-border bg-card/70 p-5 text-center sm:p-8"
+          >
             <SportSectionLabel number="01">Laufkonsole</SportSectionLabel>
             <div className="mt-6 rounded-3xl border border-primary/20 bg-gradient-to-b from-primary/10 to-transparent px-5 py-8">
               <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
@@ -328,7 +332,7 @@ function RunPage() {
               Warte auf GPS-Signal. Geh ins Freie, um die Genauigkeit zu verbessern.
             </div>
           )}
-          <section className="space-y-4">
+          <section id="run-history" data-nav-target="run-history" className="space-y-4">
             <SportSectionLabel number="02">Deine letzten Läufe</SportSectionLabel>
             {runs.length === 0 ? (
               <p className="rounded-3xl border border-border bg-card/50 p-6 text-sm text-muted-foreground">
@@ -378,7 +382,11 @@ function RunPage() {
             <span className="w-12" />
           </header>
 
-          <section className="mt-6 rounded-3xl border border-border bg-card/60 p-6 text-center backdrop-blur">
+          <section
+            id="run-console-classic"
+            data-nav-target="run-console"
+            className="mt-6 rounded-3xl border border-border bg-card/60 p-6 text-center backdrop-blur"
+          >
             <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
               Distanz
             </div>
@@ -451,7 +459,7 @@ function RunPage() {
             </div>
           )}
 
-          <section className="mt-6">
+          <section id="run-history-classic" data-nav-target="run-history" className="mt-6">
             <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Letzte Läufe
             </h2>

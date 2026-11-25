@@ -63,8 +63,12 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Clock3,
+  LayoutGrid,
+  Menu,
   Mic,
   Search,
+  Star,
   Trash2,
   X,
 } from "lucide-react";
@@ -379,6 +383,7 @@ function HomeAppHub({
   const [aiStatus, setAiStatus] = useState<HomeAiStatus | null>(null);
   const [isEditingHub, setIsEditingHub] = useState(false);
   const [activeHomePage, setActiveHomePage] = useState(0);
+  const [homeMenuOpen, setHomeMenuOpen] = useState(false);
   const homeTouchStartXRef = useRef<number | null>(null);
   const isEditingHubRef = useRef(isEditingHub);
   const [renamingAppId, setRenamingAppId] = useState<string | null>(null);
@@ -699,6 +704,7 @@ function HomeAppHub({
       (tile) => !settings.favorites.includes(tile.id) && homeTileGroupId(tile) === id,
     ),
   })).filter((section) => section.tiles.length > 0);
+  const maxHomeSectionCount = Math.max(1, ...homeSections.map((section) => section.tiles.length));
   const renamingTile = orderedTiles.find((tile) => tile.id === renamingAppId) ?? null;
   const activeActionTile = orderedTiles.find((tile) => tile.id === activeAppMenuId) ?? null;
   const activeActionTitle = activeActionTile
@@ -1439,9 +1445,21 @@ function HomeAppHub({
             className="mb-7 flex items-center justify-between gap-3"
             data-home-press-ignore="true"
           >
-            <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
-              Alo
-            </h1>
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                type="button"
+                className="alo-home-menu-trigger flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border bg-card/75 text-foreground shadow-sm backdrop-blur-xl transition hover:border-primary/50 hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                aria-label="App-Bereiche öffnen"
+                aria-haspopup="dialog"
+                aria-expanded={homeMenuOpen}
+                onClick={() => setHomeMenuOpen(true)}
+              >
+                <Menu className="h-5 w-5" aria-hidden="true" />
+              </button>
+              <h1 id="app-hub-title" className="text-2xl font-bold tracking-tight">
+                Alo
+              </h1>
+            </div>
             <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
@@ -1473,6 +1491,70 @@ function HomeAppHub({
               </Link>
             </div>
           </header>
+          <Dialog open={homeMenuOpen} onOpenChange={setHomeMenuOpen}>
+            <DialogContent className="alo-home-category-drawer">
+              <header className="flex items-start justify-between gap-3 border-b border-border/70 px-5 pb-4 pt-[max(1.25rem,env(safe-area-inset-top))]">
+                <div>
+                  <DialogTitle className="text-lg font-semibold">App-Bereiche</DialogTitle>
+                  <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                    Wähle eine Kategorie auf deiner Startseite.
+                  </DialogDescription>
+                </div>
+                <button
+                  type="button"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card/70 text-foreground"
+                  aria-label="Menü schließen"
+                  onClick={() => setHomeMenuOpen(false)}
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </header>
+              <nav
+                className="alo-home-category-list flex-1 overflow-y-auto p-4"
+                aria-label="App-Kategorien"
+              >
+                <button
+                  type="button"
+                  className="alo-home-category-link"
+                  aria-current={currentHomePage === 0 ? "page" : undefined}
+                  onClick={() => {
+                    setActiveHomePage(0);
+                    setHomeMenuOpen(false);
+                  }}
+                >
+                  <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+                  <span>Alle Apps</span>
+                </button>
+                {HOME_APP_GROUPS.map((group) => {
+                  const groupTiles = orderedTiles.filter(
+                    (tile) => homeTileGroupId(tile) === group.id,
+                  );
+                  if (groupTiles.length === 0) return null;
+                  const firstIndex = orderedTiles.findIndex(
+                    (tile) => homeTileGroupId(tile) === group.id,
+                  );
+                  const page = Math.floor(firstIndex / homePageSize);
+                  return (
+                    <button
+                      key={group.id}
+                      type="button"
+                      className="alo-home-category-link"
+                      aria-current={page === currentHomePage ? "page" : undefined}
+                      onClick={() => {
+                        setActiveHomePage(page);
+                        setHomeMenuOpen(false);
+                      }}
+                    >
+                      <span>{group.label}</span>
+                      <span className="alo-home-category-count tabular-nums">
+                        {groupTiles.length}
+                      </span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </DialogContent>
+          </Dialog>
           {isEditingHub && (
             <p className="mb-4 max-w-xl text-xs leading-relaxed text-muted-foreground">
               Ziehe die App-Symbole direkt an eine neue Position. Halte eine App lange gedrückt oder
@@ -1593,45 +1675,120 @@ function HomeAppHub({
                   </section>
                 </AloErrorBoundary>
               )}
-              <AloErrorBoundary section="Apps">
-                <div
-                  className="alo-launcher-page"
-                  aria-label={`Startseite ${currentHomePage + 1} von ${homePageCount}`}
-                  onTouchStart={(event) => {
-                    homeTouchStartXRef.current = event.touches[0]?.clientX ?? null;
-                  }}
-                  onTouchEnd={(event) => {
-                    const startX = homeTouchStartXRef.current;
-                    const endX = event.changedTouches[0]?.clientX;
-                    homeTouchStartXRef.current = null;
-                    if (startX === null || endX === undefined || Math.abs(endX - startX) < 56) {
-                      return;
-                    }
-                    setActiveHomePage((page) =>
-                      Math.max(0, Math.min(homePageCount - 1, page + (endX < startX ? 1 : -1))),
-                    );
-                  }}
-                >
-                  {renderHomeGroup("launcher", "Apps", currentHomePageTiles)}
-                  {homePageCount > 1 && (
-                    <nav
-                      className="alo-launcher-page-indicators"
-                      aria-label="Startseiten auswählen"
+              <div className="alo-home-dashboard-workspace">
+                <div className="alo-home-dashboard-launcher">
+                  <AloErrorBoundary section="Apps">
+                    <div
+                      className="alo-launcher-page"
+                      aria-label={`Startseite ${currentHomePage + 1} von ${homePageCount}`}
+                      onTouchStart={(event) => {
+                        homeTouchStartXRef.current = event.touches[0]?.clientX ?? null;
+                      }}
+                      onTouchEnd={(event) => {
+                        const startX = homeTouchStartXRef.current;
+                        const endX = event.changedTouches[0]?.clientX;
+                        homeTouchStartXRef.current = null;
+                        if (startX === null || endX === undefined || Math.abs(endX - startX) < 56) {
+                          return;
+                        }
+                        setActiveHomePage((page) =>
+                          Math.max(0, Math.min(homePageCount - 1, page + (endX < startX ? 1 : -1))),
+                        );
+                      }}
                     >
-                      {Array.from({ length: homePageCount }, (_, page) => (
-                        <button
-                          key={page}
-                          type="button"
-                          aria-label={`Startseite ${page + 1}`}
-                          aria-current={currentHomePage === page ? "page" : undefined}
-                          onClick={() => setActiveHomePage(page)}
-                          className="alo-launcher-page-dot"
-                        />
-                      ))}
-                    </nav>
-                  )}
+                      {renderHomeGroup("launcher", "Apps", currentHomePageTiles)}
+                      {homePageCount > 1 && (
+                        <nav
+                          className="alo-launcher-page-indicators"
+                          aria-label="Startseiten auswählen"
+                        >
+                          {Array.from({ length: homePageCount }, (_, page) => (
+                            <button
+                              key={page}
+                              type="button"
+                              aria-label={`Startseite ${page + 1}`}
+                              aria-current={currentHomePage === page ? "page" : undefined}
+                              onClick={() => setActiveHomePage(page)}
+                              className="alo-launcher-page-dot"
+                            />
+                          ))}
+                        </nav>
+                      )}
+                    </div>
+                  </AloErrorBoundary>
                 </div>
-              </AloErrorBoundary>
+                <aside
+                  className="alo-home-dashboard-panel"
+                  aria-labelledby="alo-home-dashboard-title"
+                  data-home-press-ignore="true"
+                >
+                  <header className="alo-home-dashboard-header">
+                    <div>
+                      <p className="alo-home-dashboard-eyebrow">ALO · ÜBERSICHT</p>
+                      <h2 id="alo-home-dashboard-title">Dein Dashboard</h2>
+                    </div>
+                  </header>
+                  <div className="alo-home-dashboard-metrics" aria-label="Startseitenübersicht">
+                    <div className="alo-home-dashboard-stat" data-alo-dashboard-card>
+                      <LayoutGrid aria-hidden="true" className="h-4 w-4 text-primary" />
+                      <span>Apps auf Home</span>
+                      <strong className="tabular-nums">{orderedTiles.length}</strong>
+                    </div>
+                    <div className="alo-home-dashboard-stat" data-alo-dashboard-card>
+                      <Star aria-hidden="true" className="h-4 w-4 text-primary" />
+                      <span>Favoriten</span>
+                      <strong className="tabular-nums">{favoriteTiles.length}</strong>
+                    </div>
+                  </div>
+                  {homeSections.length > 0 && (
+                    <section
+                      className="alo-home-dashboard-section"
+                      aria-labelledby="alo-home-category-title"
+                    >
+                      <div className="alo-home-dashboard-section-heading">
+                        <h3 id="alo-home-category-title">Apps nach Bereich</h3>
+                        <span>Favoriten separat gezählt</span>
+                      </div>
+                      <ul className="alo-home-dashboard-categories">
+                        {homeSections.map((section) => (
+                          <li key={section.id}>
+                            <div className="alo-home-dashboard-category-label">
+                              <span>{section.label}</span>
+                              <span className="tabular-nums">{section.tiles.length}</span>
+                            </div>
+                            <div className="alo-home-dashboard-bar" aria-hidden="true">
+                              <span
+                                style={{
+                                  width: `${Math.round((section.tiles.length / maxHomeSectionCount) * 100)}%`,
+                                }}
+                              />
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                  {recentTiles.length > 0 && (
+                    <section
+                      className="alo-home-dashboard-section"
+                      aria-labelledby="alo-home-recent-title"
+                    >
+                      <div className="alo-home-dashboard-section-heading">
+                        <h3 id="alo-home-recent-title">
+                          <Clock3 aria-hidden="true" className="h-4 w-4 text-primary" />
+                          Zuletzt geöffnet
+                        </h3>
+                      </div>
+                      <p className="alo-home-dashboard-note">Lokal auf diesem Gerät gespeichert.</p>
+                      <ol className="alo-home-dashboard-recent">
+                        {recentTiles.map((tile) => (
+                          <li key={tile.id}>{settings.nameOverrides[tile.id] ?? tile.title}</li>
+                        ))}
+                      </ol>
+                    </section>
+                  )}
+                </aside>
+              </div>
             </div>
           )}
 

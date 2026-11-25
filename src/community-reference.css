@@ -23,7 +23,9 @@ html[data-design-style="performance"] .reference-interior-header .sport-design-s
 }
 /* The default dark palette gets the reference's ink-and-cyan/violet community canvas.
    Explicitly selected alternative palettes keep their own color tokens. */
-html[data-design-style="performance"][data-theme="glacier"]:has(.sport-chat-app) {
+html[data-design-style="performance"][data-theme-mode="dark"][data-theme="glacier"]:has(
+    .sport-chat-app
+  ) {
   --background: #070b16;
   --foreground: #edf4ff;
   --card: #101a2e;
@@ -41,7 +43,10 @@ html[data-design-style="performance"][data-theme="glacier"]:has(.sport-chat-app)
 html[data-design-style="performance"]:has(.sport-chat-app) body {
   background: var(--background);
 }
-html[data-design-style="performance"][data-theme="glacier"]:has(.sport-chat-app) body {
+html[data-design-style="performance"][data-theme-mode="dark"][data-theme="glacier"]:has(
+    .sport-chat-app
+  )
+  body {
   background:
     radial-gradient(ellipse at 92% 0%, rgba(139, 92, 246, 0.15), transparent 34%),
     radial-gradient(ellipse at 8% 38%, rgba(34, 211, 238, 0.1), transparent 44%),
@@ -289,7 +294,8 @@ html[data-design-style="performance"] .community-quick-replies button {
 }
 
 /* Navy glass panels and restrained blue/violet edge light for the reference look. */
-html[data-design-style="performance"][data-theme="glacier"] .sport-chat-app {
+html[data-design-style="performance"][data-theme-mode="dark"][data-theme="glacier"]
+  .sport-chat-app {
   border-color: color-mix(in srgb, #8ab8ff 18%, transparent);
   border-radius: 1.5rem;
   background:
@@ -297,29 +303,48 @@ html[data-design-style="performance"][data-theme="glacier"] .sport-chat-app {
     linear-gradient(160deg, #0b1222 0%, #080d1a 68%, #071020 100%);
   box-shadow: 0 24px 72px rgba(1, 5, 18, 0.38);
 }
-html[data-design-style="performance"][data-theme="glacier"] .sport-chat-app > aside {
+html[data-design-style="performance"][data-theme-mode="dark"][data-theme="glacier"]
+  .sport-chat-app
+  > aside {
   border-color: rgba(126, 161, 219, 0.2);
   background: linear-gradient(180deg, rgba(16, 26, 46, 0.92), rgba(8, 14, 28, 0.96));
 }
-html[data-design-style="performance"][data-theme="glacier"] .sport-chat-topbar {
+html[data-design-style="performance"][data-theme-mode="dark"][data-theme="glacier"]
+  .sport-chat-topbar {
   border-color: rgba(126, 161, 219, 0.2);
   background: linear-gradient(110deg, rgba(17, 28, 52, 0.9), rgba(17, 21, 43, 0.82));
 }
-html[data-design-style="performance"][data-theme="glacier"] .community-conversation {
+html[data-design-style="performance"][data-theme-mode="dark"][data-theme="glacier"]
+  .community-conversation {
   background: linear-gradient(180deg, rgba(8, 14, 28, 0.5), rgba(6, 10, 22, 0.78));
 }
-html[data-design-style="performance"][data-theme="glacier"] .community-list-scroll button.bg-primary {
+html[data-design-style="performance"][data-theme-mode="dark"][data-theme="glacier"]
+  .community-list-scroll
+  button.bg-primary {
   border: 1px solid color-mix(in srgb, var(--primary) 42%, var(--accent));
-  background: linear-gradient(110deg, color-mix(in srgb, var(--primary) 22%, var(--card)), color-mix(in srgb, var(--accent) 18%, var(--card))) !important;
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--primary) 22%, var(--card)),
+    color-mix(in srgb, var(--accent) 18%, var(--card))
+  ) !important;
   color: var(--foreground) !important;
-  box-shadow: inset 0 0 18px rgba(58, 153, 255, 0.08), 0 0 22px rgba(117, 87, 245, 0.08);
+  box-shadow:
+    inset 0 0 18px rgba(58, 153, 255, 0.08),
+    0 0 22px rgba(117, 87, 245, 0.08);
 }
-html[data-design-style="performance"][data-theme="glacier"] .sport-chat-app .sport-chat-composer {
+html[data-design-style="performance"][data-theme-mode="dark"][data-theme="glacier"]
+  .sport-chat-app
+  .sport-chat-composer {
   border-color: rgba(104, 161, 255, 0.25);
   background: linear-gradient(130deg, rgba(18, 31, 56, 0.94), rgba(18, 21, 43, 0.92));
-  box-shadow: 0 12px 34px rgba(2, 7, 22, 0.38), 0 0 26px rgba(86, 201, 255, 0.06);
+  box-shadow:
+    0 12px 34px rgba(2, 7, 22, 0.38),
+    0 0 26px rgba(86, 201, 255, 0.06);
 }
-html[data-design-style="performance"][data-theme="glacier"] .sport-chat-app .sport-chat-composer button[type="submit"] {
+html[data-design-style="performance"][data-theme-mode="dark"][data-theme="glacier"]
+  .sport-chat-app
+  .sport-chat-composer
+  button[type="submit"] {
   border-color: transparent;
   background: linear-gradient(115deg, #13bff2, #4578ff 58%, #955af2);
   color: #ffffff;

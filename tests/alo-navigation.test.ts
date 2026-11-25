@@ -58,7 +58,7 @@ test("onboarding, hidden-by-default bottom navigation, and optional context rema
   const nav = read("components/TopNav.tsx");
   assert.doesNotMatch(nav, /alo-module-switcher|moduleMenu/);
   assert.match(nav, /layout === "bottom" \|\| layout === "floating"/);
-  assert.match(nav, /hidden=\{!barVisible\}\s+inert=\{!barVisible\}/);
+  assert.match(nav, /hidden=\{!globalVisible\}\s+inert=\{!globalVisible\}/);
   const home = read("routes/_authenticated/index.tsx");
   assert.match(home, /to="\/tools"/);
   assert.match(home, /aria-label="Überall suchen"/);
@@ -81,6 +81,9 @@ test("the shared upper Alo header is absent and area navigation lives in the app
   );
   assert.doesNotMatch(layout, /SportAppHeader|<TopNav\s*\/>/);
   assert.match(layout, /<AppNavigation\s*\/>/);
+  const nav = read("components/TopNav.tsx");
+  assert.match(nav, /item\.to !== "\/"/);
+  assert.match(nav, /window\.history\.replaceState\(\s*window\.history\.state/);
   assert.match(tileBuilder, /id: "mira"[\s\S]*?to: "\/ai"/);
   assert.match(tileBuilder, /id: "nexus"[\s\S]*?to: "\/chat"/);
   assert.match(tileBuilder, /id: "health"[\s\S]*?to: "\/health"/);
