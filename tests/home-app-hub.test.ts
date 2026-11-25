@@ -138,7 +138,10 @@ test("Home game tiles are visible to every signed-in account and the Admin tile 
     searchFrom = gateStart + gate.length;
   }
   for (const id of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {
-    assert.ok(tileBuilder.includes(`id: "${id}"`), `${id} should be registered as a Home game tile`);
+    assert.ok(
+      tileBuilder.includes(`id: "${id}"`),
+      `${id} should be registered as a Home game tile`,
+    );
     assert.ok(
       adminGates.every((gate) => !gate.includes(`id: "${id}"`)),
       `${id} should not be gated to Admins`,
