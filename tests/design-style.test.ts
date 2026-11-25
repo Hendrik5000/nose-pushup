@@ -94,9 +94,11 @@ test("design style picker renders the complete selectable style catalog", () => 
 
 test("unified design system provides Apple-like typography, whitespace and motion", () => {
   const css = readFileSync(new URL("../src/alo-visual-refresh.css", import.meta.url), "utf8");
+  const themeCss = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
   assert.match(css, /--alo-page-gutter/);
   assert.match(css, /--alo-section-gap/);
-  assert.match(css, /SF Pro Text/);
+  assert.match(themeCss, /--design-body-font/);
+  assert.match(themeCss, /SF Pro Text/);
   assert.match(css, /backdrop-filter: blur/);
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /overflow-wrap: normal/);

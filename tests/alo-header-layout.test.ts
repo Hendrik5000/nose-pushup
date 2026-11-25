@@ -26,7 +26,7 @@ test("authenticated areas render no shared Alo header or fixed upper module swit
   assert.doesNotMatch(layout, /module-menu\.css|mira-immersive\.css/);
   assert.doesNotMatch(navigation, /alo-module-switcher|moduleMenu/);
   assert.match(navigation, /layout === "bottom" \|\| layout === "floating"/);
-  assert.match(navigation, /hidden=\{!barVisible\}[\s\S]*?inert=\{!barVisible\}/);
+  assert.match(navigation, /hidden=\{!globalVisible\}[\s\S]*?inert=\{!globalVisible\}/);
 });
 
 test("authenticated content starts below the body safe area without a reserved header row", () => {

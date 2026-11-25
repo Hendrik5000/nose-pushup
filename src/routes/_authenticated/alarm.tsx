@@ -160,6 +160,7 @@ function AlarmPage() {
       </header>
 
       <section
+        id="alarm-settings"
         className="rounded-3xl border border-border bg-card/70 p-5 shadow-sm backdrop-blur sm:p-7"
         aria-labelledby="alarm-settings-title"
       >
@@ -223,6 +224,7 @@ function AlarmPage() {
             </button>
           </div>
           <div
+            id="alarm-saved"
             aria-label="Gespeicherter Wecker"
             className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm"
           >
@@ -245,7 +247,10 @@ function AlarmPage() {
         </form>
       </section>
 
-      <aside className="rounded-2xl border border-border/70 bg-secondary/40 p-4 text-sm leading-6 text-muted-foreground">
+      <aside
+        id="alarm-note"
+        className="rounded-2xl border border-border/70 bg-secondary/40 p-4 text-sm leading-6 text-muted-foreground"
+      >
         <p className="font-semibold text-foreground">Wichtig zum Browser-Wecker</p>
         <p className="mt-1">
           Der Alarm läuft, solange Alo geöffnet und vom Browser nicht angehalten ist. Ein Browser

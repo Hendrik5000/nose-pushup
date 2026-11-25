@@ -181,7 +181,7 @@ test("reference glows follow theme tokens and existing personal themes stay scop
     mira,
     /html\[data-design-style="performance"\]\[data-theme="glacier"\] main\.sport-ai-page/,
   );
-  assert.match(nexus, /\[data-theme="glacier"\]:has\(\.sport-chat-app\)/);
+  assert.match(nexus, /\[data-theme="glacier"\]:has\(\s*\.sport-chat-app\s*\)/);
   assert.match(
     health,
     /html\[data-design-style="performance"\]\[data-theme="glacier"\] body:has\(\.sport-health-page\)/,

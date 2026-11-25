@@ -451,15 +451,12 @@
   /* Existing dashboard cards → Apple Health panels */
   main section.rounded-3xl,
   main .rounded-3xl.border {
-    border-radius: var(--design-card-radius, 16px) !important;
-    border-color: var(--color-border) !important;
-    background: var(--color-card) !important;
-    background-image: none !important;
-    box-shadow: none;
-    backdrop-filter: none;
+    border-radius: var(--design-card-radius, 16px);
+    border-color: var(--color-border);
+    background: var(--color-card);
   }
   main .rounded-2xl.border {
-    border-color: var(--color-border) !important;
+    border-color: var(--color-border);
     background-color: color-mix(in srgb, var(--color-card) 92%, var(--color-background));
   }
 
@@ -1829,7 +1826,6 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
   outline-color: var(--menu-accent);
 }
 
-
 /* Appearance mode is independent from the user's selected accent palette. */
 :root[data-theme-mode="light"] {
   color-scheme: light;
@@ -1908,7 +1904,6 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
   }
 }
 
-
 /* Alo One UI 9-inspired launcher: full-bleed wallpaper, refined icon grid and glass dock. */
 .alo-oneui9-home {
   --alo-oneui-ink: #f8faff;
@@ -1970,13 +1965,58 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
   gap: clamp(1.5rem, 4vh, 2.75rem);
   flex: 1;
 }
+.alo-oneui9-home .alo-home-dashboard-workspace {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  grid-template-areas:
+    "launcher"
+    "overview";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(0.75rem, 1.8vw, 1.25rem);
+}
+.alo-oneui9-home .alo-home-dashboard-launcher {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  grid-area: launcher;
+}
+.alo-oneui9-home .alo-home-dashboard-launcher .alo-launcher-page {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.alo-oneui9-home .alo-home-dashboard-panel {
+  min-width: 0;
+  min-height: 0;
+  max-height: min(32dvh, 15rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  grid-area: overview;
+}
+@media (min-width: 1024px) {
+  .alo-oneui9-home .alo-home-dashboard-workspace {
+    grid-template-areas: "launcher overview";
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .alo-oneui9-home .alo-home-dashboard-panel {
+    max-height: 100%;
+  }
+}
 .alo-oneui9-home .alo-launcher-greeting {
   width: min(100%, 32rem);
   padding: clamp(1rem, 3vw, 1.4rem);
   border: 1px solid rgb(255 255 255 / 13%);
   border-radius: 1.55rem;
   background: linear-gradient(135deg, rgb(255 255 255 / 13%), rgb(255 255 255 / 5%));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 9%), 0 14px 35px rgb(0 0 0 / 12%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 9%),
+    0 14px 35px rgb(0 0 0 / 12%);
   color: var(--alo-oneui-ink);
   backdrop-filter: blur(24px) saturate(1.45);
   -webkit-backdrop-filter: blur(24px) saturate(1.45);
@@ -2006,7 +2046,9 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
   border-radius: 1.35rem;
   padding: 1rem;
   background: linear-gradient(145deg, rgb(255 255 255 / 14%), rgb(255 255 255 / 6%));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%), 0 10px 24px rgb(0 0 0 / 10%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 8%),
+    0 10px 24px rgb(0 0 0 / 10%);
   color: white;
   backdrop-filter: blur(22px) saturate(1.35);
   -webkit-backdrop-filter: blur(22px) saturate(1.35);
@@ -2045,7 +2087,9 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
   max-width: 4.2rem;
   border: 1px solid rgb(255 255 255 / 18%);
   border-radius: 1.32rem;
-  box-shadow: 0 8px 20px rgb(0 0 0 / 20%), inset 0 1px 0 rgb(255 255 255 / 12%);
+  box-shadow:
+    0 8px 20px rgb(0 0 0 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 12%);
   background: rgb(255 255 255 / 10%);
 }
 .alo-oneui9-home .alo-tablet-home-apps :is(a, button) > span:last-child {
@@ -2130,7 +2174,6 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
     transition: none !important;
   }
 }
-
 
 /* Full-screen Alo launcher refinements: no top strip, no page scroll, clean app glyphs. */
 body:has(main.alo-oneui9-fullscreen-home) {
@@ -2256,7 +2299,9 @@ main.alo-oneui9-fullscreen-home {
   border: 1px solid rgb(255 255 255 / 18%) !important;
   border-radius: 28px !important;
   background: rgb(255 255 255 / 8%) !important;
-  box-shadow: 0 8px 20px rgb(0 0 0 / 22%), inset 0 1px 0 rgb(255 255 255 / 10%) !important;
+  box-shadow:
+    0 8px 20px rgb(0 0 0 / 22%),
+    inset 0 1px 0 rgb(255 255 255 / 10%) !important;
 }
 .alo-oneui9-fullscreen-home .alo-tablet-home-apps :is(a, button, div) > span:last-child {
   min-height: 1.25rem;
@@ -2306,7 +2351,9 @@ body:has(main.alo-oneui9-fullscreen-home) .alo-mira-home-launcher-button {
   border-radius: 999px;
   background: linear-gradient(145deg, #9b75ff, #5b48ce 62%, #34308d);
   color: white;
-  box-shadow: 0 8px 26px rgb(0 0 0 / 35%), inset 0 1px 0 rgb(255 255 255 / 28%);
+  box-shadow:
+    0 8px 26px rgb(0 0 0 / 35%),
+    inset 0 1px 0 rgb(255 255 255 / 28%);
 }
 body:has(main.alo-oneui9-fullscreen-home) .alo-mira-home-live-transcript,
 body:has(main.alo-oneui9-fullscreen-home) .alo-mira-home-handoff-actions {
@@ -2316,16 +2363,25 @@ body:has(main.alo-oneui9-fullscreen-home) .alo-mira-home-handoff-actions {
   max-width: min(19rem, calc(100vw - 6rem));
 }
 @media (max-height: 680px) {
-  .alo-oneui9-fullscreen-home .alo-launcher-greeting { padding: 0.4rem 0.7rem; }
-  .alo-oneui9-fullscreen-home .alo-launcher-greeting dl { display: none; }
-  .alo-oneui9-fullscreen-home .alo-oneui9-content [aria-label="Widgets"] { max-height: 4.5rem; }
-  .alo-oneui9-fullscreen-home .alo-launcher-page-indicators { padding-block: 0.15rem; }
+  .alo-oneui9-fullscreen-home .alo-launcher-greeting {
+    padding: 0.4rem 0.7rem;
+  }
+  .alo-oneui9-fullscreen-home .alo-launcher-greeting dl {
+    display: none;
+  }
+  .alo-oneui9-fullscreen-home .alo-oneui9-content [aria-label="Widgets"] {
+    max-height: 4.5rem;
+  }
+  .alo-oneui9-fullscreen-home .alo-launcher-page-indicators {
+    padding-block: 0.15rem;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   body:has(main.alo-oneui9-fullscreen-home),
-  body:has(main.alo-oneui9-fullscreen-home) * { scroll-behavior: auto !important; }
+  body:has(main.alo-oneui9-fullscreen-home) * {
+    scroll-behavior: auto !important;
+  }
 }
-
 
 /* The actual persistent header is rendered by AloSystemChrome in the authenticated shell. */
 body:has(main.alo-oneui9-fullscreen-home) .alo-system-chrome {
@@ -2340,7 +2396,6 @@ body:has(main.alo-oneui9-fullscreen-home) .authenticated-shell {
 body:has(main.alo-oneui9-fullscreen-home) .alo-system-chrome + * {
   margin-top: 0 !important;
 }
-
 
 /* True edge-to-edge launcher: remove the shell's reserved navigation areas and
    anchor the home surface to the actual device viewport. */
@@ -2384,7 +2439,6 @@ body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo
   max-height: 100% !important;
   margin: 0 !important;
 }
-
 
 /* Let the device viewport define the physical corner shape in fullscreen mode. */
 body:has(main.alo-oneui9-fullscreen-home) .authenticated-shell,

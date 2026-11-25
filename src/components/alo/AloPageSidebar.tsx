@@ -240,10 +240,23 @@ function AloPageNavigation({
   const { setOpenMobile } = useSidebar();
   const menu = appMenus[active];
 
-  const runCommand = (id: AloSidebarCommand) => {
-    commandsRef.current[id]?.();
-    setOpenMobile(false);
-  };
+  const runCommand = useCallback(
+    (id: AloSidebarCommand) => {
+      commandsRef.current[id]?.();
+      setOpenMobile(false);
+    },
+    [commandsRef, setOpenMobile],
+  );
+
+  useEffect(() => {
+    const onAppTabCommand = (event: Event) => {
+      const command = (event as CustomEvent<unknown>).detail;
+      if (typeof command !== "string" || !(command in commandsRef.current)) return;
+      runCommand(command as AloSidebarCommand);
+    };
+    window.addEventListener("alo-page-sidebar-command", onAppTabCommand);
+    return () => window.removeEventListener("alo-page-sidebar-command", onAppTabCommand);
+  }, [commandsRef, runCommand]);
 
   const renderEntries = (entries: MenuEntry[], quick = false) =>
     entries.map(({ id, label, Icon, command, href }) => {

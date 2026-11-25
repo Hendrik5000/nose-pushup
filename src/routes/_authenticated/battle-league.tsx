@@ -163,7 +163,10 @@ function BattleLeaguePage() {
         <SportSectionLabel number="01">Dein Ranking</SportSectionLabel>
       </div>
       {/* Eigene Platzierung */}
-      <section className="mt-6 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card/70 to-card/60 p-5 backdrop-blur">
+      <section
+        id="battle-ranking"
+        className="mt-6 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card/70 to-card/60 p-5 backdrop-blur"
+      >
         <div className="text-[10px] uppercase tracking-[0.25em] text-primary">
           Deine Platzierung
         </div>
@@ -218,7 +221,7 @@ function BattleLeaguePage() {
         <SportSectionLabel number="03">Volle Rangliste</SportSectionLabel>
       </div>
       {/* Elo-Rangliste */}
-      <section className="mt-6">
+      <section id="battle-leaderboard" className="mt-6">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Rangliste
         </h2>

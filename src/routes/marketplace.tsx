@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AloHomeLink } from "@/components/AloHomeLink";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
+import { StandaloneAppShell } from "@/components/StandaloneAppShell";
 import {
   MarketplaceAppCatalog,
   MarketplaceCollectionSidebar,
@@ -73,9 +74,17 @@ function MarketplacePage() {
   }, []);
 
   if (!userId) {
-    return <MarketplaceGuestView sessionChecked={sessionChecked} />;
+    return (
+      <StandaloneAppShell>
+        <MarketplaceGuestView sessionChecked={sessionChecked} />
+      </StandaloneAppShell>
+    );
   }
-  return <MarketplaceContent key={userId} userId={userId} />;
+  return (
+    <StandaloneAppShell>
+      <MarketplaceContent key={userId} userId={userId} />
+    </StandaloneAppShell>
+  );
 }
 
 function MarketplaceGuestView({ sessionChecked }: { sessionChecked: boolean }) {

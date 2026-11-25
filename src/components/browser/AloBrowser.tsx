@@ -855,6 +855,29 @@ export default function AloBrowser() {
     setActiveId(id);
   };
 
+  useEffect(() => {
+    const onBottomTabAction = (event: Event) => {
+      switch ((event as CustomEvent<unknown>).detail) {
+        case "browser-back":
+          goBack();
+          break;
+        case "browser-forward":
+          goForward();
+          break;
+        case "browser-new-tab":
+          addTab();
+          break;
+        case "browser-mira":
+          setAiOpen((open) => !open);
+          break;
+        default:
+          break;
+      }
+    };
+    window.addEventListener("alo-browser-tab", onBottomTabAction);
+    return () => window.removeEventListener("alo-browser-tab", onBottomTabAction);
+  }, [activeTab, goBack, goForward, addTab]);
+
   const closeTab = (id: string, e: MouseEvent) => {
     e.stopPropagation();
     navigationGuard.invalidate(id);
