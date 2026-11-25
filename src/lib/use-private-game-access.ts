@@ -1,6 +1,5 @@
 import { useEffect, useReducer, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getAdminAreaAccess } from "@/lib/admin.functions";
 import {
   createPrivateGameAccessState,
   getPrivateGameAccessStatusForUser,
@@ -70,7 +69,7 @@ export function usePrivateGameAccess(userId: string | null) {
           return;
         }
 
-        allowed = (await getAdminAreaAccess()) === true;
+        allowed = session?.user.is_anonymous !== true;
 
         const {
           data: { session: verifiedSession },

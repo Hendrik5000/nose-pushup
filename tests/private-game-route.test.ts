@@ -18,12 +18,9 @@ const gameDocuments = Object.fromEntries(
   ]),
 );
 
-test("`/games` is an authenticated child route with a server-confirmed Admin gate", () => {
+test("`/games` is an authenticated child route available to all signed-in accounts", () => {
   assert.match(route, /createFileRoute\("\/_authenticated\/games"\)/);
-  assert.match(
-    route,
-    /beforeLoad: async \(\) => \{[\s\S]*?getAdminAreaAccess\(\)[\s\S]*?throw redirect/,
-  );
+  assert.doesNotMatch(route, /getAdminAreaAccess|beforeLoad: async|redirect/);
   assert.match(route, /usePrivateGameAccess\(user\.id\)/);
   assert.match(route, /isCurrentPrivateGameDocument\(/);
   assert.ok(
@@ -50,9 +47,8 @@ test("the private content endpoint validates four IDs and fails closed through e
     privateServerFunction,
     /z\.object\(\{ game: z\.enum\(PRIVATE_GAME_IDS\) \}\)\.strict\(\)/,
   );
-  assert.match(privateServerFunction, /withAdminGameAccess\(/);
-  assert.match(privateServerFunction, /has_global_role/);
-  assert.match(privateServerFunction, /p_role_name: "admin"/);
+  assert.match(privateServerFunction, /withAuthenticatedGameAccess\(/);
+  assert.doesNotMatch(privateServerFunction, /has_global_role|p_role_name: "admin"/);
   assert.match(privateServerFunction, /Cache-Control", "private, no-store/);
   assert.match(privateServerFunction, /X-Content-Type-Options", "nosniff/);
   for (const id of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {
@@ -63,7 +59,8 @@ test("the private content endpoint validates four IDs and fails closed through e
   for (const id of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {
     assert.ok(privatePolicy.includes(`"${id}"`));
   }
-  assert.match(privatePolicy, /roleResult\.error \|\| roleResult\.data !== true/);
+  assert.match(privatePolicy, /isAnonymousClaim === true/);
+  assert.doesNotMatch(privatePolicy, /AdminRoleResult|checkAdminRole/);
 });
 
 test("private game documents render only in a sandboxed iframe and are not public static files", () => {

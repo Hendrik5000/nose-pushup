@@ -226,38 +226,36 @@ function buildHomeHubTiles(
     artwork: "marketplace",
     to: "/marketplace",
   });
-  if (canSeeAdmin) {
-    tiles.push(
-      {
-        kind: "game",
-        id: "grid-defense",
-        title: "Grid Defense",
-        artwork: "gridDefense",
-        game: "grid-defense",
-      },
-      {
-        kind: "game",
-        id: "kupferkern",
-        title: "Kupferkern",
-        artwork: "kupferkern",
-        game: "kupferkern",
-      },
-      {
-        kind: "game",
-        id: "neon-starfighter",
-        title: "Neon Starfighter",
-        artwork: "neonStarfighter",
-        game: "neon-starfighter",
-      },
-      {
-        kind: "game",
-        id: "chess",
-        title: "Alo Schach",
-        artwork: "chess",
-        game: "chess",
-      },
-    );
-  }
+  tiles.push(
+    {
+      kind: "game",
+      id: "grid-defense",
+      title: "Grid Defense",
+      artwork: "gridDefense",
+      game: "grid-defense",
+    },
+    {
+      kind: "game",
+      id: "kupferkern",
+      title: "Kupferkern",
+      artwork: "kupferkern",
+      game: "kupferkern",
+    },
+    {
+      kind: "game",
+      id: "neon-starfighter",
+      title: "Neon Starfighter",
+      artwork: "neonStarfighter",
+      game: "neon-starfighter",
+    },
+    {
+      kind: "game",
+      id: "chess",
+      title: "Alo Schach",
+      artwork: "chess",
+      game: "chess",
+    },
+  );
   tiles.push(
     {
       kind: "standard",

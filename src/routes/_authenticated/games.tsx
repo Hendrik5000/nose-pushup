@@ -1,10 +1,9 @@
 import { HomeAppMenuSidebar } from "@/components/HomeAppMenuLayout";
-import { getAdminAreaAccess } from "@/lib/admin.functions";
 import { getPrivateGameDocument } from "@/lib/private-game.functions";
 import { isCurrentPrivateGameDocument } from "@/lib/private-game-access-policy";
 import { usePrivateGameAccess } from "@/lib/use-private-game-access";
 import { PRIVATE_GAME_IDS, type PrivateGameId } from "@/lib/private-game-policy";
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Home, Menu, X } from "lucide-react";
 import { z } from "zod";
@@ -33,13 +32,10 @@ const GAMES = [
 export const Route = createFileRoute("/_authenticated/games")({
   ssr: false,
   validateSearch: (search) => searchSchema.parse(search),
-  beforeLoad: async () => {
-    if (!(await getAdminAreaAccess())) throw redirect({ to: "/" });
-  },
   head: () => ({
     meta: [
       { title: "Alo-Spiele" },
-      { name: "description", content: "Alo-Spiele – nur für Admin-Konten." },
+      { name: "description", content: "Alo-Spiele für alle angemeldeten Alo-Nutzer." },
     ],
   }),
   component: GamesHub,
@@ -112,16 +108,16 @@ function GamesHub() {
     <main className="alo-games-page fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950 text-white">
       {accessStatus === "checking" ? (
         <p className="mx-auto mt-24 max-w-xl rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-slate-300">
-          Adminzugriff wird geprüft …
+          Anmeldung wird geprüft …
         </p>
       ) : accessStatus === "denied" ? (
         <section
           className="mx-auto mt-24 max-w-xl rounded-3xl border border-white/10 bg-slate-900 p-6"
           role="alert"
         >
-          <h1 className="text-xl font-bold">Adminzugriff erforderlich</h1>
+          <h1 className="text-xl font-bold">Anmeldung erforderlich</h1>
           <p className="mt-3 text-sm text-slate-300">
-            Alo-Spiele sind nur für Konten mit Adminrolle verfügbar.
+            Melde dich bei Alo an, um die Spiele zu öffnen.
           </p>
           <Link
             to="/"

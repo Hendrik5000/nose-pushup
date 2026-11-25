@@ -30,13 +30,23 @@ function blockAt(source: string, start: number): string {
   return "";
 }
 
-test("all four Home game tiles are inside the Admin-only visibility gate", () => {
-  const marketplaceIndex = homeTileBuilder.indexOf('id: "marketplace"');
-  const gateStart = homeTileBuilder.indexOf("if (canSeeAdmin)", marketplaceIndex);
-  assert.ok(gateStart > marketplaceIndex, "game tiles should be behind a gate after Marketplace");
-  const gameGate = blockAt(homeTileBuilder, gateStart);
+test("all four Home game tiles are visible to signed-in users while Admin tiles stay gated", () => {
+  const adminGates: string[] = [];
+  let searchFrom = 0;
+  while (true) {
+    const gateStart = homeTileBuilder.indexOf("if (canSeeAdmin)", searchFrom);
+    if (gateStart < 0) break;
+    const gate = blockAt(homeTileBuilder, gateStart);
+    adminGates.push(gate);
+    searchFrom = gateStart + gate.length;
+  }
+  assert.ok(adminGates.some((gate) => gate.includes('id: "admin"')));
   for (const id of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {
-    assert.ok(gameGate.includes(`id: "${id}"`), `${id} tile should be inside the Admin gate`);
+    assert.ok(homeTileBuilder.includes(`id: "${id}"`), `${id} tile should be registered`);
+    assert.ok(
+      adminGates.every((gate) => !gate.includes(`id: "${id}"`)),
+      `${id} tile should not be inside an Admin gate`,
+    );
   }
   assert.match(homeTileBuilder, /if \(plugin\.action\.type === "open-game"\) continue/);
   assert.match(home, /setCanSeeAdmin\(false\)/);
@@ -44,15 +54,13 @@ test("all four Home game tiles are inside the Admin-only visibility gate", () =>
 
 test("the authenticated route serves game content through the private server function", () => {
   assert.match(route, /createFileRoute\("\/_authenticated\/games"\)/);
-  assert.match(route, /getAdminAreaAccess\(\)/);
   assert.match(route, /usePrivateGameAccess\(user\.id\)/);
   assert.match(route, /getPrivateGameDocument\(\{ data: \{ game: requestGame \} \}\)/);
   assert.match(privateServerFunction, /middleware\(\[requireSupabaseAuth\]\)/);
-  assert.match(privateServerFunction, /withAdminGameAccess/);
-  assert.match(privateServerFunction, /has_global_role/);
-  assert.match(privateServerFunction, /p_role_name: "admin"/);
+  assert.match(privateServerFunction, /withAuthenticatedGameAccess/);
+  assert.doesNotMatch(privateServerFunction, /has_global_role|p_role_name: "admin"/);
   assert.match(privateServerFunction, /Cache-Control", "private, no-store/);
-  assert.match(privatePolicy, /roleResult\.error \|\| roleResult\.data !== true/);
+  assert.match(privatePolicy, /isAnonymousClaim === true/);
   assert.match(accessHook, /onAuthStateChange/);
 });
 
