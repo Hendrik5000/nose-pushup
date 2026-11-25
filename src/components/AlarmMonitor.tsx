@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlarmClock, Bell, Moon } from "lucide-react";
+import { AlarmClock, Bell, BellOff, Moon } from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
 import {
   ALARM_SETTINGS_EVENT,
@@ -88,6 +88,16 @@ export function AlarmMonitor({ userId }: { userId: string }) {
     silence();
   };
 
+  const disable = () => {
+    const settings = readAlarmSettings(userId);
+    saveAlarmSettings(userId, {
+      ...settings,
+      enabled: false,
+      snoozeUntil: undefined,
+    });
+    silence();
+  };
+
   if (!ringing) return null;
   return (
     <section
@@ -107,10 +117,13 @@ export function AlarmMonitor({ userId }: { userId: string }) {
           <h2 id="alo-alarm-alert-title" className="mt-1 text-lg font-bold">
             Guten Morgen — Zeit aufzustehen.
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Der sanft ansteigende Weckton läuft.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Der sanft ansteigende Weckton läuft. Stummschalten beendet nur diesen Alarm; der
+            tägliche Wecker bleibt aktiv.
+          </p>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
         <button
           type="button"
           onClick={snooze}
@@ -121,9 +134,16 @@ export function AlarmMonitor({ userId }: { userId: string }) {
         <button
           type="button"
           onClick={silence}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 text-sm font-semibold text-foreground"
+        >
+          <BellOff className="h-4 w-4" aria-hidden="true" /> Ton stummschalten
+        </button>
+        <button
+          type="button"
+          onClick={disable}
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
         >
-          <Bell className="h-4 w-4" aria-hidden="true" /> Wecker ausschalten
+          <Bell className="h-4 w-4" aria-hidden="true" /> Wecker deaktivieren
         </button>
       </div>
     </section>

@@ -71,6 +71,16 @@ object DeviceIdentityStore {
         } catch (_: Exception) { null }
     }
 
+    fun savedGatewayUrl(context: Context): String? =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(GATEWAY, null)
+
+    /** Removes rejected credentials but keeps the endpoint ready for re-pairing. */
+    fun clearPairing(context: Context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .remove(DEVICE_ID).remove(TOKEN).apply()
+        try { keyStore().deleteEntry(TOKEN_KEY_ALIAS) } catch (_: Exception) { }
+    }
+
     fun clear(context: Context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply()
         try { keyStore().deleteEntry(KEY_ALIAS); keyStore().deleteEntry(TOKEN_KEY_ALIAS) } catch (_: Exception) { }

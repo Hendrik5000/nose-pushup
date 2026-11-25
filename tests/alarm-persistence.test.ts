@@ -137,6 +137,14 @@ test("stable root owns the monitor; saved summary and explicit save remain on al
   assert.match(alarm, /Wecker speichern/);
   assert.match(alarm, /Gespeicherter Wecker/);
   assert.match(alarm, /noch nicht gespeichert/);
+  assert.match(monitor, /Ton stummschalten/);
+  assert.match(monitor, /onClick=\{silence\}[\s\S]{0,250}Ton stummschalten/);
+  assert.match(monitor, /Wecker deaktivieren/);
+  assert.match(monitor, /onClick=\{disable\}[\s\S]{0,250}Wecker deaktivieren/);
+  assert.match(
+    monitor,
+    /saveAlarmSettings\(userId,\s*\{\s*\.\.\.settings,\s*enabled:\s*false,\s*snoozeUntil:\s*undefined/,
+  );
   assert.match(areas, /readSavedAlarmSettings\(user.id\)/);
   assert.match(areas, /Täglich \$\{savedAlarm\.time\}/);
   assert.match(areas, /savedAlarm\.enabled \? "Ein" : "Aus"/);

@@ -121,8 +121,25 @@ class MiraGatewayService : Service() {
 
             override fun onFailure(webSocket: WebSocket, error: Throwable, response: Response?) {
                 if (!connectionGeneration.isCurrent(generation)) return
-                updateNotification("Offline – erneuter Verbindungsversuch")
-                handleSocketEnded(webSocket, generation, deviceId, token, gatewayUrl)
+                when {
+                    GatewayRetryPolicy.isAuthenticationFailure(response?.code) -> {
+                        DeviceIdentityStore.clearPairing(this@MiraGatewayService)
+                        stopConnection()
+                        updateNotification(
+                            "Kopplung ungültig (HTTP ${response?.code}) – App öffnen und erneut koppeln",
+                        )
+                    }
+                    GatewayRetryPolicy.shouldRetry(response?.code) -> {
+                        updateNotification("Offline – erneuter Verbindungsversuch")
+                        handleSocketEnded(webSocket, generation, deviceId, token, gatewayUrl)
+                    }
+                    else -> {
+                        stopConnection()
+                        updateNotification(
+                            "Gateway-Fehler (HTTP ${response?.code}) – bitte prüfen und neu starten",
+                        )
+                    }
+                }
             }
         })
         socket = newSocket

@@ -60,9 +60,38 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Android unit tests
+      - name: Android gateway behavior tests
         working-directory: android-device-agent
-        run: gradle :app:testDebugUnitTest --no-daemon
+        run: |
+          gradle :app:testDebugUnitTest --no-daemon
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          report_dir = Path("app/build/test-results/testDebugUnitTest")
+          expected = {
+              "app.alo.miraagent.ConnectionGenerationTest",
+              "app.alo.miraagent.ConnectionStartPolicyTest",
+              "app.alo.miraagent.PairingClientTest",
+              "app.alo.miraagent.GatewayRetryPolicyTest",
+          }
+          reports = list(report_dir.glob("TEST-*.xml"))
+          results = {}
+          for report in reports:
+              suite = ET.parse(report).getroot()
+              name = suite.get("name", "")
+              if name in expected:
+                  executed = int(suite.get("tests", "0")) - int(suite.get("skipped", "0"))
+                  results[name] = executed
+
+          missing = expected - results.keys()
+          empty = {name for name, count in results.items() if count < 1}
+          if missing or empty:
+              raise SystemExit(
+                  f"Android gateway tests did not execute: missing={sorted(missing)}, empty={sorted(empty)}"
+              )
+          print(f"Verified executed Android gateway test classes: {', '.join(sorted(results))}")
+          PY
       - name: Build Android debug APK
         working-directory: android-device-agent
         run: gradle :app:assembleDebug --no-daemon

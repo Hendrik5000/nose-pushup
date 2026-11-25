@@ -84,6 +84,9 @@ class MainActivity : Activity() {
         DeviceIdentityStore.load(this)?.let {
             gateway.setText(it.third)
             status.text = "Gerät gekoppelt (${it.first.take(8)}…). Die Verbindung kann gestartet werden."
+        } ?: DeviceIdentityStore.savedGatewayUrl(this)?.let {
+            gateway.setText(it)
+            status.text = "Kopplung ungültig. Bitte dieses Gerät erneut koppeln."
         }
     }
 
