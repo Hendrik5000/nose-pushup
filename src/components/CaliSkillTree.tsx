@@ -141,7 +141,7 @@ function SkillCard({
             <div className="mt-2 space-y-1">
               <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>
-                  Best:{" "}
+                  Bestwert:{" "}
                   <span className="font-semibold text-foreground tabular-nums">
                     {best > 0 ? `${best}${skill.unit === "seconds" ? "s" : ""}` : "—"}
                   </span>
@@ -162,7 +162,7 @@ function SkillCard({
 
           {isMastered && (
             <div className="mt-1 text-[11px] font-semibold text-primary">
-              ✓ Gemeistert · Best: {best}
+              ✓ Gemeistert · Bestwert: {best}
               {skill.unit === "seconds" ? "s" : " Reps"}
             </div>
           )}

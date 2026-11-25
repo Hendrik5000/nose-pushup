@@ -112,14 +112,14 @@ function ExercisesPage() {
                 <div>
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                     <Activity size={16} /> Skill-Fortschrittssystem{" "}
-                    <span className="rounded-full bg-primary/15 px-2 py-1 text-[11px]">NEU</span>
+                    <span className="rounded-full bg-primary/15 px-2 py-1 text-xs">NEU</span>
                   </div>
                   <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
                     Calisthenics
                   </h2>
                   <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-                    Planche · Front Lever · Handstand — strukturiertes Skill-Training mit
-                    Progression Gates, Belastungssteuerung und täglichem Check-in.
+                    Planche · Front Lever · Handstand — strukturiertes Fertigkeitstraining mit
+                    Freischaltregeln, Belastungssteuerung und täglichem Check-in.
                   </p>
                 </div>
                 <ArrowUpRight className="mt-1 shrink-0 text-primary" size={24} />
@@ -304,14 +304,14 @@ function ExercisesPage() {
                     <span className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
                       Skill-Fortschritt
                     </span>
-                    <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
+                    <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-primary">
                       NEU
                     </span>
                   </div>
                   <h2 className="mt-1.5 text-3xl font-bold tracking-tight">Calisthenics 🤸</h2>
                   <p className="mt-1.5 text-sm text-muted-foreground text-pretty leading-relaxed">
-                    Planche · Front Lever · Handstand — strukturiertes Skill-Training mit
-                    Progression Gates, Belastungssteuerung und täglichem Check-in.
+                    Planche · Front Lever · Handstand — strukturiertes Fertigkeitstraining mit
+                    Freischaltregeln, Belastungssteuerung und täglichem Check-in.
                   </p>
                 </div>
               </div>

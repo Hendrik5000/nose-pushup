@@ -65,21 +65,49 @@ test("the zoom-equivalent narrow health navigation can fit all tabs while retain
 
 test("confirmed mixed-language labels and tiny controls are corrected", () => {
   const exercises = read("routes/_authenticated/exercises.tsx");
+  const cali = read("components/CaliSkillTree.tsx");
   const repository = read("components/mira/MiraGithubRepository.tsx");
   const chat = read("components/chat/LocalChatShell.tsx");
   const communityCss = read("community-reference.css");
   assert.match(exercises, /touch: "Berührung"/);
   assert.match(exercises, /Bestwert/);
-  assert.doesNotMatch(exercises, /Progression System|Best:/);
-  assert.match(exercises, /text-\[11px\]/);
+  assert.match(exercises, /Freischaltregeln/);
+  assert.doesNotMatch(exercises, /Progression System|Progression Gates|Best:/);
+  assert.equal((exercises.match(/<span className="[^"]*text-xs[^"]*">\s*NEU/g) ?? []).length, 2);
+  assert.match(cali, /Bestwert/);
+  assert.doesNotMatch(cali, /Best:/);
   assert.match(repository, /GitHub-Anfrage mit Mira/);
   assert.doesNotMatch(repository, /Repository-Aufgabe für Mira/);
+  const githubDisclosure = repository.match(/<details\b([^>]*)>([\s\S]*?)<\/details>/);
+  assert.ok(githubDisclosure);
+  assert.doesNotMatch(githubDisclosure[1] ?? "", /\bopen\b/);
+  assert.match(
+    githubDisclosure[2] ?? "",
+    /<summary[^>]*>[\s\S]*?Optionale GitHub-Repository-Funktion/,
+  );
+  assert.match(githubDisclosure[2] ?? "", /\{panel\}/);
+  assert.match(repository, /const panel = \([\s\S]*?id="mira-github-prompt"/);
+  assert.match(repository, /if \(!consented\) return;/);
   assert.match(chat, /Online · Supabase/);
   assert.match(chat, /Chat exportieren/);
   assert.match(
     communityCss,
     /html\[data-design-style="performance"\] \.community-mobile-list \.community-new-chat \{\s*min-width: 44px;\s*min-height: 44px;/,
   );
+});
+
+test("home launcher labels stay at least 12px in narrow and fullscreen layouts", () => {
+  const home = read("routes/_authenticated/index.tsx");
+  const css = read("styles.css");
+  assert.equal(
+    (home.match(/max-w-full text-xs font-medium leading-tight text-foreground/g) ?? []).length,
+    3,
+  );
+  assert.match(
+    css,
+    /@media \(max-width: 380px\)[\s\S]*?\.alo-oneui9-home \.alo-tablet-home-apps :is\(a, button\) > span:last-child \{\s*font-size: 0\.75rem;/,
+  );
+  assert.match(css, /font-size: clamp\(0\.75rem, 1\.45vh, 0\.78rem\);/);
 });
 
 test("workout loading and root document fallback are useful and localized", () => {

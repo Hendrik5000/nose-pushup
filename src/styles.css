@@ -2165,7 +2165,7 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
     column-gap: 0.25rem;
   }
   .alo-oneui9-home .alo-tablet-home-apps :is(a, button) > span:last-child {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2317,7 +2317,7 @@ main.alo-oneui9-fullscreen-home {
   max-width: 100%;
   padding: 0;
   color: #fff !important;
-  font-size: clamp(0.6875rem, 1.45vh, 0.78rem);
+  font-size: clamp(0.75rem, 1.45vh, 0.78rem);
   font-weight: 550;
   line-height: 1.15;
   text-align: center;
