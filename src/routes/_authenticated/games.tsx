@@ -201,11 +201,7 @@ function GamesHub() {
               }}
               className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-slate-950/85 px-3 text-white shadow-lg backdrop-blur hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300"
             >
-              {isFullscreen ? (
-                <Minimize2 className="h-5 w-5" />
-              ) : (
-                <Maximize2 className="h-5 w-5" />
-              )}
+              {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
               <span className="text-xs font-semibold">
                 {isFullscreen ? "Vollbild verlassen" : "Vollbild"}
               </span>
