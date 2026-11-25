@@ -15,9 +15,10 @@ export function createBrowserNavigationGuard() {
   };
 }
 
-export type BrowserHistoryEntry =
-  | { kind: "url"; value: string }
-  | { kind: "search"; value: string };
+export type BrowserHistoryEntry = { kind: "url"; value: string } | {
+  kind: "search";
+  value: string;
+};
 
 export function nextBrowserHistory(
   history: BrowserHistoryEntry[],

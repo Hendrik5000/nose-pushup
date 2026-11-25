@@ -109,13 +109,7 @@ test("history uses the latest state, supports back and forward, and drops stale 
     ],
     historyIndex: 1,
   });
-  const back = nextBrowserHistory(
-    b.history,
-    b.historyIndex,
-    { kind: "url", value: "A" },
-    false,
-    0,
-  );
+  const back = nextBrowserHistory(b.history, b.historyIndex, { kind: "url", value: "A" }, false, 0);
   assert.deepEqual(back, {
     history: [
       { kind: "url", value: "A" },
@@ -144,12 +138,7 @@ test("history uses the latest state, supports back and forward, and drops stale 
     ],
     historyIndex: 1,
   });
-  const afterHome = nextBrowserHistory(
-    b.history,
-    -1,
-    { kind: "url", value: "D" },
-    true,
-  );
+  const afterHome = nextBrowserHistory(b.history, -1, { kind: "url", value: "D" }, true);
   assert.deepEqual(afterHome, { history: [{ kind: "url", value: "D" }], historyIndex: 0 });
 });
 
