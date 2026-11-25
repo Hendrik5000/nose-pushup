@@ -668,7 +668,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
         : "nexus-open-list";
   useAloPageSidebarCommands(sidebarCommands, activeSidebarItem);
 
-  const modeLabel = mode === "supabase" ? "Cloud · Supabase" : "Lokal · Gerät";
+  const modeLabel = mode === "supabase" ? "Online · Supabase" : "Lokal · Gerät";
 
   const visibleRooms = sortedRooms.filter(
     (room) =>
@@ -1046,7 +1046,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
             <HeadBtn label="Suche" onClick={() => setSearchOpen((v) => !v)}>
               🔍
             </HeadBtn>
-            <HeadBtn label="Export" onClick={() => void exportActive()}>
+            <HeadBtn label="Chat exportieren" onClick={() => void exportActive()}>
               ⬇
             </HeadBtn>
             <Link
@@ -1110,7 +1110,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
               <HeadBtn label="Suche" onClick={() => setSearchOpen((v) => !v)}>
                 🔍
               </HeadBtn>
-              <HeadBtn label="Export" onClick={() => void exportActive()}>
+              <HeadBtn label="Chat exportieren" onClick={() => void exportActive()}>
                 ⬇
               </HeadBtn>
               <Link

@@ -1172,20 +1172,42 @@ html[data-context-app="health"] .health-category-nav {
 html[data-context-navigation="true"] .alo-page-sidebar-trigger {
   display: none !important;
 }
-@media (max-width: 420px) {
+@media (min-width: 768px) and (max-width: 1023px) {
+  html[data-context-navigation="true"] .alo-page-sidebar-trigger {
+    display: inline-flex !important;
+  }
+}
+@media (max-width: 480px) {
   html[data-context-navigation="true"] .app-homebar.alo-context-tabbar {
-    inset-inline: 0.4rem !important;
-    width: calc(100% - 0.8rem);
-    border-radius: 1.15rem;
+    inset-inline: 0.35rem !important;
+    width: calc(100% - 0.7rem);
+    border-radius: 1rem;
+    padding: 0.25rem;
   }
   html[data-context-navigation="true"] .alo-context-tab-item {
-    flex-basis: 3.8rem;
+    flex: 1 1 0;
+    min-width: 0;
   }
   html[data-context-navigation="true"] .alo-context-tab-item > :is(a, button) {
-    min-width: 3.65rem;
-    min-height: 3.35rem;
-    font-size: 0.62rem;
-    padding-inline: 0.22rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 2.9rem;
+    padding: 0.25rem;
+  }
+  html[data-context-navigation="true"] .alo-context-tab-item > :is(a, button) > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  html[data-context-navigation="true"] .alo-context-tab-item .homebar-icon {
+    width: 1.2rem;
+    height: 1.2rem;
   }
 }
 

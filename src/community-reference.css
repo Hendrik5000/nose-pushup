@@ -167,6 +167,10 @@ html[data-design-style="performance"] .community-new-chat {
   background: var(--primary);
   box-shadow: 0 5px 18px #0003;
 }
+html[data-design-style="performance"] .community-mobile-list .community-new-chat {
+  min-width: 44px;
+  min-height: 44px;
+}
 html[data-design-style="performance"] .community-new-chat svg {
   width: 27px;
   height: 27px;

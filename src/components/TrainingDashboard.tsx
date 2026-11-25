@@ -577,7 +577,6 @@ export function TrainingDashboard({ user }: { user: User }) {
           <TrainingActionsSidebar activePage="training" />
         </HomeAppMenuSidebar>
         <div className="min-w-0">
-          <GymPartnerPanel />
           <header className="classic-only dashboard-header flex items-center justify-between">
             <div>
               <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
@@ -629,6 +628,22 @@ export function TrainingDashboard({ user }: { user: User }) {
               plannedReps={recommendation.plannedReps}
               goal={goal}
             />
+            <Link
+              to="/workout/$exerciseId"
+              params={{ exerciseId: "pushup" }}
+              search={{
+                mode,
+                sets: recommendation.sets,
+                reps: recommendation.reps,
+                rest_s: recommendation.rest_s,
+                title: recommendation.title,
+              }}
+              className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground"
+            >
+              <Zap className="h-4 w-4" aria-hidden="true" />
+              {recommendation.recoveryDay ? "Leichte Einheit starten" : "Training starten"}
+              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
             <label className="alo-counting-select">
               <span>Zählen</span>
               <select
@@ -665,22 +680,6 @@ export function TrainingDashboard({ user }: { user: User }) {
               Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell
               erfasst du selbst.
             </p>
-            <Link
-              to="/workout/$exerciseId"
-              params={{ exerciseId: "pushup" }}
-              search={{
-                mode,
-                sets: recommendation.sets,
-                reps: recommendation.reps,
-                rest_s: recommendation.rest_s,
-                title: recommendation.title,
-              }}
-              className="flex rounded-2xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground"
-            >
-              <Zap className="h-4 w-4" aria-hidden="true" />
-              {recommendation.recoveryDay ? "Leichte Einheit starten" : "Training starten"}
-              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
             <p className="text-xs text-muted-foreground">{recommendation.readinessNote}</p>
             <details className="text-xs text-muted-foreground">
               <summary className="cursor-pointer">Warum dieser Plan?</summary>
@@ -730,7 +729,7 @@ export function TrainingDashboard({ user }: { user: User }) {
             aria-labelledby="today-plan-title"
           >
             <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
-              Dein Start heute · {recommendation.title}
+              Trainingsplan · heute
             </div>
             <h2 id="today-plan-title" className="mt-2 text-2xl font-bold">
               {recommendation.headline}
@@ -746,6 +745,22 @@ export function TrainingDashboard({ user }: { user: User }) {
               plannedReps={recommendation.plannedReps}
               goal={goal}
             />
+            <Link
+              to="/workout/$exerciseId"
+              params={{ exerciseId: "pushup" }}
+              search={{
+                mode,
+                sets: recommendation.sets,
+                reps: recommendation.reps,
+                rest_s: recommendation.rest_s,
+                title: recommendation.title,
+              }}
+              className="mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground"
+            >
+              {recommendation.recoveryDay
+                ? "Leichte Einheit (optional) →"
+                : "Training nach Plan starten →"}
+            </Link>
             <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Zählmethode">
               <ModeChip
                 active={mode === "nose"}
@@ -770,22 +785,6 @@ export function TrainingDashboard({ user }: { user: User }) {
               Nasenmodus: Tippe den Zähler mit der Nase an. Kamera zählt automatisch; manuell
               erfasst du selbst.
             </p>
-            <Link
-              to="/workout/$exerciseId"
-              params={{ exerciseId: "pushup" }}
-              search={{
-                mode,
-                sets: recommendation.sets,
-                reps: recommendation.reps,
-                rest_s: recommendation.rest_s,
-                title: recommendation.title,
-              }}
-              className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground"
-            >
-              {recommendation.recoveryDay
-                ? "Leichte Einheit (optional) →"
-                : "Training nach Plan starten →"}
-            </Link>
             <p className="mt-3 text-xs text-muted-foreground">{recommendation.readinessNote}</p>
             <details className="mt-3 text-xs text-muted-foreground">
               <summary className="cursor-pointer">Warum dieser Plan?</summary>
@@ -795,6 +794,7 @@ export function TrainingDashboard({ user }: { user: User }) {
               )}
             </details>
           </section>
+          <GymPartnerPanel />
 
           <section className="alo-home-intro" aria-label="Deine Alo-Bereiche">
             <button

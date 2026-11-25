@@ -336,7 +336,11 @@ export function ProfilePage({ sectionId }: { sectionId?: ProfileSettingsCategory
           /* run continues without persistence */
         }
         const tutorial = getTutorial(id);
-        if (tutorial) void navigate({ to: tutorial.route as never });
+        if (tutorial) {
+          void navigate({ to: tutorial.route as never }).then(() => {
+            window.dispatchEvent(new CustomEvent("alo-tutorial-start", { detail: id }));
+          });
+        }
       }}
     />
   ) : null;

@@ -33,9 +33,9 @@ export const Route = createFileRoute("/auth")({
 });
 
 const credSchema = z.object({
-  email: z.string().trim().email("Ungültige E-Mail").max(255),
-  password: z.string().min(6, "Mindestens 6 Zeichen").max(72),
-  displayName: z.string().trim().min(1).max(60).optional(),
+  email: z.string().trim().email("Bitte gib eine gültige E-Mail-Adresse ein.").max(255),
+  password: z.string().min(6, "Das Passwort muss mindestens 6 Zeichen lang sein.").max(72),
+  displayName: z.string().trim().min(1, "Bitte gib einen Anzeigenamen ein.").max(60).optional(),
 });
 
 function AuthPage() {
@@ -70,6 +70,18 @@ function AuthPage() {
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!email.trim()) {
+      setError("Bitte gib deine E-Mail-Adresse ein.");
+      return;
+    }
+    if (!password) {
+      setError("Bitte gib dein Passwort ein.");
+      return;
+    }
+    if (mode === "signup" && !displayName.trim()) {
+      setError("Bitte gib einen Anzeigenamen ein.");
+      return;
+    }
     const parsed = credSchema.safeParse({
       email,
       password,
@@ -181,7 +193,7 @@ function AuthPage() {
                 <span className="h-px flex-1 bg-border" />
               </div>
 
-              <form onSubmit={handleEmail} className="space-y-3">
+              <form onSubmit={handleEmail} noValidate className="space-y-3">
                 {mode === "signup" && (
                   <Field
                     label="Anzeigename"
@@ -201,7 +213,7 @@ function AuthPage() {
                   required
                 />
                 <label className="block">
-                  <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                  <span className="mb-1 block text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                     Passwort
                   </span>
                   <div className="relative">
@@ -217,7 +229,7 @@ function AuthPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+                      className="absolute inset-y-0 right-0 grid min-h-11 w-11 place-items-center text-sm font-medium text-muted-foreground transition hover:text-foreground"
                       aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
                     >
                       {showPassword ? "🙈" : "👁"}
@@ -327,7 +339,7 @@ function AuthPage() {
               oder
               <span className="h-px flex-1 bg-border" />
             </div>
-            <form onSubmit={handleEmail} className="space-y-3">
+            <form onSubmit={handleEmail} noValidate className="space-y-3">
               {mode === "signup" && (
                 <Field
                   label="Anzeigename"
@@ -347,7 +359,7 @@ function AuthPage() {
                 required
               />
               <label className="block">
-                <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                   Passwort
                 </span>
                 <div className="relative">
@@ -363,7 +375,7 @@ function AuthPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute inset-y-0 right-0 px-4 text-sm text-muted-foreground"
+                    className="absolute inset-y-0 right-0 grid min-h-11 w-11 place-items-center text-sm text-muted-foreground"
                     aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
                   >
                     {showPassword ? "🙈" : "👁"}
@@ -388,7 +400,7 @@ function AuthPage() {
                 setMode(mode === "signin" ? "signup" : "signin");
                 setError(null);
               }}
-              className="mt-4 w-full text-center text-sm font-medium text-muted-foreground hover:text-foreground transition"
+              className="mt-4 min-h-11 w-full text-center text-sm font-medium text-muted-foreground hover:text-foreground transition"
             >
               {mode === "signin"
                 ? "Noch kein Konto? Jetzt registrieren"
@@ -445,7 +457,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+      <span className="mb-1 block text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
         {label}
       </span>
       <input

@@ -120,7 +120,7 @@ export function MiraGithubRepository() {
       className="mt-4 rounded-2xl border border-border bg-card/70 p-4"
       aria-label="Mira GitHub Repository"
     >
-      <h2 className="text-sm font-semibold">Repository-Aufgabe für Mira</h2>
+      <h2 className="text-sm font-semibold">GitHub-Anfrage mit Mira</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Hendrik5000/nose-pushup · Festes Lovable AI Gateway · Inhalte sind nicht vertrauenswürdig.
       </p>
@@ -184,7 +184,7 @@ export function MiraGithubRepository() {
         maxLength={6000}
         rows={3}
         className="mt-1 w-full rounded-xl border border-border bg-background p-3 text-sm"
-        placeholder="Beschreibe die gewünschte Repository-Aufgabe…"
+        placeholder="Beschreibe die gewünschte Änderung am Repository…"
       />
       <p className="mt-1 text-xs text-muted-foreground">
         Anbieter: Lovable AI Gateway · Modell: google/gemini-3-flash-preview · Max. 3 Modellaufrufe

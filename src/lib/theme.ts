@@ -216,24 +216,55 @@ function effectiveMode(mode: ThemeMode, fallback: ThemeMode): "light" | "dark" {
   return fallback === "light" ? "light" : "dark";
 }
 
-function accentForeground(hex: string): string {
+function relativeLuminance(hex: string): number {
   const channels = hex
     .slice(1)
     .match(/.{2}/g)
-    ?.map((part) => parseInt(part, 16)) ?? [0, 0, 0];
-  const brightness = (channels[0] * 299 + channels[1] * 587 + channels[2] * 114) / 1000;
-  return brightness > 150 ? "#102033" : "#ffffff";
+    ?.map((part) => parseInt(part, 16) / 255) ?? [0, 0, 0];
+  const linear = channels.map((channel) =>
+    channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+  );
+  return 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!;
 }
 
-function applyAccentStyles(accent: string) {
+function contrastRatio(a: string, b: string): number {
+  const [bright, dark] = [relativeLuminance(a), relativeLuminance(b)].sort(
+    (left, right) => right - left,
+  );
+  return (bright! + 0.05) / (dark! + 0.05);
+}
+
+function lightModeAccent(accent: string): string {
+  let channels = accent
+    .slice(1)
+    .match(/.{2}/g)
+    ?.map((part) => parseInt(part, 16)) ?? [0, 0, 0];
+  for (let step = 0; step < 48; step += 1) {
+    const color = `#${channels.map((channel) => Math.round(channel).toString(16).padStart(2, "0")).join("")}`;
+    if (contrastRatio(color, "#ffffff") >= 4.5) return color;
+    channels = channels.map((channel) => channel * 0.94);
+  }
+  return "#2069b8";
+}
+
+function accentForeground(hex: string): string {
+  return contrastRatio(hex, "#000000") >= contrastRatio(hex, "#ffffff") ? "#000000" : "#ffffff";
+}
+
+function applyAccentStyles(accent: string, mode: ThemeMode, fallbackMode: ThemeMode) {
   if (typeof document === "undefined") return;
-  document.documentElement.style.setProperty("--primary", accent);
-  document.documentElement.style.setProperty("--ring", accent);
+  const visibleAccent =
+    effectiveMode(mode, fallbackMode) === "light" ? lightModeAccent(accent) : accent;
+  document.documentElement.style.setProperty("--primary", visibleAccent);
+  document.documentElement.style.setProperty("--ring", visibleAccent);
   document.documentElement.style.setProperty(
     "--glow-1",
     `color-mix(in srgb, ${accent} 24%, transparent)`,
   );
-  document.documentElement.style.setProperty("--primary-foreground", accentForeground(accent));
+  document.documentElement.style.setProperty(
+    "--primary-foreground",
+    accentForeground(visibleAccent),
+  );
 }
 
 /** Background color for browser/system UI metadata, following the active appearance mode. */
@@ -263,7 +294,7 @@ export function applyTheme(theme: ThemeId) {
   const accent = customAccent ?? definition.swatch[0];
   document.documentElement.dataset["theme"] = theme;
   document.documentElement.dataset["themeMode"] = mode;
-  applyAccentStyles(accent);
+  applyAccentStyles(accent, mode, definition.mode);
   updateThemeColorMeta(theme, mode);
   try {
     window.localStorage.setItem(STORAGE_KEY, theme);
@@ -304,8 +335,8 @@ export function applyCustomAccent(color: string | null) {
   }
   applyTheme(getStoredTheme());
   if (!persisted && typeof document !== "undefined") {
-    const fallback = THEMES.find((item) => item.id === getStoredTheme())?.swatch[0] ?? "#9bddff";
-    applyAccentStyles(color ?? fallback);
+    const theme = THEMES.find((item) => item.id === getStoredTheme()) ?? THEMES[0]!;
+    applyAccentStyles(color ?? theme.swatch[0], getStoredThemeMode(), theme.mode);
     if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
       window.dispatchEvent(new Event("np-theme-change"));
     }

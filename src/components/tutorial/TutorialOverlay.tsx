@@ -102,14 +102,29 @@ export function TutorialOverlay({
   const stepInteraction = step?.requireInteraction === true;
 
   useEffect(() => {
-    if (!hasRun) return;
+    if (!userId) return;
+    const onTutorialStart = (event: Event) => {
+      const id = (event as CustomEvent<unknown>).detail;
+      if (typeof id !== "string") return;
+      const state = readState(userId);
+      if (state.active?.id !== id) return;
+      setRect(null);
+      setMounted(false);
+      setRun(state.active);
+    };
+    window.addEventListener("alo-tutorial-start", onTutorialStart);
+    return () => window.removeEventListener("alo-tutorial-start", onTutorialStart);
+  }, [userId]);
+
+  useEffect(() => {
+    if (!runId) return;
     previousFocus.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     requestAnimationFrame(() => {
       setMounted(true);
       cardRef.current?.focus();
     });
-  }, [hasRun]);
+  }, [runId]);
 
   useEffect(() => {
     if (!hasRun) return;

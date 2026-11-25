@@ -217,6 +217,7 @@ export function AloPageSidebar({ active, children }: AloPageSidebarProps) {
     <SidebarCommandContext.Provider value={registerCommands}>
       <SidebarProvider
         className="alo-page-sidebar-provider"
+        mobileBreakpoint={1024}
         style={{ "--sidebar-width": "clamp(12rem, 16vw, 16rem)" } as CSSProperties}
       >
         <Sidebar collapsible="offcanvas" className="alo-page-sidebar">

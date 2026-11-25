@@ -427,6 +427,29 @@
   }
 }
 
+.alo-skip-link {
+  position: fixed;
+  z-index: 200;
+  top: max(0.75rem, env(safe-area-inset-top));
+  left: 0.75rem;
+  transform: translateY(-160%);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card);
+  color: var(--foreground);
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+
+.alo-skip-link:focus {
+  transform: translateY(0);
+}
+
+.alo-module-surface:focus {
+  outline: none;
+}
+
 @layer components {
   .sh-card {
     border-radius: 16px;
@@ -2078,7 +2101,7 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
   word-break: normal;
   hyphens: none;
   color: rgb(255 255 255 / 96%);
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   font-weight: 550;
   line-height: 1.2;
   text-wrap: balance;
@@ -2142,7 +2165,7 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
     column-gap: 0.25rem;
   }
   .alo-oneui9-home .alo-tablet-home-apps :is(a, button) > span:last-child {
-    font-size: 0.62rem;
+    font-size: 0.6875rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2294,7 +2317,7 @@ main.alo-oneui9-fullscreen-home {
   max-width: 100%;
   padding: 0;
   color: #fff !important;
-  font-size: clamp(0.62rem, 1.35vh, 0.76rem);
+  font-size: clamp(0.6875rem, 1.45vh, 0.78rem);
   font-weight: 550;
   line-height: 1.15;
   text-align: center;

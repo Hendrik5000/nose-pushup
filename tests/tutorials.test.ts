@@ -149,6 +149,8 @@ test("the overlay spotlights targets, blocks clicks between steps and hands cont
   assert.match(overlay, /scrollIntoView/);
   assert.match(overlay, /addEventListener\("click", onClick, \{ capture: true, once: true \}\)/);
   assert.match(overlay, /shouldAutoStartMainTour/);
+  assert.match(overlay, /addEventListener\("alo-tutorial-start", onTutorialStart\)/);
+  assert.match(overlay, /state\.active\?\.id !== id/);
   assert.match(overlay, /Jetzt du/);
   assert.match(overlay, /Überspringen/);
   assert.match(overlay, /"pointer-events-none fixed z-\[99\]/);
@@ -168,6 +170,8 @@ test("the overlay is wired into the shell and settings list every tutorial", () 
   assert.match(profile, /ALL_TUTORIALS\.map/);
   assert.match(profile, /onStartTutorial/);
   assert.match(profile, /startTutorial/);
+  assert.match(profile, /dispatchEvent\(new CustomEvent\("alo-tutorial-start"/);
+  assert.match(profile, /navigate\(\{ to: tutorial\.route as never \}\)\.then/);
   assert.match(profile, /title="Tutorials"/);
   assert.doesNotMatch(profile, /restartWelcomeTour|Willkommenstour/);
 

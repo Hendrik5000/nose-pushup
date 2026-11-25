@@ -872,7 +872,10 @@ function WorkoutScreen() {
             </button>
           </>
         ) : (
-          "Lade…"
+          <div className="text-center">
+            <p>Übung und Trainingsdaten werden geladen …</p>
+            <p className="mt-2 text-xs">Dein Trainingsbereich wird vorbereitet.</p>
+          </div>
         )}
       </main>
     );
