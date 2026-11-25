@@ -103,10 +103,7 @@ test("Mira sends the base policy server-side and adds curated knowledge only to 
     serverFunction,
     /const marketplaceAuthoring = data\.generationMode === "marketplace-authoring"/,
   );
-  assert.match(
-    serverFunction,
-    /marketplaceAuthoring \? "" : \(data\.systemExtra \?\? ""\)/,
-  );
+  assert.match(serverFunction, /marketplaceAuthoring \? "" : \(data\.systemExtra \?\? ""\)/);
   assert.match(
     serverFunction,
     /marketplaceAuthoring \? buildMarketplaceMiraSystemInstructions\(\) : ""/,
