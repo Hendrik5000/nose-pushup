@@ -2190,6 +2190,7 @@ main.alo-oneui9-fullscreen-home {
   max-height: 100%;
   margin: 0 !important;
   padding: clamp(0.75rem, 2.2vw, 1.6rem);
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
   overflow: hidden;
   border: 0;
   border-radius: 0;
@@ -2232,9 +2233,15 @@ main.alo-oneui9-fullscreen-home {
   border-radius: 1rem;
 }
 .alo-oneui9-fullscreen-home .alo-launcher-page {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   min-height: 0;
   overflow: hidden;
   padding: 0.1rem 0 0;
+}
+.alo-oneui9-fullscreen-home .alo-launcher-page > section {
+  min-height: 0;
+  overflow: hidden;
 }
 .alo-oneui9-fullscreen-home .alo-launcher-page .alo-tablet-home-apps {
   height: 100%;
@@ -2276,10 +2283,10 @@ main.alo-oneui9-fullscreen-home {
   place-items: center;
   overflow: hidden !important;
   border: 1px solid rgb(255 255 255 / 18%) !important;
-  border-radius: 28px !important;
+  border-radius: 10px !important;
   background: rgb(255 255 255 / 8%) !important;
   box-shadow:
-    0 8px 20px rgb(0 0 0 / 22%),
+    0 4px 12px rgb(0 0 0 / 18%),
     inset 0 1px 0 rgb(255 255 255 / 10%) !important;
 }
 .alo-oneui9-fullscreen-home .alo-tablet-home-apps :is(a, button, div) > span:last-child {
@@ -2293,19 +2300,34 @@ main.alo-oneui9-fullscreen-home {
   text-align: center;
   text-shadow: 0 1px 4px rgb(0 0 0 / 65%);
 }
-.alo-oneui9-fullscreen-home .alo-launcher-page-indicators {
-  gap: 0.3rem;
-  padding: 0.35rem 0 0.25rem;
+body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-indicators {
+  align-self: end;
+  justify-self: center;
+  gap: 0.35rem;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
-.alo-oneui9-fullscreen-home .alo-launcher-page-dot {
-  width: 0.22rem;
-  height: 0.22rem;
-  padding: 0;
-  background: rgb(255 255 255 / 42%);
+body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot {
+  width: 0.25rem !important;
+  height: 0.25rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: rgb(255 255 255 / 42%) !important;
+  box-shadow: none !important;
 }
-.alo-oneui9-fullscreen-home .alo-launcher-page-dot[aria-current="page"] {
-  width: 0.62rem;
-  height: 0.22rem;
+body:has(main.alo-oneui9-fullscreen-home) .alo-launcher-page-dot[aria-current="page"] {
+  width: 0.55rem !important;
+  height: 0.25rem !important;
+  background: rgb(255 255 255 / 92%) !important;
+  box-shadow: none !important;
 }
 /* Mira stays in one predictable floating position, immediately above the bottom home bar. */
 .alo-oneui9-fullscreen-home ~ .alo-mira-home-launcher,
@@ -2386,6 +2408,7 @@ body:has(main.alo-oneui9-fullscreen-home) {
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
+  background: #000 !important;
 }
 body:has(main.alo-oneui9-fullscreen-home) .authenticated-shell {
   position: fixed !important;
@@ -2398,6 +2421,8 @@ body:has(main.alo-oneui9-fullscreen-home) .authenticated-shell {
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
+  background: #000 !important;
+  background-image: none !important;
 }
 body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home {
   position: fixed !important;
@@ -2409,6 +2434,8 @@ body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home {
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
+  background: #000 !important;
+  background-image: none !important;
 }
 body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo-oneui9-home {
   flex: 1 1 auto;
@@ -2417,6 +2444,19 @@ body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo
   min-height: 0 !important;
   max-height: 100% !important;
   margin: 0 !important;
+  background: #000 !important;
+  background-image: none !important;
+}
+body:has(main.alo-oneui9-fullscreen-home) .alo-oneui9-home::before {
+  background: none !important;
+}
+
+/* Fullscreen Home bypasses shared page and app-grid width caps only. */
+body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home > .alo-tablet-home-hub {
+  max-width: none;
+}
+body:has(main.alo-oneui9-fullscreen-home) main.alo-oneui9-fullscreen-home .alo-tablet-home-apps {
+  max-width: none;
 }
 
 /* Let the device viewport define the physical corner shape in fullscreen mode. */
