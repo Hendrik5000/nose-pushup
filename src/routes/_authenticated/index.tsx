@@ -30,7 +30,7 @@ import {
   mergeMarketplaceLocalEdit,
   requestHomeAppAccountSync,
 } from "@/lib/home-app-account-sync";
-import { loadRecentHomeAppIds, rememberHomeAppOpen } from "@/lib/home-recent-apps";
+import { rememberHomeAppOpen } from "@/lib/home-recent-apps";
 import {
   aiStatusFromProviders,
   formatDailyGoalLine,
@@ -63,12 +63,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  Clock3,
   LayoutGrid,
   Menu,
   Mic,
   Search,
-  Star,
   Trash2,
   X,
 } from "lucide-react";
@@ -376,7 +374,6 @@ function HomeAppHub({
   const [marketplaceStorageError, setMarketplaceStorageError] = useState("");
   const [settings, setSettings] = useState<HomeAppHubSettings>(EMPTY_HOME_APP_HUB_SETTINGS);
   const [settingsError, setSettingsError] = useState("");
-  const [recentAppIds, setRecentAppIds] = useState<string[]>([]);
   const { healthToday, streak, weeklyWorkouts, dailyReps, dailyGoal } = useHomeDayData(user.id);
   const nexusUnread = useNexusUnread(user.id);
   const postfach = usePostfach();
@@ -550,18 +547,14 @@ function HomeAppHub({
   }, [backgroundLoadKey, user.id]);
 
   useEffect(() => {
-    setRecentAppIds(loadRecentHomeAppIds(window.localStorage, user.id));
-  }, [user.id]);
-
-  useEffect(() => {
     setAiStatus(aiStatusFromProviders(loadProviders(user.id)));
   }, [user.id]);
 
   const rememberAppOpen = (appId: string) => {
     try {
-      setRecentAppIds(rememberHomeAppOpen(window.localStorage, user.id, appId));
+      rememberHomeAppOpen(window.localStorage, user.id, appId);
     } catch {
-      setRecentAppIds([]);
+      return;
     }
   };
 
@@ -690,21 +683,6 @@ function HomeAppHub({
     currentHomePage * homePageSize,
     (currentHomePage + 1) * homePageSize,
   );
-  const favoriteTiles = orderedTiles.filter((tile) => settings.favorites.includes(tile.id));
-  const recentTiles = recentAppIds
-    .flatMap((appId) => {
-      const tile = orderedTiles.find((candidate) => candidate.id === appId);
-      return tile && !settings.favorites.includes(tile.id) ? [tile] : [];
-    })
-    .slice(0, 4);
-  const homeSections = HOME_APP_GROUPS.map(({ id, label }) => ({
-    id,
-    label,
-    tiles: orderedTiles.filter(
-      (tile) => !settings.favorites.includes(tile.id) && homeTileGroupId(tile) === id,
-    ),
-  })).filter((section) => section.tiles.length > 0);
-  const maxHomeSectionCount = Math.max(1, ...homeSections.map((section) => section.tiles.length));
   const renamingTile = orderedTiles.find((tile) => tile.id === renamingAppId) ?? null;
   const activeActionTile = orderedTiles.find((tile) => tile.id === activeAppMenuId) ?? null;
   const activeActionTitle = activeActionTile
@@ -1717,77 +1695,6 @@ function HomeAppHub({
                     </div>
                   </AloErrorBoundary>
                 </div>
-                <aside
-                  className="alo-home-dashboard-panel"
-                  aria-labelledby="alo-home-dashboard-title"
-                  data-home-press-ignore="true"
-                >
-                  <header className="alo-home-dashboard-header">
-                    <div>
-                      <p className="alo-home-dashboard-eyebrow">ALO · ÜBERSICHT</p>
-                      <h2 id="alo-home-dashboard-title">Dein Dashboard</h2>
-                    </div>
-                  </header>
-                  <div className="alo-home-dashboard-metrics" aria-label="Startseitenübersicht">
-                    <div className="alo-home-dashboard-stat" data-alo-dashboard-card>
-                      <LayoutGrid aria-hidden="true" className="h-4 w-4 text-primary" />
-                      <span>Apps auf Home</span>
-                      <strong className="tabular-nums">{orderedTiles.length}</strong>
-                    </div>
-                    <div className="alo-home-dashboard-stat" data-alo-dashboard-card>
-                      <Star aria-hidden="true" className="h-4 w-4 text-primary" />
-                      <span>Favoriten</span>
-                      <strong className="tabular-nums">{favoriteTiles.length}</strong>
-                    </div>
-                  </div>
-                  {homeSections.length > 0 && (
-                    <section
-                      className="alo-home-dashboard-section"
-                      aria-labelledby="alo-home-category-title"
-                    >
-                      <div className="alo-home-dashboard-section-heading">
-                        <h3 id="alo-home-category-title">Apps nach Bereich</h3>
-                        <span>Favoriten separat gezählt</span>
-                      </div>
-                      <ul className="alo-home-dashboard-categories">
-                        {homeSections.map((section) => (
-                          <li key={section.id}>
-                            <div className="alo-home-dashboard-category-label">
-                              <span>{section.label}</span>
-                              <span className="tabular-nums">{section.tiles.length}</span>
-                            </div>
-                            <div className="alo-home-dashboard-bar" aria-hidden="true">
-                              <span
-                                style={{
-                                  width: `${Math.round((section.tiles.length / maxHomeSectionCount) * 100)}%`,
-                                }}
-                              />
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
-                  {recentTiles.length > 0 && (
-                    <section
-                      className="alo-home-dashboard-section"
-                      aria-labelledby="alo-home-recent-title"
-                    >
-                      <div className="alo-home-dashboard-section-heading">
-                        <h3 id="alo-home-recent-title">
-                          <Clock3 aria-hidden="true" className="h-4 w-4 text-primary" />
-                          Zuletzt geöffnet
-                        </h3>
-                      </div>
-                      <p className="alo-home-dashboard-note">Lokal auf diesem Gerät gespeichert.</p>
-                      <ol className="alo-home-dashboard-recent">
-                        {recentTiles.map((tile) => (
-                          <li key={tile.id}>{settings.nameOverrides[tile.id] ?? tile.title}</li>
-                        ))}
-                      </ol>
-                    </section>
-                  )}
-                </aside>
               </div>
             </div>
           )}

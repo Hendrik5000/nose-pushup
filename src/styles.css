@@ -1970,11 +1970,9 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
   min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
-  grid-template-areas:
-    "launcher"
-    "overview";
+  grid-template-areas: "launcher";
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
   gap: clamp(0.75rem, 1.8vw, 1.25rem);
 }
 .alo-oneui9-home .alo-home-dashboard-launcher {
@@ -1988,25 +1986,6 @@ html[data-navigation-layout="top-tabs"] .app-homebar .homebar-link[aria-current=
 .alo-oneui9-home .alo-home-dashboard-launcher .alo-launcher-page {
   min-height: 0;
   flex: 1 1 auto;
-}
-.alo-oneui9-home .alo-home-dashboard-panel {
-  min-width: 0;
-  min-height: 0;
-  max-height: min(32dvh, 15rem);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  grid-area: overview;
-}
-@media (min-width: 1024px) {
-  .alo-oneui9-home .alo-home-dashboard-workspace {
-    grid-template-areas: "launcher overview";
-    grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
-    grid-template-rows: minmax(0, 1fr);
-  }
-  .alo-oneui9-home .alo-home-dashboard-panel {
-    max-height: 100%;
-  }
 }
 .alo-oneui9-home .alo-launcher-greeting {
   width: min(100%, 32rem);
