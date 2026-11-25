@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import {
   DEFAULT_PROVIDERS,
-  FREE_PROVIDER_CATALOG,
-  isFreeOnlyProvider,
+  GEMINI_MODEL_LABELS,
+  SUPPORTED_PROVIDER_CATALOG,
+  isSupportedProvider,
   loadProviders,
   saveProviders,
+  type GeminiModelMode,
   type ProviderConfig,
+  type ProviderId,
 } from "@/lib/ai-providers";
 
 export function AiProviderSettings({
@@ -15,21 +18,30 @@ export function AiProviderSettings({
   onSaved?: () => void;
   userId?: string | null;
 }) {
+  const currentUserId = userId ?? null;
   const [list, setList] = useState<ProviderConfig[]>(DEFAULT_PROVIDERS);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(currentUserId);
   const [saved, setSaved] = useState(false);
+  const visibleList = loadedUserId === currentUserId ? list : DEFAULT_PROVIDERS;
 
   useEffect(() => {
-    setList(loadProviders(userId));
-  }, [userId]);
+    setList(loadProviders(currentUserId));
+    setLoadedUserId(currentUserId);
+    setSaved(false);
+  }, [currentUserId]);
 
-  const update = (id: string, patch: Partial<ProviderConfig>) => {
-    if (id !== "openrouter") return;
-    setList((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  const update = (id: ProviderId, patch: Partial<ProviderConfig>) => {
+    if (!isSupportedProvider(id)) return;
+    setList((previous) =>
+      previous.map((provider) => (provider.id === id ? { ...provider, ...patch } : provider)),
+    );
     setSaved(false);
   };
 
   const onSave = () => {
-    saveProviders(list, userId);
+    saveProviders(visibleList, currentUserId);
+    setList(visibleList);
+    setLoadedUserId(currentUserId);
     setSaved(true);
     onSaved?.();
   };
@@ -37,31 +49,39 @@ export function AiProviderSettings({
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Alo ist im Free-only-Modus: Aktuell ist ausschließlich OpenRouter Free freigeschaltet; der
-        Router verwendet nur kostenlose Modelle (20 Anfragen/Minute, 50/Tag). Es gibt keinen
-        kostenpflichtigen Fallback. Andere Anbieter bleiben gesperrt, solange eine garantierte
-        Nutzung ohne Zahlungsdaten oder Abrechnung nicht nachgewiesen ist. Dein OpenRouter-Key
-        bleibt ausschließlich flüchtig im Arbeitsspeicher dieses Tabs. Er wird weder in localStorage
-        noch sessionStorage geschrieben und geht beim Neuladen, Schließen des Tabs, Abmelden oder
-        Kontowechsel verloren. Während der offenen Sitzung können aktive Seitenskripte ihn weiterhin
-        lesen. Nutze deshalb einen separaten Key mit minimalen Berechtigungen.
+        Für Google Gemini musst du deinen eigenen API-Key eingeben und Gemini aktivieren. Der Key
+        bleibt nur im flüchtigen Arbeitsspeicher dieses Tabs, getrennt nach Konto; er wird weder in
+        localStorage noch sessionStorage gespeichert. Wenn Gemini aktiviert ist, kann Mira es für
+        passende Aufgaben auswählen. Erst wenn du Mira bewusst sendest, wird der Key über den
+        authentifizierten Alo-Server an Google weitergegeben. Google erhält dann deine Nachricht,
+        ausdrücklich freigegebene Alo-Kontextdaten und die von dir gesendeten Anhänge. Bei Nutzung
+        des Gemini-Free-Tiers kann Google Inhalte laut Anbieter zur Produktverbesserung verwenden;
+        Limits und mögliche Kosten hängen von deinem Google-Konto ab. Prüfe die aktuellen
+        Bedingungen, bevor du sensible Inhalte sendest. Abmelden, Kontowechsel, Neuladen oder
+        Schließen des Tabs entfernt den Key.
       </p>
-      {list.map((p) => {
-        const canUseProvider = isFreeOnlyProvider(p.id);
+      <p className="text-xs text-muted-foreground">
+        OpenRouter Free ist optional; sein Key bleibt ebenfalls nur im Arbeitsspeicher dieses Tabs.
+        Andere Anbieter bleiben serverseitig gesperrt.
+      </p>
+      {visibleList.map((provider) => {
+        const canUseProvider = isSupportedProvider(provider.id);
+        const isGemini = provider.id === "google";
+        const catalogEntry = SUPPORTED_PROVIDER_CATALOG.find((entry) => entry.id === provider.id);
         return (
           <div
-            key={p.id}
-            className="rounded-2xl border border-border bg-background/40 p-3 space-y-2"
+            key={provider.id}
+            className="space-y-2 rounded-2xl border border-border bg-background/40 p-3"
           >
             <div className="flex items-center justify-between gap-2">
-              <div className="text-sm font-semibold">{p.label}</div>
+              <div className="text-sm font-semibold">{provider.label}</div>
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 Aktiv
                 <input
                   type="checkbox"
-                  checked={canUseProvider && p.enabled}
+                  checked={canUseProvider && provider.enabled}
                   disabled={!canUseProvider}
-                  onChange={(e) => update(p.id, { enabled: e.target.checked })}
+                  onChange={(event) => update(provider.id, { enabled: event.target.checked })}
                 />
               </label>
             </div>
@@ -69,48 +89,68 @@ export function AiProviderSettings({
               <input
                 type="password"
                 autoComplete="off"
-                value={p.apiKey}
-                onChange={(e) => update(p.id, { apiKey: e.target.value })}
-                placeholder="API-Key"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={provider.apiKey}
+                onChange={(event) => update(provider.id, { apiKey: event.target.value })}
+                placeholder={
+                  isGemini ? "Gemini API-Key (nur für diesen Tab)" : "OpenRouter API-Key"
+                }
+                aria-label={isGemini ? "Google Gemini API-Key" : "OpenRouter API-Key"}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
               />
             )}
-            <input
-              value={p.model}
-              onChange={(e) => update(p.id, { model: e.target.value })}
-              disabled={!canUseProvider}
-              readOnly={canUseProvider}
-              placeholder="Modell"
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
-            />
-            {FREE_PROVIDER_CATALOG.some((entry) => entry.id === p.id) && (
+            {isGemini ? (
+              <label className="block space-y-1">
+                <span className="text-[11px] font-medium text-muted-foreground">Gemini-Modus</span>
+                <select
+                  aria-label="Gemini-Modus"
+                  value={provider.model}
+                  onChange={(event) =>
+                    update(provider.id, { model: event.target.value as GeminiModelMode })
+                  }
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
+                >
+                  {(Object.keys(GEMINI_MODEL_LABELS) as GeminiModelMode[]).map((mode) => (
+                    <option key={mode} value={mode}>
+                      {GEMINI_MODEL_LABELS[mode]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <input
+                value={provider.model}
+                onChange={(event) => update(provider.id, { model: event.target.value })}
+                disabled={!canUseProvider}
+                readOnly={canUseProvider}
+                placeholder="Modell"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
+              />
+            )}
+            {catalogEntry && (
               <div className="space-y-1 rounded-xl bg-muted/40 p-2 text-[10px] text-muted-foreground">
-                {(() => {
-                  const entry = FREE_PROVIDER_CATALOG.find((item) => item.id === p.id)!;
-                  return (
-                    <>
-                      <p>{entry.summary}</p>
-                      <p>{entry.freeAccess}</p>
-                      <p>Freigegebene Modelle: {entry.models.join(", ")}</p>
-                      <div className="flex gap-3 text-primary">
-                        <a href={entry.keyUrl} target="_blank" rel="noreferrer">
-                          API-Key holen
-                        </a>
-                        <a href={entry.docsUrl} target="_blank" rel="noreferrer">
-                          API-Doku
-                        </a>
-                      </div>
-                    </>
-                  );
-                })()}
+                <p>{catalogEntry.summary}</p>
+                <p>{catalogEntry.freeAccess}</p>
+                <p>Freigegebene Modelle: {catalogEntry.models.join(", ")}</p>
+                <div className="flex gap-3 text-primary">
+                  <a href={catalogEntry.keyUrl} target="_blank" rel="noreferrer">
+                    API-Key holen
+                  </a>
+                  <a href={catalogEntry.docsUrl} target="_blank" rel="noreferrer">
+                    API-Doku und Preise
+                  </a>
+                </div>
               </div>
             )}
             {!canUseProvider && (
               <p className="text-[10px] text-muted-foreground">
-                Dieser Anbieter ist im Free-only-Modus serverseitig gesperrt.
+                Dieser Anbieter ist in Alo serverseitig gesperrt.
               </p>
             )}
-            <div className="text-[10px] text-muted-foreground">Aufgaben: {p.tasks.join(", ")}</div>
+            <div className="text-[10px] text-muted-foreground">
+              Aufgaben: {provider.tasks.join(", ")}
+            </div>
           </div>
         );
       })}

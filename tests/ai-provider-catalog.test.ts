@@ -3,9 +3,11 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import {
   DEFAULT_PROVIDERS,
-  FREE_PROVIDER_CATALOG,
+  SUPPORTED_PROVIDER_CATALOG,
+  classifyTask,
   enabledProviderSummary,
-  isFreeOnlyProvider,
+  isProviderReady,
+  isSupportedProvider,
   loadProviders,
   saveProviders,
   selectProvider,
@@ -13,6 +15,7 @@ import {
 } from "../src/lib/ai-providers.ts";
 import { clearSensitiveClientStorage } from "../src/lib/sensitive-storage.ts";
 import { clearProviderMemory } from "../src/lib/ai-provider-memory.ts";
+import { resolveGeminiModelForTask } from "../src/lib/gemini-models.ts";
 
 function memoryStorage(initial: Record<string, string> = {}) {
   const values = new Map(Object.entries(initial));
@@ -49,98 +52,124 @@ function withBrowserStorage<T>(localStorage: Storage, sessionStorage: Storage, r
   }
 }
 
-test("free provider catalog contains only OpenRouter's zero-cost free router", () => {
+test("only Google Gemini and OpenRouter Free are in the supported provider catalog", () => {
   assert.deepEqual(
-    FREE_PROVIDER_CATALOG.map((entry) => entry.id),
-    ["openrouter"],
+    SUPPORTED_PROVIDER_CATALOG.map((entry) => entry.id),
+    ["google", "openrouter"],
   );
-  assert.deepEqual(FREE_PROVIDER_CATALOG[0].models, ["openrouter/free"]);
-  assert.equal(FREE_PROVIDER_CATALOG[0].supportsImages, false);
-});
-
-test("only OpenRouter Free can be enabled or selected", () => {
-  for (const provider of DEFAULT_PROVIDERS) {
-    if (provider.id !== "openrouter") {
-      assert.equal(provider.enabled, false);
-      assert.equal(isFreeOnlyProvider(provider.id), false);
-    }
+  assert.deepEqual(SUPPORTED_PROVIDER_CATALOG.find((entry) => entry.id === "google")?.models, [
+    "auto",
+    "gemini-4-hydrogen",
+    "gemini-3.1-flash-lite",
+  ]);
+  assert.deepEqual(SUPPORTED_PROVIDER_CATALOG.find((entry) => entry.id === "openrouter")?.models, [
+    "openrouter/free",
+  ]);
+  for (const id of [
+    "openai",
+    "anthropic",
+    "lovable",
+    "custom",
+    "cerebras",
+    "cloudflare",
+  ] as const) {
+    assert.equal(isSupportedProvider(id), false);
   }
-  const configured = DEFAULT_PROVIDERS.map((provider) => ({
-    ...provider,
-    enabled: true,
-    apiKey: "test-key",
-  }));
-  const selection = selectProvider(configured, "general");
-  assert.equal(selection.provider?.id, "openrouter");
-  assert.equal(selection.provider?.model, "openrouter/free");
-  assert.equal(enabledProviderSummary(configured), "OpenRouter (Free Models)");
 });
 
-test("OpenRouter keys stay only in volatile per-account memory and legacy browser values are discarded", () => {
+test("Gemini task routing uses only the two approved models", () => {
+  assert.equal(resolveGeminiModelForTask("quick_log", "auto"), "gemini-3.1-flash-lite");
+  assert.equal(resolveGeminiModelForTask("motivation", "auto"), "gemini-3.1-flash-lite");
+  assert.equal(resolveGeminiModelForTask("general", "auto"), "gemini-4-hydrogen");
+  assert.equal(resolveGeminiModelForTask("coding", "auto"), "gemini-4-hydrogen");
+  assert.equal(
+    resolveGeminiModelForTask("general", "gemini-3.1-flash-lite"),
+    "gemini-3.1-flash-lite",
+  );
+  assert.equal(resolveGeminiModelForTask("general", "gemini-4-hydrogen"), "gemini-4-hydrogen");
+});
+
+test("enabled Gemini is selected only after the user has configured a key", () => {
+  const withoutKeys = structuredClone(DEFAULT_PROVIDERS).map((provider) => ({
+    ...provider,
+    enabled: provider.id === "google",
+    apiKey: "",
+  }));
+  assert.equal(selectProvider(withoutKeys, "general").provider, null);
+
+  const configured = withoutKeys.map((provider) =>
+    provider.id === "google" ? { ...provider, apiKey: "test-gemini-key" } : provider,
+  );
+  const selection = selectProvider(configured, "general");
+  assert.equal(selection.provider?.id, "google");
+  assert.equal(selection.provider?.model, "auto");
+  assert.equal(enabledProviderSummary(configured), "Google Gemini (eigener API-Key)");
+  assert.equal(
+    classifyTask("Erkläre mir bitte dieses Foto", { hasVisionAttachment: true }),
+    "vision",
+  );
+});
+
+test("BYOK keys stay in volatile account-scoped tab memory and legacy browser values are discarded", () => {
   const userKey = "super-ai-providers-v1:user-1";
   const local = memoryStorage({
-    [userKey]: JSON.stringify([{ id: "openrouter", enabled: true, apiKey: "old-local-key" }]),
+    [userKey]: JSON.stringify([{ id: "google", enabled: true, apiKey: "old-local-key" }]),
     "super-ai-providers-v1": JSON.stringify([
-      { id: "openrouter", enabled: true, apiKey: "unscoped-previous-user-key" },
+      { id: "google", enabled: true, apiKey: "unscoped-previous-user-key" },
     ]),
   });
   const session = memoryStorage({
-    [userKey]: JSON.stringify([{ id: "openrouter", enabled: true, apiKey: "old-session-key" }]),
+    [userKey]: JSON.stringify([{ id: "google", enabled: true, apiKey: "old-session-key" }]),
   });
   clearProviderMemory();
   withBrowserStorage(local, session, () => {
     const loaded = loadProviders("user-1");
-    assert.equal(loaded.find((provider) => provider.id === "openrouter")?.apiKey, "");
+    assert.equal(loaded.find((provider) => provider.id === "google")?.apiKey, "");
     assert.equal(local.length, 0);
     assert.equal(session.length, 0);
+
     const configured = loaded.map((provider) =>
-      provider.id === "openrouter"
-        ? { ...provider, enabled: true, apiKey: "volatile-key" }
+      provider.id === "google"
+        ? { ...provider, enabled: true, apiKey: "volatile-test-key" }
         : provider,
     );
     saveProviders(configured, "user-1");
     assert.equal(local.length, 0);
     assert.equal(session.length, 0);
     assert.equal(
-      loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey,
-      "volatile-key",
+      loadProviders("user-1").find((provider) => provider.id === "google")?.apiKey,
+      "volatile-test-key",
     );
-    assert.equal(
-      loadProviders("user-2").find((provider) => provider.id === "openrouter")?.apiKey,
-      "",
-    );
+    assert.equal(loadProviders("user-2").find((provider) => provider.id === "google")?.apiKey, "");
   });
   clearProviderMemory();
 });
 
-test("provider memory is cleared on logout and does not survive a fresh module session", () => {
+test("provider memory is cleared on logout and absent from a fresh module session", () => {
   const configured = DEFAULT_PROVIDERS.map((provider) =>
-    provider.id === "openrouter"
-      ? { ...provider, enabled: true, apiKey: "temporary-key" }
+    provider.id === "google"
+      ? { ...provider, enabled: true, apiKey: "temporary-test-key" }
       : provider,
   );
   withBrowserStorage(memoryStorage(), memoryStorage(), () => {
     saveProviders(configured, "user-1");
     assert.equal(
-      loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey,
-      "temporary-key",
+      loadProviders("user-1").find((provider) => provider.id === "google")?.apiKey,
+      "temporary-test-key",
     );
     clearProviderMemory();
-    assert.equal(
-      loadProviders("user-1").find((provider) => provider.id === "openrouter")?.apiKey,
-      "",
-    );
+    assert.equal(loadProviders("user-1").find((provider) => provider.id === "google")?.apiKey, "");
   });
 });
 
-test("logout cleanup clears sensitive keys from local and session storage", () => {
+test("logout cleanup clears legacy sensitive values from local and session storage", () => {
   const local = memoryStorage({
-    "super-ai-providers-v1:user-1": "secret",
+    "super-ai-providers-v1:user-1": "old-key",
     "np-watch-snapshot:user-1": "snapshot",
     "keep-this": "safe",
   });
   const session = memoryStorage({
-    "super-ai-providers-v1:user-1": "secret",
+    "super-ai-providers-v1:user-1": "old-key",
     "np-watch-snapshot:user-1": "snapshot",
     "keep-this-too": "safe",
   });
@@ -155,20 +184,17 @@ test("logout cleanup clears sensitive keys from local and session storage", () =
   });
 });
 
-test("server rejects every provider except the fixed OpenRouter free router", () => {
+test("server dispatch is authenticated, restricts providers, and never returns raw provider bodies", () => {
   const server = readFileSync(new URL("../src/lib/super-ai.functions.ts", import.meta.url), "utf8");
-  assert.match(server, /const OPENROUTER_MODEL = "openrouter\/free"/);
-  assert.match(server, /max_tokens: 1200/);
-  assert.match(server, /if \(p.id !== "openrouter"\)/);
-  assert.match(server, /https:\/\/openrouter\.ai\/api\/v1\/chat\/completions/);
-  assert.doesNotMatch(
-    server,
-    /callLovable|callAnthropic|callGoogle|assertSafeCustomBaseUrl|node:dns|node:net|baseUrl/,
-  );
-  assert.match(server, /Alo ist im Free-only-Modus/);
+  assert.match(server, /middleware\(\[requireSupabaseAuth\]\)/);
+  assert.match(server, /if \(provider\.id !== "openrouter" && provider\.id !== "google"\)/);
+  assert.match(server, /assertOpenRouterModelAllowed/);
+  assert.match(server, /runGeminiChat/);
+  assert.match(server, /normalizeProviderApiKey/);
+  assert.doesNotMatch(server, /response\.text\(\)|console\.(?:log|error).*apiKey/);
 });
 
-test("root auth listener clears sensitive browser storage when the signed-in account changes", () => {
+test("account-change listener clears volatile provider memory and old storage", () => {
   const root = readFileSync(new URL("../src/routes/__root.tsx", import.meta.url), "utf8");
   assert.match(root, /onAuthStateChange\(\(event, session\)/);
   assert.match(root, /event === "INITIAL_SESSION"/);
@@ -181,7 +207,22 @@ test("root auth listener clears sensitive browser storage when the signed-in acc
   );
 });
 
-test("OpenRouter account metadata is not added to its payload", () => {
-  const openrouter = DEFAULT_PROVIDERS.find((item) => item.id === "openrouter")!;
+test("Mira in Nexus uses the same account-scoped provider memory", () => {
+  const panel = readFileSync(
+    new URL("../src/components/chat/MiraNexusPanel.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(panel, /loadProviders\(userId\)/);
+  assert.match(panel, /toPayload\(selection\.provider\)/);
+});
+
+test("provider payload keeps the selected model but omits unrelated account metadata", () => {
+  const google = DEFAULT_PROVIDERS.find((provider) => provider.id === "google")!;
+  const readyGoogle = { ...google, enabled: true, apiKey: "test-gemini-key" };
+  assert.equal(isProviderReady(readyGoogle), true);
+  assert.equal(toPayload(readyGoogle).id, "google");
+  assert.equal(toPayload(readyGoogle).apiKey, "test-gemini-key");
+  assert.equal(toPayload(readyGoogle).accountId, undefined);
+  const openrouter = DEFAULT_PROVIDERS.find((provider) => provider.id === "openrouter")!;
   assert.equal(toPayload(openrouter).accountId, undefined);
 });

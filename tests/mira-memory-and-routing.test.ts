@@ -81,9 +81,9 @@ test("selectProvider prefers provider that lists the task", () => {
   openai.tasks = ["coding"];
 
   const visionSel = selectProvider(providers, "vision");
-  assert.equal(visionSel.provider?.id, "openrouter");
+  assert.equal(visionSel.provider?.id, "google");
   assert.equal(visionSel.reason, "task_preference");
-  assert.match(describeProviderSelection(visionSel, "vision"), /Bild verstehen/);
+  assert.match(describeProviderSelection(visionSel, "vision"), /Google Gemini/);
 
   const codeSel = selectProvider(providers, "coding");
   assert.equal(codeSel.provider?.id, "openrouter");
