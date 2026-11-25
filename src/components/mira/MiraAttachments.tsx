@@ -151,7 +151,7 @@ export function MiraAttachmentPolicy() {
       <summary>Anhänge bleiben lokal, bis du sendest · Dateilimits</summary>
       <p>
         Bis 4 Anhänge, zusammen 3 MB. Bilder/PDF je 1 MB; Text je 128 KB, zusammen 10.000 Zeichen.
-        Bilder und PDFs werden nur über aktiviertes Google Gemini gesendet; OpenRouter erhält nur
+        Bilder: Google Gemini erforderlich; PDF: Google Gemini erforderlich. OpenRouter erhält nur
         Text und Textdateien. Word/Excel bitte als PDF, TXT oder CSV exportieren.
       </p>
     </details>
