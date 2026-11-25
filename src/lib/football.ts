@@ -25,6 +25,13 @@ export type FootballMatch = {
   round?: string | null;
 };
 
+export function selectFootballMatchdayMatches(
+  matches: FootballMatch[],
+  groupOrder: number | null,
+): FootballMatch[] {
+  return groupOrder === null ? matches : matches.filter((match) => match.groupOrder === groupOrder);
+}
+
 const OPENLIGADB_BASE = "https://api.openligadb.de";
 const SPORTSDB_BASE = "https://www.thesportsdb.com/api/v1/json/123";
 

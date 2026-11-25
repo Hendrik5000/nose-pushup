@@ -20,6 +20,12 @@ Eine detaillierte ÃÂbersicht ÃÂ¼ber Aufbau, Routen, Datenbank, Mira, 
 
 Das Register hÃÂ`lt fest, was die Assistenten selbst melden. Ein Eintrag allein ist kein Beleg fÃÂ¼r einen erfolgreichen Push, Test oder Live-Deploy; solche Ergebnisse mÃÂ¼ssen separat geprÃÂ¼ft werden.
 
+## Laufender Arbeitsnachweis – 2026-11-26
+
+| Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |
+|---|---|---|---|---|---|
+| Cue Coding Assistant | unbekannt | Folgeabgleich des Gastberichts gegen PR #326; weißen Mobilbildschirm prüfen und nur bestätigte, klar begrenzte Fehler beheben | Lokale Umsetzung und Prüfungen bestanden; Commit/Push/CI ausstehend; PR #326 offen/ungemergt; kein Merge/Publish; Live unverifiziert | 2026-11-26 | Weißbildschirm bei 390×844 auf `/areas`, `/health` und `/training` nicht reproduziert; Ursache offen, keine spekulative Änderung. Codebestätigt und behoben: Gast-Postfach zeigt Hinweis und „Konto sichern“ zur Profileinstellung statt Einladungen/Freundescode; Alo Sports hat eine Ligaauswahl, präzisere Spieltags-Leermeldung und keine doppelte Statistik; Alo Fußball zeigt nur Karten der aktiven Runde. Marketplace-Encoding- und Schach-Regel-Ladefehler nicht bestätigt; `/coach` ist die vorhandene Coach-Route. Geändert: `src/components/postfach/PostfachPage.tsx`, `src/components/postfach/PostfachProvider.tsx`, `src/lib/football.ts`, `src/routes/football.tsx`, `src/routes/sports.tsx`, `tests/football-app.test.ts`, `tests/postfach-guest-ui.test.ts`, `tests/sports-page.test.ts`, `docs/AI-TEAM.md`, `docs/AI-ROADMAP.md`. Fokussierte Tests 28/28 mit `TZ=UTC`; `./node_modules/.bin/tsc --noEmit` bestanden; `npm run lint` 0 Fehler/18 Warnungen; `npm run build` erfolgreich; `git diff --check` bestanden. `TZ=UTC npm test`: 1128/1129; einziges nicht ladbares Modul `tests/alo-header-layout.test.ts` findet das nicht installierte `postcss`-Paket. Keine Pakete installiert. PR #326 Branch `cue/alo-ux-a11y-review`, Basis-HEAD `2743af0cccc3683ccc13380cfba24b9a73cd4dc9`; Commit/Push und Remote-CI ausstehend. Keine DB-/Schema-/Policy-/Trigger-/Nutzerdaten-/Secret-/Produktionsänderung. |
+
 ## Laufender Arbeitsnachweis – 2026-11-25
 
 | Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |

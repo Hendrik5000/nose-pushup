@@ -39,6 +39,7 @@ type PostfachContextValue = {
   loading: boolean;
   /** False when the server migrations for the Postfach are not applied (or for guests). */
   available: boolean;
+  isGuest: boolean;
   refresh: () => Promise<void>;
   markRead: (ids: string[]) => Promise<void>;
   respondFriend: (item: PostfachItem, accept: boolean) => Promise<string>;
@@ -55,6 +56,7 @@ const EMPTY: PostfachContextValue = {
   actionableCount: 0,
   loading: false,
   available: false,
+  isGuest: false,
   refresh: async () => undefined,
   markRead: async () => undefined,
   respondFriend: async () => "Nicht verfügbar.",
@@ -347,6 +349,7 @@ export function PostfachProvider({
       actionableCount: countActionable(items),
       loading,
       available,
+      isGuest,
       refresh,
       markRead,
       respondFriend,
@@ -356,6 +359,7 @@ export function PostfachProvider({
     }),
     [
       available,
+      isGuest,
       items,
       loading,
       markRead,

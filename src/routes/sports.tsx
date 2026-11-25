@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Activity, ArrowUpRight, CircleDot, Flame, Star, Trophy, X } from "lucide-react";
+import { Activity, ArrowUpRight, CircleDot, Star, Trophy, X } from "lucide-react";
 import { HomeAppMenuLayout } from "@/components/HomeAppMenuLayout";
 import { StandaloneAppShell } from "@/components/StandaloneAppShell";
 import {
@@ -263,20 +263,6 @@ function SportsPage() {
         title="Spiele & Live"
         sidebar={
           <div className="flex flex-col gap-2">
-            <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Ligen
-            </p>
-            {FOOTBALL_LEAGUES.map((entry: FootballLeague) => (
-              <button
-                key={entry.id}
-                type="button"
-                onClick={() => setLeagueId(entry.id)}
-                aria-pressed={entry.id === league.id}
-                className={`rounded-lg px-3 py-2 text-left text-sm font-medium ${entry.id === league.id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-card"}`}
-              >
-                {entry.name}
-              </button>
-            ))}
             <Link
               to="/football"
               className="mt-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary hover:underline"
@@ -345,7 +331,7 @@ function SportsPage() {
                 </>
               ) : (
                 <h2 id="matchday-title" className="mt-5 text-xl font-bold sm:text-2xl">
-                  Noch kein Spiel beendet
+                  Am ausgewählten Spieltag wurde noch kein Spiel beendet.
                 </h2>
               )}
               <div className="mt-5 grid grid-cols-3 gap-3 text-center text-sm text-white/70">
@@ -425,7 +411,7 @@ function SportsPage() {
             </section>
 
             {league.hasTable && (
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4">
                 <section
                   className="rounded-2xl border border-border/70 bg-card/70 p-5"
                   aria-labelledby="table-title"
@@ -465,31 +451,6 @@ function SportsPage() {
                       Gesamte Tabelle in Alo Fußball <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>
                   )}
-                </section>
-                <section
-                  className="rounded-2xl border border-border/70 bg-card/70 p-5"
-                  aria-labelledby="stats-title"
-                >
-                  <div className="flex items-center justify-between">
-                    <h2 id="stats-title" className="font-bold">
-                      Spieltag-Statistik
-                    </h2>
-                    <Flame className="h-5 w-5 text-orange-400" />
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-primary/10 p-3">
-                      <strong className="block text-2xl">{goalsCount}</strong>
-                      <span className="text-xs text-muted-foreground">
-                        {matchday > 0 ? "Tore am Spieltag" : "Tore in den geladenen Spielen"}
-                      </span>
-                    </div>
-                    <div className="rounded-xl bg-primary/10 p-3">
-                      <strong className="block text-2xl">
-                        {finishedCount}/{matchdayMatches.length}
-                      </strong>
-                      <span className="text-xs text-muted-foreground">Spiele beendet</span>
-                    </div>
-                  </div>
                 </section>
               </div>
             )}
