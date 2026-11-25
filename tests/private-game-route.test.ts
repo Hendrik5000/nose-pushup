@@ -68,6 +68,11 @@ test("private game documents render only in a sandboxed iframe and are not publi
   assert.match(route, /<iframe/);
   assert.match(route, /srcDoc=\{currentDocument\}/);
   assert.match(route, /sandbox="allow-scripts"/);
+  assert.match(route, /selectedGame && hasAccess && \(/);
+  assert.match(route, /toggleGameFullscreen\(gameShellRef\.current, document\)/);
+  assert.match(route, /document\.addEventListener\("fullscreenchange", syncFullscreen\)/);
+  assert.match(route, /aria-pressed=\{isFullscreen\}/);
+  assert.match(route, /Vollbild ist in diesem Browser oder auf diesem Gerät nicht verfügbar/);
   assert.doesNotMatch(route, /allow-same-origin|VITE_PRIVATE_GAME_PREVIEW_URL|127\.0\.0\.1/);
   assert.doesNotMatch(route, /src=\{(?:frameUrl|gameUrl)\}/);
   for (const id of ["grid-defense", "kupferkern", "neon-starfighter", "chess"]) {

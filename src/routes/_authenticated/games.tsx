@@ -3,9 +3,10 @@ import { getPrivateGameDocument } from "@/lib/private-game.functions";
 import { isCurrentPrivateGameDocument } from "@/lib/private-game-access-policy";
 import { usePrivateGameAccess } from "@/lib/use-private-game-access";
 import { PRIVATE_GAME_IDS, type PrivateGameId } from "@/lib/private-game-policy";
+import { toggleGameFullscreen } from "@/lib/game-fullscreen";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Home, Menu, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Home, Maximize2, Menu, Minimize2, X } from "lucide-react";
 import { z } from "zod";
 
 const searchSchema = z.object({ game: z.enum(PRIVATE_GAME_IDS).optional() });
@@ -46,7 +47,10 @@ function GamesHub() {
   const { state: accessState, status: accessStatus, hasAccess } = usePrivateGameAccess(user.id);
   const navigate = useNavigate();
   const [loadState, setLoadState] = useState<GameLoadState | null>(null);
+  const gameShellRef = useRef<HTMLElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenFailed, setFullscreenFailed] = useState(false);
   const currentLoad =
     loadState?.userId === user.id && loadState.game === selectedGame ? loadState : null;
   const currentDocument =
@@ -55,6 +59,15 @@ function GamesHub() {
       ? currentLoad.document
       : null;
   const loadFailed = currentLoad?.status === "failed";
+  useEffect(() => {
+    const syncFullscreen = () => {
+      const active = document.fullscreenElement === gameShellRef.current;
+      setIsFullscreen(active);
+      if (active) setFullscreenFailed(false);
+    };
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
   useEffect(() => {
     if (!selectedGame) {
       void navigate({ to: "/", replace: true });
@@ -105,7 +118,10 @@ function GamesHub() {
   }, [accessState.revision, hasAccess, selectedGame, user.id]);
   const title = GAMES.find((entry) => entry.game === selectedGame)?.title ?? "Alo-Spiel";
   return (
-    <main className="alo-games-page fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950 text-white">
+    <main
+      ref={gameShellRef}
+      className="alo-games-page fixed inset-0 z-50 h-dvh w-screen overflow-hidden bg-slate-950 text-white"
+    >
       {accessStatus === "checking" ? (
         <p className="mx-auto mt-24 max-w-xl rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-slate-300">
           Anmeldung wird geprüft …
@@ -168,15 +184,51 @@ function GamesHub() {
         >
           {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
-        <Link
-          to="/"
-          aria-label="Zur Alo-Startseite"
-          className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-xl border border-white/15 bg-slate-950/85 px-4 text-sm font-semibold text-white shadow-lg backdrop-blur hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300"
-        >
-          <Home className="h-4 w-4" />
-          Home
-        </Link>
+        <div className="pointer-events-auto flex items-center gap-2">
+          {selectedGame && hasAccess && (
+            <button
+              type="button"
+              aria-label={
+                isFullscreen ? "Vollbildmodus verlassen" : "Spiel im Vollbildmodus öffnen"
+              }
+              aria-pressed={isFullscreen}
+              title={isFullscreen ? "Vollbildmodus verlassen" : "Vollbild"}
+              onClick={() => {
+                setFullscreenFailed(false);
+                void toggleGameFullscreen(gameShellRef.current, document).then((success) => {
+                  setFullscreenFailed(!success);
+                });
+              }}
+              className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-slate-950/85 px-3 text-white shadow-lg backdrop-blur hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300"
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-5 w-5" />
+              ) : (
+                <Maximize2 className="h-5 w-5" />
+              )}
+              <span className="text-xs font-semibold">
+                {isFullscreen ? "Vollbild verlassen" : "Vollbild"}
+              </span>
+            </button>
+          )}
+          <Link
+            to="/"
+            aria-label="Zur Alo-Startseite"
+            className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/15 bg-slate-950/85 px-4 text-sm font-semibold text-white shadow-lg backdrop-blur hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300"
+          >
+            <Home className="h-4 w-4" />
+            Home
+          </Link>
+        </div>
       </div>
+      {fullscreenFailed && (
+        <p
+          role="alert"
+          className="absolute bottom-4 left-1/2 z-[65] w-[min(92vw,36rem)] -translate-x-1/2 rounded-xl border border-amber-300/25 bg-slate-950/95 px-4 py-3 text-center text-sm text-amber-100 shadow-xl"
+        >
+          Vollbild ist in diesem Browser oder auf diesem Gerät nicht verfügbar.
+        </p>
+      )}
       {menuOpen && (
         <>
           <button
