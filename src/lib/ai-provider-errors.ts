@@ -59,7 +59,9 @@ export function safeGeminiError(error: unknown): Error {
     );
   }
   if (status === 400) {
-    return new Error("Google Gemini hat die Anfrage abgelehnt. Prüfe das ausgewählte Modell und die Anhänge.");
+    return new Error(
+      "Google Gemini hat die Anfrage abgelehnt. Prüfe das ausgewählte Modell und die Anhänge.",
+    );
   }
   if (status === 404) {
     return new Error("Das gewählte Gemini-Modell ist aktuell nicht erreichbar oder für deinen API-Key nicht freigeschaltet.");

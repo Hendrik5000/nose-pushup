@@ -49,14 +49,14 @@ export function AiProviderSettings({
       <p className="text-xs text-muted-foreground">
         Gib deinen eigenen Google-Gemini-API-Key ein. Änderungen werden sofort automatisch im
         Arbeitsspeicher dieses Tabs und getrennt nach Konto gespeichert; der Key wird nicht in
-        localStorage oder sessionStorage abgelegt. Mit der Eingabe wird der Anbieter aktiviert. Wenn Gemini aktiviert ist, kann Mira es für
-        passende Aufgaben auswählen. Erst wenn du Mira bewusst sendest, wird der Key über den
-        authentifizierten Alo-Server an Google weitergegeben. Google erhält dann deine Nachricht,
-        ausdrücklich freigegebene Alo-Kontextdaten und die von dir gesendeten Anhänge. Bei Nutzung
-        des Gemini-Free-Tiers kann Google Inhalte laut Anbieter zur Produktverbesserung verwenden;
-        Limits und mögliche Kosten hängen von deinem Google-Konto ab. Prüfe die aktuellen
-        Bedingungen, bevor du sensible Inhalte sendest. Abmelden, Kontowechsel, Neuladen oder
-        Schließen des Tabs entfernt den Key.
+        localStorage oder sessionStorage abgelegt. Mit der Eingabe wird der Anbieter aktiviert.
+        Wenn Gemini aktiviert ist, kann Mira es für passende Aufgaben auswählen. Erst wenn du Mira
+        bewusst sendest, wird der Key über den authentifizierten Alo-Server an Google weitergegeben.
+        Google erhält dann deine Nachricht, ausdrücklich freigegebene Alo-Kontextdaten und die von
+        dir gesendeten Anhänge. Bei Nutzung des Gemini-Free-Tiers kann Google Inhalte laut Anbieter
+        zur Produktverbesserung verwenden; Limits und mögliche Kosten hängen von deinem Google-Konto
+        ab. Prüfe die aktuellen Bedingungen, bevor du sensible Inhalte sendest. Abmelden,
+        Kontowechsel, Neuladen oder Schließen des Tabs entfernt den Key.
       </p>
       <p className="text-xs text-muted-foreground">
         OpenRouter Free ist optional; auch dieser Key wird sofort im Arbeitsspeicher dieses Tabs gespeichert.
@@ -92,7 +92,9 @@ export function AiProviderSettings({
                 value={provider.apiKey}
                 onChange={(event) => update(provider.id, { apiKey: event.target.value })}
                 placeholder={
-                  isGemini ? "Gemini API-Key – automatisch gespeichert" : "OpenRouter API-Key – automatisch gespeichert"
+                  isGemini
+                    ? "Gemini API-Key – automatisch gespeichert"
+                    : "OpenRouter API-Key – automatisch gespeichert"
                 }
                 aria-label={isGemini ? "Google Gemini API-Key" : "OpenRouter API-Key"}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
@@ -153,8 +155,11 @@ export function AiProviderSettings({
         );
       })}
       <p role="status" className="text-center text-xs text-muted-foreground">
-        {saved ? "Änderungen automatisch gespeichert ✓" : "Eingaben werden automatisch gespeichert."}
-        Der API-Key bleibt aus Sicherheitsgründen nur bis zum Neuladen oder Schließen dieses Tabs erhalten.
+        {saved
+          ? "Änderungen automatisch gespeichert ✓"
+          : "Eingaben werden automatisch gespeichert."}
+        Der API-Key bleibt aus Sicherheitsgründen nur bis zum Neuladen oder Schließen dieses Tabs
+        erhalten.
       </p>
     </div>
   );

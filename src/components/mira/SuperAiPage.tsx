@@ -479,9 +479,8 @@ export function SuperAiPage({
   const [requestedModel, setRequestedModel] = useState(() => {
     try {
       const saved = window.localStorage.getItem(`alo-mira-model:${userId}`);
-      return saved && ["auto", "gemini-4-hydrogen", "gemini-3.1-flash-lite", "openrouter/free"].includes(saved)
-        ? saved
-        : "auto";
+      const allowed = ["auto", "gemini-4-hydrogen", "gemini-3.1-flash-lite", "openrouter/free"];
+      return saved && allowed.includes(saved) ? saved : "auto";
     } catch {
       return "auto";
     }
@@ -3132,9 +3131,39 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                           className="max-w-[148px] rounded-xl border border-border bg-background px-2 py-2 text-xs text-foreground outline-none focus:border-primary"
                         >
                           <option value="auto">Automatisch</option>
-                          <option value="gemini-4-hydrogen" disabled={!configuredProviders.some((provider) => provider.id === "google" && provider.enabled && provider.apiKey.trim())}>Gemini 4 Hydrogen</option>
-                          <option value="gemini-3.1-flash-lite" disabled={!configuredProviders.some((provider) => provider.id === "google" && provider.enabled && provider.apiKey.trim())}>Gemini 3.1 Flash Lite</option>
-                          <option value="openrouter/free" disabled={!configuredProviders.some((provider) => provider.id === "openrouter" && provider.enabled && provider.apiKey.trim())}>OpenRouter Free</option>
+                          <option
+                            value="gemini-4-hydrogen"
+                            disabled={
+                              !configuredProviders.some(
+                                (provider) =>
+                                  provider.id === "google" && provider.enabled && provider.apiKey.trim(),
+                              )
+                            }
+                          >
+                            Gemini 4 Hydrogen
+                          </option>
+                          <option
+                            value="gemini-3.1-flash-lite"
+                            disabled={
+                              !configuredProviders.some(
+                                (provider) =>
+                                  provider.id === "google" && provider.enabled && provider.apiKey.trim(),
+                              )
+                            }
+                          >
+                            Gemini 3.1 Flash Lite
+                          </option>
+                          <option
+                            value="openrouter/free"
+                            disabled={
+                              !configuredProviders.some(
+                                (provider) =>
+                                  provider.id === "openrouter" && provider.enabled && provider.apiKey.trim(),
+                              )
+                            }
+                          >
+                            OpenRouter Free
+                          </option>
                         </select>
                       </label>
                       <MiraAttachmentPicker
