@@ -11,6 +11,7 @@ import {
   safeGeminiError,
   safeOpenRouterErrorMessage,
 } from "../src/lib/ai-provider-errors.ts";
+import { DEFAULT_PROVIDERS, selectProvider } from "../src/lib/ai-providers.ts";
 
 const read = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 
@@ -65,6 +66,26 @@ test("Gemini SDK failures are replaced with safe messages that never echo keys o
   assert.doesNotMatch(unknown.message, new RegExp(marker));
 });
 
+
+test("Gemini SDK nested HTTP and symbolic status fields map to safe actionable errors", () => {
+  assert.match(safeGeminiError({ response: { status: 429 }, message: "private" }).message, /Kontingent/);
+  assert.match(safeGeminiError({ cause: { code: "UNAUTHENTICATED" } }).message, /API-Key/);
+  assert.match(safeGeminiError({ code: "INVALID_ARGUMENT" }).message, /Anfrage abgelehnt/);
+  assert.match(safeGeminiError({ response: { status: 503 } }).message, /nicht verfügbar/);
+});
+
+test("manual Mira model selection routes to the selected configured provider and model", () => {
+  const providers = DEFAULT_PROVIDERS.map((provider) =>
+    provider.id === "google"
+      ? { ...provider, enabled: true, apiKey: "test-key" }
+      : provider,
+  );
+  const selected = selectProvider(providers, "general", { requestedModel: "gemini-3.1-flash-lite" });
+  assert.equal(selected.provider?.id, "google");
+  assert.equal(selected.provider?.model, "gemini-3.1-flash-lite");
+  assert.equal(selectProvider(DEFAULT_PROVIDERS, "general", { requestedModel: "gemini-4-hydrogen" }).provider, null);
+});
+
 test("OpenRouter error messages do not include upstream bodies or credentials", () => {
   const marker = "DO_NOT_LEAK_OPENROUTER_KEY_456";
   for (const status of [401, 403, 404, 429, 500]) {
@@ -84,4 +105,7 @@ test("Gemini runs server-side with a fixed token cap and only approved models", 
   assert.match(server, /isGeminiModelMode\(requestedModel\)/);
   assert.match(server, /safeGeminiError\(error\)/);
   assert.doesNotMatch(server, /console\.(?:log|error).*apiKey/);
+  const mira = read("components/mira/SuperAiPage.tsx");
+  assert.match(mira, /aria-label="Mira-Modell auswählen"/);
+  assert.match(mira, /requestedModel/);
 });

@@ -20,6 +20,12 @@ Eine detaillierte ÃÂbersicht ÃÂ¼ber Aufbau, Routen, Datenbank, Mira, 
 
 Das Register hÃÂ`lt fest, was die Assistenten selbst melden. Ein Eintrag allein ist kein Beleg fÃÂ¼r einen erfolgreichen Push, Test oder Live-Deploy; solche Ergebnisse mÃÂ¼ssen separat geprÃÂ¼ft werden.
 
+## Laufender Arbeitsnachweis – 2026-11-26
+
+| Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |
+|---|---|---|---|---|---|
+| ChatGPT | GPT-6 / OpenAI | Mira: Gemini-Fehlerdiagnose verbessern, API-Key-Eingaben sofort speichern/aktivieren und Modellwahl in der Chatoberfläche ergänzen | Implementierung vorbereitet; Tests/CI/Commit noch ausstehend | 2026-11-26 | Geplant: `src/components/AiProviderSettings.tsx`, `src/components/mira/SuperAiPage.tsx`, `src/lib/ai-providers.ts`, `src/lib/ai-provider-errors.ts`, `tests/gemini-models-and-errors.test.ts`, diese Datei und `docs/AI-ROADMAP.md`. Keine Fehlerberichte vom Nutzer vorhanden; tatsächliche Google-Antwort deshalb nicht live reproduziert. Keine API-Keys oder Secrets gelesen, gespeichert oder ausgegeben. Keine Datenbankänderung. |
+
 ## Laufender Arbeitsnachweis – 2026-11-25
 
 | Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |
