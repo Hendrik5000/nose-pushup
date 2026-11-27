@@ -8,6 +8,7 @@ import { miraMemorySystemBlock } from "@/lib/mira-memory";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
 import { MIRA_VISUAL_INSTRUCTIONS } from "@/lib/mira-visual-answer";
 import { MIRA_ACTION_INSTRUCTIONS } from "@/lib/mira-action-cards";
+import { recordMiraUsage } from "@/lib/mira-usage";
 import { MiraActionCard } from "@/components/mira/MiraActionCard";
 import {
   buildMiraNexusHistory,
@@ -77,6 +78,7 @@ export function MiraNexusPanel({ userId, onBack }: Props) {
             systemExtra,
           },
         });
+        recordMiraUsage({ userId, provider: res.provider, model: res.model, ok: true });
         const parsed = parseAiResponse(res.reply, { preserveCode: false });
         reply = parsed.reply?.trim() || "Mira hat eine leere Antwort zurückgegeben.";
         visual = parsed.visual;
