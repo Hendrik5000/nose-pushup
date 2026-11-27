@@ -3,6 +3,7 @@ import {
   saveMiraActionEntry,
   validateMiraActionCard,
 } from "@/lib/mira-action-cards";
+import { recordMiraActivity } from "@/lib/mira-activity-log";
 
 type MiraActionCardProps = { action: unknown; userId: string };
 
@@ -18,6 +19,11 @@ export function MiraActionCard({ action, userId }: MiraActionCardProps) {
     if (status === "saved") return;
     try {
       saveMiraActionEntry(parsed, userId);
+      recordMiraActivity({
+        userId,
+        kind: "entry",
+        label: (parsed.kind === "task" ? "Aufgabe: " : "Notiz: ") + parsed.title,
+      });
       setStatus("saved");
       setMessage("Im Alo-Workspace gespeichert.");
     } catch (error) {

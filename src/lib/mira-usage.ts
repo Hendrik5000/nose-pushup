@@ -1,6 +1,7 @@
 /** Lokale, ehrliche Anfragen-Zaehlung pro Mira-Anbieter/Modell. Keine Token- oder Kostenzahlen. */
 
 import { getAloOwner, localDay } from "./alo-store";
+import { recordMiraActivity } from "./mira-activity-log";
 
 export type MiraUsageEntry = {
   provider: string;
@@ -37,6 +38,7 @@ export function recordMiraUsage(input: {
   const provider = sanitizeName(input.provider, 60);
   if (!provider) return;
   const model = sanitizeName(input.model, 80) || "unbekannt";
+  recordMiraActivity({ userId: input.userId, kind: "chat", label: provider + " · " + model });
   const now = new Date();
   let entries: MiraUsageEntry[];
   try {
