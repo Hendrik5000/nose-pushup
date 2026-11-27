@@ -15,11 +15,7 @@ import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { MiraVoiceConversationDialog } from "@/components/mira/MiraVoiceConversationDialog";
 import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
-import {
-  MIRA_VISUAL_INSTRUCTIONS,
-  type MiraActionCard
-,
-} from "@/lib/mira-action-cards";
+import { MIRA_ACTION_INSTRUCTIONS } from "@/lib/mira-action-cards";
 import { MiraActionCard } from "@/components/mira/MiraActionCard";
 import {
   browserStepsToSystemBlock,
