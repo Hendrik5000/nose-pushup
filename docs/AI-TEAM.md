@@ -293,3 +293,12 @@ Mira zählt ab jetzt lokal pro Gerät, wie oft jeder eingerichtete Anbieter und 
 - **Geänderte Dateien:** `src/components/mira/SuperAiPage.tsx` (Zählung nach erfolgreicher Antwort, Karte in den Zugangsdaten), `src/components/chat/MiraNexusPanel.tsx` (Zählung für Mira in Nexus).
 - **Ehrliche Grenzen:** Es werden nur erfolgreiche Antworten gezählt; fehlgeschlagene Sendeversuche ohne Antwort erscheinen nicht. Keine Token-, Kosten- oder Quotenwerte — diese liegen nicht beim Client. Kein geräteübergreifender Abgleich.
 - **Prüfstatus:** Tests wurden in dieser Umgebung nicht lokal ausgeführt (kein Node verfügbar); Pflicht-CI muss auf dem PR-Head grün sein. Kein Lovable-Publish; Live-Status unverifiziert.
+
+### 2026-11-27 – Alo 1.201: Übersetzen-Karte für Mira (Vibe Code, Draft-PR offen)
+
+Der feste Mira-Antwortkarten-Satz hat einen dritten Typ: `translatePair` (Schema 1) zeigt Original und Übersetzung nebeneinander, mit Sprachangaben. Nur für echte Übersetzungs- oder Sprachwünsche; der Inhalt muss wortgetreu aus der Nutzereingabe oder dem Chat stammen, sehr lange Texte werden ehrlich zusammengefasst.
+
+- **Geänderte Dateien:** `src/lib/mira-visual-answer.ts` (neuer Typ, Validierung mit `safeLongText`, erweiterte Anweisungen), `src/components/mira/MiraVisualAnswerCard.tsx` (Render-Zweig TranslatePair).
+- **Neue Datei:** `tests/mira-translate-card.test.ts` (6 Tests: Validierung, Ablehnung, mehrzeilige Texte, `parseAiResponse`-Integration, Rendering, Verwerfen ungültiger Daten).
+- **Ehrliche Grenzen:** Keine Live-Übersetzung externer Dienste; die Übersetzung kommt vom eingerichteten Modell. URLs im Text lassen die Karte ehrlich entfallen. Kein Lovable-Publish; Live-Status unverifiziert.
+- **Prüfstatus:** Tests wurden in dieser Umgebung nicht lokal ausgeführt (kein Node verfügbar); Pflicht-CI muss auf dem PR-Head grün sein.

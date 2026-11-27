@@ -20,7 +20,16 @@ export type MiraVisualBarChart = {
 export type MiraVisualUnit =
   "%" | "€" | "km" | "m" | "cm" | "kg" | "g" | "kcal" | "h" | "min" | "s" | "W" | "°C" | "Punkte";
 
-export type MiraVisualAnswer = MiraVisualMetricGrid | MiraVisualBarChart;
+export type MiraVisualTranslatePair = {
+  type: "translatePair";
+  schemaVersion: typeof MIRA_VISUAL_SCHEMA_VERSION;
+  sourceLanguage: string;
+  targetLanguage: string;
+  original: string;
+  translation: string;
+};
+
+export type MiraVisualAnswer = MiraVisualMetricGrid | MiraVisualBarChart | MiraVisualTranslatePair;
 
 const UNITS = new Set<MiraVisualUnit>([
   "%",
@@ -72,6 +81,33 @@ export function validateMiraVisualAnswer(value: unknown): MiraVisualAnswer | nul
     };
   }
 
+  if (value.type === "translatePair") {
+    if (
+      !hasExactKeys(value, [
+        "type",
+        "schemaVersion",
+        "sourceLanguage",
+        "targetLanguage",
+        "original",
+        "translation",
+      ])
+    )
+      return null;
+    const sourceLanguage = safeText(value.sourceLanguage, 24);
+    const targetLanguage = safeText(value.targetLanguage, 24);
+    const original = safeLongText(value.original, 1200);
+    const translation = safeLongText(value.translation, 1200);
+    if (!sourceLanguage || !targetLanguage || !original || !translation) return null;
+    return {
+      type: "translatePair",
+      schemaVersion: MIRA_VISUAL_SCHEMA_VERSION,
+      sourceLanguage,
+      targetLanguage,
+      original,
+      translation,
+    };
+  }
+
   return null;
 }
 
@@ -112,6 +148,24 @@ function validateBarItems(value: unknown): MiraVisualBarChart["items"] | null {
   return items;
 }
 
+function safeLongText(value: unknown, maxLength: number): string | null {
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  if (
+    text.length < 1 ||
+    text.length > maxLength ||
+    /[<>]/.test(text) ||
+    [...text].some(
+      (character) =>
+        (character.charCodeAt(0) <= 31 && character !== "\n" && character !== "\t") ||
+        character.charCodeAt(0) === 127,
+    ) ||
+    /(?:https?:\/\/|www\.)/i.test(text)
+  )
+    return null;
+  return text;
+}
+
 function safeText(value: unknown, maxLength: number): string | null {
   if (typeof value !== "string") return null;
   const text = value.trim();
@@ -147,9 +201,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export const MIRA_VISUAL_INSTRUCTIONS = [
   "Visualisierung (optional, nur wenn sie die Antwort tatsächlich klarer macht): Wenn du visualisierst, antworte als JSON-Objekt mit dem vollständigen normalen reply und genau einem visual-Objekt.",
-  'Erlaubte Formen: {"reply":"...","visual":{"type":"metricGrid","schemaVersion":1,"title":"...","items":[{"label":"...","value":"..."},{"label":"...","value":"..."}]}} oder {"reply":"...","visual":{"type":"barChart","schemaVersion":1,"title":"...","unit":"km","items":[{"label":"...","value":2.5},{"label":"...","value":5}]}}.',
+  'Erlaubte Formen: {"reply":"...","visual":{"type":"metricGrid","schemaVersion":1,"title":"...","items":[{"label":"...","value":"..."},{"label":"...","value":"..."}]}} oder {"reply":"...","visual":{"type":"barChart","schemaVersion":1,"title":"...","unit":"km","items":[{"label":"...","value":2.5},{"label":"...","value":5}]}} oder {"reply":"...","visual":{"type":"translatePair","schemaVersion":1,"sourceLanguage":"...","targetLanguage":"...","original":"...","translation":"..."}}.',
   "metricGrid hat 2–6 items mit nur label, value und optional detail (Text); barChart hat 2–6 items mit nur label und value, optional unit ausschließlich aus %, €, km, m, cm, kg, g, kcal, h, min, s, W, °C, Punkte. Keine weiteren Felder.",
   "Zahlen im barChart müssen aus der Nutzereingabe oder ausdrücklich freigegebenem Kontext stammen; einfache Rechnungen daraus sind nur erlaubt, wenn du sie im reply nachvollziehbar erklärst.",
   "Erfinde keine Messwerte, persönlichen Daten, Vergleiche oder Live-Daten. Fehlen belegte Zahlen oder hilft ein Bild nicht, antworte im normalen Textformat und lasse visual weg.",
+  "translatePair nur bei echten Übersetzungs- oder Sprachwünschen: original ist der wortgetreue Ausgangstext aus der Nutzereingabe oder dem Chat, translation die Übersetzung, sourceLanguage/targetLanguage kurz benennt. Erfinde keinen Inhalt; bei sehr langen Texten fasse zusammen und sage das im reply.",
   "Keine URLs, HTML, JavaScript, Iframes, Einbettungen oder ausführbaren Inhalte; die Visuals werden ausschließlich als feste Alo-Karten gerendert.",
 ].join(" ");
