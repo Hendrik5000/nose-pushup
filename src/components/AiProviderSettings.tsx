@@ -49,8 +49,8 @@ export function AiProviderSettings({
       <p className="text-xs text-muted-foreground">
         Gib deinen eigenen Google-Gemini-API-Key ein. Änderungen werden sofort automatisch im
         Arbeitsspeicher dieses Tabs und getrennt nach Konto gespeichert; der Key wird nicht in
-        localStorage oder sessionStorage abgelegt. Mit der Eingabe wird der Anbieter aktiviert.
-        Wenn Gemini aktiviert ist, kann Mira es für passende Aufgaben auswählen. Erst wenn du Mira
+        localStorage oder sessionStorage abgelegt. Mit der Eingabe wird der Anbieter aktiviert. Wenn
+        Gemini aktiviert ist, kann Mira es für passende Aufgaben auswählen. Erst wenn du Mira
         bewusst sendest, wird der Key über den authentifizierten Alo-Server an Google weitergegeben.
         Google erhält dann deine Nachricht, ausdrücklich freigegebene Alo-Kontextdaten und die von
         dir gesendeten Anhänge. Bei Nutzung des Gemini-Free-Tiers kann Google Inhalte laut Anbieter
@@ -59,8 +59,8 @@ export function AiProviderSettings({
         Kontowechsel, Neuladen oder Schließen des Tabs entfernt den Key.
       </p>
       <p className="text-xs text-muted-foreground">
-        OpenRouter Free ist optional; auch dieser Key wird sofort im Arbeitsspeicher dieses Tabs gespeichert.
-        Andere Anbieter bleiben serverseitig gesperrt.
+        OpenRouter Free ist optional; auch dieser Key wird sofort im Arbeitsspeicher dieses Tabs
+        gespeichert. Andere Anbieter bleiben serverseitig gesperrt.
       </p>
       {visibleList.map((provider) => {
         const canUseProvider = isSupportedProvider(provider.id);

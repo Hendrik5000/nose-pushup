@@ -64,10 +64,14 @@ export function safeGeminiError(error: unknown): Error {
     );
   }
   if (status === 404) {
-    return new Error("Das gewählte Gemini-Modell ist aktuell nicht erreichbar oder für deinen API-Key nicht freigeschaltet.");
+    return new Error(
+      "Das gewählte Gemini-Modell ist aktuell nicht erreichbar oder für deinen API-Key nicht freigeschaltet.",
+    );
   }
   if (status === 503 || status === 500) {
-    return new Error("Der Google-Gemini-Dienst ist gerade nicht verfügbar. Bitte später erneut versuchen.");
+    return new Error(
+      "Der Google-Gemini-Dienst ist gerade nicht verfügbar. Bitte später erneut versuchen.",
+    );
   }
   return new Error(
     "Die Gemini-Anfrage ist fehlgeschlagen. Providerdetails wurden zum Schutz deiner Daten ausgeblendet.",

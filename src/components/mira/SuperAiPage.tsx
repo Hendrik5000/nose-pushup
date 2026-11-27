@@ -3136,7 +3136,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                             disabled={
                               !configuredProviders.some(
                                 (provider) =>
-                                  provider.id === "google" && provider.enabled && provider.apiKey.trim(),
+                                  provider.id === "google" &&
+                                  provider.enabled &&
+                                  provider.apiKey.trim(),
                               )
                             }
                           >
@@ -3147,7 +3149,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                             disabled={
                               !configuredProviders.some(
                                 (provider) =>
-                                  provider.id === "google" && provider.enabled && provider.apiKey.trim(),
+                                  provider.id === "google" &&
+                                  provider.enabled &&
+                                  provider.apiKey.trim(),
                               )
                             }
                           >
@@ -3158,7 +3162,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                             disabled={
                               !configuredProviders.some(
                                 (provider) =>
-                                  provider.id === "openrouter" && provider.enabled && provider.apiKey.trim(),
+                                  provider.id === "openrouter" &&
+                                  provider.enabled &&
+                                  provider.apiKey.trim(),
                               )
                             }
                           >

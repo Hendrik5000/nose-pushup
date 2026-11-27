@@ -66,9 +66,11 @@ test("Gemini SDK failures are replaced with safe messages that never echo keys o
   assert.doesNotMatch(unknown.message, new RegExp(marker));
 });
 
-
 test("Gemini SDK nested HTTP and symbolic status fields map to safe actionable errors", () => {
-  assert.match(safeGeminiError({ response: { status: 429 }, message: "private" }).message, /Kontingent/);
+  assert.match(
+    safeGeminiError({ response: { status: 429 }, message: "private" }).message,
+    /Kontingent/,
+  );
   assert.match(safeGeminiError({ cause: { code: "UNAUTHENTICATED" } }).message, /API-Key/);
   assert.match(safeGeminiError({ code: "INVALID_ARGUMENT" }).message, /Anfrage abgelehnt/);
   assert.match(safeGeminiError({ response: { status: 503 } }).message, /nicht verfügbar/);
@@ -76,14 +78,17 @@ test("Gemini SDK nested HTTP and symbolic status fields map to safe actionable e
 
 test("manual Mira model selection routes to the selected configured provider and model", () => {
   const providers = DEFAULT_PROVIDERS.map((provider) =>
-    provider.id === "google"
-      ? { ...provider, enabled: true, apiKey: "test-key" }
-      : provider,
+    provider.id === "google" ? { ...provider, enabled: true, apiKey: "test-key" } : provider,
   );
-  const selected = selectProvider(providers, "general", { requestedModel: "gemini-3.1-flash-lite" });
+  const selected = selectProvider(providers, "general", {
+    requestedModel: "gemini-3.1-flash-lite",
+  });
   assert.equal(selected.provider?.id, "google");
   assert.equal(selected.provider?.model, "gemini-3.1-flash-lite");
-  assert.equal(selectProvider(DEFAULT_PROVIDERS, "general", { requestedModel: "gemini-4-hydrogen" }).provider, null);
+  assert.equal(
+    selectProvider(DEFAULT_PROVIDERS, "general", { requestedModel: "gemini-4-hydrogen" }).provider,
+    null,
+  );
 });
 
 test("OpenRouter error messages do not include upstream bodies or credentials", () => {
