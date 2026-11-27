@@ -13,8 +13,35 @@ export function normalizeProviderApiKey(value: unknown): string {
 
 function statusFrom(error: unknown): number | null {
   if (!error || typeof error !== "object") return null;
-  const candidate = error as { status?: unknown; code?: unknown };
-  for (const value of [candidate.status, candidate.code]) {
+  const candidate = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    code?: unknown;
+    response?: { status?: unknown };
+    cause?: { status?: unknown; statusCode?: unknown; code?: unknown };
+  };
+  const values = [
+    candidate.status,
+    candidate.statusCode,
+    candidate.response?.status,
+    candidate.cause?.status,
+    candidate.cause?.statusCode,
+    candidate.code,
+    candidate.cause?.code,
+  ];
+  const namedStatuses: Record<string, number> = {
+    UNAUTHENTICATED: 401,
+    PERMISSION_DENIED: 403,
+    INVALID_ARGUMENT: 400,
+    NOT_FOUND: 404,
+    RESOURCE_EXHAUSTED: 429,
+    UNAVAILABLE: 503,
+    INTERNAL: 500,
+  };
+  for (const value of values) {
+    if (typeof value === "string" && namedStatuses[value.toUpperCase()]) {
+      return namedStatuses[value.toUpperCase()];
+    }
     const status = typeof value === "number" ? value : Number(value);
     if (Number.isInteger(status) && status >= 400 && status < 600) return status;
   }
@@ -31,8 +58,20 @@ export function safeGeminiError(error: unknown): Error {
       "Das Google-Gemini-Anfragelimit oder Kontingent ist erreicht. Bitte später erneut versuchen.",
     );
   }
+  if (status === 400) {
+    return new Error(
+      "Google Gemini hat die Anfrage abgelehnt. Prüfe das ausgewählte Modell und die Anhänge.",
+    );
+  }
   if (status === 404) {
-    return new Error("Das gewählte Gemini-Modell ist aktuell nicht erreichbar.");
+    return new Error(
+      "Das gewählte Gemini-Modell ist aktuell nicht erreichbar oder für deinen API-Key nicht freigeschaltet.",
+    );
+  }
+  if (status === 503 || status === 500) {
+    return new Error(
+      "Der Google-Gemini-Dienst ist gerade nicht verfügbar. Bitte später erneut versuchen.",
+    );
   }
   return new Error(
     "Die Gemini-Anfrage ist fehlgeschlagen. Providerdetails wurden zum Schutz deiner Daten ausgeblendet.",

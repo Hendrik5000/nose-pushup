@@ -18,7 +18,19 @@ Eine detaillierte ÃÂbersicht ÃÂ¼ber Aufbau, Routen, Datenbank, Mira, 
 4. Keine Arbeit anderer Assistenten ergÃÂ`nzen, umschreiben oder als eigene ausgeben. Bei einer parallelen ÃÂnderungskollision nur den eigenen Eintrag sicher koordinieren; nichts fremdes ÃÂ¼berschreiben.
 5. Keine Secrets, Tokens, privaten Nachrichten oder Nutzerkontaktdaten hier ablegen.
 
-Das Register hÃÂ`lt fest, was die Assistenten selbst melden. Ein Eintrag allein ist kein Beleg fÃÂ¼r einen erfolgreichen Push, Test oder Live-Deploy; solche Ergebnisse mÃÂ¼ssen separat geprÃÂ¼ft werden.
+Das Register hält fest, was die Assistenten selbst melden. Ein Eintrag allein ist kein Beleg für einen erfolgreichen Push, Test oder Live-Deploy; solche Ergebnisse müssen separat geprüft werden.
+
+## Laufender Arbeitsnachweis – 2026-11-27
+
+| Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |
+|---|---|---|---|---|---|
+| Cue Coding Assistant | unbekannt | PR #327: Mira-Gemini-Modellwahl/Fehlerdiagnose prüfen und fehlgeschlagene Pflicht-CI gezielt beheben | CI-Formatstellen korrigiert; 8/8 fokussierte Tests bestanden; Code-Fix-Commit gepusht, finale Pflichtchecks laufen | 2026-11-27 | Frische Basis `main` `863a24db0d46d5db0eca0915b3cb7a42203317ad`, PR-Head `8ba3434ed31900ffa3455c4a2b736a3a29aba4e1` (`fix: format Mira Gemini PR changes`, Branch `fix/mira-gemini-model-selection-20261126`). Geänderte Dateien: `src/components/AiProviderSettings.tsx`, `src/components/mira/SuperAiPage.tsx`, `src/lib/ai-provider-errors.ts`, `tests/gemini-models-and-errors.test.ts`, `docs/AI-TEAM.md`, `docs/AI-ROADMAP.md`. Ausschließlich die 13 von GitHub-Lint gemeldeten Prettier-Stellen formatiert. Fokustest mit Node 24 und temporärem Alias-Resolver außerhalb des Repositories: 8/8 bestanden; `git diff --check` bestanden. Lokales Gesamt-Lint/Build nicht ausgeführt, weil `node_modules` fehlt und die Inode-Auslastung bei 100 % liegt; keine Installation versucht. Commit ist auf den bestehenden PR-Zweig gepusht; Stand 05:14 CET: PR #327 offen, 6 Checks pending, Vercel Preview Comments erfolgreich und Supabase Preview übersprungen. Kein Merge. Keine Datenbank-/Secret-Aktion und kein Publish. |
+
+## Laufender Arbeitsnachweis – 2026-11-26
+
+| Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |
+|---|---|---|---|---|---|
+| ChatGPT | GPT-6 / OpenAI | Mira: Gemini-Fehlerdiagnose verbessern, API-Key-Eingaben sofort speichern/aktivieren und Modellwahl in der Chatoberfläche ergänzen | Implementierung vorbereitet; Tests/CI/Commit noch ausstehend | 2026-11-26 | Geplant: `src/components/AiProviderSettings.tsx`, `src/components/mira/SuperAiPage.tsx`, `src/lib/ai-providers.ts`, `src/lib/ai-provider-errors.ts`, `tests/gemini-models-and-errors.test.ts`, diese Datei und `docs/AI-ROADMAP.md`. Keine Fehlerberichte vom Nutzer vorhanden; tatsächliche Google-Antwort deshalb nicht live reproduziert. Keine API-Keys oder Secrets gelesen, gespeichert oder ausgegeben. Keine Datenbankänderung. |
 
 ## Laufender Arbeitsnachweis – 2026-11-25
 

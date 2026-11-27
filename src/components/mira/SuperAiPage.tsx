@@ -476,6 +476,22 @@ export function SuperAiPage({
   const [speakingMessage, setSpeakingMessage] = useState<number | null>(null);
   const [lastTask, setLastTask] = useState<AiTask | null>(null);
   const [sportAiView, setSportAiView] = useState<SportAiView>("chat");
+  const [requestedModel, setRequestedModel] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem(`alo-mira-model:${userId}`);
+      const allowed = ["auto", "gemini-4-hydrogen", "gemini-3.1-flash-lite", "openrouter/free"];
+      return saved && allowed.includes(saved) ? saved : "auto";
+    } catch {
+      return "auto";
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(`alo-mira-model:${userId}`, requestedModel);
+    } catch {
+      // Model preference is non-secret; keep the in-memory selection if storage is unavailable.
+    }
+  }, [requestedModel, userId]);
   const [, refreshProviderStatus] = useState(0);
   const hasVisionAttachment = attachments.some(({ file }) => {
     const mime = checkMiraFile(file);
@@ -486,7 +502,10 @@ export function SuperAiPage({
     : input.trim()
       ? classifyTask(input)
       : (lastTask ?? "general");
-  const providerPreview = selectProvider(loadProviders(userId), previewTask);
+  const configuredProviders = loadProviders(userId);
+  const providerPreview = selectProvider(configuredProviders, previewTask, {
+    requestedModel,
+  });
   const activeProvider = providerPreview.provider;
   const providerPreviewReason = describeProviderSelection(providerPreview, previewTask);
   const workbenchProviderLabel =
@@ -1169,7 +1188,7 @@ export function SuperAiPage({
       }),
     });
     setLastTask(task);
-    const selection = selectProvider(loadProviders(userId), task);
+    const selection = selectProvider(loadProviders(userId), task, { requestedModel });
     const provider = selection.provider;
     if (!provider) {
       setError("Kein aktiver KI-Anbieter. Öffne Zugangsdaten und hinterlege einen API-Schlüssel.");
@@ -3103,6 +3122,56 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     />
                   ) : (
                     <>
+                      <label className="flex shrink-0 flex-col gap-1 px-1 text-[10px] text-muted-foreground">
+                        <span>Modell</span>
+                        <select
+                          aria-label="Mira-Modell auswählen"
+                          value={requestedModel}
+                          onChange={(event) => setRequestedModel(event.target.value)}
+                          className="max-w-[148px] rounded-xl border border-border bg-background px-2 py-2 text-xs text-foreground outline-none focus:border-primary"
+                        >
+                          <option value="auto">Automatisch</option>
+                          <option
+                            value="gemini-4-hydrogen"
+                            disabled={
+                              !configuredProviders.some(
+                                (provider) =>
+                                  provider.id === "google" &&
+                                  provider.enabled &&
+                                  provider.apiKey.trim(),
+                              )
+                            }
+                          >
+                            Gemini 4 Hydrogen
+                          </option>
+                          <option
+                            value="gemini-3.1-flash-lite"
+                            disabled={
+                              !configuredProviders.some(
+                                (provider) =>
+                                  provider.id === "google" &&
+                                  provider.enabled &&
+                                  provider.apiKey.trim(),
+                              )
+                            }
+                          >
+                            Gemini 3.1 Flash Lite
+                          </option>
+                          <option
+                            value="openrouter/free"
+                            disabled={
+                              !configuredProviders.some(
+                                (provider) =>
+                                  provider.id === "openrouter" &&
+                                  provider.enabled &&
+                                  provider.apiKey.trim(),
+                              )
+                            }
+                          >
+                            OpenRouter Free
+                          </option>
+                        </select>
+                      </label>
                       <MiraAttachmentPicker
                         items={attachments}
                         compact={sketchLayout}
