@@ -2,6 +2,7 @@ import {
   validateMiraVisualAnswer,
   type MiraVisualAnswer,
   type MiraVisualBarChart,
+  type MiraVisualTranslatePair,
 } from "@/lib/mira-visual-answer";
 
 type MiraVisualAnswerCardProps = { visual: unknown };
@@ -17,7 +18,9 @@ export function MiraVisualAnswerCard({ visual }: MiraVisualAnswerCardProps) {
       aria-label={`Visualisierte Antwort: ${answer.title}`}
     >
       <h3 className="text-sm font-semibold">{answer.title}</h3>
-      {answer.type === "metricGrid" ? <MetricGrid visual={answer} /> : <BarChart visual={answer} />}
+      {answer.type === "metricGrid" && <MetricGrid visual={answer} />}
+      {answer.type === "barChart" && <BarChart visual={answer} />}
+      {answer.type === "translatePair" && <TranslatePair visual={answer} />}
       <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
         Nur eine Darstellung der Antwort – keine Live-Abfrage.
       </p>
@@ -74,5 +77,24 @@ function BarChart({ visual }: { visual: MiraVisualBarChart }) {
         );
       })}
     </ul>
+  );
+}
+
+function TranslatePair({ visual }: { visual: MiraVisualTranslatePair }) {
+  return (
+    <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-2">
+      <div className="min-w-0 rounded-xl border border-border/70 bg-background/70 p-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+          Original · {visual.sourceLanguage}
+        </p>
+        <p className="mt-1 whitespace-pre-wrap break-words text-sm">{visual.original}</p>
+      </div>
+      <div className="min-w-0 rounded-xl border border-primary/30 bg-primary/5 p-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+          Übersetzung · {visual.targetLanguage}
+        </p>
+        <p className="mt-1 whitespace-pre-wrap break-words text-sm">{visual.translation}</p>
+      </div>
+    </div>
   );
 }
