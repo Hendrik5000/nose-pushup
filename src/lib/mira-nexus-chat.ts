@@ -1,4 +1,8 @@
 import { validateMiraVisualAnswer, type MiraVisualAnswer } from "@/lib/mira-visual-answer";
+import {
+  validateMiraActionCard,
+  type MiraActionCard,
+} from "@/lib/mira-action-cards";
 
 export const MIRA_NEXUS_THREAD_STORAGE_PREFIX = "alo-nexus-mira-thread";
 
@@ -8,6 +12,7 @@ export type MiraNexusMessage = {
   content: string;
   at: string;
   visual?: MiraVisualAnswer;
+  action?: MiraActionCard;
 };
 
 export function miraNexusThreadKey(userId: string): string {
@@ -38,9 +43,14 @@ function sanitizeMiraNexusMessage(entry: unknown): MiraNexusMessage | null {
     typeof message.content !== "string"
   )
     return null;
-  if (message.role === "user" || !message.visual) return { ...message, visual: undefined };
-  const visual = validateMiraVisualAnswer(message.visual);
-  return visual ? { ...message, visual } : { ...message, visual: undefined };
+  if (message.role === "user") return { ...message, visual: undefined, action: undefined };
+  const visual = message.visual ? validateMiraVisualAnswer(message.visual) : undefined;
+  const action = message.action ? validateMiraActionCard(message.action) : undefined;
+  return {
+    ...message,
+    visual: visual ?? undefined,
+    action: action ?? undefined,
+  };
 }
 
 export function saveMiraNexusThread(userId: string, messages: MiraNexusMessage[]): void {
