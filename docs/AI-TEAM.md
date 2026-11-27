@@ -284,3 +284,12 @@ Mira kann auf ausdrücklichen Wunsch („erinnere mich an …", „speicher das 
 - **Geänderte Dateien:** `src/lib/ai-plan.ts` (`action?` in `parseAiResponse`, vollständige JSON-Antwort erforderlich), `src/lib/super-ai-tools.ts` (Persistenz-Typ), `src/lib/mira-nexus-chat.ts` (Sanitizer validiert action und entfernt sie bei Nutzer-/ungültigen Nachrichten), `src/components/chat/MiraNexusPanel.tsx`, `src/components/mira/SuperAiPage.tsx` (Anweisungen in `systemExtra`, Karten-Rendering in Mira und Mira-in-Nexus).
 - **Ehrliche Grenzen:** Kein automatisches Ausführen, kein Löschen oder Ändern bestehender Einträge; ohne Anmeldung wird der Speichervorgang ehrlich mit „Bitte zuerst anmelden." abgelehnt. Kein Lovable-Publish; Live-Status unverifiziert.
 - **Prüfstatus:** Tests wurden in dieser Umgebung nicht lokal ausgeführt (kein Node verfügbar); die Pflicht-CI (Lint & Build, Android Agent Build) muss auf dem PR-Head grün sein, bevor gemergt wird.
+
+### 2026-11-27 – Alo 1.200: BYOK-Nutzungsübersicht für Mira (Vibe Code, Draft-PR offen)
+
+Mira zählt ab jetzt lokal pro Gerät, wie oft jeder eingerichtete Anbieter und jedes Modell erfolgreich genutzt wurde (inklusive getrennter Fehlerzahl). Die Übersicht steht in den Mira-Zugangsdaten; gespeichert wird ausschließlich lokal im gerätespezifischen Speicher, pro Konto getrennt, mit 30-Tage-Aufbewahrung und Obergrenze von 40 Einträgen.
+
+- **Neue Dateien:** `src/lib/mira-usage.ts` (`recordMiraUsage`, `readMiraUsage`, `formatMiraUsageLine`; ehrliche Sanitizing-Regeln, kein Speichern bei blockiertem Speicher), `src/components/mira/MiraUsageSummary.tsx` (feste Übersichtskarte), `tests/mira-usage.test.ts` (5 Tests: Zählung, Konto-Trennung, ungültige Angaben, Fehlerzählung, Formatierung).
+- **Geänderte Dateien:** `src/components/mira/SuperAiPage.tsx` (Zählung nach erfolgreicher Antwort, Karte in den Zugangsdaten), `src/components/chat/MiraNexusPanel.tsx` (Zählung für Mira in Nexus).
+- **Ehrliche Grenzen:** Es werden nur erfolgreiche Antworten gezählt; fehlgeschlagene Sendeversuche ohne Antwort erscheinen nicht. Keine Token-, Kosten- oder Quotenwerte — diese liegen nicht beim Client. Kein geräteübergreifender Abgleich.
+- **Prüfstatus:** Tests wurden in dieser Umgebung nicht lokal ausgeführt (kein Node verfügbar); Pflicht-CI muss auf dem PR-Head grün sein. Kein Lovable-Publish; Live-Status unverifiziert.
