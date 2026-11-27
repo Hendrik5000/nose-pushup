@@ -136,6 +136,7 @@ import { superAiChat } from "@/lib/super-ai.functions";
 import { getMiraAloKnowledgeContext } from "@/lib/mira-alo-knowledge";
 import { recordMiraUsage } from "@/lib/mira-usage";
 import { MiraUsageSummary } from "@/components/mira/MiraUsageSummary";
+import { MiraActivityLog } from "@/components/mira/MiraActivityLog";
 import { getAdminAreaAccess } from "@/lib/admin.functions";
 import { isMarketplaceAdminAccessGranted } from "@/lib/marketplace";
 import { listMarketplaceCurrentApps, publishMarketplaceApp } from "@/lib/marketplace.functions";
@@ -1962,6 +1963,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
               </div>
               <MiraAppSettingsControls userId={userId} />
               <MiraUsageSummary userId={userId} />
+              <MiraActivityLog userId={userId} />
               <button
                 type="button"
                 className="alo-text-action"

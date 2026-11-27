@@ -302,3 +302,12 @@ Der feste Mira-Antwortkarten-Satz hat einen dritten Typ: `translatePair` (Schema
 - **Neue Datei:** `tests/mira-translate-card.test.ts` (6 Tests: Validierung, Ablehnung, mehrzeilige Texte, `parseAiResponse`-Integration, Rendering, Verwerfen ungültiger Daten).
 - **Ehrliche Grenzen:** Keine Live-Übersetzung externer Dienste; die Übersetzung kommt vom eingerichteten Modell. URLs im Text lassen die Karte ehrlich entfallen. Kein Lovable-Publish; Live-Status unverifiziert.
 - **Prüfstatus:** Tests wurden in dieser Umgebung nicht lokal ausgeführt (kein Node verfügbar); Pflicht-CI muss auf dem PR-Head grün sein.
+
+### 2026-11-27 – Alo 1.202: Mira-Aktivitätsprotokoll (Vibe Code, Draft-PR offen)
+
+Neues lokales Protokoll „Was hat Mira gemacht hat": erfolgreich übermittelte Anfragen (Anbieter · Modell, über die bestehende Zählung aus Alo 1.200) und über die Bestätigungskarte gespeicherte Aufgaben/Notizen aus Alo 1.199. Angezeigt in den Mira-Zugangsdaten. Nur dieses Gerät, pro Konto getrennt, 7 Tage Aufbewahrung, maximal 200 Einträge, ohne Cloud-Sync.
+
+- **Neue Dateien:** `src/lib/mira-activity-log.ts` (`recordMiraActivity`, `readMiraActivity`, `formatMiraActivityLine`, feste Arten chat/entry/browser/pointer/error), `src/components/mira/MiraActivityLog.tsx`, `tests/mira-activity-log.test.ts` (5 Tests: Aufzeichnung, Konto-Trennung, Ablehnung ungültiger Einträge, 200er-Grenze, Formatierung).
+- **Geänderte Dateien:** `src/lib/mira-usage.ts` (schreibt Chat-Ereignisse ins Protokoll), `src/components/mira/MiraActionCard.tsx` (protokolliert gespeicherte Aufgaben/Notizen), `src/components/mira/SuperAiPage.tsx` (Protokollkarte in den Zugangsdaten).
+- **Ehrliche Grenzen:** Browser- und Zeiger-Aktivitäten sind als Arten vorbereitet, werden aber erst in einem Folgepaket verdrahtet. Kein Löschen einzelner Einträge nötig (Auto-Ablauf 7 Tage). Keine Datenbank-, Policy- oder Secret-Änderung.
+- **Prüfstatus:** Tests wurden in dieser Umgebung nicht lokal ausgeführt (kein Node verfügbar); Pflicht-CI muss auf dem PR-Head grün sein. Kein Lovable-Publish; Live-Status unverifiziert.
