@@ -101,6 +101,7 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
   const [status, setStatus] = useState("");
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [runningAppId, setRunningAppId] = useState<string | null>(null);
+  const [catalogRetryCount, setCatalogRetryCount] = useState(0);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -124,7 +125,7 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
     return () => {
       active = false;
     };
-  }, [isAdmin, listApps, userId]);
+  }, [catalogRetryCount, isAdmin, listApps, userId]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -347,12 +348,18 @@ export function MarketplaceCustomApps({ userId, isAdmin }: { userId: string; isA
           je Version bestätigt werden.
         </p>
         {catalogState === "error" && (
-          <p
-            role="alert"
-            className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm"
-          >
-            {catalogError}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+            <p role="alert" className="min-w-0 flex-1 text-sm">
+              {catalogError}
+            </p>
+            <button
+              type="button"
+              onClick={() => setCatalogRetryCount((current) => current + 1)}
+              className="min-h-10 rounded-lg border border-border bg-background px-3 text-sm font-semibold"
+            >
+              Erneut laden
+            </button>
+          </div>
         )}
         {storageError && (
           <p

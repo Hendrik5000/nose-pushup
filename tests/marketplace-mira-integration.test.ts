@@ -50,6 +50,7 @@ test("Alo apps are authored from ordinary Mira chat messages without a separate 
   );
   assert.doesNotMatch(customApps, /generateMarketplaceManifestDraft/);
   assert.match(customApps, /Widerrufen …/);
+  assert.match(customApps, /Erneut laden/);
   assert.match(
     marketplaceRoute,
     /<MarketplaceCustomApps userId=\{userId\} isAdmin=\{isMarketplaceAdmin\}/,
@@ -121,6 +122,13 @@ test("published admin apps keep their icon grid and launch through the reviewed 
   assert.match(customApps, /<MarketplacePublishedAppViewer/);
   assert.match(customApps, /onInstallStateChange=\{persistInstallState\}/);
   assert.match(appViewer, /<MarketplaceManifestView/);
+});
+
+test("a failed shared Marketplace catalog can be retried without changing app data", () => {
+  assert.match(customApps, /catalogState === "error"/);
+  assert.match(customApps, /Erneut laden/);
+  assert.match(customApps, /setCatalogRetryCount\(\(current\) => current \+ 1\)/);
+  assert.ok(customApps.includes("}, [catalogRetryCount, isAdmin, listApps, userId]);"));
 });
 
 test("the icon registry covers all approved Marketplace icon IDs", () => {
