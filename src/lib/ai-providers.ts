@@ -272,10 +272,25 @@ const TASK_LABELS: Record<AiTask, string> = {
 export function selectProvider(
   providers: ProviderConfig[],
   task: AiTask,
-  options?: { requiresGoogle?: boolean },
+  options?: { requiresGoogle?: boolean; requestedModel?: string },
 ): ProviderSelection {
   const enabled = providers.filter(isProviderReady);
   if (enabled.length === 0) return { provider: null, reason: "no_provider" };
+  if (options?.requestedModel && options.requestedModel !== "auto") {
+    if (options.requestedModel === "openrouter/free") {
+      const openrouter = enabled.find((provider) => provider.id === "openrouter");
+      return openrouter
+        ? { provider: { ...openrouter, model: "openrouter/free" }, reason: "task_preference" }
+        : { provider: null, reason: "no_provider" };
+    }
+    if (isGeminiModelMode(options.requestedModel)) {
+      const google = enabled.find((provider) => provider.id === "google");
+      return google
+        ? { provider: { ...google, model: options.requestedModel }, reason: "task_preference" }
+        : { provider: null, reason: "no_provider" };
+    }
+    return { provider: null, reason: "no_provider" };
+  }
   if (options?.requiresGoogle) {
     const google = enabled.find((provider) => provider.id === "google");
     return google

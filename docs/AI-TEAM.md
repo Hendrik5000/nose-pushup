@@ -18,7 +18,19 @@ Eine detaillierte ÃÂbersicht ÃÂ¼ber Aufbau, Routen, Datenbank, Mira, 
 4. Keine Arbeit anderer Assistenten ergÃÂ`nzen, umschreiben oder als eigene ausgeben. Bei einer parallelen ÃÂnderungskollision nur den eigenen Eintrag sicher koordinieren; nichts fremdes ÃÂ¼berschreiben.
 5. Keine Secrets, Tokens, privaten Nachrichten oder Nutzerkontaktdaten hier ablegen.
 
-Das Register hÃÂ`lt fest, was die Assistenten selbst melden. Ein Eintrag allein ist kein Beleg fÃÂ¼r einen erfolgreichen Push, Test oder Live-Deploy; solche Ergebnisse mÃÂ¼ssen separat geprÃÂ¼ft werden.
+Das Register hält fest, was die Assistenten selbst melden. Ein Eintrag allein ist kein Beleg für einen erfolgreichen Push, Test oder Live-Deploy; solche Ergebnisse müssen separat geprüft werden.
+
+## Laufender Arbeitsnachweis – 2026-11-27
+
+| Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |
+|---|---|---|---|---|---|
+| Cue Coding Assistant | unbekannt | PR #327: Mira-Gemini-Modellwahl und Fehlerdiagnose abschließen | PR #327 regulär gemergt; finale Pflichtprüfungen und Post-Merge-CI erfolgreich; kein Datenbankeingriff oder Lovable-Publish | 2026-11-27 | Basis `main` `863a24db0d46d5db0eca0915b3cb7a42203317ad`; Code-Fix-Commit `8ba3434ed31900ffa3455c4a2b736a3a29aba4e1`; Dokumentations-Follow-up und finaler PR-Head `e43fdff1b83748952207a9a825bb12c252d514e7` auf `fix/mira-gemini-model-selection-20261126`. [PR #327](https://github.com/Hendrik5000/nose-pushup/pull/327) wurde regulär gemergt; Merge-Commit und verifizierter Remote-`main`-Head `cc20fbba0b5b6d1fcaffb51c644322f35b40fe52`. Geändert: `src/components/AiProviderSettings.tsx`, `src/components/mira/SuperAiPage.tsx`, `src/lib/ai-provider-errors.ts`, `src/lib/ai-providers.ts`, `tests/gemini-models-and-errors.test.ts`, `docs/AI-TEAM.md`, `docs/AI-ROADMAP.md`. Fokustests 8/8 mit Node 24 und temporärem Alias-Resolver; `git diff --check` bestanden. Auf exakt dem finalen PR-Head waren 7 Checks erfolgreich und Supabase Preview übersprungen; `Lint & Build` und Android Agent Build bestanden in PR- und Push-Lauf, Vercel-Previewchecks erfolgreich. Post-Merge-CI [Run 45939244771](https://github.com/Hendrik5000/nose-pushup/actions/runs/45939244771) bestand auf exakt `cc20fbba0b5b6d1fcaffb51c644322f35b40fe52`, einschließlich Lint, Regressionstests, Typecheck, Build, Android-Unit-Tests und Debug-APK. Lokales Gesamt-Lint/Build nicht ausgeführt: `node_modules` fehlen, Inode-Auslastung 100 %, keine Installation versucht. Prüfung ergab, dass Miras Route im `ssr: false`-Bereich liegt; der `localStorage`-Initializer verursacht dort keine SSR-Hydration-Abweichung. Kein echter Gemini-Aufruf; kein gespeicherter globaler Gemini-Key gefunden und keine Secrets gelesen, erstellt oder geändert. Keine Datenbank-/Schema-/Migrations-/Policy-/Trigger-/Datenänderung. Kein Lovable-Publish; exakte Projekt-/Repository-/Branch-/Commit-Zuordnung, passender Lovable-Build und Live-Stand unverifiziert. |
+
+## Laufender Arbeitsnachweis – 2026-11-26
+
+| Assistent | Modell / Provider | Aufgabe | Status | Aktualisiert | Ergebnis / Dateien / Prüfungen / Commit |
+|---|---|---|---|---|---|
+| ChatGPT | GPT-6 / OpenAI | Mira: Gemini-Fehlerdiagnose verbessern, API-Key-Eingaben sofort speichern/aktivieren und Modellwahl in der Chatoberfläche ergänzen | Implementierung vorbereitet; Tests/CI/Commit noch ausstehend | 2026-11-26 | Geplant: `src/components/AiProviderSettings.tsx`, `src/components/mira/SuperAiPage.tsx`, `src/lib/ai-providers.ts`, `src/lib/ai-provider-errors.ts`, `tests/gemini-models-and-errors.test.ts`, diese Datei und `docs/AI-ROADMAP.md`. Keine Fehlerberichte vom Nutzer vorhanden; tatsächliche Google-Antwort deshalb nicht live reproduziert. Keine API-Keys oder Secrets gelesen, gespeichert oder ausgegeben. Keine Datenbankänderung. |
 
 ## Laufender Arbeitsnachweis – 2026-11-25
 
