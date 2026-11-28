@@ -311,3 +311,12 @@ Neues lokales Protokoll „Was hat Mira gemacht hat": erfolgreich übermittelte 
 - **Geänderte Dateien:** `src/lib/mira-usage.ts` (schreibt Chat-Ereignisse ins Protokoll), `src/components/mira/MiraActionCard.tsx` (protokolliert gespeicherte Aufgaben/Notizen), `src/components/mira/SuperAiPage.tsx` (Protokollkarte in den Zugangsdaten).
 - **Ehrliche Grenzen:** Browser- und Zeiger-Aktivitäten sind als Arten vorbereitet, werden aber erst in einem Folgepaket verdrahtet. Kein Löschen einzelner Einträge nötig (Auto-Ablauf 7 Tage). Keine Datenbank-, Policy- oder Secret-Änderung.
 - **Prüfstatus:** Tests wurden in dieser Umgebung nicht lokal ausgeführt (kein Node verfügbar); Pflicht-CI muss auf dem PR-Head grün sein. Kein Lovable-Publish; Live-Status unverifiziert.
+
+### 2026-11-28 – Alo 1.203: Mira-Antwortentwürfe im Nexus-Chat (Vibe Code, Draft-PR offen)
+
+Neuer ✨-Button im Nexus-Composer (beide Design-Ansichten): Mira entwirft auf Klick eine Antwort für den aktuell geöffneten Raum oder die DM. Grundlage ist ausschließlich der letzte echte Nachrichtenverlauf (maximal 30 Nachrichten, 4000 Zeichen, bereinigt, mit Autorennamen). Der Entwurf landet im Eingabefeld und wird nie automatisch gesendet; ohne fremde Nachrichten, ohne aktiven Anbieter oder bei Fehlschlag gibt es eine ehrliche Hinweismeldung. Erfolgreiche Entwurfsanfragen zählen in die Nutzungsübersicht (Alo 1.200) und das Aktivitätsprotokoll (Alo 1.202).
+
+- **Neue Dateien:** `src/lib/mira-nexus-reply-draft.ts` (`MIRA_REPLY_DRAFT_SYSTEM`, `buildNexusReplyDraftHistory`, `buildNexusReplyDraftPrompt`, `cleanReplyDraftText`; strenge Bereinigung, `KEIN_ENTWURF`-Ausstieg), `tests/mira-nexus-reply-draft.test.ts` (5 Tests).
+- **Geänderte Datei:** `src/components/chat/LocalChatShell.tsx` (Button in beiden Composern, `askMiraDraft`-Handler über den bestehenden `superAiChat`-Serverpfad, Nutzungs-/Protokoll-Aufzeichnung, Entwurfsspeicherung über den vorhandenen Draft-Mechanismus).
+- **Ehrliche Grenzen:** Kein automatisches Senden, keine Massenentwürfe für alle Räume, keine @Erwähnungen; Mira sieht nur den geladenen Verlauf des aktiven Chats, keine ungelesenen anderen Chats.
+- **Prüfstatus:** Tests wurden in dieser Umgebung nicht lokal ausgeführt (kein Node verfügbar); Pflicht-CI muss auf dem PR-Head grün sein. Keine Datenbank-, Policy- oder Secret-Änderung. Kein Lovable-Publish.
