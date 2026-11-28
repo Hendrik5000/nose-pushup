@@ -467,7 +467,7 @@ export function describeMarketplaceAuthoredPermissions(manifestInput: unknown): 
   );
 }
 
-function marketplaceMiraInstructions() {
+export function buildMarketplaceMiraSystemInstructions() {
   const actionList = MARKETPLACE_AUTHOR_ACTIONS.map(({ id, label }) => `- ${id}: ${label}`).join(
     "\n",
   );
@@ -503,7 +503,7 @@ export type MarketplaceMiraRequest = {
     messages: [{ role: "user"; content: string }];
     provider: ReturnType<typeof toPayload>;
     task: "general";
-    systemExtra: string;
+    generationMode: "marketplace-authoring";
   };
 };
 
@@ -534,7 +534,7 @@ export function buildMarketplaceMiraRequest(
       ],
       provider: toPayload(provider),
       task: "general",
-      systemExtra: marketplaceMiraInstructions(),
+      generationMode: "marketplace-authoring",
     },
   };
 }

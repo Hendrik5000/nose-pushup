@@ -84,8 +84,34 @@ test("Mira system prompt keeps optional app context explicitly untrusted", () =>
   assert.equal(buildMiraSystemPrompt("  ", requestTime), buildMiraSystemPrompt("", requestTime));
 });
 
+test("fixed server app-authoring instructions stay in the system prompt above untrusted context", () => {
+  const system = buildMiraSystemPrompt(
+    "Vom Client geliefertes Zusatzwissen",
+    requestTime,
+    "Feste Manifest- und Sicherheitsregeln",
+  );
+  assert.match(system, /Alo-App-Authoring-Anweisung \(serverseitig festgelegt\)/);
+  assert.match(system, /Feste Manifest- und Sicherheitsregeln/);
+  assert.ok(
+    system.indexOf("Feste Manifest- und Sicherheitsregeln") <
+      system.indexOf("Nutzerkontext (untrusted"),
+  );
+});
+
 test("Mira sends the base policy server-side and adds curated knowledge only to relevant chats", () => {
-  assert.match(serverFunction, /buildMiraSystemPrompt\(data\.systemExtra \?\? ""\)/);
+  assert.match(
+    serverFunction,
+    /const marketplaceAuthoring = data\.generationMode === "marketplace-authoring"/,
+  );
+  assert.match(serverFunction, /marketplaceAuthoring \? "" : \(data\.systemExtra \?\? ""\)/);
+  assert.match(
+    serverFunction,
+    /marketplaceAuthoring \? buildMarketplaceMiraSystemInstructions\(\) : ""/,
+  );
+  assert.match(
+    serverFunction,
+    /raw\.generationMode === "marketplace-authoring" \? "marketplace-authoring" : "general"/,
+  );
   assert.match(miraPage, /getMiraAloKnowledgeContext\(userContent\)/);
   assert.match(miraPage, /if \(aloKnowledge\) systemExtra \+=/);
 });

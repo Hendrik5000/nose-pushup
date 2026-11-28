@@ -4,6 +4,7 @@ import test from "node:test";
 import { DEFAULT_PROVIDERS } from "../src/lib/ai-providers";
 import {
   buildMarketplaceMiraRequest,
+  buildMarketplaceMiraSystemInstructions,
   generateMarketplaceManifestDraft,
   validateMarketplaceAuthoredManifest,
 } from "../src/lib/marketplace-authoring";
@@ -171,13 +172,16 @@ test("one explicit request gets exact schema guidance and honest capability limi
   assert.ok(provider);
   const request = buildMarketplaceMiraRequest("Fußball App wie FotMob", provider);
   assert.equal(request.data.messages.length, 1);
+  assert.equal(request.data.generationMode, "marketplace-authoring");
+  assert.equal("systemExtra" in request.data, false);
+  const systemInstructions = buildMarketplaceMiraSystemInstructions();
   assert.match(
-    request.data.systemExtra,
+    systemInstructions,
     /Kein alo_app-Wrapper, metadata, screens, components oder data_source/,
   );
-  assert.match(request.data.systemExtra, /keine Fußball-Ergebnisse oder Sportligen/);
-  assert.match(request.data.systemExtra, /statischer Inhalt ist nicht live/);
-  assert.match(request.data.systemExtra, /keine Übernahme fremder Marken/);
+  assert.match(systemInstructions, /keine Fußball-Ergebnisse oder Sportligen/);
+  assert.match(systemInstructions, /statischer Inhalt ist nicht live/);
+  assert.match(systemInstructions, /keine Übernahme fremder Marken/);
   assert.equal("attachments" in request.data, false);
   let calls = 0;
   await assert.rejects(
