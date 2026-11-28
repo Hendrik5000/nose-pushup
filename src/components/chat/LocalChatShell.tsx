@@ -83,12 +83,23 @@ import {
   type ChatPrefs,
 } from "@/lib/chat-extras";
 import { validateNexusHandoffTarget } from "@/lib/mira-nexus-draft";
+import { useServerFn } from "@tanstack/react-start";
+import { superAiChat } from "@/lib/super-ai.functions";
+import { classifyTask, loadProviders, selectProvider, toPayload } from "@/lib/ai-providers";
+import {
+  MIRA_REPLY_DRAFT_SYSTEM,
+  buildNexusReplyDraftHistory,
+  buildNexusReplyDraftPrompt,
+  cleanReplyDraftText,
+} from "@/lib/mira-nexus-reply-draft";
+import { recordMiraUsage } from "@/lib/mira-usage";
 
 import { MessageLinkEmbeds } from "@/components/chat/MessageLinkEmbeds";
 
 type Target = { kind: "room" | "dm"; id: string };
 
 export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
+  const sendMira = useServerFn(superAiChat);
   const [userId, setUserId] = useState<string | null>(null);
   const [myName, setMyName] = useState("Du");
   const [mode, setMode] = useState<ChatMode>("local");
@@ -123,6 +134,7 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
   const [listening, setListening] = useState(false);
   const [dmPickerOpen, setDmPickerOpen] = useState(false);
   const [miraOpen, setMiraOpen] = useState(false);
+  const [draftBusy, setDraftBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [todayReps, setTodayReps] = useState(0);
   const [, refreshSyncLabel] = useState(0);
@@ -611,6 +623,65 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
     recognitionRef.current = rec;
     setListening(true);
     rec.start();
+  };
+
+  const askMiraDraft = async () => {
+    if (!userId || !active || draftBusy) return;
+    const transcript = buildNexusReplyDraftHistory(
+      messages.map((m) => ({
+        author:
+          m.user_id === userId
+            ? myName
+            : m.user_id === "system"
+              ? "System"
+              : dms.find((d) => d.other_id === m.user_id)?.other_name ||
+                names[m.user_id] ||
+                "Mitglied",
+        own: m.user_id === userId,
+        content: m.content,
+      })),
+    );
+    if (!transcript) {
+      flash("Noch keine Nachrichten anderer, auf die Mira entwerfen könnte.");
+      return;
+    }
+    const task = classifyTask("Antwortentwurf verfassen");
+    const selection = selectProvider(loadProviders(userId), task);
+    if (!selection.provider) {
+      flash("Kein aktiver KI-Anbieter. Hinterlege einen Schlüssel in Mira.");
+      return;
+    }
+    setDraftBusy(true);
+    try {
+      const res = await sendMira({
+        data: {
+          messages: [
+            {
+              role: "user" as const,
+              content: buildNexusReplyDraftPrompt(headerTitle, myName, transcript),
+            },
+          ],
+          provider: toPayload(selection.provider),
+          task,
+          systemExtra: MIRA_REPLY_DRAFT_SYSTEM,
+        },
+      });
+      recordMiraUsage({ userId, provider: res.provider, model: res.model, ok: true });
+      const text = cleanReplyDraftText(res.reply);
+      if (!text) {
+        flash("Mira hat keinen verwertbaren Entwurf geliefert.");
+        return;
+      }
+      const next = draftRef.current ? draftRef.current + "\n" + text : text;
+      draftRef.current = next;
+      setDraft(next);
+      saveDraft(userId, active.kind, active.id, next);
+      flash("Entwurf von Mira eingefügt. Bitte prüfen und selbst senden.");
+    } catch {
+      flash("Mira konnte gerade keinen Entwurf erstellen.");
+    } finally {
+      setDraftBusy(false);
+    }
   };
 
   const exportActive = useCallback(async () => {
@@ -1472,6 +1543,20 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
               >
                 🎤
               </button>
+              <button
+                type="button"
+                onClick={() => void askMiraDraft()}
+                disabled={!active || draftBusy}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm ${
+                  draftBusy
+                    ? "border-primary bg-primary/20 text-primary"
+                    : "border-border bg-secondary/40"
+                }`}
+                aria-label="Antwortentwurf bei Mira anfragen"
+                title="Antwortentwurf bei Mira anfragen"
+              >
+                ✨
+              </button>
               <AttachImageButton
                 enabled={mode === "supabase" && !!active}
                 busy={uploading || sending}
@@ -1526,6 +1611,20 @@ export function LocalChatShell({ initialDmId }: { initialDmId?: string } = {}) {
                 aria-label="Spracheingabe"
               >
                 <Mic className="h-5 w-5" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => void askMiraDraft()}
+                disabled={!active || draftBusy}
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-lg ${
+                  draftBusy
+                    ? "border-primary bg-primary/20 text-primary"
+                    : "border-border bg-secondary/40"
+                }`}
+                aria-label="Antwortentwurf bei Mira anfragen"
+                title="Antwortentwurf bei Mira anfragen"
+              >
+                <Sparkles className="h-5 w-5" aria-hidden="true" />
               </button>
               <AttachImageButton
                 size="lg"
