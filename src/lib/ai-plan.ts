@@ -2,6 +2,10 @@
 
 import { validateMiraInteraction, type MiraInteraction } from "./mira-interactions";
 import { validateMiraVisualAnswer, type MiraVisualAnswer } from "./mira-visual-answer";
+import {
+  validateMiraActionCard,
+  type MiraActionCard,
+} from "./mira-action-cards";
 
 export type AiWorkoutPlan = {
   title: string;
@@ -48,6 +52,7 @@ export function parseAiResponse(
   plan: AiWorkoutPlan | null;
   interaction?: MiraInteraction;
   visual?: MiraVisualAnswer;
+  action?: MiraActionCard;
 } {
   const text = raw.trim();
   const jsonText = unwrapJsonFence(text);
@@ -63,8 +68,10 @@ export function parseAiResponse(
   if (!isRecord(value)) return { reply: text, plan: null };
   const hasInteraction = Object.prototype.hasOwnProperty.call(value, "interaction");
   const hasVisual = Object.prototype.hasOwnProperty.call(value, "visual");
+  const hasAction = Object.prototype.hasOwnProperty.call(value, "action");
   const interaction = validateMiraInteraction(value.interaction);
   const visual = validateMiraVisualAnswer(value.visual);
+  const action = validateMiraActionCard(value.action);
   const plan = validateAiWorkoutPlan(value.plan);
   const reply = typeof value.reply === "string" ? value.reply.trim() : "";
   if (plan)
@@ -73,13 +80,15 @@ export function parseAiResponse(
       plan,
       ...(interaction ? { interaction } : {}),
       ...(visual ? { visual } : {}),
+      ...(action ? { action } : {}),
     };
-  if ((hasInteraction || hasVisual) && typeof value.reply === "string" && reply) {
+  if ((hasInteraction || hasVisual || hasAction) && typeof value.reply === "string" && reply) {
     return {
       reply,
       plan: null,
       ...(interaction ? { interaction } : {}),
       ...(visual ? { visual } : {}),
+      ...(action ? { action } : {}),
     };
   }
   return { reply: text, plan: null };

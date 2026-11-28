@@ -15,7 +15,8 @@ import { MiraInteractiveCard } from "@/components/mira/MiraInteractiveCard";
 import { MiraVoiceConversationDialog } from "@/components/mira/MiraVoiceConversationDialog";
 import { MiraGithubRepository } from "@/components/mira/MiraGithubRepository";
 import { MiraVisualAnswerCard } from "@/components/mira/MiraVisualAnswerCard";
-import { MIRA_VISUAL_INSTRUCTIONS } from "@/lib/mira-visual-answer";
+import { MIRA_ACTION_INSTRUCTIONS } from "@/lib/mira-action-cards";
+import { MiraActionCard } from "@/components/mira/MiraActionCard";
 import {
   browserStepsToSystemBlock,
   extractWebTarget,
@@ -1305,7 +1306,7 @@ Antworte auf Deutsch und erkläre Fachbegriffe wie „Routing“ einfach (Routin
 
 Interaktive Antwort (optional, nur bei einer ausdrücklichen Gaming-PC-Konfiguratorfrage): Ergänze zum normalen reply-Feld höchstens ein interaction-Objekt exakt in dieser Form: {"type":"pcConfigurator","schemaVersion":1,"budget":900,"resolution":"1080p","priority":"fps"}. Erlaubt sind ausschließlich budget als ganze Zahl von 600 bis 3500 in 100er-Schritten, resolution „1080p“, „1440p“ oder „4k“, priority „fps“ oder „quiet“ sowie die genannten Felder. Keine weiteren Felder. Die feste Alo-Karte leitet daraus lokal ein versioniertes Profil ab. Nenne keine aktuellen Preise, Bestände, Händler, konkreten SKUs oder Kompatibilitätszusagen; dafür gibt es keinen Live-Abgleich. Bei anderen Fragen kein interaction-Feld.
 
-${MIRA_VISUAL_INSTRUCTIONS}${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
+${MIRA_VISUAL_INSTRUCTIONS}\n\n${MIRA_ACTION_INSTRUCTIONS}${lastFeedback ? `\n\nRÜCKMELDUNG ZUM LETZTEN TRAININGSVORSCHLAG: ${lastFeedback}. Passe deine nächste Empfehlung ausdrücklich an diese Rückmeldung an und erwähne knapp, wie.` : ""}`;
       const aloKnowledge = getMiraAloKnowledgeContext(userContent);
       if (aloKnowledge) systemExtra += `\n\n${aloKnowledge}`;
       if (webContextBlock) systemExtra += `\n\n${webContextBlock}`;
@@ -1362,6 +1363,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
           ...(plan ? { plan } : {}),
           ...(parsed.interaction ? { interaction: parsed.interaction } : {}),
           ...(parsed.visual ? { visual: parsed.visual } : {}),
+          ...(parsed.action ? { action: parsed.action } : {}),
           meta: {
             provider: res.provider,
             model: res.model,
@@ -2085,6 +2087,7 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                     />
                   )}
                   {m.role === "assistant" && m.visual && <MiraVisualAnswerCard visual={m.visual} />}
+                  {m.role === "assistant" && m.action && <MiraActionCard action={m.action} userId={userId} />}
                   {m.attachments?.length ? (
                     <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
                       {m.attachments.map((item, index) => (
@@ -2876,6 +2879,9 @@ ${personaMixSystemBlock(loadPersonaMix(userId))}`;
                         )}
                         {m.role === "assistant" && m.visual && (
                           <MiraVisualAnswerCard visual={m.visual} />
+                        )}
+                        {m.role === "assistant" && m.action && (
+                          <MiraActionCard action={m.action} userId={userId} />
                         )}
                         {m.attachments?.length ? (
                           <ul className="mira-sent-attachments" aria-label="Gesendete Anhänge">
